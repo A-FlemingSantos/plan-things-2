@@ -119,7 +119,7 @@ export default function Pricing() {
               <div className={styles.cardDivider} />
 
               <a
-                href={plan.name === 'Team' ? '#faq' : '#mobile'}
+                href={plan.name === 'Team' ? '/help' : '/cadastro'}
                 className={`${styles.planCta} ${
                   plan.ctaStyle === 'primary' ? styles.ctaPrimary :
                   plan.ctaStyle === 'outline' ? styles.ctaOutline : styles.ctaSecondary

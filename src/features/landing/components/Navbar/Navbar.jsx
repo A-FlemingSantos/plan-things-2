@@ -48,8 +48,8 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className={styles.actions}>
-          <a href="#pricing" className={styles.actionLink}>Entrar</a>
-          <a href="#pricing" className={styles.ctaBtn}>Começar grátis</a>
+          <a href="/login" className={styles.actionLink}>Entrar</a>
+          <a href="/cadastro" className={styles.ctaBtn}>Começar grátis</a>
         </div>
       </nav>
     </header>

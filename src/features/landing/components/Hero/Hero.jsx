@@ -20,7 +20,7 @@ export default function Hero() {
           </p>
 
           <div className={styles.ctas}>
-            <a href="#pricing" className={styles.ctaPrimary}>
+            <a href="/cadastro" className={styles.ctaPrimary}>
               Começar grátis
             </a>
             <a href="#how-it-works" className={styles.ctaSecondary}>

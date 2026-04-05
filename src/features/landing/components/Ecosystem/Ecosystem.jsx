@@ -91,7 +91,7 @@ export default function Ecosystem() {
             <span className={styles.headingLight}>com toda a sua stack</span>
           </h2>
         </div>
-        <a href="#pricing" className={styles.allBtn}>
+        <a href="/cadastro" className={styles.allBtn}>
           Ver todas as integrações
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -122,7 +122,7 @@ export default function Ecosystem() {
                 <p className={styles.cardTagline}>{item.tagline}</p>
                 <p className={styles.cardSub}>{item.sub}</p>
                 <div className={styles.cardFooter}>
-                  <a href="#pricing" className={styles.cardCta}>
+                  <a href="/cadastro" className={styles.cardCta}>
                     <span className={styles.cardCtaIcon}>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                         <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
