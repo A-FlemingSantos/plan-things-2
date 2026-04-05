@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import opalineBackground from '../../../opaline.png'
+import highlightedBackground from '../../../minimal-drift.jpg'
 import styles from './HighlightedInnovation.module.css'
 
 export default function HighlightedInnovation() {
@@ -39,7 +39,7 @@ export default function HighlightedInnovation() {
         <div
           className={styles.section}
           style={{
-            backgroundImage: `url(${opalineBackground})`,
+            backgroundImage: `url(${highlightedBackground})`,
             transform: `scale(${scale})`,
             borderRadius: `${radius}px`,
           }}
