@@ -1,0 +1,161 @@
+.section {
+  background: var(--color-white);
+  padding: var(--section-py) 0;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--color-gray-400);
+}
+
+.heading {
+  font-size: clamp(28px, 3.5vw, 44px);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.03em;
+  line-height: 1.1;
+}
+
+.headingLight {
+  font-weight: var(--font-weight-light);
+  color: var(--color-gray-400);
+}
+
+.subtext {
+  font-size: 16px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.65;
+  color: var(--color-gray-600);
+  max-width: 440px;
+}
+
+/* ── Download area ── */
+.downloadArea {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-top: 8px;
+}
+
+/* QR */
+.qrCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.qrFrame {
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-white);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qrSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.qrHint {
+  font-size: 11px;
+  color: var(--color-gray-400);
+  letter-spacing: .02em;
+}
+
+/* Or divider */
+.orDivider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.orLine {
+  width: 1px;
+  height: 32px;
+  background: var(--color-gray-200);
+}
+
+.orText {
+  font-size: 12px;
+  color: var(--color-gray-400);
+}
+
+/* Badges */
+.badges {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--color-black);
+  color: var(--color-white);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-black);
+  transition: opacity var(--transition-fast);
+  width: 180px;
+}
+
+.badge:hover { opacity: .8; }
+
+.badgeText {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.badgeSmall {
+  font-size: 10px;
+  opacity: .65;
+}
+
+.badgeLarge {
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+}
+
+/* ── Pills ── */
+.pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pill {
+  display: inline-block;
+  padding: 5px 14px;
+  font-size: 12px;
+  color: var(--color-gray-600);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 99px;
+}
+
+@media (max-width: 560px) {
+  .downloadArea { flex-direction: column; }
+  .orDivider    { flex-direction: row; }
+  .orLine       { width: 40px; height: 1px; }
+}

@@ -1,0 +1,123 @@
+.footer {
+  background: var(--color-black);
+  color: var(--color-white);
+  padding: 80px 0 40px;
+}
+
+.inner { display: flex; flex-direction: column; gap: 60px; }
+
+/* ── Top ── */
+.top {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.logoMark {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.01em;
+  margin-bottom: 4px;
+}
+
+.brandTag {
+  font-size: 12px;
+  color: rgba(255,255,255,.4);
+  font-weight: var(--font-weight-light);
+}
+
+/* Links grid */
+.linksGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+}
+
+.colHead {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: rgba(255,255,255,.4);
+  margin-bottom: 16px;
+}
+
+.colLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.colLink {
+  font-size: 14px;
+  font-weight: var(--font-weight-light);
+  color: rgba(255,255,255,.65);
+  transition: color var(--transition-fast);
+}
+
+.colLink:hover { color: var(--color-white); }
+
+/* ── Bottom ── */
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-top: 28px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.copy {
+  font-size: 13px;
+  color: rgba(255,255,255,.35);
+  font-weight: var(--font-weight-light);
+}
+
+.socials { display: flex; gap: 12px; }
+
+.socialLink {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.socialLink:hover {
+  background: rgba(255,255,255,.12);
+  color: var(--color-white);
+}
+
+@media (max-width: 1024px) {
+  .top { grid-template-columns: 1fr; gap: 40px; }
+  .linksGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .linksGrid { grid-template-columns: 1fr 1fr; gap: 24px; }
+}

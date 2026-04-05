@@ -1,0 +1,126 @@
+.stage {
+  position: relative;
+  min-height: 220vh;
+}
+
+.stickyFrame {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.section {
+  position: relative;
+  background: var(--color-gray-50);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  min-height: 100vh;
+  width: 100%;
+  padding: 140px 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transition: transform 120ms linear, border-radius 120ms linear;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .18);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 28px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--color-white);
+}
+
+.heading {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  color: var(--color-white);
+}
+
+.headingLight {
+  font-weight: var(--font-weight-light);
+  color: var(--color-white);
+}
+
+.subtext {
+  font-size: 17px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.65;
+  color: var(--color-white);
+  max-width: 560px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  font-size: 15px;
+  background: var(--color-white);
+  color: var(--color-black);
+  border-radius: var(--radius-md);
+  transition: opacity var(--transition-fast);
+  margin-top: 4px;
+}
+
+.cta:hover { opacity: .8; }
+
+@media (max-width: 900px) {
+  .stage {
+    min-height: 190vh;
+  }
+
+  .section {
+    min-height: 100vh;
+    padding: 120px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .stage {
+    min-height: 170vh;
+  }
+
+  .section {
+    min-height: 100vh;
+    padding: 96px 0;
+  }
+}
+
+/*
+ * ── Dark mode overrides (uncomment when background image is added) ──
+ *
+ * .section.darkMode .heading      { color: var(--color-white); }
+ * .section.darkMode .headingLight { color: rgba(255,255,255,.5); }
+ * .section.darkMode .subtext      { color: rgba(255,255,255,.65); }
+ * .section.darkMode .eyebrow      { color: rgba(255,255,255,.45); }
+ * .section.darkMode .cta          { background: var(--color-white); color: var(--color-black); }
+ */

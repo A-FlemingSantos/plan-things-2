@@ -1,0 +1,38 @@
+.section {
+  background: var(--color-white);
+  padding: var(--section-py) 0;
+}
+
+.inner { display: flex; flex-direction: column; gap: 56px; }
+
+.header { text-align: center; }
+
+.eyebrow {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--color-gray-400);
+  margin-bottom: 16px;
+}
+
+.heading {
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.03em;
+  line-height: 1.1;
+}
+
+.headingLight {
+  font-weight: var(--font-weight-light);
+  color: var(--color-gray-400);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+}
