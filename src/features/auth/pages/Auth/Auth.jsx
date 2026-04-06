@@ -86,12 +86,18 @@ export default function Auth({ initialMode = 'login' }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     setLoading('email')
-    setTimeout(() => setLoading(null), 1800)
+    setTimeout(() => {
+      setLoading(null)
+      window.location.href = '/workspace'
+    }, 1800)
   }
 
   const handleOAuth = (provider) => {
     setLoading(provider)
-    setTimeout(() => setLoading(null), 1800)
+    setTimeout(() => {
+      setLoading(null)
+      window.location.href = '/workspace'
+    }, 1800)
   }
 
   useEffect(() => {

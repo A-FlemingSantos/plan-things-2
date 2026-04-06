@@ -9,7 +9,7 @@ export const INFO_PAGES = {
   '/help': {
     eyebrow: 'Suporte',
     title: 'Central de ajuda',
-    description: 'A area de ajuda ainda nao foi implementada. A landing e a tela de autenticacao ja estao integradas.',
+    description: 'A area de ajuda ainda nao foi implementada. A landing, a autenticacao e o workspace principal ja estao integrados.',
     primaryLabel: 'Ir para cadastro',
     primaryHref: '/cadastro',
   },

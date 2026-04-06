@@ -116,7 +116,7 @@ export default function FeatureCard({ feature }) {
   const featureHref =
     feature.visual === 'planning' ? '#innovation' :
     feature.visual === 'kanban' ? '#how-it-works' :
-    '#mobile'
+    '/workspace'
 
   return (
     <div className={styles.card}>
