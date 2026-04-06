@@ -207,7 +207,7 @@ function CanvasCard({
     tool === 'pan'     ? 'grab'    :
     tool === 'card'    ? 'crosshair':
     tool === 'connect' ? 'cell'    :
-    tool === 'delete'  ? 'not-allowed' : 'default'
+    tool === 'delete'  ? 'pointer' : 'default'
 
   return (
     <div
@@ -230,7 +230,9 @@ function CanvasCard({
         '--accent': color.accent,
       }}
       onPointerDown={e => {
-        e.stopPropagation()
+        if (tool !== 'pan') {
+          e.stopPropagation()
+        }
         onPointerDown(e, card.id)
       }}
       onClick={e => {
@@ -248,35 +250,43 @@ function CanvasCard({
             className={styles.cardTitle}
             value={card.title}
             placeholder="Untitled"
+            readOnly={!isInteractive}
+            tabIndex={isInteractive ? 0 : -1}
             onChange={e => onUpdate({ ...card, title: e.target.value })}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => e.stopPropagation()}
+            onPointerDown={e => {
+              if (isInteractive) e.stopPropagation()
+            }}
+            onClick={e => {
+              if (isInteractive) e.stopPropagation()
+            }}
             style={{ cursor: isInteractive ? 'text' : 'inherit', color: color.accent }}
           />
-          <div className={styles.cardMenuWrap} ref={menuRef}>
-            <button
-              className={styles.cardMenuBtn}
-              onPointerDown={e => e.stopPropagation()}
-              onClick={e => { e.stopPropagation(); setShowMenu(v => !v) }}
-            >
-              <Ic.More />
-            </button>
-            {showMenu && (
-              <div className={styles.cardMenu}>
-                <div className={styles.cardMenuColors}>
-                  {CARD_COLORS.map(c => (
-                    <button
-                      key={c.id}
-                      className={`${styles.cardMenuSwatch} ${card.colorId === c.id ? styles.cardMenuSwatchActive : ''}`}
-                      style={{ background: c.accent }}
-                      onClick={() => { onUpdate({ ...card, colorId: c.id }); setShowMenu(false) }}
-                      title={c.id}
-                    />
-                  ))}
+          {isInteractive && (
+            <div className={styles.cardMenuWrap} ref={menuRef}>
+              <button
+                className={styles.cardMenuBtn}
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); setShowMenu(v => !v) }}
+              >
+                <Ic.More />
+              </button>
+              {showMenu && (
+                <div className={styles.cardMenu}>
+                  <div className={styles.cardMenuColors}>
+                    {CARD_COLORS.map(c => (
+                      <button
+                        key={c.id}
+                        className={`${styles.cardMenuSwatch} ${card.colorId === c.id ? styles.cardMenuSwatchActive : ''}`}
+                        style={{ background: c.accent }}
+                        onClick={() => { onUpdate({ ...card, colorId: c.id }); setShowMenu(false) }}
+                        title={c.id}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         <textarea
@@ -284,9 +294,15 @@ function CanvasCard({
           value={card.content}
           placeholder="Add content…"
           rows={3}
+          readOnly={!isInteractive}
+          tabIndex={isInteractive ? 0 : -1}
           onChange={e => onUpdate({ ...card, content: e.target.value })}
-          onPointerDown={e => e.stopPropagation()}
-          onClick={e => e.stopPropagation()}
+          onPointerDown={e => {
+            if (isInteractive) e.stopPropagation()
+          }}
+          onClick={e => {
+            if (isInteractive) e.stopPropagation()
+          }}
           style={{ cursor: isInteractive ? 'text' : 'inherit' }}
         />
       </div>
@@ -306,15 +322,38 @@ function CanvasCard({
    CONNECTIONS SVG
 ═══════════════════════════════════════════════════════ */
 function ConnectionsSVG({ connections, cards, pan, zoom, cardHeights, tool, onDeleteConn, connectFrom, svgMouse }) {
-  const getCardCenter = useCallback((cardId) => {
+  const getCardBounds = useCallback((cardId) => {
     const card = cards.find(c => c.id === cardId)
     if (!card) return null
     const h = cardHeights.current[cardId] || 130
     return {
-      x: (card.x + CARD_W / 2) * zoom + pan.x,
-      y: (card.y + h / 2)      * zoom + pan.y,
+      centerX: (card.x + CARD_W / 2) * zoom + pan.x,
+      centerY: (card.y + h / 2) * zoom + pan.y,
+      halfWidth: (CARD_W * zoom) / 2,
+      halfHeight: (h * zoom) / 2,
     }
   }, [cards, pan, zoom, cardHeights])
+
+  const getCardEdgePoint = useCallback((cardId, targetPoint) => {
+    const bounds = getCardBounds(cardId)
+    if (!bounds) return null
+
+    const dx = targetPoint.x - bounds.centerX
+    const dy = targetPoint.y - bounds.centerY
+
+    if (dx === 0 && dy === 0) {
+      return { x: bounds.centerX, y: bounds.centerY }
+    }
+
+    const scaleX = dx === 0 ? Number.POSITIVE_INFINITY : bounds.halfWidth / Math.abs(dx)
+    const scaleY = dy === 0 ? Number.POSITIVE_INFINITY : bounds.halfHeight / Math.abs(dy)
+    const scale = Math.min(scaleX, scaleY)
+
+    return {
+      x: bounds.centerX + dx * scale,
+      y: bounds.centerY + dy * scale,
+    }
+  }, [getCardBounds])
 
   const makePath = (sx, sy, ex, ey) => {
     const mx = (sx + ex) / 2
@@ -324,7 +363,7 @@ function ConnectionsSVG({ connections, cards, pan, zoom, cardHeights, tool, onDe
   // In-progress connection
   let inProgress = null
   if (connectFrom && svgMouse) {
-    const src = getCardCenter(connectFrom)
+    const src = getCardEdgePoint(connectFrom, svgMouse)
     if (src) {
       inProgress = makePath(src.x, src.y, svgMouse.x, svgMouse.y)
     }
@@ -343,8 +382,12 @@ function ConnectionsSVG({ connections, cards, pan, zoom, cardHeights, tool, onDe
 
       {/* Existing connections */}
       {connections.map(conn => {
-        const src = getCardCenter(conn.from)
-        const dst = getCardCenter(conn.to)
+        const srcBounds = getCardBounds(conn.from)
+        const dstBounds = getCardBounds(conn.to)
+        if (!srcBounds || !dstBounds) return null
+
+        const src = getCardEdgePoint(conn.from, { x: dstBounds.centerX, y: dstBounds.centerY })
+        const dst = getCardEdgePoint(conn.to, { x: srcBounds.centerX, y: srcBounds.centerY })
         if (!src || !dst) return null
         const d = makePath(src.x, src.y, dst.x, dst.y)
         const isDeleteMode = tool === 'delete'
@@ -485,12 +528,21 @@ export default function CanvasPage() {
   const didMove         = useRef(false)
   const cardHeights     = useRef({})     // { cardId: heightPx }
 
+  const switchTool = useCallback((nextTool) => {
+    setTool(nextTool)
+
+    if (nextTool !== 'connect') {
+      setConnectFrom(null)
+      setSvgMouse(null)
+    }
+  }, [])
+
   /* ── Keyboard shortcuts ── */
   useEffect(() => {
     const onKey = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return
       const t = TOOLS.find(t => t.key === e.key.toLowerCase())
-      if (t) setTool(t.id)
+      if (t) switchTool(t.id)
       if (e.key === 'Escape') { setSelected(null); setConnectFrom(null); setSvgMouse(null) }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected && tool === 'select') {
         setCards(prev => prev.filter(c => c.id !== selected))
@@ -500,7 +552,7 @@ export default function CanvasPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selected, tool])
+  }, [selected, switchTool, tool])
 
   /* ── Canvas pointer events ── */
   const handleCanvasPointerDown = useCallback((e) => {
@@ -669,7 +721,7 @@ export default function CanvasPage() {
         {/* Floating toolbar */}
         <Toolbar
           tool={tool}
-          setTool={t => { setTool(t); setConnectFrom(null); setSvgMouse(null) }}
+          setTool={switchTool}
           zoom={zoom}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
