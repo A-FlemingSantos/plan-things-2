@@ -6,6 +6,8 @@ import styles from './Workspace.module.css'
 ═══════════════════════════════════════════ */
 function HomeIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.5V4M11 1.5V4M1.5 7h13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
+function InboxIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h9A1.5 1.5 0 0 1 14 4.5v7A1.5 1.5 0 0 1 12.5 13h-2.1a1 1 0 0 1-.8-.4L8.8 11.4a1 1 0 0 0-.8-.4 1 1 0 0 0-.8.4l-.8 1.2a1 1 0 0 1-.8.4H3.5A1.5 1.5 0 0 1 2 11.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M2 8.5h3l1.2 1.8a1 1 0 0 0 .8.4h2a1 1 0 0 0 .8-.4L11 8.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+function PopoverIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function CanvasIcon()   { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg> }
 function ChatIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8.5A6 6 0 0 1 4.5 13.5L1.5 14.5l1-3A6 6 0 1 1 14 8.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function FilesIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
@@ -40,6 +42,7 @@ function LogoMark() {
 const NAV_ITEMS = [
   { id: 'home',     label: 'Home',     Icon: HomeIcon     },
   { id: 'calendar', label: 'Calendar', Icon: CalendarIcon },
+  { id: 'inbox',    label: 'Inbox',    Icon: InboxIcon    },
   { id: 'canvas',   label: 'Canvas',   Icon: CanvasIcon   },
   { id: 'chat',     label: 'Chat',     Icon: ChatIcon     },
   { id: 'files',    label: 'Files',    Icon: FilesIcon    },
@@ -513,6 +516,7 @@ export default function Workspace() {
                 >
                   <span className={styles.navIcon}><Icon /></span>
                   <span className={styles.navLabel}>{label}</span>
+                  {id === 'inbox' && !collapsed && <span className={styles.navHintIcon}><PopoverIcon /></span>}
                 </button>
               ))}
             </nav>

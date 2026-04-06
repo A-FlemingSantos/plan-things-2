@@ -7,6 +7,8 @@ import styles from './KanbanBoard.module.css'
 const Icon = {
   Home:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Calendar: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.5V4M11 1.5V4M1.5 7h13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  Inbox:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h9A1.5 1.5 0 0 1 14 4.5v7A1.5 1.5 0 0 1 12.5 13h-2.1a1 1 0 0 1-.8-.4L8.8 11.4a1 1 0 0 0-.8-.4 1 1 0 0 0-.8.4l-.8 1.2a1 1 0 0 1-.8.4H3.5A1.5 1.5 0 0 1 2 11.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M2 8.5h3l1.2 1.8a1 1 0 0 0 .8.4h2a1 1 0 0 0 .8-.4L11 8.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Popover:  () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Canvas:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
   Chat:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M14 8.5A6 6 0 0 1 4.5 13.5L1.5 14.5l1-3A6 6 0 1 1 14 8.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Files:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
@@ -106,6 +108,7 @@ const INITIAL_COLS = [
 const NAV = [
   { id: 'home',     label: 'Home',     Icon: Icon.Home     },
   { id: 'calendar', label: 'Calendar', Icon: Icon.Calendar },
+  { id: 'inbox',    label: 'Inbox',    Icon: Icon.Inbox    },
   { id: 'canvas',   label: 'Canvas',   Icon: Icon.Canvas   },
   { id: 'chat',     label: 'Chat',     Icon: Icon.Chat     },
   { id: 'files',    label: 'Files',    Icon: Icon.Files    },
@@ -176,6 +179,7 @@ function Sidebar({ collapsed, onCollapse }) {
             >
               <span className={styles.navIcon}><Ic /></span>
               <span className={styles.navLabel}>{label}</span>
+              {id === 'inbox' && !collapsed && <span className={styles.navHintIcon}><Icon.Popover /></span>}
             </button>
           ))}
         </nav>

@@ -233,6 +233,13 @@
   flex: 1;
 }
 
+.navHintIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
 .sidebarCollapsed .navLabel {
   opacity: 0;
 }

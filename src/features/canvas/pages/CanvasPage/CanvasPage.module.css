@@ -152,6 +152,7 @@
 
 .navIcon { display: flex; align-items: center; flex-shrink: 0; width: 16px; }
 .navLabel { opacity: 1; transition: opacity 200ms ease; }
+.navHintIcon { display: flex; align-items: center; flex-shrink: 0; opacity: 0.7; }
 .sidebarCollapsed .navLabel { opacity: 0; }
 
 .sidebarPlans {
