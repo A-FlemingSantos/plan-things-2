@@ -50,7 +50,7 @@ export default function SectionNav() {
           ))}
         </nav>
 
-        <a href="#pricing" className={styles.cta}>
+        <a href="/cadastro" className={styles.cta}>
           Começar
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
