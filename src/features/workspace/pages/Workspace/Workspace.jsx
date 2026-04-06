@@ -44,6 +44,10 @@ const NAV_ITEMS = [
   { id: 'chat',     label: 'Chat',     Icon: ChatIcon     },
   { id: 'files',    label: 'Files',    Icon: FilesIcon    },
 ]
+const NAV_PATHS = {
+  home: '/workspace',
+  canvas: '/canvas',
+}
 
 const PLAN_TAGS = [
   { label: 'Engineering', color: 'var(--color-green)'  },
@@ -81,6 +85,19 @@ const INITIAL_PLANS = [
 ]
 
 const BOARD_PATH = '/workspace/board'
+
+function getActiveNav(pathname) {
+  if (
+    pathname === '/canvas' ||
+    pathname.startsWith('/canvas/') ||
+    pathname === '/workspace/canvas' ||
+    pathname === '/app/canvas'
+  ) {
+    return 'canvas'
+  }
+
+  return 'home'
+}
 
 /* ═══════════════════════════════════════════
    NEW PLAN POPOVER
@@ -416,7 +433,7 @@ function PlanCard({ plan, view, onOpen }) {
 ═══════════════════════════════════════════ */
 export default function Workspace() {
   const [collapsed,    setCollapsed]    = useState(false)
-  const [activeNav,    setActiveNav]    = useState('home')
+  const [activeNav,    setActiveNav]    = useState(() => getActiveNav(window.location.pathname))
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
@@ -438,6 +455,17 @@ export default function Workspace() {
 
   const openNewPlan = (event) => {
     setNewPlanAnchor(event.currentTarget)
+  }
+
+  const handleNavItemClick = (id) => {
+    const nextPath = NAV_PATHS[id]
+
+    if (nextPath) {
+      window.location.href = nextPath
+      return
+    }
+
+    setActiveNav(id)
   }
 
   return (
@@ -480,7 +508,7 @@ export default function Workspace() {
                 <button
                   key={id}
                   className={`${styles.navItem} ${activeNav === id ? styles.navItemActive : ''}`}
-                  onClick={() => setActiveNav(id)}
+                  onClick={() => handleNavItemClick(id)}
                   title={collapsed ? label : undefined}
                 >
                   <span className={styles.navIcon}><Icon /></span>

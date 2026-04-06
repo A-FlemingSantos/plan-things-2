@@ -110,12 +110,40 @@ const NAV = [
   { id: 'chat',     label: 'Chat',     Icon: Icon.Chat     },
   { id: 'files',    label: 'Files',    Icon: Icon.Files    },
 ]
+const NAV_PATHS = {
+  home: '/workspace',
+  canvas: '/canvas',
+}
+
+function getActiveNav(pathname) {
+  if (
+    pathname === '/canvas' ||
+    pathname.startsWith('/canvas/') ||
+    pathname === '/workspace/canvas' ||
+    pathname === '/app/canvas'
+  ) {
+    return 'canvas'
+  }
+
+  return 'home'
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SIDEBAR (consistent with Workspace)
 ═══════════════════════════════════════════════════════════════ */
 function Sidebar({ collapsed, onCollapse }) {
-  const [activeNav, setActiveNav] = useState('home')
+  const [activeNav, setActiveNav] = useState(() => getActiveNav(window.location.pathname))
+
+  const handleNavItemClick = (id) => {
+    const nextPath = NAV_PATHS[id]
+
+    if (nextPath) {
+      window.location.href = nextPath
+      return
+    }
+
+    setActiveNav(id)
+  }
 
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
@@ -143,7 +171,7 @@ function Sidebar({ collapsed, onCollapse }) {
             <button
               key={id}
               className={`${styles.navItem} ${activeNav === id ? styles.navItemActive : ''}`}
-              onClick={() => setActiveNav(id)}
+              onClick={() => handleNavItemClick(id)}
               title={collapsed ? label : undefined}
             >
               <span className={styles.navIcon}><Ic /></span>
