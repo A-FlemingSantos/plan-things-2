@@ -694,6 +694,9 @@
     box-shadow var(--transition-normal),
     border-color var(--transition-normal),
     transform var(--transition-normal);
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-family);
 }
 
 .planCard:hover {
@@ -847,6 +850,9 @@
   cursor: pointer;
   transition: background var(--transition-fast);
   border-bottom: 1px solid var(--color-gray-100);
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-family);
 }
 
 .listCard:last-child { border-bottom: none; }

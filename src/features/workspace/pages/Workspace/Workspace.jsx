@@ -80,6 +80,8 @@ const INITIAL_PLANS = [
   { id: 6, name: 'Q4 Content Strategy',   description: 'Editorial calendar, channel ownership, and SEO targets for the final quarter.',            tag: 'Marketing',   tagColor: 'var(--color-blue)',  members: ['#ff6766','#000'],                     date: 'Oct 1',  tasks: 7,  cover: '#f5f5f5' },
 ]
 
+const BOARD_PATH = '/workspace/board'
+
 /* ═══════════════════════════════════════════
    NEW PLAN POPOVER
 ═══════════════════════════════════════════ */
@@ -359,10 +361,10 @@ function UserMenu({ onClose, collapsed }) {
 /* ═══════════════════════════════════════════
    PLAN CARD
 ═══════════════════════════════════════════ */
-function PlanCard({ plan, view }) {
+function PlanCard({ plan, view, onOpen }) {
   if (view === 'list') {
     return (
-      <div className={styles.listCard}>
+      <button type="button" className={styles.listCard} onClick={onOpen}>
         <div className={styles.listCardLeft}>
           <div className={styles.listCover} style={{ background: plan.cover }} />
           <div className={styles.listInfo}>
@@ -380,12 +382,12 @@ function PlanCard({ plan, view }) {
           <span className={styles.cardDate}>{plan.date}</span>
           <span className={styles.cardTasks}>{plan.tasks} tasks</span>
         </div>
-      </div>
+      </button>
     )
   }
 
   return (
-    <div className={styles.planCard}>
+    <button type="button" className={styles.planCard} onClick={onOpen}>
       <div className={styles.cardBody}>
         <div className={styles.cardTop}>
           <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
@@ -405,7 +407,7 @@ function PlanCard({ plan, view }) {
           <span className={styles.cardTasks}>{plan.tasks} tasks</span>
         </div>
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -428,6 +430,10 @@ export default function Workspace() {
 
   const handleNewPlan = (data) => {
     setPlans(prev => [{ id: Date.now(), ...data }, ...prev])
+  }
+
+  const openBoard = () => {
+    window.location.href = BOARD_PATH
   }
 
   const openNewPlan = (event) => {
@@ -488,7 +494,7 @@ export default function Workspace() {
           <div className={`${styles.sidebarPlans} ${collapsed ? styles.sidebarPlansHidden : ''}`}>
             <p className={styles.sidebarSectionLabel}>Plans</p>
             {plans.slice(0, 5).map(plan => (
-              <button key={plan.id} className={styles.sidebarPlanItem}>
+              <button key={plan.id} className={styles.sidebarPlanItem} onClick={openBoard}>
                 <span className={styles.sidebarPlanDot} style={{ background: plan.tagColor }} />
                 <span className={styles.sidebarPlanName}>{plan.name}</span>
               </button>
@@ -584,7 +590,7 @@ export default function Workspace() {
 
             {view === 'grid' ? (
               <div className={styles.grid}>
-                {filtered.map(plan => <PlanCard key={plan.id} plan={plan} view="grid" />)}
+                {filtered.map(plan => <PlanCard key={plan.id} plan={plan} view="grid" onOpen={openBoard} />)}
                 <button className={styles.newPlanCard} onClick={openNewPlan}>
                   <span className={styles.newPlanIcon}><PlusIcon /></span>
                   <span className={styles.newPlanLabel}>New plan</span>
@@ -592,7 +598,7 @@ export default function Workspace() {
               </div>
             ) : (
               <div className={styles.listView}>
-                {filtered.map(plan => <PlanCard key={plan.id} plan={plan} view="list" />)}
+                {filtered.map(plan => <PlanCard key={plan.id} plan={plan} view="list" onOpen={openBoard} />)}
               </div>
             )}
           </div>
