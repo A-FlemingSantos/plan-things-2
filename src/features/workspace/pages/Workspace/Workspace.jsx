@@ -10,6 +10,7 @@ function CanvasIcon()   { return <svg width="16" height="16" viewBox="0 0 16 16"
 function ChatIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8.5A6 6 0 0 1 4.5 13.5L1.5 14.5l1-3A6 6 0 1 1 14 8.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function FilesIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function PlusIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
+function ImagePlusIcon(){ return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M4 8l1.7-1.8a.8.8 0 0 1 1.2 0L9 8.5l1-1a.8.8 0 0 1 1.1 0L12.5 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10.5 1.5v3M9 3h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function SearchIcon()   { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
 function GridIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/></svg> }
 function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 4h8M3 7h8M3 10h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
@@ -53,15 +54,13 @@ const PLAN_TAGS = [
   { label: 'Operations',  color: '#a0a0a0'             },
 ]
 
-const COVER_COLORS = [
-  { value: '#f4f0ff', label: 'Lavender' },
-  { value: '#f0fff5', label: 'Mint'     },
-  { value: '#fff9f0', label: 'Peach'    },
-  { value: '#fff0f0', label: 'Rose'     },
-  { value: '#f0f6ff', label: 'Sky'      },
-  { value: '#f5f5f5', label: 'Fog'      },
-  { value: '#fffff0', label: 'Cream'    },
-  { value: '#f0f8ff', label: 'Ice'      },
+const COVER_THEMES = [
+  { id: 'atelier', label: 'Atelier', cardCover: '#e7dcc3' },
+  { id: 'neon', label: 'Neon', cardCover: '#dfe5ff' },
+  { id: 'midnight', label: 'Midnight', cardCover: '#d9e6ff' },
+  { id: 'ember', label: 'Ember', cardCover: '#f1d8d0' },
+  { id: 'horizon', label: 'Horizon', cardCover: '#e8e2ff' },
+  { id: 'frost', label: 'Frost', cardCover: '#dde8f8' },
 ]
 
 const USER_MENU_ITEMS = [
@@ -82,27 +81,91 @@ const INITIAL_PLANS = [
 ]
 
 /* ═══════════════════════════════════════════
-   NEW PLAN MODAL
+   NEW PLAN POPOVER
 ═══════════════════════════════════════════ */
-function NewPlanModal({ onClose, onSubmit }) {
+function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
   const [name, setName]       = useState('')
-  const [desc, setDesc]       = useState('')
   const [selectedTag, setTag] = useState(PLAN_TAGS[0])
-  const [cover, setCover]     = useState(COVER_COLORS[0].value)
-  const [exiting, setExiting] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState(COVER_THEMES[0])
+  const [showCategories, setShowCategories] = useState(false)
+  const [position, setPosition] = useState({ top: 24, left: 24, placement: 'right' })
   const nameRef = useRef(null)
+  const popoverRef = useRef(null)
+  const coverUploadRef = useRef(null)
 
   useEffect(() => {
     nameRef.current?.focus()
-    const onKey = (e) => { if (e.key === 'Escape') handleClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const handleClose = () => {
-    setExiting(true)
-    setTimeout(onClose, 230)
-  }
+  useEffect(() => {
+    if (!anchorEl) return
+
+    const updatePosition = () => {
+      const anchorRect = anchorEl.getBoundingClientRect()
+      const popoverRect = popoverRef.current?.getBoundingClientRect()
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      const gap = 14
+      const margin = 16
+      const popoverWidth = popoverRect?.width ?? Math.min(330, viewportWidth - margin * 2)
+      const popoverHeight = popoverRect?.height ?? 360
+      const canOpenRight = anchorRect.right + gap + popoverWidth <= viewportWidth - margin
+      const canOpenLeft = anchorRect.left - gap - popoverWidth >= margin
+
+      let left
+      let placement
+
+      if (canOpenRight) {
+        left = anchorRect.right + gap
+        placement = 'right'
+      } else if (canOpenLeft) {
+        left = anchorRect.left - popoverWidth - gap
+        placement = 'left'
+      } else {
+        left = Math.min(
+          Math.max(margin, anchorRect.left),
+          viewportWidth - popoverWidth - margin,
+        )
+        placement = 'bottom'
+      }
+
+      let top = anchorRect.top
+      if (top + popoverHeight > viewportHeight - margin) {
+        top = viewportHeight - popoverHeight - margin
+      }
+      if (top < margin) top = margin
+
+      setPosition({
+        top,
+        left,
+        placement,
+      })
+    }
+
+    updatePosition()
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+
+    const onPointerDown = (e) => {
+      if (popoverRef.current?.contains(e.target)) return
+      if (anchorEl.contains(e.target)) return
+      onClose()
+    }
+
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [anchorEl, onClose])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -111,89 +174,88 @@ function NewPlanModal({ onClose, onSubmit }) {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     onSubmit({
       name: name.trim(),
-      description: desc.trim(),
+      description: '',
       tag: selectedTag.label,
       tagColor: selectedTag.color,
-      cover,
+      cover: selectedTheme.cardCover,
       date: `${months[today.getMonth()]} ${today.getDate()}`,
       tasks: 0,
       members: ['#000'],
     })
-    handleClose()
+    onClose()
   }
 
   return (
     <div
-      className={`${styles.modalOverlay} ${exiting ? styles.modalOverlayOut : ''}`}
-      onClick={handleClose}
+      ref={popoverRef}
+      className={`${styles.planPopover} ${position.placement === 'left' ? styles.planPopoverLeft : ''} ${position.placement === 'bottom' ? styles.planPopoverBottom : ''}`}
+      style={{ top: `${position.top}px`, left: `${position.left}px` }}
+      role="dialog"
+      aria-modal="false"
+      aria-label="Create new plan"
     >
-      <div
-        className={`${styles.modal} ${exiting ? styles.modalOut : ''}`}
-        onClick={e => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Create new plan"
-      >
-        {/* Neutral header with swatch picker */}
-        <div className={styles.modalCoverStrip}>
-          <div className={styles.swatchRow}>
-            {COVER_COLORS.map(c => (
-              <button
-                key={c.value}
-                type="button"
-                className={`${styles.swatch} ${cover === c.value ? styles.swatchActive : ''}`}
-                style={{ background: c.value }}
-                title={c.label}
-                onClick={() => setCover(c.value)}
-              />
-            ))}
+      <form className={styles.planPopoverForm} onSubmit={handleSubmit} noValidate>
+        <div className={styles.modalHead}>
+          <h2 className={styles.modalTitle}>Criar plano</h2>
+          <button type="button" className={styles.modalCloseBtn} onClick={onClose} aria-label="Close">
+            <XIcon />
+          </button>
+        </div>
+
+        <div className={`${styles.planPreview} ${styles[`theme${selectedTheme.id}`]}`}>
+          <div className={styles.planPreviewColumns}>
+            <span className={styles.planPreviewCol} />
+            <span className={styles.planPreviewCol} />
+            <span className={styles.planPreviewCol} />
           </div>
         </div>
 
-        {/* Form body */}
-        <form className={styles.modalForm} onSubmit={handleSubmit} noValidate>
-          <div className={styles.modalHead}>
-            <h2 className={styles.modalTitle}>New plan</h2>
-            <button type="button" className={styles.modalCloseBtn} onClick={handleClose} aria-label="Close">
-              <XIcon />
+        <div className={styles.coverPicker}>
+          <span className={styles.planPreviewLabel}>Tela de fundo</span>
+          <div className={styles.coverGrid}>
+            {COVER_THEMES.map(theme => (
+              <button
+                key={theme.id}
+                type="button"
+                className={`${styles.coverOption} ${selectedTheme.id === theme.id ? styles.coverOptionActive : ''} ${styles[`theme${theme.id}`]}`}
+                onClick={() => setSelectedTheme(theme)}
+                aria-label={theme.label}
+                title={theme.label}
+              >
+                <span className={styles.coverOptionShade} />
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`${styles.coverOption} ${styles.coverUploadOption}`}
+              onClick={() => coverUploadRef.current?.click()}
+              aria-label="Enviar imagem propria"
+              title="Enviar imagem propria"
+            >
+              <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
             </button>
           </div>
+          <input
+            ref={coverUploadRef}
+            type="file"
+            accept="image/*"
+            className={styles.coverUploadInput}
+          />
+        </div>
 
-          {/* Name */}
-          <div className={styles.mField}>
-            <label className={styles.mLabel} htmlFor="plan-name">Name</label>
-            <input
-              ref={nameRef}
-              id="plan-name"
-              className={styles.mInput}
-              placeholder="Give your plan a name…"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              maxLength={80}
-              autoComplete="off"
-            />
-          </div>
-
-          {/* Description */}
-          <div className={styles.mField}>
-            <label className={styles.mLabel} htmlFor="plan-desc">
-              Description
-              <span className={styles.mLabelOptional}>optional</span>
-            </label>
-            <textarea
-              id="plan-desc"
-              className={styles.mTextarea}
-              placeholder="What's this plan about?"
-              value={desc}
-              onChange={e => setDesc(e.target.value)}
-              rows={3}
-              maxLength={240}
-            />
-          </div>
-
-          {/* Tag */}
-          <div className={styles.mField}>
-            <label className={styles.mLabel}>Tag</label>
+        <div className={styles.planPreviewMeta}>
+          <button
+            type="button"
+            className={styles.categoryToggle}
+            onClick={() => setShowCategories(v => !v)}
+            aria-expanded={showCategories}
+          >
+            <span className={styles.planPreviewLabel}>Categoria</span>
+            <span className={`${styles.categoryToggleIcon} ${showCategories ? styles.categoryToggleIconOpen : ''}`}>
+              <ChevronIcon />
+            </span>
+          </button>
+          {showCategories && (
             <div className={styles.tagGrid}>
               {PLAN_TAGS.map(t => (
                 <button
@@ -210,17 +272,36 @@ function NewPlanModal({ onClose, onSubmit }) {
                 </button>
               ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Footer */}
-          <div className={styles.modalFooter}>
-            <button type="button" className={styles.mCancelBtn} onClick={handleClose}>Cancel</button>
-            <button type="submit" className={styles.mSubmitBtn} disabled={!name.trim()}>
-              Create plan
-            </button>
-          </div>
-        </form>
-      </div>
+        <div className={styles.mField}>
+          <label className={styles.mLabel} htmlFor="plan-name">
+            Titulo do plano
+            <span className={styles.mLabelRequired}>*</span>
+          </label>
+          <input
+            ref={nameRef}
+            id="plan-name"
+            className={styles.mInput}
+            placeholder=""
+            value={name}
+            onChange={e => setName(e.target.value)}
+            maxLength={80}
+            autoComplete="off"
+          />
+        </div>
+
+        {!name.trim() && (
+          <p className={styles.formHint}>O titulo do plano e obrigatorio</p>
+        )}
+
+        <div className={styles.modalFooter}>
+          <button type="submit" className={styles.mSubmitBtn} disabled={!name.trim()}>
+            Criar
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
@@ -305,7 +386,6 @@ function PlanCard({ plan, view }) {
 
   return (
     <div className={styles.planCard}>
-      <div className={styles.cardCover} style={{ background: plan.cover }} />
       <div className={styles.cardBody}>
         <div className={styles.cardTop}>
           <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
@@ -337,7 +417,7 @@ export default function Workspace() {
   const [activeNav,    setActiveNav]    = useState('home')
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
-  const [showModal,    setShowModal]    = useState(false)
+  const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [plans,        setPlans]        = useState(INITIAL_PLANS)
 
@@ -348,6 +428,10 @@ export default function Workspace() {
 
   const handleNewPlan = (data) => {
     setPlans(prev => [{ id: Date.now(), ...data }, ...prev])
+  }
+
+  const openNewPlan = (event) => {
+    setNewPlanAnchor(event.currentTarget)
   }
 
   return (
@@ -409,7 +493,7 @@ export default function Workspace() {
                 <span className={styles.sidebarPlanName}>{plan.name}</span>
               </button>
             ))}
-            <button className={styles.sidebarNewPlan} onClick={() => setShowModal(true)}>
+            <button className={styles.sidebarNewPlan} onClick={openNewPlan}>
               <PlusIcon />
               <span>New plan</span>
             </button>
@@ -420,7 +504,7 @@ export default function Workspace() {
             <div className={styles.collapsedActions}>
               <button
                 className={styles.navItem}
-                onClick={() => setShowModal(true)}
+                onClick={openNewPlan}
                 title="New plan"
               >
                 <span className={styles.navIcon}><PlusIcon /></span>
@@ -470,7 +554,7 @@ export default function Workspace() {
                   onChange={e => setSearch(e.target.value)}
                 />
               </div>
-              <button className={styles.newPlanBtn} onClick={() => setShowModal(true)}>
+              <button className={styles.newPlanBtn} onClick={openNewPlan}>
                 <PlusIcon />
                 New plan
               </button>
@@ -501,7 +585,7 @@ export default function Workspace() {
             {view === 'grid' ? (
               <div className={styles.grid}>
                 {filtered.map(plan => <PlanCard key={plan.id} plan={plan} view="grid" />)}
-                <button className={styles.newPlanCard} onClick={() => setShowModal(true)}>
+                <button className={styles.newPlanCard} onClick={openNewPlan}>
                   <span className={styles.newPlanIcon}><PlusIcon /></span>
                   <span className={styles.newPlanLabel}>New plan</span>
                 </button>
@@ -515,10 +599,11 @@ export default function Workspace() {
         </main>
       </div>
 
-      {/* ════════════ MODAL ════════════ */}
-      {showModal && (
-        <NewPlanModal
-          onClose={() => setShowModal(false)}
+      {/* ════════════ NEW PLAN POPOVER ════════════ */}
+      {newPlanAnchor && (
+        <NewPlanPopover
+          anchorEl={newPlanAnchor}
+          onClose={() => setNewPlanAnchor(null)}
           onSubmit={handleNewPlan}
         />
       )}
