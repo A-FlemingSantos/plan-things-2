@@ -1,5 +1,6 @@
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
+import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
 import { INFO_PAGES } from './features/info/data/infoPages.js'
 import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
@@ -19,6 +20,11 @@ export default function App() {
     pathname.startsWith('/canvas/') ||
     pathname === '/workspace/canvas' ||
     pathname === '/app/canvas'
+  const isFilesPath =
+    pathname === '/files' ||
+    pathname.startsWith('/files/') ||
+    pathname === '/workspace/files' ||
+    pathname === '/app/files'
 
   if (pathname === '/login' || pathname === '/cadastro') {
     return <Auth initialMode={pathname === '/cadastro' ? 'register' : 'login'} />
@@ -34,6 +40,10 @@ export default function App() {
 
   if (isCanvasPath) {
     return <CanvasPage />
+  }
+
+  if (isFilesPath) {
+    return <FilesPage />
   }
 
   if (INFO_PAGES[pathname]) {

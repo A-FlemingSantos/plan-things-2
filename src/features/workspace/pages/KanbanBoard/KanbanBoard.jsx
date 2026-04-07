@@ -116,6 +116,7 @@ const NAV = [
 const NAV_PATHS = {
   home: '/workspace',
   canvas: '/canvas',
+  files: '/files',
 }
 
 function getActiveNav(pathname) {
@@ -126,6 +127,15 @@ function getActiveNav(pathname) {
     pathname === '/app/canvas'
   ) {
     return 'canvas'
+  }
+
+  if (
+    pathname === '/files' ||
+    pathname.startsWith('/files/') ||
+    pathname === '/workspace/files' ||
+    pathname === '/app/files'
+  ) {
+    return 'files'
   }
 
   return 'home'

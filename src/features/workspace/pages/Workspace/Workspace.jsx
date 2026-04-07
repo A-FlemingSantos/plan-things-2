@@ -50,6 +50,7 @@ const NAV_ITEMS = [
 const NAV_PATHS = {
   home: '/workspace',
   canvas: '/canvas',
+  files: '/files',
 }
 
 const PLAN_TAGS = [
@@ -97,6 +98,15 @@ function getActiveNav(pathname) {
     pathname === '/app/canvas'
   ) {
     return 'canvas'
+  }
+
+  if (
+    pathname === '/files' ||
+    pathname.startsWith('/files/') ||
+    pathname === '/workspace/files' ||
+    pathname === '/app/files'
+  ) {
+    return 'files'
   }
 
   return 'home'
