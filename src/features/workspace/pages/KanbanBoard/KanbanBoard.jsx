@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
@@ -111,6 +111,8 @@ export default function KanbanBoard() {
   const [activeCard,setActiveCard]= useState(null)   // { card, colTitle }
   const [addingCol, setAddingCol] = useState(false)
   const [newColTitle,setNewColTitle] = useState('')
+  const [notification, setNotification] = useState(null)
+  const notificationTimerRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const {
     columns,
@@ -145,6 +147,23 @@ export default function KanbanBoard() {
     setNewColTitle('')
     setAddingCol(false)
   }
+
+  const showNotification = (message) => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+    setNotification(message)
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 2600)
+  }
+
+  useEffect(() => () => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+  }, [])
 
   const renderSidebarSecondaryContent = ({ collapsed }) => (
     collapsed ? null : (
@@ -192,6 +211,9 @@ export default function KanbanBoard() {
                 Share: Icon.Share,
               }}
               styles={styles}
+              onAddMember={() => showNotification('Invite flow is coming soon')}
+              onFilter={() => showNotification('Advanced filters are coming soon')}
+              onShare={() => showNotification('Share link copied for this board')}
             />
           )}
         />
@@ -256,6 +278,12 @@ export default function KanbanBoard() {
           icons={Icon}
           styles={styles}
         />
+      )}
+
+      {notification && (
+        <div className={styles.boardNotification} role="status" aria-live="polite">
+          {notification}
+        </div>
       )}
     </>
   )

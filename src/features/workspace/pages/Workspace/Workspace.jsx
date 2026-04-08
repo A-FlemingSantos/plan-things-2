@@ -428,6 +428,8 @@ export default function Workspace() {
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [notification, setNotification] = useState(null)
+  const notificationTimerRef = useRef(null)
   const { plans, activePlan, createPlan, selectPlan } = usePlans()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
 
@@ -437,8 +439,22 @@ export default function Workspace() {
   )
 
   const handleNewPlan = (data) => {
-    createPlan(data)
+    const newPlan = createPlan(data)
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+    setNotification(`Plan "${newPlan.name}" created`)
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 2600)
   }
+
+  useEffect(() => () => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+  }, [])
 
   const openBoard = (planId) => {
     selectPlan(planId)
@@ -534,6 +550,16 @@ export default function Workspace() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
+                {search && (
+                  <button
+                    type="button"
+                    className={styles.searchClear}
+                    onClick={() => setSearch('')}
+                    aria-label="Clear plan search"
+                  >
+                    <XIcon />
+                  </button>
+                )}
               </div>
               <button className={styles.newPlanBtn} onClick={openNewPlan}>
                 <PlusIcon />
@@ -590,7 +616,28 @@ export default function Workspace() {
               </div>
             </div>
 
-            {view === 'grid' ? (
+            {filtered.length === 0 ? (
+              <div className={styles.emptyState}>
+                <span className={styles.emptyStateIcon}><SearchIcon /></span>
+                <p className={styles.emptyStateTitle}>No plans found</p>
+                <p className={styles.emptyStateHint}>
+                  {search
+                    ? `Try another keyword or clear "${search}" to see all plans again.`
+                    : 'Create your first plan to start organizing work across board and canvas.'}
+                </p>
+                <div className={styles.emptyStateActions}>
+                  {search && (
+                    <button type="button" className={styles.emptyStateBtn} onClick={() => setSearch('')}>
+                      Clear search
+                    </button>
+                  )}
+                  <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
+                    <PlusIcon />
+                    New plan
+                  </button>
+                </div>
+              </div>
+            ) : view === 'grid' ? (
               <div className={styles.grid}>
                 {filtered.map(plan => (
                   <PlanCard
@@ -629,6 +676,12 @@ export default function Workspace() {
           onClose={() => setNewPlanAnchor(null)}
           onSubmit={handleNewPlan}
         />
+      )}
+
+      {notification && (
+        <div className={styles.notification} role="status" aria-live="polite">
+          {notification}
+        </div>
       )}
     </>
   )

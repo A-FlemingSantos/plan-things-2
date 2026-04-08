@@ -1,23 +1,23 @@
-const uid = () => Math.random().toString(36).slice(2, 9)
+import { createClientId } from '../../../shared/utils/createClientId.js'
 
 export function createEmptyBoardColumns() {
   return [
-    { id: `col-${uid()}`, title: 'Backlog', color: '#a0a0a0', cards: [] },
-    { id: `col-${uid()}`, title: 'In Progress', color: '#4290da', cards: [] },
-    { id: `col-${uid()}`, title: 'Review', color: '#d4aef1', cards: [] },
-    { id: `col-${uid()}`, title: 'Done', color: '#0f703a', cards: [] },
+    { id: createClientId('col'), title: 'Backlog', color: '#a0a0a0', cards: [] },
+    { id: createClientId('col'), title: 'In Progress', color: '#4290da', cards: [] },
+    { id: createClientId('col'), title: 'Review', color: '#d4aef1', cards: [] },
+    { id: createClientId('col'), title: 'Done', color: '#0f703a', cards: [] },
   ]
 }
 
 export function createSampleBoardColumns() {
   return [
     {
-      id: `col-${uid()}`,
+      id: createClientId('col'),
       title: 'Backlog',
       color: '#a0a0a0',
       cards: [
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'Competitive landscape research',
           description: 'Survey top 5 competitors and document key differentiators.',
           labelId: 'l1',
@@ -26,7 +26,7 @@ export function createSampleBoardColumns() {
           comments: [],
         },
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'Accessibility audit — WCAG 2.2',
           description: '',
           labelId: 'l5',
@@ -35,7 +35,7 @@ export function createSampleBoardColumns() {
           comments: [],
         },
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'Define success metrics for Q3',
           description: 'Align with stakeholders on KPIs before sprint kick-off.',
           labelId: 'l3',
@@ -46,21 +46,21 @@ export function createSampleBoardColumns() {
       ],
     },
     {
-      id: `col-${uid()}`,
+      id: createClientId('col'),
       title: 'In Progress',
       color: '#4290da',
       cards: [
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'Redesign onboarding flow',
           description: 'End-to-end UX redesign focusing on time-to-value reduction.',
           labelId: 'l1',
           memberIds: ['m2', 'm3'],
           dueDate: 'Aug 12',
-          comments: [{ id: uid(), author: 'm3', text: 'Wireframes are done, moving to hi-fi.', time: '2h ago' }],
+          comments: [{ id: createClientId('comment'), author: 'm3', text: 'Wireframes are done, moving to hi-fi.', time: '2h ago' }],
         },
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'Authentication endpoint refactor',
           description: 'Migrate to OAuth 2.1 with PKCE. Deprecate legacy sessions.',
           labelId: 'l2',
@@ -71,28 +71,28 @@ export function createSampleBoardColumns() {
       ],
     },
     {
-      id: `col-${uid()}`,
+      id: createClientId('col'),
       title: 'Review',
       color: '#d4aef1',
       cards: [
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'Launch campaign copy',
           description: 'Email sequence + landing page headlines for Q3 launch.',
           labelId: 'l4',
           memberIds: ['m4'],
           dueDate: 'Today',
-          comments: [{ id: uid(), author: 'm1', text: 'Looks great overall — minor tweaks on CTA.', time: '35m ago' }],
+          comments: [{ id: createClientId('comment'), author: 'm1', text: 'Looks great overall — minor tweaks on CTA.', time: '35m ago' }],
         },
       ],
     },
     {
-      id: `col-${uid()}`,
+      id: createClientId('col'),
       title: 'Done',
       color: '#0f703a',
       cards: [
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'User interview synthesis',
           description: '',
           labelId: 'l3',
@@ -101,7 +101,7 @@ export function createSampleBoardColumns() {
           comments: [],
         },
         {
-          id: uid(),
+          id: createClientId('card'),
           title: 'Brand color system update',
           description: '',
           labelId: 'l1',

@@ -3,6 +3,18 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import SidebarUserCard from '../../../../shared/components/SidebarUserCard/SidebarUserCard.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import { createClientId } from '../../../../shared/utils/createClientId.js'
+import {
+  createInitialLibrarySnapshot,
+  createLibraryItem,
+  flattenLibrary,
+  formatFileSize,
+  getFileTypeFromName,
+  insertLibraryItem,
+  markLibraryItemDeleted,
+  pathsMatch,
+  updateLibraryItem,
+} from '../../data/libraryRepository.js'
 import styles from './FilesPage.module.css'
 
 /* ═══════════════════════════════════════════
@@ -59,8 +71,6 @@ const Icon = {
 /* ═══════════════════════════════════════════
    FILE DATA
 ═══════════════════════════════════════════ */
-const uid = () => Math.random().toString(36).slice(2, 9)
-
 const FILE_TYPES = {
   folder:  { icon: Icon.Folder,      color: '#f5a623', bg: '#fff8ed' },
   image:   { icon: Icon.FileImg,     color: '#4290da', bg: '#f0f7ff' },
@@ -70,161 +80,6 @@ const FILE_TYPES = {
   zip:     { icon: Icon.FileZip,     color: '#a0a0a0', bg: '#f5f5f5' },
   generic: { icon: Icon.FileGeneric, color: '#a0a0a0', bg: '#f5f5f5' },
 }
-
-const getFileType = (name) => {
-  const ext = name.split('.').pop()?.toLowerCase()
-  if (!ext || name === ext) return 'folder'
-  if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return 'image'
-  if (ext === 'pdf') return 'pdf'
-  if (['doc','docx','txt','md'].includes(ext)) return 'doc'
-  if (['js','jsx','ts','tsx','css','html','json','py'].includes(ext)) return 'code'
-  if (['zip','rar','gz','tar'].includes(ext)) return 'zip'
-  return 'generic'
-}
-
-const formatSize = (bytes) => {
-  if (bytes === 0) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-const createLibraryItem = ({
-  name,
-  type,
-  size = 0,
-  modified,
-  starred = false,
-  shared = false,
-  owner = 'me',
-  children = [],
-}) => ({
-  id: uid(),
-  name,
-  type,
-  size,
-  modified,
-  starred,
-  shared,
-  owner,
-  deleted: false,
-  ...(type === 'folder' ? { children } : {}),
-})
-
-const INITIAL_LIBRARY = [
-  createLibraryItem({
-    name: 'Product Design',
-    type: 'folder',
-    modified: '2 hours ago',
-    starred: true,
-    shared: true,
-    children: [
-      createLibraryItem({
-        name: 'Components',
-        type: 'folder',
-        modified: '1 day ago',
-        shared: true,
-        children: [
-          createLibraryItem({ name: 'Button states.fig', type: 'generic', size: 2380000, modified: 'Today', shared: true }),
-          createLibraryItem({ name: 'Card anatomy.md', type: 'doc', size: 18600, modified: 'Yesterday', owner: 'Ana R.' }),
-        ],
-      }),
-      createLibraryItem({ name: 'Icons', type: 'folder', modified: '3 days ago' }),
-      createLibraryItem({ name: 'hero-mockup.png', type: 'image', size: 3100000, modified: '2 hours ago', starred: true, shared: true }),
-      createLibraryItem({ name: 'kanban-spec.pdf', type: 'pdf', size: 1240000, modified: 'Yesterday', owner: 'Ana R.' }),
-      createLibraryItem({ name: 'color-system.json', type: 'code', size: 8200, modified: '5 days ago', shared: true }),
-      createLibraryItem({ name: 'cover-photo.jpg', type: 'image', size: 2900000, modified: '1 week ago' }),
-    ],
-  }),
-  createLibraryItem({
-    name: 'Engineering',
-    type: 'folder',
-    modified: 'Yesterday',
-    shared: true,
-    children: [
-      createLibraryItem({ name: 'API Spec v2.md', type: 'doc', size: 86400, modified: 'Yesterday', owner: 'Tom K.' }),
-      createLibraryItem({ name: 'Design Tokens.json', type: 'code', size: 14200, modified: '5 days ago' }),
-      createLibraryItem({ name: 'vite.config.ts', type: 'code', size: 2100, modified: '2 weeks ago' }),
-      createLibraryItem({
-        name: 'Frontend',
-        type: 'folder',
-        modified: 'Today',
-        shared: true,
-        children: [
-          createLibraryItem({ name: 'routes-map.json', type: 'code', size: 4100, modified: '2 hours ago' }),
-          createLibraryItem({ name: 'app-shell-notes.md', type: 'doc', size: 12400, modified: 'Today', shared: true }),
-        ],
-      }),
-    ],
-  }),
-  createLibraryItem({
-    name: 'Brand Identity 2025',
-    type: 'folder',
-    modified: '3 days ago',
-    starred: true,
-    children: [
-      createLibraryItem({ name: 'Brand Guidelines.pdf', type: 'pdf', size: 6740000, modified: '2 weeks ago', shared: true }),
-      createLibraryItem({ name: 'Logo explorations.png', type: 'image', size: 2480000, modified: '4 days ago', starred: true }),
-    ],
-  }),
-  createLibraryItem({ name: 'Q3 Launch Plan.pdf', type: 'pdf', size: 2480000, modified: 'Today', starred: true, shared: true }),
-  createLibraryItem({ name: 'Hero Animation.gif', type: 'image', size: 4200000, modified: '3 days ago', shared: true }),
-  createLibraryItem({ name: 'Onboarding Flow.png', type: 'image', size: 1820000, modified: '1 week ago', starred: true, shared: true, owner: 'Ana R.' }),
-  createLibraryItem({ name: 'app-bundle-v2.zip', type: 'zip', size: 18600000, modified: '1 week ago' }),
-  createLibraryItem({ name: 'Meeting Notes Q3.doc', type: 'doc', size: 42000, modified: '3 weeks ago', shared: true, owner: 'Sara M.' }),
-]
-
-const pathsMatch = (left, right) =>
-  left.length === right.length && left.every((segment, index) => segment === right[index])
-
-const flattenLibrary = (items, pathIds = [], inheritedDeleted = false) =>
-  items.flatMap((item) => {
-    const children = item.children || []
-    const isDeletedTree = inheritedDeleted || item.deleted
-    const flatItem = {
-      ...item,
-      pathIds,
-      isDeletedTree,
-    }
-
-    return [
-      flatItem,
-      ...(item.type === 'folder' ? flattenLibrary(children, [...pathIds, item.id], isDeletedTree) : []),
-    ]
-  })
-
-const updateLibraryItem = (items, targetId, updater) =>
-  items.map((item) => {
-    if (item.id === targetId) return updater(item)
-    if (item.type !== 'folder') return item
-
-    return {
-      ...item,
-      children: updateLibraryItem(item.children || [], targetId, updater),
-    }
-  })
-
-const insertLibraryItem = (items, pathIds, newItem) => {
-  if (pathIds.length === 0) return [newItem, ...items]
-
-  const [currentId, ...restPath] = pathIds
-
-  return items.map((item) => {
-    if (item.id !== currentId) return item
-    if (item.type !== 'folder') return item
-
-    return {
-      ...item,
-      children: insertLibraryItem(item.children || [], restPath, newItem),
-    }
-  })
-}
-
-const markItemDeleted = (item) => ({
-  ...item,
-  deleted: true,
-  modified: 'Just now',
-})
 
 const SIDEBAR_NAV = [
   { id: 'home',     label: 'Home',     Icon: Icon.Home,     path: ROUTES.workspace },
@@ -382,7 +237,7 @@ function FileCard({ item, selected, onSelect, onOpen, onContextMenu, onToggleSta
         )}
         <div className={styles.fileCardMeta}>
           <span className={styles.fileCardDate}>{item.modified}</span>
-          {item.size > 0 && <span className={styles.fileCardSize}>{formatSize(item.size)}</span>}
+            {item.size > 0 && <span className={styles.fileCardSize}>{formatFileSize(item.size)}</span>}
         </div>
       </div>
     </div>
@@ -420,7 +275,7 @@ function FileRow({ item, selected, onSelect, onOpen, onContextMenu, onToggleStar
       <div className={styles.fileRowMeta}>
         <span className={styles.fileRowOwner}>{item.owner}</span>
         <span className={styles.fileRowDate}>{item.modified}</span>
-        <span className={styles.fileRowSize}>{formatSize(item.size)}</span>
+          <span className={styles.fileRowSize}>{formatFileSize(item.size)}</span>
         <div className={styles.fileRowActions}>
           <button
             className={`${styles.fileRowBtn} ${item.starred ? styles.fileRowBtnActive : ''}`}
@@ -470,7 +325,7 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
       <div className={styles.detailPanelBody}>
         <div className={styles.detailPanelSummary}>
           <p className={styles.detailPanelName}>{item.name}</p>
-          <span className={styles.detailPanelType}>{item.type} · {formatSize(item.size)}</span>
+          <span className={styles.detailPanelType}>{item.type} · {formatFileSize(item.size)}</span>
         </div>
 
         <div className={styles.detailPanelActions}>
@@ -501,7 +356,7 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
           <div className={styles.detailMeta}>
             {[
               { label: 'Type',      value: item.type.charAt(0).toUpperCase() + item.type.slice(1) },
-              { label: 'Size',      value: formatSize(item.size) },
+        { label: 'Size',      value: formatFileSize(item.size) },
               { label: 'Modified',  value: item.modified },
               { label: 'Owner',     value: item.owner === 'me' ? 'Arthur Santos' : item.owner },
               { label: 'Shared',    value: item.shared ? 'Yes — with team' : 'No' },
@@ -575,7 +430,7 @@ export default function FilesPage() {
   const [view, setView]                         = useState('grid')
   const [search, setSearch]                     = useState('')
   const [currentPath, setCurrentPath]           = useState([]) // array of folder ids
-  const [library, setLibrary]                   = useState(INITIAL_LIBRARY)
+  const [library, setLibrary]                   = useState(createInitialLibrarySnapshot)
   const [selected, setSelected]                 = useState(null)
   const [detailItemId, setDetailItemId]         = useState(null)
   const [contextMenu, setContextMenu]           = useState(null) // { x, y, item }
@@ -584,6 +439,7 @@ export default function FilesPage() {
   const [uploads, setUploads]                   = useState([])
   const [sortBy, setSortBy]                     = useState('modified') // modified | name | size
   const [notification, setNotification]         = useState(null)
+  const notificationTimerRef = useRef(null)
   const fileInputRef = useRef(null)
 
   const flattenedItems = useMemo(() => flattenLibrary(library), [library])
@@ -652,7 +508,7 @@ export default function FilesPage() {
     } else if (action === 'rename') {
       setRenamingId(item.id)
     } else if (action === 'delete') {
-      setLibrary((prev) => updateLibraryItem(prev, item.id, markItemDeleted))
+      setLibrary((prev) => updateLibraryItem(prev, item.id, markLibraryItemDeleted))
       if (detailItemId === item.id) setDetailItemId(null)
       if (selected === item.id) setSelected(null)
       showNotification(`"${item.name}" moved to Trash`)
@@ -673,9 +529,21 @@ export default function FilesPage() {
   }, [detailItemId, selected])
 
   const showNotification = (msg) => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
     setNotification(msg)
-    setTimeout(() => setNotification(null), 2800)
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 2800)
   }
+
+  useEffect(() => () => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+  }, [])
 
   const handleRename = (id, newName) => {
     if (newName.trim()) {
@@ -694,7 +562,7 @@ export default function FilesPage() {
 
   // Upload simulation
   const simulateUpload = (name) => {
-    const id = uid()
+    const id = createClientId('upload')
     setUploads(prev => [...prev, { id, name, progress: 0 }])
     let p = 0
     const interval = setInterval(() => {
@@ -703,13 +571,14 @@ export default function FilesPage() {
       setUploads(prev => prev.map(u => u.id === id ? { ...u, progress: Math.round(p) } : u))
       if (p === 100) {
         const newFile = {
-          id: uid(), name, type: getFileType(name),
+          name, type: getFileTypeFromName(name),
           size: Math.floor(Math.random() * 5000000 + 50000),
           modified: 'Just now', starred: false, shared: false, owner: 'me', deleted: false,
         }
         const targetPath = sidebarSection === 'my-files' ? currentPath : []
         setLibrary((prev) => insertLibraryItem(prev, targetPath, newFile))
         setSidebarSection('my-files')
+        showNotification(`"${name}" uploaded successfully`)
       }
     }, 180)
   }
@@ -735,6 +604,7 @@ export default function FilesPage() {
     setLibrary((prev) => insertLibraryItem(prev, targetPath, folder))
     setSidebarSection('my-files')
     setTimeout(() => setRenamingId(folder.id), 80)
+    showNotification('New folder created')
   }
 
   const dismissUpload = (id) => setUploads(prev => prev.filter(u => u.id !== id))

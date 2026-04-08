@@ -416,6 +416,22 @@
 .board::-webkit-scrollbar-track { background: transparent; }
 .board::-webkit-scrollbar-thumb { background: var(--color-gray-300); border-radius: 99px; }
 
+.boardNotification {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 700;
+  padding: 10px 18px;
+  background: var(--color-black);
+  color: var(--color-white);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  box-shadow: 0 12px 32px rgba(0,0,0,.16);
+  animation: fadeUp 0.2s ease both;
+}
+
 /* ════════════════════════════════════════
    COLUMN
 ════════════════════════════════════════ */
@@ -2544,6 +2560,15 @@
   .cmListMenu {
     width: min(320px, calc(100vw - 20px));
     max-width: calc(100vw - 20px);
+  }
+  .boardNotification {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    text-align: center;
+    border-radius: 16px;
+    white-space: normal;
   }
 }
 

@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
-import { createInitialPlans, createPlanRecord } from '../data/planSeeds.js'
+import { createInitialPlansSnapshot, createPlanDraftRecord } from '../data/plansRepository.js'
+import { normalizePlanRecord } from '../../../shared/contracts/planContracts.js'
 
 const PlansContext = createContext(null)
 
-const INITIAL_PLANS = createInitialPlans()
+const INITIAL_PLANS = createInitialPlansSnapshot()
 
 export function PlansProvider({ children }) {
   const [plans, setPlans] = useState(INITIAL_PLANS)
@@ -12,7 +13,7 @@ export function PlansProvider({ children }) {
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
 
   const createPlan = useCallback((data) => {
-    const newPlan = createPlanRecord(data)
+    const newPlan = createPlanDraftRecord(data)
     setPlans((prev) => [newPlan, ...prev])
     setActivePlanId(newPlan.id)
     return newPlan
@@ -31,7 +32,8 @@ export function PlansProvider({ children }) {
     setPlans((prev) =>
       prev.map((plan) => {
         if (plan.id !== planId) return plan
-        return typeof updater === 'function' ? updater(plan) : updater
+        const nextPlan = typeof updater === 'function' ? updater(plan) : updater
+        return normalizePlanRecord(nextPlan)
       }),
     )
   }, [])
