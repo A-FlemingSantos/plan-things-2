@@ -1,15 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { buildCanvasPath, buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
+import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
+import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
+import SidebarUserCard from '../../../../shared/components/SidebarUserCard/SidebarUserCard.jsx'
+import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import { usePlans } from '../../context/PlansContext.jsx'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
    ICONS
 ═══════════════════════════════════════════ */
 function HomeIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
-function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.5V4M11 1.5V4M1.5 7h13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
-function InboxIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h9A1.5 1.5 0 0 1 14 4.5v7A1.5 1.5 0 0 1 12.5 13h-2.1a1 1 0 0 1-.8-.4L8.8 11.4a1 1 0 0 0-.8-.4 1 1 0 0 0-.8.4l-.8 1.2a1 1 0 0 1-.8.4H3.5A1.5 1.5 0 0 1 2 11.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M2 8.5h3l1.2 1.8a1 1 0 0 0 .8.4h2a1 1 0 0 0 .8-.4L11 8.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function PopoverIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function CanvasIcon()   { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg> }
-function ChatIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8.5A6 6 0 0 1 4.5 13.5L1.5 14.5l1-3A6 6 0 1 1 14 8.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function FilesIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function PlusIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function ImagePlusIcon(){ return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M4 8l1.7-1.8a.8.8 0 0 1 1.2 0L9 8.5l1-1a.8.8 0 0 1 1.1 0L12.5 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10.5 1.5v3M9 3h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
@@ -39,19 +44,13 @@ function LogoMark() {
 /* ═══════════════════════════════════════════
    DATA
 ═══════════════════════════════════════════ */
-const NAV_ITEMS = [
-  { id: 'home',     label: 'Home',     Icon: HomeIcon     },
-  { id: 'calendar', label: 'Calendar', Icon: CalendarIcon },
-  { id: 'inbox',    label: 'Inbox',    Icon: InboxIcon    },
-  { id: 'canvas',   label: 'Canvas',   Icon: CanvasIcon   },
-  { id: 'chat',     label: 'Chat',     Icon: ChatIcon     },
-  { id: 'files',    label: 'Files',    Icon: FilesIcon    },
-]
-const NAV_PATHS = {
-  home: '/workspace',
-  canvas: '/canvas',
-  files: '/files',
-}
+const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
+  ...item,
+  Icon:
+    item.id === 'home' ? HomeIcon :
+    item.id === 'canvas' ? CanvasIcon :
+    FilesIcon,
+}))
 
 const PLAN_TAGS = [
   { label: 'Engineering', color: 'var(--color-green)'  },
@@ -78,39 +77,6 @@ const USER_MENU_ITEMS = [
   { id: 'settings', label: 'Settings',            Icon: SettingsIcon,danger: false },
   { id: 'logout',   label: 'Log Out',             Icon: LogOutIcon,  danger: true  },
 ]
-
-const INITIAL_PLANS = [
-  { id: 1, name: 'Product Launch — Q3',  description: 'Full scope for the third quarter release, from design handoff to public rollout.',      tag: 'Marketing',   tagColor: 'var(--color-blue)',  members: ['#d4aef1','#4290da','#0f703a'],        date: 'Aug 14', tasks: 18, cover: '#f4f0ff' },
-  { id: 2, name: 'API Redesign',          description: 'Refactor authentication layer and versioning strategy before the next major release.',   tag: 'Engineering', tagColor: 'var(--color-green)', members: ['#4290da','#ff6766'],                  date: 'Jul 30', tasks: 9,  cover: '#f0fff5' },
-  { id: 3, name: 'Brand Identity 2025',   description: 'New visual language, motion guidelines, and updated component library.',                  tag: 'Design',      tagColor: '#d4aef1',            members: ['#d4aef1','#0f703a','#ff6766','#000'], date: 'Sep 3',  tasks: 24, cover: '#fff9f0' },
-  { id: 4, name: 'Onboarding Revamp',     description: 'Reduce time-to-value by rethinking the first-run experience end to end.',                 tag: 'Growth',      tagColor: 'var(--color-red)',   members: ['#000','#d4aef1'],                     date: 'Aug 1',  tasks: 12, cover: '#fff0f0' },
-  { id: 5, name: 'Mobile App v2',         description: 'Native redesign for iOS and Android with offline sync and push notifications.',            tag: 'Engineering', tagColor: 'var(--color-green)', members: ['#4290da','#0f703a','#d4aef1'],        date: 'Oct 10', tasks: 31, cover: '#f0f6ff' },
-  { id: 6, name: 'Q4 Content Strategy',   description: 'Editorial calendar, channel ownership, and SEO targets for the final quarter.',            tag: 'Marketing',   tagColor: 'var(--color-blue)',  members: ['#ff6766','#000'],                     date: 'Oct 1',  tasks: 7,  cover: '#f5f5f5' },
-]
-
-const BOARD_PATH = '/workspace/board'
-
-function getActiveNav(pathname) {
-  if (
-    pathname === '/canvas' ||
-    pathname.startsWith('/canvas/') ||
-    pathname === '/workspace/canvas' ||
-    pathname === '/app/canvas'
-  ) {
-    return 'canvas'
-  }
-
-  if (
-    pathname === '/files' ||
-    pathname.startsWith('/files/') ||
-    pathname === '/workspace/files' ||
-    pathname === '/app/files'
-  ) {
-    return 'files'
-  }
-
-  return 'home'
-}
 
 /* ═══════════════════════════════════════════
    NEW PLAN POPOVER
@@ -391,10 +357,14 @@ function UserMenu({ onClose, collapsed }) {
 /* ═══════════════════════════════════════════
    PLAN CARD
 ═══════════════════════════════════════════ */
-function PlanCard({ plan, view, onOpen }) {
+function PlanCard({ plan, view, onOpen, isActive }) {
   if (view === 'list') {
     return (
-      <button type="button" className={styles.listCard} onClick={onOpen}>
+      <button
+        type="button"
+        className={`${styles.listCard} ${isActive ? styles.listCardActive : ''}`}
+        onClick={onOpen}
+      >
         <div className={styles.listCardLeft}>
           <div className={styles.listCover} style={{ background: plan.cover }} />
           <div className={styles.listInfo}>
@@ -403,6 +373,7 @@ function PlanCard({ plan, view, onOpen }) {
           </div>
         </div>
         <div className={styles.listMeta}>
+          {isActive && <span className={styles.currentPlanPill}>Current</span>}
           <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
           <div className={styles.memberStack}>
             {plan.members.slice(0, 3).map((c, i) => (
@@ -417,10 +388,17 @@ function PlanCard({ plan, view, onOpen }) {
   }
 
   return (
-    <button type="button" className={styles.planCard} onClick={onOpen}>
+    <button
+      type="button"
+      className={`${styles.planCard} ${isActive ? styles.planCardActive : ''}`}
+      onClick={onOpen}
+    >
       <div className={styles.cardBody}>
         <div className={styles.cardTop}>
-          <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
+          <div className={styles.cardTopMeta}>
+            <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
+            {isActive && <span className={styles.currentPlanPill}>Current</span>}
+          </div>
           <span className={styles.cardDate}>{plan.date}</span>
         </div>
         <h3 className={styles.cardName}>{plan.name}</h3>
@@ -445,13 +423,13 @@ function PlanCard({ plan, view, onOpen }) {
    WORKSPACE
 ═══════════════════════════════════════════ */
 export default function Workspace() {
-  const [collapsed,    setCollapsed]    = useState(false)
-  const [activeNav,    setActiveNav]    = useState(() => getActiveNav(window.location.pathname))
+  const navigate = useNavigate()
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [plans,        setPlans]        = useState(INITIAL_PLANS)
+  const { plans, activePlan, createPlan, selectPlan } = usePlans()
+  const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
 
   const filtered = plans.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -459,133 +437,88 @@ export default function Workspace() {
   )
 
   const handleNewPlan = (data) => {
-    setPlans(prev => [{ id: Date.now(), ...data }, ...prev])
+    createPlan(data)
   }
 
-  const openBoard = () => {
-    window.location.href = BOARD_PATH
+  const openBoard = (planId) => {
+    selectPlan(planId)
+    navigate(buildWorkspaceBoardPath(planId))
+  }
+
+  const openCanvas = (planId) => {
+    selectPlan(planId)
+    navigate(buildCanvasPath(planId))
   }
 
   const openNewPlan = (event) => {
     setNewPlanAnchor(event.currentTarget)
   }
 
-  const handleNavItemClick = (id) => {
-    const nextPath = NAV_PATHS[id]
-
-    if (nextPath) {
-      window.location.href = nextPath
-      return
-    }
-
-    setActiveNav(id)
-  }
-
-  return (
+  const renderSidebarSecondaryContent = ({ collapsed }) => (
     <>
-      <div className={`${styles.shell} ${collapsed ? styles.shellCollapsed : ''}`}>
-
-        {/* ════════════ SIDEBAR ════════════ */}
-        <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
-
-          {/* Top cluster */}
-          <div className={styles.sidebarTop}>
-
-            {/* Logo row */}
-            <div className={styles.logoRow}>
-              <a href="/workspace" className={styles.sidebarLogo}>
-                <span className={styles.sidebarLogoMark}><LogoMark /></span>
-                <span className={styles.sidebarLogoText}>Plan Things</span>
-              </a>
-              <button
-                className={styles.collapseBtn}
-                onClick={() => setCollapsed(v => !v)}
-                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                <span className={`${styles.collapseBtnIcon} ${collapsed ? styles.collapseBtnFlipped : ''}`}>
-                  <CollapseIcon />
-                </span>
-              </button>
-            </div>
-
-            {/* Workspace picker */}
-            <button className={`${styles.workspacePicker} ${collapsed ? styles.workspacePickerHidden : ''}`}>
-              <span className={styles.wsAvatar}>A</span>
-              <span className={styles.wsName}>Arthur's workspace</span>
-              <span className={styles.wsChevron}><ChevronIcon /></span>
-            </button>
-
-            {/* Nav items */}
-            <nav className={styles.nav}>
-              {NAV_ITEMS.map(({ id, label, Icon }) => (
-                <button
-                  key={id}
-                  className={`${styles.navItem} ${activeNav === id ? styles.navItemActive : ''}`}
-                  onClick={() => handleNavItemClick(id)}
-                  title={collapsed ? label : undefined}
-                >
-                  <span className={styles.navIcon}><Icon /></span>
-                  <span className={styles.navLabel}>{label}</span>
-                  {id === 'inbox' && !collapsed && <span className={styles.navHintIcon}><PopoverIcon /></span>}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Plans section */}
-          <div className={`${styles.sidebarPlans} ${collapsed ? styles.sidebarPlansHidden : ''}`}>
-            <p className={styles.sidebarSectionLabel}>Plans</p>
-            {plans.slice(0, 5).map(plan => (
-              <button key={plan.id} className={styles.sidebarPlanItem} onClick={openBoard}>
-                <span className={styles.sidebarPlanDot} style={{ background: plan.tagColor }} />
-                <span className={styles.sidebarPlanName}>{plan.name}</span>
-              </button>
-            ))}
+      {!collapsed && (
+        <PlanSidebarSection
+          plans={plans.slice(0, 5)}
+          activePlanId={activePlan?.id}
+          onSelectPlan={openBoard}
+          footer={(
             <button className={styles.sidebarNewPlan} onClick={openNewPlan}>
               <PlusIcon />
               <span>New plan</span>
             </button>
-          </div>
-
-          {/* Collapsed new-plan shortcut */}
-          {collapsed && (
-            <div className={styles.collapsedActions}>
-              <button
-                className={styles.navItem}
-                onClick={openNewPlan}
-                title="New plan"
-              >
-                <span className={styles.navIcon}><PlusIcon /></span>
-                <span className={styles.navLabel}>New</span>
-              </button>
-            </div>
           )}
+        />
+      )}
 
-          {/* User button + floating menu */}
-          <div className={styles.userSection}>
-            {showUserMenu && (
-              <UserMenu
-                onClose={() => setShowUserMenu(false)}
-                collapsed={collapsed}
-              />
-            )}
-            <button
-              className={`${styles.userBtn} ${showUserMenu ? styles.userBtnActive : ''} ${collapsed ? styles.userBtnCollapsed : ''}`}
-              onClick={() => setShowUserMenu(v => !v)}
-              aria-expanded={showUserMenu}
-              aria-haspopup="true"
-            >
-              <span className={styles.userAvatar}>AS</span>
-              <span className={styles.userDetails}>
-                <span className={styles.userName}>Arthur Santos</span>
-                <span className={styles.userPlan}>Professional</span>
-              </span>
-            </button>
-          </div>
-        </aside>
+      {collapsed && (
+        <div className={styles.collapsedActions}>
+          <button
+            className={styles.navItem}
+            onClick={openNewPlan}
+            title="New plan"
+          >
+            <span className={styles.navIcon}><PlusIcon /></span>
+            <span className={styles.navLabel}>New</span>
+          </button>
+        </div>
+      )}
+    </>
+  )
 
-        {/* ════════════ MAIN ════════════ */}
-        <main className={styles.main}>
+  const renderSidebarBottomContent = ({ collapsed }) => (
+    <SidebarUserCard
+      styles={styles}
+      collapsed={collapsed}
+      active={showUserMenu}
+      onClick={() => setShowUserMenu(v => !v)}
+      aria-expanded={showUserMenu}
+      aria-haspopup="true"
+    >
+      {showUserMenu && (
+        <UserMenu
+          onClose={() => setShowUserMenu(false)}
+          collapsed={collapsed}
+        />
+      )}
+    </SidebarUserCard>
+  )
+
+  return (
+    <>
+      <ProductAppShell
+        styles={styles}
+        activeNav={activeNav}
+        onNavItemClick={handleNavItemClick}
+        navItems={NAV_ITEMS}
+        LogoIcon={LogoMark}
+        CollapseIcon={CollapseIcon}
+        ChevronIcon={ChevronIcon}
+        HintIcon={PopoverIcon}
+        secondaryContent={renderSidebarSecondaryContent}
+        bottomContent={renderSidebarBottomContent}
+        contentClassName={styles.main}
+        contentTag="main"
+      >
           {/* Top bar */}
           <div className={styles.topbar}>
             <div className={styles.topbarLeft}>
@@ -611,6 +544,33 @@ export default function Workspace() {
 
           {/* Content */}
           <div className={styles.content}>
+            {activePlan && (
+              <section className={styles.currentPlanPanel}>
+                <div className={styles.currentPlanPanelCopy}>
+                  <p className={styles.currentPlanEyebrow}>Current plan</p>
+                  <div className={styles.currentPlanHeader}>
+                    <h2 className={styles.currentPlanTitle}>{activePlan.name}</h2>
+                    <span className={styles.cardTag} style={{ background: activePlan.tagColor + '18', color: activePlan.tagColor }}>
+                      {activePlan.tag}
+                    </span>
+                  </div>
+                  <p className={styles.currentPlanText}>
+                    {activePlan.description || 'Continue where you left off across board and canvas.'}
+                  </p>
+                </div>
+                <div className={styles.currentPlanActions}>
+                  <button className={styles.currentPlanAction} onClick={() => openBoard(activePlan.id)}>
+                    <GridIcon />
+                    Open board
+                  </button>
+                  <button className={styles.currentPlanAction} onClick={() => openCanvas(activePlan.id)}>
+                    <CanvasIcon />
+                    Open canvas
+                  </button>
+                </div>
+              </section>
+            )}
+
             <div className={styles.sectionHeader}>
               <div className={styles.sectionLeft}>
                 <h2 className={styles.sectionTitle}>All plans</h2>
@@ -632,7 +592,15 @@ export default function Workspace() {
 
             {view === 'grid' ? (
               <div className={styles.grid}>
-                {filtered.map(plan => <PlanCard key={plan.id} plan={plan} view="grid" onOpen={openBoard} />)}
+                {filtered.map(plan => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    view="grid"
+                    onOpen={() => openBoard(plan.id)}
+                    isActive={plan.id === activePlan?.id}
+                  />
+                ))}
                 <button className={styles.newPlanCard} onClick={openNewPlan}>
                   <span className={styles.newPlanIcon}><PlusIcon /></span>
                   <span className={styles.newPlanLabel}>New plan</span>
@@ -640,12 +608,19 @@ export default function Workspace() {
               </div>
             ) : (
               <div className={styles.listView}>
-                {filtered.map(plan => <PlanCard key={plan.id} plan={plan} view="list" onOpen={openBoard} />)}
+                {filtered.map(plan => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    view="list"
+                    onOpen={() => openBoard(plan.id)}
+                    isActive={plan.id === activePlan?.id}
+                  />
+                ))}
               </div>
             )}
           </div>
-        </main>
-      </div>
+      </ProductAppShell>
 
       {/* ════════════ NEW PLAN POPOVER ════════════ */}
       {newPlanAnchor && (

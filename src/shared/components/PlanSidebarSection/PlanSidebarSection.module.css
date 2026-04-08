@@ -1,0 +1,59 @@
+.section {
+  margin-top: 18px;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.section::-webkit-scrollbar {
+  display: none;
+}
+
+.label {
+  margin: 0 0 6px;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--color-gray-400);
+}
+
+.planItem {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--color-gray-500);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.planItem:hover {
+  background: var(--color-gray-100);
+  color: var(--color-black);
+}
+
+.planItemActive {
+  background: var(--color-gray-100);
+  color: var(--color-black);
+}
+
+.planDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.planName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

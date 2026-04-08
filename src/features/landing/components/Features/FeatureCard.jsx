@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './FeatureCard.module.css'
 
 /* ── Mini visual illustrations per feature ── */
@@ -116,7 +118,7 @@ export default function FeatureCard({ feature }) {
   const featureHref =
     feature.visual === 'planning' ? '#innovation' :
     feature.visual === 'kanban' ? '#how-it-works' :
-    '/workspace'
+    ROUTES.workspace
 
   return (
     <div className={styles.card}>
@@ -129,14 +131,14 @@ export default function FeatureCard({ feature }) {
       </div>
 
       <div className={styles.footer}>
-        <a href={featureHref} className={styles.cta}>
+        <Link to={featureHref} className={styles.cta}>
           <span className={styles.ctaIcon} style={{ background: feature.accent }}>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M2 6h8M7 3l3 3-3 3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </span>
           {feature.link}
-        </a>
+        </Link>
       </div>
     </div>
   )

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Pricing.module.css'
 
 const PLANS = [
@@ -118,15 +120,15 @@ export default function Pricing() {
 
               <div className={styles.cardDivider} />
 
-              <a
-                href={plan.name === 'Team' ? '/help' : '/cadastro'}
+              <Link
+                to={plan.name === 'Team' ? ROUTES.help : ROUTES.register}
                 className={`${styles.planCta} ${
                   plan.ctaStyle === 'primary' ? styles.ctaPrimary :
                   plan.ctaStyle === 'outline' ? styles.ctaOutline : styles.ctaSecondary
                 }`}
               >
                 {plan.cta}
-              </a>
+              </Link>
 
               <ul className={styles.featureList}>
                 {plan.features.map(f => (

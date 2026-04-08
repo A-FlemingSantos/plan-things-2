@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Footer.module.css'
 
 const FOOTER_LINKS = {
@@ -14,8 +16,8 @@ const FOOTER_LINKS = {
     { label: 'Blog', href: '#faq' },
     { label: 'Carreiras', href: '#pricing' },
     { label: 'Imprensa', href: '#hero' },
-    { label: 'Política de privacidade', href: '#faq' },
-    { label: 'Termos de uso', href: '#faq' },
+    { label: 'Política de privacidade', href: ROUTES.privacy, internal: true },
+    { label: 'Termos de uso', href: ROUTES.terms, internal: true },
   ],
   Resources: [
     { label: 'Documentação', href: '#how-it-works' },
@@ -26,7 +28,7 @@ const FOOTER_LINKS = {
     { label: 'Segurança', href: '#faq' },
   ],
   Support: [
-    { label: 'Central de ajuda', href: '#faq' },
+    { label: 'Central de ajuda', href: ROUTES.help, internal: true },
     { label: 'Fale conosco', href: '#pricing' },
     { label: 'Status do sistema', href: '#innovation' },
     { label: 'Webinars', href: '#how-it-works' },
@@ -68,7 +70,11 @@ export default function Footer() {
                 <ul className={styles.colLinks}>
                   {links.map(link => (
                     <li key={link.label}>
-                      <a href={link.href} className={styles.colLink}>{link.label}</a>
+                      {link.internal ? (
+                        <Link to={link.href} className={styles.colLink}>{link.label}</Link>
+                      ) : (
+                        <a href={link.href} className={styles.colLink}>{link.label}</a>
+                      )}
                     </li>
                   ))}
                 </ul>

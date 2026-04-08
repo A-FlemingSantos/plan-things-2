@@ -1,4 +1,8 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import SidebarUserCard from '../../../../shared/components/SidebarUserCard/SidebarUserCard.jsx'
+import { ROUTES } from '../../../../shared/config/routes.js'
+import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import styles from './FilesPage.module.css'
 
 /* ═══════════════════════════════════════════
@@ -7,10 +11,7 @@ import styles from './FilesPage.module.css'
 const Icon = {
   Logo:       () => <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" fill="currentColor"/><rect x="11" y="2" width="7" height="7" rx="2" fill="currentColor" opacity=".35"/><rect x="2" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".55"/><rect x="11" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".75"/></svg>,
   Home:       () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
-  Calendar:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.5V4M11 1.5V4M1.5 7h13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-  Inbox:      () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h9A1.5 1.5 0 0 1 14 4.5v7A1.5 1.5 0 0 1 12.5 13h-2.1a1 1 0 0 1-.8-.4L8.8 11.4a1 1 0 0 0-.8-.4 1 1 0 0 0-.8.4l-.8 1.2a1 1 0 0 1-.8.4H3.5A1.5 1.5 0 0 1 2 11.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Canvas:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
-  Chat:       () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M14 8.5A6 6 0 0 1 4.5 13.5L1.5 14.5l1-3A6 6 0 1 1 14 8.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Files:      () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Chevron:    () => <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   ChevronDown:() => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -88,41 +89,147 @@ const formatSize = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-const ROOT_FILES = [
-  { id: uid(), name: 'Product Design',       type: 'folder', size: 0,          modified: '2 hours ago',   starred: true,  shared: true,  owner: 'me' },
-  { id: uid(), name: 'Engineering',           type: 'folder', size: 0,          modified: 'Yesterday',     starred: false, shared: true,  owner: 'me' },
-  { id: uid(), name: 'Brand Identity 2025',   type: 'folder', size: 0,          modified: '3 days ago',    starred: true,  shared: false, owner: 'me' },
-  { id: uid(), name: 'Q3 Launch Plan.pdf',    type: 'pdf',    size: 2480000,     modified: 'Today',         starred: true,  shared: true,  owner: 'me' },
-  { id: uid(), name: 'API Spec v2.md',        type: 'doc',    size: 86400,       modified: 'Yesterday',     starred: false, shared: false, owner: 'Tom K.' },
-  { id: uid(), name: 'Hero Animation.gif',    type: 'image',  size: 4200000,     modified: '3 days ago',    starred: false, shared: true,  owner: 'me' },
-  { id: uid(), name: 'Design Tokens.json',    type: 'code',   size: 14200,       modified: '5 days ago',    starred: false, shared: false, owner: 'me' },
-  { id: uid(), name: 'Onboarding Flow.png',   type: 'image',  size: 1820000,     modified: '1 week ago',    starred: true,  shared: true,  owner: 'Ana R.' },
-  { id: uid(), name: 'app-bundle-v2.zip',     type: 'zip',    size: 18600000,    modified: '1 week ago',    starred: false, shared: false, owner: 'me' },
-  { id: uid(), name: 'Brand Guidelines.pdf',  type: 'pdf',    size: 6740000,     modified: '2 weeks ago',   starred: false, shared: true,  owner: 'me' },
-  { id: uid(), name: 'vite.config.ts',        type: 'code',   size: 2100,        modified: '2 weeks ago',   starred: false, shared: false, owner: 'me' },
-  { id: uid(), name: 'Meeting Notes Q3.doc',  type: 'doc',    size: 42000,       modified: '3 weeks ago',   starred: false, shared: true,  owner: 'Sara M.' },
+const createLibraryItem = ({
+  name,
+  type,
+  size = 0,
+  modified,
+  starred = false,
+  shared = false,
+  owner = 'me',
+  children = [],
+}) => ({
+  id: uid(),
+  name,
+  type,
+  size,
+  modified,
+  starred,
+  shared,
+  owner,
+  deleted: false,
+  ...(type === 'folder' ? { children } : {}),
+})
+
+const INITIAL_LIBRARY = [
+  createLibraryItem({
+    name: 'Product Design',
+    type: 'folder',
+    modified: '2 hours ago',
+    starred: true,
+    shared: true,
+    children: [
+      createLibraryItem({
+        name: 'Components',
+        type: 'folder',
+        modified: '1 day ago',
+        shared: true,
+        children: [
+          createLibraryItem({ name: 'Button states.fig', type: 'generic', size: 2380000, modified: 'Today', shared: true }),
+          createLibraryItem({ name: 'Card anatomy.md', type: 'doc', size: 18600, modified: 'Yesterday', owner: 'Ana R.' }),
+        ],
+      }),
+      createLibraryItem({ name: 'Icons', type: 'folder', modified: '3 days ago' }),
+      createLibraryItem({ name: 'hero-mockup.png', type: 'image', size: 3100000, modified: '2 hours ago', starred: true, shared: true }),
+      createLibraryItem({ name: 'kanban-spec.pdf', type: 'pdf', size: 1240000, modified: 'Yesterday', owner: 'Ana R.' }),
+      createLibraryItem({ name: 'color-system.json', type: 'code', size: 8200, modified: '5 days ago', shared: true }),
+      createLibraryItem({ name: 'cover-photo.jpg', type: 'image', size: 2900000, modified: '1 week ago' }),
+    ],
+  }),
+  createLibraryItem({
+    name: 'Engineering',
+    type: 'folder',
+    modified: 'Yesterday',
+    shared: true,
+    children: [
+      createLibraryItem({ name: 'API Spec v2.md', type: 'doc', size: 86400, modified: 'Yesterday', owner: 'Tom K.' }),
+      createLibraryItem({ name: 'Design Tokens.json', type: 'code', size: 14200, modified: '5 days ago' }),
+      createLibraryItem({ name: 'vite.config.ts', type: 'code', size: 2100, modified: '2 weeks ago' }),
+      createLibraryItem({
+        name: 'Frontend',
+        type: 'folder',
+        modified: 'Today',
+        shared: true,
+        children: [
+          createLibraryItem({ name: 'routes-map.json', type: 'code', size: 4100, modified: '2 hours ago' }),
+          createLibraryItem({ name: 'app-shell-notes.md', type: 'doc', size: 12400, modified: 'Today', shared: true }),
+        ],
+      }),
+    ],
+  }),
+  createLibraryItem({
+    name: 'Brand Identity 2025',
+    type: 'folder',
+    modified: '3 days ago',
+    starred: true,
+    children: [
+      createLibraryItem({ name: 'Brand Guidelines.pdf', type: 'pdf', size: 6740000, modified: '2 weeks ago', shared: true }),
+      createLibraryItem({ name: 'Logo explorations.png', type: 'image', size: 2480000, modified: '4 days ago', starred: true }),
+    ],
+  }),
+  createLibraryItem({ name: 'Q3 Launch Plan.pdf', type: 'pdf', size: 2480000, modified: 'Today', starred: true, shared: true }),
+  createLibraryItem({ name: 'Hero Animation.gif', type: 'image', size: 4200000, modified: '3 days ago', shared: true }),
+  createLibraryItem({ name: 'Onboarding Flow.png', type: 'image', size: 1820000, modified: '1 week ago', starred: true, shared: true, owner: 'Ana R.' }),
+  createLibraryItem({ name: 'app-bundle-v2.zip', type: 'zip', size: 18600000, modified: '1 week ago' }),
+  createLibraryItem({ name: 'Meeting Notes Q3.doc', type: 'doc', size: 42000, modified: '3 weeks ago', shared: true, owner: 'Sara M.' }),
 ]
 
-const DESIGN_FOLDER = [
-  { id: uid(), name: 'Components',          type: 'folder', size: 0,        modified: '1 day ago',    starred: false, shared: true,  owner: 'me' },
-  { id: uid(), name: 'Icons',               type: 'folder', size: 0,        modified: '3 days ago',   starred: false, shared: false, owner: 'me' },
-  { id: uid(), name: 'hero-mockup.png',     type: 'image',  size: 3100000,  modified: '2 hours ago',  starred: true,  shared: true,  owner: 'me' },
-  { id: uid(), name: 'kanban-spec.pdf',     type: 'pdf',    size: 1240000,  modified: 'Yesterday',    starred: false, shared: false, owner: 'Ana R.' },
-  { id: uid(), name: 'color-system.json',   type: 'code',   size: 8200,     modified: '5 days ago',   starred: false, shared: true,  owner: 'me' },
-  { id: uid(), name: 'cover-photo.jpg',     type: 'image',  size: 2900000,  modified: '1 week ago',   starred: false, shared: false, owner: 'me' },
-]
+const pathsMatch = (left, right) =>
+  left.length === right.length && left.every((segment, index) => segment === right[index])
 
-const FOLDER_MAP = {
-  'Product Design': DESIGN_FOLDER,
+const flattenLibrary = (items, pathIds = [], inheritedDeleted = false) =>
+  items.flatMap((item) => {
+    const children = item.children || []
+    const isDeletedTree = inheritedDeleted || item.deleted
+    const flatItem = {
+      ...item,
+      pathIds,
+      isDeletedTree,
+    }
+
+    return [
+      flatItem,
+      ...(item.type === 'folder' ? flattenLibrary(children, [...pathIds, item.id], isDeletedTree) : []),
+    ]
+  })
+
+const updateLibraryItem = (items, targetId, updater) =>
+  items.map((item) => {
+    if (item.id === targetId) return updater(item)
+    if (item.type !== 'folder') return item
+
+    return {
+      ...item,
+      children: updateLibraryItem(item.children || [], targetId, updater),
+    }
+  })
+
+const insertLibraryItem = (items, pathIds, newItem) => {
+  if (pathIds.length === 0) return [newItem, ...items]
+
+  const [currentId, ...restPath] = pathIds
+
+  return items.map((item) => {
+    if (item.id !== currentId) return item
+    if (item.type !== 'folder') return item
+
+    return {
+      ...item,
+      children: insertLibraryItem(item.children || [], restPath, newItem),
+    }
+  })
 }
 
+const markItemDeleted = (item) => ({
+  ...item,
+  deleted: true,
+  modified: 'Just now',
+})
+
 const SIDEBAR_NAV = [
-  { id: 'home',     label: 'Home',     Icon: Icon.Home,     path: '/workspace' },
-  { id: 'calendar', label: 'Calendar', Icon: Icon.Calendar },
-  { id: 'inbox',    label: 'Inbox',    Icon: Icon.Inbox,    hint: true },
-  { id: 'canvas',   label: 'Canvas',   Icon: Icon.Canvas,   path: '/canvas' },
-  { id: 'chat',     label: 'Chat',     Icon: Icon.Chat },
-  { id: 'files',    label: 'Files',    Icon: Icon.Files,    path: '/files' },
+  { id: 'home',     label: 'Home',     Icon: Icon.Home,     path: ROUTES.workspace },
+  { id: 'canvas',   label: 'Canvas',   Icon: Icon.Canvas,   path: ROUTES.canvas },
+  { id: 'files',    label: 'Files',    Icon: Icon.Files,    path: ROUTES.files },
 ]
 
 const STORAGE_USED = 28.4  // GB
@@ -463,14 +570,14 @@ function UploadToast({ uploads, onDismiss }) {
    MAIN FILES PAGE
 ═══════════════════════════════════════════ */
 export default function FilesPage() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const [sidebarSection, setSidebarSection]     = useState('my-files') // my-files | recent | starred | shared | trash
   const [view, setView]                         = useState('grid')
   const [search, setSearch]                     = useState('')
-  const [breadcrumb, setBreadcrumb]             = useState([]) // array of folder names
-  const [files, setFiles]                       = useState(ROOT_FILES)
+  const [currentPath, setCurrentPath]           = useState([]) // array of folder ids
+  const [library, setLibrary]                   = useState(INITIAL_LIBRARY)
   const [selected, setSelected]                 = useState(null)
-  const [detailItem, setDetailItem]             = useState(null)
+  const [detailItemId, setDetailItemId]         = useState(null)
   const [contextMenu, setContextMenu]           = useState(null) // { x, y, item }
   const [renamingId, setRenamingId]             = useState(null)
   const [dragOver, setDragOver]                 = useState(false)
@@ -479,37 +586,54 @@ export default function FilesPage() {
   const [notification, setNotification]         = useState(null)
   const fileInputRef = useRef(null)
 
+  const flattenedItems = useMemo(() => flattenLibrary(library), [library])
+  const itemById = useMemo(() => new Map(flattenedItems.map((item) => [item.id, item])), [flattenedItems])
+  const breadcrumb = currentPath.map((id) => itemById.get(id)).filter(Boolean)
+  const detailItem = detailItemId ? itemById.get(detailItemId) || null : null
+
+  useEffect(() => {
+    if (currentPath.some((id) => !itemById.has(id))) {
+      setCurrentPath([])
+    }
+  }, [currentPath, itemById])
+
   // Navigate into folder
   const openItem = (item) => {
     if (item.type === 'folder') {
-      setBreadcrumb(prev => [...prev, item.name])
-      setFiles(FOLDER_MAP[item.name] || [])
+      setSidebarSection('my-files')
+      setCurrentPath([...item.pathIds, item.id])
       setSelected(null)
-      setDetailItem(null)
+      setDetailItemId(null)
     }
   }
 
   const navigateBreadcrumb = (idx) => {
     if (idx === -1) {
-      setBreadcrumb([])
-      setFiles(ROOT_FILES)
+      setCurrentPath([])
     } else {
-      const newCrumb = breadcrumb.slice(0, idx + 1)
-      setBreadcrumb(newCrumb)
-      setFiles(FOLDER_MAP[newCrumb[newCrumb.length - 1]] || ROOT_FILES)
+      setCurrentPath(currentPath.slice(0, idx + 1))
     }
     setSelected(null)
-    setDetailItem(null)
+    setDetailItemId(null)
   }
 
   // Section filtering
-  const filteredFiles = (() => {
-    let base = files
-    if (sidebarSection === 'starred') base = ROOT_FILES.filter(f => f.starred)
-    if (sidebarSection === 'shared')  base = ROOT_FILES.filter(f => f.shared)
-    if (sidebarSection === 'recent')  base = [...ROOT_FILES].slice(0, 6)
-    if (sidebarSection === 'trash')   base = []
-    if (search) base = base.filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
+  const filteredFiles = useMemo(() => {
+    let base = flattenedItems.filter((item) => !item.isDeletedTree)
+
+    if (sidebarSection === 'my-files') {
+      base = base.filter((item) => pathsMatch(item.pathIds, currentPath))
+    }
+
+    if (sidebarSection === 'starred') base = base.filter((item) => item.starred)
+    if (sidebarSection === 'shared') base = base.filter((item) => item.shared)
+    if (sidebarSection === 'recent') base = base.slice(0, 6)
+    if (sidebarSection === 'trash') base = flattenedItems.filter((item) => item.deleted)
+
+    if (search) {
+      base = base.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
+    }
+
     return [...base].sort((a, b) => {
       if (a.type === 'folder' && b.type !== 'folder') return -1
       if (b.type === 'folder' && a.type !== 'folder') return 1
@@ -517,17 +641,20 @@ export default function FilesPage() {
       if (sortBy === 'size') return b.size - a.size
       return 0
     })
-  })()
+  }, [currentPath, flattenedItems, search, sidebarSection, sortBy])
 
   const handleContextAction = useCallback((action, item) => {
     setContextMenu(null)
     if (action === 'star' || action === 'unstar') {
-      setFiles(prev => prev.map(f => f.id === item.id ? { ...f, starred: !f.starred } : f))
+      setLibrary((prev) =>
+        updateLibraryItem(prev, item.id, (current) => ({ ...current, starred: !current.starred })),
+      )
     } else if (action === 'rename') {
       setRenamingId(item.id)
     } else if (action === 'delete') {
-      setFiles(prev => prev.filter(f => f.id !== item.id))
-      if (detailItem?.id === item.id) setDetailItem(null)
+      setLibrary((prev) => updateLibraryItem(prev, item.id, markItemDeleted))
+      if (detailItemId === item.id) setDetailItemId(null)
+      if (selected === item.id) setSelected(null)
       showNotification(`"${item.name}" moved to Trash`)
     } else if (action === 'download') {
       showNotification(`Downloading "${item.name}"…`)
@@ -538,12 +665,12 @@ export default function FilesPage() {
     } else if (action === 'open') {
       openItem(item)
     } else if (action === 'preview') {
-      setDetailItem(item)
+      setDetailItemId(item.id)
       showNotification(`Previewing "${item.name}"`)
     } else if (action === 'move') {
       showNotification(`Move options opened for "${item.name}"`)
     }
-  }, [detailItem])
+  }, [detailItemId, selected])
 
   const showNotification = (msg) => {
     setNotification(msg)
@@ -552,14 +679,17 @@ export default function FilesPage() {
 
   const handleRename = (id, newName) => {
     if (newName.trim()) {
-      setFiles(prev => prev.map(f => f.id === id ? { ...f, name: newName.trim() } : f))
+      setLibrary((prev) =>
+        updateLibraryItem(prev, id, (current) => ({ ...current, name: newName.trim() })),
+      )
     }
     setRenamingId(null)
   }
 
   const toggleStar = (id) => {
-    setFiles(prev => prev.map(f => f.id === id ? { ...f, starred: !f.starred } : f))
-    if (detailItem?.id === id) setDetailItem(prev => ({ ...prev, starred: !prev.starred }))
+    setLibrary((prev) =>
+      updateLibraryItem(prev, id, (current) => ({ ...current, starred: !current.starred })),
+    )
   }
 
   // Upload simulation
@@ -575,9 +705,11 @@ export default function FilesPage() {
         const newFile = {
           id: uid(), name, type: getFileType(name),
           size: Math.floor(Math.random() * 5000000 + 50000),
-          modified: 'Just now', starred: false, shared: false, owner: 'me'
+          modified: 'Just now', starred: false, shared: false, owner: 'me', deleted: false,
         }
-        setFiles(prev => [newFile, ...prev])
+        const targetPath = sidebarSection === 'my-files' ? currentPath : []
+        setLibrary((prev) => insertLibraryItem(prev, targetPath, newFile))
+        setSidebarSection('my-files')
       }
     }, 180)
   }
@@ -594,11 +726,14 @@ export default function FilesPage() {
   }
 
   const handleNewFolder = () => {
-    const folder = {
-      id: uid(), name: 'Untitled folder', type: 'folder',
-      size: 0, modified: 'Just now', starred: false, shared: false, owner: 'me'
-    }
-    setFiles(prev => [folder, ...prev])
+    const folder = createLibraryItem({
+      name: 'Untitled folder',
+      type: 'folder',
+      modified: 'Just now',
+    })
+    const targetPath = sidebarSection === 'my-files' ? currentPath : []
+    setLibrary((prev) => insertLibraryItem(prev, targetPath, folder))
+    setSidebarSection('my-files')
     setTimeout(() => setRenamingId(folder.id), 80)
   }
 
@@ -607,7 +742,7 @@ export default function FilesPage() {
   const handleCanvasBackground = (e) => {
     if (e.target === e.currentTarget) {
       setSelected(null)
-      setDetailItem(null)
+      setDetailItemId(null)
     }
   }
 
@@ -619,7 +754,7 @@ export default function FilesPage() {
     'trash':    'Trash',
   }[sidebarSection]
 
-  const selectedItem = selected ? filteredFiles.find(f => f.id === selected) || detailItem : null
+  const selectedItem = selected ? filteredFiles.find((item) => item.id === selected) || detailItem : null
   const emptyState = search
     ? {
         icon: Icon.Search,
@@ -660,100 +795,77 @@ export default function FilesPage() {
   const EmptyIcon = emptyState.icon
 
   const storagePercent = (STORAGE_USED / STORAGE_TOTAL) * 100
+  const renderSidebarSecondaryContent = ({ collapsed }) => (
+    <>
+      {!collapsed && (
+        <div className={styles.filesNav}>
+          <p className={styles.filesNavLabel}>Files</p>
+          {[
+            { id: 'my-files', label: 'My Files',      Ic: Icon.MyFiles },
+            { id: 'recent',   label: 'Recent',         Ic: Icon.Recent },
+            { id: 'starred',  label: 'Starred',        Ic: Icon.StarMenu },
+            { id: 'shared',   label: 'Shared with me', Ic: Icon.Shared },
+            { id: 'trash',    label: 'Trash',          Ic: Icon.Trash2 },
+          ].map(({ id, label, Ic }) => (
+            <button
+              key={id}
+              className={`${styles.filesNavItem} ${sidebarSection === id ? styles.filesNavItemActive : ''}`}
+              onClick={() => {
+                setSidebarSection(id)
+                setCurrentPath([])
+                setSelected(null)
+                setDetailItemId(null)
+              }}
+            >
+              <span className={styles.filesNavIcon}><Ic /></span>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!collapsed && (
+        <div className={styles.storageSection}>
+          <div className={styles.storageHeader}>
+            <span className={styles.storageLabel}>Storage</span>
+            <span className={styles.storageNums}>{STORAGE_USED} / {STORAGE_TOTAL} GB</span>
+          </div>
+          <div className={styles.storageBar}>
+            <div
+              className={styles.storageBarFill}
+              style={{ width: `${storagePercent}%`, background: storagePercent > 80 ? 'var(--color-red)' : 'var(--color-black)' }}
+            />
+          </div>
+          <p className={styles.storageInfo}>{(STORAGE_TOTAL - STORAGE_USED).toFixed(1)} GB available</p>
+        </div>
+      )}
+    </>
+  )
+
+  const renderSidebarBottomContent = ({ collapsed }) => (
+    <SidebarUserCard styles={styles} collapsed={collapsed} />
+  )
 
   return (
-    <div className={`${styles.shell} ${sidebarCollapsed ? styles.shellCollapsed : ''}`}>
-
-      {/* ════════════ APP SIDEBAR ════════════ */}
-      <aside className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
-        <div className={styles.sidebarTop}>
-          <div className={styles.logoRow}>
-            <a href="/workspace" className={styles.sidebarLogo}>
-              <span className={styles.sidebarLogoMark}><Icon.Logo /></span>
-              <span className={styles.sidebarLogoText}>Plan Things</span>
-            </a>
-            <button className={styles.collapseBtn} onClick={() => setSidebarCollapsed(v => !v)}>
-              <span className={`${styles.collapseBtnIcon} ${sidebarCollapsed ? styles.collapseBtnFlipped : ''}`}>
-                <Icon.Collapse />
-              </span>
-            </button>
-          </div>
-
-          <button className={`${styles.workspacePicker} ${sidebarCollapsed ? styles.workspacePickerHidden : ''}`}>
-            <span className={styles.wsAvatar}>A</span>
-            <span className={styles.wsName}>Arthur's workspace</span>
-            <span className={styles.wsChevron}><Icon.Chevron /></span>
-          </button>
-
-          <nav className={styles.nav}>
-            {SIDEBAR_NAV.map(({ id, label, Icon: Ic, path, hint }) => (
-              <button
-                key={id}
-                className={`${styles.navItem} ${id === 'files' ? styles.navItemActive : ''}`}
-                onClick={() => path && path !== '/files' && (window.location.href = path)}
-                title={sidebarCollapsed ? label : undefined}
-              >
-                <span className={styles.navIcon}><Ic /></span>
-                <span className={styles.navLabel}>{label}</span>
-                {hint && !sidebarCollapsed && <span className={styles.navHintIcon}><Icon.Popover /></span>}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Files-specific nav */}
-        {!sidebarCollapsed && (
-          <div className={styles.filesNav}>
-            <p className={styles.filesNavLabel}>Files</p>
-            {[
-              { id: 'my-files', label: 'My Files',      Ic: Icon.MyFiles },
-              { id: 'recent',   label: 'Recent',         Ic: Icon.Recent },
-              { id: 'starred',  label: 'Starred',        Ic: Icon.StarMenu },
-              { id: 'shared',   label: 'Shared with me', Ic: Icon.Shared },
-              { id: 'trash',    label: 'Trash',          Ic: Icon.Trash2 },
-            ].map(({ id, label, Ic }) => (
-              <button
-                key={id}
-                className={`${styles.filesNavItem} ${sidebarSection === id ? styles.filesNavItemActive : ''}`}
-                onClick={() => { setSidebarSection(id); setBreadcrumb([]); setFiles(ROOT_FILES); setSelected(null); setDetailItem(null) }}
-              >
-                <span className={styles.filesNavIcon}><Ic /></span>
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Storage */}
-        {!sidebarCollapsed && (
-          <div className={styles.storageSection}>
-            <div className={styles.storageHeader}>
-              <span className={styles.storageLabel}>Storage</span>
-              <span className={styles.storageNums}>{STORAGE_USED} / {STORAGE_TOTAL} GB</span>
-            </div>
-            <div className={styles.storageBar}>
-              <div
-                className={styles.storageBarFill}
-                style={{ width: `${storagePercent}%`, background: storagePercent > 80 ? 'var(--color-red)' : 'var(--color-black)' }}
-              />
-            </div>
-            <p className={styles.storageInfo}>{(STORAGE_TOTAL - STORAGE_USED).toFixed(1)} GB available</p>
-          </div>
-        )}
-
-        <div className={styles.userSection}>
-          <button className={`${styles.userBtn} ${sidebarCollapsed ? styles.userBtnCollapsed : ''}`}>
-            <span className={styles.userAvatar}>AS</span>
-            <span className={styles.userDetails}>
-              <span className={styles.userName}>Arthur Santos</span>
-              <span className={styles.userPlan}>Professional</span>
-            </span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ════════════ MAIN ════════════ */}
-      <div className={styles.main}>
+    <>
+      <ProductAppShell
+      styles={styles}
+      activeNav={activeNav}
+      onNavItemClick={handleNavItemClick}
+      navItems={SIDEBAR_NAV.map(({ id, label, Icon: IconComponent, hint }) => ({
+        id,
+        label,
+        Icon: IconComponent,
+        hint,
+      }))}
+      LogoIcon={Icon.Logo}
+      CollapseIcon={Icon.Collapse}
+      ChevronIcon={Icon.Chevron}
+      HintIcon={Icon.Popover}
+      secondaryContent={renderSidebarSecondaryContent}
+      bottomContent={renderSidebarBottomContent}
+      contentClassName={styles.main}
+    >
 
         {/* Top bar */}
         <header className={styles.topBar}>
@@ -788,7 +900,7 @@ export default function FilesPage() {
                 <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Share</button>
                 <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Move</button>
                 <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Delete</button>
-                <button className={styles.selectionClear} onClick={() => { setSelected(null); setDetailItem(null) }}><Icon.X /></button>
+                <button className={styles.selectionClear} onClick={() => { setSelected(null); setDetailItemId(null) }}><Icon.X /></button>
               </div>
             ) : (
               <>
@@ -896,7 +1008,7 @@ export default function FilesPage() {
                     onSelect={id => {
                       setSelected(id)
                       const f = filteredFiles.find(x => x.id === id)
-                      if (f) setDetailItem(f)
+                      if (f) setDetailItemId(f.id)
                     }}
                     onOpen={openItem}
                     onContextMenu={(e, item) => setContextMenu({ x: e.clientX, y: e.clientY, item })}
@@ -924,7 +1036,7 @@ export default function FilesPage() {
                     onSelect={id => {
                       setSelected(id)
                       const f = filteredFiles.find(x => x.id === id)
-                      if (f) setDetailItem(f)
+                      if (f) setDetailItemId(f.id)
                     }}
                     onOpen={openItem}
                     onContextMenu={(e, item) => setContextMenu({ x: e.clientX, y: e.clientY, item })}
@@ -942,13 +1054,13 @@ export default function FilesPage() {
           {detailItem && (
             <DetailPanel
               item={detailItem}
-              onClose={() => { setDetailItem(null); setSelected(null) }}
+              onClose={() => { setDetailItemId(null); setSelected(null) }}
               onToggleStar={toggleStar}
               onAction={handleContextAction}
             />
           )}
         </div>
-      </div>
+      </ProductAppShell>
 
       {/* Context menu */}
       {contextMenu && (
@@ -970,6 +1082,6 @@ export default function FilesPage() {
           {notification}
         </div>
       )}
-    </div>
+    </>
   )
 }
