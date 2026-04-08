@@ -224,6 +224,7 @@
   overflow: hidden;
 }
 .userBtn:hover { background: var(--color-gray-100); }
+.userBtnActive { background: var(--color-gray-100); }
 .userBtnCollapsed { justify-content: center; }
 
 .userAvatar {

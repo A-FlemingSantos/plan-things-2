@@ -6,7 +6,7 @@ import CanvasToolbar from '../../components/CanvasToolbar/CanvasToolbar.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
-import SidebarUserCard from '../../../../shared/components/SidebarUserCard/SidebarUserCard.jsx'
+import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { buildCanvasPath } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { usePlans } from '../../../workspace/context/PlansContext.jsx'
@@ -160,7 +160,7 @@ export default function CanvasPage() {
   )
 
   const renderSidebarBottomContent = ({ collapsed }) => (
-    <SidebarUserCard styles={styles} collapsed={collapsed} />
+    <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
 
   return (

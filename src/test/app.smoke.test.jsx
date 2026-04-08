@@ -109,6 +109,18 @@ describe('App smoke flows', () => {
     expect(screen.getByText('Brand Identity 2025')).toBeInTheDocument()
   })
 
+  it('opens the shared sidebar account menu outside the workspace', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/files')
+
+    await user.click(await screen.findByRole('button', { name: /arthur santos/i }))
+
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'My Profile' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toBeInTheDocument()
+  })
+
   it('navigates into folders in files without breaking the breadcrumb', async () => {
     const user = userEvent.setup()
 

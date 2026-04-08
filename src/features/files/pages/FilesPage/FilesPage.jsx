@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import SidebarUserCard from '../../../../shared/components/SidebarUserCard/SidebarUserCard.jsx'
+import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { createClientId } from '../../../../shared/utils/createClientId.js'
@@ -733,7 +733,7 @@ export default function FilesPage() {
   )
 
   const renderSidebarBottomContent = ({ collapsed }) => (
-    <SidebarUserCard styles={styles} collapsed={collapsed} />
+    <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
 
   return (

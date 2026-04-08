@@ -4,7 +4,7 @@ import { buildCanvasPath, buildWorkspaceBoardPath } from '../../../../shared/con
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
-import SidebarUserCard from '../../../../shared/components/SidebarUserCard/SidebarUserCard.jsx'
+import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { usePlans } from '../../context/PlansContext.jsx'
 import styles from './Workspace.module.css'
@@ -24,11 +24,6 @@ function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function CollapseIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function UserIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M2 12c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
-function AddUserIcon()  { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M1 12c0-2 1.8-3.5 4.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M10 8.5v4M8 10.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
-function UpgradeIcon()  { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2l1.8 3.6L13 6.3l-3 2.9.7 4.1L7 11.2 3.3 13.3l.7-4.1-3-2.9 4.2-.7z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg> }
-function SettingsIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.3"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
-function LogOutIcon()   { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9.5 9.5L12 7l-2.5-2.5M5.5 7H12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
 function LogoMark() {
   return (
@@ -68,14 +63,6 @@ const COVER_THEMES = [
   { id: 'ember', label: 'Ember', cardCover: '#f1d8d0' },
   { id: 'horizon', label: 'Horizon', cardCover: '#e8e2ff' },
   { id: 'frost', label: 'Frost', cardCover: '#dde8f8' },
-]
-
-const USER_MENU_ITEMS = [
-  { id: 'profile',  label: 'My Profile',          Icon: UserIcon,    danger: false },
-  { id: 'add',      label: 'Add another account', Icon: AddUserIcon, danger: false },
-  { id: 'upgrade',  label: 'Upgrade',             Icon: UpgradeIcon, danger: false },
-  { id: 'settings', label: 'Settings',            Icon: SettingsIcon,danger: false },
-  { id: 'logout',   label: 'Log Out',             Icon: LogOutIcon,  danger: true  },
 ]
 
 /* ═══════════════════════════════════════════
@@ -305,56 +292,6 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
 }
 
 /* ═══════════════════════════════════════════
-   USER MENU
-═══════════════════════════════════════════ */
-function UserMenu({ onClose, collapsed }) {
-  const ref = useRef(null)
-
-  useEffect(() => {
-    const onOut  = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
-    const onKey  = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('mousedown', onOut)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onOut)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [onClose])
-
-  return (
-    <div
-      ref={ref}
-      className={`${styles.userMenu} ${collapsed ? styles.userMenuCollapsed : ''}`}
-      role="menu"
-    >
-      {/* Identity */}
-      <div className={styles.umHeader}>
-        <span className={styles.umAvatar}>AS</span>
-        <div className={styles.umIdentity}>
-          <p className={styles.umName}>Arthur Santos</p>
-          <p className={styles.umEmail}>arthur@planthings.com</p>
-        </div>
-      </div>
-
-      <div className={styles.umDivider} />
-
-      {USER_MENU_ITEMS.map(({ id, label, Icon, danger }, i) => (
-        <button
-          key={id}
-          className={`${styles.umItem} ${danger ? styles.umItemDanger : ''}`}
-          role="menuitem"
-          style={{ animationDelay: `${i * 28}ms` }}
-          onClick={onClose}
-        >
-          <span className={styles.umIcon}><Icon /></span>
-          {label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════
    PLAN CARD
 ═══════════════════════════════════════════ */
 function PlanCard({ plan, view, onOpen, isActive }) {
@@ -427,7 +364,6 @@ export default function Workspace() {
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
-  const [showUserMenu, setShowUserMenu] = useState(false)
   const [notification, setNotification] = useState(null)
   const notificationTimerRef = useRef(null)
   const { plans, activePlan, createPlan, selectPlan } = usePlans()
@@ -502,21 +438,7 @@ export default function Workspace() {
   )
 
   const renderSidebarBottomContent = ({ collapsed }) => (
-    <SidebarUserCard
-      styles={styles}
-      collapsed={collapsed}
-      active={showUserMenu}
-      onClick={() => setShowUserMenu(v => !v)}
-      aria-expanded={showUserMenu}
-      aria-haspopup="true"
-    >
-      {showUserMenu && (
-        <UserMenu
-          onClose={() => setShowUserMenu(false)}
-          collapsed={collapsed}
-        />
-      )}
-    </SidebarUserCard>
+    <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
 
   return (

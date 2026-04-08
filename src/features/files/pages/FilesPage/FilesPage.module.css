@@ -252,6 +252,7 @@
   overflow: hidden;
 }
 .userBtn:hover { background: var(--color-gray-100); }
+.userBtnActive { background: var(--color-gray-100); }
 .userBtnCollapsed { justify-content: center; }
 
 .userAvatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-black); color: var(--color-white); font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: .02em; }
