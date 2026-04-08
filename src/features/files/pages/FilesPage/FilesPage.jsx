@@ -440,6 +440,7 @@ export default function FilesPage() {
   const [sortBy, setSortBy]                     = useState('modified') // modified | name | size
   const [notification, setNotification]         = useState(null)
   const notificationTimerRef = useRef(null)
+  const uploadIntervalsRef = useRef(new Map())
   const fileInputRef = useRef(null)
 
   const flattenedItems = useMemo(() => flattenLibrary(library), [library])
@@ -543,6 +544,11 @@ export default function FilesPage() {
     if (notificationTimerRef.current) {
       clearTimeout(notificationTimerRef.current)
     }
+
+    uploadIntervalsRef.current.forEach((intervalId) => {
+      clearInterval(intervalId)
+    })
+    uploadIntervalsRef.current.clear()
   }, [])
 
   const handleRename = (id, newName) => {
@@ -567,7 +573,11 @@ export default function FilesPage() {
     let p = 0
     const interval = setInterval(() => {
       p += Math.random() * 22 + 8
-      if (p >= 100) { p = 100; clearInterval(interval) }
+      if (p >= 100) {
+        p = 100
+        clearInterval(interval)
+        uploadIntervalsRef.current.delete(id)
+      }
       setUploads(prev => prev.map(u => u.id === id ? { ...u, progress: Math.round(p) } : u))
       if (p === 100) {
         const newFile = {
@@ -581,6 +591,7 @@ export default function FilesPage() {
         showNotification(`"${name}" uploaded successfully`)
       }
     }, 180)
+    uploadIntervalsRef.current.set(id, interval)
   }
 
   const handleDrop = (e) => {
@@ -607,7 +618,16 @@ export default function FilesPage() {
     showNotification('New folder created')
   }
 
-  const dismissUpload = (id) => setUploads(prev => prev.filter(u => u.id !== id))
+  const dismissUpload = (id) => {
+    const interval = uploadIntervalsRef.current.get(id)
+
+    if (interval) {
+      clearInterval(interval)
+      uploadIntervalsRef.current.delete(id)
+    }
+
+    setUploads(prev => prev.filter(u => u.id !== id))
+  }
 
   const handleCanvasBackground = (e) => {
     if (e.target === e.currentTarget) {
@@ -755,7 +775,7 @@ export default function FilesPage() {
                     className={`${styles.breadcrumbItem} ${i === breadcrumb.length - 1 ? styles.breadcrumbItemActive : ''}`}
                     onClick={() => navigateBreadcrumb(i)}
                   >
-                    {crumb}
+                    {crumb.name}
                   </button>
                 </span>
               ))}
@@ -847,7 +867,7 @@ export default function FilesPage() {
           <div className={styles.filesArea}>
             <div className={styles.filesAreaHeader}>
               <p className={styles.filesAreaKicker}>
-                {breadcrumb.length ? breadcrumb[breadcrumb.length - 1] : sectionLabel}
+                {breadcrumb.length ? breadcrumb[breadcrumb.length - 1].name : sectionLabel}
               </p>
               <div className={styles.filesAreaMeta}>
                 <span>{filteredFiles.length} {filteredFiles.length === 1 ? 'item' : 'items'}</span>

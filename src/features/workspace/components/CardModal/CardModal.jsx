@@ -1,6 +1,70 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
+const DEFAULT_CARD_SCHEDULE = {
+  selectedCalendarDay: 7,
+  startEnabled: false,
+  startDateValue: '',
+  dueEnabled: true,
+  dueDateValue: '07/04/26',
+  dueTimeValue: '16:21',
+  recurringValue: 'Nunca',
+  reminderValue: '1 dia antes',
+  displayLabel: '',
+  preserveDisplayLabel: false,
+}
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function extractDayFromDisplayLabel(value = '') {
+  const match = value.match(/(\d{1,2})$/)
+  return match ? Number(match[1]) : null
+}
+
+function formatCalendarInputValue(day) {
+  return `${String(day).padStart(2, '0')}/04/26`
+}
+
+function formatDueDateLabelFromValue(dateValue, fallbackDay) {
+  const match = dateValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+
+  if (!match) {
+    return fallbackDay ? `Apr ${fallbackDay}` : ''
+  }
+
+  const [, dayValue, monthValue] = match
+  const day = Number(dayValue)
+  const monthIndex = Number(monthValue) - 1
+  const monthLabel = MONTH_LABELS[monthIndex] ?? 'Apr'
+
+  return `${monthLabel} ${day}`
+}
+
+function buildInitialCardSchedule(card) {
+  const schedule = card.schedule ?? {}
+  const fallbackDay = extractDayFromDisplayLabel(schedule.displayLabel ?? card.dueDate) ?? DEFAULT_CARD_SCHEDULE.selectedCalendarDay
+
+  return {
+    selectedCalendarDay: Number.isFinite(schedule.selectedCalendarDay)
+      ? schedule.selectedCalendarDay
+      : fallbackDay,
+    startEnabled: typeof schedule.startEnabled === 'boolean'
+      ? schedule.startEnabled
+      : DEFAULT_CARD_SCHEDULE.startEnabled,
+    startDateValue: schedule.startDateValue ?? DEFAULT_CARD_SCHEDULE.startDateValue,
+    dueEnabled: typeof schedule.dueEnabled === 'boolean'
+      ? schedule.dueEnabled
+      : DEFAULT_CARD_SCHEDULE.dueEnabled,
+    dueDateValue: schedule.dueDateValue ?? DEFAULT_CARD_SCHEDULE.dueDateValue,
+    dueTimeValue: schedule.dueTimeValue ?? DEFAULT_CARD_SCHEDULE.dueTimeValue,
+    recurringValue: schedule.recurringValue ?? DEFAULT_CARD_SCHEDULE.recurringValue,
+    reminderValue: schedule.reminderValue ?? DEFAULT_CARD_SCHEDULE.reminderValue,
+    displayLabel: schedule.displayLabel ?? card.dueDate ?? DEFAULT_CARD_SCHEDULE.displayLabel,
+    preserveDisplayLabel: typeof schedule.preserveDisplayLabel === 'boolean'
+      ? schedule.preserveDisplayLabel
+      : DEFAULT_CARD_SCHEDULE.preserveDisplayLabel,
+  }
+}
 
 export default function CardModal({
   card,
@@ -14,6 +78,7 @@ export default function CardModal({
   icons,
   styles,
 }) {
+  const initialSchedule = buildInitialCardSchedule(card)
   const [title,    setTitle]    = useState(card.title)
   const [desc,     setDesc]     = useState(card.description)
   const [labelId,  setLabelId]  = useState(card.labelId)
@@ -40,14 +105,16 @@ export default function CardModal({
   const [textMenuPosition, setTextMenuPosition] = useState({ top: 0, left: 0 })
   const [listMenuPosition, setListMenuPosition] = useState({ top: 0, left: 0 })
   const [insertMenuPosition, setInsertMenuPosition] = useState({ top: 0, left: 0 })
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState(7)
-  const [startEnabled, setStartEnabled] = useState(false)
-  const [startDateValue, setStartDateValue] = useState('')
-  const [dueEnabled, setDueEnabled] = useState(true)
-  const [dueDateValue, setDueDateValue] = useState('07/04/26')
-  const [dueTimeValue, setDueTimeValue] = useState('16:21')
-  const [recurringValue, setRecurringValue] = useState('Nunca')
-  const [reminderValue, setReminderValue] = useState('1 dia antes')
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(initialSchedule.selectedCalendarDay)
+  const [startEnabled, setStartEnabled] = useState(initialSchedule.startEnabled)
+  const [startDateValue, setStartDateValue] = useState(initialSchedule.startDateValue)
+  const [dueEnabled, setDueEnabled] = useState(initialSchedule.dueEnabled)
+  const [dueDateValue, setDueDateValue] = useState(initialSchedule.dueDateValue)
+  const [dueTimeValue, setDueTimeValue] = useState(initialSchedule.dueTimeValue)
+  const [recurringValue, setRecurringValue] = useState(initialSchedule.recurringValue)
+  const [reminderValue, setReminderValue] = useState(initialSchedule.reminderValue)
+  const [displayLabel, setDisplayLabel] = useState(initialSchedule.displayLabel)
+  const [preserveDisplayLabel, setPreserveDisplayLabel] = useState(initialSchedule.preserveDisplayLabel)
   const [checklistTitle, setChecklistTitle] = useState('Checklist')
   const [activeChecklist, setActiveChecklist] = useState(null)
   const [newChecklistItem, setNewChecklistItem] = useState('')
@@ -90,7 +157,27 @@ export default function CardModal({
   const close = () => { setExiting(true); setTimeout(onClose, 220) }
 
   const save = () => {
-    onUpdate({ ...card, title, description: desc, labelId, memberIds, dueDate, comments })
+    onUpdate({
+      ...card,
+      title,
+      description: desc,
+      labelId,
+      memberIds,
+      dueDate,
+      schedule: {
+        selectedCalendarDay,
+        startEnabled,
+        startDateValue,
+        dueEnabled,
+        dueDateValue,
+        dueTimeValue,
+        recurringValue,
+        reminderValue,
+        displayLabel,
+        preserveDisplayLabel,
+      },
+      comments,
+    })
     close()
   }
 
@@ -106,7 +193,6 @@ export default function CardModal({
   }
 
   const handleDelete = () => { onDelete(card.id); close() }
-  const formatDueDateLabel = (day) => `Apr ${day}`
   const handleChecklistCreate = () => {
     const nextTitle = checklistTitle.trim() || 'Checklist'
     setActiveChecklist({ title: nextTitle, items: [] })
@@ -131,12 +217,28 @@ export default function CardModal({
     }))
   }
   const handleDateSave = () => {
-    setDueDate(dueEnabled ? formatDueDateLabel(selectedCalendarDay) : '')
+    const shouldPreserveDisplayLabel =
+      dueEnabled &&
+      initialSchedule.preserveDisplayLabel &&
+      dueDateValue === initialSchedule.dueDateValue &&
+      selectedCalendarDay === initialSchedule.selectedCalendarDay
+
+    const nextDueDate = dueEnabled
+      ? (shouldPreserveDisplayLabel
+          ? initialSchedule.displayLabel
+          : formatDueDateLabelFromValue(dueDateValue, selectedCalendarDay))
+      : ''
+
+    setDueDate(nextDueDate)
+    setDisplayLabel(nextDueDate)
+    setPreserveDisplayLabel(shouldPreserveDisplayLabel)
     setShowDateMenu(false)
   }
   const handleDateRemove = () => {
     setDueEnabled(false)
     setDueDate('')
+    setDisplayLabel('')
+    setPreserveDisplayLabel(false)
     setShowDateMenu(false)
   }
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
@@ -1032,11 +1134,15 @@ export default function CardModal({
                 <div className={styles.cmDetailsPanel}>
                   <div className={styles.cmMeta}>
                     <p className={styles.cmMetaTitle}><icons.Clock /> Data</p>
-                    <input
+                  <input
                     type="text"
                     className={styles.cmDateInput}
                     value={dueDate}
-                    onChange={e => setDueDate(e.target.value)}
+                    onChange={e => {
+                      setDueDate(e.target.value)
+                      setDisplayLabel(e.target.value)
+                      setPreserveDisplayLabel(false)
+                    }}
                     placeholder="ex: Aug 14"
                     aria-label="Due date"
                   />
@@ -1377,7 +1483,7 @@ export default function CardModal({
                 onClick={() => {
                   if (day.muted) return
                   setSelectedCalendarDay(day.label)
-                  setDueDateValue(`${String(day.label).padStart(2, '0')}/04/26`)
+                  setDueDateValue(formatCalendarInputValue(day.label))
                 }}
               >
                 <span className={day.underline ? styles.cmDateMenuDayUnderline : ''}>{day.label}</span>

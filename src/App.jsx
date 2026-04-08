@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
 import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
@@ -7,7 +7,19 @@ import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
-import { ROUTE_ALIASES, ROUTES } from './shared/config/routes.js'
+import {
+  buildCanvasPath,
+  buildWorkspaceBoardPath,
+  LEGACY_PLAN_ROUTE_ALIASES,
+  ROUTE_ALIASES,
+  ROUTES,
+} from './shared/config/routes.js'
+
+function LegacyPlanRedirect({ buildPath }) {
+  const { planId } = useParams()
+
+  return <Navigate to={buildPath(planId)} replace />
+}
 
 export default function App() {
   return (
@@ -24,6 +36,22 @@ export default function App() {
 
       {Object.entries(INFO_PAGES).map(([path, page]) => (
         <Route key={path} path={path} element={<InfoPage {...page} />} />
+      ))}
+
+      {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (
+        <Route
+          key={path}
+          path={path}
+          element={<LegacyPlanRedirect buildPath={buildWorkspaceBoardPath} />}
+        />
+      ))}
+
+      {LEGACY_PLAN_ROUTE_ALIASES.canvas.map((path) => (
+        <Route
+          key={path}
+          path={path}
+          element={<LegacyPlanRedirect buildPath={buildCanvasPath} />}
+        />
       ))}
 
       {ROUTE_ALIASES.map(({ from, to }) => (
