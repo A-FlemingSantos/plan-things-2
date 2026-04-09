@@ -41,6 +41,9 @@ const Icon = {
   Logo:     () => <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" fill="currentColor"/><rect x="11" y="2" width="7" height="7" rx="2" fill="currentColor" opacity=".35"/><rect x="2" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".55"/><rect x="11" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".75"/></svg>,
   Chevron:  () => <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Board:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="4" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="6" y="3" width="4" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="11" y="3" width="4" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
+  Inbox:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 3h10v10H3V3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M3 9h3l1.2 2h1.6L10 9h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Calendar: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.8v2.8M11 1.8v2.8M2.5 6.5h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  Switch:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="10" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 2.5h7A1.5 1.5 0 0 1 13.5 4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Comment:  () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M12 7A5 5 0 0 1 4 11.5L1.5 12.5l1-2.5A5 5 0 1 1 12 7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Priority: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v6M7 10.5v1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   List:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M5 5h8M5 10.5h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="2.5" cy="5" r=".9" fill="currentColor"/><circle cx="2.5" cy="10.5" r=".9" fill="currentColor"/></svg>,
@@ -112,7 +115,9 @@ export default function KanbanBoard() {
   const [addingCol, setAddingCol] = useState(false)
   const [newColTitle,setNewColTitle] = useState('')
   const [notification, setNotification] = useState(null)
+  const [isBoardSwitcherOpen, setIsBoardSwitcherOpen] = useState(false)
   const notificationTimerRef = useRef(null)
+  const boardViewToolbarRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const {
     columns,
@@ -159,11 +164,36 @@ export default function KanbanBoard() {
     }, 2600)
   }
 
+  const notifyToolbarItem = (message) => {
+    setIsBoardSwitcherOpen(false)
+    showNotification(message)
+  }
+
+  const handlePlanSwitch = (planId) => {
+    setIsBoardSwitcherOpen(false)
+    openPlan(planId)
+  }
+
   useEffect(() => () => {
     if (notificationTimerRef.current) {
       clearTimeout(notificationTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isBoardSwitcherOpen) return undefined
+
+    const handlePointerDown = (event) => {
+      if (boardViewToolbarRef.current?.contains(event.target)) return
+      setIsBoardSwitcherOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [isBoardSwitcherOpen])
 
   const renderSidebarSecondaryContent = ({ collapsed }) => (
     collapsed ? null : (
@@ -261,6 +291,69 @@ export default function KanbanBoard() {
             XIcon={Icon.X}
             styles={styles}
           />
+        </div>
+
+        <div ref={boardViewToolbarRef} className={styles.boardViewToolbar} aria-label="Atalhos do quadro">
+          <button
+            type="button"
+            className={styles.boardViewToolbarItem}
+            onClick={() => notifyToolbarItem('Caixa de entrada em breve')}
+          >
+            <Icon.Inbox />
+            <span>Caixa de entrada</span>
+          </button>
+
+          <button
+            type="button"
+            className={styles.boardViewToolbarItem}
+            onClick={() => notifyToolbarItem('Planejador em breve')}
+          >
+            <Icon.Calendar />
+            <span>Planejador</span>
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.boardViewToolbarItem} ${styles.boardViewToolbarItemActive}`}
+            aria-current="page"
+          >
+            <Icon.Board />
+            <span>Quadro</span>
+          </button>
+
+          <div className={styles.boardViewSwitcher}>
+            <button
+              type="button"
+              className={styles.boardViewToolbarItem}
+              aria-expanded={isBoardSwitcherOpen}
+              aria-haspopup="menu"
+              onClick={() => setIsBoardSwitcherOpen(open => !open)}
+            >
+              <Icon.Switch />
+              <span>Mudar de quadros</span>
+            </button>
+
+            {isBoardSwitcherOpen && (
+              <div className={styles.boardViewMenu} role="menu" aria-label="Mudar de quadro">
+                {plans.length > 0 ? (
+                  plans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      role="menuitem"
+                      className={`${styles.boardViewMenuItem} ${activePlan?.id === plan.id ? styles.boardViewMenuItemActive : ''}`}
+                      onClick={() => handlePlanSwitch(plan.id)}
+                    >
+                      <span className={styles.boardViewMenuDot} style={{ background: plan.color }} />
+                      <span className={styles.boardViewMenuLabel}>{plan.name}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className={styles.boardViewMenuEmpty}>Nenhum quadro disponível</div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </ProductAppShell>
 
