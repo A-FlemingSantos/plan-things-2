@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
-import { ROUTES } from '../../../../shared/config/routes.js'
+import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import styles from './CalendarPage.module.css'
 
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terca-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sabado']
@@ -10,6 +11,13 @@ const MINI_WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+]
+
+const VIEW_OPTIONS = [
+  { id: 'day', label: 'Dia', status: 'Vista diaria' },
+  { id: 'work', label: 'Semana de trabalho', status: 'Semana util' },
+  { id: 'week', label: 'Semana', status: 'Vista semanal' },
+  { id: 'month', label: 'Mes', status: 'Vista mensal' },
 ]
 
 const Icon = {
@@ -32,26 +40,14 @@ const Icon = {
   Popover: () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
 }
 
-const NAV_ITEMS = [
-  { id: 'home', label: 'Home', Icon: Icon.Home, path: ROUTES.workspace },
-  { id: 'canvas', label: 'Canvas', Icon: Icon.Canvas, path: ROUTES.canvas },
-  { id: 'calendar', label: 'Calendar', Icon: Icon.Calendar, path: ROUTES.calendar },
-  { id: 'files', label: 'Files', Icon: Icon.Files, path: ROUTES.files },
-]
-
-const INITIAL_EVENTS = [
-  { id: 'evt-1', title: 'Daily product sync', date: '2026-04-09', start: '09:00', end: '09:30', calendar: 'Arthur Fleming', color: '#0f6cbd', location: 'Teams' },
-  { id: 'evt-2', title: 'Sprint planning', date: '2026-04-13', start: '10:00', end: '11:30', calendar: 'rm95433', color: '#0f703a', location: 'Workspace' },
-  { id: 'evt-3', title: 'Design review', date: '2026-04-15', start: '14:00', end: '15:00', calendar: 'Gmail', color: '#b146c2', location: 'Studio' },
-  { id: 'evt-4', title: 'Print agenda notes', date: '2026-04-17', start: '16:00', end: '16:20', calendar: 'Arthur Fleming', color: '#d83b01', location: 'Desk' },
-  { id: 'evt-5', title: 'Release checkpoint', date: '2026-04-23', start: '11:00', end: '11:45', calendar: 'Arthur Fleming', color: '#0f6cbd', location: 'Teams' },
-]
-
-const CALENDAR_SOURCES = [
-  { id: 'arthur', name: 'arthurfleming.santos@o...', color: '#0f6cbd' },
-  { id: 'student', name: 'rm95433@estudante.fi...', color: '#0f703a' },
-  { id: 'gmail', name: 'flemingsantosa@gmail...', color: '#b146c2' },
-]
+const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
+  ...item,
+  Icon:
+    item.id === 'home' ? Icon.Home :
+    item.id === 'canvas' ? Icon.Canvas :
+    item.id === 'calendar' ? Icon.Calendar :
+    Icon.Files,
+}))
 
 function startOfMonth(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1)
@@ -65,6 +61,18 @@ function addDays(date, amount) {
 
 function addMonths(date, amount) {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1)
+}
+
+function startOfWeek(date) {
+  return addDays(date, -date.getDay())
+}
+
+function startOfWorkWeek(date) {
+  return addDays(date, date.getDay() === 0 ? -6 : 1 - date.getDay())
+}
+
+function daysInMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
 }
 
 function dateKey(date) {
@@ -89,6 +97,24 @@ function buildMonthCells(monthDate) {
   })
 }
 
+function buildRangeDays(startDate, length) {
+  return Array.from({ length }, (_, index) => {
+    const date = addDays(startDate, index)
+    return {
+      date,
+      key: dateKey(date),
+    }
+  })
+}
+
+function clampDateToMonth(date, monthDate) {
+  return new Date(
+    monthDate.getFullYear(),
+    monthDate.getMonth(),
+    Math.min(date.getDate(), daysInMonth(monthDate)),
+  )
+}
+
 function formatCellLabel(date, muted) {
   if (date.getDate() === 1) {
     return muted ? `${MONTHS[date.getMonth()].slice(0, 3)} ${date.getDate()}` : `${date.getDate()}`
@@ -97,15 +123,46 @@ function formatCellLabel(date, muted) {
   return String(date.getDate()).padStart(2, '0')
 }
 
-function MiniCalendar({ monthDate, selectedDate, onSelectDate }) {
+function formatLongDate(date) {
+  return `${date.getDate()} de ${MONTHS[date.getMonth()]} de ${date.getFullYear()}`
+}
+
+function formatShortDate(date) {
+  return `${date.getDate()} de ${MONTHS[date.getMonth()]}`
+}
+
+function formatRangeLabel(view, selectedDate, visibleMonth) {
+  if (view === 'month') {
+    return `${MONTHS[visibleMonth.getMonth()]} ${visibleMonth.getFullYear()}`
+  }
+
+  if (view === 'day') {
+    return formatLongDate(selectedDate)
+  }
+
+  const start = view === 'work' ? startOfWorkWeek(selectedDate) : startOfWeek(selectedDate)
+  const end = addDays(start, view === 'work' ? 4 : 6)
+
+  if (start.getMonth() === end.getMonth()) {
+    return `${start.getDate()}-${end.getDate()} de ${MONTHS[start.getMonth()]} ${start.getFullYear()}`
+  }
+
+  return `${formatShortDate(start)} - ${formatShortDate(end)} ${end.getFullYear()}`
+}
+
+function eventMeta(event) {
+  return [event.location, event.calendar].filter(Boolean).join(' · ')
+}
+
+function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
   return (
     <div className={styles.miniCalendar}>
       <div className={styles.miniCalendarHeader}>
         <button type="button" className={styles.sidebarToggle} aria-label="Expandir mes"><Icon.ChevDown /></button>
         <span>{MONTHS[monthDate.getMonth()]} {monthDate.getFullYear()}</span>
         <div className={styles.miniCalendarNav}>
-          <button type="button" aria-label="Mes anterior"><Icon.ChevLeft /></button>
-          <button type="button" aria-label="Proximo mes"><Icon.ChevRight /></button>
+          <button type="button" aria-label="Mes anterior" onClick={() => onShiftMonth(-1)}><Icon.ChevLeft /></button>
+          <button type="button" aria-label="Proximo mes" onClick={() => onShiftMonth(1)}><Icon.ChevRight /></button>
         </div>
       </div>
 
@@ -137,13 +194,12 @@ function EventDialog({ selectedDate, onClose, onCreate }) {
     event.preventDefault()
     if (!title.trim()) return
     onCreate({
-      id: `evt-${Date.now()}`,
       title: title.trim(),
       date: dateKey(selectedDate),
       start,
       end,
+      sourceId: 'arthur',
       calendar: 'Arthur Fleming',
-      color: '#0f6cbd',
       location: 'Plan Things',
     })
     onClose()
@@ -170,35 +226,91 @@ function EventDialog({ selectedDate, onClose, onCreate }) {
             <input type="time" value={end} onChange={(event) => setEnd(event.target.value)} />
           </label>
         </div>
-        <p className={styles.dialogDate}>{selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]} de {selectedDate.getFullYear()}</p>
+        <p className={styles.dialogDate}>{formatLongDate(selectedDate)}</p>
         <button type="submit" className={styles.dialogSubmit} disabled={!title.trim()}>Salvar</button>
       </form>
     </div>
   )
 }
 
+function AgendaList({ date, events, onClose, onCreate }) {
+  return (
+    <aside className={styles.agendaPanel}>
+      <div className={styles.agendaHeader}>
+        <div>
+          <p>{formatShortDate(date)}</p>
+          <span>{events.length} eventos</span>
+        </div>
+        <button type="button" className={styles.agendaCloseButton} onClick={onClose} aria-label="Fechar agenda">
+          <Icon.X />
+        </button>
+      </div>
+      <div className={styles.agendaList}>
+        {events.length ? events.map((event) => (
+          <div key={event.id} className={styles.agendaItem} style={{ '--event-color': event.color }}>
+            <div className={styles.agendaTime}>{event.start}<span>{event.end}</span></div>
+            <div>
+              <p>{event.title}</p>
+              {eventMeta(event) && <span>{eventMeta(event)}</span>}
+            </div>
+          </div>
+        )) : (
+          <div className={styles.agendaEmpty}>
+            <Icon.Calendar />
+            <p>Nenhum evento neste dia</p>
+            <button type="button" onClick={onCreate}>Criar evento</button>
+          </div>
+        )}
+      </div>
+    </aside>
+  )
+}
+
 export default function CalendarPage() {
-  const today = new Date()
+  const today = useMemo(() => new Date(), [])
   const [selectedDate, setSelectedDate] = useState(today)
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(today))
   const [view, setView] = useState('month')
   const [search, setSearch] = useState('')
-  const [events, setEvents] = useState(INITIAL_EVENTS)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [agendaPanelOpen, setAgendaPanelOpen] = useState(true)
+  const [notification, setNotification] = useState(null)
+  const notificationTimerRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const { calendarSources, filteredEvents, createEvent } = useCalendarEvents({ search })
 
   const cells = useMemo(() => buildMonthCells(visibleMonth), [visibleMonth])
-  const visibleEvents = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    return events.filter((event) => !term || event.title.toLowerCase().includes(term) || event.location.toLowerCase().includes(term))
-  }, [events, search])
   const eventsByDate = useMemo(() => {
-    return visibleEvents.reduce((grouped, event) => {
+    return filteredEvents.reduce((grouped, event) => {
       grouped[event.date] = grouped[event.date] ? [...grouped[event.date], event] : [event]
       return grouped
     }, {})
-  }, [visibleEvents])
+  }, [filteredEvents])
   const selectedEvents = eventsByDate[dateKey(selectedDate)] ?? []
+  const viewStatus = VIEW_OPTIONS.find((option) => option.id === view)?.status ?? 'Vista mensal'
+  const rangeDays = useMemo(() => {
+    if (view === 'day') return buildRangeDays(selectedDate, 1)
+    if (view === 'work') return buildRangeDays(startOfWorkWeek(selectedDate), 5)
+    if (view === 'week') return buildRangeDays(startOfWeek(selectedDate), 7)
+    return []
+  }, [selectedDate, view])
+
+  useEffect(() => () => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+  }, [])
+
+  const showNotification = (message) => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+    setNotification(message)
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 2600)
+  }
 
   const goToday = () => {
     setSelectedDate(today)
@@ -207,23 +319,117 @@ export default function CalendarPage() {
 
   const selectDate = (date) => {
     setSelectedDate(date)
+    if (view === 'month') {
+      setAgendaPanelOpen(true)
+    }
     if (date.getMonth() !== visibleMonth.getMonth() || date.getFullYear() !== visibleMonth.getFullYear()) {
       setVisibleMonth(startOfMonth(date))
     }
   }
 
+  const shiftMonth = (amount) => {
+    const nextMonth = addMonths(visibleMonth, amount)
+    setVisibleMonth(nextMonth)
+    setSelectedDate((current) => clampDateToMonth(current, nextMonth))
+  }
+
+  const handleCreateEvent = (event) => {
+    const createdEvent = createEvent(event)
+    showNotification(`Evento "${createdEvent.title}" criado`)
+  }
+
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const renderMonthGrid = () => (
+    <div className={styles.monthGrid} aria-label="Calendario mensal">
+      {WEEKDAYS.map((weekday) => (
+        <div key={weekday} className={styles.weekday}>{weekday}</div>
+      ))}
+
+      {cells.map(({ date, key, muted }) => {
+        const dayEvents = eventsByDate[key] ?? []
+        const selected = isSameDate(date, selectedDate)
+        const isToday = isSameDate(date, today)
+        return (
+          <button
+            type="button"
+            key={key}
+            className={`${styles.dayCell} ${muted ? styles.dayCellMuted : ''} ${selected ? styles.dayCellSelected : ''}`}
+            onClick={() => selectDate(date)}
+          >
+            <span className={`${styles.dayNumber} ${isToday ? styles.dayNumberToday : ''}`}>
+              {formatCellLabel(date, muted)}
+            </span>
+            <span className={styles.eventStack}>
+              {dayEvents.slice(0, 3).map((event) => (
+                <span key={event.id} className={styles.eventChip} style={{ '--event-color': event.color }}>
+                  <span>{event.start}</span>
+                  {event.title}
+                </span>
+              ))}
+              {dayEvents.length > 3 && <span className={styles.moreEvents}>+{dayEvents.length - 3} eventos</span>}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  const renderRangeView = () => (
+    <section className={styles.rangeWorkspace} aria-label={view === 'day' ? 'Calendario diario' : 'Calendario semanal'}>
+      {rangeDays.map(({ date, key }) => {
+        const dayEvents = eventsByDate[key] ?? []
+        const selected = isSameDate(date, selectedDate)
+        const isToday = isSameDate(date, today)
+
+        return (
+          <article key={key} className={`${styles.rangeDay} ${selected ? styles.rangeDaySelected : ''}`}>
+            <button type="button" className={styles.rangeDayHeader} onClick={() => selectDate(date)}>
+              <span className={styles.rangeWeekday}>{WEEKDAYS[date.getDay()]}</span>
+              <span className={`${styles.rangeDayNumber} ${isToday ? styles.dayNumberToday : ''}`}>{date.getDate()}</span>
+              <span>{MONTHS[date.getMonth()]}</span>
+            </button>
+            <div className={styles.rangeEventList}>
+              {dayEvents.length ? dayEvents.map((event) => (
+                <div key={event.id} className={styles.rangeEvent} style={{ '--event-color': event.color }}>
+                  <span>{event.start} - {event.end}</span>
+                  <p>{event.title}</p>
+                  {eventMeta(event) && <small>{eventMeta(event)}</small>}
+                </div>
+              )) : (
+                <button type="button" className={styles.rangeEmpty} onClick={() => {
+                  selectDate(date)
+                  setDialogOpen(true)
+                }}>
+                  Nenhum evento
+                </button>
+              )}
+            </div>
+          </article>
+        )
+      })}
+    </section>
+  )
+
   const renderSidebarSecondaryContent = ({ collapsed }) => collapsed ? null : (
     <div className={styles.calendarSidebarContent}>
-      <MiniCalendar monthDate={visibleMonth} selectedDate={selectedDate} onSelectDate={selectDate} />
+      <MiniCalendar
+        monthDate={visibleMonth}
+        selectedDate={selectedDate}
+        onSelectDate={selectDate}
+        onShiftMonth={shiftMonth}
+      />
 
-      <button type="button" className={styles.addCalendarButton}>
+      <button type="button" className={styles.addCalendarButton} onClick={() => showNotification('Conexao de calendario em breve')}>
         <Icon.Plus />
         Adicionar calendario
       </button>
 
       <div className={styles.calendarSources}>
-        {CALENDAR_SOURCES.map((source) => (
-          <button type="button" key={source.id} className={styles.calendarSource}>
+        {calendarSources.map((source) => (
+          <button type="button" key={source.id} className={styles.calendarSource} onClick={() => showNotification(`Fonte ativa: ${source.name}`)}>
             <span className={styles.sourceChevron}><Icon.ChevRight /></span>
             <span className={styles.sourceDot} style={{ background: source.color }} />
             <span>{source.name}</span>
@@ -259,18 +465,14 @@ export default function CalendarPage() {
               <Icon.Calendar />
               Novo evento
             </button>
-            {['day', 'work', 'week', 'month', 'split'].map((mode) => (
+            {VIEW_OPTIONS.map((mode) => (
               <button
                 type="button"
-                key={mode}
-                className={`${styles.commandButton} ${view === mode ? styles.commandButtonActive : ''}`}
-                onClick={() => setView(mode)}
+                key={mode.id}
+                className={`${styles.commandButton} ${view === mode.id ? styles.commandButtonActive : ''}`}
+                onClick={() => setView(mode.id)}
               >
-                {mode === 'day' && 'Dia'}
-                {mode === 'work' && 'Semana de trabalho'}
-                {mode === 'week' && 'Semana'}
-                {mode === 'month' && 'Mes'}
-                {mode === 'split' && 'Modo divisao'}
+                {mode.label}
               </button>
             ))}
           </div>
@@ -281,87 +483,50 @@ export default function CalendarPage() {
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar eventos" />
               {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><Icon.X /></button>}
             </div>
-            <button type="button" className={styles.commandButton}><Icon.Filter />Filtro<Icon.ChevDown /></button>
-            <button type="button" className={styles.commandButton}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
-            <button type="button" className={styles.commandButton}><Icon.Print />Imprimir</button>
+            <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avancados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
+            <button type="button" className={styles.commandButton} onClick={() => showNotification('Link de calendario copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
+            <button type="button" className={styles.commandButton} onClick={handlePrint}><Icon.Print />Imprimir</button>
           </div>
         </header>
 
         <div className={styles.monthHeader}>
           <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
-          <button type="button" className={styles.iconButton} onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))} aria-label="Mes anterior"><Icon.ChevLeft /></button>
-          <button type="button" className={styles.iconButton} onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))} aria-label="Proximo mes"><Icon.ChevRight /></button>
-          <h1>{MONTHS[visibleMonth.getMonth()]} {visibleMonth.getFullYear()}</h1>
+          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(-1)} aria-label="Mes anterior"><Icon.ChevLeft /></button>
+          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(1)} aria-label="Proximo mes"><Icon.ChevRight /></button>
+          <h1>{formatRangeLabel(view, selectedDate, visibleMonth)}</h1>
           <Icon.ChevDown />
-          <span className={styles.viewStatus}>{view === 'month' ? 'Vista mensal' : 'Vista compacta'}</span>
+          <span className={styles.viewStatus}>{viewStatus}</span>
         </div>
 
-        <section className={styles.calendarWorkspace}>
-          <div className={styles.monthGrid} aria-label="Calendario mensal">
-            {WEEKDAYS.map((weekday) => (
-              <div key={weekday} className={styles.weekday}>{weekday}</div>
-            ))}
-
-            {cells.map(({ date, key, muted }) => {
-              const dayEvents = eventsByDate[key] ?? []
-              const selected = isSameDate(date, selectedDate)
-              const isToday = isSameDate(date, today)
-              return (
-                <button
-                  type="button"
-                  key={key}
-                  className={`${styles.dayCell} ${muted ? styles.dayCellMuted : ''} ${selected ? styles.dayCellSelected : ''}`}
-                  onClick={() => selectDate(date)}
-                >
-                  <span className={`${styles.dayNumber} ${isToday ? styles.dayNumberToday : ''}`}>
-                    {formatCellLabel(date, muted)}
-                  </span>
-                  <span className={styles.eventStack}>
-                    {dayEvents.slice(0, 3).map((event) => (
-                      <span key={event.id} className={styles.eventChip} style={{ '--event-color': event.color }}>
-                        <span>{event.start}</span>
-                        {event.title}
-                      </span>
-                    ))}
-                    {dayEvents.length > 3 && <span className={styles.moreEvents}>+{dayEvents.length - 3} eventos</span>}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          <aside className={styles.agendaPanel}>
-            <div className={styles.agendaHeader}>
-              <p>{selectedDate.getDate()} de {MONTHS[selectedDate.getMonth()]}</p>
-              <span>{selectedEvents.length} eventos</span>
-            </div>
-            <div className={styles.agendaList}>
-              {selectedEvents.length ? selectedEvents.map((event) => (
-                <div key={event.id} className={styles.agendaItem} style={{ '--event-color': event.color }}>
-                  <div className={styles.agendaTime}>{event.start}<span>{event.end}</span></div>
-                  <div>
-                    <p>{event.title}</p>
-                    <span>{event.location} · {event.calendar}</span>
-                  </div>
-                </div>
-              )) : (
-                <div className={styles.agendaEmpty}>
-                  <Icon.Calendar />
-                  <p>Nenhum evento neste dia</p>
-                  <button type="button" onClick={() => setDialogOpen(true)}>Criar evento</button>
-                </div>
-              )}
-            </div>
-          </aside>
-        </section>
+        {view === 'day' || view === 'week' || view === 'work' ? (
+          renderRangeView()
+        ) : (
+          <section className={`${styles.calendarWorkspace} ${agendaPanelOpen ? '' : styles.calendarWorkspaceFull}`}>
+            {renderMonthGrid()}
+            {agendaPanelOpen && (
+              <AgendaList
+                date={selectedDate}
+                events={selectedEvents}
+                onClose={() => setAgendaPanelOpen(false)}
+                onCreate={() => setDialogOpen(true)}
+              />
+            )}
+          </section>
+        )}
       </ProductAppShell>
 
       {dialogOpen && (
         <EventDialog
           selectedDate={selectedDate}
           onClose={() => setDialogOpen(false)}
-          onCreate={(event) => setEvents((current) => [...current, event])}
+          onCreate={handleCreateEvent}
         />
+      )}
+
+      {notification && (
+        <div className={styles.notification} role="status" aria-live="polite">
+          {notification}
+        </div>
       )}
     </>
   )

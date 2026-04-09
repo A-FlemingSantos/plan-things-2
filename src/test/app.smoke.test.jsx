@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { renderApp } from './renderApp.jsx'
@@ -10,6 +10,17 @@ function formatTodayAsScheduleDateValue() {
   const year = String(today.getFullYear() % 100).padStart(2, '0')
 
   return `${day}/${month}/${year}`
+}
+
+function formatCalendarHeading(monthOffset = 0) {
+  const today = new Date()
+  const date = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
+  const months = [
+    'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ]
+
+  return `${months[date.getMonth()]} ${date.getFullYear()}`
 }
 
 describe('App smoke flows', () => {
@@ -114,7 +125,7 @@ describe('App smoke flows', () => {
 
     renderApp('/calendar')
 
-    expect(await screen.findByRole('heading', { name: /abril 2026/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /novo evento/i })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Buscar eventos')).toBeInTheDocument()
     expect(screen.getAllByText('Daily product sync')).not.toHaveLength(0)
@@ -122,6 +133,55 @@ describe('App smoke flows', () => {
     await user.click(screen.getByRole('button', { name: /novo evento/i }))
 
     expect(await screen.findByRole('dialog', { name: 'Novo evento' })).toBeInTheDocument()
+  })
+
+  it('switches calendar views, navigates months, creates events, and keeps search safe', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/calendar')
+
+    expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Dia' }))
+    expect(screen.getByRole('region', { name: 'Calendario diario' })).toBeInTheDocument()
+    expect(screen.getByText('Vista diaria')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Semana de trabalho' }))
+    expect(screen.getByRole('region', { name: 'Calendario semanal' })).toBeInTheDocument()
+    expect(screen.getByText('Semana util')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^Semana$/ }))
+    expect(screen.getByText('Vista semanal')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Mes' }))
+    expect(screen.getByText('Vista mensal')).toBeInTheDocument()
+    expect(screen.getByText('Teams · Arthur Fleming')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Modo divisao' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Fechar agenda' }))
+    expect(screen.queryByText('Teams · Arthur Fleming')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /daily product sync/i }))
+    expect(screen.getByText('Teams · Arthur Fleming')).toBeInTheDocument()
+
+    await user.click(screen.getAllByRole('button', { name: 'Proximo mes' })[0])
+    expect(await screen.findByRole('heading', { name: formatCalendarHeading(1) })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /novo evento/i }))
+    const eventDialog = await screen.findByRole('dialog', { name: 'Novo evento' })
+    await user.type(within(eventDialog).getByRole('textbox'), 'Backend readiness review')
+    await user.click(within(eventDialog).getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findAllByText('Backend readiness review')).not.toHaveLength(0)
+    expect(screen.getByRole('status')).toHaveTextContent('Evento "Backend readiness review" criado')
+
+    await user.click(screen.getAllByRole('button', { name: 'Mes anterior' })[0])
+    expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
+
+    await user.clear(screen.getByPlaceholderText('Buscar eventos'))
+    await user.type(screen.getByPlaceholderText('Buscar eventos'), 'Release checkpoint')
+
+    expect(await screen.findByText('Release checkpoint')).toBeInTheDocument()
   })
 
   it('opens the shared sidebar account menu outside the workspace', async () => {
