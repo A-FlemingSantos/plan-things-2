@@ -878,7 +878,7 @@
   }
   .toolbarWrap {
     top: 8px;
-    width: calc(100vw - 24px);
+    width: 100%;
     max-width: 420px;
   }
   .toolbarHandle {
@@ -928,7 +928,7 @@
     font-size: 11px;
   }
   .toolbarWrap {
-    width: calc(100vw - 16px);
+    width: 100%;
   }
   .toolbarHandle {
     width: 100%;

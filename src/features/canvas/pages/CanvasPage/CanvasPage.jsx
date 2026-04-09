@@ -185,25 +185,6 @@ export default function CanvasPage() {
           titleSize="large"
         />
 
-        {/* Floating toolbar */}
-        <CanvasToolbar
-          tool={tool}
-          setTool={switchTool}
-          zoom={zoom}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          onFit={fitView}
-          open={toolbarOpen}
-          onToggle={() => setToolbarOpen(v => !v)}
-          tools={TOOLS}
-          toolIcons={TOOL_ICONS}
-          ChevronDownIcon={Ic.ChevDown}
-          PlusIcon={Ic.Plus}
-          MinusIcon={Ic.Minus}
-          FitIcon={Ic.Fit}
-          styles={styles}
-        />
-
         {/* Canvas */}
         <div
           ref={canvasRef}
@@ -213,6 +194,24 @@ export default function CanvasPage() {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
         >
+          <CanvasToolbar
+            tool={tool}
+            setTool={switchTool}
+            zoom={zoom}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onFit={fitView}
+            open={toolbarOpen}
+            onToggle={() => setToolbarOpen(v => !v)}
+            tools={TOOLS}
+            toolIcons={TOOL_ICONS}
+            ChevronDownIcon={Ic.ChevDown}
+            PlusIcon={Ic.Plus}
+            MinusIcon={Ic.Minus}
+            FitIcon={Ic.Fit}
+            styles={styles}
+          />
+
           {/* Dot grid background */}
           <div
             className={styles.canvasGrid}
