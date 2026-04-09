@@ -95,6 +95,7 @@ const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
   Icon:
     item.id === 'home' ? Icon.Home :
     item.id === 'canvas' ? Icon.Canvas :
+    item.id === 'calendar' ? Icon.Calendar :
     Icon.Files,
 }))
 

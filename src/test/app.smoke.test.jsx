@@ -109,6 +109,21 @@ describe('App smoke flows', () => {
     expect(screen.getByText('Brand Identity 2025')).toBeInTheDocument()
   })
 
+  it('renders the calendar agenda and opens the event dialog', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/calendar')
+
+    expect(await screen.findByRole('heading', { name: /abril 2026/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /novo evento/i })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar eventos')).toBeInTheDocument()
+    expect(screen.getAllByText('Daily product sync')).not.toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: /novo evento/i }))
+
+    expect(await screen.findByRole('dialog', { name: 'Novo evento' })).toBeInTheDocument()
+  })
+
   it('opens the shared sidebar account menu outside the workspace', async () => {
     const user = userEvent.setup()
 

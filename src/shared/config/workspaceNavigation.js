@@ -3,6 +3,7 @@ import { ROUTES, normalizePathname } from './routes.js'
 export const WORKSPACE_NAV_ITEMS = [
   { id: 'home', label: 'Home', path: ROUTES.workspace },
   { id: 'canvas', label: 'Canvas', path: ROUTES.canvas },
+  { id: 'calendar', label: 'Calendar', path: ROUTES.calendar },
   { id: 'files', label: 'Files', path: ROUTES.files },
 ]
 
@@ -15,6 +16,10 @@ export function getActiveWorkspaceNav(pathname) {
 
   if (normalizedPath === ROUTES.canvas || normalizedPath.startsWith(`${ROUTES.canvas}/`)) {
     return 'canvas'
+  }
+
+  if (normalizedPath === ROUTES.calendar || normalizedPath.startsWith(`${ROUTES.calendar}/`)) {
+    return 'calendar'
   }
 
   if (normalizedPath === ROUTES.files || normalizedPath.startsWith(`${ROUTES.files}/`)) {

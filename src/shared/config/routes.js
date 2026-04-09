@@ -5,6 +5,7 @@ export const ROUTES = {
   workspace: '/workspace',
   workspaceBoard: '/workspace/board',
   canvas: '/canvas',
+  calendar: '/calendar',
   files: '/files',
   forgot: '/forgot',
   help: '/help',
@@ -18,6 +19,8 @@ export const ROUTE_ALIASES = [
   { from: '/kanban', to: ROUTES.workspaceBoard },
   { from: '/workspace/canvas', to: ROUTES.canvas },
   { from: '/app/canvas', to: ROUTES.canvas },
+  { from: '/workspace/calendar', to: ROUTES.calendar },
+  { from: '/app/calendar', to: ROUTES.calendar },
   { from: '/workspace/files', to: ROUTES.files },
   { from: '/app/files', to: ROUTES.files },
 ]

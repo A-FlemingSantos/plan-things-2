@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
+import CalendarPage from './features/calendar/pages/CalendarPage/CalendarPage.jsx'
 import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
 import { INFO_PAGES } from './features/info/data/infoPages.js'
 import InfoPage from './features/info/pages/InfoPage.jsx'
@@ -32,6 +33,7 @@ export default function App() {
       <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />
       <Route path={ROUTES.canvas} element={<CanvasPage />} />
       <Route path={`${ROUTES.canvas}/:planId`} element={<CanvasPage />} />
+      <Route path={ROUTES.calendar} element={<CalendarPage />} />
       <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
 
       {Object.entries(INFO_PAGES).map(([path, page]) => (
