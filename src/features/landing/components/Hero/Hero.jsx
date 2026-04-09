@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Hero.module.css'
 import KanbanMockup from './KanbanMockup.jsx'
 
@@ -20,9 +22,9 @@ export default function Hero() {
           </p>
 
           <div className={styles.ctas}>
-            <a href="/cadastro" className={styles.ctaPrimary}>
+            <Link to={ROUTES.register} className={styles.ctaPrimary}>
               Começar grátis
-            </a>
+            </Link>
             <a href="#how-it-works" className={styles.ctaSecondary}>
               Ver como funciona
             </a>

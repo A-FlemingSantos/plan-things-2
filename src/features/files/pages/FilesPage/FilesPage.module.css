@@ -252,6 +252,7 @@
   overflow: hidden;
 }
 .userBtn:hover { background: var(--color-gray-100); }
+.userBtnActive { background: var(--color-gray-100); }
 .userBtnCollapsed { justify-content: center; }
 
 .userAvatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-black); color: var(--color-white); font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: .02em; }
@@ -1403,6 +1404,18 @@
    RESPONSIVE
 ════════════════════════════════════════ */
 @media (max-width: 1024px) {
+  .topBarRight {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .searchWrap {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+  .searchInput {
+    width: 100%;
+    min-width: 0;
+  }
   .fileGrid { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
   .detailPanel { width: 280px; }
 }
@@ -1413,6 +1426,22 @@
   .topBar { padding: 0 16px; gap: 8px; flex-wrap: wrap; height: auto; min-height: 60px; padding-top: 10px; padding-bottom: 10px; }
   .topBarLeft, .topBarRight { width: 100%; }
   .topBarRight { flex-wrap: wrap; }
+  .searchWrap {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+  .searchInput {
+    width: 100%;
+  }
+  .sortWrap {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+  .newFolderBtn,
+  .uploadBtn {
+    flex: 1 1 160px;
+    justify-content: center;
+  }
   .selectionToolbar { width: 100%; overflow-x: auto; }
   .selectionCount { padding-left: 8px; }
   .filesArea { padding: 16px; }
@@ -1433,9 +1462,73 @@
   }
   .detailPanelPreview { height: 120px; }
   .detailTabs { grid-template-columns: repeat(2, 1fr); }
-  .fileList .fileListHeader,
-  .fileRow { grid-template-columns: 1fr auto; }
+  .fileList .fileListHeader { display: none; }
+  .fileRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .fileRowMeta {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .fileRowActions {
+    opacity: 1;
+  }
   .fileRowOwner, .fileRowDate, .fileRowSize { display: none; }
+  .uploadToast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    min-width: 0;
+    max-width: none;
+  }
+  .notification {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 560px) {
+  .topBar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .topBarRight {
+    gap: 6px;
+  }
+  .searchWrap,
+  .sortWrap,
+  .newFolderBtn,
+  .uploadBtn,
+  .viewToggle {
+    width: 100%;
+  }
+  .viewBtn {
+    flex: 1;
+  }
+  .filesArea {
+    padding: 14px 12px 24px;
+  }
+  .fileGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .detailPanel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 82vh;
+    border-radius: 18px 18px 0 0;
+  }
+  .uploadToastItem {
+    padding: 10px 12px;
+  }
 }
 
 @keyframes sheetIn {

@@ -1,3 +1,4 @@
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
 import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
@@ -6,49 +7,58 @@ import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
+import {
+  buildCanvasPath,
+  buildWorkspaceBoardPath,
+  LEGACY_PLAN_ROUTE_ALIASES,
+  ROUTE_ALIASES,
+  ROUTES,
+} from './shared/config/routes.js'
+
+function LegacyPlanRedirect({ buildPath }) {
+  const { planId } = useParams()
+
+  return <Navigate to={buildPath(planId)} replace />
+}
 
 export default function App() {
-  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
-  const isWorkspacePath = pathname === '/workspace' || pathname === '/app'
-  const isBoardPath =
-    pathname === '/workspace/board' ||
-    pathname === '/app/board' ||
-    pathname === '/kanban' ||
-    pathname.startsWith('/kanban/')
-  const isCanvasPath =
-    pathname === '/canvas' ||
-    pathname.startsWith('/canvas/') ||
-    pathname === '/workspace/canvas' ||
-    pathname === '/app/canvas'
-  const isFilesPath =
-    pathname === '/files' ||
-    pathname.startsWith('/files/') ||
-    pathname === '/workspace/files' ||
-    pathname === '/app/files'
+  return (
+    <Routes>
+      <Route path={ROUTES.home} element={<LandingPage />} />
+      <Route path={ROUTES.login} element={<Auth initialMode="login" />} />
+      <Route path={ROUTES.register} element={<Auth initialMode="register" />} />
+      <Route path={ROUTES.workspace} element={<Workspace />} />
+      <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
+      <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />
+      <Route path={ROUTES.canvas} element={<CanvasPage />} />
+      <Route path={`${ROUTES.canvas}/:planId`} element={<CanvasPage />} />
+      <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
 
-  if (pathname === '/login' || pathname === '/cadastro') {
-    return <Auth initialMode={pathname === '/cadastro' ? 'register' : 'login'} />
-  }
+      {Object.entries(INFO_PAGES).map(([path, page]) => (
+        <Route key={path} path={path} element={<InfoPage {...page} />} />
+      ))}
 
-  if (isWorkspacePath) {
-    return <Workspace />
-  }
+      {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (
+        <Route
+          key={path}
+          path={path}
+          element={<LegacyPlanRedirect buildPath={buildWorkspaceBoardPath} />}
+        />
+      ))}
 
-  if (isBoardPath) {
-    return <KanbanBoard />
-  }
+      {LEGACY_PLAN_ROUTE_ALIASES.canvas.map((path) => (
+        <Route
+          key={path}
+          path={path}
+          element={<LegacyPlanRedirect buildPath={buildCanvasPath} />}
+        />
+      ))}
 
-  if (isCanvasPath) {
-    return <CanvasPage />
-  }
+      {ROUTE_ALIASES.map(({ from, to }) => (
+        <Route key={from} path={from} element={<Navigate to={to} replace />} />
+      ))}
 
-  if (isFilesPath) {
-    return <FilesPage />
-  }
-
-  if (INFO_PAGES[pathname]) {
-    return <InfoPage {...INFO_PAGES[pathname]} />
-  }
-
-  return <LandingPage />
+      <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+    </Routes>
+  )
 }

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
 
 /* ── OAuth provider icons ── */
@@ -73,6 +75,7 @@ function CheckIcon() {
 
 /* ── Main Auth page ── */
 export default function Auth({ initialMode = 'login' }) {
+  const navigate = useNavigate()
   const [mode, setMode]           = useState(initialMode)   // 'login' | 'register'
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
@@ -88,7 +91,7 @@ export default function Auth({ initialMode = 'login' }) {
     setLoading('email')
     setTimeout(() => {
       setLoading(null)
-      window.location.href = '/workspace'
+      navigate(ROUTES.workspace)
     }, 1800)
   }
 
@@ -96,7 +99,7 @@ export default function Auth({ initialMode = 'login' }) {
     setLoading(provider)
     setTimeout(() => {
       setLoading(null)
-      window.location.href = '/workspace'
+      navigate(ROUTES.workspace)
     }, 1800)
   }
 
@@ -104,7 +107,7 @@ export default function Auth({ initialMode = 'login' }) {
     setMode(initialMode)
   }, [initialMode])
 
-  const alternateHref = isRegister ? '/login' : '/cadastro'
+  const alternateHref = isRegister ? ROUTES.login : ROUTES.register
 
   return (
     <div className={styles.page}>
@@ -114,17 +117,17 @@ export default function Auth({ initialMode = 'login' }) {
 
       {/* Top bar */}
       <header className={styles.topBar}>
-        <a href="/" className={styles.logo}>
+        <Link to={ROUTES.home} className={styles.logo}>
           <span className={styles.logoMark}><LogoMark /></span>
           <span className={styles.logoText}>Plan Things</span>
-        </a>
+        </Link>
 
-        <a href={alternateHref} className={styles.modeToggleTop}>
+        <Link to={alternateHref} className={styles.modeToggleTop}>
           {isRegister ? 'Já tem uma conta?' : 'Não tem uma conta?'}
           <span className={styles.modeToggleAction}>
             {isRegister ? 'Entrar' : 'Cadastrar-se'}
           </span>
-        </a>
+        </Link>
       </header>
 
       {/* Center form */}
@@ -179,7 +182,7 @@ export default function Auth({ initialMode = 'login' }) {
               <div className={styles.labelRow}>
                 <label className={styles.label} htmlFor="password">Senha</label>
                 {!isRegister && (
-                  <a href="/forgot" className={styles.forgotLink}>Esqueceu a senha?</a>
+                  <Link to={ROUTES.forgot} className={styles.forgotLink}>Esqueceu a senha?</Link>
                 )}
               </div>
               <div className={styles.passwordWrap}>
@@ -232,9 +235,9 @@ export default function Auth({ initialMode = 'login' }) {
                 </button>
                 <span className={styles.agreeText}>
                   Concordo com os{' '}
-                  <a href="/terms" className={styles.agreeLink}>Termos de Uso</a>
+                  <Link to={ROUTES.terms} className={styles.agreeLink}>Termos de Uso</Link>
                   {' '}e a{' '}
-                  <a href="/privacy" className={styles.agreeLink}>Política de Privacidade</a>
+                  <Link to={ROUTES.privacy} className={styles.agreeLink}>Política de Privacidade</Link>
                 </span>
               </label>
             )}
@@ -285,9 +288,9 @@ export default function Auth({ initialMode = 'login' }) {
           <p className={styles.switchRow}>
             {isRegister ? 'Já tem uma conta?' : 'Ainda não tem uma conta?'}
             {' '}
-            <a href={alternateHref} className={styles.switchBtn}>
+            <Link to={alternateHref} className={styles.switchBtn}>
               {isRegister ? 'Entrar' : 'Cadastrar-se'}
-            </a>
+            </Link>
           </p>
 
         </div>
@@ -297,9 +300,9 @@ export default function Auth({ initialMode = 'login' }) {
       <footer className={styles.footer}>
         <p>© {new Date().getFullYear()} Plan Things, Inc.</p>
         <div className={styles.footerLinks}>
-          <a href="/privacy">Privacidade</a>
-          <a href="/terms">Termos</a>
-          <a href="/help">Ajuda</a>
+          <Link to={ROUTES.privacy}>Privacidade</Link>
+          <Link to={ROUTES.terms}>Termos</Link>
+          <Link to={ROUTES.help}>Ajuda</Link>
         </div>
       </footer>
     </div>

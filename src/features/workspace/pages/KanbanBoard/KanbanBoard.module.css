@@ -224,6 +224,7 @@
   overflow: hidden;
 }
 .userBtn:hover { background: var(--color-gray-100); }
+.userBtnActive { background: var(--color-gray-100); }
 .userBtnCollapsed { justify-content: center; }
 
 .userAvatar {
@@ -415,6 +416,22 @@
 .board::-webkit-scrollbar { height: 6px; }
 .board::-webkit-scrollbar-track { background: transparent; }
 .board::-webkit-scrollbar-thumb { background: var(--color-gray-300); border-radius: 99px; }
+
+.boardNotification {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 700;
+  padding: 10px 18px;
+  background: var(--color-black);
+  color: var(--color-white);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  box-shadow: 0 12px 32px rgba(0,0,0,.16);
+  animation: fadeUp 0.2s ease both;
+}
 
 /* ════════════════════════════════════════
    COLUMN
@@ -2489,6 +2506,10 @@
 @media (max-width: 1024px) {
   .boardHeader { padding: 18px 20px 16px; }
   .board       { padding: 20px 20px 40px; }
+  .boardHeaderRight {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
   .cmBody { grid-template-columns: 1fr; }
   .cmMain { border-right: none; }
   .cmSidebar { border-top: 1px solid var(--color-gray-200); }
@@ -2498,17 +2519,95 @@
   .shell, .shellCollapsed { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .boardHeader { padding: 16px; }
+  .boardHeaderLeft,
+  .boardHeaderRight {
+    width: 100%;
+  }
+  .boardHeaderRight {
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .boardTitleRow { flex-wrap: wrap; }
   .board  { padding: 16px 16px 32px; gap: 10px; }
-  .column { width: 240px; }
+  .column { width: min(280px, calc(100vw - 48px)); }
   .modalOverlay { padding: 16px 10px 10px; }
-  .cardModal { max-width: 100%; max-height: calc(100vh - 16px); border-radius: var(--radius-lg); }
+  .cardModal { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--radius-lg); }
   .cmHeader,
   .cmMain,
   .cmSidebarHeader,
   .cmCommentComposer,
   .cmActivityList,
   .cmDetailsPanel { padding-left: 14px; padding-right: 14px; }
-  .cmTitle { font-size: 22px; min-height: 36px; max-height: 36px; }
+  .cmHeader {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .cmHeaderLeft { min-width: 0; }
+  .cmTitleRow { align-items: flex-start; }
+  .cmTitle { font-size: 22px; min-height: 36px; max-height: 72px; }
   .cmSaveRow { flex-direction: column; align-items: flex-start; }
-  .cmToolbar { padding-left: 32px; }
+  .cmToolbar { padding-left: 0; }
+  .cmToolbarBtn {
+    flex: 1 1 160px;
+    justify-content: center;
+  }
+  .cmDateMenu,
+  .cmChecklistDateMenu,
+  .cmChecklistMenu,
+  .cmMembersMenu,
+  .cmLabelMenu,
+  .cmTextMenu,
+  .cmInsertMenu,
+  .cmListMenu {
+    width: min(320px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
+  }
+  .boardNotification {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    text-align: center;
+    border-radius: 16px;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 560px) {
+  .boardHeader {
+    padding: 14px;
+    gap: 14px;
+  }
+  .boardHeaderDivider { display: none; }
+  .boardHeaderBtn,
+  .boardHeaderBtnPrimary {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+  .board {
+    padding: 14px 14px 28px;
+  }
+  .column {
+    width: calc(100vw - 32px);
+  }
+  .modalOverlay {
+    padding: 10px 0 0;
+  }
+  .cardModal {
+    max-height: 100dvh;
+    border-radius: 18px 18px 0 0;
+  }
+  .cmMain,
+  .cmSidebar {
+    gap: 18px;
+  }
+  .cmToolbarBtn {
+    flex-basis: 100%;
+  }
+  .cmCommentComposer {
+    flex-wrap: wrap;
+  }
+  .cmSendBtn {
+    margin-left: auto;
+  }
 }

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Navbar.module.css'
 
 const NAV_LINKS = [
@@ -48,8 +50,8 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className={styles.actions}>
-          <a href="/login" className={styles.actionLink}>Entrar</a>
-          <a href="/cadastro" className={styles.ctaBtn}>Começar grátis</a>
+          <Link to={ROUTES.login} className={styles.actionLink}>Entrar</Link>
+          <Link to={ROUTES.register} className={styles.ctaBtn}>Começar grátis</Link>
         </div>
       </nav>
     </header>

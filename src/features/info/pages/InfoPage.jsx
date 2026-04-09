@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom'
+import { ROUTES } from '../../../shared/config/routes.js'
+
 export default function InfoPage({ eyebrow, title, description, primaryLabel, primaryHref }) {
   return (
     <main
@@ -28,8 +31,8 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
           {description}
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
-          <a
-            href={primaryHref}
+          <Link
+            to={primaryHref}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -42,9 +45,9 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
             }}
           >
             {primaryLabel}
-          </a>
-          <a
-            href="/"
+          </Link>
+          <Link
+            to={ROUTES.home}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -56,7 +59,7 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
             }}
           >
             Ir para a home
-          </a>
+          </Link>
         </div>
       </div>
     </main>

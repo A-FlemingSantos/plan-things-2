@@ -193,6 +193,10 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 .sidebarPlanItem:hover { background: var(--color-gray-100); color: var(--color-black); }
+.sidebarPlanItemActive {
+  background: var(--color-gray-100);
+  color: var(--color-black);
+}
 .sidebarPlanDot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .sidebarPlanName { overflow: hidden; text-overflow: ellipsis; }
 
@@ -211,6 +215,7 @@
   overflow: hidden;
 }
 .userBtn:hover { background: var(--color-gray-100); }
+.userBtnActive { background: var(--color-gray-100); }
 .userBtnCollapsed { justify-content: center; }
 
 .userAvatar {
@@ -240,6 +245,66 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.canvasHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--color-gray-200);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.canvasBreadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-gray-400);
+}
+
+.canvasBreadcrumbLink {
+  color: var(--color-gray-400);
+  transition: color var(--transition-fast);
+}
+.canvasBreadcrumbLink:hover { color: var(--color-black); }
+
+.canvasBreadcrumbSep { color: var(--color-gray-300); }
+
+.canvasBreadcrumbCurrent {
+  color: var(--color-gray-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvasTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.canvasTitle {
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--color-black);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvasMeta {
+  font-size: 12px;
+  color: var(--color-gray-400);
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-gray-100);
+  white-space: nowrap;
 }
 
 /* ════════════════════════════════════════
@@ -785,8 +850,109 @@
 /* ════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .canvasHeader {
+    padding: 16px 18px 14px;
+  }
+  .toolbarWrap {
+    top: 6px;
+  }
+  .zoomIndicator,
+  .connectBanner {
+    bottom: 16px;
+  }
+}
+
 @media (max-width: 768px) {
   .shell, .shellCollapsed { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .toolbarPanel { flex-wrap: wrap; max-width: 320px; }
+  .canvasHeader {
+    padding: 14px 16px 12px;
+  }
+  .canvasTitleRow {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .canvasTitle {
+    font-size: 20px;
+  }
+  .toolbarWrap {
+    top: 8px;
+    width: 100%;
+    max-width: 420px;
+  }
+  .toolbarHandle {
+    max-width: 100%;
+  }
+  .toolbarPanel {
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+  }
+  .toolbarGroup {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .zoomIndicator {
+    right: 12px;
+    bottom: 12px;
+  }
+  .connectBanner,
+  .emptyHint {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+    transform: none;
+  }
+  .connectBanner {
+    bottom: 60px;
+  }
+  .emptyHint {
+    bottom: 56px;
+  }
+}
+
+@media (max-width: 560px) {
+  .canvasHeader {
+    padding: 12px 14px 10px;
+  }
+  .canvasTitle {
+    font-size: 18px;
+  }
+  .canvasMeta {
+    font-size: 11px;
+  }
+  .toolbarWrap {
+    width: 100%;
+  }
+  .toolbarHandle {
+    width: 100%;
+    justify-content: center;
+  }
+  .toolbarPanel {
+    padding: 8px;
+  }
+  .toolbarBtn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .zoomIndicator {
+    left: 12px;
+    right: 12px;
+    justify-content: center;
+  }
+  .connectBanner {
+    bottom: 66px;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  .emptyHint {
+    bottom: 58px;
+    padding: 8px 12px;
+  }
 }
