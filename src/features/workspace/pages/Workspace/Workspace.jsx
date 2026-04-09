@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { buildCanvasPath, buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
@@ -73,7 +73,13 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
   const [selectedTag, setTag] = useState(PLAN_TAGS[0])
   const [selectedTheme, setSelectedTheme] = useState(COVER_THEMES[0])
   const [showCategories, setShowCategories] = useState(false)
-  const [position, setPosition] = useState({ top: 24, left: 24, placement: 'right' })
+  const [position, setPosition] = useState({
+    top: 24,
+    left: 24,
+    placement: 'right',
+    arrowTop: 24,
+    arrowLeft: 28,
+  })
   const nameRef = useRef(null)
   const popoverRef = useRef(null)
   const coverUploadRef = useRef(null)
@@ -82,7 +88,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
     nameRef.current?.focus()
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!anchorEl) return
 
     const updatePosition = () => {
@@ -96,6 +102,9 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
       const popoverHeight = popoverRect?.height ?? 360
       const canOpenRight = anchorRect.right + gap + popoverWidth <= viewportWidth - margin
       const canOpenLeft = anchorRect.left - gap - popoverWidth >= margin
+      const anchorCenterX = anchorRect.left + anchorRect.width / 2
+      const anchorCenterY = anchorRect.top + anchorRect.height / 2
+      const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
       let left
       let placement
@@ -124,6 +133,8 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
         top,
         left,
         placement,
+        arrowTop: clamp(anchorCenterY - top - 8, 16, Math.max(16, popoverHeight - 32)),
+        arrowLeft: clamp(anchorCenterX - left - 8, 16, Math.max(16, popoverWidth - 32)),
       })
     }
 
@@ -174,7 +185,12 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
     <div
       ref={popoverRef}
       className={`${styles.planPopover} ${position.placement === 'left' ? styles.planPopoverLeft : ''} ${position.placement === 'bottom' ? styles.planPopoverBottom : ''}`}
-      style={{ top: `${position.top}px`, left: `${position.left}px` }}
+      style={{
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        '--plan-popover-arrow-top': `${position.arrowTop}px`,
+        '--plan-popover-arrow-left': `${position.arrowLeft}px`,
+      }}
       role="dialog"
       aria-modal="false"
       aria-label="Create new plan"

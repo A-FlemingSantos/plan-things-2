@@ -1142,7 +1142,7 @@
 .planPopover::before {
   content: '';
   position: absolute;
-  top: 24px;
+  top: var(--plan-popover-arrow-top, 24px);
   left: -8px;
   width: 16px;
   height: 16px;
@@ -1164,7 +1164,7 @@
 
 .planPopoverBottom::before {
   top: -8px;
-  left: 28px;
+  left: var(--plan-popover-arrow-left, 28px);
   border-top: 1px solid var(--color-gray-200);
   border-left: 1px solid var(--color-gray-200);
   border-right: none;
