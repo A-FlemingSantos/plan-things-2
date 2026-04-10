@@ -889,6 +889,10 @@
   font-size: 16px;
 }
 
+.rangeDayNumber.dayNumberToday {
+  color: var(--color-white);
+}
+
 .rangeEventList {
   flex: 1;
   min-height: 0;
