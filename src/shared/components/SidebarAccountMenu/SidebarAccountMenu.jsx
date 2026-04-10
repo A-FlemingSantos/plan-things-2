@@ -23,11 +23,11 @@ function LogOutIcon() {
 }
 
 const MENU_ITEMS = [
-  { id: 'profile', label: 'My Profile', Icon: UserIcon, danger: false },
-  { id: 'add', label: 'Add another account', Icon: AddUserIcon, danger: false },
+  { id: 'profile', label: 'Meu perfil', Icon: UserIcon, danger: false },
+  { id: 'add', label: 'Adicionar conta', Icon: AddUserIcon, danger: false },
   { id: 'upgrade', label: 'Upgrade', Icon: UpgradeIcon, danger: false },
-  { id: 'settings', label: 'Settings', Icon: SettingsIcon, danger: false },
-  { id: 'logout', label: 'Log Out', Icon: LogOutIcon, danger: true },
+  { id: 'settings', label: 'Configurações', Icon: SettingsIcon, danger: false },
+  { id: 'logout', label: 'Sair', Icon: LogOutIcon, danger: true },
 ]
 
 export default function SidebarAccountMenu({

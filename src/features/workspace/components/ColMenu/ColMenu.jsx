@@ -37,7 +37,7 @@ export default function ColMenu({
   return (
     <div className={styles.colMenu} ref={ref} role="menu">
       <button type="button" className={styles.colMenuItem} onClick={() => { onRename(); onClose() }} role="menuitem">
-        <EditIcon /> Rename
+        <EditIcon /> Renomear
       </button>
 
       {colorOptions.map((color) => (
@@ -46,7 +46,7 @@ export default function ColMenu({
           key={color.id}
           className={styles.colMenuColorOpt}
           onClick={() => { onChangeColor(color.value); onClose() }}
-          aria-label={`Set column color to ${color.id}`}
+          aria-label={`Definir cor da coluna: ${color.id}`}
           title={color.id}
         >
           <span className={styles.colMenuColorDot} style={{ background: color.value }} />
@@ -56,7 +56,7 @@ export default function ColMenu({
       <div className={styles.colMenuDivider} />
 
       <button type="button" className={`${styles.colMenuItem} ${styles.colMenuItemDanger}`} onClick={() => { onDelete(); onClose() }} role="menuitem">
-        <TrashIcon /> Delete list
+        <TrashIcon /> Excluir lista
       </button>
     </div>
   )

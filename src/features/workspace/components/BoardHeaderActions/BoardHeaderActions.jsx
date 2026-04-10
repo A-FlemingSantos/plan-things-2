@@ -19,10 +19,10 @@ export default function BoardHeaderActions({
       <div className={styles.boardHeaderDivider} />
 
       <button type="button" className={styles.boardHeaderBtn} onClick={onFilter}>
-        <icons.Filter /> Filter
+        <icons.Filter /> Filtrar
       </button>
       <button type="button" className={styles.boardHeaderBtnPrimary} onClick={onShare}>
-        <icons.Share /> Share
+        <icons.Share /> Compartilhar
       </button>
     </>
   )

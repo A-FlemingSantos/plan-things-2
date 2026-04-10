@@ -4,10 +4,10 @@ export function normalizeLibraryItem(item = {}) {
   const type = item.type ?? (Array.isArray(item.children) ? 'folder' : 'generic')
   const normalized = {
     id: item.id ?? createClientId(type === 'folder' ? 'folder' : 'file'),
-    name: item.name ?? 'Untitled',
+    name: item.name ?? 'Sem título',
     type,
     size: Number.isFinite(item.size) ? item.size : 0,
-    modified: item.modified ?? 'Just now',
+    modified: item.modified ?? 'Agora',
     starred: Boolean(item.starred),
     shared: Boolean(item.shared),
     owner: item.owner ?? 'me',

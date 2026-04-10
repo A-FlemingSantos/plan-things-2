@@ -14,7 +14,7 @@ export default function ProductSidebar({
   HintIcon,
   secondaryContent = null,
   bottomContent = null,
-  workspaceName = "Arthur's workspace",
+  workspaceName = 'Workspace do Arthur',
   workspaceInitial = 'A',
 }) {
   const secondaryWrapperStyle = {
@@ -40,7 +40,7 @@ export default function ProductSidebar({
             type="button"
             className={styles.collapseBtn}
             onClick={onToggleCollapse}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
           >
             <span className={`${styles.collapseBtnIcon} ${collapsed ? styles.collapseBtnFlipped : ''}`}>
               <CollapseIcon />
@@ -51,14 +51,14 @@ export default function ProductSidebar({
         <button
           type="button"
           className={`${styles.workspacePicker} ${collapsed ? styles.workspacePickerHidden : ''}`}
-          aria-label={`Current workspace: ${workspaceName}`}
+          aria-label={`Workspace atual: ${workspaceName}`}
         >
           <span className={styles.wsAvatar}>{workspaceInitial}</span>
           <span className={styles.wsName}>{workspaceName}</span>
           <span className={styles.wsChevron}><ChevronIcon /></span>
         </button>
 
-        <nav className={styles.nav} aria-label="Primary workspace navigation">
+        <nav className={styles.nav} aria-label="Navegação principal do workspace">
           {navItems.map(({ id, label, Icon, hint }) => (
             <button
               type="button"

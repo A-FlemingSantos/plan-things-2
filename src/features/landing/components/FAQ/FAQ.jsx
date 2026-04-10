@@ -14,7 +14,7 @@ const QUESTIONS = [
   },
   {
     q: "Posso migrar meus projetos do Trello, Asana ou Jira?",
-    a: "Sim. O Plan Things oferece importação com um clique de Trello, Asana, Jira, Linear e Monday.com. Cards, anexos, prazos e membros são transferidos automaticamente.",
+    a: "Sim. O Plan Things oferece importação com um clique de Trello, Asana, Jira, Linear e Monday.com. Cartões, anexos, prazos e membros são transferidos automaticamente.",
   },
   {
     q: "Meus dados são seguros e privados?",

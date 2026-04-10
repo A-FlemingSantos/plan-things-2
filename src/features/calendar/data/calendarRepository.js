@@ -10,11 +10,11 @@ const CALENDAR_SOURCES = [
 ]
 
 const CALENDAR_EVENTS = [
-  { id: 'evt-1', title: 'Daily product sync', date: '2026-04-09', start: '09:00', end: '09:30', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Teams' },
-  { id: 'evt-2', title: 'Sprint planning', date: '2026-04-13', start: '10:00', end: '11:30', sourceId: 'student', calendar: 'rm95433', location: 'Workspace' },
-  { id: 'evt-3', title: 'Design review', date: '2026-04-15', start: '14:00', end: '15:00', sourceId: 'gmail', calendar: 'Gmail', location: 'Studio' },
-  { id: 'evt-4', title: 'Print agenda notes', date: '2026-04-17', start: '16:00', end: '16:20', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Desk' },
-  { id: 'evt-5', title: 'Release checkpoint', date: '2026-04-23', start: '11:00', end: '11:45', sourceId: 'arthur', calendar: 'Arthur Fleming' },
+  { id: 'evt-1', title: 'Sync diário de produto', date: '2026-04-09', start: '09:00', end: '09:30', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Teams' },
+  { id: 'evt-2', title: 'Planejamento do sprint', date: '2026-04-13', start: '10:00', end: '11:30', sourceId: 'student', calendar: 'rm95433', location: 'Workspace' },
+  { id: 'evt-3', title: 'Review de design', date: '2026-04-15', start: '14:00', end: '15:00', sourceId: 'gmail', calendar: 'Gmail', location: 'Studio' },
+  { id: 'evt-4', title: 'Imprimir notas da agenda', date: '2026-04-17', start: '16:00', end: '16:20', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Mesa' },
+  { id: 'evt-5', title: 'Checkpoint do release', date: '2026-04-23', start: '11:00', end: '11:45', sourceId: 'arthur', calendar: 'Arthur Fleming' },
 ]
 
 function getSourceById(sources, sourceId) {

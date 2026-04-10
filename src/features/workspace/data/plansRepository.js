@@ -5,7 +5,7 @@ import { createClientId } from '../../../shared/utils/createClientId.js'
 
 const PLAN_TAGS = {
   marketing: { label: 'Marketing', color: 'var(--color-blue)' },
-  engineering: { label: 'Engineering', color: 'var(--color-green)' },
+  engineering: { label: 'Engenharia', color: 'var(--color-green)' },
   design: { label: 'Design', color: '#d4aef1' },
   growth: { label: 'Growth', color: 'var(--color-red)' },
 }
@@ -30,61 +30,61 @@ const PLAN_COVERS = {
 const PLAN_SEEDS = [
   {
     id: 'product-launch-q3',
-    name: 'Product Launch — Q3',
-    description: 'Full scope for the third quarter release, from design handoff to public rollout.',
+    name: 'Lançamento do Produto — Q3',
+    description: 'Escopo do release do terceiro trimestre, do handoff ao rollout público.',
     tagId: 'marketing',
     memberIds: ['member-lilac', 'member-blue', 'member-green'],
-    date: 'Aug 14',
+    date: '14 ago',
     tasks: 18,
     coverId: 'lilac',
   },
   {
     id: 'api-redesign',
-    name: 'API Redesign',
-    description: 'Refactor authentication layer and versioning strategy before the next major release.',
+    name: 'Redesign da API',
+    description: 'Refatorar autenticação e versionamento antes do próximo grande release.',
     tagId: 'engineering',
     memberIds: ['member-blue', 'member-red'],
-    date: 'Jul 30',
+    date: '30 jul',
     tasks: 9,
     coverId: 'green',
   },
   {
     id: 'brand-identity-2025',
-    name: 'Brand Identity 2025',
-    description: 'New visual language, motion guidelines, and updated component library.',
+    name: 'Identidade da Marca 2025',
+    description: 'Nova linguagem visual, diretrizes de motion e biblioteca de componentes atualizada.',
     tagId: 'design',
     memberIds: ['member-lilac', 'member-green', 'member-red', 'member-black'],
-    date: 'Sep 3',
+    date: '3 set',
     tasks: 24,
     coverId: 'sand',
   },
   {
     id: 'onboarding-revamp',
-    name: 'Onboarding Revamp',
-    description: 'Reduce time-to-value by rethinking the first-run experience end to end.',
+    name: 'Revamp do Onboarding',
+    description: 'Reduzir o time-to-value repensando a primeira experiência de ponta a ponta.',
     tagId: 'growth',
     memberIds: ['member-black', 'member-lilac'],
-    date: 'Aug 1',
+    date: '1 ago',
     tasks: 12,
     coverId: 'rose',
   },
   {
     id: 'mobile-app-v2',
-    name: 'Mobile App v2',
-    description: 'Native redesign for iOS and Android with offline sync and push notifications.',
+    name: 'App Mobile v2',
+    description: 'Redesign nativo para iOS e Android com sync offline e push.',
     tagId: 'engineering',
     memberIds: ['member-blue', 'member-green', 'member-lilac'],
-    date: 'Oct 10',
+    date: '10 out',
     tasks: 31,
     coverId: 'blue',
   },
   {
     id: 'q4-content-strategy',
-    name: 'Q4 Content Strategy',
-    description: 'Editorial calendar, channel ownership, and SEO targets for the final quarter.',
+    name: 'Estratégia de Conteúdo Q4',
+    description: 'Calendário editorial, canais e metas de SEO para o último trimestre.',
     tagId: 'marketing',
     memberIds: ['member-red', 'member-black'],
-    date: 'Oct 1',
+    date: '1 out',
     tasks: 7,
     coverId: 'neutral',
   },
@@ -95,7 +95,7 @@ function mapTagColor(tagId) {
 }
 
 function mapTagLabel(tagId) {
-  return PLAN_TAGS[tagId]?.label ?? 'General'
+  return PLAN_TAGS[tagId]?.label ?? 'Geral'
 }
 
 function mapMemberStyles(memberIds = []) {

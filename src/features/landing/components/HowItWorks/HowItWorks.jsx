@@ -86,7 +86,7 @@ function OrganizeVisual() {
   const cols = [
     { name: 'Backlog', color: '#a0a0a0', cards: [{ title: 'Refresh da marca', tag: 'Design', p: 0 }, { title: 'Docs da API', tag: 'Dev', p: 0 }] },
     { name: 'Em andamento', color: 'var(--color-blue)', cards: [{ title: 'Fluxo de onboarding', tag: 'Design', p: 60 }, { title: 'Módulo de auth', tag: 'Dev', p: 35 }] },
-    { name: 'Revisão', color: 'var(--color-purple)', cards: [{ title: 'Texto da campanha', tag: 'Marketing', p: 90 }] },
+    { name: 'Review', color: 'var(--color-purple)', cards: [{ title: 'Texto da campanha', tag: 'Marketing', p: 90 }] },
     { name: 'Concluído', color: 'var(--color-green)', cards: [{ title: 'Entrevistas com usuários', tag: 'Pesquisa', p: 100 }] },
   ]
   return (
@@ -182,7 +182,7 @@ function CollaborateVisual() {
       {/* Activity feed */}
       <div className={styles.activityFeed}>
         {[
-          { text: 'Ana moveu “Fluxo de onboarding” para Revisão', time: '1 min', color: '#d4aef1' },
+          { text: 'Ana moveu “Fluxo de onboarding” para Review', time: '1 min', color: '#d4aef1' },
           { text: 'Tom aprovou “Docs da API”', time: '4 min', color: '#4290da' },
           { text: 'Meta do sprint atualizada pela Sara', time: '9 min', color: '#0f703a' },
         ].map((a, i) => (
@@ -336,7 +336,7 @@ const TAB_ACCORDIONS = [
     { title: 'Compartilhe quadros com convidados e clientes', body: 'Colaboradores externos recebem acesso limitado de visualização ou comentário, ideal para dar visibilidade a clientes.', link: 'Ver acesso de convidados' },
   ],
   [
-    { title: 'Crie automações sem código em minutos', body: 'Automações de gatilho e ação permitem mover cards, enviar alertas, atribuir tarefas e atualizar campos sem escrever código.', link: 'Explorar automações' },
+    { title: 'Crie automações sem código em minutos', body: 'Automações de gatilho e ação permitem mover cartões, enviar alertas, atribuir tarefas e atualizar campos sem escrever código.', link: 'Explorar automações' },
     { title: 'Conecte Slack, GitHub e Zapier', body: 'Integrações prontas enviam a informação certa para o lugar certo no momento em que algo muda no seu quadro.', link: 'Ver integrações' },
     { title: 'Gere relatórios de status automaticamente', body: 'Defina uma frequência e o Plan Things monta seu resumo semanal, envia para a equipe e arquiva nos docs.', link: 'Ver relatórios' },
     { title: 'Tarefas recorrentes que se recriam sozinhas', body: 'Defina um template uma vez. O Plan Things recria a tarefa, reatribui e reajusta a timeline automaticamente.', link: 'Saiba mais sobre tarefas recorrentes' },

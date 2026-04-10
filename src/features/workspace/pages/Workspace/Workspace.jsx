@@ -50,12 +50,12 @@ const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
 }))
 
 const PLAN_TAGS = [
-  { label: 'Engineering', color: 'var(--color-green)'  },
+  { label: 'Engenharia',  color: 'var(--color-green)'  },
   { label: 'Design',      color: '#d4aef1'             },
   { label: 'Marketing',   color: 'var(--color-blue)'   },
-  { label: 'Research',    color: '#f5a623'             },
+  { label: 'Pesquisa',    color: '#f5a623'             },
   { label: 'Growth',      color: 'var(--color-red)'    },
-  { label: 'Operations',  color: '#a0a0a0'             },
+  { label: 'Operações',   color: '#a0a0a0'             },
 ]
 
 const COVER_THEMES = [
@@ -169,14 +169,14 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
     e.preventDefault()
     if (!name.trim()) return
     const today = new Date()
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
     onSubmit({
       name: name.trim(),
       description: '',
       tag: selectedTag.label,
       tagColor: selectedTag.color,
       cover: selectedTheme.cardCover,
-      date: `${months[today.getMonth()]} ${today.getDate()}`,
+      date: `${today.getDate()} ${months[today.getMonth()]}`,
       tasks: 0,
       members: ['#000'],
     })
@@ -195,12 +195,12 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
       }}
       role="dialog"
       aria-modal="false"
-      aria-label="Create new plan"
+      aria-label="Criar novo plano"
     >
       <form className={styles.planPopoverForm} onSubmit={handleSubmit} noValidate>
         <div className={styles.modalHead}>
           <h2 className={styles.modalTitle}>Criar plano</h2>
-          <button type="button" className={styles.modalCloseBtn} onClick={onClose} aria-label="Close">
+          <button type="button" className={styles.modalCloseBtn} onClick={onClose} aria-label="Fechar">
             <XIcon />
           </button>
         </div>
@@ -232,8 +232,8 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
               type="button"
               className={`${styles.coverOption} ${styles.coverUploadOption}`}
               onClick={() => coverUploadRef.current?.click()}
-              aria-label="Enviar imagem propria"
-              title="Enviar imagem propria"
+              aria-label="Enviar imagem própria"
+              title="Enviar imagem própria"
             >
               <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
             </button>
@@ -280,7 +280,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
 
         <div className={styles.mField}>
           <label className={styles.mLabel} htmlFor="plan-name">
-            Titulo do plano
+            Título do plano
             <span className={styles.mLabelRequired}>*</span>
           </label>
           <input
@@ -296,7 +296,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
         </div>
 
         {!name.trim() && (
-          <p className={styles.formHint}>O titulo do plano e obrigatorio</p>
+          <p className={styles.formHint}>O título do plano é obrigatório</p>
         )}
 
         <div className={styles.modalFooter}>
@@ -328,7 +328,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
           </div>
         </div>
         <div className={styles.listMeta}>
-          {isActive && <span className={styles.currentPlanPill}>Current</span>}
+          {isActive && <span className={styles.currentPlanPill}>Atual</span>}
           <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
           <div className={styles.memberStack}>
             {plan.members.slice(0, 3).map((c, i) => (
@@ -336,7 +336,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
             ))}
           </div>
           <span className={styles.cardDate}>{plan.date}</span>
-          <span className={styles.cardTasks}>{plan.tasks} tasks</span>
+          <span className={styles.cardTasks}>{plan.tasks} tarefas</span>
         </div>
       </button>
     )
@@ -352,7 +352,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
         <div className={styles.cardTop}>
           <div className={styles.cardTopMeta}>
             <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
-            {isActive && <span className={styles.currentPlanPill}>Current</span>}
+            {isActive && <span className={styles.currentPlanPill}>Atual</span>}
           </div>
           <span className={styles.cardDate}>{plan.date}</span>
         </div>
@@ -367,7 +367,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
               <span className={styles.memberMore}>+{plan.members.length - 3}</span>
             )}
           </div>
-          <span className={styles.cardTasks}>{plan.tasks} tasks</span>
+          <span className={styles.cardTasks}>{plan.tasks} tarefas</span>
         </div>
       </div>
     </button>
@@ -397,7 +397,7 @@ export default function Workspace() {
     if (notificationTimerRef.current) {
       clearTimeout(notificationTimerRef.current)
     }
-    setNotification(`Plan "${newPlan.name}" created`)
+    setNotification(`Plano "${newPlan.name}" criado`)
     notificationTimerRef.current = setTimeout(() => {
       setNotification(null)
       notificationTimerRef.current = null
@@ -434,7 +434,7 @@ export default function Workspace() {
           footer={(
             <button className={styles.sidebarNewPlan} onClick={openNewPlan}>
               <PlusIcon />
-              <span>New plan</span>
+              <span>Novo plano</span>
             </button>
           )}
         />
@@ -445,10 +445,10 @@ export default function Workspace() {
           <button
             className={styles.navItem}
             onClick={openNewPlan}
-            title="New plan"
+            title="Novo plano"
           >
             <span className={styles.navIcon}><PlusIcon /></span>
-            <span className={styles.navLabel}>New</span>
+            <span className={styles.navLabel}>Novo</span>
           </button>
         </div>
       )}
@@ -478,15 +478,15 @@ export default function Workspace() {
           {/* Top bar */}
           <div className={styles.topbar}>
             <div className={styles.topbarLeft}>
-              <h1 className={styles.pageTitle}>Home</h1>
-              <p className={styles.pageSubtitle}>Good morning, Arthur.</p>
+              <h1 className={styles.pageTitle}>Início</h1>
+              <p className={styles.pageSubtitle}>Bom dia, Arthur.</p>
             </div>
             <div className={styles.topbarRight}>
               <div className={styles.searchWrap}>
                 <span className={styles.searchIcon}><SearchIcon /></span>
                 <input
                   className={styles.searchInput}
-                  placeholder="Search plans…"
+                  placeholder="Buscar planos..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
@@ -495,7 +495,7 @@ export default function Workspace() {
                     type="button"
                     className={styles.searchClear}
                     onClick={() => setSearch('')}
-                    aria-label="Clear plan search"
+                    aria-label="Limpar busca de planos"
                   >
                     <XIcon />
                   </button>
@@ -503,7 +503,7 @@ export default function Workspace() {
               </div>
               <button className={styles.newPlanBtn} onClick={openNewPlan}>
                 <PlusIcon />
-                New plan
+                Novo plano
               </button>
             </div>
           </div>
@@ -513,7 +513,7 @@ export default function Workspace() {
             {activePlan && (
               <section className={styles.currentPlanPanel}>
                 <div className={styles.currentPlanPanelCopy}>
-                  <p className={styles.currentPlanEyebrow}>Current plan</p>
+                  <p className={styles.currentPlanEyebrow}>Plano atual</p>
                   <div className={styles.currentPlanHeader}>
                     <h2 className={styles.currentPlanTitle}>{activePlan.name}</h2>
                     <span className={styles.cardTag} style={{ background: activePlan.tagColor + '18', color: activePlan.tagColor }}>
@@ -521,17 +521,17 @@ export default function Workspace() {
                     </span>
                   </div>
                   <p className={styles.currentPlanText}>
-                    {activePlan.description || 'Continue where you left off across board and canvas.'}
+                    {activePlan.description || 'Continue de onde parou no quadro e no Canvas.'}
                   </p>
                 </div>
                 <div className={styles.currentPlanActions}>
                   <button className={styles.currentPlanAction} onClick={() => openBoard(activePlan.id)}>
                     <GridIcon />
-                    Open board
+                    Abrir quadro
                   </button>
                   <button className={styles.currentPlanAction} onClick={() => openCanvas(activePlan.id)}>
                     <CanvasIcon />
-                    Open canvas
+                    Abrir Canvas
                   </button>
                 </div>
               </section>
@@ -539,19 +539,19 @@ export default function Workspace() {
 
             <div className={styles.sectionHeader}>
               <div className={styles.sectionLeft}>
-                <h2 className={styles.sectionTitle}>All plans</h2>
+                <h2 className={styles.sectionTitle}>Todos os planos</h2>
                 <span className={styles.planCount}>{filtered.length}</span>
               </div>
               <div className={styles.viewToggle}>
                 <button
                   className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
                   onClick={() => setView('grid')}
-                  aria-label="Grid view"
+                  aria-label="Visualização em grade"
                 ><GridIcon /></button>
                 <button
                   className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
                   onClick={() => setView('list')}
-                  aria-label="List view"
+                  aria-label="Visualização em lista"
                 ><ListIcon /></button>
               </div>
             </div>
@@ -559,21 +559,21 @@ export default function Workspace() {
             {filtered.length === 0 ? (
               <div className={styles.emptyState}>
                 <span className={styles.emptyStateIcon}><SearchIcon /></span>
-                <p className={styles.emptyStateTitle}>No plans found</p>
+                <p className={styles.emptyStateTitle}>Nenhum plano encontrado</p>
                 <p className={styles.emptyStateHint}>
                   {search
-                    ? `Try another keyword or clear "${search}" to see all plans again.`
-                    : 'Create your first plan to start organizing work across board and canvas.'}
+                    ? `Tente outro termo ou limpe "${search}" para ver tudo.`
+                    : 'Crie seu primeiro plano para organizar o trabalho no quadro e no Canvas.'}
                 </p>
                 <div className={styles.emptyStateActions}>
                   {search && (
                     <button type="button" className={styles.emptyStateBtn} onClick={() => setSearch('')}>
-                      Clear search
+                      Limpar busca
                     </button>
                   )}
                   <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
                     <PlusIcon />
-                    New plan
+                    Novo plano
                   </button>
                 </div>
               </div>
@@ -590,7 +590,7 @@ export default function Workspace() {
                 ))}
                 <button className={styles.newPlanCard} onClick={openNewPlan}>
                   <span className={styles.newPlanIcon}><PlusIcon /></span>
-                  <span className={styles.newPlanLabel}>New plan</span>
+                  <span className={styles.newPlanLabel}>Novo plano</span>
                 </button>
               </div>
             ) : (

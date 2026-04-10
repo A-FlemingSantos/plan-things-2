@@ -1,10 +1,10 @@
 import { ROUTES, normalizePathname } from './routes.js'
 
 export const WORKSPACE_NAV_ITEMS = [
-  { id: 'home', label: 'Home', path: ROUTES.workspace },
+  { id: 'home', label: 'Início', path: ROUTES.workspace },
   { id: 'canvas', label: 'Canvas', path: ROUTES.canvas },
-  { id: 'calendar', label: 'Calendar', path: ROUTES.calendar },
-  { id: 'files', label: 'Files', path: ROUTES.files },
+  { id: 'calendar', label: 'Calendário', path: ROUTES.calendar },
+  { id: 'files', label: 'Arquivos', path: ROUTES.files },
 ]
 
 export const WORKSPACE_NAV_PATHS = Object.fromEntries(

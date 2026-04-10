@@ -2,18 +2,27 @@ import { createClientId } from '../utils/createClientId.js'
 
 const LEGACY_MONTH_INDEX = {
   jan: 1,
+  fev: 2,
   feb: 2,
   mar: 3,
+  abr: 4,
   apr: 4,
+  mai: 5,
   may: 5,
   jun: 6,
   jul: 7,
+  ago: 8,
   aug: 8,
+  set: 9,
   sep: 9,
+  out: 10,
   oct: 10,
   nov: 11,
+  dez: 12,
   dec: 12,
 }
+
+const MONTH_LABELS_PT_BR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 function normalizeComment(comment = {}) {
   return {
@@ -25,7 +34,7 @@ function normalizeComment(comment = {}) {
 }
 
 function extractDayFromDueDate(value = '') {
-  const match = value.match(/(\d{1,2})$/)
+  const match = value.match(/(?:^|\s)(\d{1,2})(?:\s|$)/)
   return match ? Number(match[1]) : null
 }
 
@@ -45,18 +54,20 @@ function deriveLegacyScheduleFromDueDate(fallbackDueDate = '') {
     }
   }
 
-  if (normalizedDueDate.toLowerCase() === 'today') {
+  const normalizedLowerDueDate = normalizedDueDate.toLowerCase()
+
+  if (normalizedLowerDueDate === 'today' || normalizedLowerDueDate === 'hoje') {
     const today = new Date()
 
     return {
       selectedCalendarDay: today.getDate(),
       dueDateValue: formatScheduleDateValue(today.getDate(), today.getMonth() + 1, today.getFullYear() % 100),
-      displayLabel: normalizedDueDate,
+      displayLabel: 'Hoje',
       preserveDisplayLabel: true,
     }
   }
 
-  const monthDayMatch = normalizedDueDate.match(/^([A-Za-z]{3})\s+(\d{1,2})$/)
+  const monthDayMatch = normalizedDueDate.match(/^([A-Za-zÀ-ÿ]{3})\s+(\d{1,2})$/)
 
   if (monthDayMatch) {
     const [, monthLabel, dayValue] = monthDayMatch
@@ -67,7 +78,24 @@ function deriveLegacyScheduleFromDueDate(fallbackDueDate = '') {
       return {
         selectedCalendarDay: day,
         dueDateValue: formatScheduleDateValue(day, month),
-        displayLabel: normalizedDueDate,
+        displayLabel: `${day} ${MONTH_LABELS_PT_BR[month - 1]}`,
+        preserveDisplayLabel: false,
+      }
+    }
+  }
+
+  const dayMonthMatch = normalizedDueDate.match(/^(\d{1,2})\s+([A-Za-zÀ-ÿ]{3})$/)
+
+  if (dayMonthMatch) {
+    const [, dayValue, monthLabel] = dayMonthMatch
+    const month = LEGACY_MONTH_INDEX[monthLabel.toLowerCase()]
+    const day = Number(dayValue)
+
+    if (month && Number.isFinite(day)) {
+      return {
+        selectedCalendarDay: day,
+        dueDateValue: formatScheduleDateValue(day, month),
+        displayLabel: `${day} ${MONTH_LABELS_PT_BR[month - 1]}`,
         preserveDisplayLabel: false,
       }
     }
@@ -84,7 +112,7 @@ function deriveLegacyScheduleFromDueDate(fallbackDueDate = '') {
 }
 
 function normalizeBoardCardSchedule(schedule = {}, fallbackDueDate = '') {
-  const legacySchedule = deriveLegacyScheduleFromDueDate(fallbackDueDate)
+  const legacySchedule = deriveLegacyScheduleFromDueDate(schedule.displayLabel ?? fallbackDueDate)
 
   return {
     selectedCalendarDay: Number.isFinite(schedule.selectedCalendarDay)
@@ -97,22 +125,24 @@ function normalizeBoardCardSchedule(schedule = {}, fallbackDueDate = '') {
     dueTimeValue: schedule.dueTimeValue ?? '16:21',
     recurringValue: schedule.recurringValue ?? 'Nunca',
     reminderValue: schedule.reminderValue ?? '1 dia antes',
-    displayLabel: schedule.displayLabel ?? legacySchedule.displayLabel,
+    displayLabel: legacySchedule.displayLabel,
     preserveDisplayLabel: typeof schedule.preserveDisplayLabel === 'boolean'
-      ? schedule.preserveDisplayLabel
+      ? schedule.preserveDisplayLabel || legacySchedule.preserveDisplayLabel
       : legacySchedule.preserveDisplayLabel,
   }
 }
 
 function normalizeBoardCard(card = {}) {
+  const schedule = normalizeBoardCardSchedule(card.schedule, card.dueDate)
+
   return {
     id: card.id ?? createClientId('card'),
-    title: card.title ?? 'Untitled card',
+    title: card.title ?? 'Cartão sem título',
     description: card.description ?? '',
     labelId: card.labelId ?? '',
     memberIds: Array.isArray(card.memberIds) ? card.memberIds.filter(Boolean) : [],
-    dueDate: card.dueDate ?? '',
-    schedule: normalizeBoardCardSchedule(card.schedule, card.dueDate),
+    dueDate: schedule.displayLabel,
+    schedule,
     comments: Array.isArray(card.comments) ? card.comments.map(normalizeComment) : [],
   }
 }
@@ -120,7 +150,7 @@ function normalizeBoardCard(card = {}) {
 function normalizeBoardColumn(column = {}) {
   return {
     id: column.id ?? createClientId('col'),
-    title: column.title ?? 'Untitled list',
+    title: column.title ?? 'Lista sem título',
     color: column.color ?? '#a0a0a0',
     cards: Array.isArray(column.cards) ? column.cards.map(normalizeBoardCard) : [],
   }
@@ -132,7 +162,7 @@ function normalizeCanvasCard(card = {}) {
     x: Number.isFinite(card.x) ? card.x : 0,
     y: Number.isFinite(card.y) ? card.y : 0,
     h: Number.isFinite(card.h) ? card.h : 130,
-    title: card.title ?? 'Untitled card',
+    title: card.title ?? 'Cartão sem título',
     content: card.content ?? '',
     colorId: card.colorId ?? 'stone',
   }
@@ -161,9 +191,9 @@ export function normalizeCanvasState(canvasState = {}) {
 export function normalizePlanRecord(plan = {}) {
   return {
     id: plan.id ?? createClientId('plan'),
-    name: plan.name ?? 'Untitled plan',
+    name: plan.name ?? 'Plano sem título',
     description: plan.description ?? '',
-    tag: plan.tag ?? 'General',
+    tag: plan.tag ?? 'Geral',
     tagColor: plan.tagColor ?? '#a0a0a0',
     members: Array.isArray(plan.members) ? plan.members.filter(Boolean) : [],
     date: plan.date ?? '',

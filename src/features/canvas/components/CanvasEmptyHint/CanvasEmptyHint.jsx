@@ -4,7 +4,7 @@ export default function CanvasEmptyHint({ tool, CardIcon, styles }) {
   return (
     <div className={styles.emptyHint} style={{ pointerEvents: 'none' }}>
       <span className={styles.emptyHintIcon}><CardIcon /></span>
-      Click anywhere on the canvas to place a card
+      Clique no Canvas para criar um cartão
     </div>
   )
 }

@@ -32,11 +32,11 @@ const CARD_COLORS = [
 ]
 
 const TOOLS = [
-  { id: 'select',  label: 'Select',  key: 'v', tip: 'Select & move (V)' },
-  { id: 'pan',     label: 'Pan',     key: 'h', tip: 'Pan canvas (H)' },
-  { id: 'card',    label: 'Card',    key: 'c', tip: 'Add card (C)' },
-  { id: 'connect', label: 'Connect', key: 'l', tip: 'Link cards (L)' },
-  { id: 'delete',  label: 'Delete',  key: 'd', tip: 'Delete (D)' },
+  { id: 'select',  label: 'Selecionar', key: 'v', tip: 'Selecionar e mover (V)' },
+  { id: 'pan',     label: 'Mover',      key: 'h', tip: 'Mover Canvas (H)' },
+  { id: 'card',    label: 'Cartão',     key: 'c', tip: 'Adicionar cartão (C)' },
+  { id: 'connect', label: 'Conectar',   key: 'l', tip: 'Conectar cartões (L)' },
+  { id: 'delete',  label: 'Excluir',    key: 'd', tip: 'Excluir (D)' },
 ]
 
 /* ═══════════════════════════════════════════════════════
@@ -80,7 +80,7 @@ const NAV = [
   { id: 'calendar', Icon: Ic.Calendar },
   { id: 'files',    Icon: Ic.Files    },
 ]
-const NAV_LABELS = { home: 'Home', canvas: 'Canvas', calendar: 'Calendar', files: 'Files' }
+const NAV_LABELS = { home: 'Início', canvas: 'Canvas', calendar: 'Calendário', files: 'Arquivos' }
 
 function SidebarCollapseIcon() {
   return (
@@ -181,8 +181,8 @@ export default function CanvasPage() {
     >
         <PlanPageHeader
           title={activePlan?.name ?? 'Canvas'}
-          breadcrumbCurrent={activePlan?.name ?? 'Plan'}
-          meta={`${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`}
+          breadcrumbCurrent={activePlan?.name ?? 'Plano'}
+          meta={`${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}`}
           tone="frosted"
           titleSize="large"
         />
@@ -266,8 +266,8 @@ export default function CanvasPage() {
           {/* Empty state / hint */}
           {cards.length === 0 && (
             <div className={styles.emptyState} style={{ pointerEvents: 'none' }}>
-              <p className={styles.emptyStateTitle}>Your canvas is empty</p>
-              <p className={styles.emptyStateHint}>Press <kbd>C</kbd> and click to place your first card</p>
+              <p className={styles.emptyStateTitle}>Seu Canvas está vazio</p>
+              <p className={styles.emptyStateHint}>Pressione <kbd>C</kbd> e clique para criar um cartão</p>
             </div>
           )}
 
@@ -285,7 +285,7 @@ export default function CanvasPage() {
         {connectFrom && (
           <div className={styles.connectBanner}>
             <span className={styles.connectBannerDot} />
-            Click another card to connect — or press <kbd>Esc</kbd> to cancel
+            Clique em outro cartão para conectar ou pressione <kbd>Esc</kbd>
           </div>
         )}
     </ProductAppShell>

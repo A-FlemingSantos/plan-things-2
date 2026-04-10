@@ -14,10 +14,10 @@ const DEFAULT_CARD_SCHEDULE = {
   preserveDisplayLabel: false,
 }
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTH_LABELS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 function extractDayFromDisplayLabel(value = '') {
-  const match = value.match(/(\d{1,2})$/)
+  const match = value.match(/(?:^|\s)(\d{1,2})(?:\s|$)/)
   return match ? Number(match[1]) : null
 }
 
@@ -29,15 +29,15 @@ function formatDueDateLabelFromValue(dateValue, fallbackDay) {
   const match = dateValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
 
   if (!match) {
-    return fallbackDay ? `Apr ${fallbackDay}` : ''
+    return fallbackDay ? `${fallbackDay} abr` : ''
   }
 
   const [, dayValue, monthValue] = match
   const day = Number(dayValue)
   const monthIndex = Number(monthValue) - 1
-  const monthLabel = MONTH_LABELS[monthIndex] ?? 'Apr'
+  const monthLabel = MONTH_LABELS[monthIndex] ?? 'abr'
 
-  return `${monthLabel} ${day}`
+  return `${day} ${monthLabel}`
 }
 
 function buildInitialCardSchedule(card) {
@@ -187,7 +187,7 @@ export default function CardModal({
 
   const addComment = () => {
     if (!comment.trim()) return
-    const c = { id: uid(), author: 'm1', text: comment.trim(), time: 'Just now' }
+    const c = { id: uid(), author: 'm1', text: comment.trim(), time: 'Agora' }
     setComments(prev => [...prev, c])
     setComment('')
   }
@@ -747,8 +747,8 @@ export default function CardModal({
             </button>
           </div>
           <div className={styles.cmHeaderActions}>
-            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Delete card" aria-label="Delete card"><icons.Trash /></button>
-            <button type="button" className={styles.cmIconBtn} onClick={close} title="Close" aria-label="Close card details"><icons.X /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão"><icons.Trash /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão"><icons.X /></button>
           </div>
         </div>
 
@@ -762,8 +762,8 @@ export default function CardModal({
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 rows={1}
-                placeholder="Titulo do cartao"
-                aria-label="Card title"
+                placeholder="Título do cartão"
+                aria-label="Título do cartão"
               />
             </div>
 
@@ -820,15 +820,15 @@ export default function CardModal({
               <div className={styles.cmSection}>
                 <p className={styles.cmSectionTitle}>
                   <icons.List />
-                  Descricao
+                  Descrição
               </p>
               <textarea
                 className={styles.cmDesc}
                 value={desc}
                 onChange={e => setDesc(e.target.value)}
-                placeholder="Adicione uma descricao mais detalhada..."
+                placeholder="Adicione uma descrição..."
                 rows={1}
-                aria-label="Card description"
+                aria-label="Descrição do cartão"
                 />
               </div>
 
@@ -960,7 +960,7 @@ export default function CardModal({
                   {label.text}
                 </span>
               )}
-              <button type="button" className={styles.cmSaveBtn} onClick={save}>Salvar alteracoes</button>
+              <button type="button" className={styles.cmSaveBtn} onClick={save}>Salvar alterações</button>
             </div>
           </div>
 
@@ -968,7 +968,7 @@ export default function CardModal({
             <div className={styles.cmSidebarHeader}>
               <p className={styles.cmSidebarTitle}>
                 <icons.Comment />
-                Comentarios e atividade
+                Comentários e atividade
               </p>
               <button
                 type="button"
@@ -976,7 +976,7 @@ export default function CardModal({
                 onClick={() => setShowDetails(v => !v)}
                 aria-expanded={showDetails}
               >
-                {showDetails ? 'Ocultar Detalhes' : 'Mostrar Detalhes'}
+                {showDetails ? 'Ocultar detalhes' : 'Mostrar detalhes'}
               </button>
             </div>
 
@@ -1046,10 +1046,10 @@ export default function CardModal({
                 <textarea
                   ref={commentTextareaRef}
                   className={styles.cmCommentTextarea}
-                  placeholder="Escrever um comentario..."
+                  placeholder="Escrever comentário..."
                   value={comment}
                   onChange={e => setComment(e.target.value)}
-                  aria-label="Write a comment"
+                  aria-label="Escrever comentário"
                   onFocus={() => setCommentFocused(true)}
                   onBlur={e => {
                     if (
@@ -1073,7 +1073,7 @@ export default function CardModal({
                 className={styles.cmSendBtn}
                 onClick={addComment}
                 disabled={!comment.trim()}
-                aria-label="Send comment"
+                aria-label="Enviar comentário"
               >
                 <icons.Send />
               </button>
@@ -1084,9 +1084,9 @@ export default function CardModal({
                 <span className={styles.cmCommentAvatar} style={{ background: '#6b4fd3' }}>AS</span>
                 <div className={styles.cmActivityContent}>
                   <p className={styles.cmActivityText}>
-                    <strong>Arthur Fleming Santos</strong> adicionou este cartao a {colTitle}
+                    <strong>Arthur Fleming Santos</strong> adicionou este cartão a {colTitle}
                   </p>
-                  <span className={styles.cmCommentTime}>ha 1 hora</span>
+                  <span className={styles.cmCommentTime}>há 1 hora</span>
                 </div>
               </div>
 
@@ -1143,8 +1143,8 @@ export default function CardModal({
                       setDisplayLabel(e.target.value)
                       setPreserveDisplayLabel(false)
                     }}
-                    placeholder="ex: Aug 14"
-                    aria-label="Due date"
+                    placeholder="ex: 14 ago"
+                    aria-label="Data de entrega"
                   />
                 </div>
 
@@ -1178,12 +1178,12 @@ export default function CardModal({
         >
           {[
             { label: 'Texto normal', shortcut: 'Ctrl+Alt+0' },
-            { label: 'Titulo 1', shortcut: 'Ctrl+Alt+1' },
-            { label: 'Titulo 2', shortcut: 'Ctrl+Alt+2' },
-            { label: 'Titulo 3', shortcut: 'Ctrl+Alt+3' },
-            { label: 'Titulo 4', shortcut: 'Ctrl+Alt+4' },
-            { label: 'Titulo 5', shortcut: 'Ctrl+Alt+5' },
-            { label: 'Titulo 6', shortcut: 'Ctrl+Alt+6' },
+            { label: 'Título 1', shortcut: 'Ctrl+Alt+1' },
+            { label: 'Título 2', shortcut: 'Ctrl+Alt+2' },
+            { label: 'Título 3', shortcut: 'Ctrl+Alt+3' },
+            { label: 'Título 4', shortcut: 'Ctrl+Alt+4' },
+            { label: 'Título 5', shortcut: 'Ctrl+Alt+5' },
+            { label: 'Título 6', shortcut: 'Ctrl+Alt+6' },
           ].map(option => (
             <button
               key={option.label}
@@ -1227,7 +1227,7 @@ export default function CardModal({
               onClick={() => setShowMembersMenu(false)}
             >
               <span className={styles.cmMembersMenuCreateIcon}><icons.Plus /></span>
-              Novo Membro
+              Novo membro
             </button>
           </div>
         </div>
@@ -1243,20 +1243,20 @@ export default function CardModal({
           aria-modal="false"
         >
           <div className={styles.cmChecklistMenuHeader}>
-            <h3 className={styles.cmChecklistMenuTitle}>Adicionar Checklist</h3>
+            <h3 className={styles.cmChecklistMenuTitle}>Adicionar checklist</h3>
             <button type="button" className={styles.cmChecklistMenuClose} onClick={() => setShowChecklistMenu(false)}>
               <icons.X />
             </button>
           </div>
 
           <div className={styles.cmChecklistMenuBody}>
-            <label className={styles.cmChecklistMenuLabel}>Titulo</label>
+            <label className={styles.cmChecklistMenuLabel}>Título</label>
             <input
               type="text"
               className={styles.cmChecklistMenuInput}
               value={checklistTitle}
               onChange={e => setChecklistTitle(e.target.value)}
-              aria-label="Checklist title"
+              aria-label="Título do checklist"
             />
             <button
               type="button"
@@ -1350,7 +1350,7 @@ export default function CardModal({
 
           <div className={styles.cmChecklistDateMenuFields}>
             <div className={styles.cmChecklistDateMenuFieldGroup}>
-              <label className={styles.cmChecklistDateMenuFieldLabel}>Data de Inicio</label>
+              <label className={styles.cmChecklistDateMenuFieldLabel}>Data de início</label>
               <div className={styles.cmChecklistDateMenuInputRow}>
                 <button
                   type="button"
@@ -1366,13 +1366,13 @@ export default function CardModal({
                   value={checklistStartDateValue}
                   onChange={e => setChecklistStartDateValue(e.target.value)}
                   disabled={!checklistStartEnabled}
-                  aria-label="Checklist start date"
+                  aria-label="Data inicial do checklist"
                 />
               </div>
             </div>
 
             <div className={styles.cmChecklistDateMenuFieldGroup}>
-              <label className={styles.cmChecklistDateMenuFieldLabel}>Data de Entrega</label>
+              <label className={styles.cmChecklistDateMenuFieldLabel}>Data de entrega</label>
               <div className={styles.cmChecklistDateMenuInputRow}>
                 <button
                   type="button"
@@ -1394,7 +1394,7 @@ export default function CardModal({
                   value={checklistDueValue}
                   onChange={e => setChecklistDueValue(e.target.value)}
                   disabled={!checklistDueEnabled}
-                  aria-label="Checklist due date"
+                  aria-label="Data de entrega do checklist"
                 />
               </div>
             </div>
@@ -1509,7 +1509,7 @@ export default function CardModal({
                   value={startDateValue}
                   onChange={e => setStartDateValue(e.target.value)}
                   disabled={!startEnabled}
-                  aria-label="Start date"
+                  aria-label="Data inicial"
                 />
               </div>
             </div>
@@ -1530,7 +1530,7 @@ export default function CardModal({
                   value={dueDateValue}
                   onChange={e => setDueDateValue(e.target.value)}
                   disabled={!dueEnabled}
-                  aria-label="Due date"
+                  aria-label="Data de entrega"
                 />
                 <input
                   type="text"
@@ -1538,7 +1538,7 @@ export default function CardModal({
                   value={dueTimeValue}
                   onChange={e => setDueTimeValue(e.target.value)}
                   disabled={!dueEnabled}
-                  aria-label="Due time"
+                  aria-label="Hora de entrega"
                 />
               </div>
             </div>
@@ -1557,7 +1557,7 @@ export default function CardModal({
                 <span>{reminderValue}</span>
                 <span className={styles.cmDateMenuSelectChevron}><icons.Chevron /></span>
               </button>
-              <p className={styles.cmDateMenuHint}>Lembretes serao enviados a todos os membros e seguidores deste cartao.</p>
+              <p className={styles.cmDateMenuHint}>Lembretes serão enviados aos membros e seguidores deste cartão.</p>
             </div>
           </div>
 
@@ -1593,8 +1593,8 @@ export default function CardModal({
               icon: <icons.Image />,
             },
             {
-              label: 'Codigo',
-              description: 'Exibir codigo com destaque',
+              label: 'Código',
+              description: 'Exibir código com destaque',
               icon: <icons.Code />,
             },
           ].map(option => (

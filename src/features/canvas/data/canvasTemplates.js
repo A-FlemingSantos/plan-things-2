@@ -7,8 +7,8 @@ const SAMPLE_CARDS = [
     x: 160,
     y: 160,
     h: 130,
-    title: 'Product Vision',
-    content: 'Build the most intuitive project management tool for modern teams who think clearly.',
+    title: 'Visão do produto',
+    content: 'Criar a ferramenta de gestão mais intuitiva para equipes modernas.',
     colorId: 'stone',
   },
   {
@@ -16,8 +16,8 @@ const SAMPLE_CARDS = [
     x: 500,
     y: 80,
     h: 130,
-    title: 'User Research',
-    content: 'Interview 20 active users. Identify the top 3 pain points in their current workflow.',
+    title: 'Pesquisa com usuários',
+    content: 'Entrevistar 20 usuários ativos. Identificar os 3 maiores atritos do fluxo atual.',
     colorId: 'blue',
   },
   {
@@ -26,7 +26,7 @@ const SAMPLE_CARDS = [
     y: 320,
     h: 130,
     title: 'Design System',
-    content: 'Tokens, components, patterns. Single source of truth for all product decisions.',
+    content: 'Tokens, componentes e padrões. Fonte única para decisões de produto.',
     colorId: 'purple',
   },
   {
@@ -34,8 +34,8 @@ const SAMPLE_CARDS = [
     x: 850,
     y: 200,
     h: 130,
-    title: 'Q3 Launch',
-    content: 'Public release: September 15. Prepare changelog, press kit, and onboarding flow.',
+    title: 'Lançamento Q3',
+    content: 'Release público: 15 de setembro. Preparar changelog, press kit e onboarding.',
     colorId: 'green',
   },
 ]

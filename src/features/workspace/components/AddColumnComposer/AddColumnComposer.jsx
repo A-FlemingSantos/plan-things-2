@@ -14,10 +14,10 @@ export default function AddColumnComposer({
         <div className={styles.addColForm}>
           <input
             className={styles.addColInput}
-            placeholder="List name…"
+            placeholder="Nome da lista..."
             value={newColTitle}
             onChange={(event) => setNewColTitle(event.target.value)}
-            aria-label="List name"
+            aria-label="Nome da lista"
             autoFocus
             onKeyDown={(event) => {
               if (event.key === 'Enter') addColumn()
@@ -29,9 +29,9 @@ export default function AddColumnComposer({
           />
           <div className={styles.addColActions}>
             <button type="button" className={styles.addColSubmit} onClick={addColumn} disabled={!newColTitle.trim()}>
-              Add list
+              Adicionar lista
             </button>
-            <button type="button" className={styles.addColCancel} onClick={() => { setAddingCol(false); setNewColTitle('') }} aria-label="Cancel new list">
+            <button type="button" className={styles.addColCancel} onClick={() => { setAddingCol(false); setNewColTitle('') }} aria-label="Cancelar nova lista">
               <XIcon />
             </button>
           </div>
@@ -39,7 +39,7 @@ export default function AddColumnComposer({
       ) : (
         <button type="button" className={styles.addColBtn} onClick={() => setAddingCol(true)}>
           <PlusIcon />
-          Add list
+          Adicionar lista
         </button>
       )}
     </div>

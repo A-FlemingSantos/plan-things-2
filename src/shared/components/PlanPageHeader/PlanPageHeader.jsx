@@ -33,7 +33,7 @@ export default function PlanPageHeader({
   return (
     <header className={headerClassName}>
       <div className={styles.left}>
-        <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+        <nav className={styles.breadcrumb} aria-label="Caminho">
           <Link to={breadcrumbRootPath} className={styles.breadcrumbLink}>{breadcrumbRootLabel}</Link>
           <span className={styles.breadcrumbSep}>›</span>
           <span className={styles.breadcrumbCurrent}>{breadcrumbCurrent}</span>

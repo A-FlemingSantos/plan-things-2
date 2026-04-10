@@ -48,7 +48,7 @@ export default function KanbanCard({
           onClick()
         }
       }}
-      aria-label={`Open card ${card.title}`}
+      aria-label={`Abrir cartão ${card.title}`}
     >
       {label ? (
         <span className={styles.cardLabel} style={{ background: `${label.color}20`, color: label.color }}>
@@ -81,7 +81,7 @@ export default function KanbanCard({
           ) : null}
 
           {card.dueDate ? (
-            <span className={`${styles.cardDue} ${card.dueDate === 'Today' ? styles.cardDueUrgent : ''}`}>
+            <span className={`${styles.cardDue} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}>
               <ClockIcon />
               {card.dueDate}
             </span>

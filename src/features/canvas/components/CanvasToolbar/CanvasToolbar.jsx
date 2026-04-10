@@ -24,7 +24,7 @@ export default function CanvasToolbar({
         type="button"
         className={styles.toolbarHandle}
         onClick={onToggle}
-        title="Toggle toolbar"
+        title="Alternar barra de ferramentas"
         aria-expanded={open}
         aria-controls="canvas-toolbar-panel"
       >
@@ -60,15 +60,15 @@ export default function CanvasToolbar({
           <div className={styles.toolbarDivider} />
 
           <div className={styles.toolbarGroup}>
-            <button type="button" className={styles.toolbarIconBtn} onClick={onZoomOut} title="Zoom out" aria-label="Zoom out">
+            <button type="button" className={styles.toolbarIconBtn} onClick={onZoomOut} title="Reduzir zoom" aria-label="Reduzir zoom">
               <MinusIcon />
             </button>
             <span className={styles.toolbarZoomLabel}>{Math.round(zoom * 100)}%</span>
-            <button type="button" className={styles.toolbarIconBtn} onClick={onZoomIn} title="Zoom in" aria-label="Zoom in">
+            <button type="button" className={styles.toolbarIconBtn} onClick={onZoomIn} title="Aumentar zoom" aria-label="Aumentar zoom">
               <PlusIcon />
             </button>
             <div className={styles.toolbarMiniDivider} />
-            <button type="button" className={styles.toolbarIconBtn} onClick={onFit} title="Fit to view" aria-label="Fit to view">
+            <button type="button" className={styles.toolbarIconBtn} onClick={onFit} title="Ajustar à tela" aria-label="Ajustar à tela">
               <FitIcon />
             </button>
           </div>

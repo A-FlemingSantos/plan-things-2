@@ -83,10 +83,10 @@ const FILE_TYPES = {
 }
 
 const SIDEBAR_NAV = [
-  { id: 'home',     label: 'Home',     Icon: Icon.Home,     path: ROUTES.workspace },
+  { id: 'home',     label: 'Início',   Icon: Icon.Home,     path: ROUTES.workspace },
   { id: 'canvas',   label: 'Canvas',   Icon: Icon.Canvas,   path: ROUTES.canvas },
-  { id: 'calendar', label: 'Calendar', Icon: Icon.Calendar, path: ROUTES.calendar },
-  { id: 'files',    label: 'Files',    Icon: Icon.Files,    path: ROUTES.files },
+  { id: 'calendar', label: 'Calendário', Icon: Icon.Calendar, path: ROUTES.calendar },
+  { id: 'files',    label: 'Arquivos', Icon: Icon.Files,    path: ROUTES.files },
 ]
 
 const STORAGE_USED = 28.4  // GB
@@ -97,9 +97,13 @@ const STORAGE_TOTAL = 100  // GB
 ═══════════════════════════════════════════ */
 const IMG_GRADIENTS = {
   'hero-mockup.png':    'linear-gradient(135deg,#4290da,#d4aef1)',
-  'Onboarding Flow.png':'linear-gradient(135deg,#0f703a,#4290da)',
-  'Hero Animation.gif': 'linear-gradient(135deg,#ff6766,#f5a623)',
-  'cover-photo.jpg':    'linear-gradient(135deg,#d4aef1,#ff6766)',
+  'fluxo-onboarding.png':'linear-gradient(135deg,#0f703a,#4290da)',
+  'animacao-hero.gif': 'linear-gradient(135deg,#ff6766,#f5a623)',
+  'foto-capa.jpg':    'linear-gradient(135deg,#d4aef1,#ff6766)',
+}
+
+function formatOwner(owner) {
+  return owner === 'me' ? 'Eu' : owner
 }
 
 /* ═══════════════════════════════════════════
@@ -118,26 +122,26 @@ function ContextMenu({ x, y, item, onAction, onClose }) {
 
   const actions = item.type === 'folder'
     ? [
-        { id: 'open',     label: 'Open',           Icon: Icon.Folder, shortcut: 'Enter' },
-        { id: 'share',    label: 'Share',           Icon: Icon.Share },
-        { id: 'copy',     label: 'Copy link',       Icon: Icon.Link, shortcut: '⌘C' },
+        { id: 'open',     label: 'Abrir',           Icon: Icon.Folder, shortcut: 'Enter' },
+        { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
+        { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
         null,
-        { id: 'rename',   label: 'Rename',          Icon: Icon.Edit, shortcut: 'R' },
-        { id: 'move',     label: 'Move to',         Icon: Icon.Move },
+        { id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' },
+        { id: 'move',     label: 'Mover para',      Icon: Icon.Move },
         null,
-        { id: 'delete',   label: 'Delete',          Icon: Icon.Trash, danger: true, shortcut: 'Del' },
+        { id: 'delete',   label: 'Excluir',         Icon: Icon.Trash, danger: true, shortcut: 'Del' },
       ]
     : [
-        { id: 'preview',  label: 'Preview',         Icon: Icon.Eye, shortcut: 'Space' },
-        { id: 'download', label: 'Download',        Icon: Icon.Download },
-        { id: 'share',    label: 'Share',           Icon: Icon.Share },
-        { id: 'copy',     label: 'Copy link',       Icon: Icon.Link, shortcut: '⌘C' },
+        { id: 'preview',  label: 'Prévia',          Icon: Icon.Eye, shortcut: 'Space' },
+        { id: 'download', label: 'Baixar',          Icon: Icon.Download },
+        { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
+        { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
         null,
-        { id: 'star',     label: item.starred ? 'Unstar' : 'Star', Icon: item.starred ? Icon.StarFill : Icon.Star },
-        { id: 'rename',   label: 'Rename',          Icon: Icon.Edit, shortcut: 'R' },
-        { id: 'move',     label: 'Move to',         Icon: Icon.Move },
+        { id: 'star',     label: item.starred ? 'Remover estrela' : 'Favoritar', Icon: item.starred ? Icon.StarFill : Icon.Star },
+        { id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' },
+        { id: 'move',     label: 'Mover para',      Icon: Icon.Move },
         null,
-        { id: 'delete',   label: 'Delete',          Icon: Icon.Trash, danger: true, shortcut: 'Del' },
+        { id: 'delete',   label: 'Excluir',         Icon: Icon.Trash, danger: true, shortcut: 'Del' },
       ]
 
   // Clamp to viewport
@@ -215,19 +219,19 @@ function FileCard({ item, selected, onSelect, onOpen, onContextMenu, onToggleSta
           <button
             className={`${styles.fileCardActionBtn} ${item.starred ? styles.fileCardActionBtnActive : ''}`}
             onClick={e => { e.stopPropagation(); onToggleStar(item.id) }}
-            title={item.starred ? 'Unstar' : 'Star'}
+            title={item.starred ? 'Remover estrela' : 'Favoritar'}
           >
             {item.starred ? <Icon.StarFill /> : <Icon.Star />}
           </button>
           <button
             className={styles.fileCardActionBtn}
             onClick={e => { e.stopPropagation(); onContextMenu(e, item) }}
-            title="More options"
+            title="Mais opções"
           >
             <Icon.More />
           </button>
         </div>
-        {item.shared && <span className={styles.sharedBadge}>Shared</span>}
+        {item.shared && <span className={styles.sharedBadge}>Compartilhado</span>}
       </div>
 
       {/* Footer */}
@@ -271,11 +275,11 @@ function FileRow({ item, selected, onSelect, onOpen, onContextMenu, onToggleStar
           ) : (
             <span className={styles.fileRowNameText}>{item.name}</span>
           )}
-          {item.shared && <span className={styles.fileRowShared}>Shared</span>}
+          {item.shared && <span className={styles.fileRowShared}>Compartilhado</span>}
         </div>
       </div>
       <div className={styles.fileRowMeta}>
-        <span className={styles.fileRowOwner}>{item.owner}</span>
+        <span className={styles.fileRowOwner}>{formatOwner(item.owner)}</span>
         <span className={styles.fileRowDate}>{item.modified}</span>
           <span className={styles.fileRowSize}>{formatFileSize(item.size)}</span>
         <div className={styles.fileRowActions}>
@@ -301,18 +305,20 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
   const typeInfo = FILE_TYPES[item.type] || FILE_TYPES.generic
   const FileIcon = typeInfo.icon
   const imgGrad = IMG_GRADIENTS[item.name]
+  const typeLabel = item.type === 'folder' ? 'Pasta' : 'Arquivo'
+  const ownerLabel = item.owner === 'me' ? 'Arthur Santos' : item.owner
   const activityRows = [
-    `${item.owner === 'me' ? 'You' : item.owner} updated this ${item.type === 'folder' ? 'folder' : 'file'} ${item.modified.toLowerCase()}`,
-    item.shared ? 'Shared with the product workspace' : 'Only you can access this item',
-    item.starred ? 'Pinned to Starred for quick access' : 'Not starred yet',
+    `${item.owner === 'me' ? 'Você' : item.owner} atualizou ${item.type === 'folder' ? 'esta pasta' : 'este arquivo'} ${item.modified.toLowerCase()}`,
+    item.shared ? 'Compartilhado com o workspace de produto' : 'Só você acessa este item',
+    item.starred ? 'Fixado nos favoritos' : 'Ainda sem estrela',
   ]
 
   return (
     <div className={styles.detailPanel}>
       <div className={styles.detailPanelHeader}>
         <div>
-          <p className={styles.detailPanelEyebrow}>Inspector</p>
-          <p className={styles.detailPanelTitle}>File info</p>
+          <p className={styles.detailPanelEyebrow}>Inspetor</p>
+          <p className={styles.detailPanelTitle}>Info do arquivo</p>
         </div>
         <button className={styles.detailPanelClose} onClick={onClose}><Icon.X /></button>
       </div>
@@ -327,41 +333,41 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
       <div className={styles.detailPanelBody}>
         <div className={styles.detailPanelSummary}>
           <p className={styles.detailPanelName}>{item.name}</p>
-          <span className={styles.detailPanelType}>{item.type} · {formatFileSize(item.size)}</span>
+          <span className={styles.detailPanelType}>{typeLabel} · {formatFileSize(item.size)}</span>
         </div>
 
         <div className={styles.detailPanelActions}>
           <button className={styles.detailAction} onClick={() => onAction('download', item)}>
-            <Icon.Download /> Download
+            <Icon.Download /> Baixar
           </button>
           <button className={styles.detailAction} onClick={() => onAction('share', item)}>
-            <Icon.Share /> Share
+            <Icon.Share /> Compartilhar
           </button>
           <button
             className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
             onClick={() => onToggleStar(item.id)}
           >
             {item.starred ? <Icon.StarFill /> : <Icon.Star />}
-            {item.starred ? 'Starred' : 'Star'}
+            {item.starred ? 'Favorito' : 'Favoritar'}
           </button>
         </div>
 
-        <div className={styles.detailTabs} aria-label="File inspector sections">
-          <button className={`${styles.detailTab} ${styles.detailTabActive}`}>Details</button>
-          <button className={styles.detailTab}>Activity</button>
-          <button className={styles.detailTab}>Versions</button>
-          <button className={styles.detailTab}>Sharing</button>
+        <div className={styles.detailTabs} aria-label="Seções do inspetor">
+          <button className={`${styles.detailTab} ${styles.detailTabActive}`}>Detalhes</button>
+          <button className={styles.detailTab}>Atividade</button>
+          <button className={styles.detailTab}>Versões</button>
+          <button className={styles.detailTab}>Compartilhamento</button>
         </div>
 
         <div className={styles.detailSection}>
-          <p className={styles.detailSectionTitle}>Properties</p>
+          <p className={styles.detailSectionTitle}>Propriedades</p>
           <div className={styles.detailMeta}>
             {[
-              { label: 'Type',      value: item.type.charAt(0).toUpperCase() + item.type.slice(1) },
-        { label: 'Size',      value: formatFileSize(item.size) },
-              { label: 'Modified',  value: item.modified },
-              { label: 'Owner',     value: item.owner === 'me' ? 'Arthur Santos' : item.owner },
-              { label: 'Shared',    value: item.shared ? 'Yes — with team' : 'No' },
+              { label: 'Tipo',      value: typeLabel },
+              { label: 'Tamanho',   value: formatFileSize(item.size) },
+              { label: 'Modificado', value: item.modified },
+              { label: 'Dono',      value: ownerLabel },
+              { label: 'Compartilhado', value: item.shared ? 'Sim, com a equipe' : 'Não' },
             ].map(row => (
               <div key={row.label} className={styles.detailMetaRow}>
                 <span className={styles.detailMetaLabel}>{row.label}</span>
@@ -372,7 +378,7 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
         </div>
 
         <div className={styles.detailSection}>
-          <p className={styles.detailSectionTitle}>Recent activity</p>
+          <p className={styles.detailSectionTitle}>Atividade recente</p>
           <div className={styles.detailActivity}>
             {activityRows.map(row => (
               <div key={row} className={styles.detailActivityRow}>
@@ -385,12 +391,12 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
 
         <div className={styles.detailSharingCard}>
           <div>
-            <p className={styles.detailSharingTitle}>{item.shared ? 'Team access' : 'Private file'}</p>
+            <p className={styles.detailSharingTitle}>{item.shared ? 'Acesso da equipe' : 'Arquivo privado'}</p>
             <p className={styles.detailSharingText}>
-              {item.shared ? 'Anyone in this workspace can view the latest version.' : 'Share a link when this is ready for review.'}
+              {item.shared ? 'Todos no workspace podem ver a versão mais recente.' : 'Compartilhe um link quando estiver pronto para review.'}
             </p>
           </div>
-          <button className={styles.detailSharingBtn} onClick={() => onAction('share', item)}>Manage</button>
+          <button className={styles.detailSharingBtn} onClick={() => onAction('share', item)}>Gerenciar</button>
         </div>
       </div>
     </div>
@@ -514,20 +520,20 @@ export default function FilesPage() {
       setLibrary((prev) => updateLibraryItem(prev, item.id, markLibraryItemDeleted))
       if (detailItemId === item.id) setDetailItemId(null)
       if (selected === item.id) setSelected(null)
-      showNotification(`"${item.name}" moved to Trash`)
+      showNotification(`"${item.name}" movido para a lixeira`)
     } else if (action === 'download') {
-      showNotification(`Downloading "${item.name}"…`)
+      showNotification(`Baixando "${item.name}"...`)
     } else if (action === 'share') {
-      showNotification(`Share link copied for "${item.name}"`)
+      showNotification(`Link de "${item.name}" copiado`)
     } else if (action === 'copy') {
-      showNotification('Link copied to clipboard')
+      showNotification('Link copiado')
     } else if (action === 'open') {
       openItem(item)
     } else if (action === 'preview') {
       setDetailItemId(item.id)
-      showNotification(`Previewing "${item.name}"`)
+      showNotification(`Prévia de "${item.name}"`)
     } else if (action === 'move') {
-      showNotification(`Move options opened for "${item.name}"`)
+      showNotification(`Opções de mover abertas para "${item.name}"`)
     }
   }, [detailItemId, selected])
 
@@ -585,12 +591,12 @@ export default function FilesPage() {
         const newFile = {
           name, type: getFileTypeFromName(name),
           size: Math.floor(Math.random() * 5000000 + 50000),
-          modified: 'Just now', starred: false, shared: false, owner: 'me', deleted: false,
+          modified: 'Agora', starred: false, shared: false, owner: 'me', deleted: false,
         }
         const targetPath = sidebarSection === 'my-files' ? currentPath : []
         setLibrary((prev) => insertLibraryItem(prev, targetPath, newFile))
         setSidebarSection('my-files')
-        showNotification(`"${name}" uploaded successfully`)
+        showNotification(`"${name}" enviado`)
       }
     }, 180)
     uploadIntervalsRef.current.set(id, interval)
@@ -609,15 +615,15 @@ export default function FilesPage() {
 
   const handleNewFolder = () => {
     const folder = createLibraryItem({
-      name: 'Untitled folder',
+      name: 'Nova pasta',
       type: 'folder',
-      modified: 'Just now',
+      modified: 'Agora',
     })
     const targetPath = sidebarSection === 'my-files' ? currentPath : []
     setLibrary((prev) => insertLibraryItem(prev, targetPath, folder))
     setSidebarSection('my-files')
     setTimeout(() => setRenamingId(folder.id), 80)
-    showNotification('New folder created')
+    showNotification('Pasta criada')
   }
 
   const dismissUpload = (id) => {
@@ -639,49 +645,49 @@ export default function FilesPage() {
   }
 
   const sectionLabel = {
-    'my-files': 'My Files',
-    'recent':   'Recent',
-    'starred':  'Starred',
-    'shared':   'Shared with me',
-    'trash':    'Trash',
+    'my-files': 'Meus arquivos',
+    'recent':   'Recentes',
+    'starred':  'Favoritos',
+    'shared':   'Compartilhados',
+    'trash':    'Lixeira',
   }[sidebarSection]
 
   const selectedItem = selected ? filteredFiles.find((item) => item.id === selected) || detailItem : null
   const emptyState = search
     ? {
         icon: Icon.Search,
-        title: `No results for "${search}"`,
-        hint: 'Try another name, owner, or file type.',
-        action: 'Clear search',
+        title: `Sem resultados para "${search}"`,
+        hint: 'Tente outro nome, dono ou tipo.',
+        action: 'Limpar busca',
         onAction: () => setSearch(''),
       }
     : {
         'my-files': {
           icon: Icon.CloudUp,
-          title: 'Bring your work into Files',
-          hint: 'Upload documents, images, and folders into a clean workspace.',
-          action: 'Upload files',
+          title: 'Traga seu trabalho para Arquivos',
+          hint: 'Envie documentos, imagens e pastas para o workspace.',
+          action: 'Enviar arquivos',
           onAction: () => fileInputRef.current?.click(),
         },
         recent: {
           icon: Icon.Recent,
-          title: 'No recent activity yet',
-          hint: 'Files you open, upload, or update will appear here.',
+          title: 'Sem atividade recente',
+          hint: 'Arquivos abertos, enviados ou atualizados aparecem aqui.',
         },
         starred: {
           icon: Icon.StarMenu,
-          title: 'No starred files',
-          hint: 'Star important work to keep it one click away.',
+          title: 'Sem favoritos',
+          hint: 'Marque trabalhos importantes para achá-los rápido.',
         },
         shared: {
           icon: Icon.Shared,
-          title: 'Nothing shared with you',
-          hint: 'Team documents and review links will collect here.',
+          title: 'Nada compartilhado',
+          hint: 'Docs da equipe e links de review aparecem aqui.',
         },
         trash: {
           icon: Icon.Trash2,
-          title: 'Trash is empty',
-          hint: 'Deleted files will appear here before they are permanently removed.',
+          title: 'Lixeira vazia',
+          hint: 'Arquivos excluídos aparecem aqui antes de sumirem de vez.',
         },
       }[sidebarSection]
   const EmptyIcon = emptyState.icon
@@ -691,13 +697,13 @@ export default function FilesPage() {
     <>
       {!collapsed && (
         <div className={styles.filesNav}>
-          <p className={styles.filesNavLabel}>Files</p>
+          <p className={styles.filesNavLabel}>Arquivos</p>
           {[
-            { id: 'my-files', label: 'My Files',      Ic: Icon.MyFiles },
-            { id: 'recent',   label: 'Recent',         Ic: Icon.Recent },
-            { id: 'starred',  label: 'Starred',        Ic: Icon.StarMenu },
-            { id: 'shared',   label: 'Shared with me', Ic: Icon.Shared },
-            { id: 'trash',    label: 'Trash',          Ic: Icon.Trash2 },
+            { id: 'my-files', label: 'Meus arquivos', Ic: Icon.MyFiles },
+            { id: 'recent',   label: 'Recentes',      Ic: Icon.Recent },
+            { id: 'starred',  label: 'Favoritos',     Ic: Icon.StarMenu },
+            { id: 'shared',   label: 'Compartilhados', Ic: Icon.Shared },
+            { id: 'trash',    label: 'Lixeira',       Ic: Icon.Trash2 },
           ].map(({ id, label, Ic }) => (
             <button
               key={id}
@@ -719,7 +725,7 @@ export default function FilesPage() {
       {!collapsed && (
         <div className={styles.storageSection}>
           <div className={styles.storageHeader}>
-            <span className={styles.storageLabel}>Storage</span>
+            <span className={styles.storageLabel}>Armazenamento</span>
             <span className={styles.storageNums}>{STORAGE_USED} / {STORAGE_TOTAL} GB</span>
           </div>
           <div className={styles.storageBar}>
@@ -728,7 +734,7 @@ export default function FilesPage() {
               style={{ width: `${storagePercent}%`, background: storagePercent > 80 ? 'var(--color-red)' : 'var(--color-black)' }}
             />
           </div>
-          <p className={styles.storageInfo}>{(STORAGE_TOTAL - STORAGE_USED).toFixed(1)} GB available</p>
+          <p className={styles.storageInfo}>{(STORAGE_TOTAL - STORAGE_USED).toFixed(1)} GB disponíveis</p>
         </div>
       )}
     </>
@@ -787,11 +793,11 @@ export default function FilesPage() {
           <div className={styles.topBarRight}>
             {selectedItem ? (
               <div className={styles.selectionToolbar}>
-                <span className={styles.selectionCount}>1 selected</span>
-                <button className={styles.selectionAction} onClick={() => handleContextAction('download', selectedItem)}><Icon.Download /> Download</button>
-                <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Share</button>
-                <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Move</button>
-                <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Delete</button>
+                <span className={styles.selectionCount}>1 selecionado</span>
+                <button className={styles.selectionAction} onClick={() => handleContextAction('download', selectedItem)}><Icon.Download /> Baixar</button>
+                <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>
+                <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Mover</button>
+                <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Excluir</button>
                 <button className={styles.selectionClear} onClick={() => { setSelected(null); setDetailItemId(null) }}><Icon.X /></button>
               </div>
             ) : (
@@ -801,7 +807,7 @@ export default function FilesPage() {
                   <span className={styles.searchIcon}><Icon.Search /></span>
                   <input
                     className={styles.searchInput}
-                    placeholder="Search files…"
+                    placeholder="Buscar arquivos..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
@@ -816,16 +822,16 @@ export default function FilesPage() {
                     value={sortBy}
                     onChange={e => setSortBy(e.target.value)}
                   >
-                    <option value="modified">Modified</option>
-                    <option value="name">Name</option>
-                    <option value="size">Size</option>
+                    <option value="modified">Modificado</option>
+                    <option value="name">Nome</option>
+                    <option value="size">Tamanho</option>
                   </select>
                 </div>
 
                 {/* View toggle */}
                 <div className={styles.viewToggle}>
-                  <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grid view"><Icon.Grid /></button>
-                  <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="List view"><Icon.List /></button>
+                  <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
+                  <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
                 </div>
 
                 <div className={styles.topBarDivider} />
@@ -833,13 +839,13 @@ export default function FilesPage() {
                 {/* New folder */}
                 <button className={styles.newFolderBtn} onClick={handleNewFolder}>
                   <Icon.NewFolder />
-                  New folder
+                  Nova pasta
                 </button>
 
                 {/* Upload */}
                 <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
                   <Icon.Upload />
-                  Upload
+                  Enviar
                 </button>
               </>
             )}
@@ -860,7 +866,7 @@ export default function FilesPage() {
             <div className={styles.dropOverlay}>
               <div className={styles.dropOverlayInner}>
                 <Icon.CloudUp />
-                <p>Drop files to upload</p>
+                <p>Solte os arquivos para enviar</p>
               </div>
             </div>
           )}
@@ -872,9 +878,9 @@ export default function FilesPage() {
                 {breadcrumb.length ? breadcrumb[breadcrumb.length - 1].name : sectionLabel}
               </p>
               <div className={styles.filesAreaMeta}>
-                <span>{filteredFiles.length} {filteredFiles.length === 1 ? 'item' : 'items'}</span>
+                <span>{filteredFiles.length} {filteredFiles.length === 1 ? 'item' : 'itens'}</span>
                 <span className={styles.filesAreaDot} />
-                <span>Synced just now</span>
+                <span>Sincronizado agora</span>
               </div>
             </div>
 
@@ -885,7 +891,7 @@ export default function FilesPage() {
                 <p className={styles.emptyHint}>{emptyState.hint}</p>
                 {emptyState.action && (
                   <button className={styles.emptyUploadBtn} onClick={emptyState.onAction}>
-                    {emptyState.action === 'Upload files' && <Icon.Upload />}
+                    {emptyState.action === 'Enviar arquivos' && <Icon.Upload />}
                     {emptyState.action}
                   </button>
                 )}
@@ -914,10 +920,10 @@ export default function FilesPage() {
             ) : (
               <div className={styles.fileList}>
                 <div className={styles.fileListHeader}>
-                  <span className={styles.fileListHdrName}>Name</span>
-                  <span className={styles.fileListHdrOwner}>Owner</span>
-                  <span className={styles.fileListHdrDate}>Modified</span>
-                  <span className={styles.fileListHdrSize}>Size</span>
+                  <span className={styles.fileListHdrName}>Nome</span>
+                  <span className={styles.fileListHdrOwner}>Dono</span>
+                  <span className={styles.fileListHdrDate}>Modificado</span>
+                  <span className={styles.fileListHdrSize}>Tamanho</span>
                   <span className={styles.fileListHdrActions} />
                 </div>
                 {filteredFiles.map(item => (

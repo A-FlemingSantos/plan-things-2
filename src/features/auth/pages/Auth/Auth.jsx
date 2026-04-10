@@ -171,7 +171,7 @@ export default function Auth({ initialMode = 'login' }) {
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="voce@exemplo.com"
+                placeholder="você@exemplo.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className={styles.input}

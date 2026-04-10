@@ -34,65 +34,65 @@ export function createLibraryItem(data) {
 
 const INITIAL_LIBRARY = [
   createLibraryItem({
-    name: 'Product Design',
+    name: 'Design do Produto',
     type: 'folder',
-    modified: '2 hours ago',
+    modified: 'há 2h',
     starred: true,
     shared: true,
     children: [
       createLibraryItem({
-        name: 'Components',
+        name: 'Componentes',
         type: 'folder',
-        modified: '1 day ago',
+        modified: 'há 1 dia',
         shared: true,
         children: [
-          createLibraryItem({ name: 'Button states.fig', type: 'generic', size: 2380000, modified: 'Today', shared: true }),
-          createLibraryItem({ name: 'Card anatomy.md', type: 'doc', size: 18600, modified: 'Yesterday', owner: 'Ana R.' }),
+          createLibraryItem({ name: 'estados-botao.fig', type: 'generic', size: 2380000, modified: 'Hoje', shared: true }),
+          createLibraryItem({ name: 'anatomia-card.md', type: 'doc', size: 18600, modified: 'Ontem', owner: 'Ana R.' }),
         ],
       }),
-      createLibraryItem({ name: 'Icons', type: 'folder', modified: '3 days ago' }),
-      createLibraryItem({ name: 'hero-mockup.png', type: 'image', size: 3100000, modified: '2 hours ago', starred: true, shared: true }),
-      createLibraryItem({ name: 'kanban-spec.pdf', type: 'pdf', size: 1240000, modified: 'Yesterday', owner: 'Ana R.' }),
-      createLibraryItem({ name: 'color-system.json', type: 'code', size: 8200, modified: '5 days ago', shared: true }),
-      createLibraryItem({ name: 'cover-photo.jpg', type: 'image', size: 2900000, modified: '1 week ago' }),
+      createLibraryItem({ name: 'Ícones', type: 'folder', modified: 'há 3 dias' }),
+      createLibraryItem({ name: 'hero-mockup.png', type: 'image', size: 3100000, modified: 'há 2h', starred: true, shared: true }),
+      createLibraryItem({ name: 'kanban-spec.pdf', type: 'pdf', size: 1240000, modified: 'Ontem', owner: 'Ana R.' }),
+      createLibraryItem({ name: 'sistema-cores.json', type: 'code', size: 8200, modified: 'há 5 dias', shared: true }),
+      createLibraryItem({ name: 'foto-capa.jpg', type: 'image', size: 2900000, modified: 'há 1 semana' }),
     ],
   }),
   createLibraryItem({
-    name: 'Engineering',
+    name: 'Engenharia',
     type: 'folder',
-    modified: 'Yesterday',
+    modified: 'Ontem',
     shared: true,
     children: [
-      createLibraryItem({ name: 'API Spec v2.md', type: 'doc', size: 86400, modified: 'Yesterday', owner: 'Tom K.' }),
-      createLibraryItem({ name: 'Design Tokens.json', type: 'code', size: 14200, modified: '5 days ago' }),
-      createLibraryItem({ name: 'vite.config.ts', type: 'code', size: 2100, modified: '2 weeks ago' }),
+      createLibraryItem({ name: 'api-spec-v2.md', type: 'doc', size: 86400, modified: 'Ontem', owner: 'Tom K.' }),
+      createLibraryItem({ name: 'design-tokens.json', type: 'code', size: 14200, modified: 'há 5 dias' }),
+      createLibraryItem({ name: 'vite.config.ts', type: 'code', size: 2100, modified: 'há 2 semanas' }),
       createLibraryItem({
         name: 'Frontend',
         type: 'folder',
-        modified: 'Today',
+        modified: 'Hoje',
         shared: true,
         children: [
-          createLibraryItem({ name: 'routes-map.json', type: 'code', size: 4100, modified: '2 hours ago' }),
-          createLibraryItem({ name: 'app-shell-notes.md', type: 'doc', size: 12400, modified: 'Today', shared: true }),
+          createLibraryItem({ name: 'mapa-rotas.json', type: 'code', size: 4100, modified: 'há 2h' }),
+          createLibraryItem({ name: 'notas-app-shell.md', type: 'doc', size: 12400, modified: 'Hoje', shared: true }),
         ],
       }),
     ],
   }),
   createLibraryItem({
-    name: 'Brand Identity 2025',
+    name: 'Identidade da Marca 2025',
     type: 'folder',
-    modified: '3 days ago',
+    modified: 'há 3 dias',
     starred: true,
     children: [
-      createLibraryItem({ name: 'Brand Guidelines.pdf', type: 'pdf', size: 6740000, modified: '2 weeks ago', shared: true }),
-      createLibraryItem({ name: 'Logo explorations.png', type: 'image', size: 2480000, modified: '4 days ago', starred: true }),
+      createLibraryItem({ name: 'diretrizes-marca.pdf', type: 'pdf', size: 6740000, modified: 'há 2 semanas', shared: true }),
+      createLibraryItem({ name: 'exploracoes-logo.png', type: 'image', size: 2480000, modified: 'há 4 dias', starred: true }),
     ],
   }),
-  createLibraryItem({ name: 'Q3 Launch Plan.pdf', type: 'pdf', size: 2480000, modified: 'Today', starred: true, shared: true }),
-  createLibraryItem({ name: 'Hero Animation.gif', type: 'image', size: 4200000, modified: '3 days ago', shared: true }),
-  createLibraryItem({ name: 'Onboarding Flow.png', type: 'image', size: 1820000, modified: '1 week ago', starred: true, shared: true, owner: 'Ana R.' }),
-  createLibraryItem({ name: 'app-bundle-v2.zip', type: 'zip', size: 18600000, modified: '1 week ago' }),
-  createLibraryItem({ name: 'Meeting Notes Q3.doc', type: 'doc', size: 42000, modified: '3 weeks ago', shared: true, owner: 'Sara M.' }),
+  createLibraryItem({ name: 'plano-lancamento-q3.pdf', type: 'pdf', size: 2480000, modified: 'Hoje', starred: true, shared: true }),
+  createLibraryItem({ name: 'animacao-hero.gif', type: 'image', size: 4200000, modified: 'há 3 dias', shared: true }),
+  createLibraryItem({ name: 'fluxo-onboarding.png', type: 'image', size: 1820000, modified: 'há 1 semana', starred: true, shared: true, owner: 'Ana R.' }),
+  createLibraryItem({ name: 'app-bundle-v2.zip', type: 'zip', size: 18600000, modified: 'há 1 semana' }),
+  createLibraryItem({ name: 'notas-reuniao-q3.doc', type: 'doc', size: 42000, modified: 'há 3 semanas', shared: true, owner: 'Sara M.' }),
 ]
 
 export function createInitialLibrarySnapshot() {
@@ -151,6 +151,6 @@ export function markLibraryItemDeleted(item) {
   return normalizeLibraryItem({
     ...item,
     deleted: true,
-    modified: 'Just now',
+    modified: 'Agora',
   })
 }

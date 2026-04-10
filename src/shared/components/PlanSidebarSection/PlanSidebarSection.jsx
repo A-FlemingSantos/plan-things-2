@@ -4,7 +4,7 @@ export default function PlanSidebarSection({
   plans,
   activePlanId = null,
   onSelectPlan,
-  title = 'Plans',
+  title = 'Planos',
   footer = null,
   className = '',
 }) {

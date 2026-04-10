@@ -86,7 +86,7 @@ export default function CanvasCard({
           <input
             className={styles.cardTitle}
             value={card.title}
-            placeholder="Untitled"
+            placeholder="Sem título"
             readOnly={!isInteractive}
             tabIndex={isInteractive ? 0 : -1}
             onChange={(event) => onUpdate({ ...card, title: event.target.value })}
@@ -137,7 +137,7 @@ export default function CanvasCard({
         <textarea
           className={styles.cardContent}
           value={card.content}
-          placeholder="Add content…"
+          placeholder="Adicionar conteúdo..."
           rows={3}
           readOnly={!isInteractive}
           tabIndex={isInteractive ? 0 : -1}

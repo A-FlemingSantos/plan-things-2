@@ -67,7 +67,7 @@ export default function KanbanColumn({
               className={styles.colRenameInput}
               value={renameVal}
               onChange={(event) => setRenameVal(event.target.value)}
-              aria-label="Column name"
+              aria-label="Nome da coluna"
               onBlur={submitRename}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') submitRename()
@@ -89,7 +89,7 @@ export default function KanbanColumn({
               setAddingCard(true)
               setTimeout(() => addInputRef.current?.focus(), 50)
             }}
-            title="Add card"
+            title="Adicionar cartão"
           >
             <icons.Plus />
           </button>
@@ -99,7 +99,7 @@ export default function KanbanColumn({
               type="button"
               className={styles.colActionBtn}
               onClick={() => setShowMenu((value) => !value)}
-              title="Column options"
+              title="Opções da coluna"
               aria-expanded={showMenu}
               aria-haspopup="menu"
             >
@@ -148,10 +148,10 @@ export default function KanbanColumn({
             <textarea
               ref={addInputRef}
               className={styles.addCardInput}
-              placeholder="Card title…"
+              placeholder="Título do cartão..."
               value={newCardText}
               onChange={(event) => setNewCardText(event.target.value)}
-              aria-label="Card title"
+              aria-label="Título do cartão"
               rows={2}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
@@ -167,9 +167,9 @@ export default function KanbanColumn({
 
             <div className={styles.addCardActions}>
               <button type="button" className={styles.addCardSubmit} onClick={submitCard} disabled={!newCardText.trim()}>
-                Add card
+                Adicionar cartão
               </button>
-              <button type="button" className={styles.addCardCancel} onClick={() => { setAddingCard(false); setNewCardText('') }} aria-label="Cancel new card">
+              <button type="button" className={styles.addCardCancel} onClick={() => { setAddingCard(false); setNewCardText('') }} aria-label="Cancelar novo cartão">
                 <icons.X />
               </button>
             </div>
@@ -187,7 +187,7 @@ export default function KanbanColumn({
           }}
         >
           <icons.Plus />
-          Add card
+          Adicionar cartão
         </button>
       ) : null}
     </div>

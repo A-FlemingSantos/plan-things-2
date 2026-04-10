@@ -59,8 +59,8 @@ const Icon = {
 ═══════════════════════════════════════════════════════════════ */
 const LABELS = [
   { id: 'l1', text: 'Design',      color: '#d4aef1' },
-  { id: 'l2', text: 'Engineering', color: '#4290da' },
-  { id: 'l3', text: 'Research',    color: '#f5a623' },
+  { id: 'l2', text: 'Engenharia',  color: '#4290da' },
+  { id: 'l3', text: 'Pesquisa',    color: '#f5a623' },
   { id: 'l4', text: 'Marketing',   color: '#ff6766' },
   { id: 'l5', text: 'QA',          color: '#0f703a' },
 ]
@@ -474,9 +474,9 @@ export default function KanbanBoard() {
       >
         <div className={styles.boardMain}>
         <PlanPageHeader
-          title={activePlan?.name ?? 'Plan'}
-          breadcrumbCurrent={activePlan?.name ?? 'Plan'}
-          meta={`${totalCards} cards`}
+          title={activePlan?.name ?? 'Plano'}
+          breadcrumbCurrent={activePlan?.name ?? 'Plano'}
+          meta={`${totalCards} cartões`}
           icon={<Icon.Board />}
           sticky
           tone="solid"
@@ -490,9 +490,9 @@ export default function KanbanBoard() {
                 Share: Icon.Share,
               }}
               styles={styles}
-              onAddMember={() => showNotification('Invite flow is coming soon')}
-              onFilter={() => showNotification('Advanced filters are coming soon')}
-              onShare={() => showNotification('Share link copied for this board')}
+              onAddMember={() => showNotification('Convites em breve')}
+              onFilter={() => showNotification('Filtros avançados em breve')}
+              onShare={() => showNotification('Link do quadro copiado')}
             />
           )}
         />

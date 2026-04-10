@@ -3,7 +3,7 @@ import styles from './MemberAvatarStack.module.css'
 export default function MemberAvatarStack({
   members,
   onAddMember = null,
-  addTitle = 'Invite member',
+  addTitle = 'Convidar membro',
   AddIcon = null,
   className = '',
 }) {

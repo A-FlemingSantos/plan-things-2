@@ -6,18 +6,18 @@ import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNav
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import styles from './CalendarPage.module.css'
 
-const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terca-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sabado']
+const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 const MINI_WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const MONTHS = [
-  'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 
 const VIEW_OPTIONS = [
-  { id: 'day', label: 'Dia', status: 'Vista diaria' },
-  { id: 'work', label: 'Semana de trabalho', status: 'Semana util' },
+  { id: 'day', label: 'Dia', status: 'Vista diária' },
+  { id: 'work', label: 'Semana de trabalho', status: 'Semana útil' },
   { id: 'week', label: 'Semana', status: 'Vista semanal' },
-  { id: 'month', label: 'Mes', status: 'Vista mensal' },
+  { id: 'month', label: 'Mês', status: 'Vista mensal' },
 ]
 
 const Icon = {
@@ -158,11 +158,11 @@ function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
   return (
     <div className={styles.miniCalendar}>
       <div className={styles.miniCalendarHeader}>
-        <button type="button" className={styles.sidebarToggle} aria-label="Expandir mes"><Icon.ChevDown /></button>
+        <button type="button" className={styles.sidebarToggle} aria-label="Expandir mês"><Icon.ChevDown /></button>
         <span>{MONTHS[monthDate.getMonth()]} {monthDate.getFullYear()}</span>
         <div className={styles.miniCalendarNav}>
-          <button type="button" aria-label="Mes anterior" onClick={() => onShiftMonth(-1)}><Icon.ChevLeft /></button>
-          <button type="button" aria-label="Proximo mes" onClick={() => onShiftMonth(1)}><Icon.ChevRight /></button>
+          <button type="button" aria-label="Mês anterior" onClick={() => onShiftMonth(-1)}><Icon.ChevLeft /></button>
+          <button type="button" aria-label="Próximo mês" onClick={() => onShiftMonth(1)}><Icon.ChevRight /></button>
         </div>
       </div>
 
@@ -213,12 +213,12 @@ function EventDialog({ selectedDate, onClose, onCreate }) {
           <button type="button" onClick={onClose} aria-label="Fechar"><Icon.X /></button>
         </div>
         <label className={styles.dialogField}>
-          <span>Titulo</span>
+          <span>Título</span>
           <input value={title} onChange={(event) => setTitle(event.target.value)} autoFocus />
         </label>
         <div className={styles.dialogRow}>
           <label className={styles.dialogField}>
-            <span>Inicio</span>
+            <span>Início</span>
             <input type="time" value={start} onChange={(event) => setStart(event.target.value)} />
           </label>
           <label className={styles.dialogField}>
@@ -343,7 +343,7 @@ export default function CalendarPage() {
   }
 
   const renderMonthGrid = () => (
-    <div className={styles.monthGrid} aria-label="Calendario mensal">
+    <div className={styles.monthGrid} aria-label="Calendário mensal">
       {WEEKDAYS.map((weekday) => (
         <div key={weekday} className={styles.weekday}>{weekday}</div>
       ))}
@@ -378,7 +378,7 @@ export default function CalendarPage() {
   )
 
   const renderRangeView = () => (
-    <section className={styles.rangeWorkspace} aria-label={view === 'day' ? 'Calendario diario' : 'Calendario semanal'}>
+    <section className={styles.rangeWorkspace} aria-label={view === 'day' ? 'Calendário diário' : 'Calendário semanal'}>
       {rangeDays.map(({ date, key }) => {
         const dayEvents = eventsByDate[key] ?? []
         const selected = isSameDate(date, selectedDate)
@@ -422,9 +422,9 @@ export default function CalendarPage() {
         onShiftMonth={shiftMonth}
       />
 
-      <button type="button" className={styles.addCalendarButton} onClick={() => showNotification('Conexao de calendario em breve')}>
+      <button type="button" className={styles.addCalendarButton} onClick={() => showNotification('Conexão de calendário em breve')}>
         <Icon.Plus />
-        Adicionar calendario
+        Adicionar calendário
       </button>
 
       <div className={styles.calendarSources}>
@@ -483,16 +483,16 @@ export default function CalendarPage() {
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar eventos" />
               {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><Icon.X /></button>}
             </div>
-            <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avancados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
-            <button type="button" className={styles.commandButton} onClick={() => showNotification('Link de calendario copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
+            <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avançados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
+            <button type="button" className={styles.commandButton} onClick={() => showNotification('Link do calendário copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
             <button type="button" className={styles.commandButton} onClick={handlePrint}><Icon.Print />Imprimir</button>
           </div>
         </header>
 
         <div className={styles.monthHeader}>
           <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
-          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(-1)} aria-label="Mes anterior"><Icon.ChevLeft /></button>
-          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(1)} aria-label="Proximo mes"><Icon.ChevRight /></button>
+          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon.ChevLeft /></button>
+          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon.ChevRight /></button>
           <h1>{formatRangeLabel(view, selectedDate, visibleMonth)}</h1>
           <Icon.ChevDown />
           <span className={styles.viewStatus}>{viewStatus}</span>

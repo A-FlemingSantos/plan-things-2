@@ -4,7 +4,7 @@ const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 const DEFAULT_SOURCE = {
   id: 'primary',
-  name: 'Calendar',
+  name: 'Calendário',
   color: '#0f6cbd',
 }
 
@@ -38,7 +38,7 @@ export function normalizeCalendarEvent(event = {}, sourcesById = new Map()) {
 
   return {
     id: event.id ?? createClientId('calendar-event'),
-    title: normalizeText(event.title, 'Untitled event').trim() || 'Untitled event',
+    title: normalizeText(event.title, 'Evento sem título').trim() || 'Evento sem título',
     date: normalizeDateKey(event.date),
     start: normalizeText(event.start, '09:00'),
     end: normalizeText(event.end, '10:00'),

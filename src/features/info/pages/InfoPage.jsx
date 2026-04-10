@@ -58,7 +58,7 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
               border: '1px solid var(--color-gray-200)',
             }}
           >
-            Ir para a home
+            Ir para o início
           </Link>
         </div>
       </div>
