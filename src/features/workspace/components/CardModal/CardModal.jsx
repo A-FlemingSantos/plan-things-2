@@ -8,8 +8,6 @@ const DEFAULT_CARD_SCHEDULE = {
   dueEnabled: true,
   dueDateValue: '07/04/26',
   dueTimeValue: '16:21',
-  recurringValue: 'Nunca',
-  reminderValue: '1 dia antes',
   displayLabel: '',
   preserveDisplayLabel: false,
 }
@@ -57,8 +55,6 @@ function buildInitialCardSchedule(card) {
       : DEFAULT_CARD_SCHEDULE.dueEnabled,
     dueDateValue: schedule.dueDateValue ?? DEFAULT_CARD_SCHEDULE.dueDateValue,
     dueTimeValue: schedule.dueTimeValue ?? DEFAULT_CARD_SCHEDULE.dueTimeValue,
-    recurringValue: schedule.recurringValue ?? DEFAULT_CARD_SCHEDULE.recurringValue,
-    reminderValue: schedule.reminderValue ?? DEFAULT_CARD_SCHEDULE.reminderValue,
     displayLabel: schedule.displayLabel ?? card.dueDate ?? DEFAULT_CARD_SCHEDULE.displayLabel,
     preserveDisplayLabel: typeof schedule.preserveDisplayLabel === 'boolean'
       ? schedule.preserveDisplayLabel
@@ -111,8 +107,6 @@ export default function CardModal({
   const [dueEnabled, setDueEnabled] = useState(initialSchedule.dueEnabled)
   const [dueDateValue, setDueDateValue] = useState(initialSchedule.dueDateValue)
   const [dueTimeValue, setDueTimeValue] = useState(initialSchedule.dueTimeValue)
-  const [recurringValue, setRecurringValue] = useState(initialSchedule.recurringValue)
-  const [reminderValue, setReminderValue] = useState(initialSchedule.reminderValue)
   const [displayLabel, setDisplayLabel] = useState(initialSchedule.displayLabel)
   const [preserveDisplayLabel, setPreserveDisplayLabel] = useState(initialSchedule.preserveDisplayLabel)
   const [checklistTitle, setChecklistTitle] = useState('Checklist')
@@ -171,8 +165,6 @@ export default function CardModal({
         dueEnabled,
         dueDateValue,
         dueTimeValue,
-        recurringValue,
-        reminderValue,
         displayLabel,
         preserveDisplayLabel,
       },
@@ -1543,22 +1535,6 @@ export default function CardModal({
               </div>
             </div>
 
-            <div className={styles.cmDateMenuFieldGroup}>
-              <label className={styles.cmDateMenuFieldLabel}>Recorrente</label>
-              <button type="button" className={styles.cmDateMenuSelect} onClick={() => setRecurringValue(recurringValue)}>
-                <span>{recurringValue}</span>
-                <span className={styles.cmDateMenuSelectChevron}><icons.Chevron /></span>
-              </button>
-            </div>
-
-            <div className={styles.cmDateMenuFieldGroup}>
-              <label className={styles.cmDateMenuFieldLabel}>Definir lembrete</label>
-              <button type="button" className={styles.cmDateMenuSelect} onClick={() => setReminderValue(reminderValue)}>
-                <span>{reminderValue}</span>
-                <span className={styles.cmDateMenuSelectChevron}><icons.Chevron /></span>
-              </button>
-              <p className={styles.cmDateMenuHint}>Lembretes serão enviados aos membros e seguidores deste cartão.</p>
-            </div>
           </div>
 
           <div className={styles.cmDateMenuActions}>

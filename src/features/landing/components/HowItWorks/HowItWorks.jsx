@@ -339,7 +339,7 @@ const TAB_ACCORDIONS = [
     { title: 'Crie automações sem código em minutos', body: 'Automações de gatilho e ação permitem mover cartões, enviar alertas, atribuir tarefas e atualizar campos sem escrever código.', link: 'Explorar automações' },
     { title: 'Conecte Slack, GitHub e Zapier', body: 'Integrações prontas enviam a informação certa para o lugar certo no momento em que algo muda no seu quadro.', link: 'Ver integrações' },
     { title: 'Gere relatórios de status automaticamente', body: 'Defina uma frequência e o Plan Things monta seu resumo semanal, envia para a equipe e arquiva nos docs.', link: 'Ver relatórios' },
-    { title: 'Tarefas recorrentes que se recriam sozinhas', body: 'Defina um template uma vez. O Plan Things recria a tarefa, reatribui e reajusta a timeline automaticamente.', link: 'Saiba mais sobre tarefas recorrentes' },
+    { title: 'Regras automáticas para tirar trabalho manual do caminho', body: 'Combine gatilhos e ações para mover cartões, avisar responsáveis e atualizar campos quando o fluxo avançar.', link: 'Saiba mais sobre automações' },
   ],
 ]
 

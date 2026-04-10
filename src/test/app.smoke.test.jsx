@@ -43,6 +43,8 @@ describe('App smoke flows', () => {
 
     expect(fixedDateCard.dueDate).toBe('3 ago')
     expect(fixedDateCard.schedule.dueDateValue).toBe('03/08/26')
+    expect(fixedDateCard.schedule).not.toHaveProperty('recurringValue')
+    expect(fixedDateCard.schedule).not.toHaveProperty('reminderValue')
     expect(relativeDateCard.dueDate).toBe('Hoje')
     expect(relativeDateCard.schedule.dueDateValue).toBe(formatTodayAsScheduleDateValue())
     expect(ptBrDateCard.dueDate).toBe('3 fev')
@@ -80,6 +82,8 @@ describe('App smoke flows', () => {
 
     await user.click(screen.getByRole('button', { name: 'Datas' }))
     expect(screen.getByLabelText('Data de entrega')).toHaveValue('03/08/26')
+    expect(screen.queryByText('Recorrente')).not.toBeInTheDocument()
+    expect(screen.queryByText('Definir lembrete')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
     await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))

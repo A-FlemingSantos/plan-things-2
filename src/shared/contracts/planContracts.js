@@ -123,8 +123,6 @@ function normalizeBoardCardSchedule(schedule = {}, fallbackDueDate = '') {
     dueEnabled: typeof schedule.dueEnabled === 'boolean' ? schedule.dueEnabled : true,
     dueDateValue: schedule.dueDateValue ?? legacySchedule.dueDateValue,
     dueTimeValue: schedule.dueTimeValue ?? '16:21',
-    recurringValue: schedule.recurringValue ?? 'Nunca',
-    reminderValue: schedule.reminderValue ?? '1 dia antes',
     displayLabel: legacySchedule.displayLabel,
     preserveDisplayLabel: typeof schedule.preserveDisplayLabel === 'boolean'
       ? schedule.preserveDisplayLabel || legacySchedule.preserveDisplayLabel

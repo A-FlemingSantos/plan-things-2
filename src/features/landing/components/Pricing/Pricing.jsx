@@ -30,7 +30,7 @@ const PLANS = [
       'Projetos ilimitados',
       'Kanban avançado + linha do tempo',
       'Planejamento com IA ilimitado',
-      'Automações e tarefas recorrentes',
+      'Automações de fluxo',
       '40 GB de armazenamento',
       'Suporte prioritário',
     ],
