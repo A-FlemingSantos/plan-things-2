@@ -33,6 +33,14 @@ beforeAll(() => {
     }
   }
 
+  if (!window.IntersectionObserver) {
+    window.IntersectionObserver = class IntersectionObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+  }
+
   if (!window.scrollTo) {
     window.scrollTo = vi.fn()
   }

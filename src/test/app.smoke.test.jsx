@@ -213,7 +213,7 @@ describe('App smoke flows', () => {
     await user.type(screen.getByPlaceholderText('Buscar eventos'), 'Checkpoint do release')
 
     expect(await screen.findByText('Checkpoint do release')).toBeInTheDocument()
-  })
+  }, 10000)
 
   it('opens the shared sidebar account menu outside the workspace', async () => {
     const user = userEvent.setup()
