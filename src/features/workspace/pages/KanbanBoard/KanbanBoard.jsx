@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
@@ -15,6 +15,7 @@ import { usePlans } from '../../context/PlansContext.jsx'
 import { useBoardColumns } from '../../hooks/useBoardColumns.js'
 import { useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
 import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
+import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -44,6 +45,7 @@ const Icon = {
   Inbox:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 3h10v10H3V3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M3 9h3l1.2 2h1.6L10 9h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Calendar: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.8v2.8M11 1.8v2.8M2.5 6.5h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Switch:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="10" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 2.5h7A1.5 1.5 0 0 1 13.5 4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  Lock:     () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="6" width="8" height="6" rx="1.4" stroke="currentColor" strokeWidth="1.3"/><path d="M4.8 6V4.4a2.2 2.2 0 1 1 4.4 0V6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Comment:  () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M12 7A5 5 0 0 1 4 11.5L1.5 12.5l1-2.5A5 5 0 1 1 12 7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Priority: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v6M7 10.5v1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   List:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M5 5h8M5 10.5h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="2.5" cy="5" r=".9" fill="currentColor"/><circle cx="2.5" cy="10.5" r=".9" fill="currentColor"/></svg>,
@@ -90,6 +92,29 @@ const COL_COLORS = [
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
+const SCHEDULE_HOURS = Array.from({ length: 10 }, (_, index) => index + 8)
+
+function dateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function eventMinutes(time) {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
+function formatPlannerDate(date) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  }).format(date)
+}
+
+function formatPlannerHour(hour) {
+  return `${hour}h`
+}
+
 const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
   ...item,
   Icon:
@@ -117,9 +142,18 @@ export default function KanbanBoard() {
   const [newColTitle,setNewColTitle] = useState('')
   const [notification, setNotification] = useState(null)
   const [isBoardSwitcherOpen, setIsBoardSwitcherOpen] = useState(false)
+  const [isInboxOpen, setIsInboxOpen] = useState(false)
+  const [isInboxPanelMounted, setIsInboxPanelMounted] = useState(false)
+  const [isPlannerOpen, setIsPlannerOpen] = useState(false)
+  const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
+  const [isPlannerAgendaOpen, setIsPlannerAgendaOpen] = useState(true)
+  const today = useMemo(() => new Date(), [])
   const notificationTimerRef = useRef(null)
+  const inboxCloseTimerRef = useRef(null)
+  const plannerCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const { filteredEvents } = useCalendarEvents()
   const {
     columns,
     totalCards,
@@ -165,8 +199,68 @@ export default function KanbanBoard() {
     }, 2600)
   }
 
+  const openPlanner = () => {
+    if (plannerCloseTimerRef.current) {
+      clearTimeout(plannerCloseTimerRef.current)
+      plannerCloseTimerRef.current = null
+    }
+    if (inboxCloseTimerRef.current) {
+      clearTimeout(inboxCloseTimerRef.current)
+      inboxCloseTimerRef.current = null
+    }
+    setIsBoardSwitcherOpen(false)
+    setIsInboxOpen(false)
+    setIsInboxPanelMounted(false)
+    setIsPlannerPanelMounted(true)
+    window.requestAnimationFrame(() => setIsPlannerOpen(true))
+  }
+
+  const closePlanner = () => {
+    setIsPlannerOpen(false)
+    if (plannerCloseTimerRef.current) {
+      clearTimeout(plannerCloseTimerRef.current)
+    }
+    plannerCloseTimerRef.current = setTimeout(() => {
+      setIsPlannerPanelMounted(false)
+      plannerCloseTimerRef.current = null
+    }, 260)
+  }
+
+  const openInbox = () => {
+    if (inboxCloseTimerRef.current) {
+      clearTimeout(inboxCloseTimerRef.current)
+      inboxCloseTimerRef.current = null
+    }
+    if (plannerCloseTimerRef.current) {
+      clearTimeout(plannerCloseTimerRef.current)
+      plannerCloseTimerRef.current = null
+    }
+    setIsBoardSwitcherOpen(false)
+    setIsPlannerOpen(false)
+    setIsPlannerPanelMounted(false)
+    setIsInboxPanelMounted(true)
+    window.requestAnimationFrame(() => setIsInboxOpen(true))
+  }
+
+  const closeInbox = () => {
+    setIsInboxOpen(false)
+    if (inboxCloseTimerRef.current) {
+      clearTimeout(inboxCloseTimerRef.current)
+    }
+    inboxCloseTimerRef.current = setTimeout(() => {
+      setIsInboxPanelMounted(false)
+      inboxCloseTimerRef.current = null
+    }, 260)
+  }
+
+  const closeFloatingPanel = () => {
+    closeInbox()
+    closePlanner()
+  }
+
   const notifyToolbarItem = (message) => {
     setIsBoardSwitcherOpen(false)
+    closeFloatingPanel()
     showNotification(message)
   }
 
@@ -175,9 +269,26 @@ export default function KanbanBoard() {
     openPlan(planId)
   }
 
+  const plannerEvents = useMemo(() => {
+    const todayKey = dateKey(today)
+    const todaysEvents = filteredEvents.filter((event) => event.date === todayKey)
+
+    if (todaysEvents.length) return todaysEvents
+
+    return filteredEvents
+      .filter((event) => event.date >= todayKey)
+      .slice(0, 4)
+  }, [filteredEvents, today])
+
   useEffect(() => () => {
     if (notificationTimerRef.current) {
       clearTimeout(notificationTimerRef.current)
+    }
+    if (inboxCloseTimerRef.current) {
+      clearTimeout(inboxCloseTimerRef.current)
+    }
+    if (plannerCloseTimerRef.current) {
+      clearTimeout(plannerCloseTimerRef.current)
     }
   }, [])
 
@@ -210,21 +321,158 @@ export default function KanbanBoard() {
     <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
 
+  const renderInboxPanel = () => (
+    <aside
+      id="board-inbox-panel"
+      className={`${styles.plannerPanel} ${styles.inboxPanel} ${isInboxOpen ? '' : styles.plannerPanelClosing}`}
+      aria-label="Caixa de entrada"
+    >
+      <div className={styles.inboxPanelHeader}>
+        <div className={styles.inboxPanelTitle}>
+          <Icon.Inbox />
+          <h2>Caixa de entrada</h2>
+        </div>
+        <button
+          type="button"
+          className={styles.plannerCloseButton}
+          aria-label="Fechar caixa de entrada"
+          onClick={closeInbox}
+        >
+          <Icon.X />
+        </button>
+      </div>
+
+      <button type="button" className={styles.inboxAddCardButton}>
+        Adicionar um cartão
+      </button>
+
+      <section className={styles.inboxEmptyState} aria-label="Conectar aplicativos">
+        <div>
+          <h3>Consolide suas tarefas</h3>
+          <p>Conecte Gmail e Outlook para transformar mensagens em cartões sem sair do seu fluxo.</p>
+        </div>
+
+        <div className={styles.inboxAppsIllustration} aria-hidden="true">
+          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleMail}`}><Icon.Inbox /></span>
+          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleGmail}`}>M</span>
+          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleOutlook}`}>O</span>
+          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleSlack}`}>#</span>
+          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleTeams}`}>T</span>
+        </div>
+      </section>
+
+      <div className={styles.inboxPrivateNote}>
+        <Icon.Lock />
+        <span>A Caixa de Entrada é visível apenas para você</span>
+      </div>
+    </aside>
+  )
+
+  const renderPlannerPanel = () => (
+    <aside
+      id="board-planner-panel"
+      className={`${styles.plannerPanel} ${isPlannerOpen ? '' : styles.plannerPanelClosing}`}
+      aria-label="Planejador"
+    >
+      <div className={styles.plannerPanelHeader}>
+        <div>
+          <span className={styles.plannerEyebrow}>Planejador</span>
+          <h2>{formatPlannerDate(today)}</h2>
+        </div>
+        <button
+          type="button"
+          className={styles.plannerCloseButton}
+          aria-label="Fechar planejador"
+          onClick={closePlanner}
+        >
+          <Icon.X />
+        </button>
+      </div>
+
+      <div className={styles.plannerSummary}>
+        <button
+          type="button"
+          className={styles.plannerSummaryToggle}
+          aria-expanded={isPlannerAgendaOpen}
+          aria-controls="planner-agenda-list"
+          onClick={() => setIsPlannerAgendaOpen(open => !open)}
+        >
+          <span>Agenda do dia</span>
+          <Icon.Chevron />
+        </button>
+        <span>{plannerEvents.length ? `${plannerEvents.length} compromissos` : 'Sem compromissos'}</span>
+      </div>
+
+      <div
+        id="planner-agenda-list"
+        className={`${styles.plannerAgendaList} ${isPlannerAgendaOpen ? '' : styles.plannerAgendaListCollapsed}`}
+      >
+        <div className={styles.plannerAgendaListInner}>
+          {plannerEvents.length ? plannerEvents.map((event) => (
+            <article key={event.id} className={styles.plannerAgendaItem} style={{ '--event-color': event.color }}>
+              <span>{event.start} - {event.end}</span>
+              <strong>{event.title}</strong>
+              <p>{[event.location, event.calendar].filter(Boolean).join(' · ')}</p>
+            </article>
+          )) : (
+            <article className={styles.plannerAgendaEmpty}>
+              <Icon.Calendar />
+              <strong>Dia livre</strong>
+              <p>Reserve o próximo bloco de foco.</p>
+            </article>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.plannerTimeline} aria-label="Linha do tempo do dia">
+        {SCHEDULE_HOURS.map((hour) => (
+          <div key={hour} className={styles.plannerTimelineRow}>
+            <span>{formatPlannerHour(hour)}</span>
+            <div />
+          </div>
+        ))}
+
+        {plannerEvents.slice(0, 3).map((event) => {
+          const startMinutes = eventMinutes(event.start)
+          const endMinutes = eventMinutes(event.end)
+          const top = Math.max(0, startMinutes - SCHEDULE_HOURS[0] * 60)
+          const height = Math.max(30, endMinutes - startMinutes)
+
+          return (
+            <article
+              key={`timeline-${event.id}`}
+              className={styles.plannerTimelineEvent}
+              style={{
+                '--event-color': event.color,
+                '--event-top': `${top}px`,
+                '--event-height': `${height}px`,
+              }}
+            >
+              <span>{event.start}</span>
+              <strong>{event.title}</strong>
+            </article>
+          )
+        })}
+      </div>
+    </aside>
+  )
+
   return (
     <>
       <ProductAppShell
-      styles={styles}
-      activeNav={activeNav}
-      onNavItemClick={handleNavItemClick}
-      navItems={NAV}
-      LogoIcon={Icon.Logo}
-      CollapseIcon={Icon.Collapse}
-      ChevronIcon={Icon.Chevron}
-      HintIcon={Icon.Popover}
-      secondaryContent={renderSidebarSecondaryContent}
-      bottomContent={renderSidebarBottomContent}
-      contentClassName={styles.boardWrapper}
-    >
+        styles={styles}
+        activeNav={activeNav}
+        onNavItemClick={handleNavItemClick}
+        navItems={NAV}
+        LogoIcon={Icon.Logo}
+        CollapseIcon={Icon.Collapse}
+        ChevronIcon={Icon.Chevron}
+        HintIcon={Icon.Popover}
+        secondaryContent={renderSidebarSecondaryContent}
+        bottomContent={renderSidebarBottomContent}
+        contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
+      >
+        <div className={styles.boardMain}>
         <PlanPageHeader
           title={activePlan?.name ?? 'Plan'}
           breadcrumbCurrent={activePlan?.name ?? 'Plan'}
@@ -297,8 +545,10 @@ export default function KanbanBoard() {
         <div ref={boardViewToolbarRef} className={styles.boardViewToolbar} aria-label="Atalhos do quadro">
           <button
             type="button"
-            className={styles.boardViewToolbarItem}
-            onClick={() => notifyToolbarItem('Caixa de entrada em breve')}
+            className={`${styles.boardViewToolbarItem} ${isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-expanded={isInboxOpen}
+            aria-controls="board-inbox-panel"
+            onClick={openInbox}
           >
             <Icon.Inbox />
             <span>Caixa de entrada</span>
@@ -306,8 +556,10 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={styles.boardViewToolbarItem}
-            onClick={() => notifyToolbarItem('Planejador em breve')}
+            className={`${styles.boardViewToolbarItem} ${isPlannerOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-expanded={isPlannerOpen}
+            aria-controls="board-planner-panel"
+            onClick={openPlanner}
           >
             <Icon.Calendar />
             <span>Planejador</span>
@@ -315,8 +567,9 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={`${styles.boardViewToolbarItem} ${styles.boardViewToolbarItemActive}`}
+            className={`${styles.boardViewToolbarItem} ${!isPlannerOpen && !isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-current="page"
+            onClick={closeFloatingPanel}
           >
             <Icon.Board />
             <span>Quadro</span>
@@ -328,7 +581,10 @@ export default function KanbanBoard() {
               className={styles.boardViewToolbarItem}
               aria-expanded={isBoardSwitcherOpen}
               aria-haspopup="menu"
-              onClick={() => setIsBoardSwitcherOpen(open => !open)}
+              onClick={() => {
+                closeFloatingPanel()
+                setIsBoardSwitcherOpen(open => !open)
+              }}
             >
               <Icon.Switch />
               <span>Mudar de quadros</span>
@@ -356,6 +612,10 @@ export default function KanbanBoard() {
             )}
           </div>
         </div>
+        </div>
+
+        {isInboxPanelMounted && renderInboxPanel()}
+        {isPlannerPanelMounted && renderPlannerPanel()}
       </ProductAppShell>
 
       {/* ── Card modal ── */}
@@ -379,6 +639,7 @@ export default function KanbanBoard() {
           {notification}
         </div>
       )}
+
     </>
   )
 }
