@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=false;trustServerCertificate=true
+    username: sa
+    password: sa-9MNP6LI
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+app:
+  jwt:
+    secret: 5f388f9c8130f6dba1f0fba57fa6a2c98f22d8e5edc94a77b701e4cb7b25c438
+    issuer: plan-things-api-test
+    access-token-minutes: 180
+    password-reset-minutes: 30

@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: plan-things-api
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=false;trustServerCertificate=true
+    username: sa
+    password: sa-9MNP6LI
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+        jdbc:
+          time_zone: UTC
+        format_sql: true
+  jackson:
+    locale: pt_BR
+    time-zone: America/Sao_Paulo
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+server:
+  error:
+    whitelabel:
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  jwt:
+    secret: 5f388f9c8130f6dba1f0fba57fa6a2c98f22d8e5edc94a77b701e4cb7b25c438
+    issuer: plan-things-api
+    access-token-minutes: 180
+    password-reset-minutes: 30
+  locale:
+    tag: pt-BR
+  time:
+    zone-id: America/Sao_Paulo

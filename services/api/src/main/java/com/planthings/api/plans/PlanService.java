@@ -1,0 +1,390 @@
+package com.planthings.api.plans;
+
+import com.planthings.api.auth.UserEntity;
+import com.planthings.api.auth.UserRepository;
+import com.planthings.api.board.BoardColumnEntity;
+import com.planthings.api.board.BoardColumnRepository;
+import com.planthings.api.canvas.CanvasDocumentEntity;
+import com.planthings.api.canvas.CanvasDocumentRepository;
+import com.planthings.api.common.api.ApiDateTimeDto;
+import com.planthings.api.common.error.BadRequestException;
+import com.planthings.api.common.error.ConflictException;
+import com.planthings.api.common.error.NotFoundException;
+import com.planthings.api.common.security.AuthenticatedUserService;
+import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.workspace.WorkspaceEntity;
+import com.planthings.api.workspace.WorkspaceRepository;
+import java.time.Clock;
+import java.time.OffsetDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class PlanService {
+
+  private final PlanRepository planRepository;
+  private final PlanMemberRepository planMemberRepository;
+  private final PlanInviteRepository planInviteRepository;
+  private final PlanLabelRepository planLabelRepository;
+  private final UserRepository userRepository;
+  private final WorkspaceRepository workspaceRepository;
+  private final BoardColumnRepository boardColumnRepository;
+  private final CanvasDocumentRepository canvasDocumentRepository;
+  private final AuthenticatedUserService authenticatedUserService;
+  private final PlanAccessService planAccessService;
+  private final BrazilDateTimeMapper brazilDateTimeMapper;
+  private final Clock clock;
+
+  public PlanService(
+      PlanRepository planRepository,
+      PlanMemberRepository planMemberRepository,
+      PlanInviteRepository planInviteRepository,
+      PlanLabelRepository planLabelRepository,
+      UserRepository userRepository,
+      WorkspaceRepository workspaceRepository,
+      BoardColumnRepository boardColumnRepository,
+      CanvasDocumentRepository canvasDocumentRepository,
+      AuthenticatedUserService authenticatedUserService,
+      PlanAccessService planAccessService,
+      BrazilDateTimeMapper brazilDateTimeMapper,
+      Clock clock
+  ) {
+    this.planRepository = planRepository;
+    this.planMemberRepository = planMemberRepository;
+    this.planInviteRepository = planInviteRepository;
+    this.planLabelRepository = planLabelRepository;
+    this.userRepository = userRepository;
+    this.workspaceRepository = workspaceRepository;
+    this.boardColumnRepository = boardColumnRepository;
+    this.canvasDocumentRepository = canvasDocumentRepository;
+    this.authenticatedUserService = authenticatedUserService;
+    this.planAccessService = planAccessService;
+    this.brazilDateTimeMapper = brazilDateTimeMapper;
+    this.clock = clock;
+  }
+
+  public List<PlanSummary> listAccessiblePlans() {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    List<PlanMemberEntity> memberships = planMemberRepository.findByUserId(currentUserId);
+    Set<UUID> planIds = memberships.stream().map(PlanMemberEntity::getPlanId).collect(Collectors.toSet());
+
+    return planRepository.findAllById(planIds).stream()
+        .sorted(Comparator.comparing(PlanEntity::getCreatedAt).reversed())
+        .map(plan -> toPlanSummary(plan, currentUserId))
+        .toList();
+  }
+
+  public PlanDetails getPlan(UUID planId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    PlanEntity plan = planAccessService.requirePlanMember(planId, currentUserId);
+    return toPlanDetails(plan, currentUserId);
+  }
+
+  @Transactional
+  public PlanDetails createPlan(String name, String description) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = workspaceRepository.findByOwnerUserId(currentUser.getId())
+        .orElseThrow(() -> new NotFoundException("WORKSPACE_NAO_ENCONTRADA", "Nao encontramos a workspace pessoal deste usuario."));
+
+    PlanEntity plan = new PlanEntity();
+    plan.setWorkspaceId(workspace.getId());
+    plan.setOwnerUserId(currentUser.getId());
+    plan.setName(requireName(name));
+    plan.setDescription(normalizeOptional(description));
+    planRepository.save(plan);
+
+    PlanMemberEntity ownerMembership = new PlanMemberEntity();
+    ownerMembership.setPlanId(plan.getId());
+    ownerMembership.setUserId(currentUser.getId());
+    ownerMembership.setRole(PlanMemberRole.OWNER);
+    planMemberRepository.save(ownerMembership);
+
+    createDefaultBoardColumns(plan.getId());
+    createEmptyCanvasDocument(plan.getId(), currentUser.getId());
+
+    return toPlanDetails(plan, currentUser.getId());
+  }
+
+  @Transactional
+  public PlanDetails updatePlan(UUID planId, String name, String description) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    PlanEntity plan = planAccessService.requirePlanMember(planId, currentUserId);
+    plan.setName(requireName(name));
+    plan.setDescription(normalizeOptional(description));
+    planRepository.save(plan);
+    return toPlanDetails(plan, currentUserId);
+  }
+
+  @Transactional
+  public MessageResponse deletePlan(UUID planId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+    planRepository.deleteById(planId);
+    return new MessageResponse("Plano excluido com sucesso.");
+  }
+
+  public List<MemberSummary> listMembers(UUID planId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, currentUserId);
+
+    List<PlanMemberEntity> members = planMemberRepository.findByPlanId(planId);
+    Set<UUID> userIds = members.stream().map(PlanMemberEntity::getUserId).collect(Collectors.toSet());
+    List<UserEntity> users = userRepository.findAllById(userIds);
+
+    return members.stream()
+        .map(member -> toMemberSummary(member, users))
+        .sorted(Comparator.comparing(MemberSummary::fullName))
+        .toList();
+  }
+
+  @Transactional
+  public InviteResponse inviteMember(UUID planId, String email) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    planAccessService.requirePlanManager(planId, currentUser.getId());
+
+    String normalizedEmail = normalizeEmail(email);
+    planInviteRepository.findByPlanIdAndInvitedEmailIgnoreCaseAndStatus(planId, normalizedEmail, PlanInviteStatus.PENDING)
+        .ifPresent(invite -> {
+          throw new ConflictException("CONVITE_PENDENTE", "Ja existe um convite pendente para este e-mail.");
+        });
+
+    userRepository.findByEmailIgnoreCase(normalizedEmail).ifPresent(user -> {
+      if (planMemberRepository.existsByPlanIdAndUserId(planId, user.getId())) {
+        throw new ConflictException("USUARIO_JA_E_MEMBRO", "Este usuario ja faz parte do plano.");
+      }
+    });
+
+    PlanInviteEntity invite = new PlanInviteEntity();
+    invite.setPlanId(planId);
+    invite.setInviterUserId(currentUser.getId());
+    invite.setInvitedEmail(normalizedEmail);
+    invite.setToken(UUID.randomUUID().toString());
+    invite.setStatus(PlanInviteStatus.PENDING);
+    invite.setExpiresAt(OffsetDateTime.now(clock).plusDays(7));
+    planInviteRepository.save(invite);
+
+    return new InviteResponse(
+        invite.getId(),
+        invite.getInvitedEmail(),
+        invite.getStatus(),
+        invite.getToken(),
+        brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
+    );
+  }
+
+  @Transactional
+  public MessageResponse acceptInvite(String token) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    PlanInviteEntity invite = planInviteRepository.findByToken(token)
+        .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
+
+    if (invite.getStatus() != PlanInviteStatus.PENDING) {
+      throw new BadRequestException("CONVITE_INVALIDO", "Este convite nao esta mais disponivel para aceite.");
+    }
+
+    if (invite.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
+      invite.setStatus(PlanInviteStatus.EXPIRED);
+      planInviteRepository.save(invite);
+      throw new BadRequestException("CONVITE_EXPIRADO", "Este convite expirou.");
+    }
+
+    if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
+      throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
+    }
+
+    if (!planMemberRepository.existsByPlanIdAndUserId(invite.getPlanId(), currentUser.getId())) {
+      PlanMemberEntity membership = new PlanMemberEntity();
+      membership.setPlanId(invite.getPlanId());
+      membership.setUserId(currentUser.getId());
+      membership.setRole(PlanMemberRole.MEMBER);
+      planMemberRepository.save(membership);
+    }
+
+    invite.setStatus(PlanInviteStatus.ACCEPTED);
+    invite.setRespondedAt(OffsetDateTime.now(clock));
+    planInviteRepository.save(invite);
+    return new MessageResponse("Convite aceito com sucesso.");
+  }
+
+  @Transactional
+  public MessageResponse declineInvite(String token) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    PlanInviteEntity invite = planInviteRepository.findByToken(token)
+        .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
+
+    if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
+      throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
+    }
+
+    invite.setStatus(PlanInviteStatus.DECLINED);
+    invite.setRespondedAt(OffsetDateTime.now(clock));
+    planInviteRepository.save(invite);
+    return new MessageResponse("Convite recusado com sucesso.");
+  }
+
+  @Transactional
+  public MessageResponse removeMember(UUID planId, UUID memberUserId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+
+    PlanMemberEntity member = planMemberRepository.findByPlanIdAndUserId(planId, memberUserId)
+        .orElseThrow(() -> new NotFoundException("MEMBRO_NAO_ENCONTRADO", "Nao encontramos este membro no plano."));
+
+    if (member.getRole() == PlanMemberRole.OWNER) {
+      throw new BadRequestException("OWNER_NAO_PODE_SER_REMOVIDO", "O owner do plano nao pode ser removido.");
+    }
+
+    planMemberRepository.delete(member);
+    return new MessageResponse("Membro removido com sucesso.");
+  }
+
+  public List<LabelSummary> listLabels(UUID planId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, currentUserId);
+    return planLabelRepository.findByPlanIdOrderByNameAsc(planId).stream()
+        .map(label -> new LabelSummary(label.getId(), label.getName(), label.getColor()))
+        .toList();
+  }
+
+  @Transactional
+  public LabelSummary createLabel(UUID planId, String name, String color) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, currentUserId);
+
+    PlanLabelEntity label = new PlanLabelEntity();
+    label.setPlanId(planId);
+    label.setName(requireName(name));
+    label.setColor(color == null || color.isBlank() ? "#a0a0a0" : color.trim());
+    planLabelRepository.save(label);
+    return new LabelSummary(label.getId(), label.getName(), label.getColor());
+  }
+
+  private PlanSummary toPlanSummary(PlanEntity plan, UUID currentUserId) {
+    PlanMemberRole role = planAccessService.requireMemberRole(plan.getId(), currentUserId);
+    long memberCount = planMemberRepository.findByPlanId(plan.getId()).size();
+    return new PlanSummary(
+        plan.getId(),
+        plan.getName(),
+        plan.getDescription(),
+        role,
+        memberCount,
+        brazilDateTimeMapper.toDateTime(plan.getCreatedAt()),
+        brazilDateTimeMapper.toDateTime(plan.getUpdatedAt())
+    );
+  }
+
+  private PlanDetails toPlanDetails(PlanEntity plan, UUID currentUserId) {
+    return new PlanDetails(
+        toPlanSummary(plan, currentUserId),
+        listMembers(plan.getId()),
+        listLabels(plan.getId())
+    );
+  }
+
+  private MemberSummary toMemberSummary(PlanMemberEntity member, List<UserEntity> users) {
+    UserEntity user = users.stream()
+        .filter(candidate -> candidate.getId().equals(member.getUserId()))
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos os dados de um membro do plano."));
+
+    return new MemberSummary(
+        user.getId(),
+        user.getFullName(),
+        user.getEmail(),
+        member.getRole(),
+        brazilDateTimeMapper.toDateTime(member.getCreatedAt())
+    );
+  }
+
+  private void createDefaultBoardColumns(UUID planId) {
+    createColumn(planId, "Backlog", "#a0a0a0", 0);
+    createColumn(planId, "Em andamento", "#4290da", 1);
+    createColumn(planId, "Review", "#d4aef1", 2);
+    createColumn(planId, "Concluido", "#0f703a", 3);
+  }
+
+  private void createColumn(UUID planId, String title, String color, int positionIndex) {
+    BoardColumnEntity column = new BoardColumnEntity();
+    column.setPlanId(planId);
+    column.setTitle(title);
+    column.setColor(color);
+    column.setPositionIndex(positionIndex);
+    boardColumnRepository.save(column);
+  }
+
+  private void createEmptyCanvasDocument(UUID planId, UUID userId) {
+    CanvasDocumentEntity document = new CanvasDocumentEntity();
+    document.setPlanId(planId);
+    document.setUpdatedByUserId(userId);
+    document.setVersionNumber(0L);
+    document.setDocumentJson("{\"cards\":[],\"connections\":[],\"pan\":{\"x\":60,\"y\":40},\"zoom\":1}");
+    canvasDocumentRepository.save(document);
+  }
+
+  private String requireName(String value) {
+    String normalized = value == null ? "" : value.trim();
+    if (normalized.isBlank()) {
+      throw new BadRequestException("NOME_OBRIGATORIO", "O nome e obrigatorio.");
+    }
+    return normalized;
+  }
+
+  private String normalizeOptional(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+
+  private String normalizeEmail(String email) {
+    String normalized = email == null ? "" : email.trim().toLowerCase();
+    if (normalized.isBlank()) {
+      throw new BadRequestException("EMAIL_OBRIGATORIO", "O e-mail e obrigatorio.");
+    }
+    return normalized;
+  }
+
+  public record PlanSummary(
+      UUID id,
+      String name,
+      String description,
+      PlanMemberRole role,
+      long memberCount,
+      ApiDateTimeDto createdAt,
+      ApiDateTimeDto updatedAt
+  ) {
+  }
+
+  public record PlanDetails(
+      PlanSummary plan,
+      List<MemberSummary> members,
+      List<LabelSummary> labels
+  ) {
+  }
+
+  public record MemberSummary(
+      UUID userId,
+      String fullName,
+      String email,
+      PlanMemberRole role,
+      ApiDateTimeDto joinedAt
+  ) {
+  }
+
+  public record InviteResponse(
+      UUID inviteId,
+      String invitedEmail,
+      PlanInviteStatus status,
+      String token,
+      ApiDateTimeDto expiresAt
+  ) {
+  }
+
+  public record LabelSummary(UUID id, String name, String color) {
+  }
+
+  public record MessageResponse(String message) {
+  }
+}
