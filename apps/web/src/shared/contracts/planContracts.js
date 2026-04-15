@@ -187,7 +187,7 @@ export function normalizeCanvasState(canvasState = {}) {
 }
 
 export function normalizePlanRecord(plan = {}) {
-  return {
+  const normalized = {
     id: plan.id ?? createClientId('plan'),
     name: plan.name ?? 'Plano sem título',
     description: plan.description ?? '',
@@ -199,5 +199,10 @@ export function normalizePlanRecord(plan = {}) {
     cover: plan.cover ?? '#f5f5f5',
     boardColumns: Array.isArray(plan.boardColumns) ? plan.boardColumns.map(normalizeBoardColumn) : [],
     canvasState: normalizeCanvasState(plan.canvasState),
+  }
+
+  return {
+    ...plan,
+    ...normalized,
   }
 }

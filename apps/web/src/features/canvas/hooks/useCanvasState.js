@@ -1,17 +1,52 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createEmptyCanvasState } from '../data/canvasTemplates.js'
 
-export function useCanvasState({ activePlanId, activeCanvasState, updatePlanCanvas }) {
-  const resolvedCanvasState = activeCanvasState ?? createEmptyCanvasState()
-  const cards = resolvedCanvasState.cards
-  const connections = resolvedCanvasState.connections
-  const pan = resolvedCanvasState.pan
-  const zoom = resolvedCanvasState.zoom
+export function useCanvasState({
+  activePlanId,
+  activeCanvasState,
+  updatePlanCanvas,
+  isBackendDriven = false,
+  savePlanCanvas,
+}) {
+  const [canvasState, setCanvasState] = useState(activeCanvasState ?? createEmptyCanvasState())
+  const saveTimerRef = useRef(null)
+
+  useEffect(() => {
+    setCanvasState(activeCanvasState ?? createEmptyCanvasState())
+  }, [activeCanvasState, activePlanId])
+
+  useEffect(() => () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+    }
+  }, [])
+
+  const scheduleSave = useCallback((nextCanvasState) => {
+    if (!activePlanId) return
+
+    if (!isBackendDriven) {
+      updatePlanCanvas(activePlanId, nextCanvasState)
+      return
+    }
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      savePlanCanvas(activePlanId, nextCanvasState).catch((error) => {
+        console.error(error)
+      })
+    }, 450)
+  }, [activePlanId, isBackendDriven, savePlanCanvas, updatePlanCanvas])
 
   const updateCanvasState = useCallback((updater) => {
-    if (!activePlanId) return
-    updatePlanCanvas(activePlanId, updater)
-  }, [activePlanId, updatePlanCanvas])
+    setCanvasState((current) => {
+      const nextCanvasState = typeof updater === 'function' ? updater(current) : updater
+      scheduleSave(nextCanvasState)
+      return nextCanvasState
+    })
+  }, [scheduleSave])
 
   const setCards = useCallback((updater) => {
     updateCanvasState((current) => ({
@@ -42,10 +77,10 @@ export function useCanvasState({ activePlanId, activeCanvasState, updatePlanCanv
   }, [updateCanvasState])
 
   return {
-    cards,
-    connections,
-    pan,
-    zoom,
+    cards: canvasState.cards,
+    connections: canvasState.connections,
+    pan: canvasState.pan,
+    zoom: canvasState.zoom,
     updateCanvasState,
     setCards,
     setConnections,

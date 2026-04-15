@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
@@ -132,7 +133,8 @@ const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
 ═══════════════════════════════════════════════════════════════ */
 export default function KanbanBoard() {
   const { planId } = useParams()
-  const { updatePlanBoard } = usePlans()
+  const { accessToken } = useAuth()
+  const { updatePlanBoard, isBackendDriven, loadPlanBoard, applyBoardView } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,
     buildPath: buildWorkspaceBoardPath,
@@ -154,6 +156,8 @@ export default function KanbanBoard() {
   const boardViewToolbarRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents } = useCalendarEvents()
+  const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
+  const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
   const {
     columns,
     totalCards,
@@ -165,10 +169,15 @@ export default function KanbanBoard() {
     addCard,
     updateCard,
     deleteCard,
+    moveCard,
   } = useBoardColumns({
     activePlanId: activePlan?.id,
     boardColumns: activePlan?.boardColumns,
     updatePlanBoard,
+    isBackendDriven,
+    accessToken,
+    applyBoardView,
+    loadPlanBoard,
   })
   const {
     dragState,
@@ -179,14 +188,25 @@ export default function KanbanBoard() {
     handleDragEnd,
   } = useBoardDragAndDrop({
     activePlanId: activePlan?.id,
+    columns,
     updateColumns,
+    moveCard,
+    isBackendDriven,
   })
 
-  const addColumn = () => {
-    if (!createColumn(newColTitle)) return
+  const addColumn = async () => {
+    if (!(await createColumn(newColTitle))) return
     setNewColTitle('')
     setAddingCol(false)
   }
+
+  useEffect(() => {
+    if (!activePlan?.id || !isBackendDriven) return
+
+    loadPlanBoard(activePlan.id).catch((error) => {
+      console.error(error)
+    })
+  }, [activePlan?.id, isBackendDriven, loadPlanBoard])
 
   const showNotification = (message) => {
     if (notificationTimerRef.current) {
@@ -483,7 +503,7 @@ export default function KanbanBoard() {
           titleSize="medium"
           actions={(
             <BoardHeaderActions
-              members={MEMBERS}
+              members={planMembers}
               icons={{
                 Plus: Icon.Plus,
                 Filter: Icon.Filter,
@@ -514,8 +534,8 @@ export default function KanbanBoard() {
               onRenameCol={renameColumn}
               onChangeColColor={changeColColor}
               onCardClick={(card, colTitle) => setActiveCard({ card, colTitle })}
-              labels={LABELS}
-              members={MEMBERS}
+              labels={planLabels}
+              members={planMembers}
               colorOptions={COL_COLORS}
               icons={{
                 Plus: Icon.Plus,
@@ -601,7 +621,7 @@ export default function KanbanBoard() {
                       className={`${styles.boardViewMenuItem} ${activePlan?.id === plan.id ? styles.boardViewMenuItemActive : ''}`}
                       onClick={() => handlePlanSwitch(plan.id)}
                     >
-                      <span className={styles.boardViewMenuDot} style={{ background: plan.color }} />
+                      <span className={styles.boardViewMenuDot} style={{ background: plan.tagColor ?? plan.cover ?? '#a0a0a0' }} />
                       <span className={styles.boardViewMenuLabel}>{plan.name}</span>
                     </button>
                   ))
@@ -626,8 +646,8 @@ export default function KanbanBoard() {
           onClose={() => setActiveCard(null)}
           onUpdate={updatedCard => { updateCard(updatedCard); setActiveCard(null) }}
           onDelete={cardId => { deleteCard(cardId); setActiveCard(null) }}
-          labels={LABELS}
-          members={MEMBERS}
+          labels={planLabels}
+          members={planMembers}
           calendarDays={CALENDAR_DAYS}
           icons={Icon}
           styles={styles}

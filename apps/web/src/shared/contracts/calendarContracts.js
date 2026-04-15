@@ -25,10 +25,15 @@ function normalizeColor(value, fallback = DEFAULT_SOURCE.color) {
 }
 
 export function normalizeCalendarSource(source = {}) {
-  return {
+  const normalized = {
     id: source.id ?? createClientId('calendar-source'),
     name: normalizeText(source.name, DEFAULT_SOURCE.name),
     color: normalizeColor(source.color),
+  }
+
+  return {
+    ...source,
+    ...normalized,
   }
 }
 
@@ -36,7 +41,7 @@ export function normalizeCalendarEvent(event = {}, sourcesById = new Map()) {
   const sourceId = event.sourceId ?? event.source ?? DEFAULT_SOURCE.id
   const source = sourcesById.get(sourceId) ?? sourcesById.values().next().value ?? DEFAULT_SOURCE
 
-  return {
+  const normalized = {
     id: event.id ?? createClientId('calendar-event'),
     title: normalizeText(event.title, 'Evento sem título').trim() || 'Evento sem título',
     date: normalizeDateKey(event.date),
@@ -46,6 +51,11 @@ export function normalizeCalendarEvent(event = {}, sourcesById = new Map()) {
     sourceId,
     color: normalizeColor(event.color, source.color),
     location: normalizeText(event.location),
+  }
+
+  return {
+    ...event,
+    ...normalized,
   }
 }
 

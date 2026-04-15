@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-export function useBoardDragAndDrop({ activePlanId, updateColumns }) {
+export function useBoardDragAndDrop({ activePlanId, columns = [], updateColumns, moveCard, isBackendDriven = false }) {
   const [dragState, setDragState] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
 
@@ -12,9 +12,20 @@ export function useBoardDragAndDrop({ activePlanId, updateColumns }) {
     setDropTarget(target)
   }, [])
 
-  const handleDrop = useCallback((target) => {
+  const handleDrop = useCallback(async (target) => {
     if (!dragState || !activePlanId) return
     const { cardId, sourceColId } = dragState
+
+    if (isBackendDriven) {
+      const destinationColumn = columns.find((column) => column.id === target.colId)
+      const targetPosition = target.type === 'card'
+        ? Math.max(0, destinationColumn?.cards.findIndex((card) => card.id === target.cardId) ?? 0)
+        : (destinationColumn?.cards.length ?? 0)
+      await moveCard(cardId, target.colId, targetPosition)
+      setDragState(null)
+      setDropTarget(null)
+      return
+    }
 
     updateColumns((prev) => {
       const nextColumns = prev.map((column) => ({ ...column, cards: [...column.cards] }))
@@ -57,7 +68,7 @@ export function useBoardDragAndDrop({ activePlanId, updateColumns }) {
 
     setDragState(null)
     setDropTarget(null)
-  }, [activePlanId, dragState, updateColumns])
+  }, [activePlanId, columns, dragState, isBackendDriven, moveCard, updateColumns])
 
   const handleDragEnd = useCallback(() => {
     setDragState(null)

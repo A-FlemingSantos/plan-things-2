@@ -1,4 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
+import { buildLibraryTreeFromApi } from '../../../../shared/contracts/backendAdapters.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
@@ -433,6 +436,8 @@ function UploadToast({ uploads, onDismiss }) {
    MAIN FILES PAGE
 ═══════════════════════════════════════════ */
 export default function FilesPage() {
+  const { accessToken, isAuthenticated, isDemoSession } = useAuth()
+  const backendEnabled = isAuthenticated && !isDemoSession
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const [sidebarSection, setSidebarSection]     = useState('my-files') // my-files | recent | starred | shared | trash
   const [view, setView]                         = useState('grid')
@@ -450,6 +455,30 @@ export default function FilesPage() {
   const notificationTimerRef = useRef(null)
   const uploadIntervalsRef = useRef(new Map())
   const fileInputRef = useRef(null)
+
+  const reloadLibrary = useCallback(async (trash = false) => {
+    if (!backendEnabled) return
+
+    try {
+      const items = await apiRequest('/api/files', {
+        token: accessToken,
+        query: { trash },
+      })
+
+      setLibrary(buildLibraryTreeFromApi(items))
+    } catch (error) {
+      console.error(error)
+    }
+  }, [accessToken, backendEnabled])
+
+  useEffect(() => {
+    if (!backendEnabled) {
+      setLibrary(createInitialLibrarySnapshot())
+      return
+    }
+
+    reloadLibrary(sidebarSection === 'trash')
+  }, [backendEnabled, reloadLibrary, sidebarSection])
 
   const flattenedItems = useMemo(() => flattenLibrary(library), [library])
   const itemById = useMemo(() => new Map(flattenedItems.map((item) => [item.id, item])), [flattenedItems])
@@ -508,7 +537,7 @@ export default function FilesPage() {
     })
   }, [currentPath, flattenedItems, search, sidebarSection, sortBy])
 
-  const handleContextAction = useCallback((action, item) => {
+  const handleContextAction = useCallback(async (action, item) => {
     setContextMenu(null)
     if (action === 'star' || action === 'unstar') {
       setLibrary((prev) =>
@@ -517,11 +546,34 @@ export default function FilesPage() {
     } else if (action === 'rename') {
       setRenamingId(item.id)
     } else if (action === 'delete') {
-      setLibrary((prev) => updateLibraryItem(prev, item.id, markLibraryItemDeleted))
+      if (backendEnabled) {
+        await apiRequest(`/api/files/${item.id}`, {
+          method: 'DELETE',
+          token: accessToken,
+        }).catch((error) => {
+          console.error(error)
+        })
+        await reloadLibrary(sidebarSection === 'trash')
+      } else {
+        setLibrary((prev) => updateLibraryItem(prev, item.id, markLibraryItemDeleted))
+      }
       if (detailItemId === item.id) setDetailItemId(null)
       if (selected === item.id) setSelected(null)
       showNotification(`"${item.name}" movido para a lixeira`)
     } else if (action === 'download') {
+      if (backendEnabled && item.type !== 'folder') {
+        const blob = await apiRequest(`/api/files/${item.id}/download`, {
+          token: accessToken,
+          responseType: 'blob',
+        }).catch((error) => {
+          console.error(error)
+          return null
+        })
+
+        if (blob) {
+          triggerBlobDownload(blob, item.name)
+        }
+      }
       showNotification(`Baixando "${item.name}"...`)
     } else if (action === 'share') {
       showNotification(`Link de "${item.name}" copiado`)
@@ -535,7 +587,7 @@ export default function FilesPage() {
     } else if (action === 'move') {
       showNotification(`Opções de mover abertas para "${item.name}"`)
     }
-  }, [detailItemId, selected])
+  }, [accessToken, backendEnabled, detailItemId, reloadLibrary, selected, sidebarSection])
 
   const showNotification = (msg) => {
     if (notificationTimerRef.current) {
@@ -575,9 +627,36 @@ export default function FilesPage() {
   }
 
   // Upload simulation
-  const simulateUpload = (name) => {
+  const simulateUpload = async (fileLike) => {
+    const name = typeof fileLike === 'string' ? fileLike : fileLike.name
     const id = createClientId('upload')
     setUploads(prev => [...prev, { id, name, progress: 0 }])
+
+    if (backendEnabled && fileLike instanceof File) {
+      const formData = new FormData()
+      formData.append('file', fileLike)
+      const parentId = sidebarSection === 'my-files' ? currentPath[currentPath.length - 1] : null
+
+      setUploads((prev) => prev.map((upload) => upload.id === id ? { ...upload, progress: 40 } : upload))
+
+      try {
+        await apiRequest('/api/files/upload', {
+          method: 'POST',
+          token: accessToken,
+          body: formData,
+          query: parentId ? { parentId } : undefined,
+        })
+
+        setUploads((prev) => prev.map((upload) => upload.id === id ? { ...upload, progress: 100 } : upload))
+        await reloadLibrary(sidebarSection === 'trash')
+        showNotification(`"${name}" enviado`)
+      } catch (error) {
+        console.error(error)
+      }
+
+      return
+    }
+
     let p = 0
     const interval = setInterval(() => {
       p += Math.random() * 22 + 8
@@ -605,15 +684,39 @@ export default function FilesPage() {
   const handleDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
-    Array.from(e.dataTransfer.files).forEach(f => simulateUpload(f.name))
+    Array.from(e.dataTransfer.files).forEach(f => simulateUpload(backendEnabled ? f : f.name))
   }
 
   const handleFileInput = (e) => {
-    Array.from(e.target.files).forEach(f => simulateUpload(f.name))
+    Array.from(e.target.files).forEach(f => simulateUpload(backendEnabled ? f : f.name))
     e.target.value = ''
   }
 
-  const handleNewFolder = () => {
+  const handleNewFolder = async () => {
+    if (backendEnabled) {
+      const parentId = sidebarSection === 'my-files' ? currentPath[currentPath.length - 1] : null
+
+      try {
+        const createdFolder = await apiRequest('/api/files/folders', {
+          method: 'POST',
+          token: accessToken,
+          query: {
+            name: 'Nova pasta',
+            parentId,
+          },
+        })
+
+        await reloadLibrary(sidebarSection === 'trash')
+        setSidebarSection('my-files')
+        setTimeout(() => setRenamingId(createdFolder.id), 80)
+        showNotification('Pasta criada')
+      } catch (error) {
+        console.error(error)
+      }
+
+      return
+    }
+
     const folder = createLibraryItem({
       name: 'Nova pasta',
       type: 'folder',

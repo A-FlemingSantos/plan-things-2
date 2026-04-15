@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { AuthProvider } from './features/auth/context/AuthContext.jsx'
 import { PlansProvider } from './features/workspace/context/PlansContext.jsx'
 import App from './App.jsx'
 import './shared/styles/globals.css'
@@ -8,9 +9,11 @@ import './shared/styles/globals.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <PlansProvider>
-        <App />
-      </PlansProvider>
+      <AuthProvider>
+        <PlansProvider>
+          <App />
+        </PlansProvider>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

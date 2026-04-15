@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
+import { ROUTES } from '../../config/routes.js'
 import SidebarUserCard from '../SidebarUserCard/SidebarUserCard.jsx'
 import menuStyles from './SidebarAccountMenu.module.css'
 
@@ -38,9 +41,16 @@ export default function SidebarAccountMenu({
   plan = 'Professional',
   initials = 'AS',
 }) {
+  const navigate = useNavigate()
+  const { currentUser, isAuthenticated, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const containerRef = useRef(null)
   const menuIdRef = useRef(`sidebar-account-menu-${Math.random().toString(36).slice(2, 10)}`)
+  const resolvedName = currentUser?.fullName ?? name
+  const resolvedEmail = currentUser?.email ?? email
+  const resolvedInitials = currentUser?.fullName
+    ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+    : initials
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -69,9 +79,9 @@ export default function SidebarAccountMenu({
       <SidebarUserCard
         styles={styles}
         collapsed={collapsed}
-        name={name}
+        name={resolvedName}
         plan={plan}
-        initials={initials}
+        initials={resolvedInitials}
         active={open}
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
@@ -88,10 +98,10 @@ export default function SidebarAccountMenu({
             role="menu"
           >
             <div className={menuStyles.header}>
-              <span className={menuStyles.avatar}>{initials}</span>
+              <span className={menuStyles.avatar}>{resolvedInitials}</span>
               <div className={menuStyles.identity}>
-                <p className={menuStyles.name}>{name}</p>
-                <p className={menuStyles.email}>{email}</p>
+                <p className={menuStyles.name}>{resolvedName}</p>
+                <p className={menuStyles.email}>{resolvedEmail}</p>
               </div>
             </div>
 
@@ -107,7 +117,13 @@ export default function SidebarAccountMenu({
                 ].filter(Boolean).join(' ')}
                 role="menuitem"
                 style={{ animationDelay: `${index * 28}ms` }}
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false)
+                  if (id === 'logout' && isAuthenticated) {
+                    logout()
+                    navigate(ROUTES.login)
+                  }
+                }}
               >
                 <span className={menuStyles.icon}><Icon /></span>
                 {label}

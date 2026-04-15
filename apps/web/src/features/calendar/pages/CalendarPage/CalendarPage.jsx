@@ -333,8 +333,8 @@ export default function CalendarPage() {
     setSelectedDate((current) => clampDateToMonth(current, nextMonth))
   }
 
-  const handleCreateEvent = (event) => {
-    const createdEvent = createEvent(event)
+  const handleCreateEvent = async (event) => {
+    const createdEvent = await createEvent(event)
     showNotification(`Evento "${createdEvent.title}" criado`)
   }
 

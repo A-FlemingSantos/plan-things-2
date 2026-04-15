@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import CanvasCard from '../../components/CanvasCard/CanvasCard.jsx'
 import CanvasEmptyHint from '../../components/CanvasEmptyHint/CanvasEmptyHint.jsx'
@@ -95,7 +96,12 @@ function SidebarCollapseIcon() {
 ═══════════════════════════════════════════════════════ */
 export default function CanvasPage() {
   const { planId } = useParams()
-  const { updatePlanCanvas } = usePlans()
+  const {
+    updatePlanCanvas,
+    isBackendDriven,
+    loadPlanCanvas,
+    savePlanCanvas,
+  } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,
     buildPath: buildCanvasPath,
@@ -114,7 +120,17 @@ export default function CanvasPage() {
     activePlanId: activePlan?.id,
     activeCanvasState: activePlan?.canvasState,
     updatePlanCanvas,
+    isBackendDriven,
+    savePlanCanvas,
   })
+
+  useEffect(() => {
+    if (!activePlan?.id || !isBackendDriven) return
+
+    loadPlanCanvas(activePlan.id).catch((error) => {
+      console.error(error)
+    })
+  }, [activePlan?.id, isBackendDriven, loadPlanCanvas])
   const {
     toolbarOpen,
     setToolbarOpen,

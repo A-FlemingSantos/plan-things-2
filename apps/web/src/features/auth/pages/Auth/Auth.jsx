@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
 
@@ -76,6 +77,7 @@ function CheckIcon() {
 /* ── Main Auth page ── */
 export default function Auth({ initialMode = 'login' }) {
   const navigate = useNavigate()
+  const { login, register } = useAuth()
   const [mode, setMode]           = useState(initialMode)   // 'login' | 'register'
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
@@ -83,24 +85,44 @@ export default function Auth({ initialMode = 'login' }) {
   const [showPass, setShowPass]   = useState(false)
   const [agree, setAgree]         = useState(false)
   const [loading, setLoading]     = useState(null)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const isRegister = mode === 'register'
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setErrorMessage('')
     setLoading('email')
-    setTimeout(() => {
-      setLoading(null)
+
+    try {
+      if (isRegister) {
+        await register({
+          fullName: name,
+          email,
+          password,
+        })
+      } else {
+        await login({
+          email,
+          password,
+        })
+      }
+
       navigate(ROUTES.workspace)
-    }, 1800)
+    } catch (error) {
+      setErrorMessage(error.message ?? 'Nao foi possivel concluir a autenticacao.')
+    } finally {
+      setLoading(null)
+    }
   }
 
   const handleOAuth = (provider) => {
+    setErrorMessage('')
     setLoading(provider)
     setTimeout(() => {
+      setErrorMessage(`Login com ${provider} ainda nao esta disponivel.`)
       setLoading(null)
-      navigate(ROUTES.workspace)
-    }, 1800)
+    }, 800)
   }
 
   useEffect(() => {
@@ -245,13 +267,19 @@ export default function Auth({ initialMode = 'login' }) {
             <button
               type="submit"
               className={`${styles.submitBtn} ${loading === 'email' ? styles.submitLoading : ''}`}
-              disabled={!!loading}
+              disabled={!!loading || (isRegister && !agree)}
             >
               {loading === 'email'
                 ? <span className={styles.spinner} />
                 : isRegister ? 'Criar conta' : 'Continuar com e-mail'
               }
             </button>
+
+            {errorMessage && (
+              <p className={styles.formHint} role="alert">
+                {errorMessage}
+              </p>
+            )}
           </form>
 
           {/* Divider */}

@@ -384,7 +384,7 @@ export default function Workspace() {
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [notification, setNotification] = useState(null)
   const notificationTimerRef = useRef(null)
-  const { plans, activePlan, createPlan, selectPlan } = usePlans()
+  const { plans, activePlan, createPlan, selectPlan, currentUser } = usePlans()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
 
   const filtered = plans.filter(p =>
@@ -392,16 +392,20 @@ export default function Workspace() {
     p.tag.toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleNewPlan = (data) => {
-    const newPlan = createPlan(data)
-    if (notificationTimerRef.current) {
-      clearTimeout(notificationTimerRef.current)
+  const handleNewPlan = async (data) => {
+    try {
+      const newPlan = await createPlan(data)
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current)
+      }
+      setNotification(`Plano "${newPlan.name}" criado`)
+      notificationTimerRef.current = setTimeout(() => {
+        setNotification(null)
+        notificationTimerRef.current = null
+      }, 2600)
+    } catch (error) {
+      setNotification(error.message ?? 'Nao foi possivel criar o plano.')
     }
-    setNotification(`Plano "${newPlan.name}" criado`)
-    notificationTimerRef.current = setTimeout(() => {
-      setNotification(null)
-      notificationTimerRef.current = null
-    }, 2600)
   }
 
   useEffect(() => () => {
@@ -479,7 +483,7 @@ export default function Workspace() {
           <div className={styles.topbar}>
             <div className={styles.topbarLeft}>
               <h1 className={styles.pageTitle}>Início</h1>
-              <p className={styles.pageSubtitle}>Bom dia, Arthur.</p>
+              <p className={styles.pageSubtitle}>Bom dia, {currentUser?.fullName?.split(' ')[0] ?? 'Arthur'}.</p>
             </div>
             <div className={styles.topbarRight}>
               <div className={styles.searchWrap}>

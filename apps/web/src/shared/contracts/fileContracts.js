@@ -18,6 +18,9 @@ export function normalizeLibraryItem(item = {}) {
     normalized.children = Array.isArray(item.children) ? item.children.map(normalizeLibraryItem) : []
   }
 
-  return normalized
+  return {
+    ...item,
+    ...normalized,
+  }
 }
 

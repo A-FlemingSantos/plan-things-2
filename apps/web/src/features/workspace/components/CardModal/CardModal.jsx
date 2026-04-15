@@ -179,7 +179,7 @@ export default function CardModal({
 
   const addComment = () => {
     if (!comment.trim()) return
-    const c = { id: uid(), author: 'm1', text: comment.trim(), time: 'Agora' }
+    const c = { id: uid(), author: members[0]?.name ?? members[0]?.initials ?? 'Você', text: comment.trim(), time: 'Agora' }
     setComments(prev => [...prev, c])
     setComment('')
   }
@@ -234,11 +234,9 @@ export default function CardModal({
     setShowDateMenu(false)
   }
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
-  const getMemberName = (initials) => {
-    if (initials === 'AS') return 'Arthur Santos'
-    if (initials === 'MK') return 'Maria Kim'
-    if (initials === 'TK') return 'Tom K.'
-    return 'Sara R.'
+  const getMemberName = (member) => {
+    if (!member) return 'Membro'
+    return member.name ?? member.email ?? member.initials ?? 'Membro'
   }
 
   useEffect(() => {
@@ -1147,7 +1145,7 @@ export default function CardModal({
                       {selectedMembers.map(member => (
                         <span key={member.id} className={styles.cmSelectedMember}>
                           <span className={styles.cmMemberAvatar} style={{ background: member.color }}>{member.initials}</span>
-                          {getMemberName(member.initials)}
+                          {getMemberName(member)}
                         </span>
                       ))}
                     </div>
@@ -1209,7 +1207,7 @@ export default function CardModal({
                 aria-pressed={memberIds.includes(m.id)}
               >
                 <span className={styles.cmMemberAvatar} style={{ background: m.color }}>{m.initials}</span>
-                <span className={styles.cmMemberName}>{getMemberName(m.initials)}</span>
+                <span className={styles.cmMemberName}>{getMemberName(m)}</span>
                 {memberIds.includes(m.id) && <span className={styles.cmMemberCheck}><icons.Check /></span>}
               </button>
             ))}
@@ -1277,7 +1275,7 @@ export default function CardModal({
               onClick={() => toggleMember(member.id)}
             >
               <span className={styles.cmMemberAvatar} style={{ background: member.color }}>{member.initials}</span>
-              <span>{getMemberName(member.initials)}</span>
+              <span>{getMemberName(member)}</span>
               {memberIds.includes(member.id) && (
                 <span className={styles.cmLabelCheck}>
                   <icons.Check />
