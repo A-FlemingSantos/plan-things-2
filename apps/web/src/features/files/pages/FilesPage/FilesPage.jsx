@@ -444,6 +444,55 @@ function UploadToast({ uploads, onDismiss }) {
   )
 }
 
+function LoadingFileCard() {
+  return (
+    <div className={styles.loadingFileCard} aria-hidden="true">
+      <div className={styles.loadingFileThumb}>
+        <span className={`${styles.loadingFileBlock} ${styles.loadingFileThumbIcon}`} />
+      </div>
+      <div className={styles.loadingFileMeta}>
+        <span className={`${styles.loadingFileBlock} ${styles.loadingFileName}`} />
+        <span className={`${styles.loadingFileBlock} ${styles.loadingFileSubmeta}`} />
+      </div>
+    </div>
+  )
+}
+
+function LoadingFileRow() {
+  return (
+    <div className={styles.loadingFileRow} aria-hidden="true">
+      <div className={styles.loadingFileRowLeft}>
+        <span className={`${styles.loadingFileBlock} ${styles.loadingFileRowIcon}`} />
+        <div className={styles.loadingFileRowText}>
+          <span className={`${styles.loadingFileBlock} ${styles.loadingFileRowTitle}`} />
+          <span className={`${styles.loadingFileBlock} ${styles.loadingFileRowMeta}`} />
+        </div>
+      </div>
+      <span className={`${styles.loadingFileBlock} ${styles.loadingFileRowBadge}`} />
+    </div>
+  )
+}
+
+function FilesLoadingState({ view }) {
+  if (view === 'list') {
+    return (
+      <div className={styles.fileList} aria-hidden="true">
+        {Array.from({ length: 6 }, (_, index) => (
+          <LoadingFileRow key={`loading-row-${index}`} />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.fileGrid} aria-hidden="true">
+      {Array.from({ length: 10 }, (_, index) => (
+        <LoadingFileCard key={`loading-card-${index}`} />
+      ))}
+    </div>
+  )
+}
+
 /* ═══════════════════════════════════════════
    MAIN FILES PAGE
 ═══════════════════════════════════════════ */
@@ -455,7 +504,8 @@ export default function FilesPage() {
   const [view, setView]                         = useState('grid')
   const [search, setSearch]                     = useState('')
   const [currentPath, setCurrentPath]           = useState([]) // array of folder ids
-  const [library, setLibrary]                   = useState(createInitialLibrarySnapshot)
+  const [library, setLibrary]                   = useState(() => (backendEnabled ? [] : createInitialLibrarySnapshot()))
+  const [hasLoadedLibrary, setHasLoadedLibrary] = useState(() => !backendEnabled)
   const [selected, setSelected]                 = useState(null)
   const [detailItemId, setDetailItemId]         = useState(null)
   const [contextMenu, setContextMenu]           = useState(null) // { x, y, item }
@@ -478,17 +528,21 @@ export default function FilesPage() {
       })
 
       setLibrary(buildLibraryTreeFromApi(items))
+      setHasLoadedLibrary(true)
     } catch (error) {
       console.error(error)
+      setHasLoadedLibrary(true)
     }
   }, [accessToken, backendEnabled])
 
   useEffect(() => {
     if (!backendEnabled) {
       setLibrary(createInitialLibrarySnapshot())
+      setHasLoadedLibrary(true)
       return
     }
 
+    setHasLoadedLibrary(false)
     reloadLibrary(sidebarSection === 'trash')
   }, [backendEnabled, reloadLibrary, sidebarSection])
 
@@ -836,6 +890,9 @@ export default function FilesPage() {
   const EmptyIcon = emptyState.icon
 
   const storagePercent = (STORAGE_USED / STORAGE_TOTAL) * 100
+  const filesAreaStatus = hasLoadedLibrary
+    ? `${filteredFiles.length} ${filteredFiles.length === 1 ? 'item' : 'itens'}`
+    : 'Sincronizando biblioteca'
   const renderSidebarSecondaryContent = ({ collapsed }) => (
     <>
       {!collapsed && (
@@ -1021,13 +1078,19 @@ export default function FilesPage() {
                 {breadcrumb.length ? breadcrumb[breadcrumb.length - 1].name : sectionLabel}
               </p>
               <div className={styles.filesAreaMeta}>
-                <span>{filteredFiles.length} {filteredFiles.length === 1 ? 'item' : 'itens'}</span>
-                <span className={styles.filesAreaDot} />
-                <span>Sincronizado agora</span>
+                <span>{filesAreaStatus}</span>
+                {hasLoadedLibrary && (
+                  <>
+                    <span className={styles.filesAreaDot} />
+                    <span>Sincronizado agora</span>
+                  </>
+                )}
               </div>
             </div>
 
-            {filteredFiles.length === 0 ? (
+            {!hasLoadedLibrary ? (
+              <FilesLoadingState view={view} />
+            ) : filteredFiles.length === 0 ? (
               <div className={styles.emptyState}>
                 <span className={styles.emptyIcon}><EmptyIcon /></span>
                 <p className={styles.emptyTitle}>{emptyState.title}</p>

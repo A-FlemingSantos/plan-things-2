@@ -382,6 +382,81 @@ function PlanCard({ plan, view, onOpen, isActive }) {
   )
 }
 
+function LoadingPlanCard({ view }) {
+  if (view === 'list') {
+    return (
+      <div className={styles.loadingListCard} aria-hidden="true">
+        <span className={`${styles.loadingBlock} ${styles.loadingListCover}`} />
+        <div className={styles.loadingListInfo}>
+          <span className={`${styles.loadingBlock} ${styles.loadingListTitle}`} />
+          <span className={`${styles.loadingBlock} ${styles.loadingListMeta}`} />
+        </div>
+        <span className={`${styles.loadingBlock} ${styles.loadingListBadge}`} />
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.loadingPlanCard} aria-hidden="true">
+      <div className={styles.loadingPlanCardBody}>
+        <div className={styles.loadingPlanCardTop}>
+          <span className={`${styles.loadingBlock} ${styles.loadingChip}`} />
+          <span className={`${styles.loadingBlock} ${styles.loadingDate}`} />
+        </div>
+        <span className={`${styles.loadingBlock} ${styles.loadingTitle}`} />
+        <span className={`${styles.loadingBlock} ${styles.loadingText}`} />
+        <span className={`${styles.loadingBlock} ${styles.loadingTextShort}`} />
+        <div className={styles.loadingPlanCardFooter}>
+          <div className={styles.loadingMemberStack}>
+            <span className={styles.loadingAvatar} />
+            <span className={styles.loadingAvatar} />
+            <span className={styles.loadingAvatar} />
+          </div>
+          <span className={`${styles.loadingBlock} ${styles.loadingMeta}`} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function WorkspaceLoadingState({ view }) {
+  return (
+    <>
+      <section className={styles.loadingCurrentPlan} aria-hidden="true">
+        <div className={styles.loadingCurrentPlanCopy}>
+          <span className={`${styles.loadingBlock} ${styles.loadingEyebrow}`} />
+          <span className={`${styles.loadingBlock} ${styles.loadingCurrentTitle}`} />
+          <span className={`${styles.loadingBlock} ${styles.loadingCurrentText}`} />
+        </div>
+        <div className={styles.loadingCurrentActions}>
+          <span className={`${styles.loadingBlock} ${styles.loadingAction}`} />
+          <span className={`${styles.loadingBlock} ${styles.loadingAction}`} />
+        </div>
+      </section>
+
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionLeft}>
+          <h2 className={styles.sectionTitle}>Carregando planos</h2>
+        </div>
+      </div>
+
+      {view === 'grid' ? (
+        <div className={styles.grid} aria-hidden="true">
+          {Array.from({ length: 6 }, (_, index) => (
+            <LoadingPlanCard key={`loading-grid-${index}`} view="grid" />
+          ))}
+        </div>
+      ) : (
+        <div className={styles.listView} aria-hidden="true">
+          {Array.from({ length: 5 }, (_, index) => (
+            <LoadingPlanCard key={`loading-list-${index}`} view="list" />
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
 /* ═══════════════════════════════════════════
    WORKSPACE
 ═══════════════════════════════════════════ */
@@ -392,7 +467,7 @@ export default function Workspace() {
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [notification, setNotification] = useState(null)
   const notificationTimerRef = useRef(null)
-  const { plans, activePlan, createPlan, selectPlan, currentUser, isBackendDriven } = usePlans()
+  const { plans, activePlan, createPlan, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
 
   const filtered = plans.filter(p =>
@@ -522,6 +597,10 @@ export default function Workspace() {
 
           {/* Content */}
           <div className={styles.content}>
+            {isBackendDriven && isLoading ? (
+              <WorkspaceLoadingState view={view} />
+            ) : (
+              <>
             {activePlan && (
               <section className={styles.currentPlanPanel}>
                 <div className={styles.currentPlanPanelCopy}>
@@ -617,6 +696,8 @@ export default function Workspace() {
                   />
                 ))}
               </div>
+            )}
+              </>
             )}
           </div>
       </ProductAppShell>

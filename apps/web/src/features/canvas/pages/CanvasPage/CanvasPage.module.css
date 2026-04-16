@@ -478,6 +478,54 @@
   touch-action: none;
 }
 
+.canvasLoading {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20px 20px, #d9d9d9 1.2px, transparent 1.2px),
+    #fafafa;
+  background-size: 24px 24px;
+}
+
+.canvasLoadingCard {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(320px, calc(100% - 40px));
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid var(--color-gray-200);
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+  transform: translate(-50%, -50%);
+}
+
+.canvasLoadingBlock {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e9e9e9 0%, #f6f6f6 50%, #e9e9e9 100%);
+  background-size: 200% 100%;
+  animation: canvasLoadingPulse 1.2s ease-in-out infinite;
+}
+
+.canvasLoadingTitle {
+  width: 62%;
+  height: 16px;
+  margin-bottom: 14px;
+}
+
+.canvasLoadingText {
+  width: 100%;
+  height: 12px;
+  margin-bottom: 10px;
+}
+
+.canvasLoadingTextShort {
+  width: 74%;
+  height: 12px;
+}
+
 /* Dot grid */
 .canvasGrid {
   position: absolute;
@@ -788,6 +836,11 @@
   padding: 1px 6px;
   font-family: var(--font-family);
   font-size: 12px;
+}
+
+@keyframes canvasLoadingPulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 /* ════════════════════════════════════════

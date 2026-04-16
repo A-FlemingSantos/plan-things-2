@@ -8,6 +8,11 @@ import {
   insertCalendarEvent,
 } from '../data/calendarRepository.js'
 
+const EMPTY_CALENDAR_SNAPSHOT = {
+  sources: [],
+  events: [],
+}
+
 function matchesSearch(event, term) {
   if (!term) return true
 
@@ -18,7 +23,8 @@ function matchesSearch(event, term) {
 export function useCalendarEvents({ search = '' } = {}) {
   const { accessToken, isAuthenticated, isDemoSession } = useAuth()
   const backendEnabled = isAuthenticated && !isDemoSession
-  const [snapshot, setSnapshot] = useState(() => createInitialCalendarSnapshot())
+  const [snapshot, setSnapshot] = useState(() => (backendEnabled ? EMPTY_CALENDAR_SNAPSHOT : createInitialCalendarSnapshot()))
+  const [isLoading, setIsLoading] = useState(() => backendEnabled)
   const [loadError, setLoadError] = useState(null)
   const searchTerm = search.trim().toLowerCase()
 
@@ -30,8 +36,13 @@ export function useCalendarEvents({ search = '' } = {}) {
         if (active) {
           setSnapshot(createInitialCalendarSnapshot())
           setLoadError(null)
+          setIsLoading(false)
         }
         return
+      }
+
+      if (active) {
+        setIsLoading(true)
       }
 
       try {
@@ -45,6 +56,10 @@ export function useCalendarEvents({ search = '' } = {}) {
       } catch (error) {
         if (!active) return
         setLoadError(error?.message ?? 'Não foi possível carregar os eventos do calendário.')
+      } finally {
+        if (active) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -147,6 +162,7 @@ export function useCalendarEvents({ search = '' } = {}) {
     events: snapshot.events,
     calendarSources: snapshot.sources,
     filteredEvents,
+    isLoading,
     loadError,
     createEvent,
     updateEvent,

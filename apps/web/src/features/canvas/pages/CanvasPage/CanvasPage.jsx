@@ -91,6 +91,18 @@ function SidebarCollapseIcon() {
   )
 }
 
+function CanvasLoadingState({ styles }) {
+  return (
+    <div className={styles.canvasLoading} aria-hidden="true">
+      <div className={styles.canvasLoadingCard}>
+        <span className={`${styles.canvasLoadingBlock} ${styles.canvasLoadingTitle}`} />
+        <span className={`${styles.canvasLoadingBlock} ${styles.canvasLoadingText}`} />
+        <span className={`${styles.canvasLoadingBlock} ${styles.canvasLoadingTextShort}`} />
+      </div>
+    </div>
+  )
+}
+
 /* ═══════════════════════════════════════════════════════
    MAIN CANVAS PAGE
 ═══════════════════════════════════════════════════════ */
@@ -101,6 +113,7 @@ export default function CanvasPage() {
     isBackendDriven,
     loadPlanCanvas,
     savePlanCanvas,
+    isLoading,
   } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,
@@ -125,7 +138,10 @@ export default function CanvasPage() {
     isBackendDriven,
     savePlanCanvas,
   })
-  const canvasMeta = `${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}${saveMessage ? ` · ${saveMessage}` : ''}`
+  const isCanvasLoading = isBackendDriven && (isLoading || !activePlan || !activePlan.canvasLoaded)
+  const canvasMeta = isCanvasLoading
+    ? 'Sincronizando canvas'
+    : `${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}${saveMessage ? ` · ${saveMessage}` : ''}`
 
   useEffect(() => {
     if (!activePlan?.id || !isBackendDriven) return
@@ -218,106 +234,111 @@ export default function CanvasPage() {
           </div>
         )}
 
-        {/* Canvas */}
-        <div
-          ref={canvasRef}
-          className={styles.canvasArea}
-          style={{ cursor: canvasCursor }}
-          onPointerDown={handleCanvasPointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-        >
-          <CanvasToolbar
-            tool={tool}
-            setTool={switchTool}
-            zoom={zoom}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onFit={fitView}
-            open={toolbarOpen}
-            onToggle={() => setToolbarOpen(v => !v)}
-            tools={TOOLS}
-            toolIcons={TOOL_ICONS}
-            ChevronDownIcon={Ic.ChevDown}
-            PlusIcon={Ic.Plus}
-            MinusIcon={Ic.Minus}
-            FitIcon={Ic.Fit}
-            styles={styles}
-          />
-
-          {/* Dot grid background */}
-          <div
-            className={styles.canvasGrid}
-            style={{
-              backgroundPosition: `${pan.x % (20 * zoom)}px ${pan.y % (20 * zoom)}px`,
-              backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
-            }}
-          />
-
-          {/* Transformed canvas layer */}
-          <div
-            className={styles.canvasLayer}
-            style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
-          >
-            {cards.map(card => (
-              <CanvasCard
-                key={card.id}
-                card={card}
-                selected={selected === card.id}
-                isConnectSource={connectFrom === card.id}
-                isConnectTarget={connectFrom && connectFrom !== card.id && tool === 'connect'}
+        {isCanvasLoading ? (
+          <CanvasLoadingState styles={styles} />
+        ) : (
+          <>
+            <div
+              ref={canvasRef}
+              className={styles.canvasArea}
+              style={{ cursor: canvasCursor }}
+              onPointerDown={handleCanvasPointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+            >
+              <CanvasToolbar
                 tool={tool}
-                onPointerDown={handleCardPointerDown}
-                onCardClick={handleCardClick}
-                onUpdate={updated => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
-                onHeightChange={(id, h) => { cardHeights.current[id] = h }}
-                cardWidth={CARD_W}
-                cardColors={CARD_COLORS}
-                MoreIcon={Ic.More}
+                setTool={switchTool}
+                zoom={zoom}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                onFit={fitView}
+                open={toolbarOpen}
+                onToggle={() => setToolbarOpen(v => !v)}
+                tools={TOOLS}
+                toolIcons={TOOL_ICONS}
+                ChevronDownIcon={Ic.ChevDown}
+                PlusIcon={Ic.Plus}
+                MinusIcon={Ic.Minus}
+                FitIcon={Ic.Fit}
                 styles={styles}
               />
-            ))}
-          </div>
 
-          {/* SVG connections overlay (screen space) */}
-          <ConnectionsSVG
-            connections={connections}
-            cards={cards}
-            pan={pan}
-            zoom={zoom}
-            cardHeights={cardHeights}
-            tool={tool}
-            onDeleteConn={id => setConnections(prev => prev.filter(c => c.id !== id))}
-            connectFrom={connectFrom}
-            svgMouse={svgMouse}
-            cardWidth={CARD_W}
-            styles={styles}
-          />
+              {/* Dot grid background */}
+              <div
+                className={styles.canvasGrid}
+                style={{
+                  backgroundPosition: `${pan.x % (20 * zoom)}px ${pan.y % (20 * zoom)}px`,
+                  backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+                }}
+              />
 
-          {/* Empty state / hint */}
-          {cards.length === 0 && (
-            <div className={styles.emptyState} style={{ pointerEvents: 'none' }}>
-              <p className={styles.emptyStateTitle}>Seu Canvas está vazio</p>
-              <p className={styles.emptyStateHint}>Pressione <kbd>C</kbd> e clique para criar um cartão</p>
+              {/* Transformed canvas layer */}
+              <div
+                className={styles.canvasLayer}
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+              >
+                {cards.map(card => (
+                  <CanvasCard
+                    key={card.id}
+                    card={card}
+                    selected={selected === card.id}
+                    isConnectSource={connectFrom === card.id}
+                    isConnectTarget={connectFrom && connectFrom !== card.id && tool === 'connect'}
+                    tool={tool}
+                    onPointerDown={handleCardPointerDown}
+                    onCardClick={handleCardClick}
+                    onUpdate={updated => setCards(prev => prev.map(c => c.id === updated.id ? updated : c))}
+                    onHeightChange={(id, h) => { cardHeights.current[id] = h }}
+                    cardWidth={CARD_W}
+                    cardColors={CARD_COLORS}
+                    MoreIcon={Ic.More}
+                    styles={styles}
+                  />
+                ))}
+              </div>
+
+              {/* SVG connections overlay (screen space) */}
+              <ConnectionsSVG
+                connections={connections}
+                cards={cards}
+                pan={pan}
+                zoom={zoom}
+                cardHeights={cardHeights}
+                tool={tool}
+                onDeleteConn={id => setConnections(prev => prev.filter(c => c.id !== id))}
+                connectFrom={connectFrom}
+                svgMouse={svgMouse}
+                cardWidth={CARD_W}
+                styles={styles}
+              />
+
+              {/* Empty state / hint */}
+              {cards.length === 0 && (
+                <div className={styles.emptyState} style={{ pointerEvents: 'none' }}>
+                  <p className={styles.emptyStateTitle}>Seu Canvas está vazio</p>
+                  <p className={styles.emptyStateHint}>Pressione <kbd>C</kbd> e clique para criar um cartão</p>
+                </div>
+              )}
+
+              <CanvasEmptyHint tool={tool} CardIcon={Ic.Card} styles={styles} />
             </div>
-          )}
 
-          <CanvasEmptyHint tool={tool} CardIcon={Ic.Card} styles={styles} />
-        </div>
+            {/* Zoom indicator (bottom-right) */}
+            <div className={styles.zoomIndicator}>
+              <button className={styles.zoomBtn} onClick={handleZoomOut}><Ic.Minus /></button>
+              <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
+              <button className={styles.zoomBtn} onClick={handleZoomIn}><Ic.Plus /></button>
+            </div>
 
-        {/* Zoom indicator (bottom-right) */}
-        <div className={styles.zoomIndicator}>
-          <button className={styles.zoomBtn} onClick={handleZoomOut}><Ic.Minus /></button>
-          <span className={styles.zoomLabel}>{Math.round(zoom * 100)}%</span>
-          <button className={styles.zoomBtn} onClick={handleZoomIn}><Ic.Plus /></button>
-        </div>
-
-        {/* Connect mode indicator */}
-        {connectFrom && (
-          <div className={styles.connectBanner}>
-            <span className={styles.connectBannerDot} />
-            Clique em outro cartão para conectar ou pressione <kbd>Esc</kbd>
-          </div>
+            {/* Connect mode indicator */}
+            {connectFrom && (
+              <div className={styles.connectBanner}>
+                <span className={styles.connectBannerDot} />
+                Clique em outro cartão para conectar ou pressione <kbd>Esc</kbd>
+              </div>
+            )}
+          </>
         )}
     </ProductAppShell>
   )

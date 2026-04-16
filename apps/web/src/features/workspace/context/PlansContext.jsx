@@ -26,9 +26,9 @@ function setPlanById(plans, planId, updater) {
 export function PlansProvider({ children }) {
   const { accessToken, isAuthenticated, isDemoSession, currentUser, workspace } = useAuth()
   const backendEnabled = isAuthenticated && !isDemoSession
-  const [plans, setPlans] = useState(INITIAL_PLANS)
-  const [activePlanId, setActivePlanId] = useState(INITIAL_PLANS[0]?.id ?? null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [plans, setPlans] = useState(() => (backendEnabled ? [] : INITIAL_PLANS))
+  const [activePlanId, setActivePlanId] = useState(() => (backendEnabled ? null : INITIAL_PLANS[0]?.id ?? null))
+  const [isLoading, setIsLoading] = useState(() => backendEnabled)
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
 

@@ -299,6 +299,22 @@ function AgendaList({ date, events, onClose, onCreate, onEditEvent, onDeleteEven
   )
 }
 
+function CalendarLoadingState({ styles }) {
+  return (
+    <section className={styles.calendarLoading} aria-hidden="true">
+      <div className={styles.calendarLoadingGrid}>
+        {Array.from({ length: 35 }, (_, index) => (
+          <div key={`calendar-loading-${index}`} className={styles.calendarLoadingCell}>
+            <span className={`${styles.calendarLoadingBlock} ${styles.calendarLoadingDay}`} />
+            <span className={`${styles.calendarLoadingBlock} ${styles.calendarLoadingEvent}`} />
+            <span className={`${styles.calendarLoadingBlock} ${styles.calendarLoadingEventShort}`} />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export default function CalendarPage() {
   const today = useMemo(() => new Date(), [])
   const [selectedDate, setSelectedDate] = useState(today)
@@ -311,7 +327,7 @@ export default function CalendarPage() {
   const [notification, setNotification] = useState(null)
   const notificationTimerRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
-  const { calendarSources, filteredEvents, loadError, createEvent, updateEvent, deleteEvent } = useCalendarEvents({ search })
+  const { calendarSources, filteredEvents, isLoading, loadError, createEvent, updateEvent, deleteEvent } = useCalendarEvents({ search })
 
   const cells = useMemo(() => buildMonthCells(visibleMonth), [visibleMonth])
   const eventsByDate = useMemo(() => {
@@ -571,7 +587,9 @@ export default function CalendarPage() {
           <span className={styles.viewStatus}>{viewStatus}</span>
         </div>
 
-        {view === 'day' || view === 'week' || view === 'work' ? (
+        {isLoading && !loadError ? (
+          <CalendarLoadingState styles={styles} />
+        ) : view === 'day' || view === 'week' || view === 'work' ? (
           renderRangeView()
         ) : (
           <section className={`${styles.calendarWorkspace} ${agendaPanelOpen ? '' : styles.calendarWorkspaceFull}`}>

@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { useAuth } from './features/auth/context/AuthContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
 import CalendarPage from './features/calendar/pages/CalendarPage/CalendarPage.jsx'
@@ -22,7 +23,33 @@ function LegacyPlanRedirect({ buildPath }) {
   return <Navigate to={buildPath(planId)} replace />
 }
 
+function AppBootstrapScreen() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        padding: '32px',
+        background: 'linear-gradient(180deg, #f7f4ec 0%, #f2f6fb 100%)',
+        color: '#1f1f1f',
+      }}
+    >
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Carregando sua sessão...</p>
+        <p style={{ margin: '8px 0 0', color: '#5f646d' }}>Preparando a aplicação com os dados mais recentes.</p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
+  const { isReady } = useAuth()
+
+  if (!isReady) {
+    return <AppBootstrapScreen />
+  }
+
   return (
     <Routes>
       <Route path={ROUTES.home} element={<LandingPage />} />

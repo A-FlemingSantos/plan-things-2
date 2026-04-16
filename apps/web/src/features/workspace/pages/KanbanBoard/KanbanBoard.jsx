@@ -125,6 +125,30 @@ const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
     Icon.Files,
 }))
 
+function BoardLoadingState({ styles }) {
+  return (
+    <div className={styles.board} aria-hidden="true">
+      {Array.from({ length: 4 }, (_, columnIndex) => (
+        <div key={`board-loading-${columnIndex}`} className={styles.boardLoadingColumn}>
+          <div className={styles.boardLoadingColumnHeader}>
+            <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingColumnTitle}`} />
+            <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingColumnMeta}`} />
+          </div>
+          <div className={styles.boardLoadingCards}>
+            {Array.from({ length: 3 }, (_, cardIndex) => (
+              <div key={`board-loading-${columnIndex}-${cardIndex}`} className={styles.boardLoadingCard}>
+                <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingCardTitle}`} />
+                <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingCardText}`} />
+                <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingCardTextShort}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CARD DETAIL MODAL
 ═══════════════════════════════════════════════════════════════ */
@@ -134,7 +158,7 @@ const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
 export default function KanbanBoard() {
   const { planId } = useParams()
   const { accessToken, currentUser } = useAuth()
-  const { updatePlanBoard, isBackendDriven, loadPlanBoard, applyBoardView } = usePlans()
+  const { updatePlanBoard, isBackendDriven, loadPlanBoard, applyBoardView, isLoading } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,
     buildPath: buildWorkspaceBoardPath,
@@ -310,6 +334,7 @@ export default function KanbanBoard() {
       .filter((event) => event.date >= todayKey)
       .slice(0, 4)
   }, [filteredEvents, today])
+  const isBoardLoading = isBackendDriven && (isLoading || !activePlan || !activePlan.boardLoaded)
 
   useEffect(() => () => {
     if (notificationTimerRef.current) {
@@ -507,7 +532,7 @@ export default function KanbanBoard() {
         <PlanPageHeader
           title={activePlan?.name ?? 'Plano'}
           breadcrumbCurrent={activePlan?.name ?? 'Plano'}
-          meta={`${totalCards} cartões`}
+          meta={isBoardLoading ? 'Sincronizando quadro' : `${totalCards} cartões`}
           icon={<Icon.Board />}
           sticky
           tone="solid"
@@ -529,49 +554,53 @@ export default function KanbanBoard() {
         />
 
         {/* ── Board ── */}
-        <div className={styles.board}>
-          {columns.map(col => (
-            <KanbanColumn
-              key={col.id}
-              col={col}
-              dragState={dragState}
-              dropTarget={dropTarget}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-              onAddCard={addCard}
-              onDeleteCol={deleteColumn}
-              onRenameCol={renameColumn}
-              onChangeColColor={changeColColor}
-              onCardClick={(card, colTitle) => setActiveCard({ card, colTitle })}
-              labels={planLabels}
-              members={planMembers}
-              colorOptions={COL_COLORS}
-              icons={{
-                Plus: Icon.Plus,
-                More: Icon.More,
-                Edit: Icon.Edit,
-                Trash: Icon.Trash,
-                X: Icon.X,
-                Comment: Icon.Comment,
-                Clock: Icon.Clock,
-              }}
+        {isBoardLoading ? (
+          <BoardLoadingState styles={styles} />
+        ) : (
+          <div className={styles.board}>
+            {columns.map(col => (
+              <KanbanColumn
+                key={col.id}
+                col={col}
+                dragState={dragState}
+                dropTarget={dropTarget}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                onAddCard={addCard}
+                onDeleteCol={deleteColumn}
+                onRenameCol={renameColumn}
+                onChangeColColor={changeColColor}
+                onCardClick={(card, colTitle) => setActiveCard({ card, colTitle })}
+                labels={planLabels}
+                members={planMembers}
+                colorOptions={COL_COLORS}
+                icons={{
+                  Plus: Icon.Plus,
+                  More: Icon.More,
+                  Edit: Icon.Edit,
+                  Trash: Icon.Trash,
+                  X: Icon.X,
+                  Comment: Icon.Comment,
+                  Clock: Icon.Clock,
+                }}
+                styles={styles}
+              />
+            ))}
+
+            <AddColumnComposer
+              addingCol={addingCol}
+              newColTitle={newColTitle}
+              setNewColTitle={setNewColTitle}
+              setAddingCol={setAddingCol}
+              addColumn={addColumn}
+              PlusIcon={Icon.Plus}
+              XIcon={Icon.X}
               styles={styles}
             />
-          ))}
-
-          <AddColumnComposer
-            addingCol={addingCol}
-            newColTitle={newColTitle}
-            setNewColTitle={setNewColTitle}
-            setAddingCol={setAddingCol}
-            addColumn={addColumn}
-            PlusIcon={Icon.Plus}
-            XIcon={Icon.X}
-            styles={styles}
-          />
-        </div>
+          </div>
+        )}
 
         <div ref={boardViewToolbarRef} className={styles.boardViewToolbar} aria-label="Atalhos do quadro">
           <button

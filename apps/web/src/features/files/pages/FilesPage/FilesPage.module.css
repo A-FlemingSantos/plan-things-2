@@ -650,6 +650,54 @@
   box-shadow: 0 0 0 2px rgba(0,0,0,.08), var(--shadow-sm) !important;
 }
 
+.loadingFileBlock {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ebebeb 0%, #f7f7f7 50%, #ebebeb 100%);
+  background-size: 200% 100%;
+  animation: filesLoadingPulse 1.2s ease-in-out infinite;
+}
+
+.loadingFileCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--color-white);
+}
+
+.loadingFileThumb {
+  height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f4f4;
+}
+
+.loadingFileThumbIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.loadingFileMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.loadingFileName {
+  width: 76%;
+  height: 14px;
+}
+
+.loadingFileSubmeta {
+  width: 52%;
+  height: 12px;
+}
+
 /* Thumbnail */
 .fileCardThumb {
   position: relative;
@@ -801,6 +849,56 @@
 .fileRow:last-child { border-bottom: none; }
 .fileRow:hover { background: var(--color-gray-50); }
 .fileRowSelected { background: #f5f5f5; }
+
+.loadingFileRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.loadingFileRow:last-child {
+  border-bottom: none;
+}
+
+.loadingFileRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.loadingFileRowIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.loadingFileRowText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.loadingFileRowTitle {
+  width: min(220px, 70%);
+  height: 14px;
+}
+
+.loadingFileRowMeta {
+  width: min(320px, 82%);
+  height: 12px;
+}
+
+.loadingFileRowBadge {
+  width: 72px;
+  height: 12px;
+  flex-shrink: 0;
+}
 
 @keyframes rowIn {
   from { opacity: 0; transform: translateX(-4px); }
@@ -1393,6 +1491,11 @@
   box-shadow: var(--shadow-lg);
   animation: notifIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
   white-space: nowrap;
+}
+
+@keyframes filesLoadingPulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
 }
 
 @keyframes notifIn {
