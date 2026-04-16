@@ -1386,6 +1386,55 @@
 }
 .emptyUploadBtn:hover { opacity: .82; }
 
+.integrationErrorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 420px;
+  padding: 80px 32px;
+  text-align: center;
+  animation: fadeIn 0.25s ease both;
+}
+
+.integrationErrorTitle {
+  font-size: 18px;
+  font-weight: var(--font-weight-regular);
+  color: var(--color-gray-600);
+  letter-spacing: -.02em;
+  margin: 0;
+}
+
+.integrationErrorText {
+  max-width: 420px;
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  color: var(--color-gray-400);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.integrationErrorRetry {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  height: 36px;
+  padding: 0 18px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  background: var(--color-black);
+  color: var(--color-white);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.integrationErrorRetry:hover {
+  opacity: .82;
+}
+
 /* ════════════════════════════════════════
    UPLOAD TOAST
 ════════════════════════════════════════ */

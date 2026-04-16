@@ -2,7 +2,6 @@ package com.planthings.api.config;
 
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.core.env.Environment;
@@ -10,7 +9,7 @@ import org.springframework.core.env.Environment;
 public final class DatasourceSafetyGuard {
 
   private static final Pattern DATABASE_NAME_PATTERN = Pattern.compile("(?i)(?:^|;)databaseName=([^;]+)");
-  private static final Set<String> FORBIDDEN_DATABASES = Set.of("master", "plan_things_test");
+  private static final String OFFICIAL_DATABASE = "plan_things_db";
 
   private DatasourceSafetyGuard() {
   }
@@ -24,18 +23,22 @@ public final class DatasourceSafetyGuard {
     String databaseName = extractDatabaseName(datasourceUrl);
 
     if (databaseName == null || databaseName.isBlank()) {
-      return;
+      throw new IllegalStateException(
+          "Inicializacao bloqueada: fora do profile de teste, o datasource deve informar o parametro 'databaseName' e usar exclusivamente a base oficial da aplicacao."
+      );
     }
 
     String normalizedDatabaseName = databaseName.trim().toLowerCase(Locale.ROOT);
-    if (!FORBIDDEN_DATABASES.contains(normalizedDatabaseName)) {
+    if (OFFICIAL_DATABASE.equals(normalizedDatabaseName)) {
       return;
     }
 
     throw new IllegalStateException(
-        "Inicializacao bloqueada: o backend fora do profile de teste nao pode usar a base '"
+        "Inicializacao bloqueada: fora do profile de teste, o backend deve usar exclusivamente a base '"
+            + OFFICIAL_DATABASE
+            + "'. Base recebida: '"
             + databaseName
-            + "'. Configure 'spring.datasource.url' para a base oficial da aplicacao."
+            + "'."
     );
   }
 

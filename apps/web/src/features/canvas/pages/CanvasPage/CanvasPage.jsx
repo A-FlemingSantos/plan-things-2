@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import CanvasCard from '../../components/CanvasCard/CanvasCard.jsx'
 import CanvasEmptyHint from '../../components/CanvasEmptyHint/CanvasEmptyHint.jsx'
@@ -120,6 +120,7 @@ export default function CanvasPage() {
     buildPath: buildCanvasPath,
   })
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const [canvasLoadError, setCanvasLoadError] = useState(null)
   const {
     cards,
     connections,
@@ -138,19 +139,38 @@ export default function CanvasPage() {
     isBackendDriven,
     savePlanCanvas,
   })
-  const isCanvasLoading = isBackendDriven && (isLoading || !activePlan || !activePlan.canvasLoaded)
-  const canvasHeaderTitle = isCanvasLoading ? 'Carregando canvas' : (activePlan?.name ?? 'Canvas')
+  const hasNoPlan = isBackendDriven && !isLoading && !activePlan
+  const isCanvasLoading = isBackendDriven && !hasNoPlan && !canvasLoadError && (isLoading || !activePlan?.canvasLoaded)
+  const canvasHeaderTitle = isCanvasLoading
+    ? 'Carregando canvas'
+    : hasNoPlan
+      ? 'Sem plano ativo'
+      : (activePlan?.name ?? 'Canvas')
   const canvasMeta = isCanvasLoading
     ? 'Sincronizando canvas'
-    : `${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}${saveMessage ? ` · ${saveMessage}` : ''}`
+    : hasNoPlan
+      ? 'Crie um plano para usar o canvas'
+      : `${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}${saveMessage ? ` · ${saveMessage}` : ''}`
 
   useEffect(() => {
+    setCanvasLoadError(null)
     if (!activePlan?.id || !isBackendDriven) return
 
     loadPlanCanvas(activePlan.id).catch((error) => {
-      console.error(error)
+      setCanvasLoadError(error?.message ?? 'Não foi possível carregar o canvas deste plano.')
     })
   }, [activePlan?.id, isBackendDriven, loadPlanCanvas])
+
+  const retryLoadCanvas = async () => {
+    if (!activePlan?.id || !isBackendDriven) return
+
+    setCanvasLoadError(null)
+    try {
+      await loadPlanCanvas(activePlan.id)
+    } catch (error) {
+      setCanvasLoadError(error?.message ?? 'Não foi possível carregar o canvas deste plano.')
+    }
+  }
   const {
     toolbarOpen,
     setToolbarOpen,
@@ -237,6 +257,19 @@ export default function CanvasPage() {
 
         {isCanvasLoading ? (
           <CanvasLoadingState styles={styles} />
+        ) : hasNoPlan ? (
+          <section className={styles.canvasStatusPanel} role="status" aria-live="polite">
+            <p className={styles.canvasStatusTitle}>Nenhum plano ativo no momento</p>
+            <p className={styles.canvasStatusText}>Quando houver um plano disponível, o canvas será exibido aqui.</p>
+          </section>
+        ) : canvasLoadError ? (
+          <section className={styles.canvasStatusPanel} role="status" aria-live="polite">
+            <p className={styles.canvasStatusTitle}>Não foi possível carregar o canvas</p>
+            <p className={styles.canvasStatusText}>{canvasLoadError}</p>
+            <button type="button" className={styles.canvasStatusRetry} onClick={retryLoadCanvas}>
+              Tentar novamente
+            </button>
+          </section>
         ) : (
           <>
             <div

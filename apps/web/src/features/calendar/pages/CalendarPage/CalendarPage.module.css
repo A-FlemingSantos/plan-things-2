@@ -1110,6 +1110,38 @@
   font-size: 13px;
 }
 
+.deleteError {
+  margin: 10px 10px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #f2c2c2;
+  background: #fff1f1;
+  color: #8d1a1a;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.deleteErrorRetry {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 5px;
+  border: 1px solid #e6a5a5;
+  background: #fff;
+  color: #8d1a1a;
+  font-family: var(--font-family);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.deleteErrorRetry:hover {
+  border-color: #d67f7f;
+  background: #fff7f7;
+}
+
 @keyframes calendarLoadingPulse {
   0% { background-position: 100% 50%; }
   100% { background-position: 0 50%; }

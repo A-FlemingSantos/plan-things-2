@@ -4,6 +4,7 @@ import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
 import com.planthings.api.board.BoardColumnEntity;
 import com.planthings.api.board.BoardColumnRepository;
+import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.canvas.CanvasDocumentEntity;
 import com.planthings.api.canvas.CanvasDocumentRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
@@ -34,6 +35,7 @@ public class PlanService {
   private final UserRepository userRepository;
   private final PersonalWorkspaceService personalWorkspaceService;
   private final BoardColumnRepository boardColumnRepository;
+  private final BoardCardRepository boardCardRepository;
   private final CanvasDocumentRepository canvasDocumentRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
@@ -48,6 +50,7 @@ public class PlanService {
       UserRepository userRepository,
       PersonalWorkspaceService personalWorkspaceService,
       BoardColumnRepository boardColumnRepository,
+      BoardCardRepository boardCardRepository,
       CanvasDocumentRepository canvasDocumentRepository,
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
@@ -61,6 +64,7 @@ public class PlanService {
     this.userRepository = userRepository;
     this.personalWorkspaceService = personalWorkspaceService;
     this.boardColumnRepository = boardColumnRepository;
+    this.boardCardRepository = boardCardRepository;
     this.canvasDocumentRepository = canvasDocumentRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
@@ -266,12 +270,14 @@ public class PlanService {
   private PlanSummary toPlanSummary(PlanEntity plan, UUID currentUserId) {
     PlanMemberRole role = planAccessService.requireMemberRole(plan.getId(), currentUserId);
     long memberCount = planMemberRepository.findByPlanId(plan.getId()).size();
+    long taskCount = boardCardRepository.countByPlanId(plan.getId());
     return new PlanSummary(
         plan.getId(),
         plan.getName(),
         plan.getDescription(),
         role,
         memberCount,
+        taskCount,
         brazilDateTimeMapper.toDateTime(plan.getCreatedAt()),
         brazilDateTimeMapper.toDateTime(plan.getUpdatedAt())
     );
@@ -351,6 +357,7 @@ public class PlanService {
       String description,
       PlanMemberRole role,
       long memberCount,
+      long taskCount,
       ApiDateTimeDto createdAt,
       ApiDateTimeDto updatedAt
   ) {

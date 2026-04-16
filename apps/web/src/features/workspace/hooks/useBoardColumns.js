@@ -48,8 +48,7 @@ export function useBoardColumns({
       applyBoardView(activePlanId, boardView)
       return true
     } catch (error) {
-      console.error(error)
-      return false
+      throw error
     }
   }, [accessToken, activePlanId, applyBoardView, isBackendDriven, updateColumns])
 
@@ -79,7 +78,7 @@ export function useBoardColumns({
       updateColumns((prev) => prev.map((column) => (
         column.id === colId ? { ...column, title } : column
       )))
-      return
+      return true
     }
 
     const currentColumn = columns.find((column) => column.id === colId)
@@ -94,8 +93,9 @@ export function useBoardColumns({
       })
 
       applyBoardView(activePlanId, boardView)
+      return true
     } catch (error) {
-      console.error(error)
+      throw error
     }
   }, [accessToken, activePlanId, applyBoardView, columns, isBackendDriven, updateColumns])
 
@@ -143,7 +143,7 @@ export function useBoardColumns({
       updateColumns((prev) => prev.map((column) => (
         column.id === colId ? { ...column, cards: [card, ...column.cards] } : column
       )))
-      return
+      return true
     }
 
     try {
@@ -162,8 +162,9 @@ export function useBoardColumns({
       })
 
       await loadPlanBoard(activePlanId)
+      return true
     } catch (error) {
-      console.error(error)
+      throw error
     }
   }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard, updateColumns])
 

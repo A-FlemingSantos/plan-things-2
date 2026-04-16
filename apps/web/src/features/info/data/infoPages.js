@@ -1,11 +1,4 @@
 export const INFO_PAGES = {
-  '/forgot': {
-    eyebrow: 'Acesso',
-    title: 'Recupere sua senha',
-    description: 'Este fluxo ainda não foi conectado ao backend. Por enquanto, volte para entrar ou crie uma nova conta.',
-    primaryLabel: 'Voltar ao login',
-    primaryHref: '/login',
-  },
   '/help': {
     eyebrow: 'Suporte',
     title: 'Central de ajuda',

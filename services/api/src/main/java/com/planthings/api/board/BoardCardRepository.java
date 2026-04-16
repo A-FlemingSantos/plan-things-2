@@ -12,4 +12,6 @@ public interface BoardCardRepository extends JpaRepository<BoardCardEntity, UUID
   List<BoardCardEntity> findByColumnIdOrderByPositionIndexAsc(UUID columnId);
 
   Optional<BoardCardEntity> findByIdAndPlanId(UUID id, UUID planId);
+
+  long countByPlanId(UUID planId);
 }

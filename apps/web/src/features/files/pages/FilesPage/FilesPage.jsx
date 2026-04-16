@@ -126,6 +126,7 @@ function ContextMenu({ x, y, item, onAction, onClose, backendEnabled }) {
   const actions = item.type === 'folder'
     ? [
         { id: 'open',     label: 'Abrir',           Icon: Icon.Folder, shortcut: 'Enter' },
+        { id: 'download', label: 'Baixar',          Icon: Icon.Download },
         { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
         { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
         null,
@@ -309,9 +310,9 @@ function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled }) 
   const FileIcon = typeInfo.icon
   const imgGrad = IMG_GRADIENTS[item.name]
   const typeLabel = item.type === 'folder' ? 'Pasta' : 'Arquivo'
-  const ownerLabel = item.owner === 'me' ? 'Arthur Santos' : item.owner
+  const ownerLabel = formatOwner(item.owner)
   const activityRows = [
-    `${item.owner === 'me' ? 'Você' : item.owner} atualizou ${item.type === 'folder' ? 'esta pasta' : 'este arquivo'} ${item.modified.toLowerCase()}`,
+    `Atualizado por ${ownerLabel} ${item.modified.toLowerCase()}`,
     backendEnabled
       ? 'Compartilhamento nesta tela será liberado por plano.'
       : item.shared ? 'Compartilhado com o workspace de produto' : 'Só você acessa este item',
@@ -496,6 +497,7 @@ export default function FilesPage() {
   const [currentPath, setCurrentPath]           = useState([]) // array of folder ids
   const [library, setLibrary]                   = useState(() => (backendEnabled ? [] : createInitialLibrarySnapshot()))
   const [hasLoadedLibrary, setHasLoadedLibrary] = useState(() => !backendEnabled)
+  const [libraryError, setLibraryError]         = useState(null)
   const [selected, setSelected]                 = useState(null)
   const [detailItemId, setDetailItemId]         = useState(null)
   const [contextMenu, setContextMenu]           = useState(null) // { x, y, item }
@@ -511,6 +513,8 @@ export default function FilesPage() {
   const reloadLibrary = useCallback(async (trash = false) => {
     if (!backendEnabled) return
 
+    setLibraryError(null)
+
     try {
       const items = await apiRequest('/api/files', {
         token: accessToken,
@@ -519,8 +523,9 @@ export default function FilesPage() {
 
       setLibrary(buildLibraryTreeFromApi(items))
       setHasLoadedLibrary(true)
+      setLibraryError(null)
     } catch (error) {
-      console.error(error)
+      setLibraryError(error?.message ?? 'Não foi possível sincronizar os arquivos agora.')
       setHasLoadedLibrary(true)
     }
   }, [accessToken, backendEnabled])
@@ -529,6 +534,7 @@ export default function FilesPage() {
     if (!backendEnabled) {
       setLibrary(createInitialLibrarySnapshot())
       setHasLoadedLibrary(true)
+      setLibraryError(null)
       return
     }
 
@@ -660,19 +666,26 @@ export default function FilesPage() {
         showNotification(error?.message ?? `Não foi possível mover "${item.name}" para a lixeira`)
       }
     } else if (action === 'download') {
-      if (backendEnabled && item.type !== 'folder') {
+      if (item.type === 'folder') {
+        showNotification('Download de pasta ainda não é suportado nesta versão.')
+        return
+      }
+
+      if (backendEnabled) {
         try {
           const blob = await apiRequest(`/api/files/${item.id}/download`, {
             token: accessToken,
             responseType: 'blob',
           })
           triggerBlobDownload(blob, item.name)
+          showNotification(`"${item.name}" baixado`)
         } catch (error) {
           showNotification(error?.message ?? `Não foi possível baixar "${item.name}"`)
           return
         }
+      } else {
+        showNotification(`Baixando "${item.name}"...`)
       }
-      showNotification(`Baixando "${item.name}"...`)
     } else if (action === 'share') {
       if (backendEnabled) {
         showNotification('Compartilhamento será disponibilizado pelas telas de plano.')
@@ -701,6 +714,11 @@ export default function FilesPage() {
       notificationTimerRef.current = null
     }, 2800)
   }
+
+  useEffect(() => {
+    if (!libraryError) return
+    showNotification(libraryError)
+  }, [libraryError])
 
   useEffect(() => () => {
     if (notificationTimerRef.current) {
@@ -753,7 +771,8 @@ export default function FilesPage() {
         await reloadLibrary(sidebarSection === 'trash')
         showNotification(`"${name}" enviado`)
       } catch (error) {
-        console.error(error)
+        setUploads((prev) => prev.map((upload) => upload.id === id ? { ...upload, progress: 100 } : upload))
+        showNotification(error?.message ?? `Não foi possível enviar "${name}"`)
       }
 
       return
@@ -799,7 +818,7 @@ export default function FilesPage() {
       const parentId = sidebarSection === 'my-files' ? currentPath[currentPath.length - 1] : null
 
       try {
-        const createdFolder = await apiRequest('/api/files/folders', {
+        await apiRequest('/api/files/folders', {
           method: 'POST',
           token: accessToken,
           query: {
@@ -812,7 +831,7 @@ export default function FilesPage() {
         setSidebarSection('my-files')
         showNotification('Pasta criada')
       } catch (error) {
-        console.error(error)
+        showNotification(error?.message ?? 'Não foi possível criar a pasta.')
       }
 
       return
@@ -898,7 +917,9 @@ export default function FilesPage() {
 
   const storagePercent = (STORAGE_USED / STORAGE_TOTAL) * 100
   const filesAreaStatus = hasLoadedLibrary
-    ? `${filteredFiles.length} ${filteredFiles.length === 1 ? 'item' : 'itens'}`
+    ? libraryError
+      ? 'Falha na sincronização'
+      : `${filteredFiles.length} ${filteredFiles.length === 1 ? 'item' : 'itens'}`
     : 'Sincronizando biblioteca'
   const renderSidebarSecondaryContent = ({ collapsed }) => (
     <>
@@ -1097,6 +1118,18 @@ export default function FilesPage() {
 
             {!hasLoadedLibrary ? (
               <FilesLoadingState view={view} />
+            ) : libraryError ? (
+              <div className={styles.integrationErrorState} role="status" aria-live="polite">
+                <p className={styles.integrationErrorTitle}>Não foi possível carregar a biblioteca</p>
+                <p className={styles.integrationErrorText}>{libraryError}</p>
+                <button
+                  type="button"
+                  className={styles.integrationErrorRetry}
+                  onClick={() => reloadLibrary(sidebarSection === 'trash')}
+                >
+                  Tentar novamente
+                </button>
+              </div>
             ) : filteredFiles.length === 0 ? (
               <div className={styles.emptyState}>
                 <span className={styles.emptyIcon}><EmptyIcon /></span>

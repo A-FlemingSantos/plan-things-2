@@ -325,6 +325,7 @@ export default function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [agendaPanelOpen, setAgendaPanelOpen] = useState(true)
   const [notification, setNotification] = useState(null)
+  const [deleteError, setDeleteError] = useState(null)
   const notificationTimerRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { calendarSources, filteredEvents, isLoading, loadError, createEvent, updateEvent, deleteEvent } = useCalendarEvents({ search })
@@ -412,13 +413,34 @@ export default function CalendarPage() {
   }
 
   const handleDeleteEvent = async (event) => {
+    await handleDeleteEventAttempt(event)
+  }
+
+  const handleDeleteEventAttempt = async (event, options = {}) => {
     if (event.raw?.generatedFromCard) {
       showNotification('Eventos vinculados a cartões devem ser removidos no quadro.')
       return
     }
 
-    await deleteEvent(event.id)
-    showNotification(`Evento "${event.title}" excluído`)
+    if (!options.skipConfirm) {
+      const shouldDelete = window.confirm(`Deseja excluir o evento "${event.title}"?`)
+      if (!shouldDelete) {
+        return
+      }
+    }
+
+    try {
+      await deleteEvent(event.id)
+      setDeleteError(null)
+      showNotification(`Evento "${event.title}" excluído`)
+    } catch (error) {
+      const message = error?.message ?? `Não foi possível excluir "${event.title}".`
+      setDeleteError({
+        event,
+        message,
+      })
+      showNotification(message)
+    }
   }
 
   const handlePrint = () => {
@@ -575,6 +597,19 @@ export default function CalendarPage() {
         {loadError && (
           <div className={styles.loadError} role="status" aria-live="polite">
             {loadError}
+          </div>
+        )}
+
+        {deleteError && (
+          <div className={styles.deleteError} role="status" aria-live="polite">
+            <span>{deleteError.message}</span>
+            <button
+              type="button"
+              className={styles.deleteErrorRetry}
+              onClick={() => handleDeleteEventAttempt(deleteError.event, { skipConfirm: true })}
+            >
+              Tentar novamente
+            </button>
           </div>
         )}
 

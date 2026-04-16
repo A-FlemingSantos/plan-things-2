@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
@@ -77,6 +77,7 @@ function CheckIcon() {
 /* ── Main Auth page ── */
 export default function Auth({ initialMode = 'login' }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, register } = useAuth()
   const [mode, setMode]           = useState(initialMode)   // 'login' | 'register'
   const [email, setEmail]         = useState('')
@@ -85,12 +86,14 @@ export default function Auth({ initialMode = 'login' }) {
   const [showPass, setShowPass]   = useState(false)
   const [agree, setAgree]         = useState(false)
   const [loading, setLoading]     = useState(null)
+  const [noticeMessage, setNoticeMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
   const isRegister = mode === 'register'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setNoticeMessage('')
     setErrorMessage('')
     setLoading('email')
 
@@ -117,6 +120,7 @@ export default function Auth({ initialMode = 'login' }) {
   }
 
   const handleOAuth = (provider) => {
+    setNoticeMessage('')
     setErrorMessage('')
     setLoading(provider)
     setTimeout(() => {
@@ -128,6 +132,10 @@ export default function Auth({ initialMode = 'login' }) {
   useEffect(() => {
     setMode(initialMode)
   }, [initialMode])
+
+  useEffect(() => {
+    setNoticeMessage(location.state?.notice ?? '')
+  }, [location.state])
 
   const alternateHref = isRegister ? ROUTES.login : ROUTES.register
 
@@ -274,6 +282,12 @@ export default function Auth({ initialMode = 'login' }) {
                 : isRegister ? 'Criar conta' : 'Continuar com e-mail'
               }
             </button>
+
+            {noticeMessage && (
+              <p className={styles.formNotice} role="status">
+                {noticeMessage}
+              </p>
+            )}
 
             {errorMessage && (
               <p className={styles.formHint} role="alert">

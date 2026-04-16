@@ -4,6 +4,7 @@ export default function AddColumnComposer({
   setNewColTitle,
   setAddingCol,
   addColumn,
+  errorMessage,
   PlusIcon,
   XIcon,
   styles,
@@ -27,6 +28,7 @@ export default function AddColumnComposer({
               }
             }}
           />
+          {errorMessage && <p className={styles.inlineComposerError}>{errorMessage}</p>}
           <div className={styles.addColActions}>
             <button type="button" className={styles.addColSubmit} onClick={addColumn} disabled={!newColTitle.trim()}>
               Adicionar lista

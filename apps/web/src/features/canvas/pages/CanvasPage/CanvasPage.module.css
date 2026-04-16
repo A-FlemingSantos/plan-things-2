@@ -526,6 +526,51 @@
   height: 12px;
 }
 
+.canvasStatusPanel {
+  margin: 0 22px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.canvasStatusTitle {
+  margin: 0;
+  font-size: 15px;
+  color: var(--color-black);
+  font-weight: var(--font-weight-regular);
+}
+
+.canvasStatusText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-gray-600);
+  line-height: 1.5;
+}
+
+.canvasStatusRetry {
+  align-self: flex-start;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-white);
+  color: var(--color-gray-700);
+  font-family: var(--font-family);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.canvasStatusRetry:hover {
+  border-color: var(--color-gray-400);
+  color: var(--color-black);
+}
+
 /* Dot grid */
 .canvasGrid {
   position: absolute;
@@ -921,6 +966,9 @@
   .canvasAlert {
     margin: 0 18px;
   }
+  .canvasStatusPanel {
+    margin: 0 18px;
+  }
   .toolbarWrap {
     top: 6px;
   }
@@ -937,6 +985,9 @@
     padding: 14px 16px 12px;
   }
   .canvasAlert {
+    margin: 0 16px;
+  }
+  .canvasStatusPanel {
     margin: 0 16px;
   }
   .canvasTitleRow {

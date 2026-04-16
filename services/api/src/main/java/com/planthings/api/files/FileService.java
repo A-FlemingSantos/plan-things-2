@@ -13,9 +13,16 @@ import com.planthings.api.workspace.WorkspaceEntity;
 import com.planthings.api.workspace.WorkspaceRepository;
 import com.planthings.api.board.BoardCardEntity;
 import com.planthings.api.board.BoardCardRepository;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -147,8 +154,7 @@ public class FileService {
   public MessageResponse delete(UUID fileId) {
     UserEntity user = authenticatedUserService.requireUser();
     FileEntryEntity file = requireOwnedFile(fileId, user.getId());
-    file.setDeletedAt(OffsetDateTime.now());
-    fileEntryRepository.save(file);
+    applySoftDeleteRecursively(file, user.getId());
     return new MessageResponse("Arquivo movido para a lixeira com sucesso.");
   }
 
@@ -156,8 +162,7 @@ public class FileService {
   public MessageResponse restore(UUID fileId) {
     UserEntity user = authenticatedUserService.requireUser();
     FileEntryEntity file = requireOwnedFile(fileId, user.getId());
-    file.setDeletedAt(null);
-    fileEntryRepository.save(file);
+    applyRestoreRecursively(file, user.getId());
     return new MessageResponse("Arquivo restaurado com sucesso.");
   }
 
@@ -252,6 +257,49 @@ public class FileService {
       throw new ForbiddenException("ARQUIVO_NAO_PERTENCE_AO_USUARIO", "Este arquivo nao pertence a sua biblioteca pessoal.");
     }
     return file;
+  }
+
+  private void applySoftDeleteRecursively(FileEntryEntity root, UUID ownerUserId) {
+    OffsetDateTime deletedAt = OffsetDateTime.now();
+    List<FileEntryEntity> subtree = collectSubtree(root, ownerUserId);
+    subtree.forEach(file -> file.setDeletedAt(deletedAt));
+    fileEntryRepository.saveAll(subtree);
+  }
+
+  private void applyRestoreRecursively(FileEntryEntity root, UUID ownerUserId) {
+    List<FileEntryEntity> subtree = collectSubtree(root, ownerUserId);
+    subtree.forEach(file -> file.setDeletedAt(null));
+    fileEntryRepository.saveAll(subtree);
+  }
+
+  private List<FileEntryEntity> collectSubtree(FileEntryEntity root, UUID ownerUserId) {
+    List<FileEntryEntity> ownedFiles = fileEntryRepository.findByWorkspaceIdAndOwnerUserId(root.getWorkspaceId(), ownerUserId);
+    Map<UUID, List<FileEntryEntity>> childrenByParent = new HashMap<>();
+
+    for (FileEntryEntity file : ownedFiles) {
+      if (file.getParentId() == null) {
+        continue;
+      }
+      childrenByParent.computeIfAbsent(file.getParentId(), ignored -> new ArrayList<>()).add(file);
+    }
+
+    List<FileEntryEntity> subtree = new ArrayList<>();
+    Deque<FileEntryEntity> stack = new ArrayDeque<>();
+    Set<UUID> visited = new HashSet<>();
+    stack.push(root);
+
+    while (!stack.isEmpty()) {
+      FileEntryEntity current = stack.pop();
+      if (!visited.add(current.getId())) {
+        continue;
+      }
+      subtree.add(current);
+      for (FileEntryEntity child : childrenByParent.getOrDefault(current.getId(), List.of())) {
+        stack.push(child);
+      }
+    }
+
+    return subtree;
   }
 
   private boolean canAccessFile(FileEntryEntity file, UUID userId) {

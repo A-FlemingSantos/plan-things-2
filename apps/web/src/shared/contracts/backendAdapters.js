@@ -115,7 +115,7 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     tagColor: roleMeta.tagColor,
     members: buildMemberDots(summary.memberCount, index),
     date: date ? shortMonthLabel(date) : '',
-    tasks: 0,
+    tasks: Number.isFinite(summary.taskCount) ? summary.taskCount : 0,
     cover: PLAN_COVERS[index % PLAN_COVERS.length],
     boardColumns: [],
     canvasState: createEmptyCanvasState(),
@@ -152,6 +152,7 @@ export function mergePlanDetails(plan, details) {
     ...plan,
     role: details.plan.role,
     memberCount: details.plan.memberCount,
+    tasks: Number.isFinite(details.plan.taskCount) ? details.plan.taskCount : plan.tasks,
     createdAt: details.plan.createdAt,
     updatedAt: details.plan.updatedAt,
     members: membersMeta.map((member) => member.color),
@@ -352,12 +353,12 @@ export function buildLibraryTreeFromApi(items) {
     const current = byId.get(item.id)
     const parentId = item.parentId
 
-    if (parentId && byId.has(parentId)) {
+    if (parentId) {
       const parent = byId.get(parentId)
-      if (parent.type === 'folder') {
+      if (parent?.type === 'folder') {
         parent.children = [...(parent.children ?? []), current]
-        return
       }
+      return
     }
 
     roots.push(current)

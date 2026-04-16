@@ -340,6 +340,21 @@
   cursor: not-allowed;
 }
 
+.formNotice,
+.formHint {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.formNotice {
+  color: #0f6cbd;
+}
+
+.formHint {
+  color: var(--color-red);
+}
+
 /* ── Divider ── */
 .divider {
   display: flex;

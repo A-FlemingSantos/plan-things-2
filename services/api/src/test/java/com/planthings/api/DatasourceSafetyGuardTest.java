@@ -19,7 +19,7 @@ class DatasourceSafetyGuardTest {
   }
 
   @Test
-  void shouldBlockMasterDatabaseOutsideTestProfile() {
+  void shouldBlockInvalidDatabaseOutsideTestProfile() {
     MockEnvironment environment = new MockEnvironment()
         .withProperty("spring.datasource.url", "jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=false");
 
@@ -27,13 +27,27 @@ class DatasourceSafetyGuardTest {
         () -> DatasourceSafetyGuard.validate(environment));
 
     assertEquals(
-        "Inicializacao bloqueada: o backend fora do profile de teste nao pode usar a base 'master'. Configure 'spring.datasource.url' para a base oficial da aplicacao.",
+        "Inicializacao bloqueada: fora do profile de teste, o backend deve usar exclusivamente a base 'plan_things_db'. Base recebida: 'master'.",
         exception.getMessage()
     );
   }
 
   @Test
-  void shouldAllowForbiddenDatabasesDuringTestProfile() {
+  void shouldBlockWhenDatabaseNameIsMissingOutsideTestProfile() {
+    MockEnvironment environment = new MockEnvironment()
+        .withProperty("spring.datasource.url", "jdbc:sqlserver://localhost:1433;encrypt=false");
+
+    IllegalStateException exception = assertThrows(IllegalStateException.class,
+        () -> DatasourceSafetyGuard.validate(environment));
+
+    assertEquals(
+        "Inicializacao bloqueada: fora do profile de teste, o datasource deve informar o parametro 'databaseName' e usar exclusivamente a base oficial da aplicacao.",
+        exception.getMessage()
+    );
+  }
+
+  @Test
+  void shouldAllowAnyDatabaseDuringTestProfile() {
     MockEnvironment environment = new MockEnvironment()
         .withProperty("spring.datasource.url", "jdbc:sqlserver://localhost:1433;databaseName=plan_things_test;encrypt=false");
     environment.setActiveProfiles("test");

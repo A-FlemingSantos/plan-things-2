@@ -166,6 +166,8 @@ export default function KanbanBoard() {
   const [activeCard,setActiveCard]= useState(null)   // { card, colTitle }
   const [addingCol, setAddingCol] = useState(false)
   const [newColTitle,setNewColTitle] = useState('')
+  const [addColumnError, setAddColumnError] = useState(null)
+  const [boardLoadError, setBoardLoadError] = useState(null)
   const [notification, setNotification] = useState(null)
   const [isBoardSwitcherOpen, setIsBoardSwitcherOpen] = useState(false)
   const [isInboxOpen, setIsInboxOpen] = useState(false)
@@ -220,9 +222,18 @@ export default function KanbanBoard() {
   })
 
   const addColumn = async () => {
-    if (!(await createColumn(newColTitle))) return
-    setNewColTitle('')
-    setAddingCol(false)
+    if (!newColTitle.trim()) return
+
+    try {
+      await createColumn(newColTitle)
+      setNewColTitle('')
+      setAddingCol(false)
+      setAddColumnError(null)
+    } catch (error) {
+      const message = error?.message ?? 'Não foi possível criar a lista.'
+      setAddColumnError(message)
+      showNotification(message)
+    }
   }
 
   const handleCardUpdate = async (updatedCard) => {
@@ -236,12 +247,24 @@ export default function KanbanBoard() {
   }
 
   useEffect(() => {
+    setBoardLoadError(null)
     if (!activePlan?.id || !isBackendDriven) return
 
     loadPlanBoard(activePlan.id).catch((error) => {
-      console.error(error)
+      setBoardLoadError(error?.message ?? 'Não foi possível carregar o quadro deste plano.')
     })
   }, [activePlan?.id, isBackendDriven, loadPlanBoard])
+
+  const retryLoadBoard = async () => {
+    if (!activePlan?.id || !isBackendDriven) return
+
+    setBoardLoadError(null)
+    try {
+      await loadPlanBoard(activePlan.id)
+    } catch (error) {
+      setBoardLoadError(error?.message ?? 'Não foi possível carregar o quadro deste plano.')
+    }
+  }
 
   const showNotification = (message) => {
     if (notificationTimerRef.current) {
@@ -334,9 +357,18 @@ export default function KanbanBoard() {
       .filter((event) => event.date >= todayKey)
       .slice(0, 4)
   }, [filteredEvents, today])
-  const isBoardLoading = isBackendDriven && (isLoading || !activePlan || !activePlan.boardLoaded)
-  const boardHeaderTitle = isBoardLoading ? 'Carregando quadro' : (activePlan?.name ?? 'Plano')
-  const boardHeaderMeta = isBoardLoading ? 'Sincronizando quadro' : `${totalCards} cartões`
+  const hasNoPlan = isBackendDriven && !isLoading && !activePlan
+  const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
+  const boardHeaderTitle = isBoardLoading
+    ? 'Carregando quadro'
+    : hasNoPlan
+      ? 'Sem plano ativo'
+      : (activePlan?.name ?? 'Plano')
+  const boardHeaderMeta = isBoardLoading
+    ? 'Sincronizando quadro'
+    : hasNoPlan
+      ? 'Crie um plano para usar o quadro'
+      : `${totalCards} cartões`
 
   useEffect(() => () => {
     if (notificationTimerRef.current) {
@@ -558,6 +590,19 @@ export default function KanbanBoard() {
         {/* ── Board ── */}
         {isBoardLoading ? (
           <BoardLoadingState styles={styles} />
+        ) : hasNoPlan ? (
+          <section className={styles.boardStatusPanel} role="status" aria-live="polite">
+            <p className={styles.boardStatusTitle}>Nenhum plano ativo no momento</p>
+            <p className={styles.boardStatusText}>Quando houver um plano disponível, o quadro será exibido aqui.</p>
+          </section>
+        ) : boardLoadError ? (
+          <section className={styles.boardStatusPanel} role="status" aria-live="polite">
+            <p className={styles.boardStatusTitle}>Não foi possível carregar o quadro</p>
+            <p className={styles.boardStatusText}>{boardLoadError}</p>
+            <button type="button" className={styles.boardStatusRetry} onClick={retryLoadBoard}>
+              Tentar novamente
+            </button>
+          </section>
         ) : (
           <div className={styles.board}>
             {columns.map(col => (
@@ -594,9 +639,15 @@ export default function KanbanBoard() {
             <AddColumnComposer
               addingCol={addingCol}
               newColTitle={newColTitle}
-              setNewColTitle={setNewColTitle}
+              setNewColTitle={(value) => {
+                setNewColTitle(value)
+                if (addColumnError) {
+                  setAddColumnError(null)
+                }
+              }}
               setAddingCol={setAddingCol}
               addColumn={addColumn}
+              errorMessage={addColumnError}
               PlusIcon={Icon.Plus}
               XIcon={Icon.X}
               styles={styles}

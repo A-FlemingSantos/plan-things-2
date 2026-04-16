@@ -8,6 +8,7 @@ export const ROUTES = {
   calendar: '/calendar',
   files: '/files',
   forgot: '/forgot',
+  reset: '/reset',
   help: '/help',
   privacy: '/privacy',
   terms: '/terms',

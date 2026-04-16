@@ -26,23 +26,42 @@ export default function KanbanColumn({
   const [showMenu, setShowMenu] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [renameVal, setRenameVal] = useState(col.title)
+  const [renameError, setRenameError] = useState(null)
+  const [cardError, setCardError] = useState(null)
   const addInputRef = useRef(null)
   const renameRef = useRef(null)
 
   const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
 
-  const submitCard = () => {
-    if (newCardText.trim()) {
-      onAddCard(col.id, newCardText.trim())
+  const submitCard = async () => {
+    if (!newCardText.trim()) return
+
+    try {
+      await onAddCard(col.id, newCardText.trim())
       setNewCardText('')
       setAddingCard(false)
+      setCardError(null)
+    } catch (error) {
+      setCardError(error?.message ?? 'Nao foi possivel criar o cartao nesta coluna.')
+      setTimeout(() => addInputRef.current?.focus(), 0)
     }
   }
 
-  const submitRename = () => {
+  const submitRename = async () => {
     if (renameVal.trim()) {
-      onRenameCol(col.id, renameVal.trim())
+      try {
+        await onRenameCol(col.id, renameVal.trim())
+        setRenameError(null)
+        setRenaming(false)
+      } catch (error) {
+        setRenameError(error?.message ?? 'Nao foi possivel renomear esta coluna.')
+        setTimeout(() => renameRef.current?.focus(), 0)
+      }
+      return
     }
+
+    setRenameVal(col.title)
+    setRenameError(null)
     setRenaming(false)
   }
 
@@ -71,7 +90,11 @@ export default function KanbanColumn({
               onBlur={submitRename}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') submitRename()
-                if (event.key === 'Escape') setRenaming(false)
+                if (event.key === 'Escape') {
+                  setRenameVal(col.title)
+                  setRenameError(null)
+                  setRenaming(false)
+                }
               }}
               autoFocus
             />
@@ -108,7 +131,11 @@ export default function KanbanColumn({
 
             {showMenu ? (
               <ColMenu
-                onRename={() => { setRenaming(true); setRenameVal(col.title) }}
+                onRename={() => {
+                  setRenaming(true)
+                  setRenameVal(col.title)
+                  setRenameError(null)
+                }}
                 onDelete={() => onDeleteCol(col.id)}
                 onChangeColor={(color) => onChangeColColor(col.id, color)}
                 onClose={() => setShowMenu(false)}
@@ -121,6 +148,7 @@ export default function KanbanColumn({
           </div>
         </div>
       </div>
+      {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
 
       <div className={styles.colCards}>
         {col.cards.map((card) => (
@@ -161,15 +189,26 @@ export default function KanbanColumn({
                 if (event.key === 'Escape') {
                   setAddingCard(false)
                   setNewCardText('')
+                  setCardError(null)
                 }
               }}
             />
+            {cardError ? <p className={styles.inlineComposerError}>{cardError}</p> : null}
 
             <div className={styles.addCardActions}>
               <button type="button" className={styles.addCardSubmit} onClick={submitCard} disabled={!newCardText.trim()}>
                 Adicionar cartão
               </button>
-              <button type="button" className={styles.addCardCancel} onClick={() => { setAddingCard(false); setNewCardText('') }} aria-label="Cancelar novo cartão">
+              <button
+                type="button"
+                className={styles.addCardCancel}
+                onClick={() => {
+                  setAddingCard(false)
+                  setNewCardText('')
+                  setCardError(null)
+                }}
+                aria-label="Cancelar novo cartão"
+              >
                 <icons.X />
               </button>
             </div>
@@ -183,6 +222,7 @@ export default function KanbanColumn({
           className={styles.colAddBtn}
           onClick={() => {
             setAddingCard(true)
+            setCardError(null)
             setTimeout(() => addInputRef.current?.focus(), 50)
           }}
         >

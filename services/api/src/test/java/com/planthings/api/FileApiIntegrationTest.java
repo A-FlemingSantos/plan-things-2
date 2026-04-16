@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -122,5 +124,82 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].starred").value(false));
+  }
+
+  @Test
+  void shouldDeleteAndRestoreFolderTreeRecursively() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-folder-tree@example.com", "12345678");
+
+    String rootFolderId = readJson(mockMvc.perform(post("/api/files/folders")
+            .header("Authorization", "Bearer " + token)
+            .param("name", "Raiz"))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    String childFolderId = readJson(mockMvc.perform(post("/api/files/folders")
+            .header("Authorization", "Bearer " + token)
+            .param("name", "Filhos")
+            .param("parentId", rootFolderId))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    MockMultipartFile nestedFile = new MockMultipartFile(
+        "file",
+        "escopo.txt",
+        MediaType.TEXT_PLAIN_VALUE,
+        "subarvore".getBytes()
+    );
+
+    String nestedFileId = readJson(mockMvc.perform(multipart("/api/files/upload")
+            .file(nestedFile)
+            .header("Authorization", "Bearer " + token)
+            .param("parentId", childFolderId))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    mockMvc.perform(delete("/api/files/" + rootFolderId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk());
+
+    JsonNode trashedItems = readJson(mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + token)
+            .param("trash", "true"))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    assertEquals(3, trashedItems.size());
+    for (JsonNode item : trashedItems) {
+      assertEquals(true, item.path("deleted").asBoolean());
+    }
+
+    mockMvc.perform(post("/api/files/" + rootFolderId + "/restore")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Arquivo restaurado com sucesso."));
+
+    JsonNode activeItems = readJson(mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    JsonNode restoredRoot = null;
+    JsonNode restoredChild = null;
+    JsonNode restoredNestedFile = null;
+    for (JsonNode item : activeItems) {
+      String itemId = item.path("id").asText();
+      if (rootFolderId.equals(itemId)) {
+        restoredRoot = item;
+      } else if (childFolderId.equals(itemId)) {
+        restoredChild = item;
+      } else if (nestedFileId.equals(itemId)) {
+        restoredNestedFile = item;
+      }
+    }
+
+    assertNotNull(restoredRoot);
+    assertNotNull(restoredChild);
+    assertNotNull(restoredNestedFile);
+    assertEquals(rootFolderId, restoredChild.path("parentId").asText());
+    assertEquals(childFolderId, restoredNestedFile.path("parentId").asText());
   }
 }
