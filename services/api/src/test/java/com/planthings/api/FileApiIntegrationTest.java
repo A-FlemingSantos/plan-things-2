@@ -85,4 +85,42 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].name").value("briefing.txt"));
   }
+
+  @Test
+  void shouldFavoriteAndUnfavoriteFiles() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-favs@example.com", "12345678");
+
+    MockMultipartFile multipartFile = new MockMultipartFile(
+        "file",
+        "roteiro.txt",
+        MediaType.TEXT_PLAIN_VALUE,
+        "arquivo favorito".getBytes()
+    );
+
+    String fileId = readJson(mockMvc.perform(multipart("/api/files/upload")
+            .file(multipartFile)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    mockMvc.perform(post("/api/files/" + fileId + "/favorite")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.starred").value(true));
+
+    mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].starred").value(true));
+
+    mockMvc.perform(post("/api/files/" + fileId + "/unfavorite")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.starred").value(false));
+
+    mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].starred").value(false));
+  }
 }

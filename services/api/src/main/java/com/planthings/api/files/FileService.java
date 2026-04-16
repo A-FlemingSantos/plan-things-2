@@ -162,6 +162,24 @@ public class FileService {
   }
 
   @Transactional
+  public FileItemView favorite(UUID fileId) {
+    UserEntity user = authenticatedUserService.requireUser();
+    FileEntryEntity file = requireOwnedFile(fileId, user.getId());
+    file.setStarred(true);
+    fileEntryRepository.save(file);
+    return toView(file);
+  }
+
+  @Transactional
+  public FileItemView unfavorite(UUID fileId) {
+    UserEntity user = authenticatedUserService.requireUser();
+    FileEntryEntity file = requireOwnedFile(fileId, user.getId());
+    file.setStarred(false);
+    fileEntryRepository.save(file);
+    return toView(file);
+  }
+
+  @Transactional
   public MessageResponse shareToPlan(UUID fileId, UUID planId) {
     UserEntity user = authenticatedUserService.requireUser();
     planAccessService.requirePlanMember(planId, user.getId());
@@ -268,6 +286,7 @@ public class FileService {
         file.getType(),
         file.getMimeType(),
         file.getSizeBytes(),
+        file.isStarred(),
         file.getDeletedAt() != null,
         brazilDateTimeMapper.toDateTime(file.getCreatedAt()),
         brazilDateTimeMapper.toDateTime(file.getUpdatedAt())
@@ -281,6 +300,7 @@ public class FileService {
       FileEntryType type,
       String mimeType,
       Long sizeBytes,
+      boolean starred,
       boolean deleted,
       ApiDateTimeDto createdAt,
       ApiDateTimeDto updatedAt

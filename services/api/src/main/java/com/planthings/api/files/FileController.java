@@ -69,6 +69,16 @@ public class FileController {
     return ApiEnvelope.ok(fileService.restore(fileId));
   }
 
+  @PostMapping("/{fileId}/favorite")
+  public ApiEnvelope<FileService.FileItemView> favorite(@PathVariable UUID fileId) {
+    return ApiEnvelope.ok(fileService.favorite(fileId));
+  }
+
+  @PostMapping("/{fileId}/unfavorite")
+  public ApiEnvelope<FileService.FileItemView> unfavorite(@PathVariable UUID fileId) {
+    return ApiEnvelope.ok(fileService.unfavorite(fileId));
+  }
+
   @PostMapping("/{fileId}/share/plans/{planId}")
   public ApiEnvelope<FileService.MessageResponse> shareToPlan(@PathVariable UUID fileId, @PathVariable UUID planId) {
     return ApiEnvelope.ok(fileService.shareToPlan(fileId, planId));

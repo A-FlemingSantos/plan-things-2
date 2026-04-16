@@ -38,6 +38,9 @@ public class FileEntryEntity extends BaseEntity {
   @Column
   private OffsetDateTime deletedAt;
 
+  @Column(name = "is_starred", nullable = false)
+  private boolean starred;
+
   public UUID getWorkspaceId() {
     return workspaceId;
   }
@@ -100,5 +103,13 @@ public class FileEntryEntity extends BaseEntity {
 
   public void setDeletedAt(OffsetDateTime deletedAt) {
     this.deletedAt = deletedAt;
+  }
+
+  public boolean isStarred() {
+    return starred;
+  }
+
+  public void setStarred(boolean starred) {
+    this.starred = starred;
   }
 }

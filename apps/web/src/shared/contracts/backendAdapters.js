@@ -337,6 +337,7 @@ export function buildLibraryTreeFromApi(items) {
       modified: item.updatedAt?.text ?? item.createdAt?.text ?? 'Agora',
       modifiedAtIso: item.updatedAt?.iso ?? item.createdAt?.iso ?? null,
       createdAtIso: item.createdAt?.iso ?? null,
+      starred: Boolean(item.starred),
       owner: 'me',
       deleted: Boolean(item.deleted),
       parentId: item.parentId ?? null,

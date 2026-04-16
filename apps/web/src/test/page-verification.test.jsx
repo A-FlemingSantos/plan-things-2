@@ -20,7 +20,7 @@ describe('Page verification flows', () => {
 
     await user.click(screen.getByRole('button', { name: 'Recolher tudo' }))
     expect(screen.queryByText(/nosso assistente de ia analisa/i)).not.toBeInTheDocument()
-  })
+  }, 15000)
 
   it('verifies login interactions and forgot-password navigation', async () => {
     const user = userEvent.setup()

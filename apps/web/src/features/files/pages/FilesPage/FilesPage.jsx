@@ -144,7 +144,7 @@ function ContextMenu({ x, y, item, onAction, onClose, backendEnabled }) {
           { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
         ] : []),
         null,
-        ...(!backendEnabled ? [{ id: 'star',     label: item.starred ? 'Remover estrela' : 'Favoritar', Icon: item.starred ? Icon.StarFill : Icon.Star }] : []),
+        { id: 'star',     label: item.starred ? 'Remover estrela' : 'Favoritar', Icon: item.starred ? Icon.StarFill : Icon.Star },
         ...(!backendEnabled ? [{ id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' }] : []),
         { id: 'move',     label: 'Mover para',      Icon: Icon.Move },
         null,
@@ -319,9 +319,7 @@ function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled }) 
     backendEnabled
       ? 'Compartilhamento nesta tela será liberado por plano.'
       : item.shared ? 'Compartilhado com o workspace de produto' : 'Só você acessa este item',
-    backendEnabled
-      ? 'Favoritos ainda não são persistidos nesta integração.'
-      : item.starred ? 'Fixado nos favoritos' : 'Ainda sem estrela',
+    item.starred ? 'Fixado nos favoritos' : 'Ainda sem estrela',
   ]
 
   return (
@@ -352,19 +350,17 @@ function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled }) 
             <Icon.Download /> Baixar
           </button>
           {!backendEnabled && (
-            <>
-              <button className={styles.detailAction} onClick={() => onAction('share', item)}>
-                <Icon.Share /> Compartilhar
-              </button>
-              <button
-                className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
-                onClick={() => onToggleStar(item.id)}
-              >
-                {item.starred ? <Icon.StarFill /> : <Icon.Star />}
-                {item.starred ? 'Favorito' : 'Favoritar'}
-              </button>
-            </>
+            <button className={styles.detailAction} onClick={() => onAction('share', item)}>
+              <Icon.Share /> Compartilhar
+            </button>
           )}
+          <button
+            className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
+            onClick={() => onToggleStar(item.id)}
+          >
+            {item.starred ? <Icon.StarFill /> : <Icon.Star />}
+            {item.starred ? 'Favorito' : 'Favoritar'}
+          </button>
         </div>
 
         <div className={styles.detailTabs} aria-label="Seções do inspetor">
@@ -607,16 +603,44 @@ export default function FilesPage() {
     })
   }, [currentPath, flattenedItems, search, sidebarSection, sortBy])
 
+  const toggleStar = useCallback(async (id) => {
+    const item = itemById.get(id)
+    if (!item || item.type === 'folder') {
+      return
+    }
+
+    if (backendEnabled) {
+      try {
+        const nextAction = item.starred ? 'unfavorite' : 'favorite'
+        const updatedItem = await apiRequest(`/api/files/${id}/${nextAction}`, {
+          method: 'POST',
+          token: accessToken,
+        })
+
+        setLibrary((prev) =>
+          updateLibraryItem(prev, id, (current) => ({
+            ...current,
+            starred: Boolean(updatedItem.starred),
+            modified: updatedItem.updatedAt?.text ?? current.modified,
+            modifiedAtIso: updatedItem.updatedAt?.iso ?? current.modifiedAtIso ?? null,
+          })),
+        )
+        showNotification(updatedItem.starred ? `"${item.name}" favoritado` : `"${item.name}" removido dos favoritos`)
+      } catch (error) {
+        showNotification(error?.message ?? `Não foi possível atualizar o favorito de "${item.name}"`)
+      }
+      return
+    }
+
+    setLibrary((prev) =>
+      updateLibraryItem(prev, id, (current) => ({ ...current, starred: !current.starred })),
+    )
+  }, [accessToken, backendEnabled, itemById])
+
   const handleContextAction = useCallback(async (action, item) => {
     setContextMenu(null)
     if (action === 'star' || action === 'unstar') {
-      if (backendEnabled) {
-        showNotification('Favoritos ainda não são persistidos nesta integração.')
-        return
-      }
-      setLibrary((prev) =>
-        updateLibraryItem(prev, item.id, (current) => ({ ...current, starred: !current.starred })),
-      )
+      await toggleStar(item.id)
     } else if (action === 'rename') {
       if (backendEnabled) {
         showNotification('Renomear ainda não está disponível nesta integração do backend.')
@@ -671,7 +695,7 @@ export default function FilesPage() {
     } else if (action === 'move') {
       showNotification(`Opções de mover abertas para "${item.name}"`)
     }
-  }, [accessToken, backendEnabled, detailItemId, reloadLibrary, selected, sidebarSection])
+  }, [accessToken, backendEnabled, detailItemId, reloadLibrary, selected, sidebarSection, toggleStar])
 
   const showNotification = (msg) => {
     if (notificationTimerRef.current) {
@@ -708,17 +732,6 @@ export default function FilesPage() {
       )
     }
     setRenamingId(null)
-  }
-
-  const toggleStar = (id) => {
-    if (backendEnabled) {
-      showNotification('Favoritos ainda não são persistidos nesta integração.')
-      return
-    }
-
-    setLibrary((prev) =>
-      updateLibraryItem(prev, id, (current) => ({ ...current, starred: !current.starred })),
-    )
   }
 
   // Upload simulation
@@ -874,7 +887,7 @@ export default function FilesPage() {
         starred: {
           icon: Icon.StarMenu,
           title: 'Sem favoritos',
-          hint: backendEnabled ? 'Favoritos ainda não são persistidos nesta integração.' : 'Marque trabalhos importantes para achá-los rápido.',
+          hint: 'Marque trabalhos importantes para achá-los rápido.',
         },
         shared: {
           icon: Icon.Shared,
@@ -901,7 +914,7 @@ export default function FilesPage() {
           {[ 
             { id: 'my-files', label: 'Meus arquivos', Ic: Icon.MyFiles },
             { id: 'recent',   label: 'Recentes',      Ic: Icon.Recent },
-            ...(!backendEnabled ? [{ id: 'starred',  label: 'Favoritos',     Ic: Icon.StarMenu }] : []),
+            { id: 'starred',  label: 'Favoritos',     Ic: Icon.StarMenu },
             ...(!backendEnabled ? [{ id: 'shared',   label: 'Compartilhados', Ic: Icon.Shared }] : []),
             { id: 'trash',    label: 'Lixeira',       Ic: Icon.Trash2 },
           ].map(({ id, label, Ic }) => (
