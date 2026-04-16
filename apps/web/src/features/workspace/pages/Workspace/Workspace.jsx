@@ -530,12 +530,14 @@ export default function Workspace() {
       {collapsed && (
         <div className={styles.collapsedActions}>
           <button
+            type="button"
             className={styles.navItem}
             onClick={openNewPlan}
             title="Novo plano"
+            data-sidebar-nav-item
           >
-            <span className={styles.navIcon}><PlusIcon /></span>
-            <span className={styles.navLabel}>Novo</span>
+            <span className={styles.navIcon} data-sidebar-nav-icon><PlusIcon /></span>
+            <span className={styles.navLabel} data-sidebar-nav-label>Novo</span>
           </button>
         </div>
       )}

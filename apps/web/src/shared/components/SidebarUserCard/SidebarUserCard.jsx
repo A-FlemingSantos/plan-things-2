@@ -16,18 +16,19 @@ export default function SidebarUserCard({
   ].filter(Boolean).join(' ')
 
   return (
-    <div className={styles.userSection}>
+    <div className={styles.userSection} data-sidebar-user-section>
       {children}
       <button
         type="button"
         className={buttonClassName}
         onClick={onClick}
+        data-sidebar-user-button
         {...buttonProps}
       >
-        <span className={styles.userAvatar}>{initials}</span>
-        <span className={styles.userDetails}>
-          <span className={styles.userName}>{name}</span>
-          <span className={styles.userPlan}>{plan}</span>
+        <span className={styles.userAvatar} data-sidebar-user-avatar>{initials}</span>
+        <span className={styles.userDetails} data-sidebar-user-details>
+          <span className={styles.userName} data-sidebar-user-name>{name}</span>
+          <span className={styles.userPlan} data-sidebar-user-plan>{plan}</span>
         </span>
       </button>
     </div>
