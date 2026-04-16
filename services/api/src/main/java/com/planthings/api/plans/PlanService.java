@@ -12,8 +12,8 @@ import com.planthings.api.common.error.ConflictException;
 import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
-import com.planthings.api.workspace.WorkspaceRepository;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
@@ -32,7 +32,7 @@ public class PlanService {
   private final PlanInviteRepository planInviteRepository;
   private final PlanLabelRepository planLabelRepository;
   private final UserRepository userRepository;
-  private final WorkspaceRepository workspaceRepository;
+  private final PersonalWorkspaceService personalWorkspaceService;
   private final BoardColumnRepository boardColumnRepository;
   private final CanvasDocumentRepository canvasDocumentRepository;
   private final AuthenticatedUserService authenticatedUserService;
@@ -46,7 +46,7 @@ public class PlanService {
       PlanInviteRepository planInviteRepository,
       PlanLabelRepository planLabelRepository,
       UserRepository userRepository,
-      WorkspaceRepository workspaceRepository,
+      PersonalWorkspaceService personalWorkspaceService,
       BoardColumnRepository boardColumnRepository,
       CanvasDocumentRepository canvasDocumentRepository,
       AuthenticatedUserService authenticatedUserService,
@@ -59,7 +59,7 @@ public class PlanService {
     this.planInviteRepository = planInviteRepository;
     this.planLabelRepository = planLabelRepository;
     this.userRepository = userRepository;
-    this.workspaceRepository = workspaceRepository;
+    this.personalWorkspaceService = personalWorkspaceService;
     this.boardColumnRepository = boardColumnRepository;
     this.canvasDocumentRepository = canvasDocumentRepository;
     this.authenticatedUserService = authenticatedUserService;
@@ -88,8 +88,7 @@ public class PlanService {
   @Transactional
   public PlanDetails createPlan(String name, String description) {
     UserEntity currentUser = authenticatedUserService.requireUser();
-    WorkspaceEntity workspace = workspaceRepository.findByOwnerUserId(currentUser.getId())
-        .orElseThrow(() -> new NotFoundException("WORKSPACE_NAO_ENCONTRADA", "Nao encontramos a workspace pessoal deste usuario."));
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
 
     PlanEntity plan = new PlanEntity();
     plan.setWorkspaceId(workspace.getId());

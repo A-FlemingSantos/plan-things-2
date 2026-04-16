@@ -2,7 +2,7 @@ spring:
   application:
     name: plan-things-api
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=false;trustServerCertificate=true
+    url: jdbc:sqlserver://localhost:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true
     username: sa
     password: sa-9MNP6LI
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver

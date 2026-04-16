@@ -7,11 +7,10 @@ import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.security.JwtService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
-import com.planthings.api.workspace.WorkspaceRepository;
 import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,11 +24,11 @@ public class AuthService {
 
   private final UserRepository userRepository;
   private final PasswordResetTokenRepository passwordResetTokenRepository;
-  private final WorkspaceRepository workspaceRepository;
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
   private final JwtService jwtService;
   private final AuthenticatedUserService authenticatedUserService;
+  private final PersonalWorkspaceService personalWorkspaceService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final Clock clock;
   private final long passwordResetMinutes;
@@ -37,22 +36,22 @@ public class AuthService {
   public AuthService(
       UserRepository userRepository,
       PasswordResetTokenRepository passwordResetTokenRepository,
-      WorkspaceRepository workspaceRepository,
       PasswordEncoder passwordEncoder,
       AuthenticationManager authenticationManager,
       JwtService jwtService,
       AuthenticatedUserService authenticatedUserService,
+      PersonalWorkspaceService personalWorkspaceService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       Clock clock,
       @Value("${app.jwt.password-reset-minutes}") long passwordResetMinutes
   ) {
     this.userRepository = userRepository;
     this.passwordResetTokenRepository = passwordResetTokenRepository;
-    this.workspaceRepository = workspaceRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
     this.jwtService = jwtService;
     this.authenticatedUserService = authenticatedUserService;
+    this.personalWorkspaceService = personalWorkspaceService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.clock = clock;
     this.passwordResetMinutes = passwordResetMinutes;
@@ -74,10 +73,7 @@ public class AuthService {
     user.setPasswordHash(passwordEncoder.encode(password));
     userRepository.save(user);
 
-    WorkspaceEntity workspace = new WorkspaceEntity();
-    workspace.setOwnerUserId(user.getId());
-    workspace.setName("Workspace de " + normalizedName);
-    workspaceRepository.save(workspace);
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
     return buildSessionResponse(user, workspace);
   }
@@ -91,8 +87,7 @@ public class AuthService {
     UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos uma conta com este e-mail."));
 
-    WorkspaceEntity workspace = workspaceRepository.findByOwnerUserId(user.getId())
-        .orElseThrow(() -> new NotFoundException("WORKSPACE_NAO_ENCONTRADA", "Nao encontramos a workspace pessoal deste usuario."));
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
     return buildSessionResponse(user, workspace);
   }
@@ -146,8 +141,7 @@ public class AuthService {
 
   public CurrentUserResponse me() {
     UserEntity user = authenticatedUserService.requireUser();
-    WorkspaceEntity workspace = workspaceRepository.findByOwnerUserId(user.getId())
-        .orElseThrow(() -> new NotFoundException("WORKSPACE_NAO_ENCONTRADA", "Nao encontramos a workspace pessoal deste usuario."));
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
     return new CurrentUserResponse(toUserSummary(user), toWorkspaceSummary(workspace));
   }

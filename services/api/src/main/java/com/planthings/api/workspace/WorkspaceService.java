@@ -1,10 +1,8 @@
 package com.planthings.api.workspace;
 
 import com.planthings.api.auth.UserEntity;
-import com.planthings.api.auth.UserRepository;
 import com.planthings.api.calendar.CalendarEventRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
-import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
 import com.planthings.api.files.FileEntryRepository;
@@ -15,8 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class WorkspaceService {
 
-  private final WorkspaceRepository workspaceRepository;
-  private final UserRepository userRepository;
+  private final PersonalWorkspaceService personalWorkspaceService;
   private final PlanMemberRepository planMemberRepository;
   private final FileEntryRepository fileEntryRepository;
   private final CalendarEventRepository calendarEventRepository;
@@ -24,16 +21,14 @@ public class WorkspaceService {
   private final BrazilDateTimeMapper brazilDateTimeMapper;
 
   public WorkspaceService(
-      WorkspaceRepository workspaceRepository,
-      UserRepository userRepository,
+      PersonalWorkspaceService personalWorkspaceService,
       PlanMemberRepository planMemberRepository,
       FileEntryRepository fileEntryRepository,
       CalendarEventRepository calendarEventRepository,
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper
   ) {
-    this.workspaceRepository = workspaceRepository;
-    this.userRepository = userRepository;
+    this.personalWorkspaceService = personalWorkspaceService;
     this.planMemberRepository = planMemberRepository;
     this.fileEntryRepository = fileEntryRepository;
     this.calendarEventRepository = calendarEventRepository;
@@ -43,8 +38,7 @@ public class WorkspaceService {
 
   public WorkspaceDashboard getCurrentWorkspace() {
     UserEntity currentUser = authenticatedUserService.requireUser();
-    WorkspaceEntity workspace = workspaceRepository.findByOwnerUserId(currentUser.getId())
-        .orElseThrow(() -> new NotFoundException("WORKSPACE_NAO_ENCONTRADA", "Nao encontramos a workspace pessoal deste usuario."));
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
 
     long plansCount = planMemberRepository.findByUserId(currentUser.getId()).size();
     long fileCount = fileEntryRepository.findByWorkspaceIdAndOwnerUserIdAndDeletedAtIsNullOrderByTypeAscNameAsc(workspace.getId(), currentUser.getId()).size();
