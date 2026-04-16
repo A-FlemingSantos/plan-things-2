@@ -1782,6 +1782,10 @@
   font-size: 14px;
   cursor: pointer;
 }
+.cmChecklistDeleteBtn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
 
 .cmChecklistProgressRow {
   display: flex;
@@ -1847,6 +1851,10 @@
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
+}
+.cmChecklistItemCheckbox:disabled {
+  cursor: default;
+  opacity: .7;
 }
 
 .cmChecklistItemCheckboxActive {
@@ -3041,6 +3049,24 @@
   letter-spacing: -.005em;
 }
 .cmSaveBtn:hover { opacity: .8; }
+.cmSaveBtn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.cmChecklistNotice {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-gray-500);
+}
+
+.cmSubmitError {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b42318;
+}
 
 .cmSelectedMembers {
   display: flex;

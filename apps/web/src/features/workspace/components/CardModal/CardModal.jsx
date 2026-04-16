@@ -19,8 +19,65 @@ function extractDayFromDisplayLabel(value = '') {
   return match ? Number(match[1]) : null
 }
 
-function formatCalendarInputValue(day) {
-  return `${String(day).padStart(2, '0')}/04/26`
+function parseBrazilDateValue(value = '') {
+  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+
+  if (!match) {
+    return null
+  }
+
+  const [, dayValue, monthValue, yearValue] = match
+  const year = yearValue.length === 2 ? 2000 + Number(yearValue) : Number(yearValue)
+
+  return {
+    day: Number(dayValue),
+    month: Number(monthValue),
+    year,
+  }
+}
+
+function buildCalendarBaseDate(value = '') {
+  const parsed = parseBrazilDateValue(value)
+
+  if (!parsed) {
+    const today = new Date()
+    return new Date(today.getFullYear(), today.getMonth(), 1)
+  }
+
+  return new Date(parsed.year, parsed.month - 1, 1)
+}
+
+function formatCalendarInputValue(day, baseDate) {
+  return `${String(day).padStart(2, '0')}/${String(baseDate.getMonth() + 1).padStart(2, '0')}/${baseDate.getFullYear()}`
+}
+
+function buildCalendarDays(baseDate) {
+  const year = baseDate.getFullYear()
+  const month = baseDate.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const startDate = new Date(year, month, 1 - firstDay.getDay())
+  const today = new Date()
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const current = new Date(startDate)
+    current.setDate(startDate.getDate() + index)
+
+    return {
+      label: current.getDate(),
+      muted: current.getMonth() !== month,
+      underline:
+        current.getDate() === today.getDate() &&
+        current.getMonth() === today.getMonth() &&
+        current.getFullYear() === today.getFullYear(),
+    }
+  })
+}
+
+function formatCalendarMonthLabel(baseDate) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  }).format(baseDate)
 }
 
 function formatDueDateLabelFromValue(dateValue, fallbackDay) {
@@ -62,6 +119,35 @@ function buildInitialCardSchedule(card) {
   }
 }
 
+function buildInitials(fullName = '') {
+  return fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || 'PT'
+}
+
+function buildInitialChecklist(card) {
+  const [firstChecklist] = Array.isArray(card.checklists) ? card.checklists : []
+
+  if (!firstChecklist) {
+    return null
+  }
+
+  return {
+    id: firstChecklist.id,
+    title: firstChecklist.title ?? 'Checklist',
+    items: Array.isArray(firstChecklist.items)
+      ? firstChecklist.items.map((item) => ({
+          id: item.id,
+          text: item.title ?? item.text ?? 'Item',
+          checked: Boolean(item.completed ?? item.checked),
+        }))
+      : [],
+  }
+}
+
 export default function CardModal({
   card,
   colTitle,
@@ -70,9 +156,11 @@ export default function CardModal({
   onDelete,
   labels,
   members,
+  currentUser,
   calendarDays,
   icons,
   styles,
+  isBackendDriven = false,
 }) {
   const initialSchedule = buildInitialCardSchedule(card)
   const [title,    setTitle]    = useState(card.title)
@@ -102,6 +190,7 @@ export default function CardModal({
   const [listMenuPosition, setListMenuPosition] = useState({ top: 0, left: 0 })
   const [insertMenuPosition, setInsertMenuPosition] = useState({ top: 0, left: 0 })
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(initialSchedule.selectedCalendarDay)
+  const [dateMenuMonth, setDateMenuMonth] = useState(() => buildCalendarBaseDate(initialSchedule.dueDateValue))
   const [startEnabled, setStartEnabled] = useState(initialSchedule.startEnabled)
   const [startDateValue, setStartDateValue] = useState(initialSchedule.startDateValue)
   const [dueEnabled, setDueEnabled] = useState(initialSchedule.dueEnabled)
@@ -110,7 +199,7 @@ export default function CardModal({
   const [displayLabel, setDisplayLabel] = useState(initialSchedule.displayLabel)
   const [preserveDisplayLabel, setPreserveDisplayLabel] = useState(initialSchedule.preserveDisplayLabel)
   const [checklistTitle, setChecklistTitle] = useState('Checklist')
-  const [activeChecklist, setActiveChecklist] = useState(null)
+  const [activeChecklist, setActiveChecklist] = useState(() => buildInitialChecklist(card))
   const [newChecklistItem, setNewChecklistItem] = useState('')
   const [checklistComposerOpen, setChecklistComposerOpen] = useState(false)
   const [showChecklistAssignMenu, setShowChecklistAssignMenu] = useState(false)
@@ -118,10 +207,14 @@ export default function CardModal({
   const [checklistAssignMenuPosition, setChecklistAssignMenuPosition] = useState({ top: 0, left: 0 })
   const [checklistDueMenuPosition, setChecklistDueMenuPosition] = useState({ top: 0, left: 0 })
   const [checklistSelectedDay, setChecklistSelectedDay] = useState(7)
+  const [checklistDateMenuMonth, setChecklistDateMenuMonth] = useState(() => buildCalendarBaseDate('07/04/2026'))
   const [checklistStartEnabled, setChecklistStartEnabled] = useState(false)
   const [checklistStartDateValue, setChecklistStartDateValue] = useState('')
   const [checklistDueEnabled, setChecklistDueEnabled] = useState(true)
   const [checklistDueValue, setChecklistDueValue] = useState('07/04/26')
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
   const commentComposerRef = useRef(null)
   const commentTextareaRef = useRef(null)
   const checklistItemTextareaRef = useRef(null)
@@ -147,30 +240,51 @@ export default function CardModal({
   const dialogTitleId = `card-modal-title-${card.id}`
 
   const label = labels.find(l => l.id === labelId)
+  const currentUserName = currentUser?.fullName ?? currentUser?.email ?? 'Você'
+  const dateMenuDays = buildCalendarDays(dateMenuMonth)
+  const checklistDateMenuDays = buildCalendarDays(checklistDateMenuMonth)
+  const startClose = () => {
+    setExiting(true)
+    setTimeout(onClose, 220)
+  }
 
-  const close = () => { setExiting(true); setTimeout(onClose, 220) }
+  const close = () => {
+    if (isSaving || isDeleting) return
+    startClose()
+  }
 
-  const save = () => {
-    onUpdate({
-      ...card,
-      title,
-      description: desc,
-      labelId,
-      memberIds,
-      dueDate,
-      schedule: {
-        selectedCalendarDay,
-        startEnabled,
-        startDateValue,
-        dueEnabled,
-        dueDateValue,
-        dueTimeValue,
-        displayLabel,
-        preserveDisplayLabel,
-      },
-      comments,
-    })
-    close()
+  const save = async () => {
+    if (isSaving || isDeleting) return
+
+    setIsSaving(true)
+    setSubmitError(null)
+
+    try {
+      await onUpdate({
+        ...card,
+        title,
+        description: desc,
+        labelId,
+        memberIds,
+        dueDate,
+        schedule: {
+          selectedCalendarDay,
+          startEnabled,
+          startDateValue,
+          dueEnabled,
+          dueDateValue,
+          dueTimeValue,
+          displayLabel,
+          preserveDisplayLabel,
+        },
+        comments,
+      })
+      startClose()
+    } catch (error) {
+      setSubmitError(error?.message ?? 'Não foi possível salvar as alterações do cartão.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const toggleMember = (id) => {
@@ -179,13 +293,35 @@ export default function CardModal({
 
   const addComment = () => {
     if (!comment.trim()) return
-    const c = { id: uid(), author: members[0]?.name ?? members[0]?.initials ?? 'Você', text: comment.trim(), time: 'Agora' }
+    const c = {
+      id: uid(),
+      author: currentUser?.id ?? null,
+      authorId: currentUser?.id ?? null,
+      authorName: currentUserName,
+      text: comment.trim(),
+      time: 'Agora',
+    }
     setComments(prev => [...prev, c])
     setComment('')
   }
 
-  const handleDelete = () => { onDelete(card.id); close() }
+  const handleDelete = async () => {
+    if (isSaving || isDeleting) return
+
+    setIsDeleting(true)
+    setSubmitError(null)
+
+    try {
+      await onDelete(card.id)
+      startClose()
+    } catch (error) {
+      setSubmitError(error?.message ?? 'Não foi possível excluir o cartão.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
   const handleChecklistCreate = () => {
+    if (isBackendDriven) return
     const nextTitle = checklistTitle.trim() || 'Checklist'
     setActiveChecklist({ title: nextTitle, items: [] })
     setChecklistComposerOpen(true)
@@ -193,6 +329,7 @@ export default function CardModal({
     setChecklistTitle('Checklist')
   }
   const handleChecklistItemAdd = () => {
+    if (isBackendDriven) return
     if (!newChecklistItem.trim() || !activeChecklist) return
 
     setActiveChecklist(prev => ({
@@ -203,6 +340,7 @@ export default function CardModal({
     setChecklistComposerOpen(true)
   }
   const toggleChecklistItem = (itemId) => {
+    if (isBackendDriven) return
     setActiveChecklist(prev => ({
       ...prev,
       items: prev.items.map(item => item.id === itemId ? { ...item, checked: !item.checked } : item),
@@ -238,6 +376,38 @@ export default function CardModal({
     if (!member) return 'Membro'
     return member.name ?? member.email ?? member.initials ?? 'Membro'
   }
+  const getCommentPresenter = (commentItem) => {
+    const memberId = commentItem.authorId ?? commentItem.author
+    const member = memberId ? members.find((item) => item.id === memberId) : null
+
+    if (member) {
+      return {
+        name: getMemberName(member),
+        initials: member.initials ?? buildInitials(getMemberName(member)),
+        color: member.color ?? '#6b7280',
+      }
+    }
+
+    const fallbackName = commentItem.authorName ?? commentItem.author ?? 'Você'
+
+    return {
+      name: fallbackName,
+      initials: buildInitials(fallbackName),
+      color: '#6b7280',
+    }
+  }
+
+  useEffect(() => {
+    if (showDateMenu) {
+      setDateMenuMonth(buildCalendarBaseDate(dueDateValue || startDateValue))
+    }
+  }, [dueDateValue, showDateMenu, startDateValue])
+
+  useEffect(() => {
+    if (showChecklistDueMenu) {
+      setChecklistDateMenuMonth(buildCalendarBaseDate(checklistDueValue || checklistStartDateValue))
+    }
+  }, [checklistDueValue, checklistStartDateValue, showChecklistDueMenu])
 
   useEffect(() => {
     if (!showChecklistMenu) return
@@ -737,8 +907,8 @@ export default function CardModal({
             </button>
           </div>
           <div className={styles.cmHeaderActions}>
-            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão"><icons.Trash /></button>
-            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão"><icons.X /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão" disabled={isSaving || isDeleting}><icons.Trash /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão" disabled={isSaving || isDeleting}><icons.X /></button>
           </div>
         </div>
 
@@ -794,17 +964,19 @@ export default function CardModal({
                 Datas
                 <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
               </button>
-              <button
-                ref={checklistMenuButtonRef}
-                type="button"
-                className={`${styles.cmToolbarBtn} ${showChecklistMenu ? styles.cmToolbarBtnActive : ''}`}
-                onClick={() => setShowChecklistMenu(v => !v)}
-                aria-expanded={showChecklistMenu}
-                aria-haspopup="dialog"
-              >
-                <icons.Check />
-                Checklist
-              </button>
+              {!isBackendDriven && (
+                <button
+                  ref={checklistMenuButtonRef}
+                  type="button"
+                  className={`${styles.cmToolbarBtn} ${showChecklistMenu ? styles.cmToolbarBtnActive : ''}`}
+                  onClick={() => setShowChecklistMenu(v => !v)}
+                  aria-expanded={showChecklistMenu}
+                  aria-haspopup="dialog"
+                >
+                  <icons.Check />
+                  Checklist
+                </button>
+              )}
             </div>
 
               <div className={styles.cmSection}>
@@ -829,17 +1001,19 @@ export default function CardModal({
                       <span className={styles.cmChecklistBlockIcon}><icons.Check /></span>
                       <p className={styles.cmChecklistBlockTitle}>{activeChecklist.title}</p>
                     </div>
-                      <button
-                        type="button"
-                        className={styles.cmChecklistDeleteBtn}
-                        onClick={() => {
-                          setActiveChecklist(null)
-                          setNewChecklistItem('')
-                          setChecklistComposerOpen(false)
-                        }}
-                      >
-                        Excluir
-                      </button>
+                      {!isBackendDriven && (
+                        <button
+                          type="button"
+                          className={styles.cmChecklistDeleteBtn}
+                          onClick={() => {
+                            setActiveChecklist(null)
+                            setNewChecklistItem('')
+                            setChecklistComposerOpen(false)
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      )}
                   </div>
 
                   <div className={styles.cmChecklistProgressRow}>
@@ -868,6 +1042,7 @@ export default function CardModal({
                             type="button"
                             className={`${styles.cmChecklistItemCheckbox} ${item.checked ? styles.cmChecklistItemCheckboxActive : ''}`}
                             onClick={() => toggleChecklistItem(item.id)}
+                            disabled={isBackendDriven}
                           >
                             {item.checked && <icons.Check />}
                           </button>
@@ -879,7 +1054,7 @@ export default function CardModal({
                     </div>
                   )}
 
-                    {checklistComposerOpen ? (
+                    {!isBackendDriven && checklistComposerOpen ? (
                       <>
                         <textarea
                           ref={checklistItemTextareaRef}
@@ -932,7 +1107,7 @@ export default function CardModal({
                           </button>
                         </div>
                       </>
-                    ) : (
+                    ) : !isBackendDriven ? (
                       <button
                         type="button"
                         className={styles.cmChecklistAddItemBtn}
@@ -940,17 +1115,26 @@ export default function CardModal({
                       >
                         Adicionar um item
                       </button>
-                    )}
+                    ) : null}
+
+                  {isBackendDriven && (
+                    <p className={styles.cmChecklistNotice}>
+                      Checklist exibido em modo somente leitura enquanto finalizamos a integração completa dessa área.
+                    </p>
+                  )}
                   </div>
                 )}
 
               <div className={styles.cmSaveRow}>
+                {submitError && <p className={styles.cmSubmitError}>{submitError}</p>}
                 {label && (
                 <span className={styles.cmActiveLabel} style={{ background: label.color + '20', color: label.color }}>
                   {label.text}
                 </span>
               )}
-              <button type="button" className={styles.cmSaveBtn} onClick={save}>Salvar alterações</button>
+              <button type="button" className={styles.cmSaveBtn} onClick={save} disabled={isSaving || isDeleting}>
+                {isSaving ? 'Salvando...' : 'Salvar alterações'}
+              </button>
             </div>
           </div>
 
@@ -975,7 +1159,7 @@ export default function CardModal({
                 ref={commentComposerRef}
                 className={`${styles.cmCommentComposerBox} ${commentFocused ? styles.cmCommentComposerBoxActive : ''}`}
               >
-                {commentFocused && (
+                {commentFocused && !isBackendDriven && (
                   <div className={styles.cmCommentToolbar}>
                     <div className={styles.cmCommentToolbarGroup}>
                       <div className={styles.cmCommentDropdown}>
@@ -1070,23 +1254,21 @@ export default function CardModal({
             </div>
 
             <div className={styles.cmActivityList}>
-              <div className={styles.cmActivityItem}>
-                <span className={styles.cmCommentAvatar} style={{ background: '#6b4fd3' }}>AS</span>
-                <div className={styles.cmActivityContent}>
-                  <p className={styles.cmActivityText}>
-                    <strong>Arthur Fleming Santos</strong> adicionou este cartão a {colTitle}
-                  </p>
-                  <span className={styles.cmCommentTime}>há 1 hora</span>
+              {comments.length === 0 && (
+                <div className={styles.cmActivityItem}>
+                  <div className={styles.cmActivityContent}>
+                    <p className={styles.cmActivityText}>Nenhum comentário registrado neste cartão ainda.</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {comments.map(c => {
-                const m = members.find(x => x.id === c.author)
+                const presenter = getCommentPresenter(c)
                 const isExpanded = expandedComments[c.id]
                 const isOverflowing = overflowingComments[c.id]
                 return (
                   <div key={c.id} className={styles.cmActivityItem}>
-                    <span className={styles.cmCommentAvatar} style={{ background: m?.color }}>{m?.initials}</span>
+                    <span className={styles.cmCommentAvatar} style={{ background: presenter.color }}>{presenter.initials}</span>
                     <div className={styles.cmActivityContent}>
                       <p
                         ref={element => {
@@ -1098,7 +1280,7 @@ export default function CardModal({
                         }}
                         className={`${styles.cmActivityText} ${!isExpanded ? styles.cmActivityTextClamped : ''}`}
                       >
-                        <strong>{getMemberName(m?.initials)}</strong> {c.text}
+                        <strong>{presenter.name}</strong> {c.text}
                       </p>
                       {isOverflowing && (
                         <button
@@ -1304,13 +1486,11 @@ export default function CardModal({
 
           <div className={styles.cmChecklistDateMenuMonthBar}>
             <div className={styles.cmChecklistDateMenuMonthNav}>
-              <button type="button" className={styles.cmChecklistDateMenuNavBtn}>«</button>
-              <button type="button" className={styles.cmChecklistDateMenuNavBtn}>‹</button>
+              <button type="button" className={styles.cmChecklistDateMenuNavBtn} onClick={() => setChecklistDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button>
             </div>
-            <span className={styles.cmChecklistDateMenuMonthLabel}>abril 2026</span>
+            <span className={styles.cmChecklistDateMenuMonthLabel}>{formatCalendarMonthLabel(checklistDateMenuMonth)}</span>
             <div className={styles.cmChecklistDateMenuMonthNav}>
-              <button type="button" className={styles.cmChecklistDateMenuNavBtn}>›</button>
-              <button type="button" className={styles.cmChecklistDateMenuNavBtn}>»</button>
+              <button type="button" className={styles.cmChecklistDateMenuNavBtn} onClick={() => setChecklistDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button>
             </div>
           </div>
 
@@ -1321,7 +1501,7 @@ export default function CardModal({
           </div>
 
           <div className={styles.cmChecklistDateMenuGrid}>
-            {calendarDays.map((day, index) => (
+            {checklistDateMenuDays.map((day, index) => (
               <button
                 key={`${day.label}-${index}`}
                 type="button"
@@ -1330,7 +1510,7 @@ export default function CardModal({
                   if (day.muted) return
                   setChecklistSelectedDay(day.label)
                   setChecklistDueEnabled(true)
-                  setChecklistDueValue(`${String(day.label).padStart(2, '0')}/04/26`)
+                  setChecklistDueValue(formatCalendarInputValue(day.label, checklistDateMenuMonth))
                 }}
               >
                 <span className={day.underline ? styles.cmChecklistDateMenuDayUnderline : ''}>{day.label}</span>
@@ -1448,13 +1628,11 @@ export default function CardModal({
 
           <div className={styles.cmDateMenuMonthBar}>
             <div className={styles.cmDateMenuMonthNav}>
-              <button type="button" className={styles.cmDateMenuNavBtn}>«</button>
-              <button type="button" className={styles.cmDateMenuNavBtn}>‹</button>
+              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button>
             </div>
-            <span className={styles.cmDateMenuMonthLabel}>abril 2026</span>
+            <span className={styles.cmDateMenuMonthLabel}>{formatCalendarMonthLabel(dateMenuMonth)}</span>
             <div className={styles.cmDateMenuMonthNav}>
-              <button type="button" className={styles.cmDateMenuNavBtn}>›</button>
-              <button type="button" className={styles.cmDateMenuNavBtn}>»</button>
+              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button>
             </div>
           </div>
 
@@ -1465,7 +1643,7 @@ export default function CardModal({
           </div>
 
           <div className={styles.cmDateMenuGrid}>
-            {calendarDays.map((day, index) => (
+            {dateMenuDays.map((day, index) => (
               <button
                 key={`${day.label}-${index}`}
                 type="button"
@@ -1473,7 +1651,7 @@ export default function CardModal({
                 onClick={() => {
                   if (day.muted) return
                   setSelectedCalendarDay(day.label)
-                  setDueDateValue(formatCalendarInputValue(day.label))
+                  setDueDateValue(formatCalendarInputValue(day.label, dateMenuMonth))
                 }}
               >
                 <span className={day.underline ? styles.cmDateMenuDayUnderline : ''}>{day.label}</span>

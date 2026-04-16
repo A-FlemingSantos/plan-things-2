@@ -185,31 +185,43 @@ function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
   )
 }
 
-function EventDialog({ selectedDate, onClose, onCreate }) {
-  const [title, setTitle] = useState('')
-  const [start, setStart] = useState('09:00')
-  const [end, setEnd] = useState('10:00')
+function EventDialog({ selectedDate, initialEvent = null, onClose, onCreate }) {
+  const [title, setTitle] = useState(initialEvent?.title ?? '')
+  const [start, setStart] = useState(initialEvent?.start ?? '09:00')
+  const [end, setEnd] = useState(initialEvent?.end ?? '10:00')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
-    if (!title.trim()) return
-    onCreate({
-      title: title.trim(),
-      date: dateKey(selectedDate),
-      start,
-      end,
-      sourceId: 'arthur',
-      calendar: 'Arthur Fleming',
-      location: 'Plan Things',
-    })
-    onClose()
+    if (!title.trim() || isSubmitting) return
+
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      await onCreate({
+        title: title.trim(),
+        date: initialEvent?.date ?? dateKey(selectedDate),
+        start,
+        end,
+        sourceId: 'arthur',
+        calendar: 'Arthur Fleming',
+        location: initialEvent?.location || 'Plan Things',
+      })
+      onClose()
+    } catch (error) {
+      setSubmitError(error?.message ?? 'Não foi possível criar o evento.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className={styles.dialogBackdrop} role="presentation">
       <form className={styles.eventDialog} onSubmit={submit} role="dialog" aria-modal="true" aria-label="Novo evento">
         <div className={styles.dialogHeader}>
-          <h2>Novo evento</h2>
+          <h2>{initialEvent ? 'Editar evento' : 'Novo evento'}</h2>
           <button type="button" onClick={onClose} aria-label="Fechar"><Icon.X /></button>
         </div>
         <label className={styles.dialogField}>
@@ -227,13 +239,16 @@ function EventDialog({ selectedDate, onClose, onCreate }) {
           </label>
         </div>
         <p className={styles.dialogDate}>{formatLongDate(selectedDate)}</p>
-        <button type="submit" className={styles.dialogSubmit} disabled={!title.trim()}>Salvar</button>
+        {submitError && <p className={styles.dialogError}>{submitError}</p>}
+        <button type="submit" className={styles.dialogSubmit} disabled={!title.trim() || isSubmitting}>
+          {isSubmitting ? 'Salvando...' : 'Salvar'}
+        </button>
       </form>
     </div>
   )
 }
 
-function AgendaList({ date, events, onClose, onCreate }) {
+function AgendaList({ date, events, onClose, onCreate, onEditEvent, onDeleteEvent }) {
   return (
     <aside className={styles.agendaPanel}>
       <div className={styles.agendaHeader}>
@@ -249,9 +264,27 @@ function AgendaList({ date, events, onClose, onCreate }) {
         {events.length ? events.map((event) => (
           <div key={event.id} className={styles.agendaItem} style={{ '--event-color': event.color }}>
             <div className={styles.agendaTime}>{event.start}<span>{event.end}</span></div>
-            <div>
+            <div className={styles.agendaItemContent}>
               <p>{event.title}</p>
               {eventMeta(event) && <span>{eventMeta(event)}</span>}
+              <div className={styles.agendaItemActions}>
+                <button
+                  type="button"
+                  className={styles.agendaAction}
+                  onClick={() => onEditEvent(event)}
+                  disabled={event.raw?.generatedFromCard}
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.agendaAction} ${styles.agendaActionDanger}`}
+                  onClick={() => onDeleteEvent(event)}
+                  disabled={event.raw?.generatedFromCard}
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           </div>
         )) : (
@@ -273,11 +306,12 @@ export default function CalendarPage() {
   const [view, setView] = useState('month')
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingEvent, setEditingEvent] = useState(null)
   const [agendaPanelOpen, setAgendaPanelOpen] = useState(true)
   const [notification, setNotification] = useState(null)
   const notificationTimerRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
-  const { calendarSources, filteredEvents, createEvent } = useCalendarEvents({ search })
+  const { calendarSources, filteredEvents, loadError, createEvent, updateEvent, deleteEvent } = useCalendarEvents({ search })
 
   const cells = useMemo(() => buildMonthCells(visibleMonth), [visibleMonth])
   const eventsByDate = useMemo(() => {
@@ -333,9 +367,42 @@ export default function CalendarPage() {
     setSelectedDate((current) => clampDateToMonth(current, nextMonth))
   }
 
-  const handleCreateEvent = async (event) => {
+  const openCreateDialog = () => {
+    setEditingEvent(null)
+    setDialogOpen(true)
+  }
+
+  const handleEditEvent = (event) => {
+    if (event.raw?.generatedFromCard) {
+      showNotification('Eventos vinculados a cartões devem ser editados no quadro.')
+      return
+    }
+
+    setEditingEvent(event)
+    setDialogOpen(true)
+  }
+
+  const handleSaveEvent = async (event) => {
+    if (editingEvent) {
+      const updatedEvent = await updateEvent(editingEvent.id, event)
+      showNotification(`Evento "${updatedEvent.title}" atualizado`)
+      setEditingEvent(null)
+      return updatedEvent
+    }
+
     const createdEvent = await createEvent(event)
     showNotification(`Evento "${createdEvent.title}" criado`)
+    return createdEvent
+  }
+
+  const handleDeleteEvent = async (event) => {
+    if (event.raw?.generatedFromCard) {
+      showNotification('Eventos vinculados a cartões devem ser removidos no quadro.')
+      return
+    }
+
+    await deleteEvent(event.id)
+    showNotification(`Evento "${event.title}" excluído`)
   }
 
   const handlePrint = () => {
@@ -461,7 +528,7 @@ export default function CalendarPage() {
       >
         <header className={styles.commandBar}>
           <div className={styles.commandLeft}>
-            <button type="button" className={styles.primaryButton} onClick={() => setDialogOpen(true)}>
+            <button type="button" className={styles.primaryButton} onClick={openCreateDialog}>
               <Icon.Calendar />
               Novo evento
             </button>
@@ -489,6 +556,12 @@ export default function CalendarPage() {
           </div>
         </header>
 
+        {loadError && (
+          <div className={styles.loadError} role="status" aria-live="polite">
+            {loadError}
+          </div>
+        )}
+
         <div className={styles.monthHeader}>
           <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
           <button type="button" className={styles.iconButton} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon.ChevLeft /></button>
@@ -508,7 +581,9 @@ export default function CalendarPage() {
                 date={selectedDate}
                 events={selectedEvents}
                 onClose={() => setAgendaPanelOpen(false)}
-                onCreate={() => setDialogOpen(true)}
+                onCreate={openCreateDialog}
+                onEditEvent={handleEditEvent}
+                onDeleteEvent={handleDeleteEvent}
               />
             )}
           </section>
@@ -517,9 +592,13 @@ export default function CalendarPage() {
 
       {dialogOpen && (
         <EventDialog
-          selectedDate={selectedDate}
-          onClose={() => setDialogOpen(false)}
-          onCreate={handleCreateEvent}
+          selectedDate={editingEvent ? new Date(`${editingEvent.date}T12:00:00`) : selectedDate}
+          initialEvent={editingEvent}
+          onClose={() => {
+            setDialogOpen(false)
+            setEditingEvent(null)
+          }}
+          onCreate={handleSaveEvent}
         />
       )}
 

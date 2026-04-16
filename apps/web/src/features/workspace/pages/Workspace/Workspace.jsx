@@ -70,7 +70,7 @@ const COVER_THEMES = [
 /* ═══════════════════════════════════════════
    NEW PLAN POPOVER
 ═══════════════════════════════════════════ */
-function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
+function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }) {
   const [name, setName]       = useState('')
   const [selectedTag, setTag] = useState(PLAN_TAGS[0])
   const [selectedTheme, setSelectedTheme] = useState(COVER_THEMES[0])
@@ -213,70 +213,74 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
           </div>
         </div>
 
-        <div className={styles.coverPicker}>
-          <span className={styles.planPreviewLabel}>Tela de fundo</span>
-          <div className={styles.coverGrid}>
-            {COVER_THEMES.map(theme => (
-              <button
-                key={theme.id}
-                type="button"
-                className={`${styles.coverOption} ${selectedTheme.id === theme.id ? styles.coverOptionActive : ''} ${styles[`theme${theme.id}`]}`}
-                onClick={() => setSelectedTheme(theme)}
-                aria-label={theme.label}
-                title={theme.label}
-              >
-                <span className={styles.coverOptionShade} />
-              </button>
-            ))}
-            <button
-              type="button"
-              className={`${styles.coverOption} ${styles.coverUploadOption}`}
-              onClick={() => coverUploadRef.current?.click()}
-              aria-label="Enviar imagem própria"
-              title="Enviar imagem própria"
-            >
-              <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
-            </button>
-          </div>
-          <input
-            ref={coverUploadRef}
-            type="file"
-            accept="image/*"
-            className={styles.coverUploadInput}
-          />
-        </div>
-
-        <div className={styles.planPreviewMeta}>
-          <button
-            type="button"
-            className={styles.categoryToggle}
-            onClick={() => setShowCategories(v => !v)}
-            aria-expanded={showCategories}
-          >
-            <span className={styles.planPreviewLabel}>Categoria</span>
-            <span className={`${styles.categoryToggleIcon} ${showCategories ? styles.categoryToggleIconOpen : ''}`}>
-              <ChevronIcon />
-            </span>
-          </button>
-          {showCategories && (
-            <div className={styles.tagGrid}>
-              {PLAN_TAGS.map(t => (
+        {!isBackendDriven && (
+          <>
+            <div className={styles.coverPicker}>
+              <span className={styles.planPreviewLabel}>Tela de fundo</span>
+              <div className={styles.coverGrid}>
+                {COVER_THEMES.map(theme => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    className={`${styles.coverOption} ${selectedTheme.id === theme.id ? styles.coverOptionActive : ''} ${styles[`theme${theme.id}`]}`}
+                    onClick={() => setSelectedTheme(theme)}
+                    aria-label={theme.label}
+                    title={theme.label}
+                  >
+                    <span className={styles.coverOptionShade} />
+                  </button>
+                ))}
                 <button
-                  key={t.label}
                   type="button"
-                  className={`${styles.tagChip} ${selectedTag.label === t.label ? styles.tagChipActive : ''}`}
-                  style={selectedTag.label === t.label
-                    ? { background: t.color + '20', borderColor: t.color, color: t.color }
-                    : {}}
-                  onClick={() => setTag(t)}
+                  className={`${styles.coverOption} ${styles.coverUploadOption}`}
+                  onClick={() => coverUploadRef.current?.click()}
+                  aria-label="Enviar imagem própria"
+                  title="Enviar imagem própria"
                 >
-                  <span className={styles.tagDot} style={{ background: t.color }} />
-                  {t.label}
+                  <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
                 </button>
-              ))}
+              </div>
+              <input
+                ref={coverUploadRef}
+                type="file"
+                accept="image/*"
+                className={styles.coverUploadInput}
+              />
             </div>
-          )}
-        </div>
+
+            <div className={styles.planPreviewMeta}>
+              <button
+                type="button"
+                className={styles.categoryToggle}
+                onClick={() => setShowCategories(v => !v)}
+                aria-expanded={showCategories}
+              >
+                <span className={styles.planPreviewLabel}>Categoria</span>
+                <span className={`${styles.categoryToggleIcon} ${showCategories ? styles.categoryToggleIconOpen : ''}`}>
+                  <ChevronIcon />
+                </span>
+              </button>
+              {showCategories && (
+                <div className={styles.tagGrid}>
+                  {PLAN_TAGS.map(t => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      className={`${styles.tagChip} ${selectedTag.label === t.label ? styles.tagChipActive : ''}`}
+                      style={selectedTag.label === t.label
+                        ? { background: t.color + '20', borderColor: t.color, color: t.color }
+                        : {}}
+                      onClick={() => setTag(t)}
+                    >
+                      <span className={styles.tagDot} style={{ background: t.color }} />
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         <div className={styles.mField}>
           <label className={styles.mLabel} htmlFor="plan-name">
@@ -297,6 +301,10 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit }) {
 
         {!name.trim() && (
           <p className={styles.formHint}>O título do plano é obrigatório</p>
+        )}
+
+        {isBackendDriven && (
+          <p className={styles.formHint}>Nesta integração, o backend salva apenas o nome e a descrição do plano.</p>
         )}
 
         <div className={styles.modalFooter}>
@@ -384,7 +392,7 @@ export default function Workspace() {
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [notification, setNotification] = useState(null)
   const notificationTimerRef = useRef(null)
-  const { plans, activePlan, createPlan, selectPlan, currentUser } = usePlans()
+  const { plans, activePlan, createPlan, selectPlan, currentUser, isBackendDriven } = usePlans()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
 
   const filtered = plans.filter(p =>
@@ -619,6 +627,7 @@ export default function Workspace() {
           anchorEl={newPlanAnchor}
           onClose={() => setNewPlanAnchor(null)}
           onSubmit={handleNewPlan}
+          isBackendDriven={isBackendDriven}
         />
       )}
 

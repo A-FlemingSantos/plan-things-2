@@ -164,6 +164,8 @@ function mapBoardComment(comment) {
   return {
     id: comment.id,
     author: comment.authorName,
+    authorId: null,
+    authorName: comment.authorName,
     text: comment.message,
     time: comment.createdAt?.text ?? 'Agora',
   }
@@ -333,6 +335,8 @@ export function buildLibraryTreeFromApi(items) {
       type: normalizedType,
       size: item.sizeBytes ?? 0,
       modified: item.updatedAt?.text ?? item.createdAt?.text ?? 'Agora',
+      modifiedAtIso: item.updatedAt?.iso ?? item.createdAt?.iso ?? null,
+      createdAtIso: item.createdAt?.iso ?? null,
       owner: 'me',
       deleted: Boolean(item.deleted),
       parentId: item.parentId ?? null,

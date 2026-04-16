@@ -19,6 +19,7 @@ export function useCalendarEvents({ search = '' } = {}) {
   const { accessToken, isAuthenticated, isDemoSession } = useAuth()
   const backendEnabled = isAuthenticated && !isDemoSession
   const [snapshot, setSnapshot] = useState(() => createInitialCalendarSnapshot())
+  const [loadError, setLoadError] = useState(null)
   const searchTerm = search.trim().toLowerCase()
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function useCalendarEvents({ search = '' } = {}) {
       if (!backendEnabled) {
         if (active) {
           setSnapshot(createInitialCalendarSnapshot())
+          setLoadError(null)
         }
         return
       }
@@ -39,8 +41,10 @@ export function useCalendarEvents({ search = '' } = {}) {
 
         if (!active) return
         setSnapshot(mapCalendarEventsToSnapshot(events))
+        setLoadError(null)
       } catch (error) {
-        console.error(error)
+        if (!active) return
+        setLoadError(error?.message ?? 'Não foi possível carregar os eventos do calendário.')
       }
     }
 
@@ -73,13 +77,79 @@ export function useCalendarEvents({ search = '' } = {}) {
 
     const nextSnapshot = mapCalendarEventsToSnapshot([...(snapshot.events.map((event) => event.raw).filter(Boolean)), createdEvent])
     setSnapshot(nextSnapshot)
+    setLoadError(null)
     return nextSnapshot.events.find((event) => event.id === createdEvent.id)
+  }
+
+  const updateEvent = async (eventId, data) => {
+    if (!backendEnabled) {
+      let updatedEvent = null
+
+      setSnapshot((current) => {
+        const nextEvents = current.events.map((event) => {
+          if (event.id !== eventId) return event
+          updatedEvent = {
+            ...event,
+            ...data,
+          }
+          return updatedEvent
+        })
+
+        return {
+          ...current,
+          events: nextEvents,
+        }
+      })
+
+      return updatedEvent
+    }
+
+    const updatedEvent = await apiRequest(`/api/calendar/events/${eventId}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: buildCalendarEventPayload(data),
+    })
+
+    const nextSnapshot = mapCalendarEventsToSnapshot(
+      snapshot.events
+        .map((event) => event.raw)
+        .filter(Boolean)
+        .map((event) => (event.id === eventId ? updatedEvent : event)),
+    )
+    setSnapshot(nextSnapshot)
+    setLoadError(null)
+    return nextSnapshot.events.find((event) => event.id === updatedEvent.id)
+  }
+
+  const deleteEvent = async (eventId) => {
+    if (!backendEnabled) {
+      setSnapshot((current) => ({
+        ...current,
+        events: current.events.filter((event) => event.id !== eventId),
+      }))
+      return true
+    }
+
+    await apiRequest(`/api/calendar/events/${eventId}`, {
+      method: 'DELETE',
+      token: accessToken,
+    })
+
+    setSnapshot((current) => ({
+      ...current,
+      events: current.events.filter((event) => event.id !== eventId),
+    }))
+    setLoadError(null)
+    return true
   }
 
   return {
     events: snapshot.events,
     calendarSources: snapshot.sources,
     filteredEvents,
+    loadError,
     createEvent,
+    updateEvent,
+    deleteEvent,
   }
 }

@@ -307,6 +307,17 @@
   white-space: nowrap;
 }
 
+.canvasAlert {
+  margin: 0 22px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid #f0d7a1;
+  background: #fff6e5;
+  color: #7c4a03;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* ════════════════════════════════════════
    FLOATING DROPDOWN TOOLBAR
 ════════════════════════════════════════ */
@@ -854,6 +865,9 @@
   .canvasHeader {
     padding: 16px 18px 14px;
   }
+  .canvasAlert {
+    margin: 0 18px;
+  }
   .toolbarWrap {
     top: 6px;
   }
@@ -868,6 +882,9 @@
   .sidebar { display: none; }
   .canvasHeader {
     padding: 14px 16px 12px;
+  }
+  .canvasAlert {
+    margin: 0 16px;
   }
   .canvasTitleRow {
     flex-wrap: wrap;
@@ -920,6 +937,10 @@
 @media (max-width: 560px) {
   .canvasHeader {
     padding: 12px 14px 10px;
+  }
+  .canvasAlert {
+    margin: 0 14px;
+    font-size: 12px;
   }
   .canvasTitle {
     font-size: 18px;

@@ -112,6 +112,8 @@ export default function CanvasPage() {
     connections,
     pan,
     zoom,
+    saveStatus,
+    saveMessage,
     setCards,
     setConnections,
     setPan,
@@ -123,6 +125,7 @@ export default function CanvasPage() {
     isBackendDriven,
     savePlanCanvas,
   })
+  const canvasMeta = `${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}${saveMessage ? ` · ${saveMessage}` : ''}`
 
   useEffect(() => {
     if (!activePlan?.id || !isBackendDriven) return
@@ -198,10 +201,22 @@ export default function CanvasPage() {
         <PlanPageHeader
           title={activePlan?.name ?? 'Canvas'}
           breadcrumbCurrent={activePlan?.name ?? 'Plano'}
-          meta={`${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}`}
+          meta={canvasMeta}
           tone="frosted"
           titleSize="large"
         />
+
+        {saveStatus === 'conflict' && (
+          <div className={styles.canvasAlert} role="status" aria-live="polite">
+            O canvas foi atualizado em outra sessão. Recarregue a página para continuar com a versão mais recente.
+          </div>
+        )}
+
+        {saveStatus === 'error' && (
+          <div className={styles.canvasAlert} role="status" aria-live="polite">
+            {saveMessage}
+          </div>
+        )}
 
         {/* Canvas */}
         <div

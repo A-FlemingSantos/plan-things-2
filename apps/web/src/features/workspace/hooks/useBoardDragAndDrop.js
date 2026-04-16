@@ -1,6 +1,13 @@
 import { useCallback, useState } from 'react'
 
-export function useBoardDragAndDrop({ activePlanId, columns = [], updateColumns, moveCard, isBackendDriven = false }) {
+export function useBoardDragAndDrop({
+  activePlanId,
+  columns = [],
+  updateColumns,
+  moveCard,
+  isBackendDriven = false,
+  onMoveError,
+}) {
   const [dragState, setDragState] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
 
@@ -18,12 +25,24 @@ export function useBoardDragAndDrop({ activePlanId, columns = [], updateColumns,
 
     if (isBackendDriven) {
       const destinationColumn = columns.find((column) => column.id === target.colId)
-      const targetPosition = target.type === 'card'
+      const sourceColumn = columns.find((column) => column.id === sourceColId)
+      const sourceIndex = sourceColumn?.cards.findIndex((card) => card.id === cardId) ?? -1
+      const destinationIndex = target.type === 'card'
         ? Math.max(0, destinationColumn?.cards.findIndex((card) => card.id === target.cardId) ?? 0)
         : (destinationColumn?.cards.length ?? 0)
-      await moveCard(cardId, target.colId, targetPosition)
-      setDragState(null)
-      setDropTarget(null)
+      const sameColumnDrop = sourceColId === target.colId
+      const targetPosition = sameColumnDrop && target.type === 'card' && sourceIndex > -1 && sourceIndex < destinationIndex
+        ? Math.max(0, destinationIndex - 1)
+        : destinationIndex
+
+      try {
+        await moveCard(cardId, target.colId, targetPosition)
+      } catch (error) {
+        onMoveError?.(error)
+      } finally {
+        setDragState(null)
+        setDropTarget(null)
+      }
       return
     }
 
@@ -68,7 +87,7 @@ export function useBoardDragAndDrop({ activePlanId, columns = [], updateColumns,
 
     setDragState(null)
     setDropTarget(null)
-  }, [activePlanId, columns, dragState, isBackendDriven, moveCard, updateColumns])
+  }, [activePlanId, columns, dragState, isBackendDriven, moveCard, onMoveError, updateColumns])
 
   const handleDragEnd = useCallback(() => {
     setDragState(null)

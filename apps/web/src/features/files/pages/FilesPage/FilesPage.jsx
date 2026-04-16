@@ -112,7 +112,7 @@ function formatOwner(owner) {
 /* ═══════════════════════════════════════════
    CONTEXT MENU
 ═══════════════════════════════════════════ */
-function ContextMenu({ x, y, item, onAction, onClose }) {
+function ContextMenu({ x, y, item, onAction, onClose, backendEnabled }) {
   const ref = useRef(null)
 
   useEffect(() => {
@@ -126,10 +126,12 @@ function ContextMenu({ x, y, item, onAction, onClose }) {
   const actions = item.type === 'folder'
     ? [
         { id: 'open',     label: 'Abrir',           Icon: Icon.Folder, shortcut: 'Enter' },
-        { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
-        { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
+        ...(!backendEnabled ? [
+          { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
+          { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
+        ] : []),
         null,
-        { id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' },
+        ...(!backendEnabled ? [{ id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' }] : []),
         { id: 'move',     label: 'Mover para',      Icon: Icon.Move },
         null,
         { id: 'delete',   label: 'Excluir',         Icon: Icon.Trash, danger: true, shortcut: 'Del' },
@@ -137,11 +139,13 @@ function ContextMenu({ x, y, item, onAction, onClose }) {
     : [
         { id: 'preview',  label: 'Prévia',          Icon: Icon.Eye, shortcut: 'Space' },
         { id: 'download', label: 'Baixar',          Icon: Icon.Download },
-        { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
-        { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
+        ...(!backendEnabled ? [
+          { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
+          { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
+        ] : []),
         null,
-        { id: 'star',     label: item.starred ? 'Remover estrela' : 'Favoritar', Icon: item.starred ? Icon.StarFill : Icon.Star },
-        { id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' },
+        ...(!backendEnabled ? [{ id: 'star',     label: item.starred ? 'Remover estrela' : 'Favoritar', Icon: item.starred ? Icon.StarFill : Icon.Star }] : []),
+        ...(!backendEnabled ? [{ id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' }] : []),
         { id: 'move',     label: 'Mover para',      Icon: Icon.Move },
         null,
         { id: 'delete',   label: 'Excluir',         Icon: Icon.Trash, danger: true, shortcut: 'Del' },
@@ -304,7 +308,7 @@ function FileRow({ item, selected, onSelect, onOpen, onContextMenu, onToggleStar
 /* ═══════════════════════════════════════════
    DETAIL PANEL
 ═══════════════════════════════════════════ */
-function DetailPanel({ item, onClose, onToggleStar, onAction }) {
+function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled }) {
   const typeInfo = FILE_TYPES[item.type] || FILE_TYPES.generic
   const FileIcon = typeInfo.icon
   const imgGrad = IMG_GRADIENTS[item.name]
@@ -312,8 +316,12 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
   const ownerLabel = item.owner === 'me' ? 'Arthur Santos' : item.owner
   const activityRows = [
     `${item.owner === 'me' ? 'Você' : item.owner} atualizou ${item.type === 'folder' ? 'esta pasta' : 'este arquivo'} ${item.modified.toLowerCase()}`,
-    item.shared ? 'Compartilhado com o workspace de produto' : 'Só você acessa este item',
-    item.starred ? 'Fixado nos favoritos' : 'Ainda sem estrela',
+    backendEnabled
+      ? 'Compartilhamento nesta tela será liberado por plano.'
+      : item.shared ? 'Compartilhado com o workspace de produto' : 'Só você acessa este item',
+    backendEnabled
+      ? 'Favoritos ainda não são persistidos nesta integração.'
+      : item.starred ? 'Fixado nos favoritos' : 'Ainda sem estrela',
   ]
 
   return (
@@ -343,16 +351,20 @@ function DetailPanel({ item, onClose, onToggleStar, onAction }) {
           <button className={styles.detailAction} onClick={() => onAction('download', item)}>
             <Icon.Download /> Baixar
           </button>
-          <button className={styles.detailAction} onClick={() => onAction('share', item)}>
-            <Icon.Share /> Compartilhar
-          </button>
-          <button
-            className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
-            onClick={() => onToggleStar(item.id)}
-          >
-            {item.starred ? <Icon.StarFill /> : <Icon.Star />}
-            {item.starred ? 'Favorito' : 'Favoritar'}
-          </button>
+          {!backendEnabled && (
+            <>
+              <button className={styles.detailAction} onClick={() => onAction('share', item)}>
+                <Icon.Share /> Compartilhar
+              </button>
+              <button
+                className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
+                onClick={() => onToggleStar(item.id)}
+              >
+                {item.starred ? <Icon.StarFill /> : <Icon.Star />}
+                {item.starred ? 'Favorito' : 'Favoritar'}
+              </button>
+            </>
+          )}
         </div>
 
         <div className={styles.detailTabs} aria-label="Seções do inspetor">
@@ -521,7 +533,11 @@ export default function FilesPage() {
 
     if (sidebarSection === 'starred') base = base.filter((item) => item.starred)
     if (sidebarSection === 'shared') base = base.filter((item) => item.shared)
-    if (sidebarSection === 'recent') base = base.slice(0, 6)
+    if (sidebarSection === 'recent') {
+      base = [...base]
+        .sort((a, b) => new Date(b.modifiedAtIso ?? 0).getTime() - new Date(a.modifiedAtIso ?? 0).getTime())
+        .slice(0, 6)
+    }
     if (sidebarSection === 'trash') base = flattenedItems.filter((item) => item.deleted)
 
     if (search) {
@@ -533,49 +549,63 @@ export default function FilesPage() {
       if (b.type === 'folder' && a.type !== 'folder') return 1
       if (sortBy === 'name') return a.name.localeCompare(b.name)
       if (sortBy === 'size') return b.size - a.size
-      return 0
+      return new Date(b.modifiedAtIso ?? 0).getTime() - new Date(a.modifiedAtIso ?? 0).getTime()
     })
   }, [currentPath, flattenedItems, search, sidebarSection, sortBy])
 
   const handleContextAction = useCallback(async (action, item) => {
     setContextMenu(null)
     if (action === 'star' || action === 'unstar') {
+      if (backendEnabled) {
+        showNotification('Favoritos ainda não são persistidos nesta integração.')
+        return
+      }
       setLibrary((prev) =>
         updateLibraryItem(prev, item.id, (current) => ({ ...current, starred: !current.starred })),
       )
     } else if (action === 'rename') {
+      if (backendEnabled) {
+        showNotification('Renomear ainda não está disponível nesta integração do backend.')
+        return
+      }
       setRenamingId(item.id)
     } else if (action === 'delete') {
-      if (backendEnabled) {
-        await apiRequest(`/api/files/${item.id}`, {
-          method: 'DELETE',
-          token: accessToken,
-        }).catch((error) => {
-          console.error(error)
-        })
-        await reloadLibrary(sidebarSection === 'trash')
-      } else {
-        setLibrary((prev) => updateLibraryItem(prev, item.id, markLibraryItemDeleted))
+      try {
+        if (backendEnabled) {
+          await apiRequest(`/api/files/${item.id}`, {
+            method: 'DELETE',
+            token: accessToken,
+          })
+          await reloadLibrary(sidebarSection === 'trash')
+        } else {
+          setLibrary((prev) => updateLibraryItem(prev, item.id, markLibraryItemDeleted))
+        }
+
+        if (detailItemId === item.id) setDetailItemId(null)
+        if (selected === item.id) setSelected(null)
+        showNotification(`"${item.name}" movido para a lixeira`)
+      } catch (error) {
+        showNotification(error?.message ?? `Não foi possível mover "${item.name}" para a lixeira`)
       }
-      if (detailItemId === item.id) setDetailItemId(null)
-      if (selected === item.id) setSelected(null)
-      showNotification(`"${item.name}" movido para a lixeira`)
     } else if (action === 'download') {
       if (backendEnabled && item.type !== 'folder') {
-        const blob = await apiRequest(`/api/files/${item.id}/download`, {
-          token: accessToken,
-          responseType: 'blob',
-        }).catch((error) => {
-          console.error(error)
-          return null
-        })
-
-        if (blob) {
+        try {
+          const blob = await apiRequest(`/api/files/${item.id}/download`, {
+            token: accessToken,
+            responseType: 'blob',
+          })
           triggerBlobDownload(blob, item.name)
+        } catch (error) {
+          showNotification(error?.message ?? `Não foi possível baixar "${item.name}"`)
+          return
         }
       }
       showNotification(`Baixando "${item.name}"...`)
     } else if (action === 'share') {
+      if (backendEnabled) {
+        showNotification('Compartilhamento será disponibilizado pelas telas de plano.')
+        return
+      }
       showNotification(`Link de "${item.name}" copiado`)
     } else if (action === 'copy') {
       showNotification('Link copiado')
@@ -612,6 +642,12 @@ export default function FilesPage() {
   }, [])
 
   const handleRename = (id, newName) => {
+    if (backendEnabled) {
+      setRenamingId(null)
+      showNotification('Renomear ainda não está disponível nesta integração do backend.')
+      return
+    }
+
     if (newName.trim()) {
       setLibrary((prev) =>
         updateLibraryItem(prev, id, (current) => ({ ...current, name: newName.trim() })),
@@ -621,6 +657,11 @@ export default function FilesPage() {
   }
 
   const toggleStar = (id) => {
+    if (backendEnabled) {
+      showNotification('Favoritos ainda não são persistidos nesta integração.')
+      return
+    }
+
     setLibrary((prev) =>
       updateLibraryItem(prev, id, (current) => ({ ...current, starred: !current.starred })),
     )
@@ -708,7 +749,6 @@ export default function FilesPage() {
 
         await reloadLibrary(sidebarSection === 'trash')
         setSidebarSection('my-files')
-        setTimeout(() => setRenamingId(createdFolder.id), 80)
         showNotification('Pasta criada')
       } catch (error) {
         console.error(error)
@@ -780,12 +820,12 @@ export default function FilesPage() {
         starred: {
           icon: Icon.StarMenu,
           title: 'Sem favoritos',
-          hint: 'Marque trabalhos importantes para achá-los rápido.',
+          hint: backendEnabled ? 'Favoritos ainda não são persistidos nesta integração.' : 'Marque trabalhos importantes para achá-los rápido.',
         },
         shared: {
           icon: Icon.Shared,
           title: 'Nada compartilhado',
-          hint: 'Docs da equipe e links de review aparecem aqui.',
+          hint: backendEnabled ? 'O compartilhamento ficará disponível pelas telas de plano.' : 'Docs da equipe e links de review aparecem aqui.',
         },
         trash: {
           icon: Icon.Trash2,
@@ -801,11 +841,11 @@ export default function FilesPage() {
       {!collapsed && (
         <div className={styles.filesNav}>
           <p className={styles.filesNavLabel}>Arquivos</p>
-          {[
+          {[ 
             { id: 'my-files', label: 'Meus arquivos', Ic: Icon.MyFiles },
             { id: 'recent',   label: 'Recentes',      Ic: Icon.Recent },
-            { id: 'starred',  label: 'Favoritos',     Ic: Icon.StarMenu },
-            { id: 'shared',   label: 'Compartilhados', Ic: Icon.Shared },
+            ...(!backendEnabled ? [{ id: 'starred',  label: 'Favoritos',     Ic: Icon.StarMenu }] : []),
+            ...(!backendEnabled ? [{ id: 'shared',   label: 'Compartilhados', Ic: Icon.Shared }] : []),
             { id: 'trash',    label: 'Lixeira',       Ic: Icon.Trash2 },
           ].map(({ id, label, Ic }) => (
             <button
@@ -898,7 +938,7 @@ export default function FilesPage() {
               <div className={styles.selectionToolbar}>
                 <span className={styles.selectionCount}>1 selecionado</span>
                 <button className={styles.selectionAction} onClick={() => handleContextAction('download', selectedItem)}><Icon.Download /> Baixar</button>
-                <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>
+                {!backendEnabled && <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>}
                 <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Mover</button>
                 <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Excluir</button>
                 <button className={styles.selectionClear} onClick={() => { setSelected(null); setDetailItemId(null) }}><Icon.X /></button>
@@ -1058,6 +1098,7 @@ export default function FilesPage() {
               onClose={() => { setDetailItemId(null); setSelected(null) }}
               onToggleStar={toggleStar}
               onAction={handleContextAction}
+              backendEnabled={backendEnabled}
             />
           )}
         </div>
@@ -1071,6 +1112,7 @@ export default function FilesPage() {
           item={contextMenu.item}
           onAction={handleContextAction}
           onClose={() => setContextMenu(null)}
+          backendEnabled={backendEnabled}
         />
       )}
 

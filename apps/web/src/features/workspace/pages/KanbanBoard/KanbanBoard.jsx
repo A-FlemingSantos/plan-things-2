@@ -133,7 +133,7 @@ const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
 ═══════════════════════════════════════════════════════════════ */
 export default function KanbanBoard() {
   const { planId } = useParams()
-  const { accessToken } = useAuth()
+  const { accessToken, currentUser } = useAuth()
   const { updatePlanBoard, isBackendDriven, loadPlanBoard, applyBoardView } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,
@@ -192,12 +192,23 @@ export default function KanbanBoard() {
     updateColumns,
     moveCard,
     isBackendDriven,
+    onMoveError: (error) => showNotification(error?.message ?? 'Não foi possível mover o cartão.'),
   })
 
   const addColumn = async () => {
     if (!(await createColumn(newColTitle))) return
     setNewColTitle('')
     setAddingCol(false)
+  }
+
+  const handleCardUpdate = async (updatedCard) => {
+    await updateCard(updatedCard)
+    setActiveCard(null)
+  }
+
+  const handleCardDelete = async (cardId) => {
+    await deleteCard(cardId)
+    setActiveCard(null)
   }
 
   useEffect(() => {
@@ -644,13 +655,15 @@ export default function KanbanBoard() {
           card={activeCard.card}
           colTitle={activeCard.colTitle}
           onClose={() => setActiveCard(null)}
-          onUpdate={updatedCard => { updateCard(updatedCard); setActiveCard(null) }}
-          onDelete={cardId => { deleteCard(cardId); setActiveCard(null) }}
+          onUpdate={handleCardUpdate}
+          onDelete={handleCardDelete}
           labels={planLabels}
           members={planMembers}
+          currentUser={currentUser}
           calendarDays={CALENDAR_DAYS}
           icons={Icon}
           styles={styles}
+          isBackendDriven={isBackendDriven}
         />
       )}
 

@@ -28,6 +28,8 @@ function normalizeComment(comment = {}) {
   return {
     id: comment.id ?? createClientId('comment'),
     author: comment.author ?? '',
+    authorId: comment.authorId ?? null,
+    authorName: comment.authorName ?? comment.author ?? '',
     text: comment.text ?? '',
     time: comment.time ?? '',
   }
