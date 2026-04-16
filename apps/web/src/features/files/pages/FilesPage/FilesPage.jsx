@@ -126,12 +126,10 @@ function ContextMenu({ x, y, item, onAction, onClose, backendEnabled }) {
   const actions = item.type === 'folder'
     ? [
         { id: 'open',     label: 'Abrir',           Icon: Icon.Folder, shortcut: 'Enter' },
-        ...(!backendEnabled ? [
-          { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
-          { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
-        ] : []),
+        { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
+        { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
         null,
-        ...(!backendEnabled ? [{ id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' }] : []),
+        { id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' },
         { id: 'move',     label: 'Mover para',      Icon: Icon.Move },
         null,
         { id: 'delete',   label: 'Excluir',         Icon: Icon.Trash, danger: true, shortcut: 'Del' },
@@ -139,13 +137,11 @@ function ContextMenu({ x, y, item, onAction, onClose, backendEnabled }) {
     : [
         { id: 'preview',  label: 'Prévia',          Icon: Icon.Eye, shortcut: 'Space' },
         { id: 'download', label: 'Baixar',          Icon: Icon.Download },
-        ...(!backendEnabled ? [
-          { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
-          { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
-        ] : []),
+        { id: 'share',    label: 'Compartilhar',    Icon: Icon.Share },
+        { id: 'copy',     label: 'Copiar link',     Icon: Icon.Link, shortcut: '⌘C' },
         null,
         { id: 'star',     label: item.starred ? 'Remover estrela' : 'Favoritar', Icon: item.starred ? Icon.StarFill : Icon.Star },
-        ...(!backendEnabled ? [{ id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' }] : []),
+        { id: 'rename',   label: 'Renomear',        Icon: Icon.Edit, shortcut: 'R' },
         { id: 'move',     label: 'Mover para',      Icon: Icon.Move },
         null,
         { id: 'delete',   label: 'Excluir',         Icon: Icon.Trash, danger: true, shortcut: 'Del' },
@@ -349,11 +345,9 @@ function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled }) 
           <button className={styles.detailAction} onClick={() => onAction('download', item)}>
             <Icon.Download /> Baixar
           </button>
-          {!backendEnabled && (
-            <button className={styles.detailAction} onClick={() => onAction('share', item)}>
-              <Icon.Share /> Compartilhar
-            </button>
-          )}
+          <button className={styles.detailAction} onClick={() => onAction('share', item)}>
+            <Icon.Share /> Compartilhar
+          </button>
           <button
             className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
             onClick={() => onToggleStar(item.id)}
@@ -892,7 +886,7 @@ export default function FilesPage() {
         shared: {
           icon: Icon.Shared,
           title: 'Nada compartilhado',
-          hint: backendEnabled ? 'O compartilhamento ficará disponível pelas telas de plano.' : 'Docs da equipe e links de review aparecem aqui.',
+          hint: 'Docs da equipe e links de review aparecem aqui.',
         },
         trash: {
           icon: Icon.Trash2,
@@ -915,7 +909,7 @@ export default function FilesPage() {
             { id: 'my-files', label: 'Meus arquivos', Ic: Icon.MyFiles },
             { id: 'recent',   label: 'Recentes',      Ic: Icon.Recent },
             { id: 'starred',  label: 'Favoritos',     Ic: Icon.StarMenu },
-            ...(!backendEnabled ? [{ id: 'shared',   label: 'Compartilhados', Ic: Icon.Shared }] : []),
+            { id: 'shared',   label: 'Compartilhados', Ic: Icon.Shared },
             { id: 'trash',    label: 'Lixeira',       Ic: Icon.Trash2 },
           ].map(({ id, label, Ic }) => (
             <button
@@ -1008,7 +1002,7 @@ export default function FilesPage() {
               <div className={styles.selectionToolbar}>
                 <span className={styles.selectionCount}>1 selecionado</span>
                 <button className={styles.selectionAction} onClick={() => handleContextAction('download', selectedItem)}><Icon.Download /> Baixar</button>
-                {!backendEnabled && <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>}
+                <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>
                 <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Mover</button>
                 <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Excluir</button>
                 <button className={styles.selectionClear} onClick={() => { setSelected(null); setDetailItemId(null) }}><Icon.X /></button>
