@@ -335,6 +335,8 @@ export default function KanbanBoard() {
       .slice(0, 4)
   }, [filteredEvents, today])
   const isBoardLoading = isBackendDriven && (isLoading || !activePlan || !activePlan.boardLoaded)
+  const boardHeaderTitle = isBoardLoading ? 'Carregando quadro' : (activePlan?.name ?? 'Plano')
+  const boardHeaderMeta = isBoardLoading ? 'Sincronizando quadro' : `${totalCards} cartões`
 
   useEffect(() => () => {
     if (notificationTimerRef.current) {
@@ -530,9 +532,9 @@ export default function KanbanBoard() {
       >
         <div className={styles.boardMain}>
         <PlanPageHeader
-          title={activePlan?.name ?? 'Plano'}
-          breadcrumbCurrent={activePlan?.name ?? 'Plano'}
-          meta={isBoardLoading ? 'Sincronizando quadro' : `${totalCards} cartões`}
+          title={boardHeaderTitle}
+          breadcrumbCurrent={boardHeaderTitle}
+          meta={boardHeaderMeta}
           icon={<Icon.Board />}
           sticky
           tone="solid"

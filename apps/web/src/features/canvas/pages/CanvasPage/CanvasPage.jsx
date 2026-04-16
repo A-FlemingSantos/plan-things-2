@@ -139,6 +139,7 @@ export default function CanvasPage() {
     savePlanCanvas,
   })
   const isCanvasLoading = isBackendDriven && (isLoading || !activePlan || !activePlan.canvasLoaded)
+  const canvasHeaderTitle = isCanvasLoading ? 'Carregando canvas' : (activePlan?.name ?? 'Canvas')
   const canvasMeta = isCanvasLoading
     ? 'Sincronizando canvas'
     : `${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}${saveMessage ? ` · ${saveMessage}` : ''}`
@@ -212,11 +213,11 @@ export default function CanvasPage() {
       HintIcon={Ic.Popover}
       secondaryContent={renderSidebarSecondaryContent}
       bottomContent={renderSidebarBottomContent}
-      contentClassName={styles.canvasWrapper}
+        contentClassName={styles.canvasWrapper}
     >
         <PlanPageHeader
-          title={activePlan?.name ?? 'Canvas'}
-          breadcrumbCurrent={activePlan?.name ?? 'Plano'}
+          title={canvasHeaderTitle}
+          breadcrumbCurrent={canvasHeaderTitle}
           meta={canvasMeta}
           tone="frosted"
           titleSize="large"

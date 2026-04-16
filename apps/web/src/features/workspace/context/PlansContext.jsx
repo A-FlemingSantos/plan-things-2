@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import {
@@ -24,27 +24,46 @@ function setPlanById(plans, planId, updater) {
 }
 
 export function PlansProvider({ children }) {
-  const { accessToken, isAuthenticated, isDemoSession, currentUser, workspace } = useAuth()
+  const { accessToken, isAuthenticated, isDemoSession, currentUser, workspace, isReady } = useAuth()
   const backendEnabled = isAuthenticated && !isDemoSession
-  const [plans, setPlans] = useState(() => (backendEnabled ? [] : INITIAL_PLANS))
-  const [activePlanId, setActivePlanId] = useState(() => (backendEnabled ? null : INITIAL_PLANS[0]?.id ?? null))
-  const [isLoading, setIsLoading] = useState(() => backendEnabled)
+  const [plans, setPlans] = useState([])
+  const [activePlanId, setActivePlanId] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
+  const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
+
+  useLayoutEffect(() => {
+    if (mode === 'boot') {
+      setPlans([])
+      setActivePlanId(null)
+      setIsLoading(true)
+      return
+    }
+
+    if (mode === 'demo') {
+      setPlans(INITIAL_PLANS)
+      setActivePlanId((current) => (
+        current && INITIAL_PLANS.some((plan) => plan.id === current)
+          ? current
+          : INITIAL_PLANS[0]?.id ?? null
+      ))
+      setIsLoading(false)
+      return
+    }
+
+    setPlans([])
+    setActivePlanId(null)
+    setIsLoading(true)
+  }, [mode])
 
   useEffect(() => {
     let active = true
 
     async function hydrateBackendPlans() {
-      if (!backendEnabled) {
-        if (!active) return
-        setPlans(INITIAL_PLANS)
-        setActivePlanId(INITIAL_PLANS[0]?.id ?? null)
-        setIsLoading(false)
+      if (mode !== 'backend') {
         return
       }
-
-      setIsLoading(true)
 
       try {
         const summaries = await apiRequest('/api/plans', {
@@ -77,7 +96,7 @@ export function PlansProvider({ children }) {
     return () => {
       active = false
     }
-  }, [accessToken, backendEnabled])
+  }, [accessToken, mode])
 
   const createPlan = useCallback(async (data) => {
     if (!backendEnabled) {
