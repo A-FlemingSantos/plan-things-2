@@ -295,16 +295,23 @@ export function mapCalendarEventsToSnapshot(events) {
       const startsAt = toDate(event.startsAt?.iso)
       const endsAt = toDate(event.endsAt?.iso)
       const source = mapBackendEventSource(event)
+      const cardKind = event.cardKind ?? null
+      const dateSourceIso =
+        event.generatedFromCard && cardKind === 'TAREFA'
+          ? event.endsAt?.iso ?? event.startsAt?.iso
+          : event.startsAt?.iso ?? event.endsAt?.iso
 
       return {
         id: event.id,
         title: event.title,
-        date: event.startsAt?.iso?.slice(0, 10),
+        description: event.description ?? '',
+        date: dateSourceIso?.slice(0, 10),
         start: startsAt ? formatTimeInputFromIso(event.startsAt?.iso) : '09:00',
         end: endsAt ? formatTimeInputFromIso(event.endsAt?.iso) : '10:00',
         calendar: event.generatedFromCard ? 'Plano vinculado' : 'Calendario interno',
         sourceId: source.id,
         color: source.color,
+        cardKind,
         location: event.location || (event.createdBy ? `Criado por ${event.createdBy}` : ''),
         raw: event,
       }

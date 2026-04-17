@@ -3,6 +3,7 @@ package com.planthings.api.calendar;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
 import com.planthings.api.board.BoardCardEntity;
+import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.error.ForbiddenException;
@@ -33,6 +34,7 @@ public class CalendarService {
   private final PlanMemberRepository planMemberRepository;
   private final PlanAccessService planAccessService;
   private final UserRepository userRepository;
+  private final BoardCardRepository boardCardRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
 
@@ -42,6 +44,7 @@ public class CalendarService {
       PlanMemberRepository planMemberRepository,
       PlanAccessService planAccessService,
       UserRepository userRepository,
+      BoardCardRepository boardCardRepository,
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper
   ) {
@@ -50,6 +53,7 @@ public class CalendarService {
     this.planMemberRepository = planMemberRepository;
     this.planAccessService = planAccessService;
     this.userRepository = userRepository;
+    this.boardCardRepository = boardCardRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
   }
@@ -196,11 +200,30 @@ public class CalendarService {
         event.getDescription(),
         event.getLocation(),
         event.getGeneratedFromCard(),
+        deriveLinkedCardKind(event),
         creator == null ? null : creator.getFullName(),
         brazilDateTimeMapper.toDateTime(event.getStartsAt()),
         brazilDateTimeMapper.toDateTime(event.getEndsAt()),
         brazilDateTimeMapper.toDateTime(event.getCreatedAt())
     );
+  }
+
+  private String deriveLinkedCardKind(CalendarEventEntity event) {
+    if (!Boolean.TRUE.equals(event.getGeneratedFromCard()) || event.getLinkedCardId() == null) {
+      return null;
+    }
+
+    return boardCardRepository.findById(event.getLinkedCardId())
+        .map(card -> {
+          if (card.getStartAt() != null && card.getDueAt() != null) {
+            return "EVENTO";
+          }
+          if (card.getDueAt() != null) {
+            return "TAREFA";
+          }
+          return "CARTAO";
+        })
+        .orElse(null);
   }
 
   private String requireTitle(String title) {
@@ -223,6 +246,7 @@ public class CalendarService {
       String description,
       String location,
       boolean generatedFromCard,
+      String cardKind,
       String createdBy,
       ApiDateTimeDto startsAt,
       ApiDateTimeDto endsAt,

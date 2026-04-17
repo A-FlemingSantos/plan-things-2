@@ -967,6 +967,12 @@
   font-size: 12px;
 }
 
+.rangeEventActions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
 .rangeEmpty {
   min-height: 76px;
   border: 1px dashed #dcdcdc;

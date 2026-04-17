@@ -154,6 +154,30 @@ function eventMeta(event) {
   return [event.location, event.calendar].filter(Boolean).join(' · ')
 }
 
+function isPlanLinkedCalendarItem(event) {
+  return event.raw?.generatedFromCard || event.sourceId === 'planos'
+}
+
+function isPlanTaskCalendarItem(event) {
+  return isPlanLinkedCalendarItem(event) && (event.cardKind === 'TAREFA' || event.raw?.cardKind === 'TAREFA')
+}
+
+function calendarItemPrimaryTime(event) {
+  return isPlanTaskCalendarItem(event) ? event.end : event.start
+}
+
+function calendarItemTimeRangeLabel(event) {
+  return isPlanTaskCalendarItem(event) ? event.end : `${event.start} - ${event.end}`
+}
+
+function sortCalendarItemsForDay(events) {
+  return [...events].sort((left, right) => {
+    const timeComparison = calendarItemPrimaryTime(left).localeCompare(calendarItemPrimaryTime(right))
+    if (timeComparison !== 0) return timeComparison
+    return left.title.localeCompare(right.title)
+  })
+}
+
 function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
   return (
     <div className={styles.miniCalendar}>
@@ -205,8 +229,9 @@ function EventDialog({ selectedDate, initialEvent = null, onClose, onCreate }) {
         date: initialEvent?.date ?? dateKey(selectedDate),
         start,
         end,
-        sourceId: 'arthur',
-        calendar: 'Arthur Fleming',
+        description: initialEvent?.description ?? initialEvent?.raw?.description ?? '',
+        sourceId: initialEvent?.sourceId ?? 'arthur',
+        calendar: initialEvent?.calendar ?? 'Arthur Fleming',
         location: initialEvent?.location || 'Plan Things',
       })
       onClose()
@@ -219,7 +244,13 @@ function EventDialog({ selectedDate, initialEvent = null, onClose, onCreate }) {
 
   return (
     <div className={styles.dialogBackdrop} role="presentation">
-      <form className={styles.eventDialog} onSubmit={submit} role="dialog" aria-modal="true" aria-label="Novo evento">
+      <form
+        className={styles.eventDialog}
+        onSubmit={submit}
+        role="dialog"
+        aria-modal="true"
+        aria-label={initialEvent ? 'Editar evento' : 'Novo evento'}
+      >
         <div className={styles.dialogHeader}>
           <h2>{initialEvent ? 'Editar evento' : 'Novo evento'}</h2>
           <button type="button" onClick={onClose} aria-label="Fechar"><Icon.X /></button>
@@ -261,33 +292,41 @@ function AgendaList({ date, events, onClose, onCreate, onEditEvent, onDeleteEven
         </button>
       </div>
       <div className={styles.agendaList}>
-        {events.length ? events.map((event) => (
-          <div key={event.id} className={styles.agendaItem} style={{ '--event-color': event.color }}>
-            <div className={styles.agendaTime}>{event.start}<span>{event.end}</span></div>
-            <div className={styles.agendaItemContent}>
-              <p>{event.title}</p>
-              {eventMeta(event) && <span>{eventMeta(event)}</span>}
-              <div className={styles.agendaItemActions}>
-                <button
-                  type="button"
-                  className={styles.agendaAction}
-                  onClick={() => onEditEvent(event)}
-                  disabled={event.raw?.generatedFromCard}
-                >
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.agendaAction} ${styles.agendaActionDanger}`}
-                  onClick={() => onDeleteEvent(event)}
-                  disabled={event.raw?.generatedFromCard}
-                >
-                  Excluir
-                </button>
+        {events.length ? events.map((event) => {
+          const linkedToPlan = isPlanLinkedCalendarItem(event)
+          const planTask = isPlanTaskCalendarItem(event)
+
+          return (
+            <div key={event.id} className={styles.agendaItem} style={{ '--event-color': event.color }}>
+              <div className={styles.agendaTime}>
+                {calendarItemPrimaryTime(event)}
+                {!planTask && <span>{event.end}</span>}
+              </div>
+              <div className={styles.agendaItemContent}>
+                <p>{event.title}</p>
+                {eventMeta(event) && <span>{eventMeta(event)}</span>}
+                {!linkedToPlan && (
+                  <div className={styles.agendaItemActions}>
+                    <button
+                      type="button"
+                      className={styles.agendaAction}
+                      onClick={() => onEditEvent(event)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.agendaAction} ${styles.agendaActionDanger}`}
+                      onClick={() => onDeleteEvent(event)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        )) : (
+          )
+        }) : (
           <div className={styles.agendaEmpty}>
             <Icon.Calendar />
             <p>Nenhum evento neste dia</p>
@@ -332,10 +371,12 @@ export default function CalendarPage() {
 
   const cells = useMemo(() => buildMonthCells(visibleMonth), [visibleMonth])
   const eventsByDate = useMemo(() => {
-    return filteredEvents.reduce((grouped, event) => {
-      grouped[event.date] = grouped[event.date] ? [...grouped[event.date], event] : [event]
-      return grouped
+    const grouped = filteredEvents.reduce((accumulator, event) => {
+      accumulator[event.date] = accumulator[event.date] ? [...accumulator[event.date], event] : [event]
+      return accumulator
     }, {})
+
+    return Object.fromEntries(Object.entries(grouped).map(([key, events]) => [key, sortCalendarItemsForDay(events)]))
   }, [filteredEvents])
   const selectedEvents = eventsByDate[dateKey(selectedDate)] ?? []
   const viewStatus = VIEW_OPTIONS.find((option) => option.id === view)?.status ?? 'Vista mensal'
@@ -470,7 +511,7 @@ export default function CalendarPage() {
             <span className={styles.eventStack}>
               {dayEvents.slice(0, 3).map((event) => (
                 <span key={event.id} className={styles.eventChip} style={{ '--event-color': event.color }}>
-                  <span>{event.start}</span>
+                  <span>{calendarItemTimeRangeLabel(event)}</span>
                   {event.title}
                 </span>
               ))}
@@ -499,9 +540,27 @@ export default function CalendarPage() {
             <div className={styles.rangeEventList}>
               {dayEvents.length ? dayEvents.map((event) => (
                 <div key={event.id} className={styles.rangeEvent} style={{ '--event-color': event.color }}>
-                  <span>{event.start} - {event.end}</span>
+                  <span>{calendarItemTimeRangeLabel(event)}</span>
                   <p>{event.title}</p>
                   {eventMeta(event) && <small>{eventMeta(event)}</small>}
+                  {!isPlanLinkedCalendarItem(event) && (
+                    <div className={styles.rangeEventActions}>
+                      <button
+                        type="button"
+                        className={styles.agendaAction}
+                        onClick={() => handleEditEvent(event)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.agendaAction} ${styles.agendaActionDanger}`}
+                        onClick={() => handleDeleteEvent(event)}
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  )}
                 </div>
               )) : (
                 <button type="button" className={styles.rangeEmpty} onClick={() => {

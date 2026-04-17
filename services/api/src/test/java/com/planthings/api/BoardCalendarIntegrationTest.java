@@ -46,7 +46,8 @@ class BoardCalendarIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data[0].title").value("Definir data do release"))
-        .andExpect(jsonPath("$.data[0].generatedFromCard").value(true));
+        .andExpect(jsonPath("$.data[0].generatedFromCard").value(true))
+        .andExpect(jsonPath("$.data[0].cardKind").value("TAREFA"));
 
     mockMvc.perform(patch("/api/plans/" + planId + "/board/cards/" + cardId)
             .header("Authorization", "Bearer " + token)
@@ -63,6 +64,13 @@ class BoardCalendarIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.kind").value("EVENTO"))
         .andExpect(jsonPath("$.data.startAt.text").value("20/04/2026 13:00"));
+
+    mockMvc.perform(get("/api/calendar/events")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].cardKind").value("EVENTO"))
+        .andExpect(jsonPath("$.data[0].startsAt.text").value("20/04/2026 13:00"))
+        .andExpect(jsonPath("$.data[0].endsAt.text").value("20/04/2026 14:00"));
 
     mockMvc.perform(delete("/api/plans/" + planId + "/board/cards/" + cardId)
             .header("Authorization", "Bearer " + token))

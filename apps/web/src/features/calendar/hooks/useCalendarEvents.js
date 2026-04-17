@@ -13,6 +13,40 @@ const EMPTY_CALENDAR_SNAPSHOT = {
   events: [],
 }
 
+async function enrichGeneratedCardKinds(events, accessToken) {
+  const pendingPlanIds = [
+    ...new Set(
+      events
+        .filter((event) => event.generatedFromCard && event.planId && event.linkedCardId && !event.cardKind)
+        .map((event) => event.planId),
+    ),
+  ]
+
+  if (!pendingPlanIds.length) {
+    return events
+  }
+
+  const boardViews = await Promise.all(
+    pendingPlanIds.map((planId) => apiRequest(`/api/plans/${planId}/board`, { token: accessToken })),
+  )
+
+  const cardKindsById = new Map(
+    boardViews
+      .flatMap((board) => board.columns ?? [])
+      .flatMap((column) => column.cards ?? [])
+      .map((card) => [card.id, card.kind]),
+  )
+
+  return events.map((event) => (
+    event.generatedFromCard && event.linkedCardId && !event.cardKind
+      ? {
+          ...event,
+          cardKind: cardKindsById.get(event.linkedCardId) ?? null,
+        }
+      : event
+  ))
+}
+
 function matchesSearch(event, term) {
   if (!term) return true
 
@@ -49,9 +83,10 @@ export function useCalendarEvents({ search = '' } = {}) {
         const events = await apiRequest('/api/calendar/events', {
           token: accessToken,
         })
+        const enrichedEvents = await enrichGeneratedCardKinds(events, accessToken)
 
         if (!active) return
-        setSnapshot(mapCalendarEventsToSnapshot(events))
+        setSnapshot(mapCalendarEventsToSnapshot(enrichedEvents))
         setLoadError(null)
       } catch (error) {
         if (!active) return
