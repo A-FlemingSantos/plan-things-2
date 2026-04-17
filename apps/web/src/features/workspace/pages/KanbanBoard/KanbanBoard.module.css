@@ -272,8 +272,8 @@
   overflow: hidden;
   position: relative;
   background:
-    linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,0)),
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,.22), transparent 30%),
+    linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,0)),
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.12), transparent 35%),
     var(--cover-bg, var(--cover-fallback, var(--color-gray-50)));
   background-position: 50% 50%, 20% 20%, 50% 50%;
   background-size: 210% 210%, 260% 260%, 210% 210%;
