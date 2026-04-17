@@ -90,7 +90,13 @@ public class PlanService {
   }
 
   @Transactional
-  public PlanDetails createPlan(String name, String description) {
+  public PlanDetails createPlan(
+      String name,
+      String description,
+      String coverThemeId,
+      String cover,
+      String coverImageId
+  ) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
 
@@ -99,6 +105,7 @@ public class PlanService {
     plan.setOwnerUserId(currentUser.getId());
     plan.setName(requireName(name));
     plan.setDescription(normalizeOptional(description));
+    applyCover(plan, coverThemeId, cover, coverImageId);
     planRepository.save(plan);
 
     PlanMemberEntity ownerMembership = new PlanMemberEntity();
@@ -114,11 +121,19 @@ public class PlanService {
   }
 
   @Transactional
-  public PlanDetails updatePlan(UUID planId, String name, String description) {
+  public PlanDetails updatePlan(
+      UUID planId,
+      String name,
+      String description,
+      String coverThemeId,
+      String cover,
+      String coverImageId
+  ) {
     UUID currentUserId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, currentUserId);
     plan.setName(requireName(name));
     plan.setDescription(normalizeOptional(description));
+    applyCover(plan, coverThemeId, cover, coverImageId);
     planRepository.save(plan);
     return toPlanDetails(plan, currentUserId);
   }
@@ -275,6 +290,9 @@ public class PlanService {
         plan.getId(),
         plan.getName(),
         plan.getDescription(),
+        plan.getCoverThemeId(),
+        plan.getCoverColor(),
+        plan.getCoverImageId(),
         role,
         memberCount,
         taskCount,
@@ -343,6 +361,49 @@ public class PlanService {
     return value == null || value.isBlank() ? null : value.trim();
   }
 
+  private void applyCover(PlanEntity plan, String coverThemeId, String cover, String coverImageId) {
+    String normalizedThemeId = normalizeOptional(coverThemeId);
+    String normalizedCover = normalizeOptional(cover);
+    String normalizedImageId = canonicalizeCoverImageId(normalizeOptional(coverImageId));
+
+    if (normalizedImageId != null) {
+      plan.setCoverImageId(normalizedImageId);
+      plan.setCoverThemeId(null);
+      plan.setCoverColor(null);
+      return;
+    }
+
+    if (normalizedThemeId != null) {
+      plan.setCoverThemeId(normalizedThemeId);
+      plan.setCoverColor(normalizedCover);
+      plan.setCoverImageId(null);
+      return;
+    }
+
+    plan.setCoverThemeId(null);
+    plan.setCoverColor(null);
+    plan.setCoverImageId(null);
+  }
+
+  private String canonicalizeCoverImageId(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+
+    String normalized = value.trim().replace("\\", "/");
+    if (normalized.startsWith("background-collections/")) {
+      return normalized;
+    }
+
+    String marker = "/background-collections/";
+    int index = normalized.indexOf(marker);
+    if (index >= 0) {
+      return "background-collections/" + normalized.substring(index + marker.length());
+    }
+
+    return normalized;
+  }
+
   private String normalizeEmail(String email) {
     String normalized = email == null ? "" : email.trim().toLowerCase();
     if (normalized.isBlank()) {
@@ -355,6 +416,9 @@ public class PlanService {
       UUID id,
       String name,
       String description,
+      String coverThemeId,
+      String cover,
+      String coverImageId,
       PlanMemberRole role,
       long memberCount,
       long taskCount,

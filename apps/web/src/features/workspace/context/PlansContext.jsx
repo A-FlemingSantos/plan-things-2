@@ -115,18 +115,15 @@ export function PlansProvider({ children }) {
       body: {
         name: data.name,
         description: data.description ?? '',
+        coverThemeId: data.coverThemeId ?? null,
+        cover: data.cover ?? null,
+        coverImageId: data.coverImageId ?? null,
       },
     })
 
     const basePlan = mapPlanSummaryToRecord(created.plan, plans.length)
     const hydratedPlan = mergePlanDetails(basePlan, created)
-    const nextPlan = data.coverThemeId
-      ? {
-          ...hydratedPlan,
-          cover: data.cover ?? hydratedPlan.cover,
-          coverThemeId: data.coverThemeId,
-        }
-      : hydratedPlan
+    const nextPlan = hydratedPlan
 
     setPlans((prev) => [nextPlan, ...prev])
     setActivePlanId(nextPlan.id)

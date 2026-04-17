@@ -22,6 +22,15 @@ public class PlanEntity extends BaseEntity {
   @Column(length = 400)
   private String description;
 
+  @Column(length = 60)
+  private String coverThemeId;
+
+  @Column(length = 20)
+  private String coverColor;
+
+  @Column(length = 255)
+  private String coverImageId;
+
   public UUID getWorkspaceId() {
     return workspaceId;
   }
@@ -52,5 +61,29 @@ public class PlanEntity extends BaseEntity {
 
   public void setDescription(String description) {
     this.description = description;
+  }
+
+  public String getCoverThemeId() {
+    return coverThemeId;
+  }
+
+  public void setCoverThemeId(String coverThemeId) {
+    this.coverThemeId = coverThemeId;
+  }
+
+  public String getCoverColor() {
+    return coverColor;
+  }
+
+  public void setCoverColor(String coverColor) {
+    this.coverColor = coverColor;
+  }
+
+  public String getCoverImageId() {
+    return coverImageId;
+  }
+
+  public void setCoverImageId(String coverImageId) {
+    this.coverImageId = coverImageId;
   }
 }

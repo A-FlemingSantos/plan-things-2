@@ -6,6 +6,36 @@ import { normalizeCanvasState, normalizePlanRecord } from './planContracts.js'
 
 const MEMBER_COLORS = ['#000000', '#4290da', '#0f703a', '#d4aef1', '#ff6766', '#f5a623']
 const PLAN_COVERS = ['#f4f0ff', '#f0fff5', '#fff9f0', '#fff0f0', '#f0f6ff', '#f5f5f5']
+const COVER_IMAGE_FILES = import.meta.glob('../assets/background-collections/**/*.{webp,png,jpg,jpeg,avif}', {
+  eager: true,
+  import: 'default',
+})
+const COVER_IMAGE_URL_BY_ID = Object.entries(COVER_IMAGE_FILES).reduce((acc, [path, url]) => {
+  const normalized = String(path).replace(/\\/g, '/')
+  const [, afterRoot = ''] = normalized.split('/background-collections/')
+  if (!afterRoot) return acc
+  acc[`background-collections/${afterRoot}`] = url
+  return acc
+}, {})
+
+function canonicalizeCoverImageId(value) {
+  if (!value) return null
+  const normalized = String(value).trim().replace(/\\/g, '/')
+  if (!normalized) return null
+  if (normalized.startsWith('background-collections/')) return normalized
+  const [, afterRoot = ''] = normalized.split('/background-collections/')
+  if (!afterRoot) return normalized
+  return `background-collections/${afterRoot}`
+}
+
+function resolveCoverImageUrl(coverImageId) {
+  const canonicalId = canonicalizeCoverImageId(coverImageId)
+  if (!canonicalId) return null
+  if (canonicalId.startsWith('background-collections/')) {
+    return COVER_IMAGE_URL_BY_ID[canonicalId] ?? null
+  }
+  return COVER_IMAGE_URL_BY_ID[`background-collections/${canonicalId}`] ?? COVER_IMAGE_URL_BY_ID[canonicalId] ?? null
+}
 
 function shortMonthLabel(date) {
   return new Intl.DateTimeFormat('pt-BR', {
@@ -106,6 +136,11 @@ function buildMemberDots(memberCount, offset = 0) {
 export function mapPlanSummaryToRecord(summary, index = 0) {
   const roleMeta = mapRoleToTag(summary.role)
   const date = toDate(summary.updatedAt?.iso ?? summary.createdAt?.iso)
+  const coverThemeId = summary.coverThemeId ?? null
+  const coverImageId = summary.coverImageId ?? null
+  const coverImage = resolveCoverImageUrl(coverImageId)
+  const coverColor = summary.cover ?? null
+  const cover = coverColor ?? PLAN_COVERS[index % PLAN_COVERS.length]
 
   return normalizePlanRecord({
     id: summary.id,
@@ -116,7 +151,10 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     members: buildMemberDots(summary.memberCount, index),
     date: date ? shortMonthLabel(date) : '',
     tasks: Number.isFinite(summary.taskCount) ? summary.taskCount : 0,
-    cover: PLAN_COVERS[index % PLAN_COVERS.length],
+    cover,
+    coverThemeId,
+    coverImageId: canonicalizeCoverImageId(coverImageId),
+    coverImage,
     boardColumns: [],
     canvasState: createEmptyCanvasState(),
     role: summary.role,
@@ -153,6 +191,10 @@ export function mergePlanDetails(plan, details) {
     role: details.plan.role,
     memberCount: details.plan.memberCount,
     tasks: Number.isFinite(details.plan.taskCount) ? details.plan.taskCount : plan.tasks,
+    coverThemeId: details.plan.coverThemeId ?? plan.coverThemeId ?? null,
+    coverImageId: canonicalizeCoverImageId(details.plan.coverImageId ?? plan.coverImageId),
+    coverImage: resolveCoverImageUrl(details.plan.coverImageId ?? plan.coverImageId) ?? plan.coverImage ?? null,
+    cover: details.plan.cover ?? plan.cover,
     createdAt: details.plan.createdAt,
     updatedAt: details.plan.updatedAt,
     members: membersMeta.map((member) => member.color),

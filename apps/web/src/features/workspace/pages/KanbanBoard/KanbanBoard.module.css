@@ -275,9 +275,13 @@
     linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,0)),
     radial-gradient(circle at 20% 20%, rgba(255,255,255,.22), transparent 30%),
     var(--cover-bg, var(--cover-fallback, var(--color-gray-50)));
-  background-position: 50% 50%;
-  background-size: 210% 210%;
+  background-position: 50% 50%, 20% 20%, 50% 50%;
+  background-size: 210% 210%, 260% 260%, 210% 210%;
   transition: border-radius 180ms ease, border-color 180ms ease;
+}
+
+.boardMainImageCover {
+  background-size: 210% 210%, 260% 260%, cover;
 }
 
 .boardWrapperPlannerMounted .boardMain {
@@ -481,14 +485,22 @@
 
 @media (min-width: 860px) {
   .boardMain {
-    background-size: 180% 180%;
+    background-size: 180% 180%, 220% 220%, 180% 180%;
+  }
+
+  .boardMainImageCover {
+    background-size: 180% 180%, 220% 220%, cover;
   }
 }
 
 @media (min-width: 1200px) {
   .boardMain {
-    background-size: 160% 160%;
-    background-position: 50% 40%;
+    background-size: 160% 160%, 200% 200%, 160% 160%;
+    background-position: 50% 50%, 20% 20%, 50% 40%;
+  }
+
+  .boardMainImageCover {
+    background-size: 160% 160%, 200% 200%, cover;
   }
 }
 

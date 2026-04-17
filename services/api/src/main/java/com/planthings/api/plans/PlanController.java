@@ -39,12 +39,25 @@ public class PlanController {
 
   @PostMapping
   public ApiEnvelope<PlanService.PlanDetails> createPlan(@Valid @RequestBody UpsertPlanRequest request) {
-    return ApiEnvelope.ok(planService.createPlan(request.name(), request.description()));
+    return ApiEnvelope.ok(planService.createPlan(
+        request.name(),
+        request.description(),
+        request.coverThemeId(),
+        request.cover(),
+        request.coverImageId()
+    ));
   }
 
   @PatchMapping("/{planId}")
   public ApiEnvelope<PlanService.PlanDetails> updatePlan(@PathVariable UUID planId, @Valid @RequestBody UpsertPlanRequest request) {
-    return ApiEnvelope.ok(planService.updatePlan(planId, request.name(), request.description()));
+    return ApiEnvelope.ok(planService.updatePlan(
+        planId,
+        request.name(),
+        request.description(),
+        request.coverThemeId(),
+        request.cover(),
+        request.coverImageId()
+    ));
   }
 
   @DeleteMapping("/{planId}")
@@ -89,7 +102,10 @@ public class PlanController {
 
   public record UpsertPlanRequest(
       @NotBlank(message = "O nome do plano e obrigatorio.") String name,
-      String description
+      String description,
+      String coverThemeId,
+      String cover,
+      String coverImageId
   ) {
   }
 

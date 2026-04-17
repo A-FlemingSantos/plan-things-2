@@ -73,6 +73,57 @@ function resolveCoverThemeClass(styles, coverThemeId) {
   return styles[key] ?? ''
 }
 
+function MoreIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="3" cy="7" r="1" fill="currentColor" />
+      <circle cx="7" cy="7" r="1" fill="currentColor" />
+      <circle cx="11" cy="7" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+function titleFromCollectionId(collectionId = '') {
+  return String(collectionId)
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (match) => match.toUpperCase())
+}
+
+function buildBackgroundCollectionsSnapshot() {
+  const files = import.meta.glob('../../../../shared/assets/background-collections/**/*.{webp,png,jpg,jpeg,avif}', {
+    eager: true,
+    import: 'default',
+  })
+
+  const items = Object.entries(files).map(([path, url]) => {
+    const normalized = String(path).replace(/\\/g, '/')
+    const [, afterRoot = ''] = normalized.split('/background-collections/')
+    const [collectionId = 'Coleção', fileName = ''] = afterRoot.split('/')
+    return {
+      id: `background-collections/${afterRoot}`,
+      url,
+      collectionId,
+      fileName,
+      label: fileName.replace(/\.[^.]+$/, ''),
+    }
+  })
+
+  const byCollection = items.reduce((acc, item) => {
+    acc[item.collectionId] = acc[item.collectionId] ? [...acc[item.collectionId], item] : [item]
+    return acc
+  }, {})
+
+  return Object.entries(byCollection)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([collectionId, collectionItems]) => ({
+      id: collectionId,
+      title: titleFromCollectionId(collectionId),
+      items: collectionItems.sort((a, b) => a.fileName.localeCompare(b.fileName)),
+    }))
+}
+
+const BACKGROUND_COLLECTIONS = buildBackgroundCollectionsSnapshot()
+
 /* ═══════════════════════════════════════════
    NEW PLAN POPOVER
 ═══════════════════════════════════════════ */
@@ -80,6 +131,8 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
   const [name, setName]       = useState('')
   const [selectedTag, setTag] = useState(PLAN_TAGS[0])
   const [selectedTheme, setSelectedTheme] = useState(null)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [showImageCollections, setShowImageCollections] = useState(false)
   const [showCategories, setShowCategories] = useState(false)
   const [position, setPosition] = useState({
     top: 24,
@@ -88,9 +141,11 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
     arrowTop: 24,
     arrowLeft: 28,
   })
+  const [collectionsPosition, setCollectionsPosition] = useState({ top: 24, left: 24 })
   const nameRef = useRef(null)
   const popoverRef = useRef(null)
   const coverUploadRef = useRef(null)
+  const imageCollectionsRef = useRef(null)
 
   useEffect(() => {
     nameRef.current?.focus()
@@ -102,6 +157,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
     const updatePosition = () => {
       const anchorRect = anchorEl.getBoundingClientRect()
       const popoverRect = popoverRef.current?.getBoundingClientRect()
+      const collectionsRect = imageCollectionsRef.current?.getBoundingClientRect()
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
       const gap = 14
@@ -144,18 +200,45 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
         arrowTop: clamp(anchorCenterY - top - 8, 16, Math.max(16, popoverHeight - 32)),
         arrowLeft: clamp(anchorCenterX - left - 8, 16, Math.max(16, popoverWidth - 32)),
       })
+
+      if (showImageCollections) {
+        const collectionsWidth = collectionsRect?.width ?? Math.min(420, viewportWidth - margin * 2)
+        const collectionsHeight = collectionsRect?.height ?? 420
+        const canOpenRight = left + popoverWidth + gap + collectionsWidth <= viewportWidth - margin
+        const canOpenLeft = left - gap - collectionsWidth >= margin
+        const collectionsLeft = canOpenRight
+          ? left + popoverWidth + gap
+          : canOpenLeft
+            ? left - collectionsWidth - gap
+            : viewportWidth - collectionsWidth - margin
+        let collectionsTop = top
+        if (collectionsTop + collectionsHeight > viewportHeight - margin) {
+          collectionsTop = viewportHeight - collectionsHeight - margin
+        }
+        if (collectionsTop < margin) collectionsTop = margin
+        setCollectionsPosition({
+          top: collectionsTop,
+          left: Math.max(margin, collectionsLeft),
+        })
+      }
     }
 
     updatePosition()
 
+    const handleCloseAll = () => {
+      setShowImageCollections(false)
+      onClose()
+    }
+
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') handleCloseAll()
     }
 
     const onPointerDown = (e) => {
       if (popoverRef.current?.contains(e.target)) return
+      if (imageCollectionsRef.current?.contains(e.target)) return
       if (anchorEl.contains(e.target)) return
-      onClose()
+      handleCloseAll()
     }
 
     window.addEventListener('resize', updatePosition)
@@ -169,7 +252,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
       document.removeEventListener('mousedown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [anchorEl, onClose])
+  }, [anchorEl, onClose, showImageCollections])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -192,39 +275,58 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
           cover: selectedTheme.cardCover,
           coverThemeId: selectedTheme.id,
         }
-      : payload)
+      : selectedImage
+        ? {
+            ...payload,
+            coverImage: selectedImage.url,
+            coverImageId: selectedImage.id,
+          }
+        : payload)
     onClose()
   }
 
-  return (
-    <div
-      ref={popoverRef}
-      className={`${styles.planPopover} ${position.placement === 'left' ? styles.planPopoverLeft : ''} ${position.placement === 'bottom' ? styles.planPopoverBottom : ''}`}
-      style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        '--plan-popover-arrow-top': `${position.arrowTop}px`,
-        '--plan-popover-arrow-left': `${position.arrowLeft}px`,
-      }}
-      role="dialog"
-      aria-modal="false"
-      aria-label="Criar novo plano"
-    >
-      <form className={styles.planPopoverForm} onSubmit={handleSubmit} noValidate>
-        <div className={styles.modalHead}>
-          <h2 className={styles.modalTitle}>Criar plano</h2>
-          <button type="button" className={styles.modalCloseBtn} onClick={onClose} aria-label="Fechar">
-            <XIcon />
-          </button>
-        </div>
+  const previewClassName = [
+    styles.planPreview,
+    selectedTheme ? resolveCoverThemeClass(styles, selectedTheme.id) : '',
+    selectedImage ? styles.planPreviewImage : '',
+  ].filter(Boolean).join(' ')
 
-        <div className={`${styles.planPreview} ${selectedTheme ? resolveCoverThemeClass(styles, selectedTheme.id) : ''}`}>
-          <div className={styles.planPreviewColumns}>
-            <span className={styles.planPreviewCol} />
-            <span className={styles.planPreviewCol} />
-            <span className={styles.planPreviewCol} />
+  const previewStyle = selectedImage
+    ? {
+        '--cover-bg': `url(${selectedImage.url})`,
+      }
+    : undefined
+
+  return (
+    <>
+      <div
+        ref={popoverRef}
+        className={`${styles.planPopover} ${position.placement === 'left' ? styles.planPopoverLeft : ''} ${position.placement === 'bottom' ? styles.planPopoverBottom : ''}`}
+        style={{
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+          '--plan-popover-arrow-top': `${position.arrowTop}px`,
+          '--plan-popover-arrow-left': `${position.arrowLeft}px`,
+        }}
+        role="dialog"
+        aria-modal="false"
+        aria-label="Criar novo plano"
+      >
+        <form className={styles.planPopoverForm} onSubmit={handleSubmit} noValidate>
+          <div className={styles.modalHead}>
+            <h2 className={styles.modalTitle}>Criar plano</h2>
+            <button type="button" className={styles.modalCloseBtn} onClick={() => { setShowImageCollections(false); onClose() }} aria-label="Fechar">
+              <XIcon />
+            </button>
           </div>
-        </div>
+
+          <div className={previewClassName} style={previewStyle}>
+            <div className={styles.planPreviewColumns}>
+              <span className={styles.planPreviewCol} />
+              <span className={styles.planPreviewCol} />
+              <span className={styles.planPreviewCol} />
+            </div>
+          </div>
 
         <>
           <div className={styles.coverPicker}>
@@ -235,7 +337,10 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
                   key={theme.id}
                   type="button"
                   className={`${styles.coverOption} ${selectedTheme?.id === theme.id ? styles.coverOptionActive : ''} ${resolveCoverThemeClass(styles, theme.id)}`}
-                  onClick={() => setSelectedTheme(theme)}
+                  onClick={() => {
+                    setSelectedTheme(theme)
+                    setSelectedImage(null)
+                  }}
                   aria-label={theme.label}
                   title={theme.label}
                 >
@@ -250,6 +355,16 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
                 title="Enviar imagem própria"
               >
                 <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.coverOption} ${styles.coverMoreOption} ${showImageCollections ? styles.coverOptionActive : ''}`}
+                onClick={() => setShowImageCollections((value) => !value)}
+                aria-label="Mais opções de tela de fundo"
+                title="Mais opções"
+                aria-expanded={showImageCollections}
+              >
+                <span className={styles.coverUploadIcon}><MoreIcon /></span>
               </button>
             </div>
             <input
@@ -318,13 +433,73 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
           <p className={styles.formHint}>Nesta integração, o backend salva apenas o nome e a descrição do plano.</p>
         )}
 
-        <div className={styles.modalFooter}>
-          <button type="submit" className={styles.mSubmitBtn} disabled={!name.trim()}>
-            Criar
-          </button>
+          <div className={styles.modalFooter}>
+            <button type="submit" className={styles.mSubmitBtn} disabled={!name.trim()}>
+              Criar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {showImageCollections && (
+        <div
+          ref={imageCollectionsRef}
+          className={styles.collectionsPopover}
+          style={{
+            top: `${collectionsPosition.top}px`,
+            left: `${collectionsPosition.left}px`,
+          }}
+          role="dialog"
+          aria-modal="false"
+          aria-label="Coleções de telas de fundo"
+        >
+          <div className={styles.collectionsHeader}>
+            <h3 className={styles.collectionsTitle}>Coleções</h3>
+            <button
+              type="button"
+              className={styles.collectionsClose}
+              onClick={() => setShowImageCollections(false)}
+              aria-label="Fechar coleções"
+            >
+              <XIcon />
+            </button>
+          </div>
+
+          <div className={styles.collectionsBody}>
+            {BACKGROUND_COLLECTIONS.map((collection) => (
+              <section key={collection.id} className={styles.collectionSection} aria-label={collection.title}>
+                <p className={styles.collectionTitle}>{collection.title}</p>
+                <div className={styles.collectionGrid}>
+                  {collection.items.map((item) => {
+                    const active = selectedImage?.id === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`${styles.collectionItem} ${active ? styles.collectionItemActive : ''}`}
+                        onClick={() => {
+                          setSelectedImage(item)
+                          setSelectedTheme(null)
+                          setShowImageCollections(false)
+                        }}
+                        title={item.label}
+                        aria-pressed={active}
+                      >
+                        <span
+                          className={styles.collectionThumb}
+                          style={{ backgroundImage: `url(${item.url})` }}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
         </div>
-      </form>
-    </div>
+      )}
+    </>
   )
 }
 
@@ -333,9 +508,20 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
 ═══════════════════════════════════════════ */
 function PlanCard({ plan, view, onOpen, isActive }) {
   const coverThemeClassName = resolveCoverThemeClass(styles, plan.coverThemeId)
-  const coverStyle = {
-    '--cover-fallback': plan.cover,
-  }
+  const isImageCover = Boolean(plan.coverImage)
+  const coverClassName = [
+    styles.planCover,
+    coverThemeClassName,
+    isImageCover ? styles.planCoverImage : '',
+  ].filter(Boolean).join(' ')
+  const coverStyle = isImageCover
+    ? {
+        '--cover-fallback': plan.cover,
+        '--cover-bg': `url(${plan.coverImage})`,
+      }
+    : {
+        '--cover-fallback': plan.cover,
+      }
 
   if (view === 'list') {
     return (
@@ -346,7 +532,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
       >
         <div className={styles.listCardLeft}>
           <div
-            className={`${styles.listCover} ${styles.planCover} ${coverThemeClassName}`}
+            className={`${styles.listCover} ${coverClassName}`}
             style={coverStyle}
             aria-hidden="true"
           />
@@ -377,7 +563,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
       onClick={onOpen}
     >
       <div
-        className={`${styles.planCardCover} ${styles.planCover} ${coverThemeClassName}`}
+        className={`${styles.planCardCover} ${coverClassName}`}
         style={coverStyle}
         aria-hidden="true"
       />
