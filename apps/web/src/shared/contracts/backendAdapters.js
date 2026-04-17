@@ -17,6 +17,17 @@ const COVER_IMAGE_URL_BY_ID = Object.entries(COVER_IMAGE_FILES).reduce((acc, [pa
   acc[`background-collections/${afterRoot}`] = url
   return acc
 }, {})
+const COVER_IMAGE_THUMB_FILES = import.meta.glob('../assets/background-collections-thumbs/**/*.{webp,png,jpg,jpeg,avif}', {
+  eager: true,
+  import: 'default',
+})
+const COVER_IMAGE_THUMB_URL_BY_ID = Object.entries(COVER_IMAGE_THUMB_FILES).reduce((acc, [path, url]) => {
+  const normalized = String(path).replace(/\\/g, '/')
+  const [, afterRoot = ''] = normalized.split('/background-collections-thumbs/')
+  if (!afterRoot) return acc
+  acc[`background-collections/${afterRoot}`] = url
+  return acc
+}, {})
 
 function canonicalizeCoverImageId(value) {
   if (!value) return null
@@ -35,6 +46,15 @@ function resolveCoverImageUrl(coverImageId) {
     return COVER_IMAGE_URL_BY_ID[canonicalId] ?? null
   }
   return COVER_IMAGE_URL_BY_ID[`background-collections/${canonicalId}`] ?? COVER_IMAGE_URL_BY_ID[canonicalId] ?? null
+}
+
+function resolveCoverImageThumbUrl(coverImageId) {
+  const canonicalId = canonicalizeCoverImageId(coverImageId)
+  if (!canonicalId) return null
+  if (canonicalId.startsWith('background-collections/')) {
+    return COVER_IMAGE_THUMB_URL_BY_ID[canonicalId] ?? null
+  }
+  return COVER_IMAGE_THUMB_URL_BY_ID[`background-collections/${canonicalId}`] ?? COVER_IMAGE_THUMB_URL_BY_ID[canonicalId] ?? null
 }
 
 function shortMonthLabel(date) {
@@ -139,6 +159,7 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
   const coverThemeId = summary.coverThemeId ?? null
   const coverImageId = summary.coverImageId ?? null
   const coverImage = resolveCoverImageUrl(coverImageId)
+  const coverImageThumb = resolveCoverImageThumbUrl(coverImageId)
   const coverColor = summary.cover ?? null
   const cover = coverColor ?? PLAN_COVERS[index % PLAN_COVERS.length]
 
@@ -155,6 +176,7 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     coverThemeId,
     coverImageId: canonicalizeCoverImageId(coverImageId),
     coverImage,
+    coverImageThumb,
     boardColumns: [],
     canvasState: createEmptyCanvasState(),
     role: summary.role,
@@ -194,6 +216,7 @@ export function mergePlanDetails(plan, details) {
     coverThemeId: details.plan.coverThemeId ?? plan.coverThemeId ?? null,
     coverImageId: canonicalizeCoverImageId(details.plan.coverImageId ?? plan.coverImageId),
     coverImage: resolveCoverImageUrl(details.plan.coverImageId ?? plan.coverImageId) ?? plan.coverImage ?? null,
+    coverImageThumb: resolveCoverImageThumbUrl(details.plan.coverImageId ?? plan.coverImageId) ?? plan.coverImageThumb ?? null,
     cover: details.plan.cover ?? plan.cover,
     createdAt: details.plan.createdAt,
     updatedAt: details.plan.updatedAt,

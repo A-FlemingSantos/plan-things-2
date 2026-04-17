@@ -90,18 +90,32 @@ function titleFromCollectionId(collectionId = '') {
 }
 
 function buildBackgroundCollectionsSnapshot() {
-  const files = import.meta.glob('../../../../shared/assets/background-collections/**/*.{webp,png,jpg,jpeg,avif}', {
+  const fullFiles = import.meta.glob('../../../../shared/assets/background-collections/**/*.{webp,png,jpg,jpeg,avif}', {
+    eager: true,
+    import: 'default',
+  })
+  const thumbFiles = import.meta.glob('../../../../shared/assets/background-collections-thumbs/**/*.{webp,png,jpg,jpeg,avif}', {
     eager: true,
     import: 'default',
   })
 
-  const items = Object.entries(files).map(([path, url]) => {
+  const fullUrlById = Object.entries(fullFiles).reduce((acc, [path, url]) => {
     const normalized = String(path).replace(/\\/g, '/')
     const [, afterRoot = ''] = normalized.split('/background-collections/')
+    if (!afterRoot) return acc
+    acc[`background-collections/${afterRoot}`] = url
+    return acc
+  }, {})
+
+  const items = Object.entries(thumbFiles).map(([path, url]) => {
+    const normalized = String(path).replace(/\\/g, '/')
+    const [, afterRoot = ''] = normalized.split('/background-collections-thumbs/')
     const [collectionId = 'Coleção', fileName = ''] = afterRoot.split('/')
+    const id = `background-collections/${afterRoot}`
     return {
-      id: `background-collections/${afterRoot}`,
+      id,
       url,
+      fullUrl: fullUrlById[id] ?? null,
       collectionId,
       fileName,
       label: fileName.replace(/\.[^.]+$/, ''),
@@ -278,8 +292,9 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
       : selectedImage
         ? {
             ...payload,
-            coverImage: selectedImage.url,
+            coverImage: selectedImage.fullUrl ?? selectedImage.url,
             coverImageId: selectedImage.id,
+            coverImageThumb: selectedImage.url,
           }
         : payload)
     onClose()
@@ -508,7 +523,8 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
 ═══════════════════════════════════════════ */
 function PlanCard({ plan, view, onOpen, isActive }) {
   const coverThemeClassName = resolveCoverThemeClass(styles, plan.coverThemeId)
-  const isImageCover = Boolean(plan.coverImage)
+  const coverImageUrl = plan.coverImageThumb ?? plan.coverImage ?? null
+  const isImageCover = Boolean(coverImageUrl)
   const coverClassName = [
     styles.planCover,
     coverThemeClassName,
@@ -517,7 +533,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
   const coverStyle = isImageCover
     ? {
         '--cover-fallback': plan.cover,
-        '--cover-bg': `url(${plan.coverImage})`,
+        '--cover-bg': `url(${coverImageUrl})`,
       }
     : {
         '--cover-fallback': plan.cover,
