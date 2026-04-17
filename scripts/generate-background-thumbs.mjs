@@ -41,7 +41,7 @@ async function listFilesRecursively(rootPath) {
 }
 
 function applyOutputFormat(pipeline, ext) {
-  if (ext === '.webp') return pipeline.webp({ quality: 62 })
+  if (ext === '.webp') return pipeline.webp({ quality: 30, effort: 4 })
   if (ext === '.avif') return pipeline.avif({ quality: 50 })
   if (ext === '.png') return pipeline.png({ compressionLevel: 9 })
   if (ext === '.jpg' || ext === '.jpeg') return pipeline.jpeg({ quality: 70, mozjpeg: true })
@@ -119,4 +119,3 @@ main().catch((error) => {
   console.error(error?.stack ?? String(error))
   process.exit(1)
 })
-
