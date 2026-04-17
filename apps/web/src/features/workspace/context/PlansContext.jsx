@@ -120,9 +120,17 @@ export function PlansProvider({ children }) {
 
     const basePlan = mapPlanSummaryToRecord(created.plan, plans.length)
     const hydratedPlan = mergePlanDetails(basePlan, created)
-    setPlans((prev) => [hydratedPlan, ...prev])
-    setActivePlanId(hydratedPlan.id)
-    return hydratedPlan
+    const nextPlan = data.coverThemeId
+      ? {
+          ...hydratedPlan,
+          cover: data.cover ?? hydratedPlan.cover,
+          coverThemeId: data.coverThemeId,
+        }
+      : hydratedPlan
+
+    setPlans((prev) => [nextPlan, ...prev])
+    setActivePlanId(nextPlan.id)
+    return nextPlan
   }, [accessToken, backendEnabled, plans.length])
 
   const selectPlan = useCallback((planId) => {

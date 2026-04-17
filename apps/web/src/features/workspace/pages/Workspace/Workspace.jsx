@@ -67,13 +67,19 @@ const COVER_THEMES = [
   { id: 'frost', label: 'Frost', cardCover: '#dde8f8' },
 ]
 
+function resolveCoverThemeClass(styles, coverThemeId) {
+  if (!coverThemeId) return ''
+  const key = `theme${coverThemeId}`
+  return styles[key] ?? ''
+}
+
 /* ═══════════════════════════════════════════
    NEW PLAN POPOVER
 ═══════════════════════════════════════════ */
 function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }) {
   const [name, setName]       = useState('')
   const [selectedTag, setTag] = useState(PLAN_TAGS[0])
-  const [selectedTheme, setSelectedTheme] = useState(COVER_THEMES[0])
+  const [selectedTheme, setSelectedTheme] = useState(null)
   const [showCategories, setShowCategories] = useState(false)
   const [position, setPosition] = useState({
     top: 24,
@@ -170,16 +176,23 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
     if (!name.trim()) return
     const today = new Date()
     const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
-    onSubmit({
+    const payload = {
       name: name.trim(),
       description: '',
       tag: selectedTag.label,
       tagColor: selectedTag.color,
-      cover: selectedTheme.cardCover,
       date: `${today.getDate()} ${months[today.getMonth()]}`,
       tasks: 0,
       members: ['#000'],
-    })
+    }
+
+    onSubmit(selectedTheme
+      ? {
+          ...payload,
+          cover: selectedTheme.cardCover,
+          coverThemeId: selectedTheme.id,
+        }
+      : payload)
     onClose()
   }
 
@@ -205,7 +218,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
           </button>
         </div>
 
-        <div className={`${styles.planPreview} ${styles[`theme${selectedTheme.id}`]}`}>
+        <div className={`${styles.planPreview} ${selectedTheme ? resolveCoverThemeClass(styles, selectedTheme.id) : ''}`}>
           <div className={styles.planPreviewColumns}>
             <span className={styles.planPreviewCol} />
             <span className={styles.planPreviewCol} />
@@ -213,74 +226,72 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
           </div>
         </div>
 
-        {!isBackendDriven && (
-          <>
-            <div className={styles.coverPicker}>
-              <span className={styles.planPreviewLabel}>Tela de fundo</span>
-              <div className={styles.coverGrid}>
-                {COVER_THEMES.map(theme => (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    className={`${styles.coverOption} ${selectedTheme.id === theme.id ? styles.coverOptionActive : ''} ${styles[`theme${theme.id}`]}`}
-                    onClick={() => setSelectedTheme(theme)}
-                    aria-label={theme.label}
-                    title={theme.label}
-                  >
-                    <span className={styles.coverOptionShade} />
-                  </button>
-                ))}
+        <>
+          <div className={styles.coverPicker}>
+            <span className={styles.planPreviewLabel}>Tela de fundo</span>
+            <div className={styles.coverGrid}>
+              {COVER_THEMES.map(theme => (
                 <button
+                  key={theme.id}
                   type="button"
-                  className={`${styles.coverOption} ${styles.coverUploadOption}`}
-                  onClick={() => coverUploadRef.current?.click()}
-                  aria-label="Enviar imagem própria"
-                  title="Enviar imagem própria"
+                  className={`${styles.coverOption} ${selectedTheme?.id === theme.id ? styles.coverOptionActive : ''} ${resolveCoverThemeClass(styles, theme.id)}`}
+                  onClick={() => setSelectedTheme(theme)}
+                  aria-label={theme.label}
+                  title={theme.label}
                 >
-                  <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
+                  <span className={styles.coverOptionShade} />
                 </button>
-              </div>
-              <input
-                ref={coverUploadRef}
-                type="file"
-                accept="image/*"
-                className={styles.coverUploadInput}
-              />
-            </div>
-
-            <div className={styles.planPreviewMeta}>
+              ))}
               <button
                 type="button"
-                className={styles.categoryToggle}
-                onClick={() => setShowCategories(v => !v)}
-                aria-expanded={showCategories}
+                className={`${styles.coverOption} ${styles.coverUploadOption}`}
+                onClick={() => coverUploadRef.current?.click()}
+                aria-label="Enviar imagem própria"
+                title="Enviar imagem própria"
               >
-                <span className={styles.planPreviewLabel}>Categoria</span>
-                <span className={`${styles.categoryToggleIcon} ${showCategories ? styles.categoryToggleIconOpen : ''}`}>
-                  <ChevronIcon />
-                </span>
+                <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
               </button>
-              {showCategories && (
-                <div className={styles.tagGrid}>
-                  {PLAN_TAGS.map(t => (
-                    <button
-                      key={t.label}
-                      type="button"
-                      className={`${styles.tagChip} ${selectedTag.label === t.label ? styles.tagChipActive : ''}`}
-                      style={selectedTag.label === t.label
-                        ? { background: t.color + '20', borderColor: t.color, color: t.color }
-                        : {}}
-                      onClick={() => setTag(t)}
-                    >
-                      <span className={styles.tagDot} style={{ background: t.color }} />
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          </>
-        )}
+            <input
+              ref={coverUploadRef}
+              type="file"
+              accept="image/*"
+              className={styles.coverUploadInput}
+            />
+          </div>
+
+          <div className={styles.planPreviewMeta}>
+            <button
+              type="button"
+              className={styles.categoryToggle}
+              onClick={() => setShowCategories(v => !v)}
+              aria-expanded={showCategories}
+            >
+              <span className={styles.planPreviewLabel}>Categoria</span>
+              <span className={`${styles.categoryToggleIcon} ${showCategories ? styles.categoryToggleIconOpen : ''}`}>
+                <ChevronIcon />
+              </span>
+            </button>
+            {showCategories && (
+              <div className={styles.tagGrid}>
+                {PLAN_TAGS.map(t => (
+                  <button
+                    key={t.label}
+                    type="button"
+                    className={`${styles.tagChip} ${selectedTag.label === t.label ? styles.tagChipActive : ''}`}
+                    style={selectedTag.label === t.label
+                      ? { background: t.color + '20', borderColor: t.color, color: t.color }
+                      : {}}
+                    onClick={() => setTag(t)}
+                  >
+                    <span className={styles.tagDot} style={{ background: t.color }} />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
 
         <div className={styles.mField}>
           <label className={styles.mLabel} htmlFor="plan-name">
@@ -321,6 +332,11 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
    PLAN CARD
 ═══════════════════════════════════════════ */
 function PlanCard({ plan, view, onOpen, isActive }) {
+  const coverThemeClassName = resolveCoverThemeClass(styles, plan.coverThemeId)
+  const coverStyle = {
+    '--cover-fallback': plan.cover,
+  }
+
   if (view === 'list') {
     return (
       <button
@@ -329,7 +345,11 @@ function PlanCard({ plan, view, onOpen, isActive }) {
         onClick={onOpen}
       >
         <div className={styles.listCardLeft}>
-          <div className={styles.listCover} style={{ background: plan.cover }} />
+          <div
+            className={`${styles.listCover} ${styles.planCover} ${coverThemeClassName}`}
+            style={coverStyle}
+            aria-hidden="true"
+          />
           <div className={styles.listInfo}>
             <p className={styles.listName}>{plan.name}</p>
             {plan.description && <p className={styles.listDesc}>{plan.description}</p>}
@@ -356,6 +376,11 @@ function PlanCard({ plan, view, onOpen, isActive }) {
       className={`${styles.planCard} ${isActive ? styles.planCardActive : ''}`}
       onClick={onOpen}
     >
+      <div
+        className={`${styles.planCardCover} ${styles.planCover} ${coverThemeClassName}`}
+        style={coverStyle}
+        aria-hidden="true"
+      />
       <div className={styles.cardBody}>
         <div className={styles.cardTop}>
           <div className={styles.cardTopMeta}>

@@ -1077,6 +1077,20 @@
   font-family: var(--font-family);
 }
 
+.planCover {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,0)),
+    radial-gradient(circle at 20% 25%, rgba(255,255,255,.22), transparent 30%),
+    var(--cover-bg, var(--cover-fallback, #f5f5f5));
+  background-position: 50% 50%;
+  background-size: 160% 160%;
+}
+
+.planCardCover {
+  height: clamp(56px, 9vw, 74px);
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
 .planCard:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--color-gray-300);

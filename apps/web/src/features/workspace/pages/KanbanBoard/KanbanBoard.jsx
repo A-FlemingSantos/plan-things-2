@@ -369,6 +369,10 @@ export default function KanbanBoard() {
     : hasNoPlan
       ? 'Crie um plano para usar o quadro'
       : `${totalCards} cartões`
+  const coverThemeClassName = activePlan?.coverThemeId ? (styles[`theme${activePlan.coverThemeId}`] ?? '') : ''
+  const boardCoverStyle = activePlan?.coverThemeId
+    ? { '--cover-fallback': activePlan.cover }
+    : undefined
 
   useEffect(() => () => {
     if (notificationTimerRef.current) {
@@ -562,7 +566,7 @@ export default function KanbanBoard() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
       >
-        <div className={styles.boardMain}>
+        <div className={`${styles.boardMain} ${coverThemeClassName}`} style={boardCoverStyle}>
         <PlanPageHeader
           title={boardHeaderTitle}
           breadcrumbCurrent={boardHeaderTitle}

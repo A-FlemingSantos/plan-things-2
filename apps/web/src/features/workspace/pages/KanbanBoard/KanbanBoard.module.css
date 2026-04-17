@@ -271,7 +271,12 @@
   min-width: 0;
   overflow: hidden;
   position: relative;
-  background: var(--color-gray-50);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,0)),
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.22), transparent 30%),
+    var(--cover-bg, var(--cover-fallback, var(--color-gray-50)));
+  background-position: 50% 50%;
+  background-size: 210% 210%;
   transition: border-radius 180ms ease, border-color 180ms ease;
 }
 
@@ -439,8 +444,52 @@
   overflow-x: auto;
   flex: 1;
   align-items: flex-start;
-  background: var(--color-gray-50);
+  background: transparent;
   min-height: 0;
+}
+
+/* ── Plan covers (shared theme gradients) ── */
+.themeatelier {
+  --cover-bg:
+    linear-gradient(135deg, #877153 0%, #c0b08e 24%, #4b4f4d 58%, #121312 100%);
+}
+
+.themeneon {
+  --cover-bg:
+    linear-gradient(135deg, #120f2f 0%, #7b2cbf 28%, #ff4fa3 56%, #1bc7ff 100%);
+}
+
+.thememidnight {
+  --cover-bg:
+    linear-gradient(135deg, #06111f 0%, #12263f 36%, #284b74 68%, #7bb2d9 100%);
+}
+
+.themeember {
+  --cover-bg:
+    linear-gradient(135deg, #170f15 0%, #61304c 34%, #b34e6a 66%, #f49a61 100%);
+}
+
+.themehorizon {
+  --cover-bg:
+    linear-gradient(135deg, #231942 0%, #5e548e 32%, #9f86c0 64%, #e0b1cb 100%);
+}
+
+.themefrost {
+  --cover-bg:
+    linear-gradient(135deg, #dfe9f3 0%, #bdd4ea 28%, #5ba7d1 60%, #2356a8 100%);
+}
+
+@media (min-width: 860px) {
+  .boardMain {
+    background-size: 180% 180%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .boardMain {
+    background-size: 160% 160%;
+    background-position: 50% 40%;
+  }
 }
 
 .board::-webkit-scrollbar { height: 6px; }
