@@ -6,11 +6,23 @@
     "apps/*",
     "services/*"
   ],
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "sharp": "^0.34.3"
+  },
   "scripts": {
+    "prepare": "husky install",
     "dev": "npm --workspace apps/web run dev",
     "build": "npm --workspace apps/web run build",
     "preview": "npm --workspace apps/web run preview",
     "test": "npm --workspace apps/web run test",
-    "test:run": "npm --workspace apps/web run test:run"
+    "test:run": "npm --workspace apps/web run test:run",
+    "thumbs": "node scripts/generate-background-thumbs.mjs --all"
+  },
+  "lint-staged": {
+    "apps/web/src/shared/assets/background-collections/**/*.{webp,png,jpg,jpeg,avif}": [
+      "node scripts/generate-background-thumbs.mjs"
+    ]
   }
 }
