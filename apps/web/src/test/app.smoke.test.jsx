@@ -227,6 +227,19 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
   })
 
+  it('opens the settings page from the shared sidebar account menu', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/files')
+
+    await user.click(await screen.findByRole('button', { name: /arthur santos/i }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Configurações' }))
+
+    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/settings')
+    expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
+  })
+
   it('navigates into folders in files without breaking the breadcrumb', async () => {
     const user = userEvent.setup()
 
@@ -253,7 +266,8 @@ describe('App smoke flows', () => {
     await user.click(screen.getByRole('button', { name: 'Criar' }))
 
     expect(await screen.findAllByText('Plano Frontend QA')).not.toHaveLength(0)
-    expect(screen.getByText('Atual')).toBeInTheDocument()
+    expect(screen.getByText('Plano atual')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Plano Frontend QA' })).not.toHaveLength(0)
   })
 
   it('keeps the sidebar collapsed state across product screens', async () => {

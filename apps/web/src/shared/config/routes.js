@@ -7,6 +7,7 @@ export const ROUTES = {
   canvas: '/canvas',
   calendar: '/calendar',
   files: '/files',
+  settings: '/settings',
   forgot: '/forgot',
   reset: '/reset',
   help: '/help',

@@ -8,6 +8,7 @@ import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
 import { INFO_PAGES } from './features/info/data/infoPages.js'
 import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
+import SettingsPage from './features/settings/pages/SettingsPage/SettingsPage.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import {
@@ -65,6 +66,7 @@ export default function App() {
       <Route path={`${ROUTES.canvas}/:planId`} element={<CanvasPage />} />
       <Route path={ROUTES.calendar} element={<CalendarPage />} />
       <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
+      <Route path={ROUTES.settings} element={<SettingsPage />} />
 
       {Object.entries(INFO_PAGES).map(([path, page]) => (
         <Route key={path} path={path} element={<InfoPage {...page} />} />
