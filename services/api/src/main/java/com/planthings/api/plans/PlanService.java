@@ -5,6 +5,7 @@ import com.planthings.api.auth.UserRepository;
 import com.planthings.api.board.BoardColumnEntity;
 import com.planthings.api.board.BoardColumnRepository;
 import com.planthings.api.board.BoardCardRepository;
+import com.planthings.api.calendar.CalendarEventRepository;
 import com.planthings.api.canvas.CanvasDocumentEntity;
 import com.planthings.api.canvas.CanvasDocumentRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
@@ -37,6 +38,7 @@ public class PlanService {
   private final BoardColumnRepository boardColumnRepository;
   private final BoardCardRepository boardCardRepository;
   private final CanvasDocumentRepository canvasDocumentRepository;
+  private final CalendarEventRepository calendarEventRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
@@ -52,6 +54,7 @@ public class PlanService {
       BoardColumnRepository boardColumnRepository,
       BoardCardRepository boardCardRepository,
       CanvasDocumentRepository canvasDocumentRepository,
+      CalendarEventRepository calendarEventRepository,
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
       BrazilDateTimeMapper brazilDateTimeMapper,
@@ -66,6 +69,7 @@ public class PlanService {
     this.boardColumnRepository = boardColumnRepository;
     this.boardCardRepository = boardCardRepository;
     this.canvasDocumentRepository = canvasDocumentRepository;
+    this.calendarEventRepository = calendarEventRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
@@ -142,6 +146,7 @@ public class PlanService {
   public MessageResponse deletePlan(UUID planId) {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanManager(planId, currentUserId);
+    calendarEventRepository.deleteForPlan(planId);
     planRepository.deleteById(planId);
     return new MessageResponse("Plano excluido com sucesso.");
   }
