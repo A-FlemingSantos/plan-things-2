@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { apiRequest } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
@@ -56,19 +57,84 @@ const SECTIONS = [
   { id: 'security',      label: 'Privacidade e segurança',  Icon: Ic.Shield   },
 ]
 
+const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
+const DEFAULT_LOCAL_SETTINGS = {
+  homePage: 'workspace',
+  openLastCtx: true,
+  collapsedByDefault: false,
+}
+const DEFAULT_BACKEND_PREFERENCES = {
+  language: 'pt-BR',
+  timezone: 'America/Sao_Paulo',
+  dateFormat: 'dd/MM/yyyy',
+  timeFormat: '24h',
+}
+const DEFAULT_NOTIFICATIONS = {
+  emailNotifs: true,
+  eventReminders: true,
+  deadlineAlerts: true,
+}
+
+function normalizeSaveState(state) {
+  return state === 'saving' || state === 'saved' || state === 'error' ? state : 'idle'
+}
+
+function getLocalSettingsStorageKey(userId) {
+  if (!userId) return null
+  return `${LOCAL_SETTINGS_STORAGE_PREFIX}${userId}`
+}
+
+function readLocalSettings(userId) {
+  if (!userId || typeof window === 'undefined') return null
+  const key = getLocalSettingsStorageKey(userId)
+  if (!key) return null
+
+  try {
+    const raw = window.localStorage.getItem(key)
+    const parsed = raw ? JSON.parse(raw) : null
+    if (!parsed || typeof parsed !== 'object') return null
+    return {
+      homePage: parsed.homePage ?? DEFAULT_LOCAL_SETTINGS.homePage,
+      openLastCtx: parsed.openLastCtx ?? DEFAULT_LOCAL_SETTINGS.openLastCtx,
+      collapsedByDefault: parsed.collapsedByDefault ?? DEFAULT_LOCAL_SETTINGS.collapsedByDefault,
+    }
+  } catch {
+    return null
+  }
+}
+
+function writeLocalSettings(userId, settings) {
+  if (!userId || typeof window === 'undefined') return
+  const key = getLocalSettingsStorageKey(userId)
+  if (!key) return
+
+  const nextSettings = {
+    homePage: settings.homePage,
+    openLastCtx: settings.openLastCtx,
+    collapsedByDefault: settings.collapsedByDefault,
+  }
+
+  window.localStorage.setItem(key, JSON.stringify(nextSettings))
+}
+
 /* ═══════════════════════════════════════════
    REUSABLE UI PRIMITIVES
 ═══════════════════════════════════════════ */
 
-function Toggle({ checked, onChange, id }) {
+function Toggle({ checked, onChange, id, disabled = false }) {
   return (
     <button
       type="button"
       role="switch"
       id={id}
       aria-checked={checked}
-      className={`${styles.toggle} ${checked ? styles.toggleOn : ''}`}
-      onClick={() => onChange(!checked)}
+      className={`${styles.toggle} ${checked ? styles.toggleOn : ''} ${disabled ? styles.toggleDisabled : ''}`}
+      onClick={() => {
+        if (!disabled) {
+          onChange(!checked)
+        }
+      }}
+      disabled={disabled}
     />
   )
 }
@@ -104,13 +170,31 @@ function SaveButton({ saved, onClick, label = 'Salvar alterações', savedLabel 
   )
 }
 
+function AutoSaveStatus({ state = 'idle', errorMessage = '' }) {
+  if (state === 'saving') {
+    return <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusSaving}`}>Salvando...</p>
+  }
+  if (state === 'saved') {
+    return <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusSaved}`}>Salvo automaticamente</p>
+  }
+  if (state === 'error') {
+    return (
+      <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusError}`}>
+        {errorMessage || 'Nao foi possivel salvar automaticamente.'}
+      </p>
+    )
+  }
+  return null
+}
+
 /* ═══════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════ */
 
 export default function SettingsPage() {
-  const { currentUser, workspace } = useAuth()
+  const { currentUser, workspace, accessToken, isAuthenticated, isDemoSession, patchSession } = useAuth()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const backendEnabled = isAuthenticated && !isDemoSession
 
   const [activeSection, setActiveSection] = useState('account')
 
@@ -122,7 +206,10 @@ export default function SettingsPage() {
   const [confirmPass, setConfirmPass] = useState('')
   const [showCurPass, setShowCurPass] = useState(false)
   const [showNewPass, setShowNewPass] = useState(false)
-  const [accountSaved, setAccountSaved] = useState(false)
+  const [accountSaveState, setAccountSaveState] = useState('idle')
+  const [accountFeedback, setAccountFeedback] = useState('')
+  const [passwordSaveState, setPasswordSaveState] = useState('idle')
+  const [passwordFeedback, setPasswordFeedback] = useState('')
 
   // ── General preferences state
   const [language, setLanguage] = useState(currentUser?.locale ?? 'pt-BR')
@@ -133,11 +220,13 @@ export default function SettingsPage() {
   const [openLastCtx, setOpenLastCtx] = useState(true)
   const [collapsedByDefault, setCollapsedByDefault] = useState(false)
   const [density, setDensity] = useState('normal')
-  const [prefsSaved, setPrefsSaved] = useState(false)
+  const [generalSaveState, setGeneralSaveState] = useState('idle')
+  const [generalError, setGeneralError] = useState('')
 
   // ── Workspace state
   const [wsName, setWsName] = useState(workspace?.name ?? '')
-  const [wsSaved, setWsSaved] = useState(false)
+  const [workspaceSaveState, setWorkspaceSaveState] = useState('idle')
+  const [workspaceError, setWorkspaceError] = useState('')
 
   // ── Notifications state
   const [emailNotifs, setEmailNotifs] = useState(true)
@@ -145,7 +234,8 @@ export default function SettingsPage() {
   const [deadlineAlerts, setDeadlineAlerts] = useState(true)
   const [dailySummary, setDailySummary] = useState(false)
   const [weeklySummary, setWeeklySummary] = useState(true)
-  const [notifsSaved, setNotifsSaved] = useState(false)
+  const [notificationsSaveState, setNotificationsSaveState] = useState('idle')
+  const [notificationsError, setNotificationsError] = useState('')
 
   // ── Integrations (demo state)
   const [integrationStatus, setIntegrationStatus] = useState({
@@ -155,26 +245,348 @@ export default function SettingsPage() {
     'outlook-mail': false,
   })
 
-  const flashTimeoutsRef = useRef(new Set())
+  const generalRequestRef = useRef(0)
+  const workspaceRequestRef = useRef(0)
+  const notificationsRequestRef = useRef(0)
 
-  useEffect(() => (
-    () => {
-      flashTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId))
-      flashTimeoutsRef.current.clear()
+  useEffect(() => {
+    const localSettings = readLocalSettings(currentUser?.id)
+    setHomePage(localSettings?.homePage ?? DEFAULT_LOCAL_SETTINGS.homePage)
+    setOpenLastCtx(localSettings?.openLastCtx ?? DEFAULT_LOCAL_SETTINGS.openLastCtx)
+    setCollapsedByDefault(localSettings?.collapsedByDefault ?? DEFAULT_LOCAL_SETTINGS.collapsedByDefault)
+  }, [currentUser?.id])
+
+  useEffect(() => {
+    setFullName(currentUser?.fullName ?? '')
+    setLanguage(currentUser?.locale ?? DEFAULT_BACKEND_PREFERENCES.language)
+    setTimezone(currentUser?.timeZone ?? DEFAULT_BACKEND_PREFERENCES.timezone)
+    setWsName(workspace?.name ?? '')
+  }, [currentUser?.fullName, currentUser?.locale, currentUser?.timeZone, workspace?.name])
+
+  useEffect(() => {
+    if (!backendEnabled || !accessToken) return
+
+    let active = true
+
+    async function hydrateSettings() {
+      try {
+        const snapshot = await apiRequest('/api/settings', {
+          token: accessToken,
+        })
+
+        if (!active) return
+
+        setLanguage(snapshot?.preferences?.locale ?? DEFAULT_BACKEND_PREFERENCES.language)
+        setTimezone(snapshot?.preferences?.timeZone ?? DEFAULT_BACKEND_PREFERENCES.timezone)
+        setDateFormat(snapshot?.preferences?.dateFormat ?? DEFAULT_BACKEND_PREFERENCES.dateFormat)
+        setTimeFormat(snapshot?.preferences?.timeFormat ?? DEFAULT_BACKEND_PREFERENCES.timeFormat)
+
+        setEmailNotifs(snapshot?.notifications?.emailNotifs ?? DEFAULT_NOTIFICATIONS.emailNotifs)
+        setEventReminders(snapshot?.notifications?.eventReminders ?? DEFAULT_NOTIFICATIONS.eventReminders)
+        setDeadlineAlerts(snapshot?.notifications?.deadlineAlerts ?? DEFAULT_NOTIFICATIONS.deadlineAlerts)
+        patchSession?.({
+          user: {
+            locale: snapshot?.preferences?.locale ?? DEFAULT_BACKEND_PREFERENCES.language,
+            timeZone: snapshot?.preferences?.timeZone ?? DEFAULT_BACKEND_PREFERENCES.timezone,
+          },
+        })
+      } catch {
+        if (!active) return
+      }
     }
-  ), [])
 
-  const flash = (setter) => {
-    setter(true)
-    const timeoutId = setTimeout(() => {
-      flashTimeoutsRef.current.delete(timeoutId)
-      setter(false)
-    }, 2400)
-    flashTimeoutsRef.current.add(timeoutId)
+    hydrateSettings()
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, backendEnabled])
+
+  const persistLocalSessionSettings = (nextLocalSettings) => {
+    writeLocalSettings(currentUser?.id, nextLocalSettings)
+    setGeneralError('')
+    setGeneralSaveState('saved')
   }
 
-  const userInitials = currentUser?.fullName
-    ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
+  const persistGeneralPreferences = async (nextPreferences) => {
+    if (!backendEnabled || !accessToken) {
+      setGeneralError('')
+      setGeneralSaveState('saved')
+      return
+    }
+
+    const requestId = ++generalRequestRef.current
+    setGeneralError('')
+    setGeneralSaveState('saving')
+
+    try {
+      const response = await apiRequest('/api/settings/preferences', {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          locale: nextPreferences.language,
+          timeZone: nextPreferences.timezone,
+          dateFormat: nextPreferences.dateFormat,
+          timeFormat: nextPreferences.timeFormat,
+        },
+      })
+
+      if (requestId !== generalRequestRef.current) return
+
+      setLanguage(response.locale)
+      setTimezone(response.timeZone)
+      setDateFormat(response.dateFormat)
+      setTimeFormat(response.timeFormat)
+      patchSession?.({
+        user: {
+          locale: response.locale,
+          timeZone: response.timeZone,
+        },
+      })
+      setGeneralSaveState('saved')
+    } catch (error) {
+      if (requestId !== generalRequestRef.current) return
+      setGeneralError(error?.message ?? 'Nao foi possivel salvar as preferencias gerais.')
+      setGeneralSaveState('error')
+    }
+  }
+
+  const persistWorkspaceName = async (nextName) => {
+    if (!nextName?.trim()) {
+      setWorkspaceSaveState('error')
+      setWorkspaceError('O nome do workspace e obrigatorio.')
+      return
+    }
+
+    if (!backendEnabled || !accessToken) {
+      patchSession?.({ workspace: { name: nextName.trim() } })
+      setWorkspaceError('')
+      setWorkspaceSaveState('saved')
+      return
+    }
+
+    const requestId = ++workspaceRequestRef.current
+    setWorkspaceError('')
+    setWorkspaceSaveState('saving')
+
+    try {
+      const response = await apiRequest('/api/workspace', {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          name: nextName,
+        },
+      })
+
+      if (requestId !== workspaceRequestRef.current) return
+
+      setWsName(response.name)
+      patchSession?.({
+        workspace: {
+          name: response.name,
+        },
+      })
+      setWorkspaceSaveState('saved')
+    } catch (error) {
+      if (requestId !== workspaceRequestRef.current) return
+      setWorkspaceError(error?.message ?? 'Nao foi possivel salvar o nome do workspace.')
+      setWorkspaceSaveState('error')
+    }
+  }
+
+  const persistNotifications = async (nextNotifications) => {
+    if (!backendEnabled || !accessToken) {
+      setNotificationsError('')
+      setNotificationsSaveState('saved')
+      return
+    }
+
+    const requestId = ++notificationsRequestRef.current
+    setNotificationsError('')
+    setNotificationsSaveState('saving')
+
+    try {
+      const response = await apiRequest('/api/settings/notifications', {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          emailNotifs: nextNotifications.emailNotifs,
+          eventReminders: nextNotifications.eventReminders,
+          deadlineAlerts: nextNotifications.deadlineAlerts,
+        },
+      })
+
+      if (requestId !== notificationsRequestRef.current) return
+
+      setEmailNotifs(response.emailNotifs)
+      setEventReminders(response.eventReminders)
+      setDeadlineAlerts(response.deadlineAlerts)
+      setNotificationsSaveState('saved')
+    } catch (error) {
+      if (requestId !== notificationsRequestRef.current) return
+      setNotificationsError(error?.message ?? 'Nao foi possivel salvar as notificacoes.')
+      setNotificationsSaveState('error')
+    }
+  }
+
+  const handleSaveAccount = async () => {
+    if (!fullName.trim()) {
+      setAccountSaveState('error')
+      setAccountFeedback('O nome completo e obrigatorio.')
+      return
+    }
+
+    setAccountSaveState('saving')
+    setAccountFeedback('')
+
+    if (!backendEnabled || !accessToken) {
+      patchSession?.({
+        user: {
+          fullName: fullName.trim(),
+        },
+      })
+      setAccountSaveState('saved')
+      return
+    }
+
+    try {
+      const response = await apiRequest('/api/settings/account', {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          fullName,
+        },
+      })
+
+      setFullName(response.fullName)
+      patchSession?.({
+        user: {
+          fullName: response.fullName,
+        },
+      })
+      setAccountSaveState('saved')
+    } catch (error) {
+      setAccountSaveState('error')
+      setAccountFeedback(error?.message ?? 'Nao foi possivel salvar os dados da conta.')
+    }
+  }
+
+  const handleSavePassword = async () => {
+    if (!curPass.trim() || !newPass.trim() || !confirmPass.trim()) {
+      setPasswordSaveState('error')
+      setPasswordFeedback('Preencha todos os campos da senha.')
+      return
+    }
+
+    if (newPass.length < 8) {
+      setPasswordSaveState('error')
+      setPasswordFeedback('A nova senha deve ter pelo menos 8 caracteres.')
+      return
+    }
+
+    if (newPass !== confirmPass) {
+      setPasswordSaveState('error')
+      setPasswordFeedback('A confirmacao precisa ser igual a nova senha.')
+      return
+    }
+
+    if (!backendEnabled || !accessToken) {
+      setPasswordSaveState('saved')
+      setPasswordFeedback('Senha atualizada no modo local.')
+      setShowPassForm(false)
+      setCurPass('')
+      setNewPass('')
+      setConfirmPass('')
+      return
+    }
+
+    setPasswordSaveState('saving')
+    setPasswordFeedback('')
+
+    try {
+      const response = await apiRequest('/api/settings/password', {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          currentPassword: curPass,
+          newPassword: newPass,
+        },
+      })
+      setPasswordSaveState('saved')
+      setPasswordFeedback(response.message)
+      setShowPassForm(false)
+      setCurPass('')
+      setNewPass('')
+      setConfirmPass('')
+    } catch (error) {
+      setPasswordSaveState('error')
+      setPasswordFeedback(error?.message ?? 'Nao foi possivel alterar a senha.')
+    }
+  }
+
+  const handleGeneralFieldChange = (field, value) => {
+    const next = {
+      language,
+      timezone,
+      dateFormat,
+      timeFormat,
+      [field]: value,
+    }
+
+    if (field === 'language') setLanguage(value)
+    if (field === 'timezone') setTimezone(value)
+    if (field === 'dateFormat') setDateFormat(value)
+    if (field === 'timeFormat') setTimeFormat(value)
+
+    persistGeneralPreferences(next)
+  }
+
+  const handleLocalGeneralFieldChange = (field, value) => {
+    const nextLocal = {
+      homePage,
+      openLastCtx,
+      collapsedByDefault,
+      [field]: value,
+    }
+
+    if (field === 'homePage') setHomePage(value)
+    if (field === 'openLastCtx') setOpenLastCtx(value)
+    if (field === 'collapsedByDefault') setCollapsedByDefault(value)
+
+    persistLocalSessionSettings(nextLocal)
+  }
+
+  const handleRestoreLocalDefaults = () => {
+    setHomePage(DEFAULT_LOCAL_SETTINGS.homePage)
+    setOpenLastCtx(DEFAULT_LOCAL_SETTINGS.openLastCtx)
+    setCollapsedByDefault(DEFAULT_LOCAL_SETTINGS.collapsedByDefault)
+    persistLocalSessionSettings(DEFAULT_LOCAL_SETTINGS)
+  }
+
+  const handleWorkspaceNameChange = (value) => {
+    setWsName(value)
+    persistWorkspaceName(value)
+  }
+
+  const handleNotificationToggle = (field, value) => {
+    const next = {
+      emailNotifs,
+      eventReminders,
+      deadlineAlerts,
+      [field]: value,
+    }
+
+    if (field === 'emailNotifs') setEmailNotifs(value)
+    if (field === 'eventReminders') setEventReminders(value)
+    if (field === 'deadlineAlerts') setDeadlineAlerts(value)
+
+    persistNotifications(next)
+  }
+
+  const accountSaved = normalizeSaveState(accountSaveState) === 'saved'
+
+  const userInitials = fullName
+    ? fullName.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
     : 'AS'
 
   const wsInitials = wsName
@@ -188,7 +600,7 @@ export default function SettingsPage() {
         <div className={styles.avatarRow}>
           <div className={styles.avatarCircle}>{userInitials}</div>
           <div className={styles.avatarMeta}>
-            <p className={styles.avatarName}>{currentUser?.fullName ?? 'Usuário'}</p>
+            <p className={styles.avatarName}>{fullName || 'Usuário'}</p>
             <p className={styles.avatarHint}>JPG, PNG ou GIF. Máximo 2 MB.</p>
             <button type="button" className={styles.btnSecondary}>
               <Ic.Upload /> Alterar foto
@@ -202,7 +614,13 @@ export default function SettingsPage() {
             type="text"
             className={styles.input}
             value={fullName}
-            onChange={e => setFullName(e.target.value)}
+            onChange={(e) => {
+              setFullName(e.target.value)
+              if (accountSaveState !== 'idle') {
+                setAccountSaveState('idle')
+                setAccountFeedback('')
+              }
+            }}
             placeholder="Seu nome completo"
           />
         </Field>
@@ -222,7 +640,8 @@ export default function SettingsPage() {
         </Field>
 
         <div className={styles.rowActions}>
-          <SaveButton saved={accountSaved} onClick={() => flash(setAccountSaved)} />
+          <SaveButton saved={accountSaved} onClick={handleSaveAccount} />
+          <AutoSaveStatus state={accountSaveState} errorMessage={accountFeedback} />
         </div>
       </SectionGroup>
 
@@ -232,7 +651,15 @@ export default function SettingsPage() {
           hint="Altere sua senha regularmente para manter a conta protegida."
         >
           {!showPassForm ? (
-            <button type="button" className={styles.btnSecondary} onClick={() => setShowPassForm(true)}>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={() => {
+                setShowPassForm(true)
+                setPasswordFeedback('')
+                setPasswordSaveState('idle')
+              }}
+            >
               Alterar senha
             </button>
           ) : (
@@ -269,16 +696,31 @@ export default function SettingsPage() {
                 onChange={e => setConfirmPass(e.target.value)}
               />
               <div className={styles.rowActions}>
-                <button type="button" className={styles.btnPrimary}>Salvar nova senha</button>
+                <button type="button" className={styles.btnPrimary} onClick={handleSavePassword}>
+                  Salvar nova senha
+                </button>
                 <button
                   type="button"
                   className={styles.btnGhost}
-                  onClick={() => { setShowPassForm(false); setCurPass(''); setNewPass(''); setConfirmPass('') }}
+                  onClick={() => {
+                    setShowPassForm(false)
+                    setCurPass('')
+                    setNewPass('')
+                    setConfirmPass('')
+                    setPasswordFeedback('')
+                    setPasswordSaveState('idle')
+                  }}
                 >
                   Cancelar
                 </button>
               </div>
+              {(passwordFeedback || passwordSaveState === 'saving') && (
+                <AutoSaveStatus state={passwordSaveState} errorMessage={passwordFeedback} />
+              )}
             </div>
+          )}
+          {!showPassForm && (passwordFeedback || passwordSaveState === 'saving') && (
+            <AutoSaveStatus state={passwordSaveState} errorMessage={passwordFeedback} />
           )}
         </Field>
       </SectionGroup>
@@ -290,14 +732,14 @@ export default function SettingsPage() {
     <>
       <SectionGroup title="Configurações regionais">
         <Field label="Idioma" htmlFor="lang">
-          <select id="lang" className={styles.select} value={language} onChange={e => setLanguage(e.target.value)}>
+          <select id="lang" className={styles.select} value={language} onChange={e => handleGeneralFieldChange('language', e.target.value)}>
             <option value="pt-BR">Português (Brasil)</option>
             <option value="en-US">English (US)</option>
             <option value="es-ES">Español</option>
           </select>
         </Field>
         <Field label="Fuso horário" htmlFor="tz">
-          <select id="tz" className={styles.select} value={timezone} onChange={e => setTimezone(e.target.value)}>
+          <select id="tz" className={styles.select} value={timezone} onChange={e => handleGeneralFieldChange('timezone', e.target.value)}>
             <option value="America/Sao_Paulo">América/São Paulo (GMT-3)</option>
             <option value="America/New_York">América/Nova York (GMT-5)</option>
             <option value="Europe/London">Europa/Londres (GMT+0)</option>
@@ -306,7 +748,7 @@ export default function SettingsPage() {
           </select>
         </Field>
         <Field label="Formato de data" htmlFor="datefmt">
-          <select id="datefmt" className={styles.select} value={dateFormat} onChange={e => setDateFormat(e.target.value)}>
+          <select id="datefmt" className={styles.select} value={dateFormat} onChange={e => handleGeneralFieldChange('dateFormat', e.target.value)}>
             <option value="dd/MM/yyyy">DD/MM/AAAA — 31/12/2024</option>
             <option value="MM/dd/yyyy">MM/DD/AAAA — 12/31/2024</option>
             <option value="yyyy-MM-dd">AAAA-MM-DD — 2024-12-31</option>
@@ -325,7 +767,7 @@ export default function SettingsPage() {
                   name="timeFormat"
                   value={opt.value}
                   checked={timeFormat === opt.value}
-                  onChange={() => setTimeFormat(opt.value)}
+                  onChange={() => handleGeneralFieldChange('timeFormat', opt.value)}
                 />
                 <span>{opt.label}</span>
               </label>
@@ -336,7 +778,7 @@ export default function SettingsPage() {
 
       <SectionGroup title="Experiência da aplicação">
         <Field label="Página inicial padrão" htmlFor="homepage">
-          <select id="homepage" className={styles.select} value={homePage} onChange={e => setHomePage(e.target.value)}>
+          <select id="homepage" className={styles.select} value={homePage} onChange={e => handleLocalGeneralFieldChange('homePage', e.target.value)}>
             <option value="workspace">Workspace</option>
             <option value="canvas">Canvas</option>
             <option value="calendar">Calendário</option>
@@ -347,13 +789,13 @@ export default function SettingsPage() {
           label="Abrir no último contexto usado"
           hint="O app lembrará onde você estava ao sair."
         >
-          <Toggle checked={openLastCtx} onChange={setOpenLastCtx} />
+          <Toggle checked={openLastCtx} onChange={(value) => handleLocalGeneralFieldChange('openLastCtx', value)} />
         </Field>
         <Field
           label="Barra lateral recolhida por padrão"
           hint="Ao abrir, a barra lateral iniciará recolhida."
         >
-          <Toggle checked={collapsedByDefault} onChange={setCollapsedByDefault} />
+          <Toggle checked={collapsedByDefault} onChange={(value) => handleLocalGeneralFieldChange('collapsedByDefault', value)} />
         </Field>
         <Field label="Densidade visual" hint="Define o espaçamento geral dos elementos na interface.">
           <div className={styles.densityGroup}>
@@ -392,8 +834,8 @@ export default function SettingsPage() {
       </SectionGroup>
 
       <div className={styles.rowActions}>
-        <SaveButton saved={prefsSaved} onClick={() => flash(setPrefsSaved)} label="Salvar preferências" savedLabel="Salvo" />
-        <button type="button" className={styles.btnGhost}>Restaurar padrões</button>
+        <AutoSaveStatus state={generalSaveState} errorMessage={generalError} />
+        <button type="button" className={styles.btnGhost} onClick={handleRestoreLocalDefaults}>Restaurar padrões</button>
       </div>
     </>
   )
@@ -417,7 +859,7 @@ export default function SettingsPage() {
             type="text"
             className={styles.input}
             value={wsName}
-            onChange={e => setWsName(e.target.value)}
+            onChange={e => handleWorkspaceNameChange(e.target.value)}
           />
         </Field>
 
@@ -429,7 +871,7 @@ export default function SettingsPage() {
         </Field>
 
         <div className={styles.rowActions}>
-          <SaveButton saved={wsSaved} onClick={() => flash(setWsSaved)} label="Renomear workspace" savedLabel="Salvo" />
+          <AutoSaveStatus state={workspaceSaveState} errorMessage={workspaceError} />
         </div>
       </SectionGroup>
 
@@ -559,13 +1001,13 @@ export default function SettingsPage() {
           label="Lembretes de eventos"
           hint="Alertas antes de eventos do calendário."
         >
-          <Toggle checked={eventReminders} onChange={setEventReminders} />
+          <Toggle checked={eventReminders} onChange={(value) => handleNotificationToggle('eventReminders', value)} />
         </Field>
         <Field
           label="Alertas de prazo de tarefas"
           hint="Notificação quando tarefas se aproximam do vencimento."
         >
-          <Toggle checked={deadlineAlerts} onChange={setDeadlineAlerts} />
+          <Toggle checked={deadlineAlerts} onChange={(value) => handleNotificationToggle('deadlineAlerts', value)} />
         </Field>
       </SectionGroup>
 
@@ -574,7 +1016,7 @@ export default function SettingsPage() {
           label="Notificações por e-mail"
           hint="Receba atualizações importantes por e-mail."
         >
-          <Toggle checked={emailNotifs} onChange={setEmailNotifs} />
+          <Toggle checked={emailNotifs} onChange={(value) => handleNotificationToggle('emailNotifs', value)} />
         </Field>
         <Field
           label="Silenciar categorias"
@@ -591,20 +1033,20 @@ export default function SettingsPage() {
       <SectionGroup title="Resumos">
         <Field
           label="Resumo diário"
-          hint="Receba pela manhã um resumo das tarefas e eventos do dia."
+          hint="Disponível em breve."
         >
-          <Toggle checked={dailySummary} onChange={setDailySummary} />
+          <Toggle checked={dailySummary} onChange={setDailySummary} disabled />
         </Field>
         <Field
           label="Resumo semanal"
-          hint="Um apanhado das atividades e conquistas da semana."
+          hint="Disponível em breve."
         >
-          <Toggle checked={weeklySummary} onChange={setWeeklySummary} />
+          <Toggle checked={weeklySummary} onChange={setWeeklySummary} disabled />
         </Field>
       </SectionGroup>
 
       <div className={styles.rowActions}>
-        <SaveButton saved={notifsSaved} onClick={() => flash(setNotifsSaved)} label="Salvar preferências" savedLabel="Salvo" />
+        <AutoSaveStatus state={notificationsSaveState} errorMessage={notificationsError} />
       </div>
     </>
   )

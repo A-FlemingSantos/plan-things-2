@@ -125,6 +125,18 @@ export function AuthProvider({ children }) {
     return nextSession
   }
 
+  const patchSession = ({ user, workspace } = {}) => {
+    if (!session) return null
+
+    const nextSession = {
+      ...session,
+      user: user ? { ...session.user, ...user } : session.user,
+      workspace: workspace ? { ...session.workspace, ...workspace } : session.workspace,
+    }
+
+    return saveSession(nextSession)
+  }
+
   const login = async (credentials) => {
     if (isTestEnvironment()) {
       return saveSession(createDemoSession('login', credentials))
@@ -199,6 +211,7 @@ export function AuthProvider({ children }) {
     register,
     forgotPassword,
     resetPassword,
+    patchSession,
     logout,
   }), [isReady, session])
 

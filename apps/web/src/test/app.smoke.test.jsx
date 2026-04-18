@@ -240,6 +240,22 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
   })
 
+  it('keeps save action only in account and uses autosave sections', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/settings')
+
+    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Salvar alterações' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: /salvar preferências/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Notificações' }))
+
+    const switches = screen.getAllByRole('switch')
+    const disabledSwitches = switches.filter((item) => item.hasAttribute('disabled'))
+    expect(disabledSwitches).toHaveLength(2)
+  })
+
   it('navigates into folders in files without breaking the breadcrumb', async () => {
     const user = userEvent.setup()
 

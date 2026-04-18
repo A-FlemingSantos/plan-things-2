@@ -539,6 +539,27 @@
 }
 .toggleOn { background: var(--color-black); }
 .toggleOn::after { transform: translateX(18px); }
+.toggleDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.toggleDisabled::after {
+  box-shadow: none;
+}
+
+.autoSaveStatus {
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+}
+.autoSaveStatusSaving {
+  color: var(--color-gray-500);
+}
+.autoSaveStatusSaved {
+  color: var(--color-green);
+}
+.autoSaveStatusError {
+  color: var(--color-red);
+}
 
 /* ════════════════════════════════════════
    AVATAR

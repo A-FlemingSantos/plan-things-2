@@ -15,5 +15,6 @@ DELETE FROM plan_invites;
 DELETE FROM plan_members;
 DELETE FROM plans;
 DELETE FROM workspaces;
+DELETE FROM user_settings;
 DELETE FROM password_reset_tokens;
 DELETE FROM users;
