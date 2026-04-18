@@ -130,6 +130,27 @@ export function PlansProvider({ children }) {
     return nextPlan
   }, [accessToken, backendEnabled, plans.length])
 
+  const deletePlan = useCallback(async (planId) => {
+    if (!planId) return
+
+    if (backendEnabled) {
+      await apiRequest(`/api/plans/${planId}`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+    }
+
+    let nextPlansSnapshot = []
+    setPlans((prev) => {
+      const nextPlans = prev.filter((plan) => plan.id !== planId)
+      nextPlansSnapshot = nextPlans
+      setActivePlanId((current) => (current === planId ? (nextPlans[0]?.id ?? null) : current))
+      return nextPlans
+    })
+
+    return nextPlansSnapshot
+  }, [accessToken, backendEnabled])
+
   const selectPlan = useCallback((planId) => {
     setActivePlanId(planId)
   }, [])
@@ -265,6 +286,7 @@ export function PlansProvider({ children }) {
     isLoading,
     isBackendDriven: backendEnabled,
     createPlan,
+    deletePlan,
     getPlanById,
     selectPlan,
     updatePlan,
@@ -281,6 +303,7 @@ export function PlansProvider({ children }) {
     applyBoardView,
     backendEnabled,
     createPlan,
+    deletePlan,
     currentUser,
     ensurePlanDetails,
     getPlanById,

@@ -83,6 +83,16 @@ function MoreIcon() {
   )
 }
 
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M3 4.5h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M5.2 4.5v-.8c0-.6.5-1.1 1.1-1.1h1.4c.6 0 1.1.5 1.1 1.1v.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M4.2 4.7l.4 6.3c.04.6.53 1.1 1.13 1.1h2.54c.6 0 1.1-.5 1.13-1.1l.4-6.3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function titleFromCollectionId(collectionId = '') {
   return String(collectionId)
     .replace(/[-_]+/g, ' ')
@@ -521,7 +531,14 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
 /* ═══════════════════════════════════════════
    PLAN CARD
 ═══════════════════════════════════════════ */
-function PlanCard({ plan, view, onOpen, isActive }) {
+function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onOpen?.()
+    }
+  }
+
   const coverThemeClassName = resolveCoverThemeClass(styles, plan.coverThemeId)
   const coverImageUrl = plan.coverImageThumb ?? plan.coverImage ?? null
   const isImageCover = Boolean(coverImageUrl)
@@ -539,13 +556,47 @@ function PlanCard({ plan, view, onOpen, isActive }) {
         '--cover-fallback': plan.cover,
       }
 
-  if (view === 'list') {
-    return (
+  const actions = (
+    <div className={styles.planCardActions}>
       <button
         type="button"
+        className={`${styles.planCardActionBtn} ${styles.planCardActionDanger}`}
+        aria-label="Excluir plano"
+        title="Excluir"
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onDelete?.()
+        }}
+      >
+        <TrashIcon />
+      </button>
+      <button
+        type="button"
+        className={styles.planCardActionBtn}
+        aria-label="Mais opções"
+        title="Mais opções"
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onMore?.()
+        }}
+      >
+        <MoreIcon />
+      </button>
+    </div>
+  )
+
+  if (view === 'list') {
+    return (
+      <div
         className={`${styles.listCard} ${isActive ? styles.listCardActive : ''}`}
         onClick={onOpen}
+        onKeyDown={handleKeyDown}
+        role="button"
+        tabIndex={0}
       >
+        {actions}
         <div className={styles.listCardLeft}>
           <div
             className={`${styles.listCover} ${coverClassName}`}
@@ -563,16 +614,19 @@ function PlanCard({ plan, view, onOpen, isActive }) {
             </div>
           </div>
         </div>
-      </button>
+      </div>
     )
   }
 
   return (
-    <button
-      type="button"
+    <div
       className={`${styles.planCard} ${isActive ? styles.planCardActive : ''}`}
       onClick={onOpen}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
     >
+      {actions}
       <div
         className={`${styles.planCardCover} ${coverClassName}`}
         style={coverStyle}
@@ -588,7 +642,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
           )}
         </div>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -677,7 +731,7 @@ export default function Workspace() {
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [notification, setNotification] = useState(null)
   const notificationTimerRef = useRef(null)
-  const { plans, activePlan, createPlan, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { plans, activePlan, createPlan, deletePlan, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
 
   const filtered = plans.filter(p =>
@@ -685,19 +739,33 @@ export default function Workspace() {
     p.tag.toLowerCase().includes(search.toLowerCase())
   )
 
+  const pushNotification = (message) => {
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current)
+    }
+    setNotification(message)
+    notificationTimerRef.current = setTimeout(() => {
+      setNotification(null)
+      notificationTimerRef.current = null
+    }, 2600)
+  }
+
   const handleNewPlan = async (data) => {
     try {
       const newPlan = await createPlan(data)
-      if (notificationTimerRef.current) {
-        clearTimeout(notificationTimerRef.current)
-      }
-      setNotification(`Plano "${newPlan.name}" criado`)
-      notificationTimerRef.current = setTimeout(() => {
-        setNotification(null)
-        notificationTimerRef.current = null
-      }, 2600)
+      pushNotification(`Plano "${newPlan.name}" criado`)
     } catch (error) {
       setNotification(error.message ?? 'Nao foi possivel criar o plano.')
+    }
+  }
+
+  const handleDeletePlan = async (plan) => {
+    if (!plan?.id) return
+    try {
+      await deletePlan(plan.id)
+      pushNotification(`Plano "${plan.name}" excluido`)
+    } catch (error) {
+      pushNotification(error.message ?? 'Nao foi possivel excluir o plano.')
     }
   }
 
@@ -888,6 +956,8 @@ export default function Workspace() {
                     plan={plan}
                     view="grid"
                     onOpen={() => openBoard(plan.id)}
+                    onDelete={() => handleDeletePlan(plan)}
+                    onMore={() => {}}
                     isActive={plan.id === activePlan?.id}
                   />
                 ))}
@@ -904,6 +974,8 @@ export default function Workspace() {
                     plan={plan}
                     view="list"
                     onOpen={() => openBoard(plan.id)}
+                    onDelete={() => handleDeletePlan(plan)}
+                    onMore={() => {}}
                     isActive={plan.id === activePlan?.id}
                   />
                 ))}
