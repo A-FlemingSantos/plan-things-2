@@ -554,19 +554,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
           />
           <div className={styles.listInfo}>
             <p className={styles.listName}>{plan.name}</p>
-            {plan.description && <p className={styles.listDesc}>{plan.description}</p>}
           </div>
-        </div>
-        <div className={styles.listMeta}>
-          {isActive && <span className={styles.currentPlanPill}>Atual</span>}
-          <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
-          <div className={styles.memberStack}>
-            {plan.members.slice(0, 3).map((c, i) => (
-              <span key={i} className={styles.memberDot} style={{ background: c }} />
-            ))}
-          </div>
-          <span className={styles.cardDate}>{plan.date}</span>
-          <span className={styles.cardTasks}>{plan.tasks} tarefas</span>
         </div>
       </button>
     )
@@ -584,26 +572,7 @@ function PlanCard({ plan, view, onOpen, isActive }) {
         aria-hidden="true"
       />
       <div className={styles.cardBody}>
-        <div className={styles.cardTop}>
-          <div className={styles.cardTopMeta}>
-            <span className={styles.cardTag} style={{ background: plan.tagColor + '18', color: plan.tagColor }}>{plan.tag}</span>
-            {isActive && <span className={styles.currentPlanPill}>Atual</span>}
-          </div>
-          <span className={styles.cardDate}>{plan.date}</span>
-        </div>
         <h3 className={styles.cardName}>{plan.name}</h3>
-        {plan.description && <p className={styles.cardDesc}>{plan.description}</p>}
-        <div className={styles.cardFooter}>
-          <div className={styles.memberStack}>
-            {plan.members.slice(0, 3).map((c, i) => (
-              <span key={i} className={styles.memberDot} style={{ background: c }} />
-            ))}
-            {plan.members.length > 3 && (
-              <span className={styles.memberMore}>+{plan.members.length - 3}</span>
-            )}
-          </div>
-          <span className={styles.cardTasks}>{plan.tasks} tarefas</span>
-        </div>
       </div>
     </button>
   )
