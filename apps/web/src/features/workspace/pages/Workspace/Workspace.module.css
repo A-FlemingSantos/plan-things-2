@@ -1112,6 +1112,14 @@
   padding: 10px 12px 12px;
 }
 
+.cardNameRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
 .cardTop {
   display: flex;
   align-items: center;
@@ -1148,6 +1156,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.cardTaskCount {
+  font-size: 12px;
+  color: var(--color-gray-700);
+  font-weight: var(--font-weight-light);
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .cardDesc {
@@ -1296,7 +1314,15 @@
   flex-shrink: 0;
 }
 
-.listInfo { min-width: 0; }
+.listInfo { min-width: 0; flex: 1; }
+
+.listNameRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
 
 .listName {
   font-size: 13px;
@@ -1306,6 +1332,17 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.listTaskCount {
+  font-size: 12px;
+  color: var(--color-gray-700);
+  font-weight: var(--font-weight-light);
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .listDesc {

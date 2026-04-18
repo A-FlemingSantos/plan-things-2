@@ -553,7 +553,14 @@ function PlanCard({ plan, view, onOpen, isActive }) {
             aria-hidden="true"
           />
           <div className={styles.listInfo}>
-            <p className={styles.listName}>{plan.name}</p>
+            <div className={styles.listNameRow}>
+              <p className={styles.listName}>{plan.name}</p>
+              {plan.tasks > 0 && (
+                <span className={styles.listTaskCount} aria-label={`${plan.tasks} tarefas`}>
+                  {plan.tasks}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </button>
@@ -572,7 +579,14 @@ function PlanCard({ plan, view, onOpen, isActive }) {
         aria-hidden="true"
       />
       <div className={styles.cardBody}>
-        <h3 className={styles.cardName}>{plan.name}</h3>
+        <div className={styles.cardNameRow}>
+          <h3 className={styles.cardName}>{plan.name}</h3>
+          {plan.tasks > 0 && (
+            <span className={styles.cardTaskCount} aria-label={`${plan.tasks} tarefas`}>
+              {plan.tasks}
+            </span>
+          )}
+        </div>
       </div>
     </button>
   )
