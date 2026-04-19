@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import {
+  DEFAULT_LOCAL_PREFERENCES,
+  usePreferences,
+} from '../../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
@@ -57,64 +61,8 @@ const SECTIONS = [
   { id: 'security',      label: 'Privacidade e segurança',  Icon: Ic.Shield   },
 ]
 
-const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
-const DEFAULT_LOCAL_SETTINGS = {
-  homePage: 'workspace',
-  openLastCtx: true,
-  collapsedByDefault: false,
-}
-const DEFAULT_BACKEND_PREFERENCES = {
-  language: 'pt-BR',
-  timezone: 'America/Sao_Paulo',
-  dateFormat: 'dd/MM/yyyy',
-  timeFormat: '24h',
-}
-const DEFAULT_NOTIFICATIONS = {
-  emailNotifs: true,
-  eventReminders: true,
-  deadlineAlerts: true,
-}
-
 function normalizeSaveState(state) {
   return state === 'saving' || state === 'saved' || state === 'error' ? state : 'idle'
-}
-
-function getLocalSettingsStorageKey(userId) {
-  if (!userId) return null
-  return `${LOCAL_SETTINGS_STORAGE_PREFIX}${userId}`
-}
-
-function readLocalSettings(userId) {
-  if (!userId || typeof window === 'undefined') return null
-  const key = getLocalSettingsStorageKey(userId)
-  if (!key) return null
-
-  try {
-    const raw = window.localStorage.getItem(key)
-    const parsed = raw ? JSON.parse(raw) : null
-    if (!parsed || typeof parsed !== 'object') return null
-    return {
-      homePage: parsed.homePage ?? DEFAULT_LOCAL_SETTINGS.homePage,
-      openLastCtx: parsed.openLastCtx ?? DEFAULT_LOCAL_SETTINGS.openLastCtx,
-      collapsedByDefault: parsed.collapsedByDefault ?? DEFAULT_LOCAL_SETTINGS.collapsedByDefault,
-    }
-  } catch {
-    return null
-  }
-}
-
-function writeLocalSettings(userId, settings) {
-  if (!userId || typeof window === 'undefined') return
-  const key = getLocalSettingsStorageKey(userId)
-  if (!key) return
-
-  const nextSettings = {
-    homePage: settings.homePage,
-    openLastCtx: settings.openLastCtx,
-    collapsedByDefault: settings.collapsedByDefault,
-  }
-
-  window.localStorage.setItem(key, JSON.stringify(nextSettings))
 }
 
 /* ═══════════════════════════════════════════
@@ -193,6 +141,15 @@ function AutoSaveStatus({ state = 'idle', errorMessage = '' }) {
 
 export default function SettingsPage() {
   const { currentUser, workspace, accessToken, isAuthenticated, isDemoSession, patchSession } = useAuth()
+  const {
+    generalPreferences,
+    localPreferences,
+    notificationPreferences,
+    updateGeneral,
+    updateLocal,
+    restoreLocalDefaults,
+    updateNotifications,
+  } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const backendEnabled = isAuthenticated && !isDemoSession
 
@@ -212,13 +169,6 @@ export default function SettingsPage() {
   const [passwordFeedback, setPasswordFeedback] = useState('')
 
   // ── General preferences state
-  const [language, setLanguage] = useState(currentUser?.locale ?? 'pt-BR')
-  const [timezone, setTimezone] = useState(currentUser?.timeZone ?? 'America/Sao_Paulo')
-  const [dateFormat, setDateFormat] = useState('dd/MM/yyyy')
-  const [timeFormat, setTimeFormat] = useState('24h')
-  const [homePage, setHomePage] = useState('workspace')
-  const [openLastCtx, setOpenLastCtx] = useState(true)
-  const [collapsedByDefault, setCollapsedByDefault] = useState(false)
   const [density, setDensity] = useState('normal')
   const [generalSaveState, setGeneralSaveState] = useState('idle')
   const [generalError, setGeneralError] = useState('')
@@ -229,9 +179,6 @@ export default function SettingsPage() {
   const [workspaceError, setWorkspaceError] = useState('')
 
   // ── Notifications state
-  const [emailNotifs, setEmailNotifs] = useState(true)
-  const [eventReminders, setEventReminders] = useState(true)
-  const [deadlineAlerts, setDeadlineAlerts] = useState(true)
   const [dailySummary, setDailySummary] = useState(false)
   const [weeklySummary, setWeeklySummary] = useState(true)
   const [notificationsSaveState, setNotificationsSaveState] = useState('idle')
@@ -245,107 +192,31 @@ export default function SettingsPage() {
     'outlook-mail': false,
   })
 
-  const generalRequestRef = useRef(0)
   const workspaceRequestRef = useRef(0)
-  const notificationsRequestRef = useRef(0)
-
-  useEffect(() => {
-    const localSettings = readLocalSettings(currentUser?.id)
-    setHomePage(localSettings?.homePage ?? DEFAULT_LOCAL_SETTINGS.homePage)
-    setOpenLastCtx(localSettings?.openLastCtx ?? DEFAULT_LOCAL_SETTINGS.openLastCtx)
-    setCollapsedByDefault(localSettings?.collapsedByDefault ?? DEFAULT_LOCAL_SETTINGS.collapsedByDefault)
-  }, [currentUser?.id])
+  const language = generalPreferences.language
+  const timezone = generalPreferences.timezone
+  const dateFormat = generalPreferences.dateFormat
+  const timeFormat = generalPreferences.timeFormat
+  const homePage = localPreferences.homePage
+  const openLastCtx = localPreferences.openLastCtx
+  const collapsedByDefault = localPreferences.collapsedByDefault
+  const emailNotifs = notificationPreferences.emailNotifs
+  const eventReminders = notificationPreferences.eventReminders
+  const deadlineAlerts = notificationPreferences.deadlineAlerts
 
   useEffect(() => {
     setFullName(currentUser?.fullName ?? '')
-    setLanguage(currentUser?.locale ?? DEFAULT_BACKEND_PREFERENCES.language)
-    setTimezone(currentUser?.timeZone ?? DEFAULT_BACKEND_PREFERENCES.timezone)
     setWsName(workspace?.name ?? '')
-  }, [currentUser?.fullName, currentUser?.locale, currentUser?.timeZone, workspace?.name])
-
-  useEffect(() => {
-    if (!backendEnabled || !accessToken) return
-
-    let active = true
-
-    async function hydrateSettings() {
-      try {
-        const snapshot = await apiRequest('/api/settings', {
-          token: accessToken,
-        })
-
-        if (!active) return
-
-        setLanguage(snapshot?.preferences?.locale ?? DEFAULT_BACKEND_PREFERENCES.language)
-        setTimezone(snapshot?.preferences?.timeZone ?? DEFAULT_BACKEND_PREFERENCES.timezone)
-        setDateFormat(snapshot?.preferences?.dateFormat ?? DEFAULT_BACKEND_PREFERENCES.dateFormat)
-        setTimeFormat(snapshot?.preferences?.timeFormat ?? DEFAULT_BACKEND_PREFERENCES.timeFormat)
-
-        setEmailNotifs(snapshot?.notifications?.emailNotifs ?? DEFAULT_NOTIFICATIONS.emailNotifs)
-        setEventReminders(snapshot?.notifications?.eventReminders ?? DEFAULT_NOTIFICATIONS.eventReminders)
-        setDeadlineAlerts(snapshot?.notifications?.deadlineAlerts ?? DEFAULT_NOTIFICATIONS.deadlineAlerts)
-        patchSession?.({
-          user: {
-            locale: snapshot?.preferences?.locale ?? DEFAULT_BACKEND_PREFERENCES.language,
-            timeZone: snapshot?.preferences?.timeZone ?? DEFAULT_BACKEND_PREFERENCES.timezone,
-          },
-        })
-      } catch {
-        if (!active) return
-      }
-    }
-
-    hydrateSettings()
-
-    return () => {
-      active = false
-    }
-  }, [accessToken, backendEnabled])
-
-  const persistLocalSessionSettings = (nextLocalSettings) => {
-    writeLocalSettings(currentUser?.id, nextLocalSettings)
-    setGeneralError('')
-    setGeneralSaveState('saved')
-  }
+  }, [currentUser?.fullName, workspace?.name])
 
   const persistGeneralPreferences = async (nextPreferences) => {
-    if (!backendEnabled || !accessToken) {
-      setGeneralError('')
-      setGeneralSaveState('saved')
-      return
-    }
-
-    const requestId = ++generalRequestRef.current
     setGeneralError('')
     setGeneralSaveState('saving')
 
     try {
-      const response = await apiRequest('/api/settings/preferences', {
-        method: 'PATCH',
-        token: accessToken,
-        body: {
-          locale: nextPreferences.language,
-          timeZone: nextPreferences.timezone,
-          dateFormat: nextPreferences.dateFormat,
-          timeFormat: nextPreferences.timeFormat,
-        },
-      })
-
-      if (requestId !== generalRequestRef.current) return
-
-      setLanguage(response.locale)
-      setTimezone(response.timeZone)
-      setDateFormat(response.dateFormat)
-      setTimeFormat(response.timeFormat)
-      patchSession?.({
-        user: {
-          locale: response.locale,
-          timeZone: response.timeZone,
-        },
-      })
+      await updateGeneral(nextPreferences)
       setGeneralSaveState('saved')
     } catch (error) {
-      if (requestId !== generalRequestRef.current) return
       setGeneralError(error?.message ?? 'Nao foi possivel salvar as preferencias gerais.')
       setGeneralSaveState('error')
     }
@@ -395,35 +266,13 @@ export default function SettingsPage() {
   }
 
   const persistNotifications = async (nextNotifications) => {
-    if (!backendEnabled || !accessToken) {
-      setNotificationsError('')
-      setNotificationsSaveState('saved')
-      return
-    }
-
-    const requestId = ++notificationsRequestRef.current
     setNotificationsError('')
     setNotificationsSaveState('saving')
 
     try {
-      const response = await apiRequest('/api/settings/notifications', {
-        method: 'PATCH',
-        token: accessToken,
-        body: {
-          emailNotifs: nextNotifications.emailNotifs,
-          eventReminders: nextNotifications.eventReminders,
-          deadlineAlerts: nextNotifications.deadlineAlerts,
-        },
-      })
-
-      if (requestId !== notificationsRequestRef.current) return
-
-      setEmailNotifs(response.emailNotifs)
-      setEventReminders(response.eventReminders)
-      setDeadlineAlerts(response.deadlineAlerts)
+      await updateNotifications(nextNotifications)
       setNotificationsSaveState('saved')
     } catch (error) {
-      if (requestId !== notificationsRequestRef.current) return
       setNotificationsError(error?.message ?? 'Nao foi possivel salvar as notificacoes.')
       setNotificationsSaveState('error')
     }
@@ -533,11 +382,6 @@ export default function SettingsPage() {
       [field]: value,
     }
 
-    if (field === 'language') setLanguage(value)
-    if (field === 'timezone') setTimezone(value)
-    if (field === 'dateFormat') setDateFormat(value)
-    if (field === 'timeFormat') setTimeFormat(value)
-
     persistGeneralPreferences(next)
   }
 
@@ -549,18 +393,15 @@ export default function SettingsPage() {
       [field]: value,
     }
 
-    if (field === 'homePage') setHomePage(value)
-    if (field === 'openLastCtx') setOpenLastCtx(value)
-    if (field === 'collapsedByDefault') setCollapsedByDefault(value)
-
-    persistLocalSessionSettings(nextLocal)
+    updateLocal(nextLocal)
+    setGeneralError('')
+    setGeneralSaveState('saved')
   }
 
   const handleRestoreLocalDefaults = () => {
-    setHomePage(DEFAULT_LOCAL_SETTINGS.homePage)
-    setOpenLastCtx(DEFAULT_LOCAL_SETTINGS.openLastCtx)
-    setCollapsedByDefault(DEFAULT_LOCAL_SETTINGS.collapsedByDefault)
-    persistLocalSessionSettings(DEFAULT_LOCAL_SETTINGS)
+    restoreLocalDefaults()
+    setGeneralError('')
+    setGeneralSaveState('saved')
   }
 
   const handleWorkspaceNameChange = (value) => {
@@ -575,10 +416,6 @@ export default function SettingsPage() {
       deadlineAlerts,
       [field]: value,
     }
-
-    if (field === 'emailNotifs') setEmailNotifs(value)
-    if (field === 'eventReminders') setEventReminders(value)
-    if (field === 'deadlineAlerts') setDeadlineAlerts(value)
 
     persistNotifications(next)
   }

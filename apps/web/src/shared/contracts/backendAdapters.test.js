@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { mapCalendarEventsToSnapshot } from './backendAdapters.js'
+import {
+  buildBoardCardPayload,
+  buildCalendarEventPayload,
+  mapCalendarEventsToSnapshot,
+  mapBoardViewToColumns,
+} from './backendAdapters.js'
 
 describe('mapCalendarEventsToSnapshot', () => {
   it('pins generated tasks to the due day instead of the synthetic start day', () => {
@@ -40,5 +45,125 @@ describe('mapCalendarEventsToSnapshot', () => {
       end: '14:00',
       cardKind: 'EVENTO',
     })
+  })
+
+  it('maps date and hour using the configured timezone', () => {
+    const snapshot = mapCalendarEventsToSnapshot([
+      {
+        id: 'task-2',
+        title: 'Virada com timezone preferido',
+        generatedFromCard: true,
+        cardKind: 'TAREFA',
+        startsAt: { iso: '2026-04-20T02:30:00Z' },
+        endsAt: { iso: '2026-04-20T04:30:00Z' },
+      },
+    ], {
+      timeZone: 'America/New_York',
+    })
+
+    expect(snapshot.events[0]).toMatchObject({
+      date: '2026-04-20',
+      start: '22:30',
+      end: '00:30',
+    })
+  })
+})
+
+describe('timezone-aware payload serializers', () => {
+  it('serializes calendar payload with the preferred timezone offset', () => {
+    const payload = buildCalendarEventPayload(
+      {
+        title: 'Review semanal',
+        date: '2026-06-15',
+        start: '09:00',
+        end: '10:00',
+      },
+      {
+        timeZone: 'America/New_York',
+      },
+    )
+
+    expect(payload.startsAt).toBe('2026-06-15T09:00:00-04:00')
+    expect(payload.endsAt).toBe('2026-06-15T10:00:00-04:00')
+  })
+
+  it('serializes board card payload with explicit date format and timezone', () => {
+    const payload = buildBoardCardPayload(
+      {
+        columnId: 'col-1',
+        title: 'Card 1',
+        description: '',
+        memberIds: [],
+        labelId: null,
+        schedule: {
+          startEnabled: false,
+          dueEnabled: true,
+          dueDateValue: '06/15/2026',
+          dueTimeValue: '14:30',
+        },
+      },
+      {
+        dateFormat: 'MM/dd/yyyy',
+        timeZone: 'America/New_York',
+      },
+    )
+
+    expect(payload.dueAt).toBe('2026-06-15T14:30:00-04:00')
+  })
+})
+
+describe('board mapping with preferences', () => {
+  const sampleBoardView = {
+    columns: [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '#a0a0a0',
+        cards: [
+          {
+            id: 'card-1',
+            columnId: 'col-1',
+            title: 'Card timezone',
+            description: '',
+            label: null,
+            assignees: [],
+            startAt: null,
+            dueAt: { iso: '2026-04-20T03:30:00Z', text: '20/04/2026 03:30 UTC' },
+            comments: [],
+            kind: 'TAREFA',
+            checklists: [],
+          },
+        ],
+      },
+    ],
+    labels: [],
+  }
+
+  it('hydrates board schedule values using timezone and date format options', () => {
+    const [column] = mapBoardViewToColumns(sampleBoardView, {
+      timeZone: 'America/New_York',
+      dateFormat: 'MM/dd/yyyy',
+      locale: 'en-US',
+    })
+    const [card] = column.cards
+
+    expect(card.schedule.dueDateValue).toBe('04/19/2026')
+    expect(card.schedule.dueTimeValue).toBe('23:30')
+    expect(card.schedule.selectedCalendarDay).toBe(19)
+  })
+
+  it('keeps instant stable in board roundtrip when using the same preferences', () => {
+    const [column] = mapBoardViewToColumns(sampleBoardView, {
+      timeZone: 'America/New_York',
+      dateFormat: 'MM/dd/yyyy',
+      locale: 'en-US',
+    })
+    const [card] = column.cards
+    const payload = buildBoardCardPayload(card, {
+      timeZone: 'America/New_York',
+      dateFormat: 'MM/dd/yyyy',
+    })
+
+    expect(payload.dueAt).toBe('2026-04-19T23:30:00-04:00')
   })
 })

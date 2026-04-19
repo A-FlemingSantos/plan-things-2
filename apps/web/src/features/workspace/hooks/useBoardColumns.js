@@ -12,6 +12,8 @@ export function useBoardColumns({
   accessToken = null,
   applyBoardView,
   loadPlanBoard,
+  timeZone = 'America/Sao_Paulo',
+  dateFormat = 'dd/MM/yyyy',
 }) {
   const columns = boardColumns ?? []
 
@@ -190,7 +192,10 @@ export function useBoardColumns({
       await apiRequest(`/api/plans/${activePlanId}/board/cards/${updatedCard.id}`, {
         method: 'PATCH',
         token: accessToken,
-        body: buildBoardCardPayload(updatedCard),
+        body: buildBoardCardPayload(updatedCard, {
+          timeZone,
+          dateFormat,
+        }),
       })
       cardUpdated = true
 
@@ -223,7 +228,7 @@ export function useBoardColumns({
 
       throw error
     }
-  }, [accessToken, activePlanId, columns, isBackendDriven, loadPlanBoard, updateColumns])
+  }, [accessToken, activePlanId, columns, dateFormat, isBackendDriven, loadPlanBoard, timeZone, updateColumns])
 
   const deleteCard = useCallback(async (cardId) => {
     if (!activePlanId) return false

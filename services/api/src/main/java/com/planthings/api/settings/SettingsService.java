@@ -4,7 +4,12 @@ import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.security.AuthenticatedUserService;
+import java.time.DateTimeException;
+import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +23,11 @@ public class SettingsService {
       "yyyy-MM-dd"
   );
   private static final Set<String> ALLOWED_TIME_FORMATS = Set.of("24h", "12h");
+  private static final Set<String> SUPPORTED_LOCALE_TAGS = Arrays.stream(Locale.getAvailableLocales())
+      .map(Locale::toLanguageTag)
+      .filter((tag) -> !tag.isBlank())
+      .filter((tag) -> !"und".equalsIgnoreCase(tag))
+      .collect(Collectors.toUnmodifiableSet());
 
   private final AuthenticatedUserService authenticatedUserService;
   private final UserRepository userRepository;
@@ -145,18 +155,42 @@ public class SettingsService {
 
   private String requireLocale(String value) {
     String normalized = normalizeRequired(value, "IDIOMA_OBRIGATORIO", "O idioma e obrigatorio.");
-    if (normalized.length() > 20) {
+
+    if (normalized.length() > 35) {
       throw new BadRequestException("IDIOMA_INVALIDO", "O idioma informado e invalido.");
     }
-    return normalized;
+
+    String canonicalCandidate = normalized.replace('_', '-');
+
+    try {
+      Locale locale = Locale.forLanguageTag(canonicalCandidate);
+      String canonical = locale.toLanguageTag();
+
+      if (canonical.isBlank() || "und".equalsIgnoreCase(canonical) || locale.getLanguage().isBlank()) {
+        throw new BadRequestException("IDIOMA_INVALIDO", "O idioma informado e invalido.");
+      }
+      if (!SUPPORTED_LOCALE_TAGS.contains(canonical)) {
+        throw new BadRequestException("IDIOMA_INVALIDO", "O idioma informado e invalido.");
+      }
+
+      return canonical;
+    } catch (RuntimeException exception) {
+      throw new BadRequestException("IDIOMA_INVALIDO", "O idioma informado e invalido.");
+    }
   }
 
   private String requireTimeZone(String value) {
     String normalized = normalizeRequired(value, "FUSO_OBRIGATORIO", "O fuso horario e obrigatorio.");
-    if (normalized.length() > 60) {
+
+    if (normalized.length() > 80) {
       throw new BadRequestException("FUSO_INVALIDO", "O fuso horario informado e invalido.");
     }
-    return normalized;
+
+    try {
+      return ZoneId.of(normalized).getId();
+    } catch (DateTimeException exception) {
+      throw new BadRequestException("FUSO_INVALIDO", "O fuso horario informado e invalido.");
+    }
   }
 
   private String requireDateFormat(String value) {

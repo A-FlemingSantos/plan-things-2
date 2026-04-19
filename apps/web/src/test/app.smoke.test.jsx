@@ -16,12 +16,32 @@ function formatTodayAsScheduleDateValue() {
 function formatCalendarHeading(monthOffset = 0) {
   const today = new Date()
   const date = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
-  const months = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-  ]
+  const formatted = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
 
-  return `${months[date.getMonth()]} ${date.getFullYear()}`
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+}
+
+function seedDemoSession(userId = 'demo-user-route') {
+  window.localStorage.setItem('plan-things.session', JSON.stringify({
+    accessToken: 'demo-login-token',
+    demo: true,
+    user: {
+      id: userId,
+      fullName: 'Arthur Santos',
+      email: 'arthur@example.com',
+      locale: 'pt-BR',
+      timeZone: 'America/Sao_Paulo',
+    },
+    workspace: {
+      id: 'demo-workspace',
+      name: 'Workspace de Arthur Santos',
+    },
+  }))
+
+  return userId
 }
 
 describe('App smoke flows', () => {
@@ -58,6 +78,42 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/workspace')
     expect(screen.getByText('Plano atual')).toBeInTheDocument()
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
+  })
+
+  it('resolves /app to last context when openLastCtx is enabled', async () => {
+    const userId = seedDemoSession('route-last-context-user')
+    window.localStorage.setItem(
+      `plan-things:settings:v1:${userId}`,
+      JSON.stringify({
+        homePage: 'canvas',
+        openLastCtx: true,
+        collapsedByDefault: false,
+      }),
+    )
+    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
+
+    renderApp('/app')
+
+    expect(await screen.findAllByRole('button', { name: /^meus arquivos$/i })).not.toHaveLength(0)
+    expect(window.location.pathname).toBe('/files')
+  })
+
+  it('resolves /app to homePage when openLastCtx is disabled', async () => {
+    const userId = seedDemoSession('route-home-page-user')
+    window.localStorage.setItem(
+      `plan-things:settings:v1:${userId}`,
+      JSON.stringify({
+        homePage: 'calendar',
+        openLastCtx: false,
+        collapsedByDefault: false,
+      }),
+    )
+    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
+
+    renderApp('/app')
+
+    expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/calendar')
   })
 
   it('opens the current plan board from the workspace', async () => {

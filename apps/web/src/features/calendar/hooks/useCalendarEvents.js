@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import { buildCalendarEventPayload, mapCalendarEventsToSnapshot } from '../../../shared/contracts/backendAdapters.js'
 import {
@@ -56,7 +57,9 @@ function matchesSearch(event, term) {
 
 export function useCalendarEvents({ search = '' } = {}) {
   const { accessToken, isAuthenticated, isDemoSession } = useAuth()
+  const { generalPreferences } = usePreferences()
   const backendEnabled = isAuthenticated && !isDemoSession
+  const timeZone = generalPreferences.timezone
   const [snapshot, setSnapshot] = useState(() => (backendEnabled ? EMPTY_CALENDAR_SNAPSHOT : createInitialCalendarSnapshot()))
   const [isLoading, setIsLoading] = useState(() => backendEnabled)
   const [loadError, setLoadError] = useState(null)
@@ -86,7 +89,7 @@ export function useCalendarEvents({ search = '' } = {}) {
         const enrichedEvents = await enrichGeneratedCardKinds(events, accessToken)
 
         if (!active) return
-        setSnapshot(mapCalendarEventsToSnapshot(enrichedEvents))
+        setSnapshot(mapCalendarEventsToSnapshot(enrichedEvents, { timeZone }))
         setLoadError(null)
       } catch (error) {
         if (!active) return
@@ -103,7 +106,17 @@ export function useCalendarEvents({ search = '' } = {}) {
     return () => {
       active = false
     }
-  }, [accessToken, backendEnabled])
+  }, [accessToken, backendEnabled, timeZone])
+
+  useEffect(() => {
+    if (!backendEnabled) return
+
+    setSnapshot((current) => {
+      const rawEvents = current.events.map((event) => event.raw).filter(Boolean)
+      if (!rawEvents.length) return current
+      return mapCalendarEventsToSnapshot(rawEvents, { timeZone })
+    })
+  }, [backendEnabled, timeZone])
 
   const filteredEvents = useMemo(() => {
     return snapshot.events.filter((event) => matchesSearch(event, searchTerm))
@@ -122,10 +135,13 @@ export function useCalendarEvents({ search = '' } = {}) {
     const createdEvent = await apiRequest('/api/calendar/events', {
       method: 'POST',
       token: accessToken,
-      body: buildCalendarEventPayload(data),
+      body: buildCalendarEventPayload(data, { timeZone }),
     })
 
-    const nextSnapshot = mapCalendarEventsToSnapshot([...(snapshot.events.map((event) => event.raw).filter(Boolean)), createdEvent])
+    const nextSnapshot = mapCalendarEventsToSnapshot(
+      [...(snapshot.events.map((event) => event.raw).filter(Boolean)), createdEvent],
+      { timeZone },
+    )
     setSnapshot(nextSnapshot)
     setLoadError(null)
     return nextSnapshot.events.find((event) => event.id === createdEvent.id)
@@ -157,7 +173,7 @@ export function useCalendarEvents({ search = '' } = {}) {
     const updatedEvent = await apiRequest(`/api/calendar/events/${eventId}`, {
       method: 'PATCH',
       token: accessToken,
-      body: buildCalendarEventPayload(data),
+      body: buildCalendarEventPayload(data, { timeZone }),
     })
 
     const nextSnapshot = mapCalendarEventsToSnapshot(
@@ -165,6 +181,7 @@ export function useCalendarEvents({ search = '' } = {}) {
         .map((event) => event.raw)
         .filter(Boolean)
         .map((event) => (event.id === eventId ? updatedEvent : event)),
+      { timeZone },
     )
     setSnapshot(nextSnapshot)
     setLoadError(null)

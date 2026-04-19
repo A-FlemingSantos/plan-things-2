@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import {
   buildCanvasSavePayload,
@@ -25,10 +26,20 @@ function setPlanById(plans, planId, updater) {
 
 export function PlansProvider({ children }) {
   const { accessToken, isAuthenticated, isDemoSession, currentUser, workspace, isReady } = useAuth()
+  const { generalPreferences } = usePreferences()
   const backendEnabled = isAuthenticated && !isDemoSession
   const [plans, setPlans] = useState([])
   const [activePlanId, setActivePlanId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const boardMappingOptions = useMemo(() => ({
+    locale: generalPreferences.language,
+    timeZone: generalPreferences.timezone,
+    dateFormat: generalPreferences.dateFormat,
+  }), [
+    generalPreferences.dateFormat,
+    generalPreferences.language,
+    generalPreferences.timezone,
+  ])
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
   const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
@@ -213,17 +224,17 @@ export function PlansProvider({ children }) {
     })
 
     setPlans((prev) => prev.map((plan) => (
-      plan.id === planId ? mergeBoardIntoPlan(plan, boardView) : plan
+      plan.id === planId ? mergeBoardIntoPlan(plan, boardView, boardMappingOptions) : plan
     )))
 
-    return mapBoardViewToColumns(boardView)
-  }, [accessToken, backendEnabled, ensurePlanDetails, getPlanById])
+    return mapBoardViewToColumns(boardView, boardMappingOptions)
+  }, [accessToken, backendEnabled, boardMappingOptions, ensurePlanDetails, getPlanById])
 
   const applyBoardView = useCallback((planId, boardView) => {
     setPlans((prev) => prev.map((plan) => (
-      plan.id === planId ? mergeBoardIntoPlan(plan, boardView) : plan
+      plan.id === planId ? mergeBoardIntoPlan(plan, boardView, boardMappingOptions) : plan
     )))
-  }, [])
+  }, [boardMappingOptions])
 
   const loadPlanCanvas = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { useAuth } from './features/auth/context/AuthContext.jsx'
+import { usePreferences } from './features/preferences/context/PreferencesContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import PasswordRecovery from './features/auth/pages/PasswordRecovery/PasswordRecovery.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
@@ -23,6 +24,17 @@ function LegacyPlanRedirect({ buildPath }) {
   const { planId } = useParams()
 
   return <Navigate to={buildPath(planId)} replace />
+}
+
+function PreferredAppEntryRedirect() {
+  const { isAuthenticated } = useAuth()
+  const { resolveInitialRoute } = usePreferences()
+
+  if (!isAuthenticated) {
+    return <Navigate to={ROUTES.workspace} replace />
+  }
+
+  return <Navigate to={resolveInitialRoute()} replace />
 }
 
 function AppBootstrapScreen() {
@@ -59,6 +71,7 @@ export default function App() {
       <Route path={ROUTES.register} element={<Auth initialMode="register" />} />
       <Route path={ROUTES.forgot} element={<PasswordRecovery mode="forgot" />} />
       <Route path={ROUTES.reset} element={<PasswordRecovery mode="reset" />} />
+      <Route path="/app" element={<PreferredAppEntryRedirect />} />
       <Route path={ROUTES.workspace} element={<Workspace />} />
       <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
       <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />

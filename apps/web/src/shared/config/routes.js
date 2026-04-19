@@ -16,7 +16,6 @@ export const ROUTES = {
 }
 
 export const ROUTE_ALIASES = [
-  { from: '/app', to: ROUTES.workspace },
   { from: '/app/board', to: ROUTES.workspaceBoard },
   { from: '/kanban', to: ROUTES.workspaceBoard },
   { from: '/workspace/canvas', to: ROUTES.canvas },

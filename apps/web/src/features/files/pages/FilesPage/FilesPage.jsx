@@ -7,6 +7,7 @@ import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu
 import { ROUTES } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { createClientId } from '../../../../shared/utils/createClientId.js'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import {
   createInitialLibrarySnapshot,
   createLibraryItem,
@@ -196,7 +197,18 @@ function RenameInput({ value, onConfirm, onCancel }) {
 /* ═══════════════════════════════════════════
    FILE CARD (grid)
 ═══════════════════════════════════════════ */
-function FileCard({ item, selected, onSelect, onOpen, onContextMenu, onToggleStar, renamingId, onRename, onRenameCancel }) {
+function FileCard({
+  item,
+  selected,
+  onSelect,
+  onOpen,
+  onContextMenu,
+  onToggleStar,
+  renamingId,
+  onRename,
+  onRenameCancel,
+  modifiedLabel,
+}) {
   const typeInfo = FILE_TYPES[item.type] || FILE_TYPES.generic
   const FileIcon = typeInfo.icon
   const isRenaming = renamingId === item.id
@@ -246,8 +258,8 @@ function FileCard({ item, selected, onSelect, onOpen, onContextMenu, onToggleSta
           <p className={styles.fileCardName} title={item.name}>{item.name}</p>
         )}
         <div className={styles.fileCardMeta}>
-          <span className={styles.fileCardDate}>{item.modified}</span>
-            {item.size > 0 && <span className={styles.fileCardSize}>{formatFileSize(item.size)}</span>}
+          <span className={styles.fileCardDate}>{modifiedLabel}</span>
+          {item.size > 0 && <span className={styles.fileCardSize}>{formatFileSize(item.size)}</span>}
         </div>
       </div>
     </div>
@@ -257,7 +269,18 @@ function FileCard({ item, selected, onSelect, onOpen, onContextMenu, onToggleSta
 /* ═══════════════════════════════════════════
    FILE ROW (list)
 ═══════════════════════════════════════════ */
-function FileRow({ item, selected, onSelect, onOpen, onContextMenu, onToggleStar, renamingId, onRename, onRenameCancel }) {
+function FileRow({
+  item,
+  selected,
+  onSelect,
+  onOpen,
+  onContextMenu,
+  onToggleStar,
+  renamingId,
+  onRename,
+  onRenameCancel,
+  modifiedLabel,
+}) {
   const typeInfo = FILE_TYPES[item.type] || FILE_TYPES.generic
   const FileIcon = typeInfo.icon
   const isRenaming = renamingId === item.id
@@ -284,8 +307,8 @@ function FileRow({ item, selected, onSelect, onOpen, onContextMenu, onToggleStar
       </div>
       <div className={styles.fileRowMeta}>
         <span className={styles.fileRowOwner}>{formatOwner(item.owner)}</span>
-        <span className={styles.fileRowDate}>{item.modified}</span>
-          <span className={styles.fileRowSize}>{formatFileSize(item.size)}</span>
+        <span className={styles.fileRowDate}>{modifiedLabel}</span>
+        <span className={styles.fileRowSize}>{formatFileSize(item.size)}</span>
         <div className={styles.fileRowActions}>
           <button
             className={`${styles.fileRowBtn} ${item.starred ? styles.fileRowBtnActive : ''}`}
@@ -305,14 +328,14 @@ function FileRow({ item, selected, onSelect, onOpen, onContextMenu, onToggleStar
 /* ═══════════════════════════════════════════
    DETAIL PANEL
 ═══════════════════════════════════════════ */
-function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled }) {
+function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled, modifiedLabel }) {
   const typeInfo = FILE_TYPES[item.type] || FILE_TYPES.generic
   const FileIcon = typeInfo.icon
   const imgGrad = IMG_GRADIENTS[item.name]
   const typeLabel = item.type === 'folder' ? 'Pasta' : 'Arquivo'
   const ownerLabel = formatOwner(item.owner)
   const activityRows = [
-    `Atualizado por ${ownerLabel} ${item.modified.toLowerCase()}`,
+    `Atualizado por ${ownerLabel} em ${modifiedLabel}`,
     backendEnabled
       ? 'Compartilhamento nesta tela será liberado por plano.'
       : item.shared ? 'Compartilhado com o workspace de produto' : 'Só você acessa este item',
@@ -371,7 +394,7 @@ function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled }) 
             {[
               { label: 'Tipo',      value: typeLabel },
               { label: 'Tamanho',   value: formatFileSize(item.size) },
-              { label: 'Modificado', value: item.modified },
+              { label: 'Modificado', value: modifiedLabel },
               { label: 'Dono',      value: ownerLabel },
               { label: 'Compartilhado', value: item.shared ? 'Sim, com a equipe' : 'Não' },
             ].map(row => (
@@ -489,6 +512,7 @@ function FilesLoadingState({ view }) {
 ═══════════════════════════════════════════ */
 export default function FilesPage() {
   const { accessToken, isAuthenticated, isDemoSession } = useAuth()
+  const { formatDateTime } = usePreferences()
   const backendEnabled = isAuthenticated && !isDemoSession
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const [sidebarSection, setSidebarSection]     = useState('my-files') // my-files | recent | starred | shared | trash
@@ -602,6 +626,17 @@ export default function FilesPage() {
       return new Date(b.modifiedAtIso ?? 0).getTime() - new Date(a.modifiedAtIso ?? 0).getTime()
     })
   }, [currentPath, flattenedItems, search, sidebarSection, sortBy])
+
+  const formatModifiedLabel = useCallback((item) => {
+    if (!item) return ''
+
+    if (item.modifiedAtIso) {
+      const formatted = formatDateTime(item.modifiedAtIso)
+      if (formatted) return formatted
+    }
+
+    return item.modified
+  }, [formatDateTime])
 
   const toggleStar = useCallback(async (id) => {
     const item = itemById.get(id)
@@ -1148,6 +1183,7 @@ export default function FilesPage() {
                   <FileCard
                     key={item.id}
                     item={item}
+                    modifiedLabel={formatModifiedLabel(item)}
                     selected={selected === item.id}
                     onSelect={id => {
                       setSelected(id)
@@ -1176,6 +1212,7 @@ export default function FilesPage() {
                   <FileRow
                     key={item.id}
                     item={item}
+                    modifiedLabel={formatModifiedLabel(item)}
                     selected={selected === item.id}
                     onSelect={id => {
                       setSelected(id)
@@ -1198,6 +1235,7 @@ export default function FilesPage() {
           {detailItem && (
             <DetailPanel
               item={detailItem}
+              modifiedLabel={formatModifiedLabel(detailItem)}
               onClose={() => { setDetailItemId(null); setSelected(null) }}
               onToggleStar={toggleStar}
               onAction={handleContextAction}

@@ -126,4 +126,57 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
 
     org.junit.jupiter.api.Assertions.assertFalse(login.path("data").path("accessToken").asText().isBlank());
   }
+
+  @Test
+  void shouldRejectInvalidLocaleAndTimeZone() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-settings-invalid@example.com", "12345678");
+
+    mockMvc.perform(patch("/api/settings/preferences")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "locale": "zz-INVALID",
+                  "timeZone": "America/Sao_Paulo",
+                  "dateFormat": "dd/MM/yyyy",
+                  "timeFormat": "24h"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("IDIOMA_INVALIDO"));
+
+    mockMvc.perform(patch("/api/settings/preferences")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "locale": "pt-BR",
+                  "timeZone": "Mars/Olympus",
+                  "dateFormat": "dd/MM/yyyy",
+                  "timeFormat": "24h"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("FUSO_INVALIDO"));
+  }
+
+  @Test
+  void shouldCanonicalizeLocaleAndTimeZoneOnPreferencesUpdate() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-settings-canonical@example.com", "12345678");
+
+    mockMvc.perform(patch("/api/settings/preferences")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "locale": "pt_br",
+                  "timeZone": "America/Sao_Paulo",
+                  "dateFormat": "dd/MM/yyyy",
+                  "timeFormat": "24h"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.locale").value("pt-BR"))
+        .andExpect(jsonPath("$.data.timeZone").value("America/Sao_Paulo"));
+  }
 }

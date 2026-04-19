@@ -1,19 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
+import { usePreferences } from '../../../features/preferences/context/PreferencesContext.jsx'
 import ProductSidebar from '../ProductSidebar/ProductSidebar.jsx'
 
-const SIDEBAR_STORAGE_KEY = 'plan-things:sidebar-collapsed'
-const SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
+const SIDEBAR_STORAGE_PREFIX = 'plan-things:sidebar-collapsed:v1:'
 
-function readLocalSettings(userId) {
-  if (!userId || typeof window === 'undefined') return null
-
-  try {
-    const raw = window.localStorage.getItem(`${SETTINGS_STORAGE_PREFIX}${userId}`)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+function buildSidebarStorageKey(userId) {
+  return `${SIDEBAR_STORAGE_PREFIX}${userId || 'anonymous'}`
 }
 
 export default function ProductAppShell({
@@ -34,17 +27,12 @@ export default function ProductAppShell({
   children,
 }) {
   const { workspace, currentUser } = useAuth()
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-
-    const persistedSidebarValue = window.localStorage.getItem(SIDEBAR_STORAGE_KEY)
-    if (persistedSidebarValue !== null) {
-      return persistedSidebarValue === 'true'
-    }
-
-    const localSettings = readLocalSettings(currentUser?.id)
-    return localSettings?.collapsedByDefault === true
-  })
+  const { localPreferences, localRestoreVersion } = usePreferences()
+  const sidebarStorageKey = useMemo(
+    () => buildSidebarStorageKey(currentUser?.id),
+    [currentUser?.id],
+  )
+  const [collapsed, setCollapsed] = useState(localPreferences.collapsedByDefault === true)
   const ContentTag = contentTag
   const resolvedWorkspaceName = workspaceName ?? workspace?.name ?? 'Workspace'
   const resolvedWorkspaceInitial = workspaceInitial
@@ -57,26 +45,30 @@ export default function ProductAppShell({
     typeof bottomContent === 'function' ? bottomContent({ collapsed }) : bottomContent
 
   useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed))
-  }, [collapsed])
-
-  useEffect(() => {
     if (typeof window === 'undefined') return
-    if (!currentUser?.id) return
-    if (window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== null) return
+    const persistedSidebarValue = window.localStorage.getItem(sidebarStorageKey)
+    const nextCollapsed = persistedSidebarValue !== null
+      ? persistedSidebarValue === 'true'
+      : localPreferences.collapsedByDefault === true
+    setCollapsed(nextCollapsed)
+  }, [localPreferences.collapsedByDefault, localRestoreVersion, sidebarStorageKey])
 
-    const localSettings = readLocalSettings(currentUser.id)
-    if (typeof localSettings?.collapsedByDefault === 'boolean') {
-      setCollapsed(localSettings.collapsedByDefault)
-    }
-  }, [currentUser?.id])
+  const handleToggleCollapse = () => {
+    setCollapsed((value) => {
+      const next = !value
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(sidebarStorageKey, String(next))
+      }
+      return next
+    })
+  }
 
   return (
     <div className={`${styles.shell} ${collapsed ? styles.shellCollapsed : ''}`}>
       <ProductSidebar
         styles={styles}
         collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((value) => !value)}
+        onToggleCollapse={handleToggleCollapse}
         activeNav={activeNav}
         onNavItemClick={onNavItemClick}
         navItems={navItems}

@@ -17,6 +17,7 @@ import { useBoardColumns } from '../../hooks/useBoardColumns.js'
 import { useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
 import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
 import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -99,21 +100,33 @@ function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+function dateKeyFromTimeZoneInstant(value, timeZone) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  const partByType = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date).map((part) => [part.type, part.value]))
+
+  const year = partByType.year
+  const month = partByType.month
+  const day = partByType.day
+
+  if (!year || !month || !day) return null
+  return `${year}-${month}-${day}`
+}
+
 function eventMinutes(time) {
   const [hours, minutes] = time.split(':').map(Number)
   return hours * 60 + minutes
 }
 
-function formatPlannerDate(date) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-  }).format(date)
-}
-
-function formatPlannerHour(hour) {
-  return `${hour}h`
+function capitalizeFirst(value) {
+  if (!value) return value
+  return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
 const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
@@ -175,13 +188,23 @@ export default function KanbanBoard() {
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
   const [isPlannerAgendaOpen, setIsPlannerAgendaOpen] = useState(true)
-  const today = useMemo(() => new Date(), [])
+  const { generalPreferences, formatIntl, formatClockTime } = usePreferences()
+  const timeZone = generalPreferences.timezone
+  const dateFormat = generalPreferences.dateFormat
+  const today = useMemo(() => new Date(), [timeZone])
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
   const plannerCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents } = useCalendarEvents()
+  const formatPlannerDateLabel = (date) => capitalizeFirst(formatIntl(date, {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  }))
+  const formatPlannerHourLabel = (hour) => formatClockTime(`${String(hour).padStart(2, '0')}:00`)
+  const formatEventClockLabel = (timeValue) => formatClockTime(timeValue)
   const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
   const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
   const {
@@ -204,6 +227,8 @@ export default function KanbanBoard() {
     accessToken,
     applyBoardView,
     loadPlanBoard,
+    timeZone,
+    dateFormat,
   })
   const {
     dragState,
@@ -348,7 +373,7 @@ export default function KanbanBoard() {
   }
 
   const plannerEvents = useMemo(() => {
-    const todayKey = dateKey(today)
+    const todayKey = dateKeyFromTimeZoneInstant(today, timeZone) ?? dateKey(today)
     const todaysEvents = filteredEvents.filter((event) => event.date === todayKey)
 
     if (todaysEvents.length) return todaysEvents
@@ -356,7 +381,7 @@ export default function KanbanBoard() {
     return filteredEvents
       .filter((event) => event.date >= todayKey)
       .slice(0, 4)
-  }, [filteredEvents, today])
+  }, [filteredEvents, timeZone, today])
   const hasNoPlan = isBackendDriven && !isLoading && !activePlan
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
   const boardHeaderTitle = isBoardLoading
@@ -483,7 +508,7 @@ export default function KanbanBoard() {
       <div className={styles.plannerPanelHeader}>
         <div>
           <span className={styles.plannerEyebrow}>Planejador</span>
-          <h2>{formatPlannerDate(today)}</h2>
+          <h2>{formatPlannerDateLabel(today)}</h2>
         </div>
         <button
           type="button"
@@ -516,7 +541,7 @@ export default function KanbanBoard() {
         <div className={styles.plannerAgendaListInner}>
           {plannerEvents.length ? plannerEvents.map((event) => (
             <article key={event.id} className={styles.plannerAgendaItem} style={{ '--event-color': event.color }}>
-              <span>{event.start} - {event.end}</span>
+              <span>{formatEventClockLabel(event.start)} - {formatEventClockLabel(event.end)}</span>
               <strong>{event.title}</strong>
               <p>{[event.location, event.calendar].filter(Boolean).join(' · ')}</p>
             </article>
@@ -533,7 +558,7 @@ export default function KanbanBoard() {
       <div className={styles.plannerTimeline} aria-label="Linha do tempo do dia">
         {SCHEDULE_HOURS.map((hour) => (
           <div key={hour} className={styles.plannerTimelineRow}>
-            <span>{formatPlannerHour(hour)}</span>
+            <span>{formatPlannerHourLabel(hour)}</span>
             <div />
           </div>
         ))}
@@ -554,7 +579,7 @@ export default function KanbanBoard() {
                 '--event-height': `${height}px`,
               }}
             >
-              <span>{event.start}</span>
+              <span>{formatEventClockLabel(event.start)}</span>
               <strong>{event.title}</strong>
             </article>
           )

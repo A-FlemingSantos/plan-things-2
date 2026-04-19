@@ -4,14 +4,8 @@ import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import styles from './CalendarPage.module.css'
-
-const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
-const MINI_WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-const MONTHS = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
 
 const VIEW_OPTIONS = [
   { id: 'day', label: 'Dia', status: 'Vista diária' },
@@ -49,34 +43,95 @@ const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
     Icon.Files,
 }))
 
+function createCalendarDate(year, month, day) {
+  return new Date(Date.UTC(year, month, day, 12, 0, 0, 0))
+}
+
+function yearOf(date) {
+  return date.getUTCFullYear()
+}
+
+function monthOf(date) {
+  return date.getUTCMonth()
+}
+
+function dayOfMonth(date) {
+  return date.getUTCDate()
+}
+
+function weekdayOf(date) {
+  return date.getUTCDay()
+}
+
+function dateFromKey(value) {
+  if (!value || typeof value !== 'string') return null
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return null
+  const [, yearValue, monthValue, dayValue] = match
+  return createCalendarDate(Number(yearValue), Number(monthValue) - 1, Number(dayValue))
+}
+
+function dateKeyFromTimeZoneInstant(value, timeZone) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  const partByType = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date).map((part) => [part.type, part.value]))
+
+  const year = partByType.year
+  const month = partByType.month
+  const day = partByType.day
+  if (!year || !month || !day) return null
+  return `${year}-${month}-${day}`
+}
+
+function currentDateInTimeZone(timeZone) {
+  const key = dateKeyFromTimeZoneInstant(new Date(), timeZone)
+  if (key) {
+    const parsed = dateFromKey(key)
+    if (parsed) return parsed
+  }
+
+  const fallback = new Date()
+  return createCalendarDate(
+    fallback.getUTCFullYear(),
+    fallback.getUTCMonth(),
+    fallback.getUTCDate(),
+  )
+}
+
 function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1)
+  return createCalendarDate(yearOf(date), monthOf(date), 1)
 }
 
 function addDays(date, amount) {
   const next = new Date(date)
-  next.setDate(next.getDate() + amount)
+  next.setUTCDate(next.getUTCDate() + amount)
   return next
 }
 
 function addMonths(date, amount) {
-  return new Date(date.getFullYear(), date.getMonth() + amount, 1)
+  return createCalendarDate(yearOf(date), monthOf(date) + amount, 1)
 }
 
 function startOfWeek(date) {
-  return addDays(date, -date.getDay())
+  return addDays(date, -weekdayOf(date))
 }
 
 function startOfWorkWeek(date) {
-  return addDays(date, date.getDay() === 0 ? -6 : 1 - date.getDay())
+  const weekDay = weekdayOf(date)
+  return addDays(date, weekDay === 0 ? -6 : 1 - weekDay)
 }
 
 function daysInMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  return new Date(Date.UTC(yearOf(date), monthOf(date) + 1, 0, 12, 0, 0, 0)).getUTCDate()
 }
 
 function dateKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  return `${yearOf(date)}-${String(monthOf(date) + 1).padStart(2, '0')}-${String(dayOfMonth(date)).padStart(2, '0')}`
 }
 
 function isSameDate(a, b) {
@@ -85,14 +140,14 @@ function isSameDate(a, b) {
 
 function buildMonthCells(monthDate) {
   const first = startOfMonth(monthDate)
-  const gridStart = addDays(first, -first.getDay())
+  const gridStart = addDays(first, -weekdayOf(first))
 
   return Array.from({ length: 42 }, (_, index) => {
     const date = addDays(gridStart, index)
     return {
       date,
       key: dateKey(date),
-      muted: date.getMonth() !== monthDate.getMonth(),
+      muted: monthOf(date) !== monthOf(monthDate),
     }
   })
 }
@@ -108,46 +163,89 @@ function buildRangeDays(startDate, length) {
 }
 
 function clampDateToMonth(date, monthDate) {
-  return new Date(
-    monthDate.getFullYear(),
-    monthDate.getMonth(),
-    Math.min(date.getDate(), daysInMonth(monthDate)),
+  return createCalendarDate(
+    yearOf(monthDate),
+    monthOf(monthDate),
+    Math.min(dayOfMonth(date), daysInMonth(monthDate)),
   )
 }
 
-function formatCellLabel(date, muted) {
-  if (date.getDate() === 1) {
-    return muted ? `${MONTHS[date.getMonth()].slice(0, 3)} ${date.getDate()}` : `${date.getDate()}`
+function capitalizeFirst(value) {
+  if (!value) return value
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
+function normalizeShortMonthLabel(value) {
+  return value.replace('.', '').trim().toLowerCase()
+}
+
+function buildWeekdayLabels(locale, _timeZone, width = 'long') {
+  const firstSunday = createCalendarDate(2026, 0, 4)
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(firstSunday, index)
+    return capitalizeFirst(new Intl.DateTimeFormat(locale, {
+      weekday: width,
+      timeZone: 'UTC',
+    }).format(date))
+  })
+}
+
+function formatCellLabel(date, muted, locale, timeZone) {
+  if (dayOfMonth(date) === 1) {
+    const shortMonth = normalizeShortMonthLabel(new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      timeZone: 'UTC',
+    }).format(date))
+    return muted ? `${shortMonth} ${dayOfMonth(date)}` : `${dayOfMonth(date)}`
   }
 
-  return String(date.getDate()).padStart(2, '0')
+  return String(dayOfMonth(date)).padStart(2, '0')
 }
 
-function formatLongDate(date) {
-  return `${date.getDate()} de ${MONTHS[date.getMonth()]} de ${date.getFullYear()}`
+function formatLongDate(date, locale, timeZone) {
+  return capitalizeFirst(new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone,
+  }).format(date))
 }
 
-function formatShortDate(date) {
-  return `${date.getDate()} de ${MONTHS[date.getMonth()]}`
+function formatShortDate(date, locale, timeZone) {
+  const day = new Intl.DateTimeFormat(locale, { day: 'numeric', timeZone }).format(date)
+  const shortMonth = normalizeShortMonthLabel(new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    timeZone,
+  }).format(date))
+
+  return `${day} ${shortMonth}`
 }
 
-function formatRangeLabel(view, selectedDate, visibleMonth) {
+function formatRangeLabel(view, selectedDate, visibleMonth, locale, timeZone) {
   if (view === 'month') {
-    return `${MONTHS[visibleMonth.getMonth()]} ${visibleMonth.getFullYear()}`
+    return capitalizeFirst(new Intl.DateTimeFormat(locale, {
+      month: 'long',
+      year: 'numeric',
+      timeZone,
+    }).format(visibleMonth))
   }
 
   if (view === 'day') {
-    return formatLongDate(selectedDate)
+    return formatLongDate(selectedDate, locale, timeZone)
   }
 
   const start = view === 'work' ? startOfWorkWeek(selectedDate) : startOfWeek(selectedDate)
   const end = addDays(start, view === 'work' ? 4 : 6)
 
-  if (start.getMonth() === end.getMonth()) {
-    return `${start.getDate()}-${end.getDate()} de ${MONTHS[start.getMonth()]} ${start.getFullYear()}`
+  if (monthOf(start) === monthOf(end) && yearOf(start) === yearOf(end)) {
+    const monthLabel = normalizeShortMonthLabel(new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      timeZone: 'UTC',
+    }).format(start))
+    return `${dayOfMonth(start)}-${dayOfMonth(end)} ${monthLabel} ${yearOf(start)}`
   }
 
-  return `${formatShortDate(start)} - ${formatShortDate(end)} ${end.getFullYear()}`
+  return `${formatShortDate(start, locale, timeZone)} - ${formatShortDate(end, locale, timeZone)} ${yearOf(end)}`
 }
 
 function eventMeta(event) {
@@ -178,12 +276,19 @@ function sortCalendarItemsForDay(events) {
   })
 }
 
-function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
+function MiniCalendar({
+  monthDate,
+  selectedDate,
+  onSelectDate,
+  onShiftMonth,
+  miniWeekdays,
+  monthLabel,
+}) {
   return (
     <div className={styles.miniCalendar}>
       <div className={styles.miniCalendarHeader}>
         <button type="button" className={styles.sidebarToggle} aria-label="Expandir mês"><Icon.ChevDown /></button>
-        <span>{MONTHS[monthDate.getMonth()]} {monthDate.getFullYear()}</span>
+        <span>{monthLabel}</span>
         <div className={styles.miniCalendarNav}>
           <button type="button" aria-label="Mês anterior" onClick={() => onShiftMonth(-1)}><Icon.ChevLeft /></button>
           <button type="button" aria-label="Próximo mês" onClick={() => onShiftMonth(1)}><Icon.ChevRight /></button>
@@ -191,7 +296,7 @@ function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
       </div>
 
       <div className={styles.miniCalendarGrid}>
-        {MINI_WEEKDAYS.map((weekday, index) => (
+        {miniWeekdays.map((weekday, index) => (
           <span key={`${weekday}-${index}`} className={styles.miniWeekday}>{weekday}</span>
         ))}
         {buildMonthCells(monthDate).map(({ date, key, muted }) => (
@@ -201,7 +306,7 @@ function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
             className={`${styles.miniDay} ${muted ? styles.miniDayMuted : ''} ${isSameDate(date, selectedDate) ? styles.miniDaySelected : ''}`}
             onClick={() => onSelectDate(date)}
           >
-            {date.getDate()}
+            {dayOfMonth(date)}
           </button>
         ))}
       </div>
@@ -209,7 +314,13 @@ function MiniCalendar({ monthDate, selectedDate, onSelectDate, onShiftMonth }) {
   )
 }
 
-function EventDialog({ selectedDate, initialEvent = null, onClose, onCreate }) {
+function EventDialog({
+  selectedDate,
+  initialEvent = null,
+  onClose,
+  onCreate,
+  formatLongDateLabel,
+}) {
   const [title, setTitle] = useState(initialEvent?.title ?? '')
   const [start, setStart] = useState(initialEvent?.start ?? '09:00')
   const [end, setEnd] = useState(initialEvent?.end ?? '10:00')
@@ -269,7 +380,7 @@ function EventDialog({ selectedDate, initialEvent = null, onClose, onCreate }) {
             <input type="time" value={end} onChange={(event) => setEnd(event.target.value)} />
           </label>
         </div>
-        <p className={styles.dialogDate}>{formatLongDate(selectedDate)}</p>
+        <p className={styles.dialogDate}>{formatLongDateLabel(selectedDate)}</p>
         {submitError && <p className={styles.dialogError}>{submitError}</p>}
         <button type="submit" className={styles.dialogSubmit} disabled={!title.trim() || isSubmitting}>
           {isSubmitting ? 'Salvando...' : 'Salvar'}
@@ -279,12 +390,22 @@ function EventDialog({ selectedDate, initialEvent = null, onClose, onCreate }) {
   )
 }
 
-function AgendaList({ date, events, onClose, onCreate, onEditEvent, onDeleteEvent }) {
+function AgendaList({
+  date,
+  events,
+  onClose,
+  onCreate,
+  onEditEvent,
+  onDeleteEvent,
+  formatShortDateLabel,
+  formatEventPrimaryTime,
+  formatEventEndTime,
+}) {
   return (
     <aside className={styles.agendaPanel}>
       <div className={styles.agendaHeader}>
         <div>
-          <p>{formatShortDate(date)}</p>
+          <p>{formatShortDateLabel(date)}</p>
           <span>{events.length} eventos</span>
         </div>
         <button type="button" className={styles.agendaCloseButton} onClick={onClose} aria-label="Fechar agenda">
@@ -299,8 +420,8 @@ function AgendaList({ date, events, onClose, onCreate, onEditEvent, onDeleteEven
           return (
             <div key={event.id} className={styles.agendaItem} style={{ '--event-color': event.color }}>
               <div className={styles.agendaTime}>
-                {calendarItemPrimaryTime(event)}
-                {!planTask && <span>{event.end}</span>}
+                {formatEventPrimaryTime(event)}
+                {!planTask && <span>{formatEventEndTime(event)}</span>}
               </div>
               <div className={styles.agendaItemContent}>
                 <p>{event.title}</p>
@@ -355,9 +476,12 @@ function CalendarLoadingState({ styles }) {
 }
 
 export default function CalendarPage() {
-  const today = useMemo(() => new Date(), [])
-  const [selectedDate, setSelectedDate] = useState(today)
-  const [visibleMonth, setVisibleMonth] = useState(startOfMonth(today))
+  const { generalPreferences, formatIntl, formatClockTime, formatMonthLabel } = usePreferences()
+  const locale = generalPreferences.language
+  const timeZone = generalPreferences.timezone
+  const initialToday = useMemo(() => currentDateInTimeZone(timeZone), [timeZone])
+  const [selectedDate, setSelectedDate] = useState(() => initialToday)
+  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(initialToday))
   const [view, setView] = useState('month')
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -366,8 +490,25 @@ export default function CalendarPage() {
   const [notification, setNotification] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
   const notificationTimerRef = useRef(null)
+  const today = useMemo(() => currentDateInTimeZone(timeZone), [timeZone])
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { calendarSources, filteredEvents, isLoading, loadError, createEvent, updateEvent, deleteEvent } = useCalendarEvents({ search })
+  const weekdayLabels = useMemo(() => buildWeekdayLabels(locale, timeZone, 'long'), [locale, timeZone])
+  const miniWeekdays = useMemo(() => buildWeekdayLabels(locale, timeZone, 'narrow'), [locale, timeZone])
+  const formatLongDateLabel = (date) => formatLongDate(date, locale, timeZone)
+  const formatShortDateLabel = (date) => formatShortDate(date, locale, timeZone)
+  const formatShortMonthLabel = (date) => capitalizeFirst(
+    normalizeShortMonthLabel(formatIntl(date, { month: 'short' })),
+  )
+  const formatEventPrimaryTime = (event) => formatClockTime(calendarItemPrimaryTime(event))
+  const formatEventEndTime = (event) => formatClockTime(event.end)
+  const formatEventRangeLabel = (event) => {
+    if (isPlanTaskCalendarItem(event)) {
+      return formatClockTime(event.end)
+    }
+
+    return `${formatClockTime(event.start)} - ${formatClockTime(event.end)}`
+  }
 
   const cells = useMemo(() => buildMonthCells(visibleMonth), [visibleMonth])
   const eventsByDate = useMemo(() => {
@@ -380,12 +521,23 @@ export default function CalendarPage() {
   }, [filteredEvents])
   const selectedEvents = eventsByDate[dateKey(selectedDate)] ?? []
   const viewStatus = VIEW_OPTIONS.find((option) => option.id === view)?.status ?? 'Vista mensal'
+  const calendarRangeLabel = useMemo(
+    () => formatRangeLabel(view, selectedDate, visibleMonth, locale, timeZone),
+    [locale, selectedDate, timeZone, view, visibleMonth],
+  )
+  const visibleMonthLabel = useMemo(() => formatMonthLabel(visibleMonth), [formatMonthLabel, visibleMonth])
   const rangeDays = useMemo(() => {
     if (view === 'day') return buildRangeDays(selectedDate, 1)
     if (view === 'work') return buildRangeDays(startOfWorkWeek(selectedDate), 5)
     if (view === 'week') return buildRangeDays(startOfWeek(selectedDate), 7)
     return []
   }, [selectedDate, view])
+
+  useEffect(() => {
+    const nextToday = currentDateInTimeZone(timeZone)
+    setSelectedDate(nextToday)
+    setVisibleMonth(startOfMonth(nextToday))
+  }, [timeZone])
 
   useEffect(() => () => {
     if (notificationTimerRef.current) {
@@ -414,7 +566,7 @@ export default function CalendarPage() {
     if (view === 'month') {
       setAgendaPanelOpen(true)
     }
-    if (date.getMonth() !== visibleMonth.getMonth() || date.getFullYear() !== visibleMonth.getFullYear()) {
+    if (monthOf(date) !== monthOf(visibleMonth) || yearOf(date) !== yearOf(visibleMonth)) {
       setVisibleMonth(startOfMonth(date))
     }
   }
@@ -490,7 +642,7 @@ export default function CalendarPage() {
 
   const renderMonthGrid = () => (
     <div className={styles.monthGrid} aria-label="Calendário mensal">
-      {WEEKDAYS.map((weekday) => (
+      {weekdayLabels.map((weekday) => (
         <div key={weekday} className={styles.weekday}>{weekday}</div>
       ))}
 
@@ -506,12 +658,12 @@ export default function CalendarPage() {
             onClick={() => selectDate(date)}
           >
             <span className={`${styles.dayNumber} ${isToday ? styles.dayNumberToday : ''}`}>
-              {formatCellLabel(date, muted)}
+              {formatCellLabel(date, muted, locale, timeZone)}
             </span>
             <span className={styles.eventStack}>
               {dayEvents.slice(0, 3).map((event) => (
                 <span key={event.id} className={styles.eventChip} style={{ '--event-color': event.color }}>
-                  <span>{calendarItemTimeRangeLabel(event)}</span>
+                  <span>{formatEventRangeLabel(event)}</span>
                   {event.title}
                 </span>
               ))}
@@ -529,18 +681,19 @@ export default function CalendarPage() {
         const dayEvents = eventsByDate[key] ?? []
         const selected = isSameDate(date, selectedDate)
         const isToday = isSameDate(date, today)
+        const weekDayIndex = weekdayOf(date)
 
         return (
           <article key={key} className={`${styles.rangeDay} ${selected ? styles.rangeDaySelected : ''}`}>
             <button type="button" className={styles.rangeDayHeader} onClick={() => selectDate(date)}>
-              <span className={styles.rangeWeekday}>{WEEKDAYS[date.getDay()]}</span>
-              <span className={`${styles.rangeDayNumber} ${isToday ? styles.dayNumberToday : ''}`}>{date.getDate()}</span>
-              <span>{MONTHS[date.getMonth()]}</span>
+              <span className={styles.rangeWeekday}>{weekdayLabels[weekDayIndex]}</span>
+              <span className={`${styles.rangeDayNumber} ${isToday ? styles.dayNumberToday : ''}`}>{dayOfMonth(date)}</span>
+              <span>{formatShortMonthLabel(date)}</span>
             </button>
             <div className={styles.rangeEventList}>
               {dayEvents.length ? dayEvents.map((event) => (
                 <div key={event.id} className={styles.rangeEvent} style={{ '--event-color': event.color }}>
-                  <span>{calendarItemTimeRangeLabel(event)}</span>
+                  <span>{formatEventRangeLabel(event)}</span>
                   <p>{event.title}</p>
                   {eventMeta(event) && <small>{eventMeta(event)}</small>}
                   {!isPlanLinkedCalendarItem(event) && (
@@ -584,6 +737,8 @@ export default function CalendarPage() {
         selectedDate={selectedDate}
         onSelectDate={selectDate}
         onShiftMonth={shiftMonth}
+        miniWeekdays={miniWeekdays}
+        monthLabel={visibleMonthLabel}
       />
 
       <button type="button" className={styles.addCalendarButton} onClick={() => showNotification('Conexão de calendário em breve')}>
@@ -676,7 +831,7 @@ export default function CalendarPage() {
           <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
           <button type="button" className={styles.iconButton} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon.ChevLeft /></button>
           <button type="button" className={styles.iconButton} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon.ChevRight /></button>
-          <h1>{formatRangeLabel(view, selectedDate, visibleMonth)}</h1>
+          <h1>{calendarRangeLabel}</h1>
           <Icon.ChevDown />
           <span className={styles.viewStatus}>{viewStatus}</span>
         </div>
@@ -696,6 +851,9 @@ export default function CalendarPage() {
                 onCreate={openCreateDialog}
                 onEditEvent={handleEditEvent}
                 onDeleteEvent={handleDeleteEvent}
+                formatShortDateLabel={formatShortDateLabel}
+                formatEventPrimaryTime={formatEventPrimaryTime}
+                formatEventEndTime={formatEventEndTime}
               />
             )}
           </section>
@@ -704,13 +862,14 @@ export default function CalendarPage() {
 
       {dialogOpen && (
         <EventDialog
-          selectedDate={editingEvent ? new Date(`${editingEvent.date}T12:00:00`) : selectedDate}
+          selectedDate={editingEvent ? (dateFromKey(editingEvent.date) ?? selectedDate) : selectedDate}
           initialEvent={editingEvent}
           onClose={() => {
             setDialogOpen(false)
             setEditingEvent(null)
           }}
           onCreate={handleSaveEvent}
+          formatLongDateLabel={formatLongDateLabel}
         />
       )}
 

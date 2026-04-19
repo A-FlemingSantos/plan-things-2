@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
 
@@ -79,6 +80,7 @@ export default function Auth({ initialMode = 'login' }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { login, register } = useAuth()
+  const { resolveInitialRoute } = usePreferences()
   const [mode, setMode]           = useState(initialMode)   // 'login' | 'register'
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
@@ -98,20 +100,22 @@ export default function Auth({ initialMode = 'login' }) {
     setLoading('email')
 
     try {
+      let session = null
+
       if (isRegister) {
-        await register({
+        session = await register({
           fullName: name,
           email,
           password,
         })
       } else {
-        await login({
+        session = await login({
           email,
           password,
         })
       }
 
-      navigate(ROUTES.workspace)
+      navigate(resolveInitialRoute(session?.user?.id), { replace: true })
     } catch (error) {
       setErrorMessage(error.message ?? 'Nao foi possivel concluir a autenticacao.')
     } finally {
