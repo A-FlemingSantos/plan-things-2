@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
-import { usePreferences } from '../../../features/preferences/context/PreferencesContext.jsx'
 import ProductSidebar from '../ProductSidebar/ProductSidebar.jsx'
 
 const SIDEBAR_STORAGE_PREFIX = 'plan-things:sidebar-collapsed:v1:'
 
 function buildSidebarStorageKey(userId) {
   return `${SIDEBAR_STORAGE_PREFIX}${userId || 'anonymous'}`
+}
+
+function readSidebarCollapsedState(storageKey) {
+  if (typeof window === 'undefined') return false
+
+  const persistedSidebarValue = window.localStorage.getItem(storageKey)
+  return persistedSidebarValue === 'true'
 }
 
 export default function ProductAppShell({
@@ -27,12 +33,13 @@ export default function ProductAppShell({
   children,
 }) {
   const { workspace, currentUser } = useAuth()
-  const { localPreferences, localRestoreVersion } = usePreferences()
   const sidebarStorageKey = useMemo(
     () => buildSidebarStorageKey(currentUser?.id),
     [currentUser?.id],
   )
-  const [collapsed, setCollapsed] = useState(localPreferences.collapsedByDefault === true)
+  const [collapsed, setCollapsed] = useState(() => (
+    readSidebarCollapsedState(sidebarStorageKey)
+  ))
   const ContentTag = contentTag
   const resolvedWorkspaceName = workspaceName ?? workspace?.name ?? 'Workspace'
   const resolvedWorkspaceInitial = workspaceInitial
@@ -45,13 +52,8 @@ export default function ProductAppShell({
     typeof bottomContent === 'function' ? bottomContent({ collapsed }) : bottomContent
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const persistedSidebarValue = window.localStorage.getItem(sidebarStorageKey)
-    const nextCollapsed = persistedSidebarValue !== null
-      ? persistedSidebarValue === 'true'
-      : localPreferences.collapsedByDefault === true
-    setCollapsed(nextCollapsed)
-  }, [localPreferences.collapsedByDefault, localRestoreVersion, sidebarStorageKey])
+    setCollapsed(readSidebarCollapsedState(sidebarStorageKey))
+  }, [sidebarStorageKey])
 
   const handleToggleCollapse = () => {
     setCollapsed((value) => {

@@ -15,7 +15,6 @@ describe('PreferencesContext helpers', () => {
       localPreferences: {
         homePage: 'canvas',
         openLastCtx: true,
-        collapsedByDefault: false,
       },
       lastContext: '/calendar',
     })
@@ -28,7 +27,6 @@ describe('PreferencesContext helpers', () => {
       localPreferences: {
         homePage: 'files',
         openLastCtx: true,
-        collapsedByDefault: false,
       },
       lastContext: '/help',
     })
@@ -37,7 +35,6 @@ describe('PreferencesContext helpers', () => {
       localPreferences: {
         homePage: 'canvas',
         openLastCtx: false,
-        collapsedByDefault: false,
       },
       lastContext: '/calendar',
     })

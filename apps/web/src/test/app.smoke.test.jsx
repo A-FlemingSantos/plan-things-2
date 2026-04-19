@@ -87,7 +87,6 @@ describe('App smoke flows', () => {
       JSON.stringify({
         homePage: 'canvas',
         openLastCtx: true,
-        collapsedByDefault: false,
       }),
     )
     window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
@@ -105,7 +104,6 @@ describe('App smoke flows', () => {
       JSON.stringify({
         homePage: 'calendar',
         openLastCtx: false,
-        collapsedByDefault: false,
       }),
     )
     window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
@@ -352,5 +350,22 @@ describe('App smoke flows', () => {
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /expandir barra lateral/i })).toBeInTheDocument()
+  })
+
+  it('marks the collapsed-by-default sidebar preference as deprecated', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/settings')
+
+    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Preferências gerais' }))
+
+    const collapsedByDefaultLabel = await screen.findByText('Barra lateral recolhida por padrão')
+    const collapsedByDefaultField = collapsedByDefaultLabel.closest('div')?.parentElement
+    const collapsedByDefaultSwitch = within(collapsedByDefaultField).getByRole('switch')
+
+    expect(screen.getByText(/será removida ou substituída/i)).toBeInTheDocument()
+    expect(collapsedByDefaultSwitch).toBeDisabled()
   })
 })

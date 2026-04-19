@@ -199,7 +199,6 @@ export default function SettingsPage() {
   const timeFormat = generalPreferences.timeFormat
   const homePage = localPreferences.homePage
   const openLastCtx = localPreferences.openLastCtx
-  const collapsedByDefault = localPreferences.collapsedByDefault
   const emailNotifs = notificationPreferences.emailNotifs
   const eventReminders = notificationPreferences.eventReminders
   const deadlineAlerts = notificationPreferences.deadlineAlerts
@@ -389,7 +388,6 @@ export default function SettingsPage() {
     const nextLocal = {
       homePage,
       openLastCtx,
-      collapsedByDefault,
       [field]: value,
     }
 
@@ -630,9 +628,9 @@ export default function SettingsPage() {
         </Field>
         <Field
           label="Barra lateral recolhida por padrão"
-          hint="Ao abrir, a barra lateral iniciará recolhida."
+          hint="Esta preferência será removida ou substituída. Use o botão da barra lateral; o app lembrará sua última escolha."
         >
-          <Toggle checked={collapsedByDefault} onChange={(value) => handleLocalGeneralFieldChange('collapsedByDefault', value)} />
+          <Toggle checked={false} onChange={() => {}} disabled />
         </Field>
         <Field label="Densidade visual" hint="Define o espaçamento geral dos elementos na interface.">
           <div className={styles.densityGroup}>

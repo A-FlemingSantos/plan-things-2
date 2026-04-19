@@ -6,12 +6,10 @@ import { ROUTES, normalizePathname } from '../../../shared/config/routes.js'
 
 export const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
 const LAST_CONTEXT_STORAGE_PREFIX = 'plan-things:last-context:v1:'
-const SIDEBAR_COLLAPSE_STORAGE_PREFIX = 'plan-things:sidebar-collapsed:v1:'
 
 export const DEFAULT_LOCAL_PREFERENCES = {
   homePage: 'workspace',
   openLastCtx: true,
-  collapsedByDefault: false,
 }
 
 export const DEFAULT_GENERAL_PREFERENCES = {
@@ -102,10 +100,6 @@ function buildLastContextStorageKey(userId) {
   return `${LAST_CONTEXT_STORAGE_PREFIX}${userId}`
 }
 
-function buildSidebarCollapseStorageKey(userId) {
-  return `${SIDEBAR_COLLAPSE_STORAGE_PREFIX}${userId || 'anonymous'}`
-}
-
 function readStoredJson(key) {
   if (!key || typeof window === 'undefined') return null
 
@@ -134,7 +128,6 @@ export function readStoredLocalPreferences(userId) {
   return {
     homePage: parsed.homePage ?? DEFAULT_LOCAL_PREFERENCES.homePage,
     openLastCtx: parsed.openLastCtx ?? DEFAULT_LOCAL_PREFERENCES.openLastCtx,
-    collapsedByDefault: parsed.collapsedByDefault ?? DEFAULT_LOCAL_PREFERENCES.collapsedByDefault,
   }
 }
 
@@ -145,7 +138,6 @@ function writeStoredLocalPreferences(userId, preferences) {
   writeStoredJson(key, {
     homePage: preferences.homePage,
     openLastCtx: preferences.openLastCtx,
-    collapsedByDefault: preferences.collapsedByDefault,
   })
 }
 
@@ -164,11 +156,6 @@ function writeStoredLastContext(userId, pathname) {
   const key = buildLastContextStorageKey(userId)
   if (!key || typeof window === 'undefined') return
   window.localStorage.setItem(key, normalizePathname(pathname))
-}
-
-function clearStoredSidebarCollapseOverride(userId) {
-  if (typeof window === 'undefined') return
-  window.localStorage.removeItem(buildSidebarCollapseStorageKey(userId))
 }
 
 function mapHomePageToRoute(homePage) {
@@ -335,7 +322,6 @@ export function PreferencesProvider({ children }) {
   const [generalPreferences, setGeneralPreferences] = useState(DEFAULT_GENERAL_PREFERENCES)
   const [localPreferences, setLocalPreferences] = useState(DEFAULT_LOCAL_PREFERENCES)
   const [notificationPreferences, setNotificationPreferences] = useState(DEFAULT_NOTIFICATION_PREFERENCES)
-  const [localRestoreVersion, setLocalRestoreVersion] = useState(0)
   const [isHydrating, setIsHydrating] = useState(true)
   const generalRequestRef = useRef(0)
   const notificationsRequestRef = useRef(0)
@@ -507,15 +493,13 @@ export function PreferencesProvider({ children }) {
     setLocalPreferences(nextLocal)
     localStateRef.current = nextLocal
     writeStoredLocalPreferences(currentUser?.id, nextLocal)
+
     return nextLocal
   }, [currentUser?.id])
 
   const restoreLocalDefaults = useCallback(() => {
-    clearStoredSidebarCollapseOverride(currentUser?.id)
-    const restored = updateLocal(DEFAULT_LOCAL_PREFERENCES)
-    setLocalRestoreVersion((current) => current + 1)
-    return restored
-  }, [currentUser?.id, updateLocal])
+    return updateLocal(DEFAULT_LOCAL_PREFERENCES)
+  }, [updateLocal])
 
   const updateNotifications = useCallback(async (patch) => {
     const previous = notificationStateRef.current
@@ -599,7 +583,6 @@ export function PreferencesProvider({ children }) {
     generalPreferences,
     localPreferences,
     notificationPreferences,
-    localRestoreVersion,
     isHydrating,
     updateGeneral,
     updateLocal,
@@ -623,7 +606,6 @@ export function PreferencesProvider({ children }) {
     formatTime,
     generalPreferences,
     isHydrating,
-    localRestoreVersion,
     localPreferences,
     notificationPreferences,
     resolveInitialRoute,
