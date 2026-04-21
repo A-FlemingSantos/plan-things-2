@@ -55,6 +55,22 @@ describe('AppThemeScope', () => {
     expect(container.firstChild).toHaveAttribute('data-theme-preference', 'dark')
   })
 
+  it('supports a preference override prop', () => {
+    mockedThemePreference = 'dark'
+
+    const { matchMedia } = createMatchMediaStub({ matches: false })
+    window.matchMedia = matchMedia
+
+    const { container } = render(
+      <AppThemeScope preference="system">
+        <div data-testid="child" />
+      </AppThemeScope>,
+    )
+
+    expect(container.firstChild).toHaveAttribute('data-theme', 'light')
+    expect(container.firstChild).toHaveAttribute('data-theme-preference', 'system')
+  })
+
   it('resolves system theme from matchMedia and reacts to changes', () => {
     mockedThemePreference = 'system'
 

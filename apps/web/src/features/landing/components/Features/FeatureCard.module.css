@@ -1,8 +1,8 @@
 .card {
   display: flex;
   flex-direction: column;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -16,8 +16,8 @@
 
 /* ── Visual area ── */
 .visual {
-  background: var(--color-gray-50);
-  border-bottom: 1px solid var(--color-gray-100);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-1);
   padding: 28px 24px 24px;
   min-height: 200px;
   display: flex;
@@ -36,8 +36,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   padding: 10px 12px;
   box-shadow: var(--shadow-xs);
@@ -47,7 +47,7 @@
 
 .planPromptText {
   font-size: 12px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   flex: 1;
 }
 
@@ -75,13 +75,13 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-gray-300);
+  background: var(--border-2);
   flex-shrink: 0;
 }
 
 .planTaskLabel {
   font-size: 11px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   flex-shrink: 0;
   width: 150px;
   white-space: nowrap;
@@ -92,7 +92,7 @@
 .planTaskBar {
   flex: 1;
   height: 3px;
-  background: var(--color-gray-100);
+  background: var(--surface-3);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -105,7 +105,7 @@
   margin-top: 4px;
   padding: 4px 10px;
   background: var(--color-green);
-  color: var(--color-white);
+  color: var(--text-on-accent);
   border-radius: 99px;
   font-size: 10px;
 }
@@ -140,21 +140,21 @@
 
 .kbColName {
   font-size: 10px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   flex: 1;
 }
 
 .kbCount {
   font-size: 9px;
-  color: var(--color-gray-400);
-  background: var(--color-gray-100);
+  color: var(--text-3);
+  background: var(--surface-3);
   border-radius: 3px;
   padding: 0 4px;
 }
 
 .kbCard {
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
   padding: 7px 8px;
   display: flex;
@@ -167,7 +167,7 @@
 
 .kbCardLine {
   height: 4px;
-  background: var(--color-gray-200);
+  background: var(--border-1);
   border-radius: 2px;
 }
 
@@ -175,21 +175,21 @@
 .wsTabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--border-1);
   padding-bottom: 8px;
 }
 
 .wsTab {
   font-size: 10px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
 .wsTabActive {
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
 }
 
 .wsContent {
@@ -215,7 +215,7 @@
 .wsRowBar {
   flex: 1;
   height: 5px;
-  background: var(--color-gray-200);
+  background: var(--border-1);
   border-radius: 3px;
 }
 
@@ -261,14 +261,14 @@
   font-weight: var(--font-weight-regular);
   line-height: 1.3;
   letter-spacing: -.02em;
-  color: var(--color-black);
+  color: var(--text-1);
 }
 
 .text {
   font-size: 14px;
   font-weight: var(--font-weight-light);
   line-height: 1.65;
-  color: var(--color-gray-600);
+  color: var(--text-2);
 }
 
 /* ── Card footer ── */
@@ -281,7 +281,7 @@
   align-items: center;
   gap: 9px;
   font-size: 13px;
-  color: var(--color-black);
+  color: var(--text-1);
   transition: gap var(--transition-fast);
 }
 

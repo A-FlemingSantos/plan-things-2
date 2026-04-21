@@ -80,10 +80,10 @@ function PreferredAppEntryRedirect() {
 
 function AppBootstrapScreen() {
   const location = useLocation()
-  const enableTheme = isInternalAppPath(location.pathname)
+  const isInternalPath = isInternalAppPath(location.pathname)
 
   return (
-    <AppThemeScope enabled={enableTheme}>
+    <AppThemeScope preference={isInternalPath ? null : 'system'}>
       <div
         style={{
           minHeight: '100vh',
@@ -112,11 +112,46 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path={ROUTES.home} element={<LandingPage />} />
-      <Route path={ROUTES.login} element={<Auth initialMode="login" />} />
-      <Route path={ROUTES.register} element={<Auth initialMode="register" />} />
-      <Route path={ROUTES.forgot} element={<PasswordRecovery mode="forgot" />} />
-      <Route path={ROUTES.reset} element={<PasswordRecovery mode="reset" />} />
+      <Route
+        path={ROUTES.home}
+        element={(
+          <AppThemeScope preference="system">
+            <LandingPage />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.login}
+        element={(
+          <AppThemeScope preference="system">
+            <Auth initialMode="login" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.register}
+        element={(
+          <AppThemeScope preference="system">
+            <Auth initialMode="register" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.forgot}
+        element={(
+          <AppThemeScope preference="system">
+            <PasswordRecovery mode="forgot" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.reset}
+        element={(
+          <AppThemeScope preference="system">
+            <PasswordRecovery mode="reset" />
+          </AppThemeScope>
+        )}
+      />
       <Route path="/app" element={<PreferredAppEntryRedirect />} />
       <Route path={ROUTES.workspace} element={<Workspace />} />
       <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
@@ -128,7 +163,15 @@ export default function App() {
       <Route path={ROUTES.settings} element={<SettingsPage />} />
 
       {Object.entries(INFO_PAGES).map(([path, page]) => (
-        <Route key={path} path={path} element={<InfoPage {...page} />} />
+        <Route
+          key={path}
+          path={path}
+          element={(
+            <AppThemeScope preference="system">
+              <InfoPage {...page} />
+            </AppThemeScope>
+          )}
+        />
       ))}
 
       {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (

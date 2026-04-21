@@ -1,5 +1,5 @@
 .section {
-  background: var(--color-white);
+  background: var(--app-bg);
   padding: var(--section-py) 0;
 }
 
@@ -24,7 +24,7 @@
 .subheading {
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-600);
+  color: var(--text-2);
   max-width: 480px;
   line-height: 1.6;
 }
@@ -42,7 +42,7 @@
   gap: 6px;
   padding: 7px 14px;
   font-size: 13px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
@@ -51,15 +51,15 @@
 }
 
 .billingActive {
-  color: var(--color-black) !important;
-  border-color: var(--color-gray-300) !important;
-  background: var(--color-white) !important;
+  color: var(--text-1) !important;
+  border-color: var(--border-2) !important;
+  background: var(--surface-1) !important;
 }
 
 .saveBadge {
   font-size: 10px;
   background: var(--color-green);
-  color: var(--color-white);
+  color: var(--text-on-accent);
   padding: 2px 6px;
   border-radius: 99px;
 }
@@ -75,8 +75,8 @@
 /* ── Card ── */
 .card {
   position: relative;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-lg);
   padding: 28px 24px;
   display: flex;
@@ -91,16 +91,17 @@
 }
 
 .highlighted {
-  border-color: var(--color-black);
-  background: var(--color-black);
+  border-color: var(--text-1);
+  background: var(--text-1);
   box-shadow: var(--shadow-sm);
   padding: 40px 32px;
   transform: translateY(-18px) scale(1.04);
+  color: var(--text-inverse);
 }
 
 .highlighted .popularBadge {
-  background: var(--color-white);
-  color: var(--color-black);
+  background: var(--text-inverse);
+  color: var(--text-1);
 }
 
 .highlighted .planName,
@@ -108,11 +109,12 @@
 .highlighted .pricePer,
 .highlighted .priceNote,
 .highlighted .featureItem {
-  color: var(--color-white);
+  color: var(--text-inverse);
 }
 
 .highlighted .priceCurrency {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-inverse);
+  opacity: 0.72;
 }
 
 .highlighted .cardDivider {
@@ -120,8 +122,12 @@
 }
 
 .highlighted .ctaPrimary {
-  background: var(--color-white);
-  color: var(--color-black);
+  background: var(--text-inverse);
+  color: var(--text-1);
+}
+
+[data-theme='dark'] .highlighted .cardDivider {
+  background: rgba(0, 0, 0, 0.14);
 }
 
 .popularBadge {
@@ -129,8 +135,8 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   font-size: 11px;
   padding: 5px 14px;
   border-radius: 99px;
@@ -143,7 +149,7 @@
 .planName {
   font-size: 15px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-800);
+  color: var(--text-1);
   margin-bottom: 16px;
   letter-spacing: -.01em;
 }
@@ -157,7 +163,7 @@
 
 .priceCurrency {
   font-size: 18px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   margin-top: 4px;
   align-self: flex-start;
 }
@@ -166,7 +172,7 @@
   font-size: 44px;
   font-weight: var(--font-weight-light);
   letter-spacing: -.04em;
-  color: var(--color-black);
+  color: var(--text-1);
   line-height: 1;
 }
 
@@ -176,19 +182,19 @@
 
 .pricePer {
   font-size: 14px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   margin-left: 2px;
 }
 
 .priceNote {
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   line-height: 1.4;
 }
 
 .cardDivider {
   height: 1px;
-  background: var(--color-gray-100);
+  background: var(--border-1);
 }
 
 /* CTA */
@@ -202,27 +208,27 @@
 }
 
 .ctaPrimary {
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
 }
 
 .ctaPrimary:hover { opacity: .8; }
 
 .ctaSecondary {
-  background: var(--color-white);
-  color: var(--color-black);
-  border: 1px solid var(--color-gray-300);
+  background: var(--surface-1);
+  color: var(--text-1);
+  border: 1px solid var(--border-2);
 }
 
-.ctaSecondary:hover { border-color: var(--color-black); }
+.ctaSecondary:hover { border-color: var(--text-1); }
 
 .ctaOutline {
   background: transparent;
-  color: var(--color-black);
-  border: 1px solid var(--color-gray-300);
+  color: var(--text-1);
+  border: 1px solid var(--border-2);
 }
 
-.ctaOutline:hover { border-color: var(--color-black); }
+.ctaOutline:hover { border-color: var(--text-1); }
 
 /* Feature list */
 .featureList {
@@ -237,7 +243,7 @@
   gap: 9px;
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-600);
+  color: var(--text-2);
   line-height: 1.4;
 }
 

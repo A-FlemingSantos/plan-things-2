@@ -15,7 +15,7 @@
 
 .section {
   position: relative;
-  background: var(--color-gray-50);
+  background: var(--surface-2);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -84,8 +84,8 @@
   gap: 10px;
   padding: 14px 32px;
   font-size: 15px;
-  background: var(--color-white);
-  color: var(--color-black);
+  background: var(--text-inverse);
+  color: var(--text-1);
   border-radius: var(--radius-md);
   transition: opacity var(--transition-fast);
   margin-top: 4px;

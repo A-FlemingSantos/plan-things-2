@@ -65,12 +65,13 @@ function restoreRootThemeScope(previous) {
   }
 }
 
-export default function AppThemeScope({ children, enabled = true, className = '' }) {
+export default function AppThemeScope({ children, enabled = true, className = '', preference = null }) {
   const { generalPreferences } = usePreferences()
-  const themePreference = useMemo(
-    () => normalizeThemePreference(generalPreferences?.theme) ?? 'system',
-    [generalPreferences?.theme],
-  )
+  const themePreference = useMemo(() => {
+    const override = normalizeThemePreference(preference)
+    if (override) return override
+    return normalizeThemePreference(generalPreferences?.theme) ?? 'system'
+  }, [generalPreferences?.theme, preference])
   const [effectiveTheme, setEffectiveTheme] = useState(() => resolveEffectiveTheme(themePreference))
 
   useLayoutEffect(() => {
@@ -122,7 +123,11 @@ export default function AppThemeScope({ children, enabled = true, className = ''
       data-theme={effectiveTheme}
       data-theme-preference={themePreference}
       data-app-theme-scope
-      style={{ colorScheme: effectiveTheme }}
+      style={{
+        colorScheme: effectiveTheme,
+        color: 'var(--text-1)',
+        backgroundColor: 'var(--app-bg)',
+      }}
       className={className}
     >
       {children}

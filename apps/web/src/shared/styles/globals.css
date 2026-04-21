@@ -103,6 +103,10 @@
   --frosted-bg: rgba(255,255,255,0.92);
   --overlay-bg: rgba(0,0,0,.15);
 
+  /* Landing */
+  --landing-hero-scrim-1: rgba(255,255,255,0.76);
+  --landing-hero-scrim-2: rgba(255,255,255,0.58);
+
   /* Cover surfaces */
   --cover-shine-1: rgba(255,255,255,.08);
   --cover-shine-2: rgba(255,255,255,.12);
@@ -184,6 +188,9 @@
   --menu-bg: var(--surface-2);
   --frosted-bg: rgba(18,18,18,0.92);
   --overlay-bg: rgba(0,0,0,.65);
+
+  --landing-hero-scrim-1: rgba(0,0,0,0.62);
+  --landing-hero-scrim-2: rgba(0,0,0,0.46);
 
   --cover-shine-1: rgba(255,255,255,.05);
   --cover-shine-2: rgba(255,255,255,.08);
@@ -331,8 +338,8 @@ body {
   font-weight: var(--font-weight-regular);
   font-size: 16px;
   line-height: 1.6;
-  color: var(--color-black);
-  background-color: var(--color-white);
+  color: var(--text-1);
+  background-color: var(--app-bg);
   overflow-x: hidden;
 }
 
@@ -375,8 +382,8 @@ ul, ol { list-style: none; }
    ────────────────────────────────────────── */
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--color-white); }
-::-webkit-scrollbar-thumb { background: var(--color-gray-300); border-radius: 99px; }
+::-webkit-scrollbar-track { background: var(--app-bg); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
 
 [data-app-color-scheme='dark']::-webkit-scrollbar-track { background: #000000; }
 [data-app-color-scheme='dark']::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); }
