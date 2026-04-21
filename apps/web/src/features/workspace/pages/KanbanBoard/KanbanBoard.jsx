@@ -55,6 +55,8 @@ const Icon = {
   Link:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.4 9.6L9.6 6.4M6 11.5H4.8A2.8 2.8 0 1 1 4.8 5.9H6M10 4.5h1.2a2.8 2.8 0 1 1 0 5.6H10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Image:    () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4.5 10l2.1-2.2a.8.8 0 0 1 1.2 0l1.7 1.8 1.3-1.3a.8.8 0 0 1 1.1 0L13.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="6" r="1" fill="currentColor"/></svg>,
   Code:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 5L3 8l3 3M10 5l3 3-3 3M8.8 3.5L7.2 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Star:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2.2l1.7 3.5 3.9.6-2.8 2.7.7 3.9L8 11.1 4.5 12.9l.7-3.9L2.4 6.3l3.9-.6L8 2.2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
+  StarFill: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2.2l1.7 3.5 3.9.6-2.8 2.7.7 3.9L8 11.1 4.5 12.9l.7-3.9L2.4 6.3l3.9-.6L8 2.2z" fill="currentColor"/></svg>,
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -95,8 +97,6 @@ const COL_COLORS = [
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
-const SCHEDULE_HOURS = Array.from({ length: 10 }, (_, index) => index + 8)
-
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -120,9 +120,66 @@ function dateKeyFromTimeZoneInstant(value, timeZone) {
   return `${year}-${month}-${day}`
 }
 
-function eventMinutes(time) {
-  const [hours, minutes] = time.split(':').map(Number)
+function timeValueFromIsoInTimeZone(iso, timeZone) {
+  if (!iso) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+
+  const partByType = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date).map((part) => [part.type, part.value]))
+
+  const hour = partByType.hour
+  const minute = partByType.minute
+  if (!hour || !minute) return null
+  return `${hour}:${minute}`
+}
+
+function timeValueMinutes(value) {
+  if (!value) return null
+  const [hours, minutes] = value.split(':').map(Number)
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null
   return hours * 60 + minutes
+}
+
+function moveCardInColumns(columns, cardId, targetColumnId, targetPosition = 0) {
+  const nextColumns = columns.map((column) => ({
+    ...column,
+    cards: Array.isArray(column.cards) ? [...column.cards] : [],
+  }))
+
+  let movedCard = null
+  let sourceColumnId = null
+
+  nextColumns.forEach((column) => {
+    const index = column.cards.findIndex((card) => card.id === cardId)
+    if (index < 0) return
+    movedCard = column.cards[index]
+    sourceColumnId = column.id
+    column.cards.splice(index, 1)
+  })
+
+  if (!movedCard || sourceColumnId === targetColumnId) {
+    return columns
+  }
+
+  const targetColumn = nextColumns.find((column) => column.id === targetColumnId)
+  if (!targetColumn) {
+    return columns
+  }
+
+  const nextCard = {
+    ...movedCard,
+    columnId: targetColumnId,
+  }
+
+  const clampedPosition = Math.max(0, Math.min(targetColumn.cards.length, targetPosition))
+  targetColumn.cards.splice(clampedPosition, 0, nextCard)
+
+  return nextColumns
 }
 
 function capitalizeFirst(value) {
@@ -188,7 +245,8 @@ export default function KanbanBoard() {
   const [isInboxPanelMounted, setIsInboxPanelMounted] = useState(false)
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
-  const [isPlannerAgendaOpen, setIsPlannerAgendaOpen] = useState(true)
+  const previousColumnByCardIdRef = useRef(new Map())
+  const [plannerPinnedById, setPlannerPinnedById] = useState({})
   const { generalPreferences, formatIntl, formatClockTime } = usePreferences()
   const timeZone = generalPreferences.timezone
   const dateFormat = generalPreferences.dateFormat
@@ -198,14 +256,16 @@ export default function KanbanBoard() {
   const plannerCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
-  const { filteredEvents } = useCalendarEvents()
+  const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
+    enabled: isPlannerPanelMounted,
+    includeGeneratedFromCard: false,
+    enrichGeneratedCardKinds: false,
+  })
   const formatPlannerDateLabel = (date) => capitalizeFirst(formatIntl(date, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
   }))
-  const formatPlannerHourLabel = (hour) => formatClockTime(`${String(hour).padStart(2, '0')}:00`)
-  const formatEventClockLabel = (timeValue) => formatClockTime(timeValue)
   const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
   const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
   const {
@@ -373,16 +433,145 @@ export default function KanbanBoard() {
     openPlan(planId)
   }
 
-  const plannerEvents = useMemo(() => {
-    const todayKey = dateKeyFromTimeZoneInstant(today, timeZone) ?? dateKey(today)
-    const todaysEvents = filteredEvents.filter((event) => event.date === todayKey)
+  const todayKey = useMemo(
+    () => dateKeyFromTimeZoneInstant(today, timeZone) ?? dateKey(today),
+    [timeZone, today],
+  )
+  const doneColumn = useMemo(() => {
+    const doneMatcher = /(^|\b)(conclu[ií]do|feito|done|completed)(\b|$)/i
+    return columns.find((column) => doneMatcher.test(column.title ?? ''))
+  }, [columns])
+  const plannerPinnedStorageKey = useMemo(
+    () => `plan-things:plannerPinned:${activePlan?.id ?? 'none'}`,
+    [activePlan?.id],
+  )
 
-    if (todaysEvents.length) return todaysEvents
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(plannerPinnedStorageKey)
+      const parsed = stored ? JSON.parse(stored) : []
+      if (Array.isArray(parsed)) {
+        setPlannerPinnedById(Object.fromEntries(parsed.map((id) => [id, true])))
+        return
+      }
+    } catch {}
+    setPlannerPinnedById({})
+  }, [plannerPinnedStorageKey])
 
-    return filteredEvents
-      .filter((event) => event.date >= todayKey)
-      .slice(0, 4)
-  }, [filteredEvents, timeZone, today])
+  const togglePlannerPinned = (itemId) => {
+    setPlannerPinnedById((current) => {
+      const next = { ...current }
+      if (next[itemId]) {
+        delete next[itemId]
+      } else {
+        next[itemId] = true
+      }
+      try {
+        window.localStorage.setItem(plannerPinnedStorageKey, JSON.stringify(Object.keys(next)))
+      } catch {}
+      return next
+    })
+  }
+
+  const plannerItems = useMemo(() => {
+    const planName = activePlan?.name ?? 'Plano'
+    const doneColumnId = doneColumn?.id ?? null
+    const todayCards = columns
+      .flatMap((column) => column.cards.map((card) => ({
+        column,
+        card,
+      })))
+      .filter(({ card }) => {
+        const dueKey = dateKeyFromTimeZoneInstant(card.dueAt?.iso, timeZone)
+        const startKey = dateKeyFromTimeZoneInstant(card.startAt?.iso, timeZone)
+        return dueKey === todayKey || startKey === todayKey
+      })
+      .map(({ column, card }) => {
+        const timeValue = timeValueFromIsoInTimeZone(card.dueAt?.iso, timeZone)
+        const itemId = `card:${card.id}`
+
+        return {
+          id: itemId,
+          type: 'card',
+          title: card.title,
+          meta: `${planName} · ${column.title} · Hoje`,
+          pinned: Boolean(plannerPinnedById[itemId]),
+          timeMinutes: timeValueMinutes(timeValue) ?? 99999,
+          isCompleted: Boolean(doneColumnId && card.columnId === doneColumnId),
+          card,
+          colTitle: column.title,
+        }
+      })
+
+    const todayEvents = plannerCalendarEvents
+      .filter((event) => event.date === todayKey)
+      .map((event) => {
+        const rangeLabel = `${formatClockTime(event.start)}–${formatClockTime(event.end)}`
+        const itemId = `event:${event.id}`
+        return {
+          id: itemId,
+          type: 'event',
+          title: event.title,
+          meta: `Calendário · ${rangeLabel} · Hoje`,
+          pinned: Boolean(plannerPinnedById[itemId]),
+          timeMinutes: timeValueMinutes(event.start) ?? 99999,
+          isCompleted: false,
+          event,
+        }
+      })
+
+    const merged = [...todayCards, ...todayEvents]
+    merged.sort((left, right) => {
+      if (left.pinned !== right.pinned) return left.pinned ? -1 : 1
+      if (left.isCompleted !== right.isCompleted) return left.isCompleted ? 1 : -1
+      if (left.timeMinutes !== right.timeMinutes) return left.timeMinutes - right.timeMinutes
+      return left.title.localeCompare(right.title, 'pt-BR')
+    })
+    return merged
+  }, [
+    activePlan?.name,
+    columns,
+    doneColumn?.id,
+    formatClockTime,
+    plannerCalendarEvents,
+    plannerPinnedById,
+    timeZone,
+    todayKey,
+  ])
+
+  const togglePlannerCardCompleted = async (card) => {
+    const doneColumnId = doneColumn?.id
+    if (!doneColumnId) {
+      showNotification('Crie uma coluna "Concluído" para marcar tarefas como feitas.')
+      return
+    }
+
+    const isCompleted = card.columnId === doneColumnId
+    if (!isCompleted) {
+      previousColumnByCardIdRef.current.set(card.id, card.columnId)
+    }
+
+    const fallbackColumnId = columns.find((column) => column.id !== doneColumnId)?.id ?? null
+    const previousColumnId = previousColumnByCardIdRef.current.get(card.id) ?? null
+    const undoTargetId =
+      previousColumnId && previousColumnId !== doneColumnId
+        ? previousColumnId
+        : fallbackColumnId
+    const targetColumnId = isCompleted ? undoTargetId : doneColumnId
+
+    if (!targetColumnId) return
+
+    if (!isBackendDriven) {
+      updateColumns((prev) => moveCardInColumns(prev, card.id, targetColumnId, 0))
+      return
+    }
+
+    try {
+      await moveCard(card.id, targetColumnId, 0)
+    } catch (error) {
+      showNotification(error?.message ?? 'Não foi possível atualizar a tarefa.')
+    }
+  }
   const hasNoPlan = isBackendDriven && !isLoading && !activePlan
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
   const boardHeaderTitle = isBoardLoading
@@ -521,71 +710,94 @@ export default function KanbanBoard() {
         </button>
       </div>
 
-      <div className={styles.plannerSummary}>
-        <button
-          type="button"
-          className={styles.plannerSummaryToggle}
-          aria-expanded={isPlannerAgendaOpen}
-          aria-controls="planner-agenda-list"
-          onClick={() => setIsPlannerAgendaOpen(open => !open)}
-        >
-          <span>Agenda do dia</span>
-          <Icon.Chevron />
-        </button>
-        <span>{plannerEvents.length ? `${plannerEvents.length} compromissos` : 'Sem compromissos'}</span>
-      </div>
+      <section className={styles.plannerList} aria-label="Itens de hoje">
+        {plannerItems.length ? plannerItems.map((item) => {
+          const isCard = item.type === 'card'
+          const isEvent = item.type === 'event'
+          const itemClassName = [
+            styles.plannerListItem,
+            item.isCompleted ? styles.plannerListItemCompleted : '',
+          ].filter(Boolean).join(' ')
 
-      <div
-        id="planner-agenda-list"
-        className={`${styles.plannerAgendaList} ${isPlannerAgendaOpen ? '' : styles.plannerAgendaListCollapsed}`}
-      >
-        <div className={styles.plannerAgendaListInner}>
-          {plannerEvents.length ? plannerEvents.map((event) => (
-            <article key={event.id} className={styles.plannerAgendaItem} style={{ '--event-color': event.color }}>
-              <span>{formatEventClockLabel(event.start)} - {formatEventClockLabel(event.end)}</span>
-              <strong>{event.title}</strong>
-              <p>{[event.location, event.calendar].filter(Boolean).join(' · ')}</p>
-            </article>
-          )) : (
-            <article className={styles.plannerAgendaEmpty}>
-              <Icon.Calendar />
-              <strong>Dia livre</strong>
-              <p>Reserve o próximo bloco de foco.</p>
-            </article>
-          )}
-        </div>
-      </div>
-
-      <div className={styles.plannerTimeline} aria-label="Linha do tempo do dia">
-        {SCHEDULE_HOURS.map((hour) => (
-          <div key={hour} className={styles.plannerTimelineRow}>
-            <span>{formatPlannerHourLabel(hour)}</span>
-            <div />
-          </div>
-        ))}
-
-        {plannerEvents.slice(0, 3).map((event) => {
-          const startMinutes = eventMinutes(event.start)
-          const endMinutes = eventMinutes(event.end)
-          const top = Math.max(0, startMinutes - SCHEDULE_HOURS[0] * 60)
-          const height = Math.max(30, endMinutes - startMinutes)
+          const activate = () => {
+            if (isCard) {
+              setActiveCard({ card: item.card, colTitle: item.colTitle })
+              return
+            }
+            if (isEvent) {
+              handleNavItemClick('calendar')
+              closePlanner()
+            }
+          }
 
           return (
             <article
-              key={`timeline-${event.id}`}
-              className={styles.plannerTimelineEvent}
-              style={{
-                '--event-color': event.color,
-                '--event-top': `${top}px`,
-                '--event-height': `${height}px`,
+              key={item.id}
+              className={itemClassName}
+              role="button"
+              tabIndex={0}
+              onClick={activate}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  activate()
+                }
               }}
+              aria-label={isCard ? `Abrir tarefa ${item.title}` : `Abrir evento ${item.title}`}
             >
-              <span>{formatEventClockLabel(event.start)}</span>
-              <strong>{event.title}</strong>
+              <div className={styles.plannerListLeft}>
+                {isCard ? (
+                  <button
+                    type="button"
+                    className={`${styles.plannerCheckbox} ${item.isCompleted ? styles.plannerCheckboxChecked : ''}`}
+                    role="checkbox"
+                    aria-checked={item.isCompleted}
+                    aria-label={item.isCompleted ? 'Marcar como não concluída' : 'Marcar como concluída'}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      togglePlannerCardCompleted(item.card)
+                    }}
+                  >
+                    {item.isCompleted ? <Icon.Check /> : null}
+                  </button>
+                ) : (
+                  <span className={styles.plannerEventDot} style={{ background: item.event?.color ?? 'var(--border-2)' }}>
+                    <Icon.Calendar />
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.plannerListBody}>
+                <p className={styles.plannerListTitle}>{item.title}</p>
+                <p className={styles.plannerListMeta}>{item.meta}</p>
+              </div>
+
+              <div className={styles.plannerListRight}>
+                <button
+                  type="button"
+                  className={`${styles.plannerStarBtn} ${item.pinned ? styles.plannerStarBtnActive : ''}`}
+                  aria-pressed={item.pinned}
+                  aria-label={item.pinned ? 'Remover dos fixados' : 'Fixar no topo'}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    togglePlannerPinned(item.id)
+                  }}
+                >
+                  {item.pinned ? <Icon.StarFill /> : <Icon.Star />}
+                </button>
+              </div>
             </article>
           )
-        })}
-      </div>
+        }) : (
+          <div className={styles.plannerEmptyState}>
+            <Icon.Calendar />
+            <strong>Nenhum item hoje</strong>
+            <p>Agende tarefas ou adicione eventos para ver aqui.</p>
+          </div>
+        )}
+      </section>
     </aside>
   )
 

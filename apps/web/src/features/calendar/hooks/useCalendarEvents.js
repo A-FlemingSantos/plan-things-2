@@ -55,13 +55,21 @@ function matchesSearch(event, term) {
     .some((value) => value.toLowerCase().includes(term))
 }
 
-export function useCalendarEvents({ search = '' } = {}) {
+export function useCalendarEvents({
+  search = '',
+  enabled = true,
+  includeGeneratedFromCard = true,
+  enrichGeneratedCardKinds: shouldEnrichGeneratedCardKinds = true,
+} = {}) {
   const { accessToken, isAuthenticated, isDemoSession } = useAuth()
   const { generalPreferences } = usePreferences()
   const backendEnabled = isAuthenticated && !isDemoSession
   const timeZone = generalPreferences.timezone
-  const [snapshot, setSnapshot] = useState(() => (backendEnabled ? EMPTY_CALENDAR_SNAPSHOT : createInitialCalendarSnapshot()))
-  const [isLoading, setIsLoading] = useState(() => backendEnabled)
+  const [snapshot, setSnapshot] = useState(() => {
+    if (!backendEnabled) return createInitialCalendarSnapshot()
+    return EMPTY_CALENDAR_SNAPSHOT
+  })
+  const [isLoading, setIsLoading] = useState(() => backendEnabled && enabled)
   const [loadError, setLoadError] = useState(null)
   const searchTerm = search.trim().toLowerCase()
 
@@ -78,6 +86,15 @@ export function useCalendarEvents({ search = '' } = {}) {
         return
       }
 
+      if (!enabled) {
+        if (active) {
+          setSnapshot(EMPTY_CALENDAR_SNAPSHOT)
+          setLoadError(null)
+          setIsLoading(false)
+        }
+        return
+      }
+
       if (active) {
         setIsLoading(true)
       }
@@ -86,7 +103,12 @@ export function useCalendarEvents({ search = '' } = {}) {
         const events = await apiRequest('/api/calendar/events', {
           token: accessToken,
         })
-        const enrichedEvents = await enrichGeneratedCardKinds(events, accessToken)
+        const filteredFetchedEvents = includeGeneratedFromCard
+          ? events
+          : events.filter((event) => !event.generatedFromCard)
+        const enrichedEvents = shouldEnrichGeneratedCardKinds
+          ? await enrichGeneratedCardKinds(filteredFetchedEvents, accessToken)
+          : filteredFetchedEvents
 
         if (!active) return
         setSnapshot(mapCalendarEventsToSnapshot(enrichedEvents, { timeZone }))
@@ -106,17 +128,17 @@ export function useCalendarEvents({ search = '' } = {}) {
     return () => {
       active = false
     }
-  }, [accessToken, backendEnabled, timeZone])
+  }, [accessToken, backendEnabled, enabled, includeGeneratedFromCard, shouldEnrichGeneratedCardKinds, timeZone])
 
   useEffect(() => {
-    if (!backendEnabled) return
+    if (!backendEnabled || !enabled) return
 
     setSnapshot((current) => {
       const rawEvents = current.events.map((event) => event.raw).filter(Boolean)
       if (!rawEvents.length) return current
       return mapCalendarEventsToSnapshot(rawEvents, { timeZone })
     })
-  }, [backendEnabled, timeZone])
+  }, [backendEnabled, enabled, timeZone])
 
   const filteredEvents = useMemo(() => {
     return snapshot.events.filter((event) => matchesSearch(event, searchTerm))
