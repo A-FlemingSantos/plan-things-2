@@ -103,6 +103,10 @@
   --frosted-bg: rgba(255,255,255,0.92);
   --overlay-bg: rgba(0,0,0,.15);
 
+  /* Cover surfaces */
+  --cover-shine-1: rgba(255,255,255,.08);
+  --cover-shine-2: rgba(255,255,255,.12);
+
   /* Skeleton / loading */
   --skeleton-1: #ececec;
   --skeleton-2: #f6f6f6;
@@ -181,6 +185,9 @@
   --frosted-bg: rgba(18,18,18,0.92);
   --overlay-bg: rgba(0,0,0,.65);
 
+  --cover-shine-1: rgba(255,255,255,.05);
+  --cover-shine-2: rgba(255,255,255,.08);
+
   --skeleton-1: #1a1a1a;
   --skeleton-2: #222222;
 
@@ -247,6 +254,9 @@
   --menu-bg: var(--surface-1);
   --frosted-bg: rgba(255,255,255,0.92);
   --overlay-bg: rgba(0,0,0,.15);
+
+  --cover-shine-1: rgba(255,255,255,.08);
+  --cover-shine-2: rgba(255,255,255,.12);
 
   --skeleton-1: #ececec;
   --skeleton-2: #f6f6f6;

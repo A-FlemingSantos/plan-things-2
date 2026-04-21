@@ -866,7 +866,7 @@
 .connectBannerDot {
   width: 8px; height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,.6);
+  background: color-mix(in srgb, var(--text-on-accent) 60%, transparent);
   animation: dotBlink 1s step-end infinite;
   flex-shrink: 0;
 }
@@ -877,7 +877,8 @@
 }
 
 .connectBanner kbd {
-  background: rgba(255,255,255,.2);
+  background: color-mix(in srgb, var(--text-on-accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-on-accent) 22%, transparent);
   border-radius: 4px;
   padding: 1px 6px;
   font-family: var(--font-family);

@@ -1174,7 +1174,7 @@ export default function KanbanBoard() {
                       className={`${styles.boardViewMenuItem} ${activePlan?.id === plan.id ? styles.boardViewMenuItemActive : ''}`}
                       onClick={() => handlePlanSwitch(plan.id)}
                     >
-                      <span className={styles.boardViewMenuDot} style={{ background: plan.tagColor ?? plan.cover ?? '#a0a0a0' }} />
+                  <span className={styles.boardViewMenuDot} style={{ background: plan.tagColor ?? plan.cover ?? 'var(--text-3)' }} />
                       <span className={styles.boardViewMenuLabel}>{plan.name}</span>
                     </button>
                   ))
