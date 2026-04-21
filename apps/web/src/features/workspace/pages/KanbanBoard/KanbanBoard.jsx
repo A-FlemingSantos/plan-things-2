@@ -809,14 +809,14 @@ export default function KanbanBoard() {
     </aside>
   )
 
-	  const renderPlannerPanel = () => {
-	    const plannerFilterOptions = [
-	      { id: 'my-day', label: 'Meu Dia', Icon: Icon.Sun, count: plannerFilterCounts.myDay },
-	      { id: 'important', label: 'Importante', Icon: Icon.Star, count: plannerFilterCounts.important },
-	      { id: 'planned', label: 'Planejado', Icon: Icon.List, count: plannerFilterCounts.planned },
-	      { id: 'completed', label: 'Concluída', Icon: Icon.CheckCircle, count: plannerFilterCounts.completed },
-	      { id: 'assigned-to-me', label: 'Atribuído a mim', Icon: Icon.User, count: plannerFilterCounts.assignedToMe },
-	    ]
+		  const renderPlannerPanel = () => {
+		    const plannerFilterOptions = [
+		      { id: 'my-day', label: 'Meu Dia', Icon: Icon.Sun, count: plannerFilterCounts.myDay, accent: '#4290da' },
+		      { id: 'important', label: 'Importante', Icon: Icon.Star, count: plannerFilterCounts.important, accent: '#d4aef1' },
+		      { id: 'planned', label: 'Planejado', Icon: Icon.List, count: plannerFilterCounts.planned, accent: '#0f703a' },
+		      { id: 'completed', label: 'Concluída', Icon: Icon.CheckCircle, count: plannerFilterCounts.completed, accent: 'var(--text-3)' },
+		      { id: 'assigned-to-me', label: 'Atribuído a mim', Icon: Icon.User, count: plannerFilterCounts.assignedToMe, accent: '#f5a623' },
+		    ]
 
 	    const activeFilterOption =
 	      plannerFilterOptions.find((option) => option.id === plannerFilter) ?? plannerFilterOptions[0]
@@ -955,18 +955,19 @@ export default function KanbanBoard() {
 	                {activeFilterOption.count ? <span className={styles.plannerTitleCount}>{activeFilterOption.count}</span> : null}
 	              </button>
 
-	              {isPlannerFilterOpen && (
-	                <div className={styles.plannerFilterMenu} role="menu" aria-label="Filtros do planejador">
-	                  {plannerFilterOptions.map(({ id, label, Icon: ItemIcon, count }) => (
-	                    <button
-	                      key={id}
-	                      type="button"
-	                      className={`${styles.plannerFilterItem} ${plannerFilter === id ? styles.plannerFilterItemActive : ''}`}
-	                      role="menuitem"
-	                      aria-current={plannerFilter === id ? 'true' : undefined}
-	                      onClick={() => {
-	                        setPlannerFilter(id)
-	                        setIsPlannerFilterOpen(false)
+		              {isPlannerFilterOpen && (
+		                <div className={styles.plannerFilterMenu} role="menu" aria-label="Filtros do planejador">
+		                  {plannerFilterOptions.map(({ id, label, Icon: ItemIcon, count, accent }) => (
+		                    <button
+		                      key={id}
+		                      type="button"
+		                      className={`${styles.plannerFilterItem} ${plannerFilter === id ? styles.plannerFilterItemActive : ''}`}
+		                      style={{ '--planner-filter-accent': accent }}
+		                      role="menuitem"
+		                      aria-current={plannerFilter === id ? 'true' : undefined}
+		                      onClick={() => {
+		                        setPlannerFilter(id)
+		                        setIsPlannerFilterOpen(false)
 	                      }}
 	                    >
 	                      <ItemIcon />
