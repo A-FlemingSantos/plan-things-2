@@ -831,6 +831,137 @@
   line-height: 1.2;
 }
 
+.plannerTitleWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.plannerTitleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  margin: -6px -10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 20px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px transparent;
+  transition: box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.plannerTitleButton:hover {
+  background: color-mix(in srgb, var(--surface-3) 65%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-3) 38%, transparent);
+}
+
+.plannerTitleButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.plannerTitleCount {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plannerTitleChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transform: rotate(90deg);
+  transition: transform 180ms ease, color var(--transition-fast);
+}
+
+.plannerTitleButton[aria-expanded="true"] .plannerTitleChevron {
+  transform: rotate(-90deg);
+  color: var(--text-1);
+}
+
+.plannerFilterMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 260px;
+  padding: 10px 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
+  z-index: 40;
+}
+
+.plannerFilterItem {
+  width: 100%;
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 18px;
+  border-radius: 10px;
+  color: var(--text-1);
+  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.plannerFilterItem::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--focus-ring);
+  opacity: 0;
+}
+
+.plannerFilterItemActive::before {
+  opacity: 1;
+}
+
+.plannerFilterItem:hover {
+  background: var(--hover);
+}
+
+.plannerFilterItem svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-2);
+}
+
+.plannerFilterCount {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 .plannerCloseButton {
   width: 30px;
   height: 30px;
@@ -3434,6 +3565,12 @@
   }
   .plannerPanelHeader h2 {
     font-size: 18px;
+  }
+  .plannerTitleButton {
+    font-size: 18px;
+  }
+  .plannerFilterMenu {
+    width: min(280px, calc(100vw - 40px));
   }
   .plannerListItem {
     grid-template-columns: 32px minmax(0, 1fr) 32px;

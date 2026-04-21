@@ -57,6 +57,8 @@ const Icon = {
   Code:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 5L3 8l3 3M10 5l3 3-3 3M8.8 3.5L7.2 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Star:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2.2l1.7 3.5 3.9.6-2.8 2.7.7 3.9L8 11.1 4.5 12.9l.7-3.9L2.4 6.3l3.9-.6L8 2.2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
   StarFill: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2.2l1.7 3.5 3.9.6-2.8 2.7.7 3.9L8 11.1 4.5 12.9l.7-3.9L2.4 6.3l3.9-.6L8 2.2z" fill="currentColor"/></svg>,
+  CheckCircle: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3"/><path d="M5.3 8.3l1.6 1.6 3.7-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Sun: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3 3l1.4 1.4M11.6 11.6L13 13M13 3l-1.4 1.4M4.4 11.6L3 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -182,11 +184,6 @@ function moveCardInColumns(columns, cardId, targetColumnId, targetPosition = 0) 
   return nextColumns
 }
 
-function capitalizeFirst(value) {
-  if (!value) return value
-  return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
 const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
   ...item,
   Icon:
@@ -245,9 +242,12 @@ export default function KanbanBoard() {
   const [isInboxPanelMounted, setIsInboxPanelMounted] = useState(false)
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
+  const [isPlannerFilterOpen, setIsPlannerFilterOpen] = useState(false)
+  const [plannerFilter, setPlannerFilter] = useState('my-day')
+  const plannerFilterWrapRef = useRef(null)
   const previousColumnByCardIdRef = useRef(new Map())
   const [plannerPinnedById, setPlannerPinnedById] = useState({})
-  const { generalPreferences, formatIntl, formatClockTime } = usePreferences()
+  const { generalPreferences, formatClockTime } = usePreferences()
   const timeZone = generalPreferences.timezone
   const dateFormat = generalPreferences.dateFormat
   const today = useMemo(() => new Date(), [timeZone])
@@ -261,11 +261,6 @@ export default function KanbanBoard() {
     includeGeneratedFromCard: false,
     enrichGeneratedCardKinds: false,
   })
-  const formatPlannerDateLabel = (date) => capitalizeFirst(formatIntl(date, {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-  }))
   const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
   const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
   const {
@@ -375,12 +370,14 @@ export default function KanbanBoard() {
     setIsBoardSwitcherOpen(false)
     setIsInboxOpen(false)
     setIsInboxPanelMounted(false)
+    setIsPlannerFilterOpen(false)
     setIsPlannerPanelMounted(true)
     window.requestAnimationFrame(() => setIsPlannerOpen(true))
   }
 
   const closePlanner = () => {
     setIsPlannerOpen(false)
+    setIsPlannerFilterOpen(false)
     if (plannerCloseTimerRef.current) {
       clearTimeout(plannerCloseTimerRef.current)
     }
@@ -421,6 +418,29 @@ export default function KanbanBoard() {
     closeInbox()
     closePlanner()
   }
+
+  useEffect(() => {
+    if (!isPlannerFilterOpen) return undefined
+
+    const handlePointerDown = (event) => {
+      if (plannerFilterWrapRef.current?.contains(event.target)) return
+      setIsPlannerFilterOpen(false)
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsPlannerFilterOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isPlannerFilterOpen])
 
   const notifyToolbarItem = (message) => {
     setIsBoardSwitcherOpen(false)
@@ -538,6 +558,25 @@ export default function KanbanBoard() {
     timeZone,
     todayKey,
   ])
+  const plannerFilterCounts = useMemo(() => {
+    const important = plannerItems.filter((item) => item.pinned).length
+    const planned = plannerItems.filter((item) => item.type === 'card' && !item.isCompleted).length
+    const completed = plannerItems.filter((item) => item.type === 'card' && item.isCompleted).length
+    const assignedToMe = plannerItems.filter((item) => (
+      item.type === 'card' &&
+      Boolean(currentUser?.id) &&
+      Array.isArray(item.card?.memberIds) &&
+      item.card.memberIds.includes(currentUser.id)
+    )).length
+
+    return {
+      total: plannerItems.length,
+      important,
+      planned,
+      completed,
+      assignedToMe,
+    }
+  }, [currentUser?.id, plannerItems])
 
   const togglePlannerCardCompleted = async (card) => {
     const doneColumnId = doneColumn?.id
@@ -698,7 +737,49 @@ export default function KanbanBoard() {
       <div className={styles.plannerPanelHeader}>
         <div>
           <span className={styles.plannerEyebrow}>Planejador</span>
-          <h2>{formatPlannerDateLabel(today)}</h2>
+          <div ref={plannerFilterWrapRef} className={styles.plannerTitleWrap}>
+            <button
+              type="button"
+              className={styles.plannerTitleButton}
+              aria-haspopup="menu"
+              aria-expanded={isPlannerFilterOpen}
+              onClick={() => setIsPlannerFilterOpen((open) => !open)}
+            >
+              <span>Meu Dia</span>
+              <span className={styles.plannerTitleChevron} aria-hidden="true">
+                <Icon.Chevron />
+              </span>
+              {plannerFilterCounts.total ? <span className={styles.plannerTitleCount}>{plannerFilterCounts.total}</span> : null}
+            </button>
+
+            {isPlannerFilterOpen && (
+              <div className={styles.plannerFilterMenu} role="menu" aria-label="Filtros do planejador">
+                {[
+                  { id: 'my-day', label: 'Meu Dia', Icon: Icon.Sun, count: plannerFilterCounts.total },
+                  { id: 'important', label: 'Importante', Icon: Icon.Star, count: plannerFilterCounts.important },
+                  { id: 'planned', label: 'Planejado', Icon: Icon.List, count: plannerFilterCounts.planned },
+                  { id: 'completed', label: 'Concluída', Icon: Icon.CheckCircle, count: plannerFilterCounts.completed },
+                  { id: 'assigned-to-me', label: 'Atribuído a mim', Icon: Icon.User, count: plannerFilterCounts.assignedToMe },
+                ].map(({ id, label, Icon: ItemIcon, count }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`${styles.plannerFilterItem} ${plannerFilter === id ? styles.plannerFilterItemActive : ''}`}
+                    role="menuitem"
+                    aria-current={plannerFilter === id ? 'true' : undefined}
+                    onClick={() => {
+                      setPlannerFilter(id)
+                      setIsPlannerFilterOpen(false)
+                    }}
+                  >
+                    <ItemIcon />
+                    <span>{label}</span>
+                    {count ? <span className={styles.plannerFilterCount}>{count}</span> : null}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <button
           type="button"
