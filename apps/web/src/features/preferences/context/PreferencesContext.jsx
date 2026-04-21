@@ -5,6 +5,7 @@ import { apiRequest } from '../../../shared/api/apiClient.js'
 import { ROUTES, normalizePathname } from '../../../shared/config/routes.js'
 
 export const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
+export const THEME_STORAGE_PREFIX = 'plan-things:theme:v1:'
 const LAST_CONTEXT_STORAGE_PREFIX = 'plan-things:last-context:v1:'
 
 export const DEFAULT_LOCAL_PREFERENCES = {
@@ -17,6 +18,7 @@ export const DEFAULT_GENERAL_PREFERENCES = {
   timezone: 'America/Sao_Paulo',
   dateFormat: 'dd/MM/yyyy',
   timeFormat: '24h',
+  theme: 'system',
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES = {
@@ -95,6 +97,10 @@ export function buildLocalSettingsStorageKey(userId) {
   return `${LOCAL_SETTINGS_STORAGE_PREFIX}${userId}`
 }
 
+export function buildThemeStorageKey(userId) {
+  return `${THEME_STORAGE_PREFIX}${userId || 'anonymous'}`
+}
+
 function buildLastContextStorageKey(userId) {
   if (!userId) return null
   return `${LAST_CONTEXT_STORAGE_PREFIX}${userId}`
@@ -115,6 +121,31 @@ function readStoredJson(key) {
 function writeStoredJson(key, value) {
   if (!key || typeof window === 'undefined') return
   window.localStorage.setItem(key, JSON.stringify(value))
+}
+
+export function normalizeThemePreference(value) {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (!normalized) return null
+  if (normalized === 'system' || normalized === 'light' || normalized === 'dark') return normalized
+  return null
+}
+
+export function readStoredTheme(userId) {
+  const key = buildThemeStorageKey(userId)
+  if (!key || typeof window === 'undefined') return null
+
+  try {
+    const raw = window.localStorage.getItem(key)
+    return normalizeThemePreference(raw)
+  } catch {
+    return null
+  }
+}
+
+function writeStoredTheme(userId, theme) {
+  const key = buildThemeStorageKey(userId)
+  if (!key || typeof window === 'undefined') return
+  window.localStorage.setItem(key, theme)
 }
 
 export function readStoredLocalPreferences(userId) {
@@ -180,12 +211,15 @@ function normalizeGeneralPreferences(source = {}) {
     ?? DEFAULT_GENERAL_PREFERENCES.language
   const timezone = normalizeTimeZoneId(source.timezone ?? source.timeZone)
     ?? DEFAULT_GENERAL_PREFERENCES.timezone
+  const theme = normalizeThemePreference(source.theme)
+    ?? DEFAULT_GENERAL_PREFERENCES.theme
 
   return {
     language,
     timezone,
     dateFormat: source.dateFormat ?? DEFAULT_GENERAL_PREFERENCES.dateFormat,
     timeFormat: source.timeFormat ?? DEFAULT_GENERAL_PREFERENCES.timeFormat,
+    theme,
   }
 }
 
@@ -319,7 +353,13 @@ export function PreferencesProvider({ children }) {
     patchSession,
   } = useAuth()
   const backendEnabled = isAuthenticated && !isDemoSession
-  const [generalPreferences, setGeneralPreferences] = useState(DEFAULT_GENERAL_PREFERENCES)
+  const [generalPreferences, setGeneralPreferences] = useState(() => ({
+    ...DEFAULT_GENERAL_PREFERENCES,
+    theme:
+      readStoredTheme(currentUser?.id)
+      ?? readStoredTheme(null)
+      ?? DEFAULT_GENERAL_PREFERENCES.theme,
+  }))
   const [localPreferences, setLocalPreferences] = useState(DEFAULT_LOCAL_PREFERENCES)
   const [notificationPreferences, setNotificationPreferences] = useState(DEFAULT_NOTIFICATION_PREFERENCES)
   const [isHydrating, setIsHydrating] = useState(true)
@@ -349,10 +389,29 @@ export function PreferencesProvider({ children }) {
   }, [currentUser?.id])
 
   useEffect(() => {
+    const storedTheme = readStoredTheme(currentUser?.id)
+    if (!storedTheme) return
+
+    setGeneralPreferences((current) => {
+      if (current.theme === storedTheme) return current
+      return {
+        ...current,
+        theme: storedTheme,
+      }
+    })
+  }, [currentUser?.id])
+
+  useEffect(() => {
     if (!backendEnabled || !accessToken) {
+      const storedTheme =
+        readStoredTheme(currentUser?.id)
+        ?? readStoredTheme(null)
+        ?? generalStateRef.current.theme
+        ?? DEFAULT_GENERAL_PREFERENCES.theme
       const fallbackGeneral = normalizeGeneralPreferences({
         language: currentUser?.locale,
         timezone: currentUser?.timeZone,
+        theme: storedTheme,
       })
 
       setGeneralPreferences((current) => ({
@@ -378,19 +437,27 @@ export function PreferencesProvider({ children }) {
         const nextGeneral = normalizeGeneralPreferences({
           language: snapshot?.preferences?.locale,
           timezone: snapshot?.preferences?.timeZone,
+          theme: snapshot?.preferences?.theme,
           dateFormat: snapshot?.preferences?.dateFormat,
           timeFormat: snapshot?.preferences?.timeFormat,
         })
 
         const nextNotifications = normalizeNotificationPreferences(snapshot?.notifications)
         setGeneralPreferences(nextGeneral)
+        writeStoredTheme(currentUser?.id, nextGeneral.theme)
         setNotificationPreferences(nextNotifications)
       } catch {
         if (!active) return
 
+        const storedTheme =
+          readStoredTheme(currentUser?.id)
+          ?? readStoredTheme(null)
+          ?? generalStateRef.current.theme
+          ?? DEFAULT_GENERAL_PREFERENCES.theme
         setGeneralPreferences(normalizeGeneralPreferences({
           language: currentUser?.locale,
           timezone: currentUser?.timeZone,
+          theme: storedTheme,
         }))
         setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES)
       } finally {
@@ -435,6 +502,7 @@ export function PreferencesProvider({ children }) {
 
     setGeneralPreferences(nextGeneral)
     generalStateRef.current = nextGeneral
+    writeStoredTheme(currentUser?.id, nextGeneral.theme)
 
     if (!backendEnabled || !accessToken) {
       return nextGeneral
@@ -449,6 +517,7 @@ export function PreferencesProvider({ children }) {
         body: {
           locale: nextGeneral.language,
           timeZone: nextGeneral.timezone,
+          theme: nextGeneral.theme,
           dateFormat: nextGeneral.dateFormat,
           timeFormat: nextGeneral.timeFormat,
         },
@@ -461,12 +530,14 @@ export function PreferencesProvider({ children }) {
       const persisted = normalizeGeneralPreferences({
         language: response.locale,
         timezone: response.timeZone,
+        theme: response.theme,
         dateFormat: response.dateFormat,
         timeFormat: response.timeFormat,
       })
 
       setGeneralPreferences(persisted)
       generalStateRef.current = persisted
+      writeStoredTheme(currentUser?.id, persisted.theme)
       patchSession?.({
         user: {
           locale: persisted.language,
@@ -478,11 +549,12 @@ export function PreferencesProvider({ children }) {
       if (requestId === generalRequestRef.current) {
         setGeneralPreferences(previous)
         generalStateRef.current = previous
+        writeStoredTheme(currentUser?.id, previous.theme)
         throw error
       }
       return generalStateRef.current
     }
-  }, [accessToken, backendEnabled, patchSession])
+  }, [accessToken, backendEnabled, currentUser?.id, patchSession])
 
   const updateLocal = useCallback((patch) => {
     const nextLocal = {

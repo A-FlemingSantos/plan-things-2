@@ -1,13 +1,13 @@
 import { normalizeLibraryItem } from '../../../shared/contracts/fileContracts.js'
 
 export const FILE_TYPES = {
-  folder: { color: '#f5a623', bg: '#fff8ed' },
-  image: { color: '#4290da', bg: '#f0f7ff' },
-  pdf: { color: '#d94f4f', bg: '#fff4f4' },
-  doc: { color: '#0f703a', bg: '#f0fbf4' },
-  code: { color: '#9b7ec8', bg: '#f7f3ff' },
-  zip: { color: '#a0a0a0', bg: '#f5f5f5' },
-  generic: { color: '#a0a0a0', bg: '#f5f5f5' },
+  folder: { color: 'var(--filetype-folder-fg)', bg: 'var(--filetype-folder-bg)' },
+  image: { color: 'var(--filetype-image-fg)', bg: 'var(--filetype-image-bg)' },
+  pdf: { color: 'var(--filetype-pdf-fg)', bg: 'var(--filetype-pdf-bg)' },
+  doc: { color: 'var(--filetype-doc-fg)', bg: 'var(--filetype-doc-bg)' },
+  code: { color: 'var(--filetype-code-fg)', bg: 'var(--filetype-code-bg)' },
+  zip: { color: 'var(--filetype-zip-fg)', bg: 'var(--filetype-zip-bg)' },
+  generic: { color: 'var(--filetype-generic-fg)', bg: 'var(--filetype-generic-bg)' },
 }
 
 export function getFileTypeFromName(name) {

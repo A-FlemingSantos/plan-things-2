@@ -9,6 +9,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import styles from './SettingsPage.module.css'
 
 /* ═══════════════════════════════════════════
@@ -197,6 +198,7 @@ export default function SettingsPage() {
   const timezone = generalPreferences.timezone
   const dateFormat = generalPreferences.dateFormat
   const timeFormat = generalPreferences.timeFormat
+  const theme = generalPreferences.theme
   const homePage = localPreferences.homePage
   const openLastCtx = localPreferences.openLastCtx
   const emailNotifs = notificationPreferences.emailNotifs
@@ -378,6 +380,7 @@ export default function SettingsPage() {
       timezone,
       dateFormat,
       timeFormat,
+      theme,
       [field]: value,
     }
 
@@ -653,17 +656,44 @@ export default function SettingsPage() {
       </SectionGroup>
 
       <SectionGroup title="Aparência">
-        <Field label="Tema visual" hint="Tema escuro disponível em breve.">
+        <Field label="Tema visual" hint="Define como o app se adapta ao modo claro/escuro.">
           <div className={styles.themeGroup}>
-            <button type="button" className={`${styles.themeCard} ${styles.themeCardActive}`}>
-              <span className={styles.themePreview} style={{ background: '#ffffff', border: '1px solid #e8e8e8' }} />
-              <span className={styles.themeLabel}>Claro</span>
-            </button>
-            <button type="button" className={styles.themeCard} disabled>
-              <span className={styles.themePreview} style={{ background: '#1a1a1a' }} />
-              <span className={styles.themeLabel}>Escuro</span>
-              <span className={styles.comingSoonBadge}>Em breve</span>
-            </button>
+            {[
+              {
+                value: 'system',
+                label: 'Sistema',
+              },
+              {
+                value: 'light',
+                label: 'Claro',
+              },
+              {
+                value: 'dark',
+                label: 'Escuro',
+              },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`${styles.themeCard} ${theme === opt.value ? styles.themeCardActive : ''}`}
+                onClick={() => handleGeneralFieldChange('theme', opt.value)}
+                aria-pressed={theme === opt.value}
+              >
+                {opt.value === 'system' ? (
+                  <span className={`${styles.themePreview} ${styles.themePreviewSystem}`} aria-hidden="true">
+                    <span className={styles.themePreviewHalf} />
+                    <span className={styles.themePreviewHalf} data-theme="dark" />
+                  </span>
+                ) : (
+                  <span
+                    className={styles.themePreview}
+                    data-theme={opt.value === 'dark' ? 'dark' : 'light'}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className={styles.themeLabel}>{opt.label}</span>
+              </button>
+            ))}
           </div>
         </Field>
       </SectionGroup>
@@ -967,53 +997,55 @@ export default function SettingsPage() {
   )
 
   return (
-    <ProductAppShell
-      styles={styles}
-      activeNav={activeNav}
-      onNavItemClick={handleNavItemClick}
-      navItems={NAV.map(({ id, Icon }) => ({ id, label: NAV_LABELS[id], Icon }))}
-      LogoIcon={Ic.Logo}
-      CollapseIcon={SidebarCollapseIcon}
-      ChevronIcon={Ic.Chevron}
-      HintIcon={Ic.Popover}
-      bottomContent={renderSidebarBottomContent}
-      contentClassName={styles.settingsWrapper}
-    >
-      <PlanPageHeader
-        title="Configurações"
-        breadcrumbCurrent="Configurações"
-        breadcrumbRootLabel="Workspace"
-        tone="solid"
-        titleSize="medium"
-      />
+    <AppThemeScope>
+      <ProductAppShell
+        styles={styles}
+        activeNav={activeNav}
+        onNavItemClick={handleNavItemClick}
+        navItems={NAV.map(({ id, Icon }) => ({ id, label: NAV_LABELS[id], Icon }))}
+        LogoIcon={Ic.Logo}
+        CollapseIcon={SidebarCollapseIcon}
+        ChevronIcon={Ic.Chevron}
+        HintIcon={Ic.Popover}
+        bottomContent={renderSidebarBottomContent}
+        contentClassName={styles.settingsWrapper}
+      >
+        <PlanPageHeader
+          title="Configurações"
+          breadcrumbCurrent="Configurações"
+          breadcrumbRootLabel="Workspace"
+          tone="solid"
+          titleSize="medium"
+        />
 
-      <div className={styles.settingsLayout}>
-        {/* Settings nav */}
-        <nav className={styles.settingsNav} aria-label="Seções de configurações">
-          {SECTIONS.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
-              onClick={() => setActiveSection(id)}
-              aria-current={activeSection === id ? 'page' : undefined}
-            >
-              <span className={styles.settingsNavIcon}><Icon /></span>
-              <span className={styles.settingsNavLabel}>{label}</span>
-            </button>
-          ))}
-        </nav>
+        <div className={styles.settingsLayout}>
+          {/* Settings nav */}
+          <nav className={styles.settingsNav} aria-label="Seções de configurações">
+            {SECTIONS.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
+                onClick={() => setActiveSection(id)}
+                aria-current={activeSection === id ? 'page' : undefined}
+              >
+                <span className={styles.settingsNavIcon}><Icon /></span>
+                <span className={styles.settingsNavLabel}>{label}</span>
+              </button>
+            ))}
+          </nav>
 
-        {/* Settings content */}
-        <main className={styles.settingsContent}>
-          <div className={styles.settingsContentHeader}>
-            <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
-          </div>
-          <div className={styles.settingsContentBody}>
-            {renderContent()}
-          </div>
-        </main>
-      </div>
-    </ProductAppShell>
+          {/* Settings content */}
+          <main className={styles.settingsContent}>
+            <div className={styles.settingsContentHeader}>
+              <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
+            </div>
+            <div className={styles.settingsContentBody}>
+              {renderContent()}
+            </div>
+          </main>
+        </div>
+      </ProductAppShell>
+    </AppThemeScope>
   )
 }

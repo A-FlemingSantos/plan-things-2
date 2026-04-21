@@ -384,7 +384,7 @@ export default function CardModal({
       return {
         name: getMemberName(member),
         initials: member.initials ?? buildInitials(getMemberName(member)),
-        color: member.color ?? '#6b7280',
+        color: member.color ?? 'var(--text-3)',
       }
     }
 
@@ -393,7 +393,7 @@ export default function CardModal({
     return {
       name: fallbackName,
       initials: buildInitials(fallbackName),
-      color: '#6b7280',
+      color: 'var(--text-3)',
     }
   }
 

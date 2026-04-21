@@ -18,7 +18,7 @@
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .planItem {
@@ -31,18 +31,18 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  color: var(--color-gray-500);
+  color: var(--text-2);
   transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .planItem:hover {
-  background: var(--color-gray-100);
-  color: var(--color-black);
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .planItemActive {
-  background: var(--color-gray-100);
-  color: var(--color-black);
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .planDot {

@@ -37,6 +37,7 @@ public class SettingsController {
     return ApiEnvelope.ok(settingsService.updatePreferences(
         request.locale(),
         request.timeZone(),
+        request.theme(),
         request.dateFormat(),
         request.timeFormat()
     ));
@@ -64,6 +65,7 @@ public class SettingsController {
   public record UpdatePreferencesRequest(
       @NotBlank(message = "O idioma e obrigatorio.") String locale,
       @NotBlank(message = "O fuso horario e obrigatorio.") String timeZone,
+      String theme,
       @NotBlank(message = "O formato de data e obrigatorio.") String dateFormat,
       @NotBlank(message = "O formato de hora e obrigatorio.") String timeFormat
   ) {

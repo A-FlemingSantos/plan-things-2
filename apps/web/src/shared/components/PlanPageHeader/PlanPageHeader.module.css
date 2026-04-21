@@ -5,7 +5,7 @@
   gap: 20px;
   flex-wrap: wrap;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--border-1);
 }
 
 .sticky {
@@ -15,11 +15,11 @@
 }
 
 .toneSolid {
-  background: var(--color-white);
+  background: var(--surface-1);
 }
 
 .toneFrosted {
-  background: rgba(255,255,255,0.92);
+  background: var(--frosted-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -36,26 +36,26 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   min-width: 0;
 }
 
 .breadcrumbLink {
-  color: var(--color-gray-400);
+  color: var(--text-3);
   transition: color var(--transition-fast);
 }
 
 .breadcrumbLink:hover {
-  color: var(--color-black);
+  color: var(--text-1);
 }
 
 .breadcrumbSep {
-  color: var(--color-gray-300);
+  color: var(--border-2);
   flex-shrink: 0;
 }
 
 .breadcrumbCurrent {
-  color: var(--color-gray-600);
+  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -73,14 +73,14 @@
 }
 
 .icon {
-  color: var(--color-gray-400);
+  color: var(--text-3);
   display: flex;
   flex-shrink: 0;
 }
 
 .title {
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -99,10 +99,10 @@
 
 .meta {
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--color-gray-100);
+  background: var(--surface-3);
   white-space: nowrap;
   flex-shrink: 0;
 }

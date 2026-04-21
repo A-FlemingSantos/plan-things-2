@@ -8,6 +8,7 @@ import { ROUTES } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { createClientId } from '../../../../shared/utils/createClientId.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import {
   createInitialLibrarySnapshot,
   createLibraryItem,
@@ -77,13 +78,13 @@ const Icon = {
    FILE DATA
 ═══════════════════════════════════════════ */
 const FILE_TYPES = {
-  folder:  { icon: Icon.Folder,      color: '#f5a623', bg: '#fff8ed' },
-  image:   { icon: Icon.FileImg,     color: '#4290da', bg: '#f0f7ff' },
-  pdf:     { icon: Icon.FilePdf,     color: '#d94f4f', bg: '#fff4f4' },
-  doc:     { icon: Icon.FileText,    color: '#0f703a', bg: '#f0fbf4' },
-  code:    { icon: Icon.FileCode,    color: '#9b7ec8', bg: '#f7f3ff' },
-  zip:     { icon: Icon.FileZip,     color: '#a0a0a0', bg: '#f5f5f5' },
-  generic: { icon: Icon.FileGeneric, color: '#a0a0a0', bg: '#f5f5f5' },
+  folder:  { icon: Icon.Folder,      color: 'var(--filetype-folder-fg)', bg: 'var(--filetype-folder-bg)' },
+  image:   { icon: Icon.FileImg,     color: 'var(--filetype-image-fg)', bg: 'var(--filetype-image-bg)' },
+  pdf:     { icon: Icon.FilePdf,     color: 'var(--filetype-pdf-fg)', bg: 'var(--filetype-pdf-bg)' },
+  doc:     { icon: Icon.FileText,    color: 'var(--filetype-doc-fg)', bg: 'var(--filetype-doc-bg)' },
+  code:    { icon: Icon.FileCode,    color: 'var(--filetype-code-fg)', bg: 'var(--filetype-code-bg)' },
+  zip:     { icon: Icon.FileZip,     color: 'var(--filetype-zip-fg)', bg: 'var(--filetype-zip-bg)' },
+  generic: { icon: Icon.FileGeneric, color: 'var(--filetype-generic-fg)', bg: 'var(--filetype-generic-bg)' },
 }
 
 const SIDEBAR_NAV = [
@@ -994,7 +995,7 @@ export default function FilesPage() {
           <div className={styles.storageBar}>
             <div
               className={styles.storageBarFill}
-              style={{ width: `${storagePercent}%`, background: storagePercent > 80 ? 'var(--color-red)' : 'var(--color-black)' }}
+              style={{ width: `${storagePercent}%`, background: storagePercent > 80 ? 'var(--danger-text)' : 'var(--text-1)' }}
             />
           </div>
           <p className={styles.storageInfo}>{(STORAGE_TOTAL - STORAGE_USED).toFixed(1)} GB disponíveis</p>
@@ -1008,10 +1009,10 @@ export default function FilesPage() {
   )
 
   return (
-    <>
+    <AppThemeScope>
       <ProductAppShell
-      styles={styles}
-      activeNav={activeNav}
+        styles={styles}
+        activeNav={activeNav}
       onNavItemClick={handleNavItemClick}
       navItems={SIDEBAR_NAV.map(({ id, label, Icon: IconComponent, hint }) => ({
         id,
@@ -1266,6 +1267,6 @@ export default function FilesPage() {
           {notification}
         </div>
       )}
-    </>
+    </AppThemeScope>
   )
 }

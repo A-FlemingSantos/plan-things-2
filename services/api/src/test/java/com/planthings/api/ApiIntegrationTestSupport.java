@@ -30,7 +30,7 @@ public abstract class ApiIntegrationTestSupport {
   private static final String SQL_SERVER_HOST = "localhost:1433";
   private static final String SQL_SERVER_USER = "sa";
   private static final String SQL_SERVER_PASSWORD = "sa-9MNP6LI";
-  private static final String TEST_DATABASE_NAME = "plan_things_test";
+  private static final String TEST_DATABASE_NAME = "plan_things_test_" + System.currentTimeMillis();
 
   @Autowired
   protected MockMvc mockMvc;

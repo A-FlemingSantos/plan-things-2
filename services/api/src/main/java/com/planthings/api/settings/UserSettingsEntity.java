@@ -13,6 +13,9 @@ public class UserSettingsEntity extends BaseEntity {
   @Column(nullable = false, unique = true)
   private UUID userId;
 
+  @Column(name = "theme_mode", nullable = false, length = 10)
+  private String theme = "system";
+
   @Column(nullable = false, length = 20)
   private String dateFormat = "dd/MM/yyyy";
 
@@ -34,6 +37,14 @@ public class UserSettingsEntity extends BaseEntity {
 
   public void setUserId(UUID userId) {
     this.userId = userId;
+  }
+
+  public String getTheme() {
+    return theme;
+  }
+
+  public void setTheme(String theme) {
+    this.theme = theme;
   }
 
   public String getDateFormat() {

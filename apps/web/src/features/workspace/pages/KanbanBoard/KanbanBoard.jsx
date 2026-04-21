@@ -18,6 +18,7 @@ import { useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
 import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
 import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -589,7 +590,7 @@ export default function KanbanBoard() {
   )
 
   return (
-    <>
+    <AppThemeScope>
       <ProductAppShell
         styles={styles}
         activeNav={activeNav}
@@ -796,7 +797,7 @@ export default function KanbanBoard() {
         </div>
       )}
 
-    </>
+    </AppThemeScope>
   )
 }
 

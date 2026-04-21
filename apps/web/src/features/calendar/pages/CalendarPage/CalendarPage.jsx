@@ -5,6 +5,7 @@ import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigati
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import styles from './CalendarPage.module.css'
 
 const VIEW_OPTIONS = [
@@ -763,7 +764,7 @@ export default function CalendarPage() {
   )
 
   return (
-    <>
+    <AppThemeScope>
       <ProductAppShell
         styles={styles}
         activeNav={activeNav}
@@ -878,6 +879,6 @@ export default function CalendarPage() {
           {notification}
         </div>
       )}
-    </>
+    </AppThemeScope>
   )
 }

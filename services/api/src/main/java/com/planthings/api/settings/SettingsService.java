@@ -56,6 +56,7 @@ public class SettingsService {
         new PreferencesSettings(
             user.getLocaleTag(),
             user.getTimeZone(),
+            userSettings.getTheme(),
             userSettings.getDateFormat(),
             userSettings.getTimeFormat()
         ),
@@ -79,6 +80,7 @@ public class SettingsService {
   public PreferencesSettings updatePreferences(
       String locale,
       String timeZone,
+      String theme,
       String dateFormat,
       String timeFormat
   ) {
@@ -87,6 +89,7 @@ public class SettingsService {
 
     user.setLocaleTag(requireLocale(locale));
     user.setTimeZone(requireTimeZone(timeZone));
+    userSettings.setTheme(resolveTheme(theme, userSettings.getTheme()));
     userSettings.setDateFormat(requireDateFormat(dateFormat));
     userSettings.setTimeFormat(requireTimeFormat(timeFormat));
 
@@ -96,6 +99,7 @@ public class SettingsService {
     return new PreferencesSettings(
         user.getLocaleTag(),
         user.getTimeZone(),
+        userSettings.getTheme(),
         userSettings.getDateFormat(),
         userSettings.getTimeFormat()
     );
@@ -209,6 +213,26 @@ public class SettingsService {
     return normalized;
   }
 
+  private String resolveTheme(String value, String fallback) {
+    if (value == null) {
+      return fallback == null || fallback.isBlank() ? "system" : fallback;
+    }
+
+    String normalized = value.trim().toLowerCase();
+    if (normalized.isBlank()) {
+      return fallback == null || fallback.isBlank() ? "system" : fallback;
+    }
+
+    return requireTheme(normalized);
+  }
+
+  private String requireTheme(String value) {
+    if ("system".equals(value) || "light".equals(value) || "dark".equals(value)) {
+      return value;
+    }
+    throw new BadRequestException("TEMA_INVALIDO", "O tema informado e invalido.");
+  }
+
   private String normalizeRequired(String value, String code, String message) {
     String normalized = value == null ? "" : value.trim();
     if (normalized.isBlank()) {
@@ -242,6 +266,7 @@ public class SettingsService {
   public record PreferencesSettings(
       String locale,
       String timeZone,
+      String theme,
       String dateFormat,
       String timeFormat
   ) {

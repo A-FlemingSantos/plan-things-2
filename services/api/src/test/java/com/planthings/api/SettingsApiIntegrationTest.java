@@ -19,6 +19,7 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
     mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.preferences.theme").value("system"))
         .andExpect(jsonPath("$.data.preferences.dateFormat").value("dd/MM/yyyy"))
         .andExpect(jsonPath("$.data.preferences.timeFormat").value("24h"))
         .andExpect(jsonPath("$.data.notifications.emailNotifs").value(true))
@@ -32,6 +33,7 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
                 {
                   "locale": "en-US",
                   "timeZone": "America/New_York",
+                  "theme": "dark",
                   "dateFormat": "MM/dd/yyyy",
                   "timeFormat": "12h"
                 }
@@ -39,6 +41,7 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.locale").value("en-US"))
         .andExpect(jsonPath("$.data.timeZone").value("America/New_York"))
+        .andExpect(jsonPath("$.data.theme").value("dark"))
         .andExpect(jsonPath("$.data.dateFormat").value("MM/dd/yyyy"))
         .andExpect(jsonPath("$.data.timeFormat").value("12h"));
 
@@ -62,6 +65,7 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.preferences.locale").value("en-US"))
         .andExpect(jsonPath("$.data.preferences.timeZone").value("America/New_York"))
+        .andExpect(jsonPath("$.data.preferences.theme").value("dark"))
         .andExpect(jsonPath("$.data.preferences.dateFormat").value("MM/dd/yyyy"))
         .andExpect(jsonPath("$.data.preferences.timeFormat").value("12h"))
         .andExpect(jsonPath("$.data.notifications.emailNotifs").value(false))
@@ -158,6 +162,26 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
                 """))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error.code").value("FUSO_INVALIDO"));
+  }
+
+  @Test
+  void shouldRejectInvalidThemeOnPreferencesUpdate() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-settings-theme-invalid@example.com", "12345678");
+
+    mockMvc.perform(patch("/api/settings/preferences")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "locale": "pt-BR",
+                  "timeZone": "America/Sao_Paulo",
+                  "theme": "midnight-blue",
+                  "dateFormat": "dd/MM/yyyy",
+                  "timeFormat": "24h"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("TEMA_INVALIDO"));
   }
 
   @Test

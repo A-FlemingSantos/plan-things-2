@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from './features/auth/context/AuthContext.jsx'
 import { usePreferences } from './features/preferences/context/PreferencesContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
@@ -9,6 +9,7 @@ import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
 import { INFO_PAGES } from './features/info/data/infoPages.js'
 import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
+import AppThemeScope from './features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import SettingsPage from './features/settings/pages/SettingsPage/SettingsPage.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
@@ -19,6 +20,26 @@ import {
   ROUTE_ALIASES,
   ROUTES,
 } from './shared/config/routes.js'
+
+function isInternalAppPath(pathname) {
+  if (!pathname) return false
+
+  return (
+    pathname === '/app'
+    || pathname.startsWith(`${ROUTES.workspace}/`)
+    || pathname.startsWith(`${ROUTES.workspaceBoard}/`)
+    || pathname.startsWith(`${ROUTES.canvas}/`)
+    || pathname.startsWith(`${ROUTES.calendar}/`)
+    || pathname.startsWith(`${ROUTES.files}/`)
+    || pathname.startsWith(`${ROUTES.settings}/`)
+    || pathname === ROUTES.workspace
+    || pathname === ROUTES.workspaceBoard
+    || pathname === ROUTES.canvas
+    || pathname === ROUTES.calendar
+    || pathname === ROUTES.files
+    || pathname === ROUTES.settings
+  )
+}
 
 function LegacyPlanRedirect({ buildPath }) {
   const { planId } = useParams()
@@ -38,22 +59,27 @@ function PreferredAppEntryRedirect() {
 }
 
 function AppBootstrapScreen() {
+  const location = useLocation()
+  const enableTheme = isInternalAppPath(location.pathname)
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        padding: '32px',
-        background: 'linear-gradient(180deg, #f7f4ec 0%, #f2f6fb 100%)',
-        color: '#1f1f1f',
-      }}
-    >
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Carregando sua sessão...</p>
-        <p style={{ margin: '8px 0 0', color: '#5f646d' }}>Preparando a aplicação com os dados mais recentes.</p>
+    <AppThemeScope enabled={enableTheme}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          padding: '32px',
+          background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--app-bg) 100%)',
+          color: 'var(--text-1)',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Carregando sua sessão...</p>
+          <p style={{ margin: '8px 0 0', color: 'var(--text-2)' }}>Preparando a aplicação com os dados mais recentes.</p>
+        </div>
       </div>
-    </div>
+    </AppThemeScope>
   )
 }
 

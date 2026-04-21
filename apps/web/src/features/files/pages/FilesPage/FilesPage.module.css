@@ -8,7 +8,8 @@
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
-  background: var(--color-white);
+  background: var(--app-bg);
+  color: var(--text-1);
   transition: grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -25,8 +26,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-gray-200);
-  background: var(--color-white);
+  border-right: 1px solid var(--border-1);
+  background: var(--surface-1);
   overflow: hidden;
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
   width: 240px;
@@ -55,7 +56,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  color: var(--color-black);
+  color: var(--text-1);
   flex: 1;
   min-width: 0;
   transition: opacity var(--transition-fast);
@@ -66,8 +67,8 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,11 +93,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.collapseBtn:hover { background: var(--color-gray-100); color: var(--color-black); }
+.collapseBtn:hover { background: var(--hover); color: var(--text-1); }
 
 .collapseBtnIcon {
   display: flex;
@@ -110,8 +111,8 @@
   gap: 8px;
   padding: 7px 8px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-gray-200);
-  background: var(--color-gray-50);
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
   cursor: pointer;
   font-family: var(--font-family);
   width: 100%;
@@ -120,12 +121,12 @@
   max-height: 44px;
   margin-bottom: 4px;
 }
-.workspacePicker:hover { border-color: var(--color-gray-300); }
+.workspacePicker:hover { border-color: var(--border-2); }
 .workspacePickerHidden { opacity: 0; max-height: 0; padding: 0 8px; margin-bottom: 0; border-color: transparent; pointer-events: none; }
 
-.wsAvatar { width: 20px; height: 20px; border-radius: 5px; background: var(--color-black); color: var(--color-white); font-size: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.wsName { font-size: 12px; color: var(--color-gray-800); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wsChevron { color: var(--color-gray-400); display: flex; flex-shrink: 0; }
+.wsAvatar { width: 20px; height: 20px; border-radius: 5px; background: var(--text-1); color: var(--text-inverse); font-size: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.wsName { font-size: 12px; color: var(--text-2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wsChevron { color: var(--text-3); display: flex; flex-shrink: 0; }
 
 .nav { display: flex; flex-direction: column; gap: 1px; }
 
@@ -137,15 +138,15 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 13px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
 }
-.navItem:hover { background: var(--color-gray-100); color: var(--color-black); }
-.navItemActive { background: var(--color-black) !important; color: var(--color-white) !important; }
+.navItem:hover { background: var(--hover); color: var(--text-1); }
+.navItemActive { background: var(--text-1) !important; color: var(--text-inverse) !important; }
 
 .navIcon { display: flex; align-items: center; flex-shrink: 0; width: 16px; }
 .navLabel { opacity: 1; transition: opacity 200ms ease; }
@@ -155,7 +156,7 @@
 /* ── Files-specific nav ── */
 .filesNav {
   padding: 14px 10px 8px;
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--border-1);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -165,7 +166,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--color-gray-300);
+  color: var(--text-3);
   margin-bottom: 4px;
   padding: 0 4px;
 }
@@ -178,22 +179,22 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 13px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   cursor: pointer;
   width: 100%;
   text-align: left;
   transition: background var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
 }
-.filesNavItem:hover { background: var(--color-gray-100); color: var(--color-black); }
-.filesNavItemActive { background: var(--color-gray-100) !important; color: var(--color-black) !important; font-weight: var(--font-weight-regular); }
+.filesNavItem:hover { background: var(--hover); color: var(--text-1); }
+.filesNavItemActive { background: var(--active) !important; color: var(--text-1) !important; font-weight: var(--font-weight-regular); }
 
 .filesNavIcon { display: flex; align-items: center; flex-shrink: 0; }
 
 /* ── Storage ── */
 .storageSection {
   padding: 14px 14px 10px;
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--border-1);
 }
 
 .storageHeader {
@@ -206,19 +207,19 @@
 .storageLabel {
   font-size: 11px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-600);
+  color: var(--text-2);
 }
 
 .storageNums {
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-light);
 }
 
 .storageBar {
   width: 100%;
   height: 4px;
-  background: var(--color-gray-100);
+  background: var(--surface-3);
   border-radius: 99px;
   overflow: hidden;
   margin-bottom: 6px;
@@ -228,16 +229,17 @@
   height: 100%;
   border-radius: 99px;
   transition: width 0.5s ease;
+  background: var(--focus-ring);
 }
 
 .storageInfo {
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-light);
 }
 
 /* ── User section ── */
-.userSection { padding: 10px; border-top: 1px solid var(--color-gray-100); }
+.userSection { padding: 10px; border-top: 1px solid var(--border-1); }
 
 .userBtn {
   display: flex;
@@ -251,15 +253,15 @@
   transition: background var(--transition-fast);
   overflow: hidden;
 }
-.userBtn:hover { background: var(--color-gray-100); }
-.userBtnActive { background: var(--color-gray-100); }
+.userBtn:hover { background: var(--hover); }
+.userBtnActive { background: var(--hover); }
 .userBtnCollapsed { justify-content: center; }
 
-.userAvatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-black); color: var(--color-white); font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: .02em; }
+.userAvatar { width: 28px; height: 28px; border-radius: 50%; background: var(--text-1); color: var(--text-inverse); font-size: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: .02em; }
 .userDetails { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; transition: opacity 200ms ease; }
 .sidebarCollapsed .userDetails { opacity: 0; }
-.userName { font-size: 12px; font-weight: var(--font-weight-regular); color: var(--color-black); white-space: nowrap; }
-.userPlan  { font-size: 11px; color: var(--color-gray-400); font-weight: var(--font-weight-light); }
+.userName { font-size: 12px; font-weight: var(--font-weight-regular); color: var(--text-1); white-space: nowrap; }
+.userPlan  { font-size: 11px; color: var(--text-3); font-weight: var(--font-weight-light); }
 
 /* ════════════════════════════════════════
    MAIN
@@ -269,7 +271,7 @@
   flex-direction: column;
   min-height: 100vh;
   min-width: 0;
-  background: #fafafa;
+  background: var(--app-bg);
 }
 
 /* ── Top bar ── */
@@ -280,8 +282,8 @@
   gap: 16px;
   padding: 0 28px;
   height: 60px;
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -297,9 +299,9 @@
   gap: 6px;
   min-height: 40px;
   padding: 4px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-lg);
-  background: rgba(255,255,255,.92);
+  background: var(--frosted-bg);
   box-shadow: var(--shadow-sm);
   animation: toolbarIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -311,7 +313,7 @@
 
 .selectionCount {
   padding: 0 12px;
-  color: var(--color-black);
+  color: var(--text-1);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   white-space: nowrap;
@@ -333,20 +335,20 @@
 .selectionAction {
   gap: 6px;
   padding: 0 10px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
 }
-.selectionAction:hover { background: var(--color-gray-100); color: var(--color-black); }
+.selectionAction:hover { background: var(--hover); color: var(--text-1); }
 
-.selectionDanger { color: var(--color-red); }
-.selectionDanger:hover { background: #fff0f0; color: var(--color-red); }
+.selectionDanger { color: var(--danger-text); }
+.selectionDanger:hover { background: var(--danger-bg); color: var(--danger-text); }
 
 .selectionClear {
   width: 30px;
-  color: var(--color-gray-400);
-  border-left: 1px solid var(--color-gray-100);
+  color: var(--text-3);
+  border-left: 1px solid var(--border-1);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
-.selectionClear:hover { background: var(--color-gray-100); color: var(--color-black); }
+.selectionClear:hover { background: var(--hover); color: var(--text-1); }
 
 /* Breadcrumb */
 .breadcrumb {
@@ -360,7 +362,7 @@
 .breadcrumbGroup { display: flex; align-items: center; gap: 2px; }
 
 .breadcrumbSep {
-  color: var(--color-gray-300);
+  color: var(--text-3);
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -370,7 +372,7 @@
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-400);
+  color: var(--text-3);
   padding: 4px 6px;
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -380,8 +382,8 @@
   text-overflow: ellipsis;
   max-width: 160px;
 }
-.breadcrumbItem:hover { color: var(--color-black); background: var(--color-gray-100); }
-.breadcrumbItemActive { color: var(--color-black); font-weight: var(--font-weight-regular); }
+.breadcrumbItem:hover { color: var(--text-1); background: var(--hover); }
+.breadcrumbItemActive { color: var(--text-1); font-weight: var(--font-weight-regular); }
 
 /* Search */
 .searchWrap {
@@ -390,16 +392,16 @@
   gap: 8px;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
-  background: var(--color-white);
-  color: var(--color-gray-400);
+  background: var(--surface-1);
+  color: var(--text-3);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .searchWrap:focus-within {
-  border-color: var(--color-black);
-  color: var(--color-black);
-  box-shadow: 0 0 0 3px rgba(0,0,0,.04);
+  border-color: var(--focus-ring);
+  color: var(--text-1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 
 .searchIcon { display: flex; align-items: center; flex-shrink: 0; }
@@ -410,36 +412,36 @@
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-black);
+  color: var(--text-1);
   background: transparent;
   width: 160px;
 }
-.searchInput::placeholder { color: var(--color-gray-400); }
+.searchInput::placeholder { color: var(--text-3); }
 
 .searchClear {
   display: flex;
   align-items: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   padding: 2px;
   transition: color var(--transition-fast);
 }
-.searchClear:hover { color: var(--color-black); }
+.searchClear:hover { color: var(--text-1); }
 
 /* Sort */
 .sortWrap {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
-  background: var(--color-white);
+  background: var(--surface-1);
   transition: border-color var(--transition-fast);
 }
-.sortWrap:focus-within { border-color: var(--color-gray-400); }
+.sortWrap:focus-within { border-color: var(--focus-ring); }
 
 .sortSelect {
   border: none;
@@ -447,7 +449,7 @@
   background: transparent;
   font-family: var(--font-family);
   font-size: 12px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   cursor: pointer;
   padding: 0;
   -webkit-appearance: none;
@@ -457,10 +459,10 @@
 .viewToggle {
   display: flex;
   gap: 2px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
   padding: 2px;
-  background: var(--color-white);
+  background: var(--surface-1);
 }
 
 .viewBtn {
@@ -470,14 +472,14 @@
   width: 28px;
   height: 28px;
   border-radius: 4px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.viewBtn:hover { color: var(--color-black); }
-.viewBtnActive { background: var(--color-black); color: var(--color-white) !important; }
+.viewBtn:hover { color: var(--text-1); }
+.viewBtnActive { background: var(--text-1); color: var(--text-inverse) !important; }
 
-.topBarDivider { width: 1px; height: 20px; background: var(--color-gray-200); margin: 0 2px; flex-shrink: 0; }
+.topBarDivider { width: 1px; height: 20px; background: var(--border-1); margin: 0 2px; flex-shrink: 0; }
 
 /* Buttons */
 .newFolderBtn,
@@ -498,16 +500,16 @@
 }
 
 .newFolderBtn {
-  background: var(--color-white);
-  color: var(--color-gray-600);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  color: var(--text-2);
+  border: 1px solid var(--border-1);
 }
-.newFolderBtn:hover { border-color: var(--color-gray-400); color: var(--color-black); }
+.newFolderBtn:hover { border-color: var(--border-2); color: var(--text-1); background: var(--hover); }
 
 .uploadBtn {
-  background: var(--color-black);
-  color: var(--color-white);
-  border: 1px solid var(--color-black);
+  background: var(--text-1);
+  color: var(--text-inverse);
+  border: 1px solid var(--text-1);
 }
 .uploadBtn:hover { opacity: .82; }
 
@@ -548,14 +550,14 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .filesAreaMeta {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -564,7 +566,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--color-gray-300);
+  background: var(--border-2);
 }
 
 /* ── Drop overlay ── */
@@ -572,12 +574,12 @@
   position: absolute;
   inset: 0;
   z-index: 100;
-  background: rgba(255,255,255,.92);
+  background: var(--frosted-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
-  border: 2px dashed var(--color-black);
+  border: 2px dashed var(--border-2);
   margin: 12px;
   border-radius: var(--radius-xl);
   animation: fadeIn 0.15s ease both;
@@ -588,7 +590,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: var(--color-black);
+  color: var(--text-1);
 }
 
 .dropOverlayInner svg { width: 40px; height: 40px; }
@@ -622,8 +624,8 @@
 .fileCard {
   display: flex;
   flex-direction: column;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
   overflow: hidden;
   cursor: pointer;
@@ -641,19 +643,19 @@
 
 .fileCard:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--color-gray-300);
+  border-color: var(--border-2);
   transform: translateY(-2px);
 }
 
 .fileCardSelected {
-  border-color: var(--color-black) !important;
-  box-shadow: 0 0 0 2px rgba(0,0,0,.08), var(--shadow-sm) !important;
+  border-color: var(--focus-ring) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 28%, transparent), var(--shadow-sm) !important;
 }
 
 .loadingFileBlock {
   display: block;
   border-radius: 999px;
-  background: linear-gradient(90deg, #ebebeb 0%, #f7f7f7 50%, #ebebeb 100%);
+  background: linear-gradient(90deg, var(--skeleton-1) 0%, var(--skeleton-2) 50%, var(--skeleton-1) 100%);
   background-size: 200% 100%;
   animation: filesLoadingPulse 1.2s ease-in-out infinite;
 }
@@ -661,10 +663,10 @@
 .loadingFileCard {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  background: var(--color-white);
+  background: var(--surface-1);
 }
 
 .loadingFileThumb {
@@ -672,7 +674,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f4f4f4;
+  background: var(--surface-3);
 }
 
 .loadingFileThumbIcon {
@@ -739,18 +741,18 @@
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  background: rgba(255,255,255,.9);
+  background: var(--frosted-bg);
   backdrop-filter: blur(4px);
-  color: var(--color-gray-600);
+  color: var(--text-2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
-  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  box-shadow: var(--shadow-xs);
 }
-.fileCardActionBtn:hover { color: var(--color-black); background: var(--color-white); }
-.fileCardActionBtnActive { color: #f5a623 !important; }
+.fileCardActionBtn:hover { color: var(--text-1); background: var(--hover); }
+.fileCardActionBtnActive { color: var(--filetype-folder-fg) !important; }
 
 .sharedBadge {
   position: absolute;
@@ -763,7 +765,7 @@
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(0,0,0,.55);
-  color: var(--color-white);
+  color: var(--text-on-accent);
   backdrop-filter: blur(4px);
 }
 
@@ -778,7 +780,7 @@
 .fileCardName {
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   letter-spacing: -.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -796,7 +798,7 @@
 .fileCardDate,
 .fileCardSize {
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-light);
   white-space: nowrap;
 }
@@ -807,8 +809,8 @@
 .fileList {
   display: flex;
   flex-direction: column;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
   overflow: hidden;
   animation: gridIn 0.25s ease both;
@@ -819,8 +821,8 @@
   grid-template-columns: 1fr 120px 140px 80px 80px;
   gap: 0;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--color-gray-100);
-  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--border-1);
+  background: var(--surface-2);
 }
 
 .fileListHdrName,
@@ -832,7 +834,7 @@
   font-weight: var(--font-weight-regular);
   text-transform: uppercase;
   letter-spacing: .07em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .fileRow {
@@ -840,15 +842,15 @@
   grid-template-columns: 1fr 80px;
   gap: 0;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--color-gray-100);
+  border-bottom: 1px solid var(--border-1);
   cursor: pointer;
   transition: background var(--transition-fast);
   align-items: center;
   animation: rowIn 0.2s ease both;
 }
 .fileRow:last-child { border-bottom: none; }
-.fileRow:hover { background: var(--color-gray-50); }
-.fileRowSelected { background: #f5f5f5; }
+.fileRow:hover { background: var(--hover); }
+.fileRowSelected { background: var(--active); }
 
 .loadingFileRow {
   display: flex;
@@ -856,7 +858,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-gray-100);
+  border-bottom: 1px solid var(--border-1);
 }
 
 .loadingFileRow:last-child {
@@ -933,7 +935,7 @@
 
 .fileRowNameText {
   font-size: 13px;
-  color: var(--color-black);
+  color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -946,8 +948,8 @@
   letter-spacing: .06em;
   padding: 2px 6px;
   border-radius: 4px;
-  background: var(--color-gray-100);
-  color: var(--color-gray-400);
+  background: var(--surface-2);
+  color: var(--text-3);
   flex-shrink: 0;
 }
 
@@ -962,7 +964,7 @@
 .fileRowDate,
 .fileRowSize {
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-light);
   white-space: nowrap;
 }
@@ -987,12 +989,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.fileRowBtn:hover { background: var(--color-gray-100); color: var(--color-black); }
-.fileRowBtnActive { color: #f5a623 !important; }
+.fileRowBtn:hover { background: var(--hover); color: var(--text-1); }
+.fileRowBtnActive { color: var(--filetype-folder-fg) !important; }
 
 /* ════════════════════════════════════════
    DETAIL PANEL
@@ -1000,8 +1002,8 @@
 .detailPanel {
   width: 320px;
   flex-shrink: 0;
-  background: var(--color-white);
-  border-left: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border-left: 1px solid var(--border-1);
   display: flex;
   flex-direction: column;
   animation: panelIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -1020,11 +1022,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 18px 14px;
-  border-bottom: 1px solid var(--color-gray-100);
+  border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  background: var(--color-white);
+  background: var(--surface-1);
   z-index: 2;
 }
 
@@ -1032,14 +1034,14 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--color-gray-300);
+  color: var(--text-3);
   margin-bottom: 2px;
 }
 
 .detailPanelTitle {
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   letter-spacing: -.01em;
 }
 
@@ -1050,11 +1052,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.detailPanelClose:hover { background: var(--color-gray-100); color: var(--color-black); }
+.detailPanelClose:hover { background: var(--hover); color: var(--text-1); }
 
 .detailPanelPreview {
   height: 160px;
@@ -1089,7 +1091,7 @@
 .detailPanelName {
   font-size: 16px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   letter-spacing: -.02em;
   line-height: 1.4;
   word-break: break-word;
@@ -1097,7 +1099,7 @@
 
 .detailPanelType {
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   text-transform: capitalize;
 }
 
@@ -1117,24 +1119,24 @@
   font-size: 12px;
   font-weight: var(--font-weight-regular);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-gray-200);
-  background: var(--color-white);
-  color: var(--color-gray-600);
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
 }
-.detailAction:hover { border-color: var(--color-gray-400); color: var(--color-black); }
-.detailActionActive { color: #f5a623 !important; border-color: #f5a623 !important; }
+.detailAction:hover { border-color: var(--border-2); color: var(--text-1); background: var(--hover); }
+.detailActionActive { color: var(--filetype-folder-fg) !important; border-color: var(--filetype-folder-fg) !important; }
 
 .detailTabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 2px;
   padding: 3px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
-  background: var(--color-gray-50);
+  background: var(--surface-2);
 }
 
 .detailTab {
@@ -1142,12 +1144,12 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.detailTab:hover { color: var(--color-black); }
-.detailTabActive { background: var(--color-white); color: var(--color-black); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.detailTab:hover { color: var(--text-1); }
+.detailTabActive { background: var(--surface-1); color: var(--text-1); box-shadow: var(--shadow-xs); }
 
 .detailSection {
   display: flex;
@@ -1159,14 +1161,14 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .07em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .detailMeta {
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid var(--color-gray-100);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -1177,7 +1179,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--color-gray-100);
+  border-bottom: 1px solid var(--border-1);
 }
 .detailMetaRow:last-child { border-bottom: none; }
 
@@ -1185,13 +1187,13 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .06em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   flex-shrink: 0;
 }
 
 .detailMetaValue {
   font-size: 12px;
-  color: var(--color-gray-800);
+  color: var(--text-1);
   text-align: right;
   font-weight: var(--font-weight-light);
 }
@@ -1201,9 +1203,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--color-gray-100);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
-  background: var(--color-white);
+  background: var(--surface-1);
 }
 
 .detailActivityRow {
@@ -1213,7 +1215,7 @@
   align-items: start;
   font-size: 12px;
   line-height: 1.45;
-  color: var(--color-gray-600);
+  color: var(--text-2);
 }
 
 .detailActivityDot {
@@ -1221,7 +1223,7 @@
   height: 7px;
   margin-top: 5px;
   border-radius: 50%;
-  background: var(--color-black);
+  background: var(--text-1);
 }
 
 .detailSharingCard {
@@ -1230,29 +1232,29 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
-  background: var(--color-gray-50);
+  background: var(--surface-2);
 }
 
 .detailSharingTitle {
   font-size: 13px;
-  color: var(--color-black);
+  color: var(--text-1);
   margin-bottom: 3px;
 }
 
 .detailSharingText {
   font-size: 12px;
   line-height: 1.4;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .detailSharingBtn {
   height: 30px;
   padding: 0 10px;
   border-radius: var(--radius-sm);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   font-family: var(--font-family);
   font-size: 12px;
   cursor: pointer;
@@ -1267,10 +1269,10 @@
   position: fixed;
   z-index: 1000;
   width: 192px;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--menu-bg);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg), 0 20px 48px rgba(0,0,0,.12);
+  box-shadow: var(--shadow-lg);
   padding: 5px;
   animation: menuIn 0.14s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -1288,25 +1290,25 @@
   padding: 8px 10px;
   font-family: var(--font-family);
   font-size: 13px;
-  color: var(--color-gray-800);
+  color: var(--text-2);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
   text-align: left;
   white-space: nowrap;
 }
-.contextMenuBtn:hover { background: var(--color-gray-50); color: var(--color-black); }
-.contextMenuDanger { color: var(--color-red) !important; }
-.contextMenuDanger:hover { background: #fff0f0 !important; }
+.contextMenuBtn:hover { background: var(--hover); color: var(--text-1); }
+.contextMenuDanger { color: var(--danger-text) !important; }
+.contextMenuDanger:hover { background: var(--danger-bg) !important; }
 
 .contextMenuIcon { display: flex; align-items: center; flex-shrink: 0; }
 .contextMenuLabel { flex: 1; min-width: 0; }
 .contextMenuShortcut {
-  color: var(--color-gray-300);
+  color: var(--text-3);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
-.contextMenuDivider { height: 1px; background: var(--color-gray-100); margin: 4px 0; }
+.contextMenuDivider { height: 1px; background: var(--border-1); margin: 4px 0; }
 
 /* ════════════════════════════════════════
    RENAME INPUT
@@ -1314,14 +1316,14 @@
 .renameInput {
   font-family: var(--font-family);
   font-size: 13px;
-  color: var(--color-black);
-  background: var(--color-white);
-  border: 1px solid var(--color-black);
+  color: var(--text-1);
+  background: var(--surface-1);
+  border: 1px solid var(--focus-ring);
   border-radius: 4px;
   padding: 2px 6px;
   outline: none;
   width: 100%;
-  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 
 /* ════════════════════════════════════════
@@ -1343,13 +1345,13 @@
   width: 64px;
   height: 64px;
   border-radius: var(--radius-xl);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   margin-bottom: 4px;
 }
 .emptyIcon svg { width: 22px; height: 22px; }
@@ -1357,7 +1359,7 @@
 .emptyTitle {
   font-size: 18px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-600);
+  color: var(--text-1);
   letter-spacing: -.02em;
 }
 
@@ -1365,7 +1367,7 @@
   max-width: 320px;
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
   line-height: 1.5;
 }
 
@@ -1378,8 +1380,8 @@
   padding: 0 18px;
   font-family: var(--font-family);
   font-size: 13px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: opacity var(--transition-fast);
@@ -1401,7 +1403,7 @@
 .integrationErrorTitle {
   font-size: 18px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-600);
+  color: var(--text-2);
   letter-spacing: -.02em;
   margin: 0;
 }
@@ -1410,7 +1412,7 @@
   max-width: 420px;
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
   line-height: 1.5;
   margin: 0;
 }
@@ -1424,8 +1426,8 @@
   padding: 0 18px;
   font-family: var(--font-family);
   font-size: 13px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: opacity var(--transition-fast);
@@ -1455,8 +1457,8 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   animation: toastIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -1470,7 +1472,7 @@
 .uploadToastIcon {
   display: flex;
   align-items: center;
-  color: var(--color-black);
+  color: var(--text-1);
   flex-shrink: 0;
 }
 
@@ -1479,7 +1481,7 @@
 .uploadToastName {
   font-size: 12px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1488,21 +1490,21 @@
 
 .uploadToastBar {
   height: 3px;
-  background: var(--color-gray-100);
+  background: var(--surface-3);
   border-radius: 99px;
   overflow: hidden;
 }
 
 .uploadToastFill {
   height: 100%;
-  background: var(--color-black);
+  background: var(--text-1);
   border-radius: 99px;
   transition: width 0.18s ease;
 }
 
 .uploadToastPct {
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   flex-shrink: 0;
   min-width: 28px;
   text-align: right;
@@ -1516,11 +1518,11 @@
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
 }
-.uploadToastDismiss:hover { color: var(--color-black); background: var(--color-gray-100); }
+.uploadToastDismiss:hover { color: var(--text-1); background: var(--hover); }
 
 /* ════════════════════════════════════════
    NOTIFICATION TOAST
@@ -1532,8 +1534,8 @@
   transform: translateX(-50%);
   z-index: 600;
   padding: 10px 20px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
@@ -1607,9 +1609,9 @@
     z-index: 700;
     width: auto;
     max-height: min(78vh, 680px);
-    border: 1px solid var(--color-gray-200);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg), 0 24px 80px rgba(0,0,0,.16);
+    box-shadow: var(--shadow-lg);
     animation: sheetIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .detailPanelPreview { height: 120px; }
