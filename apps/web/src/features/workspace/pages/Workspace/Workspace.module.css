@@ -1105,8 +1105,8 @@
 }
 
 .planCardActive {
-  border-color: rgba(66, 144, 218, 0.35);
-  box-shadow: 0 0 0 1px rgba(66, 144, 218, 0.16);
+  border-color: var(--focus-ring-border);
+  box-shadow: 0 0 0 1px var(--focus-ring-shadow);
 }
 
 .planCardActions {
@@ -1349,7 +1349,7 @@
 .listCard:last-child { border-bottom: none; }
 .listCard:hover { background: var(--hover); }
 
-.listCardActive { background: rgba(66, 144, 218, 0.06); }
+.listCardActive { background: var(--focus-ring-bg); }
 
 .listCardLeft {
   display: flex;

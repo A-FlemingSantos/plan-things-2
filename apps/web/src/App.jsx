@@ -17,28 +17,48 @@ import {
   buildCanvasPath,
   buildWorkspaceBoardPath,
   LEGACY_PLAN_ROUTE_ALIASES,
+  normalizePathname,
   ROUTE_ALIASES,
   ROUTES,
 } from './shared/config/routes.js'
 
 function isInternalAppPath(pathname) {
-  if (!pathname) return false
+  const normalized = normalizePathname(pathname ?? '')
 
-  return (
-    pathname === '/app'
-    || pathname.startsWith(`${ROUTES.workspace}/`)
-    || pathname.startsWith(`${ROUTES.workspaceBoard}/`)
-    || pathname.startsWith(`${ROUTES.canvas}/`)
-    || pathname.startsWith(`${ROUTES.calendar}/`)
-    || pathname.startsWith(`${ROUTES.files}/`)
-    || pathname.startsWith(`${ROUTES.settings}/`)
-    || pathname === ROUTES.workspace
-    || pathname === ROUTES.workspaceBoard
-    || pathname === ROUTES.canvas
-    || pathname === ROUTES.calendar
-    || pathname === ROUTES.files
-    || pathname === ROUTES.settings
-  )
+  if (!normalized) return false
+
+  if (normalized === '/app') return true
+
+  const internalBases = [
+    ROUTES.workspace,
+    ROUTES.workspaceBoard,
+    ROUTES.canvas,
+    ROUTES.calendar,
+    ROUTES.files,
+    ROUTES.settings,
+  ]
+
+  for (const base of internalBases) {
+    if (normalized === base || normalized.startsWith(`${base}/`)) return true
+  }
+
+  for (const { from } of ROUTE_ALIASES) {
+    const aliasPath = normalizePathname(from)
+    if (normalized === aliasPath || normalized.startsWith(`${aliasPath}/`)) return true
+  }
+
+  const legacyPrefixes = [
+    ...LEGACY_PLAN_ROUTE_ALIASES.board,
+    ...LEGACY_PLAN_ROUTE_ALIASES.canvas,
+  ]
+    .map((pattern) => pattern.replace('/:planId', ''))
+    .map((path) => normalizePathname(path))
+
+  for (const prefix of legacyPrefixes) {
+    if (normalized === prefix || normalized.startsWith(`${prefix}/`)) return true
+  }
+
+  return false
 }
 
 function LegacyPlanRedirect({ buildPath }) {

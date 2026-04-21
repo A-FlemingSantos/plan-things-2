@@ -64,10 +64,15 @@ O “anti-leak” para rotas fora do app foi implementado em:
 
 - `apps/web/src/App.jsx`
   - `isInternalAppPath(pathname)` decide quando habilitar o scope.
+    - Normaliza pathname (trailing slash) e cobre aliases/legados (`ROUTE_ALIASES`/`LEGACY_PLAN_ROUTE_ALIASES`) para evitar “flash” ao entrar direto em rotas como `/kanban`.
   - `AppBootstrapScreen` é envolto em `<AppThemeScope enabled={enableTheme}>`
     - e o bootstrap usa tokens semânticos (sem hex hardcoded).
 
 Observação: o `AppThemeScope` **não** foi aplicado globalmente em `App()` (rotas). Ele é aplicado no bootstrap + cada tela interna refatorada usa `var(--app-bg)`/`var(--text-1)` etc, evitando mexer na Landing/Info.
+
+Nota de polimento (scrollbar/root):
+
+- Para o scrollbar do documento (html/body) respeitar light/dark mesmo com tokens escopados no container, `AppThemeScope` também aplica `data-app-color-scheme="light|dark"` em `html` e `body` durante a vida do app interno, com cleanup ao desmontar (para não afetar Landing/Auth).
 
 ### 3) UI de Settings (Sistema / Claro / Escuro)
 
@@ -76,6 +81,7 @@ Observação: o `AppThemeScope` **não** foi aplicado globalmente em `App()` (ro
     - Sistema / Claro / Escuro
   - Clique chama `handleGeneralFieldChange('theme', opt.value)` → `updateGeneral({ theme })`.
   - Prévia visual usa `data-theme` no próprio preview, para mostrar claro/escuro mesmo no tema atual.
+    - Isso depende de um reset explícito em `globals.css` via `[data-theme='light'] { ...tokens }` para permitir “forçar light” mesmo quando o app estiver em dark.
 
 ---
 
@@ -293,7 +299,7 @@ Alternativas recomendadas:
 ### 5) Arquivos locais/untracked
 
 - `.mvn-home/` apareceu como untracked (provavelmente artefato local).
-  - Recomenda-se adicionar ao `.gitignore` se for recorrente.
+  - Foi adicionado ao `.gitignore` para evitar sujeira recorrente no `git status`.
 
 ---
 
@@ -352,4 +358,3 @@ Critério:
   - `cd services/api; mvn test`
 - Backend run (recomendado sempre com clean enquanto houver mudanças em migrations):
   - `cd services/api; mvn clean spring-boot:run`
-

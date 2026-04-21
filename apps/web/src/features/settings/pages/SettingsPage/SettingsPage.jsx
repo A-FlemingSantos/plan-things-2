@@ -679,18 +679,18 @@ export default function SettingsPage() {
                 onClick={() => handleGeneralFieldChange('theme', opt.value)}
                 aria-pressed={theme === opt.value}
               >
-                {opt.value === 'system' ? (
-                  <span className={`${styles.themePreview} ${styles.themePreviewSystem}`} aria-hidden="true">
-                    <span className={styles.themePreviewHalf} />
+                 {opt.value === 'system' ? (
+                   <span className={`${styles.themePreview} ${styles.themePreviewSystem}`} aria-hidden="true">
+                    <span className={styles.themePreviewHalf} data-theme="light" />
                     <span className={styles.themePreviewHalf} data-theme="dark" />
-                  </span>
-                ) : (
-                  <span
-                    className={styles.themePreview}
-                    data-theme={opt.value === 'dark' ? 'dark' : 'light'}
-                    aria-hidden="true"
-                  />
-                )}
+                   </span>
+                 ) : (
+                   <span
+                     className={styles.themePreview}
+                     data-theme={opt.value === 'dark' ? 'dark' : 'light'}
+                     aria-hidden="true"
+                   />
+                 )}
                 <span className={styles.themeLabel}>{opt.label}</span>
               </button>
             ))}

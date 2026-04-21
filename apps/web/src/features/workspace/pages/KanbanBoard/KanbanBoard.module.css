@@ -1916,7 +1916,7 @@
 .cmDesc::placeholder { color: var(--text-3); }
 .cmDesc:focus {
   border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px rgba(66,144,218,.18);
+  box-shadow: 0 0 0 3px var(--focus-ring-glow);
   background: var(--surface-1);
 }
 

@@ -341,20 +341,20 @@
   align-items: center;
   gap: 8px;
   padding: 7px 14px 7px 12px;
-  background: rgba(12, 12, 12, 0.90);
-  color: rgba(255,255,255,0.9);
+  background: var(--frosted-bg);
+  color: var(--text-1);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   cursor: pointer;
   pointer-events: all;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid var(--border-2);
   border-top: none;
   transition: background var(--transition-fast), padding var(--transition-fast);
-  box-shadow: 0 4px 20px rgba(0,0,0,.18);
+  box-shadow: var(--shadow-sm);
   user-select: none;
 }
-.toolbarHandle:hover { background: rgba(20, 20, 20, 0.95); }
+.toolbarHandle:hover { background: var(--surface-2); }
 
 .toolbarHandleIcon {
   display: flex;
@@ -383,12 +383,12 @@
   align-items: center;
   gap: 4px;
   padding: 6px 8px;
-  background: rgba(12, 12, 12, 0.90);
+  background: var(--frosted-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px rgba(0,0,0,.22);
+  box-shadow: var(--shadow-md);
   pointer-events: all;
   animation: dropDown 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
   margin-top: 4px;
@@ -414,16 +414,16 @@
   font-family: var(--font-family);
   font-size: 12px;
   font-weight: var(--font-weight-regular);
-  color: rgba(255,255,255,.6);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
 }
-.toolbarBtn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
+.toolbarBtn:hover { background: var(--hover); color: var(--text-1); }
 
 .toolbarBtnActive {
-  background: rgba(255,255,255,.14) !important;
-  color: rgba(255,255,255,.95) !important;
+  background: var(--active) !important;
+  color: var(--text-1) !important;
 }
 
 .toolbarBtnLabel {
@@ -434,7 +434,7 @@
 .toolbarDivider {
   width: 1px;
   height: 22px;
-  background: rgba(255,255,255,.12);
+  background: var(--border-2);
   margin: 0 4px;
   flex-shrink: 0;
 }
@@ -442,7 +442,7 @@
 .toolbarMiniDivider {
   width: 1px;
   height: 16px;
-  background: rgba(255,255,255,.1);
+  background: var(--border-2);
   margin: 0 2px;
   flex-shrink: 0;
 }
@@ -453,15 +453,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,.6);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.toolbarIconBtn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
+.toolbarIconBtn:hover { background: var(--hover); color: var(--text-1); }
 
 .toolbarZoomLabel {
   font-size: 12px;
-  color: rgba(255,255,255,.7);
+  color: var(--text-2);
   min-width: 36px;
   text-align: center;
   font-variant-numeric: tabular-nums;
