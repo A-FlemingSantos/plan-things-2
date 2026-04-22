@@ -1,6 +1,7 @@
 # Status Atual — Settings e Preferências Globais
 
 ## Estado atual (implementado)
+
 - Motor de Preferências Globais v1 ativo no frontend.
 - `homePage` + `openLastCtx` aplicados no fluxo de entrada (`/app` e pós-login), com precedência de último contexto válido.
 - Último contexto navegável persistido por usuário.
@@ -12,13 +13,15 @@
 - `collapsedByDefault` com efeito real na sidebar.
 
 ## Persistem, mas sem regra comportamental (por enquanto)
+
 - `emailNotifs`, `eventReminders`, `deadlineAlerts`.
 
 ## Fora do escopo atual / para depois
+
 - `dailySummary` e `weeklySummary` (desabilitados).
 - Integrações reais Google/Outlook (OAuth + sync).
 - Upload de avatar (conta/workspace).
-- Tema escuro.
+- 
 - “Silenciar categorias” com persistência/regra real.
 - `density` com persistência/aplicação global (hoje local da tela).
 - “Tela inicial do workspace” (campo ainda só UI).
@@ -26,5 +29,6 @@
 - Backend ainda possui mapeamento textual legado fixo em pt-BR via `BrazilDateTimeMapper`.
 
 ## Validação recente
+
 - Frontend: testes de Preferences + smoke passaram (`25/25`).
 - Backend: `SettingsApiIntegrationTest` passou (`4/4`).
