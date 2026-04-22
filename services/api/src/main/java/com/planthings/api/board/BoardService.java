@@ -78,6 +78,7 @@ public class BoardService {
   public BoardView getBoard(UUID planId) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    ensureDefaultLabels(planId);
     return buildBoardView(plan);
   }
 
@@ -448,6 +449,7 @@ public class BoardService {
 
   private void replaceAssignees(UUID cardId, List<UUID> assigneeIds) {
     boardCardAssigneeRepository.deleteByCardId(cardId);
+    boardCardAssigneeRepository.flush();
     if (assigneeIds == null || assigneeIds.isEmpty()) {
       return;
     }
@@ -493,6 +495,26 @@ public class BoardService {
       return CardKind.TAREFA;
     }
     return CardKind.CARTAO;
+  }
+
+  private void ensureDefaultLabels(UUID planId) {
+    if (!planLabelRepository.findByPlanIdOrderByNameAsc(planId).isEmpty()) {
+      return;
+    }
+
+    createLabel(planId, "Design", "#d4aef1");
+    createLabel(planId, "Engenharia", "#4290da");
+    createLabel(planId, "Pesquisa", "#f5a623");
+    createLabel(planId, "Marketing", "#ff6766");
+    createLabel(planId, "QA", "#0f703a");
+  }
+
+  private void createLabel(UUID planId, String name, String color) {
+    PlanLabelEntity label = new PlanLabelEntity();
+    label.setPlanId(planId);
+    label.setName(name);
+    label.setColor(color);
+    planLabelRepository.save(label);
   }
 
   public record BoardView(UUID planId, String planName, List<ColumnView> columns, List<LabelView> labels) {

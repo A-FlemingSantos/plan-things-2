@@ -7,11 +7,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
   private final Clock clock;
 
   public GlobalExceptionHandler(Clock clock) {
@@ -84,11 +89,29 @@ public class GlobalExceptionHandler {
     );
   }
 
+  @ExceptionHandler({
+      HttpMessageNotReadableException.class,
+      MethodArgumentTypeMismatchException.class
+  })
+  public ResponseEntity<ApiEnvelope<Void>> handleBadRequest(
+      Exception ex,
+      HttpServletRequest request
+  ) {
+    return buildResponse(
+        HttpStatus.BAD_REQUEST,
+        "REQUISICAO_INVALIDA",
+        "Os dados enviados sao invalidos.",
+        request.getRequestURI(),
+        List.of()
+    );
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiEnvelope<Void>> handleUnexpected(
       Exception ex,
       HttpServletRequest request
   ) {
+    logger.error("Unexpected error processing request path={}", request.getRequestURI(), ex);
     return buildResponse(
         HttpStatus.INTERNAL_SERVER_ERROR,
         "ERRO_INTERNO",
