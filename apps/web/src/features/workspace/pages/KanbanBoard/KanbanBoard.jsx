@@ -666,6 +666,35 @@ export default function KanbanBoard() {
     return refreshActiveCardFromColumns(nextColumns, cardId)
   }
 
+  const uploadLocalFileToCard = async (localFile, cardId) => {
+    if (!activePlan?.id || !isBackendDriven || !(localFile instanceof File)) return null
+
+    const formData = new FormData()
+    formData.append('file', localFile)
+
+    const uploadedItem = await apiRequest('/api/files/upload', {
+      method: 'POST',
+      token: accessToken,
+      body: formData,
+    })
+    const uploadedFile = mapApiFileItem(uploadedItem)
+
+    await apiRequest(`/api/files/${uploadedFile.id}/share/plans/${activePlan.id}`, {
+      method: 'POST',
+      token: accessToken,
+    })
+
+    await apiRequest(`/api/files/${uploadedFile.id}/attach/cards/${cardId}`, {
+      method: 'POST',
+      token: accessToken,
+    })
+
+    const nextColumns = await loadPlanBoard(activePlan.id)
+    await reloadFileLists()
+    showNotification(`"${uploadedFile.name}" enviado para a Biblioteca e anexado ao cartão.`)
+    return refreshActiveCardFromColumns(nextColumns, cardId)
+  }
+
   const removeAttachmentFromCard = async (attachment) => {
     if (!activePlan?.id || !isBackendDriven) return null
 
@@ -1809,6 +1838,7 @@ export default function KanbanBoard() {
           filesError={filesError}
           onLoadFiles={reloadFileLists}
           onAttachFile={attachFileToCard}
+          onUploadLocalFile={uploadLocalFileToCard}
           onRemoveAttachment={removeAttachmentFromCard}
           onDownloadFile={downloadFile}
         />

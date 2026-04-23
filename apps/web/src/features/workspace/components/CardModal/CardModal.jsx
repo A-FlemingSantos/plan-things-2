@@ -149,6 +149,15 @@ function buildInitialChecklist(card) {
   }
 }
 
+function ComputerIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <rect x="2" y="2.5" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5 11.5h4M4 9.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function CardModal({
   card,
   colTitle,
@@ -168,6 +177,7 @@ export default function CardModal({
   filesError = null,
   onLoadFiles,
   onAttachFile,
+  onUploadLocalFile,
   onRemoveAttachment,
   onDownloadFile,
 }) {
@@ -191,10 +201,12 @@ export default function CardModal({
   const [showListMenu, setShowListMenu] = useState(false)
   const [showInsertMenu, setShowInsertMenu] = useState(false)
   const [showFilePicker, setShowFilePicker] = useState(false)
+  const [showAttachmentAddMenu, setShowAttachmentAddMenu] = useState(false)
   const [filePickerFilter, setFilePickerFilter] = useState('plan')
   const [fileSearch, setFileSearch] = useState('')
   const [fileActionError, setFileActionError] = useState('')
   const [attachingFileId, setAttachingFileId] = useState(null)
+  const [uploadingLocalFile, setUploadingLocalFile] = useState(false)
   const [removingAttachmentId, setRemovingAttachmentId] = useState(null)
   const [membersMenuPosition, setMembersMenuPosition] = useState({ top: 0, left: 0 })
   const [labelMenuPosition, setLabelMenuPosition] = useState({ top: 0, left: 0 })
@@ -252,6 +264,9 @@ export default function CardModal({
   const listMenuButtonRef = useRef(null)
   const insertMenuRef = useRef(null)
   const insertMenuButtonRef = useRef(null)
+  const attachmentAddMenuRef = useRef(null)
+  const attachmentAddToggleRef = useRef(null)
+  const localFileInputRef = useRef(null)
   const commentTextRefs = useRef({})
   const dialogTitleId = `card-modal-title-${card.id}`
 
@@ -324,6 +339,7 @@ export default function CardModal({
 
   const openFilePicker = async () => {
     setShowInsertMenu(false)
+    setShowAttachmentAddMenu(false)
     setShowFilePicker(true)
     setFileActionError('')
     await onLoadFiles?.()
@@ -366,6 +382,33 @@ export default function CardModal({
       setSubmitError(error?.message ?? 'Não foi possível remover o anexo.')
     } finally {
       setRemovingAttachmentId(null)
+    }
+  }
+
+  const handleLocalFileInput = async (event) => {
+    const [localFile] = Array.from(event.target.files ?? [])
+    event.target.value = ''
+
+    if (!localFile || !onUploadLocalFile || uploadingLocalFile) return
+
+    setShowAttachmentAddMenu(false)
+    setUploadingLocalFile(true)
+    setFileActionError('')
+    setSubmitError(null)
+
+    try {
+      const nextCard = await onUploadLocalFile(localFile, card.id)
+      if (nextCard?.attachments) {
+        setAttachments(nextCard.attachments)
+      }
+      setShowFilePicker(false)
+      setFileSearch('')
+    } catch (error) {
+      const message = error?.message ?? 'Não foi possível enviar e anexar este arquivo.'
+      setFileActionError(message)
+      setSubmitError(message)
+    } finally {
+      setUploadingLocalFile(false)
     }
   }
 
@@ -506,6 +549,33 @@ export default function CardModal({
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [showChecklistMenu])
+
+  useEffect(() => {
+    if (!showAttachmentAddMenu) return
+
+    const handlePointerDown = (event) => {
+      const clickedMenu = attachmentAddMenuRef.current?.contains(event.target)
+      const clickedButton = attachmentAddToggleRef.current?.contains(event.target)
+
+      if (!clickedMenu && !clickedButton) {
+        setShowAttachmentAddMenu(false)
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setShowAttachmentAddMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showAttachmentAddMenu])
 
   useEffect(() => {
     if (!showChecklistAssignMenu) return
@@ -1066,22 +1136,78 @@ export default function CardModal({
               </div>
 
               <div className={styles.cmSection}>
-                <div className={styles.cmAttachmentHeader}>
-                  <p className={styles.cmSectionTitle}>
-                    <icons.Files />
-                    Anexos
-                  </p>
-                  <button
-                    type="button"
-                    className={styles.cmAttachmentAddBtn}
-                    onClick={openFilePicker}
-                  >
-                    <icons.Plus />
-                    Adicionar
-                  </button>
-                </div>
+                  <div className={styles.cmAttachmentHeader}>
+                    <p className={styles.cmSectionTitle}>
+                      <icons.Files />
+                      Anexos
+                    </p>
+                    <div className={styles.cmAttachmentAddSplit}>
+                      <button
+                        type="button"
+                        className={styles.cmAttachmentAddBtn}
+                        onClick={openFilePicker}
+                        disabled={uploadingLocalFile}
+                      >
+                        <icons.Plus />
+                        {uploadingLocalFile ? 'Enviando...' : 'Adicionar'}
+                      </button>
+                      <button
+                        ref={attachmentAddToggleRef}
+                        type="button"
+                        className={styles.cmAttachmentAddToggle}
+                        onClick={() => setShowAttachmentAddMenu((value) => !value)}
+                        aria-label="Escolher origem do anexo"
+                        aria-expanded={showAttachmentAddMenu}
+                        aria-haspopup="menu"
+                        disabled={uploadingLocalFile}
+                      >
+                        <span className={`${styles.cmAttachmentAddToggleIcon} ${showAttachmentAddMenu ? styles.cmAttachmentAddToggleIconOpen : ''}`}>
+                          <icons.Chevron />
+                        </span>
+                      </button>
 
-                {attachments.length ? (
+                      {showAttachmentAddMenu && (
+                        <div
+                          ref={attachmentAddMenuRef}
+                          className={styles.cmAttachmentAddMenu}
+                          role="menu"
+                        >
+                          <button
+                            type="button"
+                            className={styles.cmAttachmentAddMenuItem}
+                            onClick={openFilePicker}
+                            role="menuitem"
+                          >
+                            <span className={styles.cmAttachmentAddMenuItemIcon}><icons.Files /></span>
+                            da Biblioteca
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.cmAttachmentAddMenuItem}
+                            onClick={() => {
+                              setShowAttachmentAddMenu(false)
+                              localFileInputRef.current?.click()
+                            }}
+                            role="menuitem"
+                          >
+                            <span className={styles.cmAttachmentAddMenuItemIcon}><ComputerIcon /></span>
+                            do Meu Computador
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <input
+                    ref={localFileInputRef}
+                    type="file"
+                    className={styles.cmHiddenFileInput}
+                    onChange={handleLocalFileInput}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+
+                  {attachments.length ? (
                   <div className={styles.cmAttachmentList}>
                     {attachments.map((attachment) => (
                       <div key={attachment.id} className={styles.cmAttachmentRow}>
