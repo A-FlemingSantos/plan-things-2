@@ -104,6 +104,7 @@ const COL_COLORS = [
 ]
 
 const uid = () => Math.random().toString(36).slice(2, 9)
+const FILE_DRAG_MIME_TYPE = 'application/x-planthings-file'
 
 function mapApiFileItem(item) {
   return {
@@ -307,6 +308,8 @@ export default function KanbanBoard() {
   const [libraryFiles, setLibraryFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(false)
   const [filesError, setFilesError] = useState(null)
+  const [draggedFile, setDraggedFile] = useState(null)
+  const [fileDropTargetCardId, setFileDropTargetCardId] = useState(null)
   const [filesSectionOpenById, setFilesSectionOpenById] = useState({
     plan: true,
     library: true,
@@ -731,6 +734,40 @@ export default function KanbanBoard() {
     await reloadFileLists()
     showNotification(`"${file.name}" anexado ao cartão.`)
     return refreshActiveCardFromColumns(nextColumns, cardId)
+  }
+
+  const startFileDrag = (event, file) => {
+    setDraggedFile(file)
+    setFileDropTargetCardId(null)
+    event.dataTransfer.effectAllowed = 'copy'
+    event.dataTransfer.setData(FILE_DRAG_MIME_TYPE, JSON.stringify({ id: file.id }))
+    event.dataTransfer.setData('text/plain', file.name)
+  }
+
+  const endFileDrag = () => {
+    setDraggedFile(null)
+    setFileDropTargetCardId(null)
+  }
+
+  const handleFileDragOverCard = (cardId) => {
+    setFileDropTargetCardId(cardId)
+  }
+
+  const handleFileDropOnCard = async (file, cardId) => {
+    if (!file?.id || !cardId) {
+      endFileDrag()
+      return
+    }
+
+    setFileDropTargetCardId(cardId)
+
+    try {
+      await attachFileToCard(file, cardId)
+    } catch (error) {
+      showNotification(error?.message ?? 'Não foi possível anexar este arquivo ao cartão.')
+    } finally {
+      endFileDrag()
+    }
   }
 
   const uploadLocalFileToCard = async (localFile, cardId) => {
@@ -1345,6 +1382,11 @@ export default function KanbanBoard() {
           key={file.id}
           className={`${styles.filesListRow} ${isSharedLibraryFile ? styles.filesListRowMuted : ''}`}
           title={isSharedLibraryFile ? 'Já compartilhado com o plano' : undefined}
+          draggable
+          onDragStart={(event) => {
+            startFileDrag(event, file)
+          }}
+          onDragEnd={endFileDrag}
         >
           <span className={styles.filesListIcon}><Icon.Files /></span>
           <div className={styles.filesListBody}>
@@ -1845,10 +1887,14 @@ export default function KanbanBoard() {
                 col={col}
                 dragState={dragState}
                 dropTarget={dropTarget}
+                draggedFile={draggedFile}
+                fileDropTargetCardId={fileDropTargetCardId}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
+                onFileDragOver={handleFileDragOverCard}
+                onFileDrop={handleFileDropOnCard}
                 onAddCard={addCard}
                 onDeleteCol={deleteColumn}
                 onRenameCol={renameColumn}

@@ -6,10 +6,14 @@ export default function KanbanColumn({
   col,
   dragState,
   dropTarget,
+  draggedFile,
+  fileDropTargetCardId,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
+  onFileDragOver,
+  onFileDrop,
   onAddCard,
   onDeleteCol,
   onRenameCol,
@@ -32,6 +36,12 @@ export default function KanbanColumn({
   const renameRef = useRef(null)
 
   const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
+  const getCardHasDraggedFile = (card) => {
+    if (!draggedFile?.id) return false
+    return (card.attachments ?? []).some((attachment) => (
+      (attachment.fileId ?? attachment.id) === draggedFile.id
+    ))
+  }
 
   const submitCard = async () => {
     if (!newCardText.trim()) return
@@ -69,10 +79,23 @@ export default function KanbanColumn({
     <div
       className={`${styles.column} ${isColDropTarget ? styles.columnDropTarget : ''}`}
       onDragOver={(event) => {
+        if (draggedFile) {
+          event.preventDefault()
+          event.dataTransfer.dropEffect = 'none'
+          onFileDragOver?.(null)
+          return
+        }
+
         event.preventDefault()
         onDragOver({ type: 'col', colId: col.id })
       }}
       onDrop={(event) => {
+        if (draggedFile) {
+          event.preventDefault()
+          onFileDrop?.(draggedFile, null)
+          return
+        }
+
         event.preventDefault()
         onDrop({ type: 'col', colId: col.id })
       }}
@@ -158,10 +181,15 @@ export default function KanbanColumn({
             colId={col.id}
             isDragging={dragState?.cardId === card.id}
             isDropTarget={dropTarget?.type === 'card' && dropTarget.cardId === card.id}
+            draggedFile={draggedFile}
+            isFileDropTarget={fileDropTargetCardId === card.id && !getCardHasDraggedFile(card)}
+            isFileDropDisabled={Boolean(draggedFile) && getCardHasDraggedFile(card)}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
+            onFileDragOver={onFileDragOver}
+            onFileDrop={onFileDrop}
             onClick={() => onCardClick(card, col.title)}
             labels={labels}
             members={members}
