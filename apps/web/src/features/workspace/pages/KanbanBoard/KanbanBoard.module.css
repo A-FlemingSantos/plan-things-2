@@ -3742,55 +3742,20 @@
   overflow: hidden;
 }
 
-.filesFilterBar {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-1);
-}
-
-.filesFilterButton {
-  height: 36px;
-  border-radius: 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--text-2);
-  background: transparent;
-  border: 1px solid var(--border-1);
-  font-size: 13px;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.filesFilterButton:hover,
-.filesFilterButtonActive {
-  background: var(--surface-2);
-  color: var(--text-1);
-  border-color: var(--border-2);
-}
-
-.filesFilterCount {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--surface-3);
-  color: var(--text-2);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .filesList {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 14px 16px 18px;
   overflow-y: auto;
+}
+
+.filesSectionEmpty {
+  margin: 0;
+  padding: 4px 10px 6px 36px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .filesListRow {

@@ -289,11 +289,14 @@ export default function KanbanBoard() {
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
   const [isFilesOpen, setIsFilesOpen] = useState(false)
   const [isFilesPanelMounted, setIsFilesPanelMounted] = useState(false)
-  const [filesFilter, setFilesFilter] = useState('plan')
   const [planFiles, setPlanFiles] = useState([])
   const [libraryFiles, setLibraryFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(false)
   const [filesError, setFilesError] = useState(null)
+  const [filesSectionOpenById, setFilesSectionOpenById] = useState({
+    plan: true,
+    library: true,
+  })
   const [isPlannerFilterOpen, setIsPlannerFilterOpen] = useState(false)
   const [plannerFilter, setPlannerFilter] = useState('my-day')
   const plannerFilterWrapRef = useRef(null)
@@ -823,6 +826,18 @@ export default function KanbanBoard() {
     reloadFileLists()
   }, [activePlan?.id, isFilesPanelMounted])
 
+  const isFilesSectionOpen = (sectionId) => filesSectionOpenById?.[sectionId] !== false
+
+  const toggleFilesSection = (sectionId) => {
+    setFilesSectionOpenById((current) => {
+      const currentValue = current?.[sectionId] !== false
+      return {
+        ...(current ?? {}),
+        [sectionId]: !currentValue,
+      }
+    })
+  }
+
   useEffect(() => {
     if (!isPlannerFilterOpen) return undefined
 
@@ -1207,17 +1222,94 @@ export default function KanbanBoard() {
   )
 
   const renderFilesPanel = () => {
-    const visibleFiles = filesFilter === 'plan' ? planFiles : libraryFiles
-    const emptyText = filesFilter === 'plan'
-      ? 'Nenhum arquivo compartilhado com este plano.'
-      : 'Nenhum arquivo disponível na sua biblioteca.'
-
     const runFileAction = async (action) => {
       try {
         await action()
       } catch (error) {
         showNotification(error?.message ?? 'Não foi possível concluir a ação.')
       }
+    }
+
+    const fileSections = [
+      {
+        id: 'plan',
+        title: 'Plano',
+        emptyText: 'Nenhum arquivo compartilhado com este plano.',
+        files: planFiles,
+      },
+      {
+        id: 'library',
+        title: 'Biblioteca',
+        emptyText: 'Nenhum arquivo disponível na sua biblioteca.',
+        files: libraryFiles,
+      },
+    ]
+
+    const renderFileRow = (file, sectionId) => (
+      <div key={file.id} className={styles.filesListRow}>
+        <span className={styles.filesListIcon}><Icon.Files /></span>
+        <div className={styles.filesListBody}>
+          <p className={styles.filesListName}>{file.name}</p>
+          <p className={styles.filesListMeta}>{formatFileSize(file.size)} · {file.modified}</p>
+        </div>
+        <div className={styles.filesListActions}>
+          <button
+            type="button"
+            className={styles.filesActionButton}
+            onClick={() => runFileAction(() => downloadFile(file))}
+            title="Baixar"
+            aria-label={`Baixar ${file.name}`}
+          >
+            <Icon.Download />
+          </button>
+          {sectionId === 'library' ? (
+            <button
+              type="button"
+              className={styles.filesActionTextButton}
+              onClick={() => runFileAction(() => shareFileWithPlan(file))}
+            >
+              Compartilhar
+            </button>
+          ) : file.canUnshare ? (
+            <button
+              type="button"
+              className={styles.filesActionTextButton}
+              onClick={() => runFileAction(() => unshareFileFromPlan(file))}
+            >
+              Remover
+            </button>
+          ) : null}
+        </div>
+      </div>
+    )
+
+    const renderFileSection = (section) => {
+      const expanded = isFilesSectionOpen(section.id)
+      return (
+        <div key={section.id} className={styles.plannerSection}>
+          <button
+            type="button"
+            className={styles.plannerSectionHeaderBtn}
+            aria-expanded={expanded}
+            onClick={() => toggleFilesSection(section.id)}
+          >
+            <span className={styles.plannerSectionChevron} aria-hidden="true">
+              <Icon.Chevron />
+            </span>
+            <span className={styles.plannerSectionTitle}>{section.title}</span>
+            <span className={styles.plannerSectionCount}>{section.files.length}</span>
+          </button>
+          {expanded ? (
+            <div className={styles.plannerSectionBody}>
+              {section.files.length ? (
+                section.files.map((file) => renderFileRow(file, section.id))
+              ) : (
+                <p className={styles.filesSectionEmpty}>{section.emptyText}</p>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )
     }
 
     return (
@@ -1241,26 +1333,7 @@ export default function KanbanBoard() {
           </button>
         </div>
 
-        <div className={styles.filesFilterBar} role="tablist" aria-label="Filtros de arquivos">
-          {[
-            { id: 'plan', label: 'Plano', count: planFiles.length },
-            { id: 'library', label: 'Biblioteca', count: libraryFiles.length },
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`${styles.filesFilterButton} ${filesFilter === option.id ? styles.filesFilterButtonActive : ''}`}
-              onClick={() => setFilesFilter(option.id)}
-              role="tab"
-              aria-selected={filesFilter === option.id}
-            >
-              <span>{option.label}</span>
-              <span className={styles.filesFilterCount}>{option.count}</span>
-            </button>
-          ))}
-        </div>
-
-        <section className={styles.filesList} aria-label={filesFilter === 'plan' ? 'Arquivos do plano' : 'Arquivos da biblioteca'}>
+        <section className={styles.filesList} aria-label="Arquivos do plano e da biblioteca">
           {!isBackendDriven ? (
             <div className={styles.filesEmptyState}>
               <Icon.Lock />
@@ -1278,49 +1351,13 @@ export default function KanbanBoard() {
               <p>{filesError}</p>
               <button type="button" onClick={reloadFileLists}>Tentar novamente</button>
             </div>
-          ) : visibleFiles.length ? (
-            visibleFiles.map((file) => (
-              <div key={file.id} className={styles.filesListRow}>
-                <span className={styles.filesListIcon}><Icon.Files /></span>
-                <div className={styles.filesListBody}>
-                  <p className={styles.filesListName}>{file.name}</p>
-                  <p className={styles.filesListMeta}>{formatFileSize(file.size)} · {file.modified}</p>
-                </div>
-                <div className={styles.filesListActions}>
-                  <button
-                    type="button"
-                    className={styles.filesActionButton}
-                    onClick={() => runFileAction(() => downloadFile(file))}
-                    title="Baixar"
-                    aria-label={`Baixar ${file.name}`}
-                  >
-                    <Icon.Download />
-                  </button>
-                  {filesFilter === 'library' ? (
-                    <button
-                      type="button"
-                      className={styles.filesActionTextButton}
-                      onClick={() => runFileAction(() => shareFileWithPlan(file))}
-                    >
-                      Compartilhar
-                    </button>
-                  ) : file.canUnshare ? (
-                    <button
-                      type="button"
-                      className={styles.filesActionTextButton}
-                      onClick={() => runFileAction(() => unshareFileFromPlan(file))}
-                    >
-                      Remover
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ))
+          ) : planFiles.length || libraryFiles.length ? (
+            fileSections.map(renderFileSection)
           ) : (
             <div className={styles.filesEmptyState}>
               <Icon.Files />
               <strong>Nada para mostrar</strong>
-              <p>{emptyText}</p>
+              <p>Nenhum arquivo disponível no plano ou na sua biblioteca.</p>
             </div>
           )}
         </section>
