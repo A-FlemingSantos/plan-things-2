@@ -1179,7 +1179,7 @@ export default function CardModal({
                             role="menuitem"
                           >
                             <span className={styles.cmAttachmentAddMenuItemIcon}><icons.Files /></span>
-                            da Biblioteca
+                            Biblioteca
                           </button>
                           <button
                             type="button"
@@ -1191,7 +1191,7 @@ export default function CardModal({
                             role="menuitem"
                           >
                             <span className={styles.cmAttachmentAddMenuItemIcon}><ComputerIcon /></span>
-                            do Meu Computador
+                            Meu Computador
                           </button>
                         </div>
                       )}
