@@ -1,85 +1,84 @@
-# Status Overview - Collaboracao e Settings
+# Status Overview - Colaboracao e Settings
 
-Este arquivo resume o estado atual do projeto com foco no que ja existe, no que ainda falta e no que deve ficar para depois.
+Este arquivo resume o estado atual da base depois da etapa 1.
 
 ## 1. O que ja esta pronto
 
-### Colaboracao em planos
+### Convites de plano
 
-- Convites de plano funcionam no backend e na UI.
-- Um `OWNER` ou `ADMIN` pode convidar, listar membros e remover membros.
-- O convidado pode aceitar ou recusar o convite.
-- Existe tela dedicada para aceitar convite.
-- O board mostra membros do plano quando o backend devolve esses dados.
+- O backend cria, lista, revoga, aceita e recusa convites de plano.
+- O gestor do plano pode ver os convites enviados e remover convites pendentes.
+- O usuario convidado pode abrir o convite por token e aceitar ou recusar.
+- Existe uma area global de notificacoes de convite em `Workspace`, `Board`, `Calendar` e `Files`.
+- O painel de membros do quadro agora tem uma aba de convites com os convites enviados do plano.
 
 ### Arquivos e anexos
 
-- Arquivos do plano podem ser listados, baixados, compartilhados e descompartilhados.
-- Cartoes aceitam anexos de arquivo.
+- Arquivos do plano podem ser listados, compartilhados, descompartilhados e baixados.
+- Cartoes aceitam anexos.
 - Anexos podem ser removidos.
-- O backend ja respeita regras de permissao por papel do plano.
+- O backend ja aplica as regras de permissao por papel do plano.
 
 ### Settings e preferencias
 
-- `homePage` e `openLastCtx` ja funcionam no fluxo de entrada.
-- O ultimo contexto valido do usuario e persistido.
-- `locale`, `timeZone`, `dateFormat` e `timeFormat` ja sao aplicados em runtime.
-- Preferencias globais ja impactam Kanban, Calendar e Arquivos.
-- O backend de settings ja persiste e valida `locale` e `timeZone`.
-- `collapsedByDefault` ja tem efeito real na sidebar.
+- `locale`, `timeZone`, `dateFormat`, `timeFormat` e `theme` ja sao persistidos e validados.
+- `homePage` e `openLastCtx` ja interferem na rota inicial do usuario.
+- O app lembra o ultimo contexto valido e usa isso na entrada.
+- `emailNotifs`, `eventReminders` e `deadlineAlerts` ja sao salvos no backend.
 
 ## 2. O que ainda falta
 
-### Convites
+### Convite por e-mail
 
-- Falta UI para listar convites do plano.
-- Falta UI para revogar convite diretamente na interface.
-- Falta uma experiencia mais clara para convites pendentes do usuario.
-- Falta deixar a recusa de convite mais visivel e fluida na UI.
+- Falta a camada real de integracao com Gmail/Outlook.
+- Falta ligar o convite ao envio real feito pelo conector autenticado do usuario.
+- Falta tratar retry, falha e feedback de envio nesse fluxo.
 
-### Arquivos e anexos
-
-- Falta busca.
-- Falta paginação.
-- Falta ordenacao.
-- Falta indicar melhor a origem do arquivo e a permissao de cada acao.
-
-### Colaboracao futura
+### Governanca de colaboracao
 
 - Falta auditoria de eventos importantes:
   - quem convidou
   - quem aceitou
+  - quem recusou
+  - quem revogou
   - quem anexou
-  - quem removeu
   - quem descompartilhou
-- Falta notificacoes baseadas em eventos reais de colaboracao.
-- Realtime/presenca ainda deve ficar para uma fase posterior.
+- Falta um historico de atividade mais visivel.
+- Realtime e presenca ainda devem ficar para uma fase posterior.
+
+### Arquivos e anexos
+
+- Falta busca.
+- Falta paginacao.
+- Falta ordenacao.
+- Falta sinalizar melhor origem, permissao e contexto de cada arquivo.
 
 ### Settings
 
-- `emailNotifs`, `eventReminders` e `deadlineAlerts` existem, mas ainda nao dirigem comportamento real.
-- `dailySummary` e `weeklySummary` continuam fora do escopo pratico.
-- `density` ainda nao esta persistida/aplicada globalmente.
-- A navegacao inicial do workspace ainda tem redundancias.
+- `density` existe na tela, mas ainda nao esta persistida nem aplicada globalmente.
+- A opcao `Barra lateral recolhida por padrão` esta desabilitada e so existe como transicao para substituicao.
+- `dailySummary` e `weeklySummary` continuam desabilitados.
+- `emailNotifs`, `eventReminders` e `deadlineAlerts` ainda nao dirigem uma camada completa de notificacoes do produto.
 
 ## 3. Decisao importante sobre convite por e-mail
 
-- Por agora, "convite por e-mail" significa exclusivamente o envio de convites de plano.
-- Nao tratar isso como um sistema separado de SMTP.
+- Por agora, "convite por e-mail" significa exclusivamente convite de plano.
+- Nao tratar isso como um sistema genérico de SMTP.
 - O envio de convite por e-mail so deve entrar quando existir integracao real com Gmail/Outlook.
-- Quando isso acontecer, o envio deve ocorrer pelo fluxo autenticado do proprio usuario/conector.
-- Sem essa camada, o roadmap de convites deve parar em link/token e UX de aceite/recusa.
+- Quando isso acontecer, o envio deve sair pelo fluxo autenticado do proprio usuario/conector.
+- Ate la, o fluxo continua baseado em link/token, notificacao interna e aceitação/recusa.
 
 ## 4. O que o produto ainda precisa decidir
 
-- Se o fluxo inicial vai continuar com `homePage` + `openLastCtx` ou se isso sera simplificado.
-- Como o workspace unico sera tratado quando existir multi-workspace.
-- Quando a equipe vai querer evoluir notificacoes para regras reais e nao apenas toggles.
-- Se a colaboracao vai ganhar auditoria antes de qualquer camada de realtime.
+- Se `homePage` + `openLastCtx` devem continuar como estao ou se a entrada no app sera simplificada.
+- Como a experiencia de settings vai tratar a opcao antiga de barra lateral recolhida por padrao.
+- Quando vale conectar notificacoes de settings a eventos reais do produto.
+- Se auditoria deve vir antes de realtime.
+- Como o app vai evoluir para multi-workspace sem aumentar a complexidade da entrada.
 
 ## 5. Leitura pratica
 
-- A fundacao de colaboracao ja existe.
-- O valor agora esta em fechar o fluxo que o usuario enxerga e usa.
+- A etapa de convites de plano ja foi fechada.
+- O proximo passo relevante e a infraestrutura real de Gmail/Outlook para convite por e-mail.
 - Settings precisa de consolidacao, nao de mais campos soltos.
-- Integracoes e automacoes devem vir depois da base de Gmail/Outlook.
+- O foco agora e reduzir ambiguidades e preparar a base para integracoes futuras.
