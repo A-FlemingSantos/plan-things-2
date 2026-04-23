@@ -17,13 +17,13 @@ Por que primeiro:
 - Preparar OAuth/conector real.
 - Definir como as contas serao vinculadas.
 - Resolver permissao e consentimento para envio.
-- Estruturar a operacao de envio como um fluxo autenticado do usuario.
+- Estruturar o convite por e-mail como um fluxo autenticado do usuario.
 
-Por que antes do e-mail automatico:
-- sem essa camada, o envio automatico ficaria desalinhado com a regra de produto
+Por que antes do convite por e-mail:
+- sem essa camada, o envio de convites ficaria desalinhado com a regra de produto
 - o sistema nao deve se comportar como SMTP generico
 
-## 3. Implementar e-mail automatico
+## 3. Implementar convite por e-mail
 
 - Disparar e-mails de convite pela integracao real.
 - Definir retry, falha e feedback de envio.
@@ -81,9 +81,8 @@ Por que por ultimo:
 
 1. Fechar convites
 2. Preparar Gmail/Outlook
-3. Fazer e-mail automatico
+3. Fazer convite por e-mail
 4. Adicionar governanca
 5. Melhorar arquivos
 6. Consolidar settings
 7. Evoluir integracoes e seguranca
-

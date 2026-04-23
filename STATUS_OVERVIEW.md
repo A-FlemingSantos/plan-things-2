@@ -62,10 +62,11 @@ Este arquivo resume o estado atual do projeto com foco no que ja existe, no que 
 - `density` ainda nao esta persistida/aplicada globalmente.
 - A navegacao inicial do workspace ainda tem redundancias.
 
-## 3. Decisao importante sobre e-mail automatico
+## 3. Decisao importante sobre convite por e-mail
 
-- Nao tratar e-mail automatico como um sistema separado de SMTP.
-- E-mail automatico so deve entrar quando existir integracao real com Gmail/Outlook.
+- Por agora, "convite por e-mail" significa exclusivamente o envio de convites de plano.
+- Nao tratar isso como um sistema separado de SMTP.
+- O envio de convite por e-mail so deve entrar quando existir integracao real com Gmail/Outlook.
 - Quando isso acontecer, o envio deve ocorrer pelo fluxo autenticado do proprio usuario/conector.
 - Sem essa camada, o roadmap de convites deve parar em link/token e UX de aceite/recusa.
 
@@ -82,4 +83,3 @@ Este arquivo resume o estado atual do projeto com foco no que ja existe, no que 
 - O valor agora esta em fechar o fluxo que o usuario enxerga e usa.
 - Settings precisa de consolidacao, nao de mais campos soltos.
 - Integracoes e automacoes devem vir depois da base de Gmail/Outlook.
-
