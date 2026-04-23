@@ -309,6 +309,8 @@ export default function KanbanBoard() {
   const [filesLoading, setFilesLoading] = useState(false)
   const [filesError, setFilesError] = useState(null)
   const [draggedFile, setDraggedFile] = useState(null)
+  const [draggedFileRowKey, setDraggedFileRowKey] = useState(null)
+  const [draggedFileVisual, setDraggedFileVisual] = useState(null)
   const [fileDropTargetCardId, setFileDropTargetCardId] = useState(null)
   const [filesSectionOpenById, setFilesSectionOpenById] = useState({
     plan: true,
@@ -736,16 +738,64 @@ export default function KanbanBoard() {
     return refreshActiveCardFromColumns(nextColumns, cardId)
   }
 
-  const startFileDrag = (event, file) => {
+  const startFileDrag = (event, file, rowKey) => {
+    const sourceRow = event.currentTarget
+    const sourceRect = sourceRow.getBoundingClientRect()
+    const offsetX = event.clientX - sourceRect.left
+    const offsetY = event.clientY - sourceRect.top
+
     setDraggedFile(file)
+    setDraggedFileRowKey(rowKey)
+    setDraggedFileVisual({
+      file,
+      left: sourceRect.left,
+      top: sourceRect.top,
+      width: sourceRect.width,
+      height: sourceRect.height,
+      offsetX,
+      offsetY,
+    })
     setFileDropTargetCardId(null)
     event.dataTransfer.effectAllowed = 'copy'
     event.dataTransfer.setData(FILE_DRAG_MIME_TYPE, JSON.stringify({ id: file.id }))
     event.dataTransfer.setData('text/plain', file.name)
+    const transparentDragImage = document.createElement('canvas')
+    transparentDragImage.width = 1
+    transparentDragImage.height = 1
+    event.dataTransfer.setDragImage?.(transparentDragImage, 0, 0)
   }
+
+  const updateFileDragVisual = (event) => {
+    if (!draggedFileVisual || event.clientX === 0 || event.clientY === 0) return
+
+    setDraggedFileVisual((current) => {
+      if (!current) return current
+      return {
+        ...current,
+        left: event.clientX - current.offsetX,
+        top: event.clientY - current.offsetY,
+      }
+    })
+  }
+
+  useEffect(() => {
+    if (!draggedFileVisual) return undefined
+
+    const handleDragOverWindow = (event) => {
+      updateFileDragVisual(event)
+    }
+
+    window.addEventListener('dragover', handleDragOverWindow, true)
+
+    return () => {
+      window.removeEventListener('dragover', handleDragOverWindow, true)
+    }
+  }, [Boolean(draggedFileVisual)])
 
   const endFileDrag = () => {
     setDraggedFile(null)
+    setDraggedFileRowKey(null)
+    setDraggedFileVisual(null)
     setFileDropTargetCardId(null)
   }
 
@@ -1376,16 +1426,19 @@ export default function KanbanBoard() {
 
     const renderFileRow = (file, sectionId) => {
       const isSharedLibraryFile = sectionId === 'library' && sharedPlanFileIds.has(file.id)
+      const rowKey = `${sectionId}:${file.id}`
+      const isDraggedFileRow = draggedFileRowKey === rowKey
 
       return (
         <div
           key={file.id}
-          className={`${styles.filesListRow} ${isSharedLibraryFile ? styles.filesListRowMuted : ''}`}
+          className={`${styles.filesListRow} ${isSharedLibraryFile ? styles.filesListRowMuted : ''} ${isDraggedFileRow ? styles.filesListRowDragging : ''}`}
           title={isSharedLibraryFile ? 'Já compartilhado com o plano' : undefined}
           draggable
           onDragStart={(event) => {
-            startFileDrag(event, file)
+            startFileDrag(event, file, rowKey)
           }}
+          onDrag={updateFileDragVisual}
           onDragEnd={endFileDrag}
         >
           <span className={styles.filesListIcon}><Icon.Files /></span>
@@ -1984,6 +2037,24 @@ export default function KanbanBoard() {
         {isInboxPanelMounted && renderInboxPanel()}
         {isPlannerPanelMounted && renderPlannerPanel()}
         {isFilesPanelMounted && renderFilesPanel()}
+        {draggedFileVisual ? (
+          <div
+            className={styles.filesDraggedItem}
+            style={{
+              left: draggedFileVisual.left,
+              top: draggedFileVisual.top,
+              width: draggedFileVisual.width,
+              minHeight: draggedFileVisual.height,
+            }}
+            aria-hidden="true"
+          >
+            <span className={styles.filesListIcon}><Icon.Files /></span>
+            <div className={styles.filesListBody}>
+              <p className={styles.filesListName}>{draggedFileVisual.file.name}</p>
+              <p className={styles.filesListMeta}>{formatFileSize(draggedFileVisual.file.size)} · {draggedFileVisual.file.modified}</p>
+            </div>
+          </div>
+        ) : null}
       </ProductAppShell>
 
       {/* ── Card modal ── */}
