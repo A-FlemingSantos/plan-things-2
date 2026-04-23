@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
-import { apiRequest } from '../../../../shared/api/apiClient.js'
+import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
@@ -20,6 +20,7 @@ import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
 import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
+import { formatFileSize, getFileTypeFromName } from '../../../files/data/libraryRepository.js'
 import { buildPlannerView, filterPlannerItems } from './plannerFilters.js'
 import styles from './KanbanBoard.module.css'
 
@@ -31,6 +32,7 @@ const Icon = {
   Popover:  () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Canvas:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
   Files:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
+  Download: () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4.5 6.5L7 9l2.5-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1.5A1.5 1.5 0 0 0 3.5 13h7a1.5 1.5 0 0 0 1.5-1.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Plus:     () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   Users:    () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" stroke="currentColor" strokeWidth="1.3"/><path d="M1.5 14c0-2.4 2-4.3 4.5-4.3S10.5 11.6 10.5 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11.2 7.6a2.4 2.4 0 1 0 0-4.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11 9.9c1.9.3 3.5 1.9 3.5 4.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   X:        () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
@@ -101,6 +103,19 @@ const COL_COLORS = [
 ]
 
 const uid = () => Math.random().toString(36).slice(2, 9)
+
+function mapApiFileItem(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    type: item.type === 'FOLDER' ? 'folder' : getFileTypeFromName(item.name),
+    mimeType: item.mimeType ?? '',
+    size: item.sizeBytes ?? 0,
+    modified: item.updatedAt?.text ?? item.createdAt?.text ?? 'Agora',
+    sharedByCurrentUser: Boolean(item.sharedByCurrentUser),
+    canUnshare: Boolean(item.canUnshare),
+  }
+}
 
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -272,6 +287,13 @@ export default function KanbanBoard() {
   const [isInboxPanelMounted, setIsInboxPanelMounted] = useState(false)
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
+  const [isFilesOpen, setIsFilesOpen] = useState(false)
+  const [isFilesPanelMounted, setIsFilesPanelMounted] = useState(false)
+  const [filesFilter, setFilesFilter] = useState('plan')
+  const [planFiles, setPlanFiles] = useState([])
+  const [libraryFiles, setLibraryFiles] = useState([])
+  const [filesLoading, setFilesLoading] = useState(false)
+  const [filesError, setFilesError] = useState(null)
   const [isPlannerFilterOpen, setIsPlannerFilterOpen] = useState(false)
   const [plannerFilter, setPlannerFilter] = useState('my-day')
   const plannerFilterWrapRef = useRef(null)
@@ -284,6 +306,7 @@ export default function KanbanBoard() {
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
   const plannerCloseTimerRef = useRef(null)
+  const filesCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
@@ -582,6 +605,112 @@ export default function KanbanBoard() {
     }
   }
 
+  const reloadFileLists = async () => {
+    if (!activePlan?.id || !isBackendDriven) {
+      setPlanFiles([])
+      setLibraryFiles([])
+      setFilesError(null)
+      return { plan: [], library: [] }
+    }
+
+    setFilesLoading(true)
+    setFilesError(null)
+
+    try {
+      const [planItems, libraryItems] = await Promise.all([
+        apiRequest(`/api/files/plans/${activePlan.id}`, {
+          token: accessToken,
+        }),
+        apiRequest('/api/files', {
+          token: accessToken,
+        }),
+      ])
+      const nextPlanFiles = planItems.map(mapApiFileItem).filter((file) => file.type !== 'folder')
+      const nextLibraryFiles = libraryItems.map(mapApiFileItem).filter((file) => file.type !== 'folder')
+      setPlanFiles(nextPlanFiles)
+      setLibraryFiles(nextLibraryFiles)
+      return { plan: nextPlanFiles, library: nextLibraryFiles }
+    } catch (error) {
+      const message = error?.message ?? 'Não foi possível carregar os arquivos.'
+      setFilesError(message)
+      showNotification(message)
+      return { plan: [], library: [] }
+    } finally {
+      setFilesLoading(false)
+    }
+  }
+
+  const refreshActiveCardFromColumns = (nextColumns, cardId) => {
+    const nextCard = nextColumns.flatMap((column) => column.cards).find((card) => card.id === cardId)
+    if (nextCard) {
+      setActiveCard((current) => (
+        current?.card?.id === cardId ? { ...current, card: nextCard } : current
+      ))
+    }
+    return nextCard
+  }
+
+  const attachFileToCard = async (file, cardId) => {
+    if (!activePlan?.id || !isBackendDriven) return null
+
+    await apiRequest(`/api/files/${file.id}/attach/cards/${cardId}`, {
+      method: 'POST',
+      token: accessToken,
+    })
+    const nextColumns = await loadPlanBoard(activePlan.id)
+    await reloadFileLists()
+    showNotification(`"${file.name}" anexado ao cartão.`)
+    return refreshActiveCardFromColumns(nextColumns, cardId)
+  }
+
+  const removeAttachmentFromCard = async (attachment) => {
+    if (!activePlan?.id || !isBackendDriven) return null
+
+    await apiRequest(`/api/files/attachments/${attachment.id}`, {
+      method: 'DELETE',
+      token: accessToken,
+    })
+    const nextColumns = await loadPlanBoard(activePlan.id)
+    showNotification(`"${attachment.name}" removido do cartão.`)
+    return refreshActiveCardFromColumns(nextColumns, activeCard?.card?.id)
+  }
+
+  const downloadFile = async (file) => {
+    if (!isBackendDriven) {
+      showNotification(`Baixando "${file.name}"...`)
+      return
+    }
+
+    const blob = await apiRequest(`/api/files/${file.fileId ?? file.id}/download`, {
+      token: accessToken,
+      responseType: 'blob',
+    })
+    triggerBlobDownload(blob, file.name)
+    showNotification(`"${file.name}" baixado.`)
+  }
+
+  const shareFileWithPlan = async (file) => {
+    if (!activePlan?.id || !isBackendDriven) return
+
+    await apiRequest(`/api/files/${file.id}/share/plans/${activePlan.id}`, {
+      method: 'POST',
+      token: accessToken,
+    })
+    await reloadFileLists()
+    showNotification(`"${file.name}" compartilhado com o plano.`)
+  }
+
+  const unshareFileFromPlan = async (file) => {
+    if (!activePlan?.id || !isBackendDriven) return
+
+    await apiRequest(`/api/files/${file.id}/share/plans/${activePlan.id}`, {
+      method: 'DELETE',
+      token: accessToken,
+    })
+    await reloadFileLists()
+    showNotification(`"${file.name}" removido do plano.`)
+  }
+
   const openPlanner = () => {
     if (plannerCloseTimerRef.current) {
       clearTimeout(plannerCloseTimerRef.current)
@@ -591,9 +720,15 @@ export default function KanbanBoard() {
       clearTimeout(inboxCloseTimerRef.current)
       inboxCloseTimerRef.current = null
     }
+    if (filesCloseTimerRef.current) {
+      clearTimeout(filesCloseTimerRef.current)
+      filesCloseTimerRef.current = null
+    }
     setIsBoardSwitcherOpen(false)
     setIsInboxOpen(false)
     setIsInboxPanelMounted(false)
+    setIsFilesOpen(false)
+    setIsFilesPanelMounted(false)
     setIsPlannerFilterOpen(false)
     setIsPlannerPanelMounted(true)
     window.requestAnimationFrame(() => setIsPlannerOpen(true))
@@ -620,9 +755,15 @@ export default function KanbanBoard() {
       clearTimeout(plannerCloseTimerRef.current)
       plannerCloseTimerRef.current = null
     }
+    if (filesCloseTimerRef.current) {
+      clearTimeout(filesCloseTimerRef.current)
+      filesCloseTimerRef.current = null
+    }
     setIsBoardSwitcherOpen(false)
     setIsPlannerOpen(false)
     setIsPlannerPanelMounted(false)
+    setIsFilesOpen(false)
+    setIsFilesPanelMounted(false)
     setIsInboxPanelMounted(true)
     window.requestAnimationFrame(() => setIsInboxOpen(true))
   }
@@ -638,10 +779,49 @@ export default function KanbanBoard() {
     }, 260)
   }
 
+  const openFiles = () => {
+    if (filesCloseTimerRef.current) {
+      clearTimeout(filesCloseTimerRef.current)
+      filesCloseTimerRef.current = null
+    }
+    if (plannerCloseTimerRef.current) {
+      clearTimeout(plannerCloseTimerRef.current)
+      plannerCloseTimerRef.current = null
+    }
+    if (inboxCloseTimerRef.current) {
+      clearTimeout(inboxCloseTimerRef.current)
+      inboxCloseTimerRef.current = null
+    }
+    setIsBoardSwitcherOpen(false)
+    setIsPlannerOpen(false)
+    setIsPlannerPanelMounted(false)
+    setIsInboxOpen(false)
+    setIsInboxPanelMounted(false)
+    setIsFilesPanelMounted(true)
+    window.requestAnimationFrame(() => setIsFilesOpen(true))
+  }
+
+  const closeFiles = () => {
+    setIsFilesOpen(false)
+    if (filesCloseTimerRef.current) {
+      clearTimeout(filesCloseTimerRef.current)
+    }
+    filesCloseTimerRef.current = setTimeout(() => {
+      setIsFilesPanelMounted(false)
+      filesCloseTimerRef.current = null
+    }, 260)
+  }
+
   const closeFloatingPanel = () => {
     closeInbox()
     closePlanner()
+    closeFiles()
   }
+
+  useEffect(() => {
+    if (!isFilesPanelMounted) return
+    reloadFileLists()
+  }, [activePlan?.id, isFilesPanelMounted])
 
   useEffect(() => {
     if (!isPlannerFilterOpen) return undefined
@@ -945,6 +1125,9 @@ export default function KanbanBoard() {
     if (plannerCloseTimerRef.current) {
       clearTimeout(plannerCloseTimerRef.current)
     }
+    if (filesCloseTimerRef.current) {
+      clearTimeout(filesCloseTimerRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -1023,7 +1206,129 @@ export default function KanbanBoard() {
     </aside>
   )
 
-		  const renderPlannerPanel = () => {
+  const renderFilesPanel = () => {
+    const visibleFiles = filesFilter === 'plan' ? planFiles : libraryFiles
+    const emptyText = filesFilter === 'plan'
+      ? 'Nenhum arquivo compartilhado com este plano.'
+      : 'Nenhum arquivo disponível na sua biblioteca.'
+
+    const runFileAction = async (action) => {
+      try {
+        await action()
+      } catch (error) {
+        showNotification(error?.message ?? 'Não foi possível concluir a ação.')
+      }
+    }
+
+    return (
+      <aside
+        id="board-files-panel"
+        className={`${styles.plannerPanel} ${styles.filesPanel} ${isFilesOpen ? '' : styles.plannerPanelClosing}`}
+        aria-label="Arquivos do plano"
+      >
+        <div className={styles.plannerPanelHeader}>
+          <div>
+            <span className={styles.plannerEyebrow}>Arquivos</span>
+            <h2>Plano</h2>
+          </div>
+          <button
+            type="button"
+            className={styles.plannerCloseButton}
+            aria-label="Fechar arquivos"
+            onClick={closeFiles}
+          >
+            <Icon.X />
+          </button>
+        </div>
+
+        <div className={styles.filesFilterBar} role="tablist" aria-label="Filtros de arquivos">
+          {[
+            { id: 'plan', label: 'Plano', count: planFiles.length },
+            { id: 'library', label: 'Biblioteca', count: libraryFiles.length },
+          ].map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={`${styles.filesFilterButton} ${filesFilter === option.id ? styles.filesFilterButtonActive : ''}`}
+              onClick={() => setFilesFilter(option.id)}
+              role="tab"
+              aria-selected={filesFilter === option.id}
+            >
+              <span>{option.label}</span>
+              <span className={styles.filesFilterCount}>{option.count}</span>
+            </button>
+          ))}
+        </div>
+
+        <section className={styles.filesList} aria-label={filesFilter === 'plan' ? 'Arquivos do plano' : 'Arquivos da biblioteca'}>
+          {!isBackendDriven ? (
+            <div className={styles.filesEmptyState}>
+              <Icon.Lock />
+              <strong>Conecte ao backend</strong>
+              <p>Arquivos do plano ficam disponíveis em sessões autenticadas.</p>
+            </div>
+          ) : filesLoading ? (
+            Array.from({ length: 5 }, (_, index) => (
+              <div key={`file-loading-${index}`} className={styles.filesListSkeleton} />
+            ))
+          ) : filesError ? (
+            <div className={styles.filesEmptyState}>
+              <Icon.Files />
+              <strong>Não foi possível carregar</strong>
+              <p>{filesError}</p>
+              <button type="button" onClick={reloadFileLists}>Tentar novamente</button>
+            </div>
+          ) : visibleFiles.length ? (
+            visibleFiles.map((file) => (
+              <div key={file.id} className={styles.filesListRow}>
+                <span className={styles.filesListIcon}><Icon.Files /></span>
+                <div className={styles.filesListBody}>
+                  <p className={styles.filesListName}>{file.name}</p>
+                  <p className={styles.filesListMeta}>{formatFileSize(file.size)} · {file.modified}</p>
+                </div>
+                <div className={styles.filesListActions}>
+                  <button
+                    type="button"
+                    className={styles.filesActionButton}
+                    onClick={() => runFileAction(() => downloadFile(file))}
+                    title="Baixar"
+                    aria-label={`Baixar ${file.name}`}
+                  >
+                    <Icon.Download />
+                  </button>
+                  {filesFilter === 'library' ? (
+                    <button
+                      type="button"
+                      className={styles.filesActionTextButton}
+                      onClick={() => runFileAction(() => shareFileWithPlan(file))}
+                    >
+                      Compartilhar
+                    </button>
+                  ) : file.canUnshare ? (
+                    <button
+                      type="button"
+                      className={styles.filesActionTextButton}
+                      onClick={() => runFileAction(() => unshareFileFromPlan(file))}
+                    >
+                      Remover
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className={styles.filesEmptyState}>
+              <Icon.Files />
+              <strong>Nada para mostrar</strong>
+              <p>{emptyText}</p>
+            </div>
+          )}
+        </section>
+      </aside>
+    )
+  }
+
+	  const renderPlannerPanel = () => {
 		    const plannerFilterOptions = [
 		      { id: 'my-day', label: 'Meu Dia', Icon: Icon.Sun, count: plannerFilterCounts.myDay, accent: '#4290da' },
 		      { id: 'important', label: 'Importante', Icon: Icon.Star, count: plannerFilterCounts.important, accent: '#d4aef1' },
@@ -1234,7 +1539,7 @@ export default function KanbanBoard() {
         HintIcon={Icon.Popover}
         secondaryContent={renderSidebarSecondaryContent}
         bottomContent={renderSidebarBottomContent}
-        contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
+        contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted || isFilesPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen || isFilesOpen ? styles.boardWrapperWithPlanner : ''}`}
       >
         <div className={boardMainClassName} style={boardCoverStyle}>
         <PlanPageHeader
@@ -1415,47 +1720,22 @@ export default function KanbanBoard() {
             <span>Quadro</span>
           </button>
 
-          <div className={styles.boardViewSwitcher}>
-            <button
-              type="button"
-              className={styles.boardViewToolbarItem}
-              aria-expanded={isBoardSwitcherOpen}
-              aria-haspopup="menu"
-              onClick={() => {
-                closeFloatingPanel()
-                setIsBoardSwitcherOpen(open => !open)
-              }}
-            >
-              <Icon.Switch />
-              <span>Mudar de quadros</span>
-            </button>
-
-            {isBoardSwitcherOpen && (
-              <div className={styles.boardViewMenu} role="menu" aria-label="Mudar de quadro">
-                {plans.length > 0 ? (
-                  plans.map((plan) => (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      role="menuitem"
-                      className={`${styles.boardViewMenuItem} ${activePlan?.id === plan.id ? styles.boardViewMenuItemActive : ''}`}
-                      onClick={() => handlePlanSwitch(plan.id)}
-                    >
-                  <span className={styles.boardViewMenuDot} style={{ background: plan.tagColor ?? plan.cover ?? 'var(--text-3)' }} />
-                      <span className={styles.boardViewMenuLabel}>{plan.name}</span>
-                    </button>
-                  ))
-                ) : (
-                  <div className={styles.boardViewMenuEmpty}>Nenhum quadro disponível</div>
-                )}
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            className={`${styles.boardViewToolbarItem} ${isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-expanded={isFilesOpen}
+            aria-controls="board-files-panel"
+            onClick={openFiles}
+          >
+            <Icon.Files />
+            <span>Arquivos</span>
+          </button>
         </div>
         </div>
 
         {isInboxPanelMounted && renderInboxPanel()}
         {isPlannerPanelMounted && renderPlannerPanel()}
+        {isFilesPanelMounted && renderFilesPanel()}
       </ProductAppShell>
 
       {/* ── Card modal ── */}
@@ -1473,6 +1753,14 @@ export default function KanbanBoard() {
           icons={Icon}
           styles={styles}
           isBackendDriven={isBackendDriven}
+          planFiles={planFiles}
+          libraryFiles={libraryFiles}
+          filesLoading={filesLoading}
+          filesError={filesError}
+          onLoadFiles={reloadFileLists}
+          onAttachFile={attachFileToCard}
+          onRemoveAttachment={removeAttachmentFromCard}
+          onDownloadFile={downloadFile}
         />
       )}
 

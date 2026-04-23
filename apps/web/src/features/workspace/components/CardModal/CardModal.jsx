@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { formatFileSize } from '../../../files/data/libraryRepository.js'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 const DEFAULT_CARD_SCHEDULE = {
@@ -161,6 +162,14 @@ export default function CardModal({
   icons,
   styles,
   isBackendDriven = false,
+  planFiles = [],
+  libraryFiles = [],
+  filesLoading = false,
+  filesError = null,
+  onLoadFiles,
+  onAttachFile,
+  onRemoveAttachment,
+  onDownloadFile,
 }) {
   const initialSchedule = buildInitialCardSchedule(card)
   const [title,    setTitle]    = useState(card.title)
@@ -170,6 +179,7 @@ export default function CardModal({
   const [dueDate,  setDueDate]  = useState(card.dueDate)
   const [comment,  setComment]  = useState('')
   const [comments, setComments] = useState(card.comments)
+  const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
   const [exiting,  setExiting]  = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [commentFocused, setCommentFocused] = useState(false)
@@ -180,6 +190,12 @@ export default function CardModal({
   const [showTextMenu, setShowTextMenu] = useState(false)
   const [showListMenu, setShowListMenu] = useState(false)
   const [showInsertMenu, setShowInsertMenu] = useState(false)
+  const [showFilePicker, setShowFilePicker] = useState(false)
+  const [filePickerFilter, setFilePickerFilter] = useState('plan')
+  const [fileSearch, setFileSearch] = useState('')
+  const [fileActionError, setFileActionError] = useState('')
+  const [attachingFileId, setAttachingFileId] = useState(null)
+  const [removingAttachmentId, setRemovingAttachmentId] = useState(null)
   const [membersMenuPosition, setMembersMenuPosition] = useState({ top: 0, left: 0 })
   const [labelMenuPosition, setLabelMenuPosition] = useState({ top: 0, left: 0 })
   const [dateMenuPosition, setDateMenuPosition] = useState({ top: 0, left: 0 })
@@ -278,6 +294,7 @@ export default function CardModal({
           preserveDisplayLabel,
         },
         comments,
+        attachments,
       })
       startClose()
     } catch (error) {
@@ -303,6 +320,53 @@ export default function CardModal({
     }
     setComments(prev => [...prev, c])
     setComment('')
+  }
+
+  const openFilePicker = async () => {
+    setShowInsertMenu(false)
+    setShowFilePicker(true)
+    setFileActionError('')
+    await onLoadFiles?.()
+  }
+
+  const handleAttachFile = async (file) => {
+    if (!onAttachFile || attachingFileId || attachedFileIds.has(file.id)) return
+
+    setAttachingFileId(file.id)
+    setFileActionError('')
+
+    try {
+      const nextCard = await onAttachFile(file, card.id)
+      if (nextCard?.attachments) {
+        setAttachments(nextCard.attachments)
+      }
+      setShowFilePicker(false)
+      setFileSearch('')
+    } catch (error) {
+      setFileActionError(error?.message ?? 'Não foi possível anexar este arquivo.')
+    } finally {
+      setAttachingFileId(null)
+    }
+  }
+
+  const handleRemoveAttachment = async (attachment) => {
+    if (!onRemoveAttachment || removingAttachmentId || !attachment.canRemove) return
+
+    setRemovingAttachmentId(attachment.id)
+    setSubmitError(null)
+
+    try {
+      const nextCard = await onRemoveAttachment(attachment)
+      if (nextCard?.attachments) {
+        setAttachments(nextCard.attachments)
+      } else {
+        setAttachments((current) => current.filter((item) => item.id !== attachment.id))
+      }
+    } catch (error) {
+      setSubmitError(error?.message ?? 'Não foi possível remover o anexo.')
+    } finally {
+      setRemovingAttachmentId(null)
+    }
   }
 
   const handleDelete = async () => {
@@ -372,6 +436,9 @@ export default function CardModal({
     setShowDateMenu(false)
   }
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
+  const pickerFiles = (filePickerFilter === 'plan' ? planFiles : libraryFiles)
+    .filter((file) => file.name.toLowerCase().includes(fileSearch.trim().toLowerCase()))
+  const attachedFileIds = new Set(attachments.map((attachment) => attachment.fileId))
   const getMemberName = (member) => {
     if (!member) return 'Membro'
     return member.name ?? member.email ?? member.initials ?? 'Membro'
@@ -396,6 +463,10 @@ export default function CardModal({
       color: 'var(--text-3)',
     }
   }
+
+  useEffect(() => {
+    setAttachments(Array.isArray(card.attachments) ? card.attachments : [])
+  }, [card.id, card.attachments])
 
   useEffect(() => {
     if (showDateMenu) {
@@ -994,6 +1065,67 @@ export default function CardModal({
                 />
               </div>
 
+              <div className={styles.cmSection}>
+                <div className={styles.cmAttachmentHeader}>
+                  <p className={styles.cmSectionTitle}>
+                    <icons.Files />
+                    Anexos
+                  </p>
+                  <button
+                    type="button"
+                    className={styles.cmAttachmentAddBtn}
+                    onClick={openFilePicker}
+                  >
+                    <icons.Plus />
+                    Adicionar
+                  </button>
+                </div>
+
+                {attachments.length ? (
+                  <div className={styles.cmAttachmentList}>
+                    {attachments.map((attachment) => (
+                      <div key={attachment.id} className={styles.cmAttachmentRow}>
+                        <span className={styles.cmAttachmentIcon}><icons.Files /></span>
+                        <div className={styles.cmAttachmentBody}>
+                          <p className={styles.cmAttachmentName}>{attachment.name}</p>
+                          <p className={styles.cmAttachmentMeta}>
+                            {formatFileSize(attachment.size)} · {attachment.attachedBy?.fullName ?? 'Membro'}
+                          </p>
+                        </div>
+                        <div className={styles.cmAttachmentActions}>
+                          {onDownloadFile ? (
+                            <button
+                              type="button"
+                              className={styles.cmAttachmentIconBtn}
+                              onClick={() => {
+                                Promise.resolve(onDownloadFile(attachment)).catch((error) => {
+                                  setSubmitError(error?.message ?? 'Não foi possível baixar o anexo.')
+                                })
+                              }}
+                              aria-label={`Baixar ${attachment.name}`}
+                            >
+                              <icons.Download />
+                            </button>
+                          ) : null}
+                          {attachment.canRemove ? (
+                            <button
+                              type="button"
+                              className={styles.cmAttachmentRemoveBtn}
+                              onClick={() => handleRemoveAttachment(attachment)}
+                              disabled={removingAttachmentId === attachment.id}
+                            >
+                              {removingAttachmentId === attachment.id ? 'Removendo...' : 'Remover'}
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.cmAttachmentEmpty}>Nenhum arquivo anexado a este cartão.</p>
+                )}
+              </div>
+
               {activeChecklist && (
                 <div className={styles.cmChecklistBlock}>
                   <div className={styles.cmChecklistBlockHeader}>
@@ -1339,6 +1471,101 @@ export default function CardModal({
         </div>
 
       </div>
+
+      {showFilePicker && (
+        <div
+          className={styles.cmFilePickerOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Anexar arquivo"
+          onClick={(event) => {
+            event.stopPropagation()
+            setShowFilePicker(false)
+          }}
+        >
+          <div className={styles.cmFilePicker} onClick={e => e.stopPropagation()}>
+            <header className={styles.cmFilePickerHeader}>
+              <div>
+                <p className={styles.cmFilePickerEyebrow}>Anexar arquivo</p>
+                <h3>Arquivos do cartão</h3>
+              </div>
+              <button type="button" className={styles.cmIconBtn} onClick={() => setShowFilePicker(false)} aria-label="Fechar">
+                <icons.X />
+              </button>
+            </header>
+
+            <div className={styles.cmFilePickerControls}>
+              <div className={styles.cmFilePickerTabs} role="tablist" aria-label="Fonte do arquivo">
+                {[
+                  { id: 'plan', label: 'Plano', count: planFiles.length },
+                  { id: 'library', label: 'Biblioteca', count: libraryFiles.length },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`${styles.cmFilePickerTab} ${filePickerFilter === option.id ? styles.cmFilePickerTabActive : ''}`}
+                    onClick={() => setFilePickerFilter(option.id)}
+                    role="tab"
+                    aria-selected={filePickerFilter === option.id}
+                  >
+                    {option.label}
+                    <span>{option.count}</span>
+                  </button>
+                ))}
+              </div>
+              <input
+                type="search"
+                className={styles.cmFilePickerSearch}
+                value={fileSearch}
+                onChange={e => setFileSearch(e.target.value)}
+                placeholder="Buscar arquivo"
+                aria-label="Buscar arquivo"
+              />
+            </div>
+
+            {fileActionError ? <p className={styles.cmFilePickerError}>{fileActionError}</p> : null}
+            {filesError ? <p className={styles.cmFilePickerError}>{filesError}</p> : null}
+
+            <div className={styles.cmFilePickerList}>
+              {filesLoading ? (
+                Array.from({ length: 5 }, (_, index) => (
+                  <div key={`picker-loading-${index}`} className={styles.cmFilePickerSkeleton} />
+                ))
+              ) : pickerFiles.length ? (
+                pickerFiles.map((file) => {
+                  const isAttached = attachedFileIds.has(file.id)
+                  const isBusy = attachingFileId === file.id
+
+                  return (
+                    <button
+                      key={file.id}
+                      type="button"
+                      className={styles.cmFilePickerItem}
+                      onClick={() => handleAttachFile(file)}
+                      disabled={isAttached || isBusy}
+                    >
+                      <span className={styles.cmFilePickerIcon}><icons.Files /></span>
+                      <span className={styles.cmFilePickerBody}>
+                        <span className={styles.cmFilePickerName}>{file.name}</span>
+                        <span className={styles.cmFilePickerMeta}>{formatFileSize(file.size)} · {file.modified}</span>
+                      </span>
+                      <span className={styles.cmFilePickerAction}>
+                        {isAttached ? 'Anexado' : isBusy ? 'Anexando...' : 'Anexar'}
+                      </span>
+                    </button>
+                  )
+                })
+              ) : (
+                <div className={styles.cmFilePickerEmpty}>
+                  <icons.Files />
+                  <strong>Nada para mostrar</strong>
+                  <p>{filePickerFilter === 'plan' ? 'Nenhum arquivo compartilhado com este plano.' : 'Nenhum arquivo disponível na sua biblioteca.'}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showTextMenu && (
         <div
@@ -1738,6 +1965,7 @@ export default function CardModal({
               label: 'Arquivo',
               description: 'Anexe um arquivo',
               icon: <icons.Files />,
+              action: openFilePicker,
             },
             {
               label: 'Imagem',
@@ -1755,7 +1983,13 @@ export default function CardModal({
               type="button"
               className={styles.cmInsertMenuItem}
               onMouseDown={e => e.preventDefault()}
-              onClick={() => setShowInsertMenu(false)}
+              onClick={() => {
+                if (option.action) {
+                  option.action()
+                  return
+                }
+                setShowInsertMenu(false)
+              }}
             >
               <span className={styles.cmInsertMenuIcon}>{option.icon}</span>
               <span className={styles.cmInsertMenuContent}>

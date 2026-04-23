@@ -446,6 +446,20 @@ function mapBoardCard(card, options = {}) {
     startAt: card.startAt ?? null,
     dueAt: card.dueAt ?? null,
     comments: card.comments.map(mapBoardComment),
+    attachments: Array.isArray(card.attachments)
+      ? card.attachments.map((attachment) => ({
+          id: attachment.id,
+          fileId: attachment.fileId,
+          name: attachment.name,
+          type: attachment.type === 'FOLDER' ? 'folder' : getFileTypeFromName(attachment.name),
+          mimeType: attachment.mimeType ?? '',
+          size: attachment.sizeBytes ?? 0,
+          attachedBy: attachment.attachedBy ?? null,
+          attachedByCurrentUser: Boolean(attachment.attachedByCurrentUser),
+          canRemove: Boolean(attachment.canRemove),
+          createdAt: attachment.createdAt ?? null,
+        }))
+      : [],
     kind: card.kind,
     schedule: {
       selectedCalendarDay,
@@ -630,6 +644,8 @@ export function buildLibraryTreeFromApi(items) {
       owner: 'me',
       deleted: Boolean(item.deleted),
       parentId: item.parentId ?? null,
+      sharedByCurrentUser: Boolean(item.sharedByCurrentUser),
+      canUnshare: Boolean(item.canUnshare),
       children: [],
     })
   })

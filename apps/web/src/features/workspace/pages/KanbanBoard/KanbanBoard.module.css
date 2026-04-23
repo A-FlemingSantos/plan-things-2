@@ -3738,6 +3738,380 @@
 /* ════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════ */
+.filesPanel {
+  overflow: hidden;
+}
+
+.filesFilterBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.filesFilterButton {
+  height: 36px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--border-1);
+  font-size: 13px;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.filesFilterButton:hover,
+.filesFilterButtonActive {
+  background: var(--surface-2);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.filesFilterCount {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 18px;
+  overflow-y: auto;
+}
+
+.filesListRow {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.filesListIcon,
+.cmAttachmentIcon,
+.cmFilePickerIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.filesListBody,
+.cmAttachmentBody,
+.cmFilePickerBody {
+  min-width: 0;
+}
+
+.filesListName,
+.cmAttachmentName,
+.cmFilePickerName {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filesListMeta,
+.cmAttachmentMeta,
+.cmFilePickerMeta {
+  margin: 3px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.filesListActions,
+.cmAttachmentActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filesActionButton,
+.cmAttachmentIconBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.filesActionButton:hover,
+.cmAttachmentIconBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.filesActionTextButton,
+.cmAttachmentRemoveBtn {
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.filesActionTextButton:hover,
+.cmAttachmentRemoveBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.filesEmptyState,
+.cmFilePickerEmpty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.filesEmptyState strong,
+.cmFilePickerEmpty strong {
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+}
+
+.filesEmptyState p,
+.cmFilePickerEmpty p {
+  margin: 0;
+  max-width: 260px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.filesEmptyState button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.filesListSkeleton,
+.cmFilePickerSkeleton {
+  height: 58px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+.cmAttachmentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cmAttachmentAddBtn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-size: 12px;
+}
+
+.cmAttachmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmAttachmentRow {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.cmAttachmentEmpty {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.cmFilePickerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: color-mix(in srgb, var(--text-1) 34%, transparent);
+}
+
+.cmFilePicker {
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100vh - 36px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
+}
+
+.cmFilePickerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.cmFilePickerEyebrow {
+  margin: 0 0 4px;
+  color: var(--text-3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.cmFilePickerHeader h3 {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 18px;
+  font-weight: var(--font-weight-regular);
+}
+
+.cmFilePickerControls {
+  display: grid;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.cmFilePickerTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cmFilePickerTab {
+  height: 34px;
+  border: 1px solid var(--border-1);
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.cmFilePickerTabActive {
+  background: var(--surface-2);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.cmFilePickerTab span {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.cmFilePickerSearch {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--border-1);
+  border-radius: 7px;
+  padding: 0 11px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+}
+
+.cmFilePickerError {
+  margin: 12px 18px 0;
+  color: var(--danger-text);
+  font-size: 12px;
+}
+
+.cmFilePickerList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+}
+
+.cmFilePickerItem {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 9px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  text-align: left;
+}
+
+.cmFilePickerItem:disabled {
+  opacity: .62;
+  cursor: default;
+}
+
+.cmFilePickerAction {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 @media (max-width: 1024px) {
   .boardWrapperWithPlanner { gap: 10px; padding: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }

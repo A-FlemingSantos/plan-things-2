@@ -84,8 +84,18 @@ public class FileController {
     return ApiEnvelope.ok(fileService.shareToPlan(fileId, planId));
   }
 
+  @DeleteMapping("/{fileId}/share/plans/{planId}")
+  public ApiEnvelope<FileService.MessageResponse> unshareFromPlan(@PathVariable UUID fileId, @PathVariable UUID planId) {
+    return ApiEnvelope.ok(fileService.unshareFromPlan(fileId, planId));
+  }
+
   @PostMapping("/{fileId}/attach/cards/{cardId}")
   public ApiEnvelope<FileService.MessageResponse> attachToCard(@PathVariable UUID fileId, @PathVariable UUID cardId) {
     return ApiEnvelope.ok(fileService.attachToCard(fileId, cardId));
+  }
+
+  @DeleteMapping("/attachments/{attachmentId}")
+  public ApiEnvelope<FileService.MessageResponse> removeAttachment(@PathVariable UUID attachmentId) {
+    return ApiEnvelope.ok(fileService.removeAttachment(attachmentId));
   }
 }

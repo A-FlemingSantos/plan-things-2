@@ -132,6 +132,19 @@ describe('board mapping with preferences', () => {
             comments: [],
             kind: 'TAREFA',
             checklists: [],
+            attachments: [
+              {
+                id: 'att-1',
+                fileId: 'file-1',
+                name: 'briefing.pdf',
+                mimeType: 'application/pdf',
+                sizeBytes: 2048,
+                attachedBy: { id: 'user-1', fullName: 'Owner', email: 'owner@example.com' },
+                attachedByCurrentUser: true,
+                canRemove: true,
+                createdAt: { iso: '2026-04-20T03:30:00Z', text: '20/04/2026 03:30 UTC' },
+              },
+            ],
           },
         ],
       },
@@ -165,5 +178,22 @@ describe('board mapping with preferences', () => {
     })
 
     expect(payload.dueAt).toBe('2026-04-19T23:30:00-04:00')
+  })
+
+  it('maps board card attachments with permission flags', () => {
+    const [column] = mapBoardViewToColumns(sampleBoardView)
+    const [card] = column.cards
+
+    expect(card.attachments).toEqual([
+      expect.objectContaining({
+        id: 'att-1',
+        fileId: 'file-1',
+        name: 'briefing.pdf',
+        type: 'pdf',
+        size: 2048,
+        attachedByCurrentUser: true,
+        canRemove: true,
+      }),
+    ])
   })
 })

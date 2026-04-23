@@ -127,6 +127,116 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldApplyPlanFileAttachmentPermissions() throws Exception {
+    String ownerToken = registerAndGetToken("Owner", "owner-files@example.com", "12345678");
+    JsonNode createdPlan = createPlan(ownerToken, "Plano com permissoes de arquivos");
+    String planId = createdPlan.path("plan").path("id").asText();
+
+    JsonNode invite = readJson(mockMvc.perform(post("/api/plans/" + planId + "/invites")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "member-files@example.com"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String memberToken = registerAndGetToken("Member", "member-files@example.com", "12345678");
+    mockMvc.perform(post("/api/plans/invites/" + invite.path("token").asText() + "/accept")
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk());
+
+    JsonNode board = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    String columnId = board.path("columns").get(0).path("id").asText();
+    String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card colaborativo"
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    String sharedOwnerFileId = uploadTextFile(ownerToken, "briefing-compartilhado.txt");
+    mockMvc.perform(post("/api/files/" + sharedOwnerFileId + "/share/plans/" + planId)
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(post("/api/files/" + sharedOwnerFileId + "/attach/cards/" + cardId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk());
+
+    String lockedOwnerFileId = uploadTextFile(ownerToken, "contrato-owner.txt");
+    mockMvc.perform(post("/api/files/" + lockedOwnerFileId + "/attach/cards/" + cardId)
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk());
+
+    JsonNode memberBoard = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    String lockedOwnerAttachmentId = findAttachmentByFileId(memberBoard, lockedOwnerFileId).path("id").asText();
+
+    mockMvc.perform(delete("/api/files/attachments/" + lockedOwnerAttachmentId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error.code").value("REMOCAO_DO_ANEXO_NEGADA"));
+
+    mockMvc.perform(delete("/api/files/attachments/" + lockedOwnerAttachmentId)
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk());
+
+    String memberFileId = uploadTextFile(memberToken, "minuta-member.txt");
+    mockMvc.perform(post("/api/files/" + memberFileId + "/attach/cards/" + cardId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(get("/api/files/plans/" + planId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[?(@.id=='" + memberFileId + "')].name").value("minuta-member.txt"));
+
+    mockMvc.perform(delete("/api/files/" + memberFileId + "/share/plans/" + planId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("ARQUIVO_ANEXADO_A_CARTOES"));
+
+    JsonNode boardWithMemberFile = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    String memberAttachmentId = findAttachmentByFileId(boardWithMemberFile, memberFileId).path("id").asText();
+
+    mockMvc.perform(delete("/api/files/attachments/" + memberAttachmentId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(delete("/api/files/" + memberFileId + "/share/plans/" + planId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Arquivo removido do plano com sucesso."));
+
+    String folderId = readJson(mockMvc.perform(post("/api/files/folders")
+            .header("Authorization", "Bearer " + memberToken)
+            .param("name", "Pasta nao anexavel"))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    mockMvc.perform(post("/api/files/" + folderId + "/attach/cards/" + cardId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("ANEXO_INVALIDO"));
+  }
+
+  @Test
   void shouldDeleteAndRestoreFolderTreeRecursively() throws Exception {
     String token = registerAndGetToken("Arthur Santos", "arthur-folder-tree@example.com", "12345678");
 
@@ -201,5 +311,33 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     assertNotNull(restoredNestedFile);
     assertEquals(rootFolderId, restoredChild.path("parentId").asText());
     assertEquals(childFolderId, restoredNestedFile.path("parentId").asText());
+  }
+
+  private String uploadTextFile(String token, String name) throws Exception {
+    MockMultipartFile multipartFile = new MockMultipartFile(
+        "file",
+        name,
+        MediaType.TEXT_PLAIN_VALUE,
+        "conteudo".getBytes()
+    );
+
+    return readJson(mockMvc.perform(multipart("/api/files/upload")
+            .file(multipartFile)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+  }
+
+  private JsonNode findAttachmentByFileId(JsonNode board, String fileId) {
+    for (JsonNode column : board.path("columns")) {
+      for (JsonNode card : column.path("cards")) {
+        for (JsonNode attachment : card.path("attachments")) {
+          if (fileId.equals(attachment.path("fileId").asText())) {
+            return attachment;
+          }
+        }
+      }
+    }
+    throw new AssertionError("Anexo nao encontrado para arquivo " + fileId);
   }
 }

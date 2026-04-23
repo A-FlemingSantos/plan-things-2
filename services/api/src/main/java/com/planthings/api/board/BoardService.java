@@ -9,12 +9,18 @@ import com.planthings.api.common.error.ConflictException;
 import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.files.CardAttachmentEntity;
+import com.planthings.api.files.CardAttachmentRepository;
+import com.planthings.api.files.FileEntryEntity;
+import com.planthings.api.files.FileEntryRepository;
+import com.planthings.api.files.FileEntryType;
 import com.planthings.api.plans.PlanAccessService;
 import com.planthings.api.plans.PlanEntity;
 import com.planthings.api.plans.PlanLabelEntity;
 import com.planthings.api.plans.PlanLabelRepository;
 import com.planthings.api.plans.PlanMemberEntity;
 import com.planthings.api.plans.PlanMemberRepository;
+import com.planthings.api.plans.PlanMemberRole;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,6 +46,8 @@ public class BoardService {
   private final BoardChecklistRepository boardChecklistRepository;
   private final BoardChecklistItemRepository boardChecklistItemRepository;
   private final BoardCardAssigneeRepository boardCardAssigneeRepository;
+  private final CardAttachmentRepository cardAttachmentRepository;
+  private final FileEntryRepository fileEntryRepository;
   private final UserRepository userRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
@@ -55,6 +63,8 @@ public class BoardService {
       BoardChecklistRepository boardChecklistRepository,
       BoardChecklistItemRepository boardChecklistItemRepository,
       BoardCardAssigneeRepository boardCardAssigneeRepository,
+      CardAttachmentRepository cardAttachmentRepository,
+      FileEntryRepository fileEntryRepository,
       UserRepository userRepository,
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper,
@@ -69,6 +79,8 @@ public class BoardService {
     this.boardChecklistRepository = boardChecklistRepository;
     this.boardChecklistItemRepository = boardChecklistItemRepository;
     this.boardCardAssigneeRepository = boardCardAssigneeRepository;
+    this.cardAttachmentRepository = cardAttachmentRepository;
+    this.fileEntryRepository = fileEntryRepository;
     this.userRepository = userRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
@@ -79,7 +91,7 @@ public class BoardService {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     ensureDefaultLabels(planId);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -93,7 +105,7 @@ public class BoardService {
     column.setColor(color == null || color.isBlank() ? "#a0a0a0" : color.trim());
     column.setPositionIndex(boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).size());
     boardColumnRepository.save(column);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -106,7 +118,7 @@ public class BoardService {
       column.setColor(color.trim());
     }
     boardColumnRepository.save(column);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -143,7 +155,7 @@ public class BoardService {
       column.setPositionIndex(i);
     }
     boardColumnRepository.saveAll(columns);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -169,7 +181,7 @@ public class BoardService {
 
     replaceAssignees(card.getId(), assigneeIds);
     calendarService.syncCardEvent(plan, card);
-    return toCardView(card);
+    return toCardView(card, userId, planAccessService.requireMemberRole(planId, userId));
   }
 
   @Transactional
@@ -198,7 +210,7 @@ public class BoardService {
 
     replaceAssignees(card.getId(), assigneeIds);
     calendarService.syncCardEvent(plan, card);
-    return toCardView(card);
+    return toCardView(card, userId, planAccessService.requireMemberRole(planId, userId));
   }
 
   @Transactional
@@ -226,7 +238,7 @@ public class BoardService {
       boardCardRepository.saveAll(sourceCards);
     }
     boardCardRepository.saveAll(targetCards);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -312,10 +324,11 @@ public class BoardService {
     return toChecklistItemView(item);
   }
 
-  private BoardView buildBoardView(PlanEntity plan) {
+  private BoardView buildBoardView(PlanEntity plan, UUID currentUserId) {
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     List<BoardCardEntity> cards = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     Map<UUID, List<BoardCardEntity>> cardsByColumn = cards.stream().collect(Collectors.groupingBy(BoardCardEntity::getColumnId));
+    PlanMemberRole currentRole = planAccessService.requireMemberRole(plan.getId(), currentUserId);
     List<LabelView> labels = planLabelRepository.findByPlanIdOrderByNameAsc(plan.getId()).stream()
         .map(label -> new LabelView(label.getId(), label.getName(), label.getColor()))
         .toList();
@@ -328,13 +341,15 @@ public class BoardService {
             column.getTitle(),
             column.getColor(),
             column.getPositionIndex(),
-            cardsByColumn.getOrDefault(column.getId(), List.of()).stream().map(this::toCardView).toList()
+            cardsByColumn.getOrDefault(column.getId(), List.of()).stream()
+                .map(card -> toCardView(card, currentUserId, currentRole))
+                .toList()
         )).toList(),
         labels
     );
   }
 
-  private BoardCardView toCardView(BoardCardEntity card) {
+  private BoardCardView toCardView(BoardCardEntity card, UUID currentUserId, PlanMemberRole currentRole) {
     UserEntity author = userRepository.findById(card.getAuthorUserId()).orElse(null);
     PlanLabelEntity label = card.getLabelId() == null ? null : planLabelRepository.findById(card.getLabelId()).orElse(null);
     List<UserSummary> assignees = boardCardAssigneeRepository.findByCardId(card.getId()).stream()
@@ -347,6 +362,10 @@ public class BoardService {
         .toList();
     List<ChecklistView> checklists = boardChecklistRepository.findByCardIdOrderByPositionIndexAsc(card.getId()).stream()
         .map(this::toChecklistView)
+        .toList();
+    List<AttachmentView> attachments = cardAttachmentRepository.findByCardId(card.getId()).stream()
+        .map(attachment -> toAttachmentView(attachment, currentUserId, currentRole))
+        .filter(Objects::nonNull)
         .toList();
 
     return new BoardCardView(
@@ -361,10 +380,35 @@ public class BoardService {
         assignees,
         comments,
         checklists,
+        attachments,
         brazilDateTimeMapper.toDateTime(card.getStartAt()),
         brazilDateTimeMapper.toDateTime(card.getDueAt()),
         brazilDateTimeMapper.toDateTime(card.getCreatedAt()),
         brazilDateTimeMapper.toDateTime(card.getUpdatedAt())
+    );
+  }
+
+  private AttachmentView toAttachmentView(CardAttachmentEntity attachment, UUID currentUserId, PlanMemberRole currentRole) {
+    FileEntryEntity file = fileEntryRepository.findById(attachment.getFileEntryId()).orElse(null);
+    if (file == null || file.getDeletedAt() != null || file.getType() != FileEntryType.FILE) {
+      return null;
+    }
+
+    UserEntity attachedBy = userRepository.findById(attachment.getAttachedByUserId()).orElse(null);
+    boolean attachedByCurrentUser = Objects.equals(attachment.getAttachedByUserId(), currentUserId);
+    boolean canRemove = attachedByCurrentUser || currentRole == PlanMemberRole.OWNER || currentRole == PlanMemberRole.ADMIN;
+
+    return new AttachmentView(
+        attachment.getId(),
+        file.getId(),
+        file.getName(),
+        file.getType(),
+        file.getMimeType(),
+        file.getSizeBytes(),
+        attachedBy == null ? null : new UserSummary(attachedBy.getId(), attachedBy.getFullName(), attachedBy.getEmail()),
+        attachedByCurrentUser,
+        canRemove,
+        brazilDateTimeMapper.toDateTime(attachment.getCreatedAt())
     );
   }
 
@@ -535,6 +579,7 @@ public class BoardService {
       List<UserSummary> assignees,
       List<CommentView> comments,
       List<ChecklistView> checklists,
+      List<AttachmentView> attachments,
       ApiDateTimeDto startAt,
       ApiDateTimeDto dueAt,
       ApiDateTimeDto createdAt,
@@ -555,6 +600,20 @@ public class BoardService {
   }
 
   public record ChecklistItemView(UUID id, String title, boolean completed, int position, UserSummary assignee, ApiDateTimeDto startAt, ApiDateTimeDto dueAt) {
+  }
+
+  public record AttachmentView(
+      UUID id,
+      UUID fileId,
+      String name,
+      FileEntryType type,
+      String mimeType,
+      Long sizeBytes,
+      UserSummary attachedBy,
+      boolean attachedByCurrentUser,
+      boolean canRemove,
+      ApiDateTimeDto createdAt
+  ) {
   }
 
   public record MessageResponse(String message) {
