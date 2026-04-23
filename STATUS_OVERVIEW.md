@@ -79,6 +79,7 @@ Este arquivo resume o estado atual da base depois da etapa 1.
 - Google Calendar e Microsoft Calendar ficam como integracao opcional e por ultimo.
 - Falta mapear eventos e tarefas internas para as contas conectadas.
 - Falta decidir o nivel de sincronizacao e como tratar conflitos, recorrencia e exclusao.
+- A sincronizacao deve usar tempo canonico interno; preferencias de exibicao nao podem dirigir o payload do sync.
 
 ## 3. Decisao importante sobre convite por e-mail
 
@@ -95,6 +96,7 @@ Este arquivo resume o estado atual da base depois da etapa 1.
 - Quando vale conectar notificacoes de settings a eventos reais do produto.
 - Se auditoria deve vir antes de realtime.
 - Como o app vai evoluir para multi-workspace sem aumentar a complexidade da entrada.
+- Como calendarios externos vao converter entre horario canonico e formatos de exibicao sem quebrar preferencia do usuario.
 
 ## 5. Leitura pratica
 

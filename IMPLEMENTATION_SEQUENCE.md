@@ -112,6 +112,7 @@ Por que por ultimo:
 - Adicionar Google Calendar e Microsoft Calendar como fontes externas.
 - Sincronizar tarefas e eventos com as contas conectadas.
 - Resolver mapeamento entre eventos internos e externos.
+- Usar um modelo temporal canonico interno (`UTC`/`ISO-8601`) e deixar `locale`, `dateFormat`, `timeFormat` e `timeZone` apenas para exibicao.
 - Tratar essa integracao como opcional, nao como dependencia do fluxo principal.
 
 Por que fica por ultimo:
