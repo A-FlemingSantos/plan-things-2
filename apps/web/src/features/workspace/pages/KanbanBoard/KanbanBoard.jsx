@@ -739,7 +739,11 @@ export default function KanbanBoard() {
       method: 'DELETE',
       token: accessToken,
     })
+    const nextColumns = await loadPlanBoard(activePlan.id)
     await reloadFileLists()
+    if (activeCard?.card?.id) {
+      refreshActiveCardFromColumns(nextColumns, activeCard.card.id)
+    }
     showNotification(`"${file.name}" removido do plano.`)
   }
 

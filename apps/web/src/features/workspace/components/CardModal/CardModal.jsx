@@ -202,6 +202,7 @@ export default function CardModal({
   const [showInsertMenu, setShowInsertMenu] = useState(false)
   const [showFilePicker, setShowFilePicker] = useState(false)
   const [showAttachmentAddMenu, setShowAttachmentAddMenu] = useState(false)
+  const [filePickerOpening, setFilePickerOpening] = useState(false)
   const [filePickerFilter, setFilePickerFilter] = useState('plan')
   const [fileSearch, setFileSearch] = useState('')
   const [fileActionError, setFileActionError] = useState('')
@@ -340,9 +341,14 @@ export default function CardModal({
   const openFilePicker = async () => {
     setShowInsertMenu(false)
     setShowAttachmentAddMenu(false)
+    setFilePickerOpening(true)
     setShowFilePicker(true)
     setFileActionError('')
-    await onLoadFiles?.()
+    try {
+      await onLoadFiles?.()
+    } finally {
+      setFilePickerOpening(false)
+    }
   }
 
   const handleAttachFile = async (file) => {
@@ -481,6 +487,7 @@ export default function CardModal({
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
   const pickerFiles = (filePickerFilter === 'plan' ? planFiles : libraryFiles)
     .filter((file) => file.name.toLowerCase().includes(fileSearch.trim().toLowerCase()))
+  const isFilePickerLoading = filePickerOpening || filesLoading
   const attachedFileIds = new Set(attachments.map((attachment) => attachment.fileId))
   const getMemberName = (member) => {
     if (!member) return 'Membro'
@@ -1605,17 +1612,26 @@ export default function CardModal({
           aria-modal="true"
           aria-label="Anexar arquivo"
           onClick={(event) => {
-            event.stopPropagation()
-            setShowFilePicker(false)
-          }}
-        >
+              event.stopPropagation()
+              setFilePickerOpening(false)
+              setShowFilePicker(false)
+            }}
+          >
           <div className={styles.cmFilePicker} onClick={e => e.stopPropagation()}>
             <header className={styles.cmFilePickerHeader}>
               <div>
                 <p className={styles.cmFilePickerEyebrow}>Anexar arquivo</p>
                 <h3>Arquivos do cartão</h3>
               </div>
-              <button type="button" className={styles.cmIconBtn} onClick={() => setShowFilePicker(false)} aria-label="Fechar">
+              <button
+                type="button"
+                className={styles.cmIconBtn}
+                onClick={() => {
+                  setFilePickerOpening(false)
+                  setShowFilePicker(false)
+                }}
+                aria-label="Fechar"
+              >
                 <icons.X />
               </button>
             </header>
@@ -1653,7 +1669,7 @@ export default function CardModal({
             {filesError ? <p className={styles.cmFilePickerError}>{filesError}</p> : null}
 
             <div className={styles.cmFilePickerList}>
-              {filesLoading ? (
+              {isFilePickerLoading ? (
                 Array.from({ length: 5 }, (_, index) => (
                   <div key={`picker-loading-${index}`} className={styles.cmFilePickerSkeleton} />
                 ))

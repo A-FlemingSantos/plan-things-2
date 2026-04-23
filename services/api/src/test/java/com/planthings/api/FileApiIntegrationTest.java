@@ -206,23 +206,18 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
 
     mockMvc.perform(delete("/api/files/" + memberFileId + "/share/plans/" + planId)
             .header("Authorization", "Bearer " + memberToken))
-        .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.error.code").value("ARQUIVO_ANEXADO_A_CARTOES"));
+        .andExpect(status().isOk());
 
-    JsonNode boardWithMemberFile = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+    JsonNode boardWithoutMemberFile = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
             .header("Authorization", "Bearer " + memberToken))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String memberAttachmentId = findAttachmentByFileId(boardWithMemberFile, memberFileId).path("id").asText();
+    assertAttachmentMissing(boardWithoutMemberFile, memberFileId);
 
-    mockMvc.perform(delete("/api/files/attachments/" + memberAttachmentId)
-            .header("Authorization", "Bearer " + memberToken))
-        .andExpect(status().isOk());
-
-    mockMvc.perform(delete("/api/files/" + memberFileId + "/share/plans/" + planId)
+    mockMvc.perform(get("/api/files/plans/" + planId)
             .header("Authorization", "Bearer " + memberToken))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.message").value("Arquivo removido do plano com sucesso."));
+        .andExpect(jsonPath("$.data[?(@.id=='" + memberFileId + "')]").doesNotExist());
 
     String folderId = readJson(mockMvc.perform(post("/api/files/folders")
             .header("Authorization", "Bearer " + memberToken)
@@ -339,5 +334,17 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
       }
     }
     throw new AssertionError("Anexo nao encontrado para arquivo " + fileId);
+  }
+
+  private void assertAttachmentMissing(JsonNode board, String fileId) {
+    for (JsonNode column : board.path("columns")) {
+      for (JsonNode card : column.path("cards")) {
+        for (JsonNode attachment : card.path("attachments")) {
+          if (fileId.equals(attachment.path("fileId").asText())) {
+            throw new AssertionError("Anexo ainda presente para arquivo " + fileId);
+          }
+        }
+      }
+    }
   }
 }

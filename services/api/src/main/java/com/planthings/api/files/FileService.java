@@ -3,7 +3,6 @@ package com.planthings.api.files;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
-import com.planthings.api.common.error.ConflictException;
 import com.planthings.api.common.error.ForbiddenException;
 import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
@@ -283,14 +282,14 @@ public class FileService {
       throw new ForbiddenException("REMOCAO_DO_COMPARTILHAMENTO_NEGADA", "Voce so pode descompartilhar arquivos adicionados por voce.");
     }
 
-    boolean attachedInPlan = cardAttachmentRepository.findByFileEntryId(fileId).stream()
-        .map(CardAttachmentEntity::getCardId)
-        .map(boardCardRepository::findById)
-        .flatMap(Optional::stream)
-        .anyMatch(card -> Objects.equals(card.getPlanId(), planId));
+    List<CardAttachmentEntity> attachmentsInPlan = cardAttachmentRepository.findByFileEntryId(fileId).stream()
+        .filter(attachment -> boardCardRepository.findById(attachment.getCardId())
+            .map(card -> Objects.equals(card.getPlanId(), planId))
+            .orElse(false))
+        .toList();
 
-    if (attachedInPlan) {
-      throw new ConflictException("ARQUIVO_ANEXADO_A_CARTOES", "Remova os anexos deste arquivo antes de descompartilhar do plano.");
+    if (!attachmentsInPlan.isEmpty()) {
+      cardAttachmentRepository.deleteAll(attachmentsInPlan);
     }
 
     filePlanShareRepository.delete(share);
