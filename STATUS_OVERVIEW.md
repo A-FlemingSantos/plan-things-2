@@ -1,129 +1,85 @@
-# Status Consolidado - Colaboração em Planos e Settings
+# Status Overview - Collaboracao e Settings
 
-Este documento substitui os antigos:
-- `PLANS_COLLABORATION_ROADMAP.md`
-- `SETTINGS_STATUS_OVERVIEW.md`
+Este arquivo resume o estado atual do projeto com foco no que ja existe, no que ainda falta e no que deve ficar para depois.
 
-## Visao geral
+## 1. O que ja esta pronto
 
-O projeto ja tem uma base boa em dois blocos:
-- colaboracao em planos, com convites, membros e arquivos/anexos
-- settings globais, com preferencias aplicadas em runtime e persistencia do que ja faz sentido hoje
+### Colaboracao em planos
 
-A principal diferenca entre "o que existe" e "o que ainda falta" agora esta mais em fechamento de UX, governanca e integrações futuras do que em fundação tecnica.
+- Convites de plano funcionam no backend e na UI.
+- Um `OWNER` ou `ADMIN` pode convidar, listar membros e remover membros.
+- O convidado pode aceitar ou recusar o convite.
+- Existe tela dedicada para aceitar convite.
+- O board mostra membros do plano quando o backend devolve esses dados.
 
-## Colaboracao em planos
+### Arquivos e anexos
 
-### O que ja esta implementado
+- Arquivos do plano podem ser listados, baixados, compartilhados e descompartilhados.
+- Cartoes aceitam anexos de arquivo.
+- Anexos podem ser removidos.
+- O backend ja respeita regras de permissao por papel do plano.
 
-- Convites de plano
-  - criar convite
-  - listar membros
-  - aceitar convite
-  - recusar convite
-  - remover membro
-  - revogar convite no backend
-- UI do board
-  - modal de convite
-  - lista/menu de membros
-  - remocao de membro
-  - tela dedicada para aceitar convite
-- Arquivos e anexos
-  - arquivos compartilhados com plano
-  - anexar arquivo ao cartao
-  - remover anexo
-  - descompartilhar arquivo do plano
-  - regras de permissao por papel
+### Settings e preferencias
 
-### O que ainda falta ou merece refinamento
+- `homePage` e `openLastCtx` ja funcionam no fluxo de entrada.
+- O ultimo contexto valido do usuario e persistido.
+- `locale`, `timeZone`, `dateFormat` e `timeFormat` ja sao aplicados em runtime.
+- Preferencias globais ja impactam Kanban, Calendar e Arquivos.
+- O backend de settings ja persiste e valida `locale` e `timeZone`.
+- `collapsedByDefault` ja tem efeito real na sidebar.
 
-- UI para listar convites do plano e revogar convites direto na interface
-- UI melhor para recusar convite e para ver convites pendentes
-- Melhorias de UX para arquivos e anexos
-  - busca
-  - paginação
-  - ordenacao
-  - indicacao mais clara de origem e permissao
-- Auditoria de colaboracao
+## 2. O que ainda falta
+
+### Convites
+
+- Falta UI para listar convites do plano.
+- Falta UI para revogar convite diretamente na interface.
+- Falta uma experiencia mais clara para convites pendentes do usuario.
+- Falta deixar a recusa de convite mais visivel e fluida na UI.
+
+### Arquivos e anexos
+
+- Falta busca.
+- Falta paginação.
+- Falta ordenacao.
+- Falta indicar melhor a origem do arquivo e a permissao de cada acao.
+
+### Colaboracao futura
+
+- Falta auditoria de eventos importantes:
   - quem convidou
   - quem aceitou
   - quem anexou
   - quem removeu
   - quem descompartilhou
-- Notificacoes ligadas a eventos reais de colaboracao
-- Realtime/presenca, apenas se isso virar prioridade mais adiante
+- Falta notificacoes baseadas em eventos reais de colaboracao.
+- Realtime/presenca ainda deve ficar para uma fase posterior.
 
-### Ponto importante sobre e-mail automatico
+### Settings
 
-- Nao deve ser tratado como envio por um sistema de e-mail generico.
-- O e-mail automatico so entra quando existir uma camada real de integracao com Gmail/Outlook.
-- Quando isso acontecer, o envio sera feito pelo proprio fluxo autenticado do usuario/conector, e nao por um SMTP "do sistema" desconectado dessas contas.
+- `emailNotifs`, `eventReminders` e `deadlineAlerts` existem, mas ainda nao dirigem comportamento real.
+- `dailySummary` e `weeklySummary` continuam fora do escopo pratico.
+- `density` ainda nao esta persistida/aplicada globalmente.
+- A navegacao inicial do workspace ainda tem redundancias.
 
-## Settings e preferencias globais
+## 3. Decisao importante sobre e-mail automatico
 
-### O que ja esta implementado
+- Nao tratar e-mail automatico como um sistema separado de SMTP.
+- E-mail automatico so deve entrar quando existir integracao real com Gmail/Outlook.
+- Quando isso acontecer, o envio deve ocorrer pelo fluxo autenticado do proprio usuario/conector.
+- Sem essa camada, o roadmap de convites deve parar em link/token e UX de aceite/recusa.
 
-- Motor de preferencias globais v1 ativo no frontend
-- `homePage` e `openLastCtx` aplicados no fluxo de entrada
-- ultimo contexto navegavel persistido por usuario
-- `locale`, `timeZone`, `dateFormat` e `timeFormat` aplicados em runtime sem reload
-- cobertura funcional em Kanban, Calendar e Arquivos
-- settings usando provider global como fonte unica em runtime
-- auto-save nas secoes nao ligadas a Conta
-- botao explicito de salvar apenas em Conta
-- backend de settings com persistencia e validacao endurecida de `locale` e `timeZone`
-- `collapsedByDefault` com efeito real na sidebar
+## 4. O que o produto ainda precisa decidir
 
-### O que ainda esta sem regra comportamental
+- Se o fluxo inicial vai continuar com `homePage` + `openLastCtx` ou se isso sera simplificado.
+- Como o workspace unico sera tratado quando existir multi-workspace.
+- Quando a equipe vai querer evoluir notificacoes para regras reais e nao apenas toggles.
+- Se a colaboracao vai ganhar auditoria antes de qualquer camada de realtime.
 
-- `emailNotifs`
-- `eventReminders`
-- `deadlineAlerts`
+## 5. Leitura pratica
 
-### O que ficou para depois
+- A fundacao de colaboracao ja existe.
+- O valor agora esta em fechar o fluxo que o usuario enxerga e usa.
+- Settings precisa de consolidacao, nao de mais campos soltos.
+- Integracoes e automacoes devem vir depois da base de Gmail/Outlook.
 
-- `dailySummary` e `weeklySummary`
-- integracoes reais Google/Outlook com OAuth e sync
-- upload de avatar para conta/workspace
-- silenciar categorias com persistencia real
-- `density` com persistencia/aplicacao global
-- simplificacao da navegacao inicial do workspace
-- privacidade e seguranca avancadas
-  - 2FA
-  - sessoes reais
-  - exportacao/exclusao de dados
-  - billing/storage reais
-
-### Observacoes de produto
-
-- Hoje existe sobreposicao entre `homePage`, `openLastCtx` e "Tela inicial do workspace". A tendencia natural e simplificar isso para um modelo unico, deixando apenas um fallback claro quando o ultimo contexto nao existir.
-- O projeto ainda opera com um unico workspace por usuario. Isso reduz a urgencia de regras mais complexas de entrada no workspace ate existir multi-workspace de verdade.
-- "Silenciar categorias" e comportamento mais inteligente de notificacoes devem esperar a existencia de eventos reais no backend.
-- O backend ainda usa mapeamento textual legado em pt-BR via `BrazilDateTimeMapper`.
-
-## Leitura pratica do que falta
-
-### Prioridade 1
-
-- Fechar o ciclo de convites na interface
-- Decidir e implementar a experiencia de convites pendentes
-- Preparar o caminho para integracao real com Gmail/Outlook antes de qualquer envio automatico de e-mail
-
-### Prioridade 2
-
-- Melhorar governanca e visibilidade da colaboracao
-- Adicionar auditoria/atividade
-- Melhorar a UX de arquivos e anexos
-
-### Prioridade 3
-
-- Remover redundancias de settings
-- Persistir `density` de forma global
-- Avancar em integracoes e sync
-- Revisitar o modelo de workspace quando existir multi-workspace
-
-## Resumo curto
-
-- Colaboracao: base ja existe; falta fechar UX, auditoria e integracoes
-- Settings: base forte; falta consolidar redundancias e tirar placeholders do caminho
-- E-mail automatico: somente depois de Gmail/Outlook real, com envio pelo fluxo autenticado do proprio usuario/conector
