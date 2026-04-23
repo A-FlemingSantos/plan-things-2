@@ -3914,6 +3914,7 @@
   position: relative;
   display: inline-flex;
   align-items: stretch;
+  z-index: 6;
 }
 
 .cmAttachmentAddBtn {
@@ -4041,21 +4042,12 @@
   font-size: 13px;
 }
 
-.cmFilePickerOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: color-mix(in srgb, var(--text-1) 34%, transparent);
-}
-
 .cmFilePicker {
-  width: min(560px, 100%);
-  min-height: min(560px, calc(100vh - 36px));
-  max-height: min(720px, calc(100vh - 36px));
+  position: fixed;
+  width: min(420px, calc(100vw - 64px));
+  max-width: min(420px, calc(100vw - 64px));
+  min-height: 360px;
+  max-height: min(560px, calc(100vh - 180px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -4063,30 +4055,7 @@
   border-radius: 8px;
   background: var(--surface-1);
   box-shadow: var(--shadow-lg);
-}
-
-.cmFilePickerHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 18px 18px 14px;
-  border-bottom: 1px solid var(--border-1);
-}
-
-.cmFilePickerEyebrow {
-  margin: 0 0 4px;
-  color: var(--text-3);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.cmFilePickerHeader h3 {
-  margin: 0;
-  color: var(--text-1);
-  font-size: 18px;
-  font-weight: var(--font-weight-regular);
+  z-index: 1200;
 }
 
 .cmFilePickerControls {
@@ -4148,7 +4117,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 340px;
+  min-height: 0;
   padding: 14px 18px 18px;
   overflow-y: auto;
 }
@@ -4208,6 +4177,11 @@
     padding: 10px;
   }
   .boardHeader { padding: 16px; }
+  .cmFilePicker {
+    width: min(360px, calc(100vw - 40px));
+    max-width: min(360px, calc(100vw - 40px));
+    max-height: min(480px, calc(100vh - 160px));
+  }
   .boardHeaderLeft,
   .boardHeaderRight {
     width: 100%;
