@@ -11,6 +11,7 @@ import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeaderActions from '../../components/BoardHeaderActions/BoardHeaderActions.jsx'
+import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
 import KanbanColumn from '../../components/KanbanColumn/KanbanColumn.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { usePlans } from '../../context/PlansContext.jsx'
@@ -220,6 +221,14 @@ const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
     Icon.Files,
 }))
 
+function formatInviteStatus(status) {
+  if (status === 'ACCEPTED') return 'Aceito'
+  if (status === 'DECLINED') return 'Recusado'
+  if (status === 'REVOKED') return 'Revogado'
+  if (status === 'EXPIRED') return 'Expirado'
+  return 'Pendente'
+}
+
 function BoardLoadingState({ styles }) {
   return (
     <div className={styles.board} aria-hidden="true">
@@ -273,7 +282,12 @@ export default function KanbanBoard() {
   const [boardLoadError, setBoardLoadError] = useState(null)
   const [notification, setNotification] = useState(null)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [membersPanelTab, setMembersPanelTab] = useState('members')
   const [membersLoadError, setMembersLoadError] = useState(null)
+  const [planInvites, setPlanInvites] = useState([])
+  const [planInvitesLoading, setPlanInvitesLoading] = useState(false)
+  const [planInvitesError, setPlanInvitesError] = useState('')
+  const [revokingInviteId, setRevokingInviteId] = useState('')
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteSubmitting, setInviteSubmitting] = useState(false)
@@ -383,6 +397,39 @@ export default function KanbanBoard() {
       setMembersLoadError(error?.message ?? 'Não foi possível carregar os membros deste plano.')
     })
   }, [activePlan?.id, activePlan?.membersMeta?.length, ensurePlanDetails, isBackendDriven, isMembersOpen])
+
+  useEffect(() => {
+    if (canManageMembers || membersPanelTab !== 'invites') return
+    setMembersPanelTab('members')
+  }, [canManageMembers, membersPanelTab])
+
+  const loadPlanInvites = async () => {
+    if (!activePlan?.id || !isBackendDriven || !canManageMembers) {
+      setPlanInvites([])
+      setPlanInvitesError('')
+      setPlanInvitesLoading(false)
+      return
+    }
+
+    setPlanInvitesLoading(true)
+    setPlanInvitesError('')
+    try {
+      const invites = await apiRequest(`/api/plans/${activePlan.id}/invites`, {
+        token: accessToken,
+      })
+      setPlanInvites(Array.isArray(invites) ? invites : [])
+    } catch (error) {
+      setPlanInvitesError(error?.message ?? 'Não foi possível carregar os convites deste plano.')
+    } finally {
+      setPlanInvitesLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!isMembersOpen) return
+    if (membersPanelTab !== 'invites') return
+    loadPlanInvites()
+  }, [accessToken, activePlan?.id, canManageMembers, isBackendDriven, isMembersOpen, membersPanelTab])
   const {
     columns,
     totalCards,
@@ -585,10 +632,30 @@ export default function KanbanBoard() {
         body: { email },
       })
       setInviteResult(result)
+      await loadPlanInvites()
     } catch (error) {
       setInviteError(error?.message ?? 'Não foi possível criar o convite.')
     } finally {
       setInviteSubmitting(false)
+    }
+  }
+
+  const revokePlanInvite = async (inviteId) => {
+    if (!activePlan?.id || !isBackendDriven || !canManageMembers || !inviteId) return
+
+    setRevokingInviteId(inviteId)
+    try {
+      const response = await apiRequest(`/api/plans/${activePlan.id}/invites/${inviteId}/revoke`, {
+        method: 'POST',
+        token: accessToken,
+      })
+      await loadPlanInvites()
+      showNotification(response?.message ?? 'Convite revogado com sucesso.')
+    } catch (error) {
+      showNotification(error?.message ?? 'Não foi possível revogar este convite.')
+      await loadPlanInvites()
+    } finally {
+      setRevokingInviteId('')
     }
   }
 
@@ -1637,6 +1704,7 @@ export default function KanbanBoard() {
               membersButtonRef={membersButtonRef}
               onFilter={() => showNotification('Filtros avançados em breve')}
               onShare={() => showNotification('Link do quadro copiado')}
+              notifications={<InviteNotifications />}
             />
           )}
         />
@@ -1650,36 +1718,98 @@ export default function KanbanBoard() {
             role="menu"
           >
             <div className={styles.planMembersPanelInner}>
-              {!activePlan ? (
-                <p className={styles.planMembersEmpty}>Nenhum plano ativo.</p>
-              ) : membersLoadError ? (
-                <p className={styles.planMembersEmpty}>{membersLoadError}</p>
-              ) : !planMembers?.length ? (
-                <p className={styles.planMembersEmpty}>Nenhum membro para exibir.</p>
+              <div className={styles.planMembersTabs} role="tablist" aria-label="Colaboração do plano">
+                <button
+                  type="button"
+                  className={`${styles.planMembersTab} ${membersPanelTab === 'members' ? styles.planMembersTabActive : ''}`}
+                  onClick={() => setMembersPanelTab('members')}
+                >
+                  Membros
+                </button>
+                {canManageMembers ? (
+                  <button
+                    type="button"
+                    className={`${styles.planMembersTab} ${membersPanelTab === 'invites' ? styles.planMembersTabActive : ''}`}
+                    onClick={() => setMembersPanelTab('invites')}
+                  >
+                    Convites
+                    {planInvites.filter((invite) => invite.status === 'PENDING').length ? (
+                      <span>{planInvites.filter((invite) => invite.status === 'PENDING').length}</span>
+                    ) : null}
+                  </button>
+                ) : null}
+              </div>
+
+              {membersPanelTab === 'members' ? (
+                !activePlan ? (
+                  <p className={styles.planMembersEmpty}>Nenhum plano ativo.</p>
+                ) : membersLoadError ? (
+                  <p className={styles.planMembersEmpty}>{membersLoadError}</p>
+                ) : !planMembers?.length ? (
+                  <p className={styles.planMembersEmpty}>Nenhum membro para exibir.</p>
+                ) : (
+                  <div className={styles.planMembersList}>
+                    {planMembers.map((member) => {
+                      const isOwner = member.role === 'OWNER'
+                      const isSelf = currentUser?.id && member.id === currentUser.id
+                      const canRemove = canManageMembers && !isOwner && !isSelf
+
+                      return (
+                        <div key={member.id} className={styles.planMemberRow} role="menuitem">
+                          <span className={styles.planMemberAvatar} style={{ background: member.color }}>
+                            {member.initials}
+                          </span>
+                          <div className={styles.planMemberInfo}>
+                            <span className={styles.planMemberName}>{member.name}</span>
+                            <span className={styles.planMemberEmail}>{member.email}</span>
+                          </div>
+                          <span className={styles.planMemberRole}>{member.role === 'OWNER' ? 'Owner' : member.role === 'ADMIN' ? 'Admin' : 'Membro'}</span>
+                          {canRemove ? (
+                            <button
+                              type="button"
+                              className={styles.planMemberRemove}
+                              onClick={() => removeMemberFromPlan(member.id)}
+                            >
+                              Remover
+                            </button>
+                          ) : null}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              ) : planInvitesLoading ? (
+                <p className={styles.planMembersEmpty}>Carregando convites...</p>
+              ) : planInvitesError ? (
+                <p className={styles.planMembersEmpty}>{planInvitesError}</p>
+              ) : !planInvites.length ? (
+                <p className={styles.planMembersEmpty}>Nenhum convite enviado para este plano.</p>
               ) : (
-                <div className={styles.planMembersList}>
-                  {planMembers.map((member) => {
-                    const isOwner = member.role === 'OWNER'
-                    const isSelf = currentUser?.id && member.id === currentUser.id
-                    const canRemove = canManageMembers && !isOwner && !isSelf
+                <div className={styles.planInvitesList}>
+                  {planInvites.map((invite) => {
+                    const pending = invite.status === 'PENDING'
+                    const revoking = revokingInviteId === invite.inviteId
 
                     return (
-                      <div key={member.id} className={styles.planMemberRow} role="menuitem">
-                        <span className={styles.planMemberAvatar} style={{ background: member.color }}>
-                          {member.initials}
-                        </span>
-                        <div className={styles.planMemberInfo}>
-                          <span className={styles.planMemberName}>{member.name}</span>
-                          <span className={styles.planMemberEmail}>{member.email}</span>
+                      <div key={invite.inviteId} className={styles.planInviteRow} role="menuitem">
+                        <div className={styles.planInviteInfo}>
+                          <span className={styles.planMemberName}>{invite.invitedEmail}</span>
+                          <span className={styles.planMemberEmail}>
+                            {formatInviteStatus(invite.status)}
+                            {invite.expiresAt?.text ? ` · expira em ${invite.expiresAt.text}` : ''}
+                          </span>
                         </div>
-                        <span className={styles.planMemberRole}>{member.role === 'OWNER' ? 'Owner' : member.role === 'ADMIN' ? 'Admin' : 'Membro'}</span>
-                        {canRemove ? (
+                        <span className={`${styles.planInviteStatus} ${pending ? styles.planInviteStatusPending : ''}`}>
+                          {formatInviteStatus(invite.status)}
+                        </span>
+                        {pending ? (
                           <button
                             type="button"
                             className={styles.planMemberRemove}
-                            onClick={() => removeMemberFromPlan(member.id)}
+                            onClick={() => revokePlanInvite(invite.inviteId)}
+                            disabled={revoking}
                           >
-                            Remover
+                            {revoking ? 'Revogando...' : 'Revogar'}
                           </button>
                         ) : null}
                       </div>

@@ -12,6 +12,7 @@ import { buildCanvasPath } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { usePlans } from '../../../workspace/context/PlansContext.jsx'
 import { useResolvedPlanRoute } from '../../../workspace/hooks/useResolvedPlanRoute.js'
+import InviteNotifications from '../../../workspace/components/InviteNotifications/InviteNotifications.jsx'
 import { useCanvasInteractions } from '../../hooks/useCanvasInteractions.js'
 import { useCanvasState } from '../../hooks/useCanvasState.js'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -243,6 +244,7 @@ export default function CanvasPage() {
           meta={canvasMeta}
           tone="frosted"
           titleSize="large"
+          actions={<InviteNotifications />}
         />
 
         {saveStatus === 'conflict' && (

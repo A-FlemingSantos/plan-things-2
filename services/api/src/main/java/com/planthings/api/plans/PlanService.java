@@ -254,6 +254,44 @@ public class PlanService {
   }
 
   @Transactional
+  public List<InvitePreviewResponse> listPendingInvitesForCurrentUser() {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    OffsetDateTime now = OffsetDateTime.now(clock);
+    List<PlanInviteEntity> invites = planInviteRepository
+        .findByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc(currentUser.getEmail(), PlanInviteStatus.PENDING);
+    List<PlanInviteEntity> expiredInvites = invites.stream()
+        .filter(invite -> invite.getExpiresAt().isBefore(now))
+        .peek(invite -> invite.setStatus(PlanInviteStatus.EXPIRED))
+        .toList();
+    if (!expiredInvites.isEmpty()) {
+      planInviteRepository.saveAll(expiredInvites);
+    }
+
+    return invites.stream()
+        .filter(invite -> invite.getStatus() == PlanInviteStatus.PENDING)
+        .map(this::toInvitePreviewResponse)
+        .toList();
+  }
+
+  @Transactional
+  public InvitePreviewResponse getInvitePreview(String token) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    PlanInviteEntity invite = planInviteRepository.findByToken(token)
+        .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
+
+    if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
+      throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
+    }
+
+    if (invite.getStatus() == PlanInviteStatus.PENDING && invite.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
+      invite.setStatus(PlanInviteStatus.EXPIRED);
+      planInviteRepository.save(invite);
+    }
+
+    return toInvitePreviewResponse(invite);
+  }
+
+  @Transactional
   public MessageResponse revokeInvite(UUID planId, UUID inviteId) {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanManager(planId, currentUserId);
@@ -287,6 +325,16 @@ public class PlanService {
 
     if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
       throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
+    }
+
+    if (invite.getStatus() != PlanInviteStatus.PENDING) {
+      throw new BadRequestException("CONVITE_INVALIDO", "Este convite nao esta mais disponivel para recusa.");
+    }
+
+    if (invite.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
+      invite.setStatus(PlanInviteStatus.EXPIRED);
+      planInviteRepository.save(invite);
+      throw new BadRequestException("CONVITE_EXPIRADO", "Este convite expirou.");
     }
 
     invite.setStatus(PlanInviteStatus.DECLINED);
@@ -377,6 +425,20 @@ public class PlanService {
   private InviteResponse toInviteResponse(PlanInviteEntity invite) {
     return new InviteResponse(
         invite.getId(),
+        invite.getInvitedEmail(),
+        invite.getStatus(),
+        invite.getToken(),
+        brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
+    );
+  }
+
+  private InvitePreviewResponse toInvitePreviewResponse(PlanInviteEntity invite) {
+    PlanEntity plan = planRepository.findById(invite.getPlanId())
+        .orElseThrow(() -> new NotFoundException("PLANO_NAO_ENCONTRADO", "Nao encontramos o plano deste convite."));
+    return new InvitePreviewResponse(
+        invite.getId(),
+        invite.getPlanId(),
+        plan.getName(),
         invite.getInvitedEmail(),
         invite.getStatus(),
         invite.getToken(),
@@ -505,6 +567,17 @@ public class PlanService {
 
   public record InviteResponse(
       UUID inviteId,
+      String invitedEmail,
+      PlanInviteStatus status,
+      String token,
+      ApiDateTimeDto expiresAt
+  ) {
+  }
+
+  public record InvitePreviewResponse(
+      UUID inviteId,
+      UUID planId,
+      String planName,
       String invitedEmail,
       PlanInviteStatus status,
       String token,

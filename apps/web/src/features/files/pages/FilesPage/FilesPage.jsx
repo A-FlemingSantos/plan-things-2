@@ -8,6 +8,7 @@ import { ROUTES } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { createClientId } from '../../../../shared/utils/createClientId.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import InviteNotifications from '../../../workspace/components/InviteNotifications/InviteNotifications.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import {
   createInitialLibrarySnapshot,
@@ -1113,6 +1114,7 @@ export default function FilesPage() {
                 </button>
               </>
             )}
+            <InviteNotifications />
             <input ref={fileInputRef} type="file" multiple className={styles.hiddenInput} onChange={handleFileInput} />
           </div>
         </header>

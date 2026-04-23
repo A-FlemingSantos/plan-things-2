@@ -22,8 +22,10 @@ export default function InviteAccept() {
   const navigate = useNavigate()
   const { accessToken, isAuthenticated } = useAuth()
   const { refreshPlans } = usePlans()
-  const [status, setStatus] = useState('loading') // loading | error
+  const [status, setStatus] = useState('loading') // loading | ready | accepted | declined | error
   const [message, setMessage] = useState('')
+  const [invite, setInvite] = useState(null)
+  const [submittingAction, setSubmittingAction] = useState('')
 
   const normalizedToken = useMemo(() => String(token ?? '').trim(), [token])
 
@@ -47,40 +49,86 @@ export default function InviteAccept() {
 
     let active = true
 
-    async function accept() {
+    async function loadInvite() {
       setStatus('loading')
-      setMessage('Aceitando convite...')
+      setMessage('Carregando convite...')
 
       try {
-        const result = await apiRequest(`/api/plans/invites/${normalizedToken}/accept`, {
-          method: 'POST',
+        const result = await apiRequest(`/api/plans/invites/${normalizedToken}`, {
           token: accessToken,
         })
 
         if (!active) return
 
-        const planId = result?.planId ?? null
-        if (!planId) {
+        setInvite(result)
+        if (result?.status !== 'PENDING') {
           setStatus('error')
-          setMessage('Não foi possível identificar o plano do convite.')
+          setMessage('Este convite não está mais disponível.')
           return
         }
-
-        await refreshPlans({ selectPlanId: planId }).catch(() => {})
-        navigate(buildWorkspaceBoardPath(planId), { replace: true })
+        setStatus('ready')
+        setMessage('Revise o convite antes de entrar no plano.')
       } catch (error) {
         if (!active) return
         setStatus('error')
-        setMessage(error?.message ?? 'Não foi possível aceitar este convite.')
+        setMessage(error?.message ?? 'Não foi possível carregar este convite.')
       }
     }
 
-    accept()
+    loadInvite()
 
     return () => {
       active = false
     }
   }, [accessToken, isAuthenticated, navigate, normalizedToken, refreshPlans])
+
+  const acceptInvite = async () => {
+    if (!normalizedToken || !accessToken) return
+
+    setSubmittingAction('accept')
+    setMessage('')
+    try {
+      const result = await apiRequest(`/api/plans/invites/${normalizedToken}/accept`, {
+        method: 'POST',
+        token: accessToken,
+      })
+      const planId = result?.planId ?? invite?.planId ?? null
+      if (!planId) {
+        setStatus('error')
+        setMessage('Não foi possível identificar o plano do convite.')
+        return
+      }
+      await refreshPlans({ selectPlanId: planId }).catch(() => {})
+      setStatus('accepted')
+      setMessage(result?.message ?? 'Convite aceito com sucesso.')
+      navigate(buildWorkspaceBoardPath(planId), { replace: true })
+    } catch (error) {
+      setStatus('error')
+      setMessage(error?.message ?? 'Não foi possível aceitar este convite.')
+    } finally {
+      setSubmittingAction('')
+    }
+  }
+
+  const declineInvite = async () => {
+    if (!normalizedToken || !accessToken) return
+
+    setSubmittingAction('decline')
+    setMessage('')
+    try {
+      const result = await apiRequest(`/api/plans/invites/${normalizedToken}/decline`, {
+        method: 'POST',
+        token: accessToken,
+      })
+      setStatus('declined')
+      setMessage(result?.message ?? 'Convite recusado com sucesso.')
+    } catch (error) {
+      setStatus('error')
+      setMessage(error?.message ?? 'Não foi possível recusar este convite.')
+    } finally {
+      setSubmittingAction('')
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -94,10 +142,48 @@ export default function InviteAccept() {
       <main className={styles.center}>
         <section className={styles.card} aria-live="polite">
           <p className={styles.eyebrow}>Convite</p>
-          <h1 className={styles.title}>{status === 'loading' ? 'Processando...' : 'Não foi possível'}</h1>
+          <h1 className={styles.title}>
+            {status === 'loading'
+              ? 'Carregando...'
+              : status === 'ready'
+                ? invite?.planName ?? 'Entrar no plano'
+                : status === 'declined'
+                  ? 'Convite recusado'
+                  : status === 'accepted'
+                    ? 'Convite aceito'
+                    : 'Não foi possível'}
+          </h1>
           <p className={styles.description}>{message}</p>
 
-          {status === 'error' ? (
+          {status === 'ready' ? (
+            <div className={styles.inviteDetails}>
+              <div>
+                <span>Plano</span>
+                <strong>{invite?.planName ?? 'Plano compartilhado'}</strong>
+              </div>
+              <div>
+                <span>Enviado para</span>
+                <strong>{invite?.invitedEmail}</strong>
+              </div>
+              {invite?.expiresAt?.text ? (
+                <div>
+                  <span>Expira em</span>
+                  <strong>{invite.expiresAt.text}</strong>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {status === 'ready' ? (
+            <div className={styles.actions}>
+              <button type="button" className={styles.primary} onClick={acceptInvite} disabled={Boolean(submittingAction)}>
+                {submittingAction === 'accept' ? 'Aceitando...' : 'Aceitar convite'}
+              </button>
+              <button type="button" className={styles.secondary} onClick={declineInvite} disabled={Boolean(submittingAction)}>
+                {submittingAction === 'decline' ? 'Recusando...' : 'Recusar'}
+              </button>
+            </div>
+          ) : status === 'error' || status === 'declined' ? (
             <div className={styles.actions}>
               <button type="button" className={styles.primary} onClick={() => navigate(ROUTES.workspace, { replace: true })}>
                 Ir para o workspace
@@ -114,4 +200,3 @@ export default function InviteAccept() {
     </div>
   )
 }
-

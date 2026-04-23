@@ -80,6 +80,16 @@ public class PlanController {
     return ApiEnvelope.ok(planService.listInvites(planId));
   }
 
+  @GetMapping("/invites/pending")
+  public ApiEnvelope<List<PlanService.InvitePreviewResponse>> listPendingInvites() {
+    return ApiEnvelope.ok(planService.listPendingInvitesForCurrentUser());
+  }
+
+  @GetMapping("/invites/{token}")
+  public ApiEnvelope<PlanService.InvitePreviewResponse> getInvite(@PathVariable String token) {
+    return ApiEnvelope.ok(planService.getInvitePreview(token));
+  }
+
   @PostMapping("/{planId}/invites/{inviteId}/revoke")
   public ApiEnvelope<PlanService.MessageResponse> revokeInvite(@PathVariable UUID planId, @PathVariable UUID inviteId) {
     return ApiEnvelope.ok(planService.revokeInvite(planId, inviteId));

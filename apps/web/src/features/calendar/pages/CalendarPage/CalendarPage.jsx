@@ -5,6 +5,7 @@ import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigati
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import InviteNotifications from '../../../workspace/components/InviteNotifications/InviteNotifications.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import styles from './CalendarPage.module.css'
 
@@ -806,6 +807,7 @@ export default function CalendarPage() {
             <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avançados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
             <button type="button" className={styles.commandButton} onClick={() => showNotification('Link do calendário copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
             <button type="button" className={styles.commandButton} onClick={handlePrint}><Icon.Print />Imprimir</button>
+            <InviteNotifications />
           </div>
         </header>
 

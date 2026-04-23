@@ -9,6 +9,7 @@ export default function BoardHeaderActions({
   membersButtonRef,
   onFilter,
   onShare,
+  notifications = null,
 }) {
   return (
     <>
@@ -24,6 +25,7 @@ export default function BoardHeaderActions({
 
       <div className={styles.boardHeaderDivider} />
 
+      {notifications}
       <button type="button" className={styles.boardHeaderBtn} onClick={onFilter}>
         <icons.Filter /> Filtrar
       </button>
