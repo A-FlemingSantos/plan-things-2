@@ -75,8 +75,18 @@ public class PlanController {
     return ApiEnvelope.ok(planService.inviteMember(planId, request.email()));
   }
 
+  @GetMapping("/{planId}/invites")
+  public ApiEnvelope<List<PlanService.InviteResponse>> listInvites(@PathVariable UUID planId) {
+    return ApiEnvelope.ok(planService.listInvites(planId));
+  }
+
+  @PostMapping("/{planId}/invites/{inviteId}/revoke")
+  public ApiEnvelope<PlanService.MessageResponse> revokeInvite(@PathVariable UUID planId, @PathVariable UUID inviteId) {
+    return ApiEnvelope.ok(planService.revokeInvite(planId, inviteId));
+  }
+
   @PostMapping("/invites/{token}/accept")
-  public ApiEnvelope<PlanService.MessageResponse> acceptInvite(@PathVariable String token) {
+  public ApiEnvelope<PlanService.AcceptInviteResponse> acceptInvite(@PathVariable String token) {
     return ApiEnvelope.ok(planService.acceptInvite(token));
   }
 

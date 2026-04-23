@@ -12,6 +12,7 @@ import LandingPage from './features/landing/pages/LandingPage.jsx'
 import AppThemeScope from './features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import SettingsPage from './features/settings/pages/SettingsPage/SettingsPage.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
+import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import {
   buildCanvasPath,
@@ -149,6 +150,14 @@ export default function App() {
         element={(
           <AppThemeScope preference="system">
             <PasswordRecovery mode="reset" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path="/plans/invites/:token"
+        element={(
+          <AppThemeScope preference="system">
+            <InviteAccept />
           </AppThemeScope>
         )}
       />

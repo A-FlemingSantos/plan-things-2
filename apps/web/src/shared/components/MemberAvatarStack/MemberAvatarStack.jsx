@@ -5,6 +5,9 @@ export default function MemberAvatarStack({
   onAddMember = null,
   addTitle = 'Convidar membro',
   AddIcon = null,
+  onOpenMembers = null,
+  membersTitle = 'Ver membros',
+  MembersIcon = null,
   className = '',
 }) {
   const wrapperClassName = [styles.stack, className].filter(Boolean).join(' ')
@@ -25,6 +28,12 @@ export default function MemberAvatarStack({
       {onAddMember ? (
         <button className={styles.addButton} title={addTitle} onClick={onAddMember}>
           {AddIcon ? <AddIcon /> : '+'}
+        </button>
+      ) : null}
+
+      {onOpenMembers ? (
+        <button className={styles.membersButton} title={membersTitle} onClick={onOpenMembers}>
+          {MembersIcon ? <MembersIcon /> : '👥'}
         </button>
       ) : null}
     </div>

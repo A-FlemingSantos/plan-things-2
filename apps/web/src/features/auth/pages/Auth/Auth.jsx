@@ -115,7 +115,8 @@ export default function Auth({ initialMode = 'login' }) {
         })
       }
 
-      navigate(resolveInitialRoute(session?.user?.id), { replace: true })
+      const redirectTo = location.state?.redirectTo
+      navigate(redirectTo ? String(redirectTo) : resolveInitialRoute(session?.user?.id), { replace: true })
     } catch (error) {
       setErrorMessage(error.message ?? 'Nao foi possivel concluir a autenticacao.')
     } finally {
@@ -156,7 +157,7 @@ export default function Auth({ initialMode = 'login' }) {
           <span className={styles.logoText}>Plan Things</span>
         </Link>
 
-        <Link to={alternateHref} className={styles.modeToggleTop}>
+        <Link to={alternateHref} className={styles.modeToggleTop} state={location.state}>
           {isRegister ? 'Já tem uma conta?' : 'Não tem uma conta?'}
           <span className={styles.modeToggleAction}>
             {isRegister ? 'Entrar' : 'Cadastrar-se'}
@@ -334,7 +335,7 @@ export default function Auth({ initialMode = 'login' }) {
           <p className={styles.switchRow}>
             {isRegister ? 'Já tem uma conta?' : 'Ainda não tem uma conta?'}
             {' '}
-            <Link to={alternateHref} className={styles.switchBtn}>
+            <Link to={alternateHref} className={styles.switchBtn} state={location.state}>
               {isRegister ? 'Entrar' : 'Cadastrar-se'}
             </Link>
           </p>

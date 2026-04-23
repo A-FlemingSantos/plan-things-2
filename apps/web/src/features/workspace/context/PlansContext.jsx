@@ -213,6 +213,56 @@ export function PlansProvider({ children }) {
     return mergedPlan
   }, [accessToken, backendEnabled, getPlanById, plansById])
 
+  const refreshPlanDetails = useCallback(async (planId) => {
+    if (!backendEnabled) {
+      return getPlanById(planId)
+    }
+
+    if (!planId) {
+      return null
+    }
+
+    const currentPlan = plansById.get(planId)
+    if (!currentPlan) return null
+
+    const details = await apiRequest(`/api/plans/${planId}`, {
+      token: accessToken,
+    })
+
+    let mergedPlan = null
+    setPlans((prev) => prev.map((plan) => {
+      if (plan.id !== planId) return plan
+      mergedPlan = mergePlanDetails(plan, details)
+      return mergedPlan
+    }))
+    return mergedPlan
+  }, [accessToken, backendEnabled, getPlanById, plansById])
+
+  const refreshPlans = useCallback(async ({ selectPlanId } = {}) => {
+    if (mode !== 'backend') {
+      return plans
+    }
+
+    const summaries = await apiRequest('/api/plans', {
+      token: accessToken,
+    })
+
+    const mappedPlans = summaries.map((summary, index) => mapPlanSummaryToRecord(summary, index))
+    setPlans(mappedPlans)
+
+    setActivePlanId((current) => {
+      if (selectPlanId && mappedPlans.some((plan) => plan.id === selectPlanId)) {
+        return selectPlanId
+      }
+      if (current && mappedPlans.some((plan) => plan.id === current)) {
+        return current
+      }
+      return mappedPlans[0]?.id ?? null
+    })
+
+    return mappedPlans
+  }, [accessToken, mode, plans])
+
   const loadPlanBoard = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {
       return getPlanById(planId)?.boardColumns ?? []
@@ -304,6 +354,8 @@ export function PlansProvider({ children }) {
     updatePlanBoard,
     updatePlanCanvas,
     ensurePlanDetails,
+    refreshPlanDetails,
+    refreshPlans,
     loadPlanBoard,
     applyBoardView,
     loadPlanCanvas,
@@ -317,6 +369,8 @@ export function PlansProvider({ children }) {
     deletePlan,
     currentUser,
     ensurePlanDetails,
+    refreshPlanDetails,
+    refreshPlans,
     getPlanById,
     isLoading,
     loadPlanBoard,

@@ -5,6 +5,7 @@ export default function BoardHeaderActions({
   icons,
   styles,
   onAddMember,
+  onOpenMembers,
   onFilter,
   onShare,
 }) {
@@ -14,6 +15,9 @@ export default function BoardHeaderActions({
         members={members}
         onAddMember={onAddMember}
         AddIcon={icons.Plus}
+        onOpenMembers={onOpenMembers}
+        MembersIcon={icons.Users}
+        membersTitle="Membros do plano"
       />
 
       <div className={styles.boardHeaderDivider} />

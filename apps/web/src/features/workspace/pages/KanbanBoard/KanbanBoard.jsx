@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
+import { apiRequest } from '../../../../shared/api/apiClient.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
@@ -31,6 +32,7 @@ const Icon = {
   Canvas:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
   Files:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Plus:     () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  Users:    () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" stroke="currentColor" strokeWidth="1.3"/><path d="M1.5 14c0-2.4 2-4.3 4.5-4.3S10.5 11.6 10.5 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11.2 7.6a2.4 2.4 0 1 0 0-4.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11 9.9c1.9.3 3.5 1.9 3.5 4.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   X:        () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   Collapse: () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   More:     () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="3" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="11" r="1" fill="currentColor"/></svg>,
@@ -236,7 +238,15 @@ function BoardLoadingState({ styles }) {
 export default function KanbanBoard() {
   const { planId } = useParams()
   const { accessToken, currentUser } = useAuth()
-  const { updatePlanBoard, isBackendDriven, loadPlanBoard, applyBoardView, isLoading } = usePlans()
+  const {
+    updatePlanBoard,
+    isBackendDriven,
+    loadPlanBoard,
+    applyBoardView,
+    ensurePlanDetails,
+    refreshPlanDetails,
+    isLoading,
+  } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,
     buildPath: buildWorkspaceBoardPath,
@@ -247,6 +257,16 @@ export default function KanbanBoard() {
   const [addColumnError, setAddColumnError] = useState(null)
   const [boardLoadError, setBoardLoadError] = useState(null)
   const [notification, setNotification] = useState(null)
+  const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [membersLoadError, setMembersLoadError] = useState(null)
+  const [isInviteOpen, setIsInviteOpen] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteSubmitting, setInviteSubmitting] = useState(false)
+  const [inviteError, setInviteError] = useState('')
+  const [inviteResult, setInviteResult] = useState(null)
+  const membersButtonRef = useRef(null)
+  const membersMenuRef = useRef(null)
+  const [membersMenuStyle, setMembersMenuStyle] = useState(null)
   const [isBoardSwitcherOpen, setIsBoardSwitcherOpen] = useState(false)
   const [isInboxOpen, setIsInboxOpen] = useState(false)
   const [isInboxPanelMounted, setIsInboxPanelMounted] = useState(false)
@@ -273,6 +293,70 @@ export default function KanbanBoard() {
   })
   const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
   const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
+  const canManageMembers = isBackendDriven && (activePlan?.role === 'OWNER' || activePlan?.role === 'ADMIN')
+
+  const refreshMembersMenuPosition = () => {
+    const button = membersButtonRef.current
+    if (!button) return
+
+    const rect = button.getBoundingClientRect()
+    const top = rect.bottom + 10
+    const right = Math.max(12, window.innerWidth - rect.right)
+    setMembersMenuStyle({ top, right })
+  }
+
+  useEffect(() => {
+    if (!isMembersOpen) return
+
+    const handleMouseDown = (event) => {
+      const button = membersButtonRef.current
+      const menu = membersMenuRef.current
+      if (button && button.contains(event.target)) return
+      if (menu && menu.contains(event.target)) return
+      setIsMembersOpen(false)
+    }
+
+    refreshMembersMenuPosition()
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [isMembersOpen])
+
+  useEffect(() => {
+    if (!isMembersOpen) return
+
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      setIsMembersOpen(false)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isMembersOpen])
+
+  useEffect(() => {
+    if (!isMembersOpen) return
+
+    const handleResize = () => refreshMembersMenuPosition()
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('scroll', handleResize, true)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('scroll', handleResize, true)
+    }
+  }, [isMembersOpen])
+
+  useEffect(() => {
+    if (!isMembersOpen) return
+    if (!isBackendDriven) return
+    if (!activePlan?.id) return
+    if (activePlan?.membersMeta?.length) return
+
+    setMembersLoadError(null)
+
+    ensurePlanDetails(activePlan.id).catch((error) => {
+      setMembersLoadError(error?.message ?? 'Não foi possível carregar os membros deste plano.')
+    })
+  }, [activePlan?.id, activePlan?.membersMeta?.length, ensurePlanDetails, isBackendDriven, isMembersOpen])
   const {
     columns,
     totalCards,
@@ -366,6 +450,136 @@ export default function KanbanBoard() {
       setNotification(null)
       notificationTimerRef.current = null
     }, 2600)
+  }
+
+  const toggleMembersPanel = (event) => {
+    const rect = event?.currentTarget?.getBoundingClientRect?.() ?? null
+
+    setIsMembersOpen((value) => {
+      const next = !value
+      if (next) {
+        if (rect) {
+          setMembersMenuStyle({
+            top: rect.bottom + 10,
+            right: Math.max(12, window.innerWidth - rect.right),
+          })
+        } else {
+          refreshMembersMenuPosition()
+        }
+      }
+
+      return next
+    })
+  }
+
+  const openInviteModal = () => {
+    if (!activePlan?.id) return
+
+    if (!isBackendDriven) {
+      showNotification('Convites ficam disponíveis apenas quando a sessão está conectada ao backend.')
+      return
+    }
+
+    if (!canManageMembers) {
+      showNotification('Apenas owner/admin podem convidar membros para este plano.')
+      return
+    }
+
+    setInviteEmail('')
+    setInviteError('')
+    setInviteResult(null)
+    setInviteSubmitting(false)
+    setIsInviteOpen(true)
+  }
+
+  const closeInviteModal = () => {
+    setIsInviteOpen(false)
+    setInviteSubmitting(false)
+    setInviteError('')
+    setInviteResult(null)
+  }
+
+  useEffect(() => {
+    if (!isInviteOpen) return
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') closeInviteModal()
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isInviteOpen])
+
+  const copyText = async (text, successMessage = 'Copiado.') => {
+    const normalized = String(text ?? '').trim()
+    if (!normalized) return
+
+    try {
+      await navigator.clipboard.writeText(normalized)
+      showNotification(successMessage)
+      return
+    } catch {
+      // noop
+    }
+
+    try {
+      const textarea = document.createElement('textarea')
+      textarea.value = normalized
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.top = '-1000px'
+      textarea.style.left = '-1000px'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      textarea.remove()
+      showNotification(successMessage)
+    } catch {
+      showNotification('Não foi possível copiar automaticamente.')
+    }
+  }
+
+  const submitInvite = async () => {
+    if (!activePlan?.id || !isBackendDriven) return
+    if (!canManageMembers) return
+
+    const email = inviteEmail.trim()
+    if (!email) {
+      setInviteError('Informe um e-mail para enviar o convite.')
+      return
+    }
+
+    setInviteSubmitting(true)
+    setInviteError('')
+
+    try {
+      const result = await apiRequest(`/api/plans/${activePlan.id}/invites`, {
+        method: 'POST',
+        token: accessToken,
+        body: { email },
+      })
+      setInviteResult(result)
+    } catch (error) {
+      setInviteError(error?.message ?? 'Não foi possível criar o convite.')
+    } finally {
+      setInviteSubmitting(false)
+    }
+  }
+
+  const removeMemberFromPlan = async (memberUserId) => {
+    if (!activePlan?.id || !isBackendDriven) return
+    if (!canManageMembers) return
+
+    try {
+      const response = await apiRequest(`/api/plans/${activePlan.id}/members/${memberUserId}`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      await refreshPlanDetails(activePlan.id)
+      showNotification(response?.message ?? 'Membro removido com sucesso.')
+    } catch (error) {
+      showNotification(error?.message ?? 'Não foi possível remover este membro.')
+    }
   }
 
   const openPlanner = () => {
@@ -1036,16 +1250,69 @@ export default function KanbanBoard() {
               members={planMembers}
               icons={{
                 Plus: Icon.Plus,
+                Users: Icon.Users,
                 Filter: Icon.Filter,
                 Share: Icon.Share,
               }}
               styles={styles}
-              onAddMember={() => showNotification('Convites em breve')}
+              onAddMember={openInviteModal}
+              onOpenMembers={toggleMembersPanel}
+              membersButtonRef={membersButtonRef}
               onFilter={() => showNotification('Filtros avançados em breve')}
               onShare={() => showNotification('Link do quadro copiado')}
             />
           )}
         />
+
+        {isMembersOpen ? (
+          <div
+            ref={membersMenuRef}
+            className={styles.planMembersMenu}
+            style={membersMenuStyle ?? undefined}
+            aria-label="Membros do plano"
+            role="menu"
+          >
+            <div className={styles.planMembersPanelInner}>
+              {!activePlan ? (
+                <p className={styles.planMembersEmpty}>Nenhum plano ativo.</p>
+              ) : membersLoadError ? (
+                <p className={styles.planMembersEmpty}>{membersLoadError}</p>
+              ) : !planMembers?.length ? (
+                <p className={styles.planMembersEmpty}>Nenhum membro para exibir.</p>
+              ) : (
+                <div className={styles.planMembersList}>
+                  {planMembers.map((member) => {
+                    const isOwner = member.role === 'OWNER'
+                    const isSelf = currentUser?.id && member.id === currentUser.id
+                    const canRemove = canManageMembers && !isOwner && !isSelf
+
+                    return (
+                      <div key={member.id} className={styles.planMemberRow} role="menuitem">
+                        <span className={styles.planMemberAvatar} style={{ background: member.color }}>
+                          {member.initials}
+                        </span>
+                        <div className={styles.planMemberInfo}>
+                          <span className={styles.planMemberName}>{member.name}</span>
+                          <span className={styles.planMemberEmail}>{member.email}</span>
+                        </div>
+                        <span className={styles.planMemberRole}>{member.role === 'OWNER' ? 'Owner' : member.role === 'ADMIN' ? 'Admin' : 'Membro'}</span>
+                        {canRemove ? (
+                          <button
+                            type="button"
+                            className={styles.planMemberRemove}
+                            onClick={() => removeMemberFromPlan(member.id)}
+                          >
+                            Remover
+                          </button>
+                        ) : null}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
 
         {/* ── Board ── */}
         {isBoardLoading ? (
@@ -1207,6 +1474,92 @@ export default function KanbanBoard() {
           styles={styles}
           isBackendDriven={isBackendDriven}
         />
+      )}
+
+      {isInviteOpen && (
+        <div
+          className={styles.modalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Convidar membro"
+          onMouseDown={closeInviteModal}
+        >
+          <div
+            className={`${styles.cardModal} ${styles.inviteModal}`}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={styles.cmHeader}>
+              <div className={styles.cmHeaderLeft}>
+                <strong>Convidar membro</strong>
+              </div>
+
+              <div className={styles.cmHeaderActions}>
+                <button type="button" className={styles.cmIconBtn} onClick={closeInviteModal} aria-label="Fechar">
+                  <Icon.X />
+                </button>
+              </div>
+            </header>
+
+            <div className={styles.inviteBody}>
+              <label className={styles.inviteField}>
+                <span className={styles.inviteLabel}>E-mail</span>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(event) => setInviteEmail(event.target.value)}
+                  placeholder="membro@exemplo.com"
+                  className={styles.inviteInput}
+                  disabled={inviteSubmitting}
+                />
+              </label>
+
+              {inviteError ? <p className={styles.inviteError}>{inviteError}</p> : null}
+
+              <div className={styles.inviteActions}>
+                <button
+                  type="button"
+                  className={styles.inviteSubmit}
+                  onClick={submitInvite}
+                  disabled={inviteSubmitting || !inviteEmail.trim()}
+                >
+                  {inviteSubmitting ? 'Convidando...' : 'Convidar'}
+                </button>
+
+                <button type="button" className={styles.inviteCancel} onClick={closeInviteModal} disabled={inviteSubmitting}>
+                  Cancelar
+                </button>
+              </div>
+
+              {inviteResult?.token ? (
+                <div className={styles.inviteResult}>
+                  <p className={styles.inviteResultTitle}>Convite criado</p>
+                  <p className={styles.inviteResultText}>
+                    Link: <span className={styles.inviteMonospace}>{`${window.location.origin}/plans/invites/${inviteResult.token}`}</span>
+                  </p>
+                  <div className={styles.inviteResultActions}>
+                    <button
+                      type="button"
+                      className={styles.inviteCopy}
+                      onClick={() => copyText(`${window.location.origin}/plans/invites/${inviteResult.token}`, 'Link copiado.')}
+                    >
+                      Copiar link
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.inviteCopySecondary}
+                      onClick={() => copyText(inviteResult.token, 'Token copiado.')}
+                    >
+                      Copiar token
+                    </button>
+                  </div>
+                  {inviteResult.expiresAt?.text ? (
+                    <p className={styles.inviteResultHint}>Expira em {inviteResult.expiresAt.text}.</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
       )}
 
       {notification && (

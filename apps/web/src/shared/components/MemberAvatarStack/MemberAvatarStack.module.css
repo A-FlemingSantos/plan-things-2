@@ -44,3 +44,23 @@
   border-color: var(--text-1);
   color: var(--text-1);
 }
+
+.membersButton {
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 50%;
+  background: var(--surface-1);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+
+.membersButton:hover {
+  border-color: var(--border-2);
+  color: var(--text-1);
+  background: var(--hover);
+}

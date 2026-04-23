@@ -201,7 +201,7 @@ public class PlanService {
   }
 
   @Transactional
-  public MessageResponse acceptInvite(String token) {
+  public AcceptInviteResponse acceptInvite(String token) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     PlanInviteEntity invite = planInviteRepository.findByToken(token)
         .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
@@ -231,7 +231,52 @@ public class PlanService {
     invite.setStatus(PlanInviteStatus.ACCEPTED);
     invite.setRespondedAt(OffsetDateTime.now(clock));
     planInviteRepository.save(invite);
-    return new MessageResponse("Convite aceito com sucesso.");
+    return new AcceptInviteResponse(invite.getPlanId(), "Convite aceito com sucesso.");
+  }
+
+  @Transactional
+  public List<InviteResponse> listInvites(UUID planId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+
+    OffsetDateTime now = OffsetDateTime.now(clock);
+    List<PlanInviteEntity> invites = planInviteRepository.findByPlanIdOrderByCreatedAtDesc(planId);
+    List<PlanInviteEntity> expiredInvites = invites.stream()
+        .filter(invite -> invite.getStatus() == PlanInviteStatus.PENDING)
+        .filter(invite -> invite.getExpiresAt().isBefore(now))
+        .peek(invite -> invite.setStatus(PlanInviteStatus.EXPIRED))
+        .toList();
+    if (!expiredInvites.isEmpty()) {
+      planInviteRepository.saveAll(expiredInvites);
+    }
+
+    return invites.stream().map(this::toInviteResponse).toList();
+  }
+
+  @Transactional
+  public MessageResponse revokeInvite(UUID planId, UUID inviteId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+
+    PlanInviteEntity invite = planInviteRepository.findById(inviteId)
+        .filter(candidate -> candidate.getPlanId().equals(planId))
+        .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos este convite para o plano informado."));
+
+    if (invite.getStatus() != PlanInviteStatus.PENDING) {
+      throw new BadRequestException("CONVITE_INVALIDO", "Este convite nao esta mais disponivel para revogacao.");
+    }
+
+    OffsetDateTime now = OffsetDateTime.now(clock);
+    if (invite.getExpiresAt().isBefore(now)) {
+      invite.setStatus(PlanInviteStatus.EXPIRED);
+      planInviteRepository.save(invite);
+      throw new BadRequestException("CONVITE_EXPIRADO", "Este convite expirou.");
+    }
+
+    invite.setStatus(PlanInviteStatus.REVOKED);
+    invite.setRespondedAt(now);
+    planInviteRepository.save(invite);
+    return new MessageResponse("Convite revogado com sucesso.");
   }
 
   @Transactional
@@ -326,6 +371,16 @@ public class PlanService {
         user.getEmail(),
         member.getRole(),
         brazilDateTimeMapper.toDateTime(member.getCreatedAt())
+    );
+  }
+
+  private InviteResponse toInviteResponse(PlanInviteEntity invite) {
+    return new InviteResponse(
+        invite.getId(),
+        invite.getInvitedEmail(),
+        invite.getStatus(),
+        invite.getToken(),
+        brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
     );
   }
 
@@ -455,6 +510,9 @@ public class PlanService {
       String token,
       ApiDateTimeDto expiresAt
   ) {
+  }
+
+  public record AcceptInviteResponse(UUID planId, String message) {
   }
 
   public record LabelSummary(UUID id, String name, String color) {
