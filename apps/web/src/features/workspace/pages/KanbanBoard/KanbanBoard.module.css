@@ -3770,6 +3770,12 @@
   background: var(--surface-2);
 }
 
+.filesListRowMuted {
+  opacity: 0.58;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  border-color: color-mix(in srgb, var(--border-1) 70%, transparent);
+}
+
 .filesListIcon,
 .cmAttachmentIcon,
 .cmFilePickerIcon {

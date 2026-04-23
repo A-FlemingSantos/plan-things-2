@@ -1230,58 +1230,71 @@ export default function KanbanBoard() {
       }
     }
 
+    const sharedPlanFileIds = new Set(planFiles.map((file) => file.id))
     const fileSections = [
       {
         id: 'plan',
         title: 'Plano',
         emptyText: 'Nenhum arquivo compartilhado com este plano.',
         files: planFiles,
+        count: planFiles.length,
       },
       {
         id: 'library',
         title: 'Biblioteca',
         emptyText: 'Nenhum arquivo disponível na sua biblioteca.',
         files: libraryFiles,
+        count: libraryFiles.filter((file) => !sharedPlanFileIds.has(file.id)).length,
       },
     ]
 
-    const renderFileRow = (file, sectionId) => (
-      <div key={file.id} className={styles.filesListRow}>
-        <span className={styles.filesListIcon}><Icon.Files /></span>
-        <div className={styles.filesListBody}>
-          <p className={styles.filesListName}>{file.name}</p>
-          <p className={styles.filesListMeta}>{formatFileSize(file.size)} · {file.modified}</p>
+    const renderFileRow = (file, sectionId) => {
+      const isSharedLibraryFile = sectionId === 'library' && sharedPlanFileIds.has(file.id)
+
+      return (
+        <div
+          key={file.id}
+          className={`${styles.filesListRow} ${isSharedLibraryFile ? styles.filesListRowMuted : ''}`}
+          title={isSharedLibraryFile ? 'Já compartilhado com o plano' : undefined}
+        >
+          <span className={styles.filesListIcon}><Icon.Files /></span>
+          <div className={styles.filesListBody}>
+            <p className={styles.filesListName}>{file.name}</p>
+            <p className={styles.filesListMeta}>{formatFileSize(file.size)} · {file.modified}</p>
+          </div>
+          {isSharedLibraryFile ? null : (
+            <div className={styles.filesListActions}>
+              <button
+                type="button"
+                className={styles.filesActionButton}
+                onClick={() => runFileAction(() => downloadFile(file))}
+                title="Baixar"
+                aria-label={`Baixar ${file.name}`}
+              >
+                <Icon.Download />
+              </button>
+              {sectionId === 'library' ? (
+                <button
+                  type="button"
+                  className={styles.filesActionTextButton}
+                  onClick={() => runFileAction(() => shareFileWithPlan(file))}
+                >
+                  Compartilhar
+                </button>
+              ) : file.canUnshare ? (
+                <button
+                  type="button"
+                  className={styles.filesActionTextButton}
+                  onClick={() => runFileAction(() => unshareFileFromPlan(file))}
+                >
+                  Remover
+                </button>
+              ) : null}
+            </div>
+          )}
         </div>
-        <div className={styles.filesListActions}>
-          <button
-            type="button"
-            className={styles.filesActionButton}
-            onClick={() => runFileAction(() => downloadFile(file))}
-            title="Baixar"
-            aria-label={`Baixar ${file.name}`}
-          >
-            <Icon.Download />
-          </button>
-          {sectionId === 'library' ? (
-            <button
-              type="button"
-              className={styles.filesActionTextButton}
-              onClick={() => runFileAction(() => shareFileWithPlan(file))}
-            >
-              Compartilhar
-            </button>
-          ) : file.canUnshare ? (
-            <button
-              type="button"
-              className={styles.filesActionTextButton}
-              onClick={() => runFileAction(() => unshareFileFromPlan(file))}
-            >
-              Remover
-            </button>
-          ) : null}
-        </div>
-      </div>
-    )
+      )
+    }
 
     const renderFileSection = (section) => {
       const expanded = isFilesSectionOpen(section.id)
@@ -1297,7 +1310,7 @@ export default function KanbanBoard() {
               <Icon.Chevron />
             </span>
             <span className={styles.plannerSectionTitle}>{section.title}</span>
-            <span className={styles.plannerSectionCount}>{section.files.length}</span>
+            <span className={styles.plannerSectionCount}>{section.count ?? section.files.length}</span>
           </button>
           {expanded ? (
             <div className={styles.plannerSectionBody}>
