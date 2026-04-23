@@ -21,12 +21,17 @@
 - `dailySummary` e `weeklySummary` (desabilitados).
 - Integrações reais Google/Outlook (OAuth + sync).
 - Upload de avatar (conta/workspace).
-- 
 - “Silenciar categorias” com persistência/regra real.
 - `density` com persistência/aplicação global (hoje local da tela).
 - “Tela inicial do workspace” (campo ainda só UI).
 - Privacidade/segurança avançada (2FA, sessões reais, exportação/exclusão de dados, billing/storage reais).
 - Backend ainda possui mapeamento textual legado fixo em pt-BR via `BrazilDateTimeMapper`.
+
+## Observações (mudanças futuras / decisões de produto)
+
+- **Redundância de telas iniciais:** hoje existem `homePage`, `openLastCtx` e “Tela inicial do workspace”. Provavelmente será simplificado para **apenas `openLastCtx`** no futuro, removendo as redundâncias e deixando um fallback fixo quando o último contexto não for válido.
+- **Escopo atual de workspace:** no estado atual do projeto, o usuário trabalha em **apenas 1 workspace** (criado no cadastro). Isso reduz a urgência de regras mais sofisticadas de “entrada no workspace” até existir multi-workspace.
+- **Notificações / “Silenciar categorias”:** adiar a implementação de “silenciar categorias” e regras comportamentais de notificações até existir backend/eventos reais (ex.: integração de e-mail e camada de colaboração/atividades dos Planos).
 
 ## Validação recente
 
