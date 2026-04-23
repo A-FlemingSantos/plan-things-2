@@ -23,7 +23,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -114,26 +113,27 @@ public class FileService {
     validateParent(parentId, user.getId());
 
     try {
-      if (multipartFile.isEmpty()) {
-        throw new BadRequestException("ARQUIVO_VAZIO", "Selecione um arquivo valido para envio.");
-      }
-
-      FileEntryEntity file = new FileEntryEntity();
-      file.setWorkspaceId(workspace.getId());
-      file.setOwnerUserId(user.getId());
-      file.setParentId(parentId);
-      file.setType(FileEntryType.FILE);
-      file.setName(requireName(multipartFile.getOriginalFilename()));
-      file.setMimeType(multipartFile.getContentType());
-      file.setSizeBytes(multipartFile.getSize());
-      fileEntryRepository.save(file);
-
-      FileBlobEntity blob = new FileBlobEntity();
-      blob.setFileEntryId(file.getId());
-      blob.setContent(multipartFile.getBytes());
-      fileBlobRepository.save(blob);
+      FileEntryEntity file = persistUploadedFile(multipartFile, parentId, user, workspace);
       return toView(file);
     } catch (BadRequestException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new BadRequestException("FALHA_NO_UPLOAD", "Nao foi possivel enviar o arquivo informado.");
+    }
+  }
+
+  @Transactional
+  public MessageResponse uploadAndAttachToCard(MultipartFile multipartFile, UUID cardId) {
+    UserEntity user = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = requireWorkspace(user.getId());
+    CardPlanContext context = requireCardPlanContext(cardId, user.getId());
+
+    try {
+      FileEntryEntity file = persistUploadedFile(multipartFile, null, user, workspace);
+      ensureFileSharedWithPlan(file.getId(), context.plan().getId(), user.getId());
+      createCardAttachmentIfAbsent(file.getId(), context.card().getId(), user.getId());
+      return new MessageResponse("Arquivo enviado e anexado ao cartao com sucesso.");
+    } catch (BadRequestException | ForbiddenException | NotFoundException ex) {
       throw ex;
     } catch (Exception ex) {
       throw new BadRequestException("FALHA_NO_UPLOAD", "Nao foi possivel enviar o arquivo informado.");
@@ -220,9 +220,8 @@ public class FileService {
     FileEntryEntity file = fileEntryRepository.findById(fileId)
         .orElseThrow(() -> new NotFoundException("ARQUIVO_NAO_ENCONTRADO", "Nao encontramos o arquivo informado."));
     requireRegularFile(file);
-    BoardCardEntity card = boardCardRepository.findById(cardId)
-        .orElseThrow(() -> new NotFoundException("CARTAO_NAO_ENCONTRADO", "Nao encontramos o cartao informado."));
-    PlanEntity plan = planAccessService.requirePlanMember(card.getPlanId(), user.getId());
+    CardPlanContext context = requireCardPlanContext(cardId, user.getId());
+    PlanEntity plan = context.plan();
     boolean ownsFile = Objects.equals(file.getOwnerUserId(), user.getId());
     boolean sharedWithCardPlan = filePlanShareRepository.findByPlanIdAndFileEntryId(plan.getId(), file.getId()).isPresent();
 
@@ -231,25 +230,10 @@ public class FileService {
     }
 
     if (ownsFile) {
-      filePlanShareRepository.findByPlanIdAndFileEntryId(plan.getId(), file.getId()).orElseGet(() -> {
-        FilePlanShareEntity share = new FilePlanShareEntity();
-        share.setFileEntryId(file.getId());
-        share.setPlanId(plan.getId());
-        share.setSharedByUserId(user.getId());
-        return filePlanShareRepository.save(share);
-      });
+      ensureFileSharedWithPlan(file.getId(), plan.getId(), user.getId());
     }
 
-    boolean alreadyAttached = cardAttachmentRepository.findByCardId(cardId).stream()
-        .anyMatch(attachment -> attachment.getFileEntryId().equals(fileId));
-
-    if (!alreadyAttached) {
-      CardAttachmentEntity attachment = new CardAttachmentEntity();
-      attachment.setCardId(cardId);
-      attachment.setFileEntryId(fileId);
-      attachment.setAttachedByUserId(user.getId());
-      cardAttachmentRepository.save(attachment);
-    }
+    createCardAttachmentIfAbsent(fileId, cardId, user.getId());
 
     return new MessageResponse("Arquivo anexado ao cartao com sucesso.");
   }
@@ -301,6 +285,13 @@ public class FileService {
         .orElseThrow(() -> new NotFoundException("WORKSPACE_NAO_ENCONTRADA", "Nao encontramos a workspace pessoal deste usuario."));
   }
 
+  private CardPlanContext requireCardPlanContext(UUID cardId, UUID userId) {
+    BoardCardEntity card = boardCardRepository.findById(cardId)
+        .orElseThrow(() -> new NotFoundException("CARTAO_NAO_ENCONTRADO", "Nao encontramos o cartao informado."));
+    PlanEntity plan = planAccessService.requirePlanMember(card.getPlanId(), userId);
+    return new CardPlanContext(card, plan);
+  }
+
   private void validateParent(UUID parentId, UUID ownerUserId) {
     if (parentId == null) {
       return;
@@ -332,6 +323,51 @@ public class FileService {
   private boolean canManagePlanFiles(UUID planId, UUID userId) {
     PlanMemberRole role = planAccessService.requireMemberRole(planId, userId);
     return role == PlanMemberRole.OWNER || role == PlanMemberRole.ADMIN;
+  }
+
+  private FileEntryEntity persistUploadedFile(MultipartFile multipartFile, UUID parentId, UserEntity user, WorkspaceEntity workspace) throws Exception {
+    if (multipartFile.isEmpty()) {
+      throw new BadRequestException("ARQUIVO_VAZIO", "Selecione um arquivo valido para envio.");
+    }
+
+    FileEntryEntity file = new FileEntryEntity();
+    file.setWorkspaceId(workspace.getId());
+    file.setOwnerUserId(user.getId());
+    file.setParentId(parentId);
+    file.setType(FileEntryType.FILE);
+    file.setName(requireName(multipartFile.getOriginalFilename()));
+    file.setMimeType(multipartFile.getContentType());
+    file.setSizeBytes(multipartFile.getSize());
+    fileEntryRepository.save(file);
+
+    FileBlobEntity blob = new FileBlobEntity();
+    blob.setFileEntryId(file.getId());
+    blob.setContent(multipartFile.getBytes());
+    fileBlobRepository.save(blob);
+    return file;
+  }
+
+  private void ensureFileSharedWithPlan(UUID fileId, UUID planId, UUID userId) {
+    filePlanShareRepository.findByPlanIdAndFileEntryId(planId, fileId).orElseGet(() -> {
+      FilePlanShareEntity share = new FilePlanShareEntity();
+      share.setFileEntryId(fileId);
+      share.setPlanId(planId);
+      share.setSharedByUserId(userId);
+      return filePlanShareRepository.save(share);
+    });
+  }
+
+  private void createCardAttachmentIfAbsent(UUID fileId, UUID cardId, UUID userId) {
+    boolean alreadyAttached = cardAttachmentRepository.findByCardId(cardId).stream()
+        .anyMatch(attachment -> attachment.getFileEntryId().equals(fileId));
+
+    if (!alreadyAttached) {
+      CardAttachmentEntity attachment = new CardAttachmentEntity();
+      attachment.setCardId(cardId);
+      attachment.setFileEntryId(fileId);
+      attachment.setAttachedByUserId(userId);
+      cardAttachmentRepository.save(attachment);
+    }
   }
 
   private void applySoftDeleteRecursively(FileEntryEntity root, UUID ownerUserId) {
@@ -445,5 +481,8 @@ public class FileService {
   }
 
   private record SharedFile(FileEntryEntity file, boolean sharedByCurrentUser, boolean canUnshare) {
+  }
+
+  private record CardPlanContext(BoardCardEntity card, PlanEntity plan) {
   }
 }

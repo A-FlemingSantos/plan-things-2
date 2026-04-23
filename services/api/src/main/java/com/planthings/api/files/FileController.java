@@ -50,6 +50,11 @@ public class FileController {
     return ApiEnvelope.ok(fileService.upload(file, parentId));
   }
 
+  @PostMapping(value = "/upload/attach/cards/{cardId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ApiEnvelope<FileService.MessageResponse> uploadAndAttachToCard(@RequestPart("file") MultipartFile file, @PathVariable UUID cardId) {
+    return ApiEnvelope.ok(fileService.uploadAndAttachToCard(file, cardId));
+  }
+
   @GetMapping("/{fileId}/download")
   public void download(@PathVariable UUID fileId, HttpServletResponse response) throws Exception {
     FileService.DownloadedFile file = fileService.download(fileId);

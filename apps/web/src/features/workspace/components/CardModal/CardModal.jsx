@@ -16,6 +16,8 @@ const DEFAULT_CARD_SCHEDULE = {
 const MONTH_LABELS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const FILE_PICKER_DESKTOP_WIDTH = 680
 const FILE_PICKER_MOBILE_WIDTH = 360
+const FILE_PICKER_FALLBACK_HEIGHT = 360
+const FILE_PICKER_VIEWPORT_MARGIN = 16
 const FILE_TYPE_OPTIONS = [
   { id: 'all', label: 'Todos' },
   { id: 'image', label: 'Imagem' },
@@ -441,16 +443,30 @@ export default function CardModal({
     if (!rect) return
 
     const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
     const pickerWidth = viewportWidth <= 768
       ? Math.min(FILE_PICKER_MOBILE_WIDTH, viewportWidth - 40)
       : Math.min(FILE_PICKER_DESKTOP_WIDTH, viewportWidth - 64)
-    const minLeft = 16
-    const maxLeft = Math.max(minLeft, viewportWidth - pickerWidth - 16)
+    const pickerHeight = filePickerRef.current?.getBoundingClientRect?.().height ?? FILE_PICKER_FALLBACK_HEIGHT
+    const minLeft = FILE_PICKER_VIEWPORT_MARGIN
+    const maxLeft = Math.max(minLeft, viewportWidth - pickerWidth - FILE_PICKER_VIEWPORT_MARGIN)
     const idealLeft = rect.left
     const left = Math.min(Math.max(minLeft, idealLeft), maxLeft)
+    const preferredTopBelow = rect.bottom + 4
+    const preferredTopAbove = rect.top - pickerHeight - 4
+    const minTop = FILE_PICKER_VIEWPORT_MARGIN
+    const maxTop = Math.max(minTop, viewportHeight - pickerHeight - FILE_PICKER_VIEWPORT_MARGIN)
+
+    let top = preferredTopBelow
+
+    if (preferredTopBelow + pickerHeight > viewportHeight - FILE_PICKER_VIEWPORT_MARGIN) {
+      top = preferredTopAbove >= minTop ? preferredTopAbove : maxTop
+    }
+
+    top = Math.min(Math.max(minTop, top), maxTop)
 
     setFilePickerPosition({
-      top: rect.bottom + 4,
+      top,
       left,
     })
   }
@@ -741,6 +757,11 @@ export default function CardModal({
       window.removeEventListener('scroll', handleViewportChange, true)
     }
   }, [showFilePicker])
+
+  useLayoutEffect(() => {
+    if (!showFilePicker) return
+    updateFilePickerPosition()
+  }, [showFilePicker, isFilePickerLoading, fileActionError, filesError, pickerFiles.length, filePickerFilter, filePickerTypeFilter])
 
   useEffect(() => {
     if (!showFilePickerTypeMenu) return

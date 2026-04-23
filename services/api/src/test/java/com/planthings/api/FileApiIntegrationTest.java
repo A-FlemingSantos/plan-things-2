@@ -232,6 +232,129 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldUploadAndAttachToCardAtomically() throws Exception {
+    String token = registerAndGetToken("Upload Attach", "upload-attach@example.com", "12345678");
+    JsonNode plan = createPlan(token, "Plano com upload atomico");
+    String planId = plan.path("plan").path("id").asText();
+    JsonNode board = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    String columnId = board.path("columns").get(0).path("id").asText();
+    String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card com upload atomico"
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    MockMultipartFile multipartFile = new MockMultipartFile(
+        "file",
+        "anexo-atomico.txt",
+        MediaType.TEXT_PLAIN_VALUE,
+        "conteudo atomico".getBytes()
+    );
+
+    mockMvc.perform(multipart("/api/files/upload/attach/cards/" + cardId)
+            .file(multipartFile)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Arquivo enviado e anexado ao cartao com sucesso."));
+
+    String fileId = readJson(mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[?(@.name=='anexo-atomico.txt')].name").value("anexo-atomico.txt"))
+        .andReturn()).path("data").get(0).path("id").asText();
+
+    mockMvc.perform(get("/api/files/plans/" + planId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[?(@.id=='" + fileId + "')].name").value("anexo-atomico.txt"));
+
+    JsonNode boardWithAttachment = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    findAttachmentByFileId(boardWithAttachment, fileId);
+  }
+
+  @Test
+  void shouldRollbackAtomicUploadWhenCardIsInvalidOrInaccessible() throws Exception {
+    String token = registerAndGetToken("Atomic Owner", "atomic-owner@example.com", "12345678");
+    JsonNode plan = createPlan(token, "Plano rollback atomico");
+    String planId = plan.path("plan").path("id").asText();
+
+    MockMultipartFile invalidCardUpload = new MockMultipartFile(
+        "file",
+        "falha-card-invalido.txt",
+        MediaType.TEXT_PLAIN_VALUE,
+        "falha".getBytes()
+    );
+
+    mockMvc.perform(multipart("/api/files/upload/attach/cards/" + java.util.UUID.randomUUID())
+            .file(invalidCardUpload)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error.code").value("CARTAO_NAO_ENCONTRADO"));
+
+    mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[?(@.name=='falha-card-invalido.txt')]").doesNotExist());
+
+    mockMvc.perform(get("/api/files/plans/" + planId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[?(@.name=='falha-card-invalido.txt')]").doesNotExist());
+
+    JsonNode ownerBoard = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    String columnId = ownerBoard.path("columns").get(0).path("id").asText();
+    String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card protegido"
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    String outsiderToken = registerAndGetToken("Atomic Outsider", "atomic-outsider@example.com", "12345678");
+    MockMultipartFile forbiddenUpload = new MockMultipartFile(
+        "file",
+        "falha-sem-acesso.txt",
+        MediaType.TEXT_PLAIN_VALUE,
+        "falha".getBytes()
+    );
+
+    mockMvc.perform(multipart("/api/files/upload/attach/cards/" + cardId)
+            .file(forbiddenUpload)
+            .header("Authorization", "Bearer " + outsiderToken))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + outsiderToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[?(@.name=='falha-sem-acesso.txt')]").doesNotExist());
+
+    mockMvc.perform(get("/api/files/plans/" + planId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[?(@.name=='falha-sem-acesso.txt')]").doesNotExist());
+  }
+
+  @Test
   void shouldDeleteAndRestoreFolderTreeRecursively() throws Exception {
     String token = registerAndGetToken("Arthur Santos", "arthur-folder-tree@example.com", "12345678");
 

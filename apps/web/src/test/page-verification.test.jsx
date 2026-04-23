@@ -79,7 +79,7 @@ describe('Page verification flows', () => {
     expect(search).toHaveValue('')
   })
 
-  it('verifies kanban utility panels and board switcher', async () => {
+  it('verifies kanban utility panels', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace/board/product-launch-q3')
@@ -93,9 +93,11 @@ describe('Page verification flows', () => {
     expect(await screen.findByLabelText('Planejador')).toBeInTheDocument()
     expect(screen.queryByLabelText('Caixa de entrada')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /mudar de quadros/i }))
-    const switcher = await screen.findByRole('menu', { name: 'Mudar de quadro' })
-    expect(within(switcher).getByRole('menuitem', { name: /redesign da api/i })).toBeInTheDocument()
+    const toolbar = screen.getByText('Quadro').closest('div[aria-label="Atalhos do quadro"]')
+    expect(toolbar).not.toBeNull()
+    await user.click(within(toolbar).getByRole('button', { name: 'Arquivos' }))
+    expect(await screen.findByLabelText('Arquivos do plano')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Planejador')).not.toBeInTheDocument()
   })
 
   it('verifies canvas route fallback and toolbar toggle', async () => {

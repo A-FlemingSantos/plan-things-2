@@ -672,26 +672,15 @@ export default function KanbanBoard() {
     const formData = new FormData()
     formData.append('file', localFile)
 
-    const uploadedItem = await apiRequest('/api/files/upload', {
+    await apiRequest(`/api/files/upload/attach/cards/${cardId}`, {
       method: 'POST',
       token: accessToken,
       body: formData,
     })
-    const uploadedFile = mapApiFileItem(uploadedItem)
-
-    await apiRequest(`/api/files/${uploadedFile.id}/share/plans/${activePlan.id}`, {
-      method: 'POST',
-      token: accessToken,
-    })
-
-    await apiRequest(`/api/files/${uploadedFile.id}/attach/cards/${cardId}`, {
-      method: 'POST',
-      token: accessToken,
-    })
 
     const nextColumns = await loadPlanBoard(activePlan.id)
     await reloadFileLists()
-    showNotification(`"${uploadedFile.name}" enviado para a Biblioteca e anexado ao cartão.`)
+    showNotification(`"${localFile.name}" enviado para a Biblioteca e anexado ao cartão.`)
     return refreshActiveCardFromColumns(nextColumns, cardId)
   }
 
@@ -1795,8 +1784,8 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={`${styles.boardViewToolbarItem} ${!isPlannerOpen && !isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-current="page"
+            className={`${styles.boardViewToolbarItem} ${!isPlannerOpen && !isInboxOpen && !isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-current={!isPlannerOpen && !isInboxOpen && !isFilesOpen ? 'page' : undefined}
             onClick={closeFloatingPanel}
           >
             <Icon.Board />

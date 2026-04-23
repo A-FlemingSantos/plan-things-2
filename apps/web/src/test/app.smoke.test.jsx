@@ -126,6 +126,26 @@ describe('App smoke flows', () => {
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
 
+  it('marks only the active toolbar view when opening the files panel', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/workspace/board/product-launch-q3')
+
+    const boardButton = await screen.findByRole('button', { name: 'Quadro' })
+    const toolbar = boardButton.closest('div[aria-label="Atalhos do quadro"]')
+    expect(toolbar).not.toBeNull()
+    const filesButton = within(toolbar).getByRole('button', { name: 'Arquivos' })
+
+    expect(boardButton).toHaveAttribute('aria-current', 'page')
+    expect(filesButton).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(filesButton)
+
+    expect(await screen.findByLabelText('Arquivos do plano')).toBeInTheDocument()
+    expect(boardButton).not.toHaveAttribute('aria-current')
+    expect(filesButton).toHaveAttribute('aria-expanded', 'true')
+  })
+
   it('keeps legacy seeded due dates in pt-BR after opening and saving the date modal', async () => {
     const user = userEvent.setup()
 
