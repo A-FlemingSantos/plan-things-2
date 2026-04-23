@@ -6,6 +6,7 @@ export default function MemberAvatarStack({
   addTitle = 'Convidar membro',
   AddIcon = null,
   onOpenMembers = null,
+  membersButtonRef = null,
   membersTitle = 'Ver membros',
   MembersIcon = null,
   className = '',
@@ -32,7 +33,7 @@ export default function MemberAvatarStack({
       ) : null}
 
       {onOpenMembers ? (
-        <button className={styles.membersButton} title={membersTitle} onClick={onOpenMembers}>
+        <button ref={membersButtonRef} className={styles.membersButton} title={membersTitle} onClick={onOpenMembers}>
           {MembersIcon ? <MembersIcon /> : '👥'}
         </button>
       ) : null}

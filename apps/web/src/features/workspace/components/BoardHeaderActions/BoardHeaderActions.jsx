@@ -6,6 +6,7 @@ export default function BoardHeaderActions({
   styles,
   onAddMember,
   onOpenMembers,
+  membersButtonRef,
   onFilter,
   onShare,
 }) {
@@ -16,6 +17,7 @@ export default function BoardHeaderActions({
         onAddMember={onAddMember}
         AddIcon={icons.Plus}
         onOpenMembers={onOpenMembers}
+        membersButtonRef={membersButtonRef}
         MembersIcon={icons.Users}
         membersTitle="Membros do plano"
       />
