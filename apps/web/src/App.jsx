@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import { useAuth } from './features/auth/context/AuthContext.jsx'
 import { usePreferences } from './features/preferences/context/PreferencesContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
+import OAuthCallback from './features/auth/pages/OAuthCallback/OAuthCallback.jsx'
 import PasswordRecovery from './features/auth/pages/PasswordRecovery/PasswordRecovery.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
 import CalendarPage from './features/calendar/pages/CalendarPage/CalendarPage.jsx'
@@ -134,6 +135,14 @@ export default function App() {
         element={(
           <AppThemeScope preference="system">
             <Auth initialMode="register" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.oauthCallback}
+        element={(
+          <AppThemeScope preference="system">
+            <OAuthCallback />
           </AppThemeScope>
         )}
       />

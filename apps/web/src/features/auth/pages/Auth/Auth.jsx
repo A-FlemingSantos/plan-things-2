@@ -79,7 +79,7 @@ function CheckIcon() {
 export default function Auth({ initialMode = 'login' }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login, register } = useAuth()
+  const { login, register, startOAuthLogin } = useAuth()
   const { resolveInitialRoute } = usePreferences()
   const [mode, setMode]           = useState(initialMode)   // 'login' | 'register'
   const [email, setEmail]         = useState('')
@@ -124,14 +124,22 @@ export default function Auth({ initialMode = 'login' }) {
     }
   }
 
-  const handleOAuth = (provider) => {
+  const handleOAuth = async (provider) => {
     setNoticeMessage('')
     setErrorMessage('')
     setLoading(provider)
-    setTimeout(() => {
-      setErrorMessage(`Login com ${provider} ainda nao esta disponivel.`)
+
+    try {
+      const redirectTo = location.state?.redirectTo
+      const response = await startOAuthLogin(provider, {
+        redirectTo: redirectTo ? String(redirectTo) : undefined,
+      })
+
+      window.location.assign(response.authorizationUrl)
+    } catch (error) {
+      setErrorMessage(error.message ?? `Nao foi possivel iniciar o login com ${provider}.`)
       setLoading(null)
-    }, 800)
+    }
   }
 
   useEffect(() => {
@@ -313,7 +321,6 @@ export default function Auth({ initialMode = 'login' }) {
             {[
               { id: 'google',    label: 'Google',    Icon: GoogleIcon    },
               { id: 'microsoft', label: 'Microsoft',  Icon: MicrosoftIcon },
-              { id: 'github',    label: 'GitHub',     Icon: GitHubIcon    },
             ].map(({ id, label, Icon }) => (
               <button
                 key={id}

@@ -11,6 +11,7 @@ import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
   private final UserRepository userRepository;
+  private final UserExternalIdentityRepository externalIdentityRepository;
   private final PasswordResetTokenRepository passwordResetTokenRepository;
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
@@ -35,6 +37,7 @@ public class AuthService {
 
   public AuthService(
       UserRepository userRepository,
+      UserExternalIdentityRepository externalIdentityRepository,
       PasswordResetTokenRepository passwordResetTokenRepository,
       PasswordEncoder passwordEncoder,
       AuthenticationManager authenticationManager,
@@ -46,6 +49,7 @@ public class AuthService {
       @Value("${app.jwt.password-reset-minutes}") long passwordResetMinutes
   ) {
     this.userRepository = userRepository;
+    this.externalIdentityRepository = externalIdentityRepository;
     this.passwordResetTokenRepository = passwordResetTokenRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
@@ -87,6 +91,29 @@ public class AuthService {
     UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos uma conta com este e-mail."));
 
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
+
+    return buildSessionResponse(user, workspace);
+  }
+
+  @Transactional
+  public SessionResponse loginWithExternalIdentity(OAuthIdentity identity) {
+    String provider = normalizeProvider(identity.provider());
+    String providerSubject = normalizeExternalSubject(identity.providerSubject());
+    String normalizedEmail = normalizeEmail(identity.email());
+
+    if (!identity.emailVerified()) {
+      throw new BadRequestException("EMAIL_OAUTH_NAO_VERIFICADO", "O provedor externo nao confirmou este e-mail.");
+    }
+
+    return externalIdentityRepository.findByProviderAndProviderSubject(provider, providerSubject)
+        .map(externalIdentity -> loginExistingExternalIdentity(externalIdentity, identity, normalizedEmail))
+        .orElseGet(() -> loginAndLinkExternalIdentity(provider, providerSubject, identity, normalizedEmail));
+  }
+
+  public SessionResponse sessionForUserId(UUID userId) {
+    UserEntity user = userRepository.findById(userId)
+        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos o usuario vinculado a este login."));
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
     return buildSessionResponse(user, workspace);
@@ -176,6 +203,113 @@ public class AuthService {
       throw new BadRequestException("EMAIL_OBRIGATORIO", "O e-mail e obrigatorio.");
     }
     return normalized;
+  }
+
+  private SessionResponse loginExistingExternalIdentity(
+      UserExternalIdentityEntity externalIdentity,
+      OAuthIdentity identity,
+      String normalizedEmail
+  ) {
+    UserEntity user = userRepository.findById(externalIdentity.getUserId())
+        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos o usuario vinculado a este login."));
+
+    updateExternalIdentitySnapshot(externalIdentity, identity, normalizedEmail);
+    externalIdentityRepository.save(externalIdentity);
+
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
+    return buildSessionResponse(user, workspace);
+  }
+
+  private SessionResponse loginAndLinkExternalIdentity(
+      String provider,
+      String providerSubject,
+      OAuthIdentity identity,
+      String normalizedEmail
+  ) {
+    UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
+        .map(existingUser -> requireTrustedAutoLink(existingUser, identity))
+        .orElseGet(() -> createExternalUser(identity, normalizedEmail));
+
+    externalIdentityRepository.findByUserIdAndProvider(user.getId(), provider)
+        .ifPresent(existing -> {
+          throw new ConflictException(
+              "PROVEDOR_OAUTH_JA_VINCULADO",
+              "Esta conta ja esta vinculada a outro login deste provedor."
+          );
+        });
+
+    UserExternalIdentityEntity externalIdentity = new UserExternalIdentityEntity();
+    externalIdentity.setUserId(user.getId());
+    externalIdentity.setProvider(provider);
+    externalIdentity.setProviderSubject(providerSubject);
+    updateExternalIdentitySnapshot(externalIdentity, identity, normalizedEmail);
+    externalIdentityRepository.save(externalIdentity);
+
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
+    return buildSessionResponse(user, workspace);
+  }
+
+  private UserEntity createExternalUser(OAuthIdentity identity, String normalizedEmail) {
+    UserEntity user = new UserEntity();
+    user.setFullName(normalizeName(defaultExternalName(identity.displayName(), normalizedEmail)));
+    user.setEmail(normalizedEmail);
+    user.setPasswordHash(passwordEncoder.encode("oauth-" + UUID.randomUUID()));
+    return userRepository.save(user);
+  }
+
+  private UserEntity requireTrustedAutoLink(UserEntity user, OAuthIdentity identity) {
+    if (!identity.emailAutoLinkTrusted()) {
+      throw new ConflictException(
+          "VINCULO_OAUTH_REQUER_LOGIN",
+          "Entre com sua conta antes de vincular este provedor externo."
+      );
+    }
+    return user;
+  }
+
+  private void updateExternalIdentitySnapshot(
+      UserExternalIdentityEntity externalIdentity,
+      OAuthIdentity identity,
+      String normalizedEmail
+  ) {
+    externalIdentity.setEmail(normalizedEmail);
+    externalIdentity.setEmailVerified(identity.emailVerified());
+    externalIdentity.setDisplayName(trimToNull(identity.displayName()));
+    externalIdentity.setAvatarUrl(trimToNull(identity.avatarUrl()));
+  }
+
+  private String normalizeProvider(String provider) {
+    String normalized = provider == null ? "" : provider.trim().toLowerCase(Locale.ROOT);
+    if (normalized.isBlank()) {
+      throw new BadRequestException("PROVEDOR_OAUTH_INVALIDO", "Provedor OAuth nao suportado.");
+    }
+    return normalized;
+  }
+
+  private String normalizeExternalSubject(String providerSubject) {
+    String normalized = providerSubject == null ? "" : providerSubject.trim();
+    if (normalized.isBlank()) {
+      throw new BadRequestException("OAUTH_SUBJECT_AUSENTE", "O provedor externo nao retornou identificador do usuario.");
+    }
+    return normalized;
+  }
+
+  private String trimToNull(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim();
+    return trimmed.isBlank() ? null : trimmed;
+  }
+
+  private String defaultExternalName(String displayName, String normalizedEmail) {
+    String trimmedName = trimToNull(displayName);
+    if (trimmedName != null) {
+      return trimmedName;
+    }
+
+    int atIndex = normalizedEmail.indexOf('@');
+    return atIndex > 0 ? normalizedEmail.substring(0, atIndex) : normalizedEmail;
   }
 
   private String normalizeName(String fullName) {

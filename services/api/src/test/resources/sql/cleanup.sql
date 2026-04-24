@@ -16,5 +16,8 @@ DELETE FROM plan_members;
 DELETE FROM plans;
 DELETE FROM workspaces;
 DELETE FROM user_settings;
+DELETE FROM oauth_login_codes;
+DELETE FROM oauth_login_states;
+DELETE FROM user_external_identities;
 DELETE FROM password_reset_tokens;
 DELETE FROM users;

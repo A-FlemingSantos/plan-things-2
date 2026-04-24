@@ -2,6 +2,7 @@ export const ROUTES = {
   home: '/',
   login: '/login',
   register: '/cadastro',
+  oauthCallback: '/oauth/callback',
   workspace: '/workspace',
   workspaceBoard: '/workspace/board',
   canvas: '/canvas',
