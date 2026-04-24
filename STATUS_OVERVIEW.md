@@ -2,6 +2,12 @@
 
 Este arquivo resume o estado atual da base depois das etapas 1, 2 e 3.
 
+Leitura rapida:
+- `convite por e-mail` aqui significa apenas convite de plano, enviado pelo Gmail conectado.
+- `Inbox` aqui significa a sidebar do KanbanBoard para mensagens ligadas a tarefas e eventos.
+- `Google Calendar` fica como integracao externa opcional e por ultimo.
+- `Microsoft` / `Outlook` nao entram no produto.
+
 ## 1. O que ja esta pronto
 
 ### Convites de plano
@@ -10,7 +16,7 @@ Este arquivo resume o estado atual da base depois das etapas 1, 2 e 3.
 - O gestor do plano pode ver os convites enviados e remover convites pendentes.
 - O usuario convidado pode abrir o convite por token e aceitar ou recusar.
 - Existe uma area global de notificacoes de convite em `Workspace`, `Board`, `Calendar` e `Files`.
-- O painel de membros do quadro agora tem uma aba de convites com os convites enviados do plano.
+- O painel de membros do quadro tem uma aba de convites com os convites enviados do plano.
 
 ### Arquivos e anexos
 
@@ -18,9 +24,9 @@ Este arquivo resume o estado atual da base depois das etapas 1, 2 e 3.
 - Cartoes aceitam anexos.
 - Qualquer membro do plano pode anexar arquivos a um cartao.
 - Nao existe restricao de papel para o ato de anexar.
-- A sidebar "Arquivos" do KanbanBoard aceita drag-and-drop de arquivos das secoes `Plano` e `Biblioteca`.
+- A sidebar `Arquivos` do KanbanBoard aceita drag-and-drop de arquivos das secoes `Plano` e `Biblioteca`.
 - O frontend separa o drag de arquivos do drag de movimentacao de cartoes.
-- O frontend tambem controla um drag preview custom para o arquivo arrastado.
+- O frontend controla um drag preview custom para o arquivo arrastado.
 - O backend continua validando permissao, compartilhamento automatico da Biblioteca e anexos duplicados.
 - Anexos podem ser removidos.
 - O backend ainda aplica regras de permissao para compartilhar, descompartilhar e baixar arquivos.
@@ -34,7 +40,7 @@ Este arquivo resume o estado atual da base depois das etapas 1, 2 e 3.
 
 ### OAuth e identidade de conta
 
-- O fluxo OAuth/OIDC com Google ja existe para identidade de login da conta.
+- O fluxo OAuth/OIDC com Google existe para identidade de login da conta.
 - O backend usa Authorization Code Flow com escopos minimos `openid profile email`.
 - A sessao interna continua sendo a do Plan Things, com `AuthService.SessionResponse` e JWT proprio.
 - Tokens externos nao sao persistidos.
@@ -43,19 +49,19 @@ Este arquivo resume o estado atual da base depois das etapas 1, 2 e 3.
 
 ## 2. O que ainda falta
 
-### Integracoes Gmail e convite por e-mail
+### Gmail nas Configuracoes e convite por e-mail do plano
 
-- Falta transformar os cards de `Gmail` em integracoes reais persistidas.
+- Falta transformar o card de `Gmail` em integracao real persistida.
 - Falta usar a conta autenticada para envio e leitura contextual.
 - Falta tratar retry, falha e feedback de envio nesse fluxo.
-- "Convite por e-mail" e o primeiro uso dessa base, nao uma camada separada.
-- Os cards de `Gmail` e `Google Calendar` ainda estao em estado de demo/local state.
+- Falta conectar o convite por e-mail ao Gmail real.
+- `Gmail` e `Google Calendar` ainda estao em estado de demo/local state.
 - Qualquer referencia a `Outlook Mail` ou `Outlook Calendar` deve ser tratada como fora de escopo.
 
-### Caixa de entrada no KanbanBoard
+### Inbox da sidebar no KanbanBoard
 
 - Falta a sidebar de caixa de entrada para tarefas e eventos.
-- Falta gerar e enviar email com template dinamico a partir de um cartao arrastado.
+- Falta gerar e enviar e-mail com template dinamico a partir de um cartao arrastado.
 - Falta exibir e-mails recebidos vinculados a tarefas delegadas.
 
 ### Governanca de colaboracao
@@ -88,17 +94,17 @@ Este arquivo resume o estado atual da base depois das etapas 1, 2 e 3.
 ### Calendarios externos
 
 - Google Calendar fica como integracao opcional e por ultimo.
-- Falta mapear eventos e tarefas internas para as contas conectadas.
+- Falta mapear eventos e tarefas internas para a conta conectada.
 - Falta decidir o nivel de sincronizacao e como tratar conflitos, recorrencia e exclusao.
 - A sincronizacao deve usar tempo canonico interno; preferencias de exibicao nao podem dirigir o payload do sync.
 
 ## 3. Decisao importante sobre convite por e-mail
 
-- Por agora, "convite por e-mail" significa exclusivamente convite de plano.
+- Por agora, `convite por e-mail` significa exclusivamente convite de plano.
 - Nao tratar isso como um sistema generico de SMTP.
 - O envio de convite por e-mail entra como primeiro uso das integracoes Gmail.
 - Quando isso acontecer, o envio deve sair pelo fluxo autenticado do proprio usuario/conector.
-- Ate la, o fluxo continua baseado em link/token, notificacao interna e aceitação/recusa.
+- Ate la, o fluxo continua baseado em link/token, notificacao interna e aceitacao/recusa.
 
 ## 4. O que o produto ainda precisa decidir
 
