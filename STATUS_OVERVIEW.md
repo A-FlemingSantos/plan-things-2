@@ -1,6 +1,6 @@
 # Status Overview - Colaboracao e Settings
 
-Este arquivo resume o estado atual da base depois das etapas 1 e 2.
+Este arquivo resume o estado atual da base depois das etapas 1, 2 e 3.
 
 ## 1. O que ja esta pronto
 
@@ -32,20 +32,24 @@ Este arquivo resume o estado atual da base depois das etapas 1 e 2.
 - O app lembra o ultimo contexto valido e usa isso na entrada.
 - `emailNotifs`, `eventReminders` e `deadlineAlerts` ja sao salvos no backend.
 
-### Integrações de conta
+### OAuth e identidade de conta
 
-- O login OAuth com Google e Microsoft ja existe na pagina de autenticacao.
-- A pagina de Configuracoes ja mostra cards separados para `Gmail`, `Outlook Mail`, `Google Calendar` e `Outlook Calendar`.
-- Essa camada de UI ainda e demo/local state, mas a estrutura de produtos ja esta no lugar.
+- O fluxo OAuth/OIDC com Google e Microsoft ja existe para identidade de login da conta.
+- O backend usa Authorization Code Flow com escopos minimos `openid profile email`.
+- A sessao interna continua sendo a do Plan Things, com `AuthService.SessionResponse` e JWT proprio.
+- Tokens externos de Google/Microsoft nao sao persistidos.
+- O frontend inicia o OAuth real, trata o callback e conclui o login na sessao da aplicacao.
+- Google foi validado manualmente; Microsoft foi implementado e coberto por testes, com configuracao real ainda dependente de tenant/portal externo.
 
 ## 2. O que ainda falta
 
-### Integracoes Gmail/Outlook nas Configuracoes
+### Integracoes Gmail/Outlook e convite por e-mail
 
 - Falta transformar os cards de `Gmail` e `Outlook Mail` em integracoes reais persistidas.
 - Falta usar a conta autenticada para envio e leitura contextual.
 - Falta tratar retry, falha e feedback de envio nesse fluxo.
 - "Convite por e-mail" e o primeiro uso dessa base, nao uma camada separada.
+- Os cards de `Gmail`, `Outlook Mail`, `Google Calendar` e `Outlook Calendar` ainda estao em estado de demo/local state.
 
 ### Caixa de entrada no KanbanBoard
 
@@ -91,7 +95,7 @@ Este arquivo resume o estado atual da base depois das etapas 1 e 2.
 
 - Por agora, "convite por e-mail" significa exclusivamente convite de plano.
 - Nao tratar isso como um sistema generico de SMTP.
-- O envio de convite por e-mail so deve entrar quando existir integracao real com Gmail/Outlook.
+- O envio de convite por e-mail entra como primeiro uso das integracoes Gmail/Outlook.
 - Quando isso acontecer, o envio deve sair pelo fluxo autenticado do proprio usuario/conector.
 - Ate la, o fluxo continua baseado em link/token, notificacao interna e aceitação/recusa.
 
@@ -108,7 +112,8 @@ Este arquivo resume o estado atual da base depois das etapas 1 e 2.
 
 - A etapa de convites de plano ja foi fechada.
 - A etapa de arquivos com drag-and-drop tambem ja foi fechada.
-- A proxima entrega mais valiosa e o OAuth de Google/Microsoft seguido das integracoes Gmail/Outlook.
+- A etapa de OAuth com Google/Microsoft tambem ja foi fechada.
+- A proxima entrega mais valiosa e Gmail/Outlook nas configuracoes, junto com convite por e-mail.
 - A caixa de entrada no KanbanBoard depende dessa base de comunicacao.
 - Calendarios externos ficam para o fim e nao bloqueiam o restante do produto.
 - Settings precisa de consolidacao, nao de mais campos soltos.

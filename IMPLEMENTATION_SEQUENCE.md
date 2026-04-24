@@ -29,29 +29,34 @@ Por que esta etapa foi fechada:
 - o backend continua validando permissao e evitando anexos duplicados
 - o comportamento de mover cartoes entre colunas foi preservado
 
-## Proximas etapas
+## Etapa 3 concluida
 
-### 3. OAuth com Google/Microsoft
+### 3. OAuth com Google/Microsoft como identidade de login da conta
 
 - Consolidar o login com Google e Microsoft como base de conta.
 - Manter esse fluxo separado das integracoes funcionais do app.
 - Garantir que a autenticacao suporte a vinculacao posterior das contas.
+- Manter a sessao interna do Plan Things com `AuthService.SessionResponse` e JWT proprio.
+- Nao persistir tokens externos de Google/Microsoft.
 
-Por que vem antes:
-- a autenticacao e a porta de entrada para as integracoes de Gmail/Outlook
-- sem isso, nao ha conexao confiavel com as contas externas
+Por que esta etapa foi fechada:
+- o fluxo OAuth/OIDC agora existe para Google e Microsoft
+- o backend suporta criacao de usuario, reutilizacao de identidade e vinculo seguro por email confiavel
+- o frontend inicia OAuth real, trata callback e conclui o login com a sessao interna
+- o fluxo ficou coberto por testes e validacao manual
 
-### 4. Integracoes Gmail/Outlook nas configuracoes
+## Proximas etapas
+
+### 4. Integracoes Gmail/Outlook e convite por e-mail
 
 - Tornar reais os cards de Gmail e Outlook na pagina de Configuracoes.
 - Persistir a conexao por provider em vez de usar estado de demo.
 - Usar essa camada para habilitar envio autenticado e leitura contextual.
-- Tratar "convite por e-mail" como um primeiro uso dessa integracao.
+- Tratar "convite por e-mail" como o primeiro uso dessa integracao.
 
 Por que vem depois do OAuth:
-- o login com Google/Microsoft ja existe e pode servir de base
-- a UI de Settings ja mostra esses providers, mas ainda em modo demo
-- essa etapa transforma os cards em integracoes de verdade
+- a autenticacao e a porta de entrada para as integracoes de Gmail/Outlook
+- sem isso, nao ha conexao confiavel com as contas externas
 
 ### 5. Sidebar "Caixa de entrada" no KanbanBoard
 
@@ -127,8 +132,8 @@ Por que fica por ultimo:
 
 1. Etapa 1 fechada: convites de plano na UI
 2. Etapa 2 fechada: sidebar de arquivos com drag-and-drop
-3. OAuth com Google/Microsoft
-4. Integracoes Gmail/Outlook nas configuracoes
+3. Etapa 3 fechada: OAuth com Google/Microsoft como identidade de login da conta
+4. Integracoes Gmail/Outlook e convite por e-mail
 5. Caixa de entrada no KanbanBoard
 6. Governanca de colaboracao
 7. Arquivos e anexos
