@@ -31,32 +31,33 @@ Por que esta etapa foi fechada:
 
 ## Etapa 3 concluida
 
-### 3. OAuth com Google/Microsoft como identidade de login da conta
+### 3. OAuth com Google como identidade de login da conta
 
-- Consolidar o login com Google e Microsoft como base de conta.
+- Consolidar o login com Google como base de conta.
 - Manter esse fluxo separado das integracoes funcionais do app.
 - Garantir que a autenticacao suporte a vinculacao posterior das contas.
 - Manter a sessao interna do Plan Things com `AuthService.SessionResponse` e JWT proprio.
-- Nao persistir tokens externos de Google/Microsoft.
+- Nao persistir tokens externos.
 
 Por que esta etapa foi fechada:
-- o fluxo OAuth/OIDC agora existe para Google e Microsoft
+- o fluxo OAuth/OIDC agora existe para Google
 - o backend suporta criacao de usuario, reutilizacao de identidade e vinculo seguro por email confiavel
 - o frontend inicia OAuth real, trata callback e conclui o login com a sessao interna
 - o fluxo ficou coberto por testes e validacao manual
+- Microsoft nao sera implementado e saiu do escopo do produto
 
 ## Proximas etapas
 
-### 4. Integracoes Gmail/Outlook e convite por e-mail
+### 4. Integracoes Gmail e convite por e-mail
 
-- Tornar reais os cards de Gmail e Outlook na pagina de Configuracoes.
-- Persistir a conexao por provider em vez de usar estado de demo.
+- Tornar reais os cards de Gmail na pagina de Configuracoes.
+- Persistir a conexao Gmail em vez de usar estado de demo.
 - Usar essa camada para habilitar envio autenticado e leitura contextual.
 - Tratar "convite por e-mail" como o primeiro uso dessa integracao.
 
 Por que vem depois do OAuth:
-- a autenticacao e a porta de entrada para as integracoes de Gmail/Outlook
-- sem isso, nao ha conexao confiavel com as contas externas
+- a autenticacao e a porta de entrada para as integracoes de Gmail
+- sem isso, nao ha conexao confiavel com a conta externa
 
 ### 5. Sidebar "Caixa de entrada" no KanbanBoard
 
@@ -66,7 +67,7 @@ Por que vem depois do OAuth:
 - Separar visualmente mensagens de tarefas e mensagens comuns.
 
 Por que vem depois:
-- depende das integracoes Gmail/Outlook ja ativas
+- depende da integracao Gmail ja ativa
 - precisa de modelagem de conversa, rastreio e permissao mais madura
 - faz mais sentido quando a comunicacao por email ja estiver estabilizada
 
@@ -115,9 +116,9 @@ Por que por ultimo:
 - sao itens mais caros e mais dependentes da maturidade da plataforma
 - fazem mais sentido depois do nucleo colaborativo estar redondo
 
-### 10. Calendarios externos, opcional e por ultimo
+### 10. Google Calendar, opcional e por ultimo
 
-- Adicionar Google Calendar e Microsoft Calendar como fontes externas.
+- Adicionar Google Calendar como fonte externa.
 - Sincronizar tarefas e eventos com as contas conectadas.
 - Resolver mapeamento entre eventos internos e externos.
 - Usar um modelo temporal canonico interno (`UTC`/`ISO-8601`) e deixar `locale`, `dateFormat`, `timeFormat` e `timeZone` apenas para exibicao.
@@ -132,11 +133,11 @@ Por que fica por ultimo:
 
 1. Etapa 1 fechada: convites de plano na UI
 2. Etapa 2 fechada: sidebar de arquivos com drag-and-drop
-3. Etapa 3 fechada: OAuth com Google/Microsoft como identidade de login da conta
-4. Integracoes Gmail/Outlook e convite por e-mail
+3. Etapa 3 fechada: OAuth com Google como identidade de login da conta
+4. Integracoes Gmail e convite por e-mail
 5. Caixa de entrada no KanbanBoard
 6. Governanca de colaboracao
 7. Arquivos e anexos
 8. Settings e entrada no app
 9. Integracoes e seguranca
-10. Calendarios externos opcionais
+10. Google Calendar opcional
