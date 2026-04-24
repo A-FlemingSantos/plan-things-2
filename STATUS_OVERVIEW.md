@@ -1,6 +1,6 @@
 # Status Overview - Colaboracao e Settings
 
-Este arquivo resume o estado atual da base depois da etapa 1.
+Este arquivo resume o estado atual da base depois das etapas 1 e 2.
 
 ## 1. O que ja esta pronto
 
@@ -18,6 +18,10 @@ Este arquivo resume o estado atual da base depois da etapa 1.
 - Cartoes aceitam anexos.
 - Qualquer membro do plano pode anexar arquivos a um cartao.
 - Nao existe restricao de papel para o ato de anexar.
+- A sidebar "Arquivos" do KanbanBoard aceita drag-and-drop de arquivos das secoes `Plano` e `Biblioteca`.
+- O frontend separa o drag de arquivos do drag de movimentacao de cartoes.
+- O frontend tambem controla um drag preview custom para o arquivo arrastado.
+- O backend continua validando permissao, compartilhamento automatico da Biblioteca e anexos duplicados.
 - Anexos podem ser removidos.
 - O backend ainda aplica regras de permissao para compartilhar, descompartilhar e baixar arquivos.
 
@@ -32,9 +36,9 @@ Este arquivo resume o estado atual da base depois da etapa 1.
 
 ### Sidebar de arquivos no KanbanBoard
 
-- Falta permitir drag-and-drop dos arquivos listados na sidebar para um cartao.
-- Falta anexar o arquivo ao cartao por arraste.
-- Falta feedback mais claro de sucesso e falha no gesto de anexar.
+- A etapa de drag-and-drop de arquivos para cartoes ja foi concluida.
+- Falta evoluir a experiencia com feedback mais rico de sucesso, falha e contexto.
+- Falta pensar em busca, ordenacao e navegacao melhor na lista de arquivos.
 
 ### Convite por e-mail
 
@@ -101,7 +105,8 @@ Este arquivo resume o estado atual da base depois da etapa 1.
 ## 5. Leitura pratica
 
 - A etapa de convites de plano ja foi fechada.
-- A proxima entrega mais valiosa e a sidebar de arquivos com drag-and-drop.
+- A etapa de arquivos com drag-and-drop tambem ja foi fechada.
+- A proxima entrega mais valiosa e a base real de Gmail/Outlook.
 - O fluxo de email vem depois da base Gmail/Outlook.
 - A caixa de entrada no KanbanBoard depende dessa base de comunicacao.
 - Calendarios externos ficam para o fim e nao bloqueiam o restante do produto.

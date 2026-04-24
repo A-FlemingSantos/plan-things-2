@@ -12,10 +12,10 @@
 
 Por que esta etapa foi fechada:
 - o backend ja suportava o ciclo de convite
-- a interface agora expoe criacao, listagem, revogacao, aceitacao e recusa
+- a interface passou a expor criacao, listagem, revogacao, aceitacao e recusa
 - o fluxo ficou usavel no dia a dia, nao apenas disponivel via API
 
-## Proximas etapas
+## Etapa 2 concluida
 
 ### 2. Sidebar "Arquivos" no KanbanBoard
 
@@ -24,10 +24,12 @@ Por que esta etapa foi fechada:
 - Dar feedback claro de sucesso, falha e permissao.
 - Manter a experiencia simples para qualquer membro do plano.
 
-Por que vem agora:
-- a base de arquivos ja existe
-- o ganho de produtividade e imediato
-- nao existe restricao por papel para anexar em cartoes
+Por que esta etapa foi fechada:
+- arquivos das secoes `Plano` e `Biblioteca` ja podem ser arrastados para cartoes
+- o backend continua validando permissao e evitando anexos duplicados
+- o comportamento de mover cartoes entre colunas foi preservado
+
+## Proximas etapas
 
 ### 3. Criar a base real de integracao Gmail/Outlook
 
@@ -123,7 +125,7 @@ Por que fica por ultimo:
 ## Resumo curto
 
 1. Etapa 1 fechada: convites de plano na UI
-2. Sidebar de arquivos com drag-and-drop
+2. Etapa 2 fechada: sidebar de arquivos com drag-and-drop
 3. Base Gmail/Outlook
 4. Convite por e-mail
 5. Caixa de entrada no KanbanBoard
