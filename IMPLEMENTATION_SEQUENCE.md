@@ -31,26 +31,27 @@ Por que esta etapa foi fechada:
 
 ## Proximas etapas
 
-### 3. Criar a base real de integracao Gmail/Outlook
+### 3. OAuth com Google/Microsoft
 
-- Preparar OAuth e vinculacao de conta.
-- Definir consentimento e escopo de envio.
-- Resolver como o provider autenticado sera selecionado para cada usuario.
-- Deixar claro que o sistema nao age como SMTP generico.
+- Consolidar o login com Google e Microsoft como base de conta.
+- Manter esse fluxo separado das integracoes funcionais do app.
+- Garantir que a autenticacao suporte a vinculacao posterior das contas.
 
-Por que vem antes do convite por e-mail:
-- e o alicerce necessario para qualquer envio autenticado
-- sem essa camada, a entrega de email ficaria desalinhada com a regra de produto
+Por que vem antes:
+- a autenticacao e a porta de entrada para as integracoes de Gmail/Outlook
+- sem isso, nao ha conexao confiavel com as contas externas
 
-### 4. Implementar convite por e-mail
+### 4. Integracoes Gmail/Outlook nas configuracoes
 
-- Disparar o convite por meio da integracao real.
-- Tratar falha, retry e feedback de envio.
-- Amarrar o email ao estado do convite e ao usuario autenticado.
+- Tornar reais os cards de Gmail e Outlook na pagina de Configuracoes.
+- Persistir a conexao por provider em vez de usar estado de demo.
+- Usar essa camada para habilitar envio autenticado e leitura contextual.
+- Tratar "convite por e-mail" como um primeiro uso dessa integracao.
 
-Por que depende da etapa 3:
-- o envio so faz sentido quando existir Gmail/Outlook de verdade
-- isso evita uma solucao provisoria que precisaria ser refeita depois
+Por que vem depois do OAuth:
+- o login com Google/Microsoft ja existe e pode servir de base
+- a UI de Settings ja mostra esses providers, mas ainda em modo demo
+- essa etapa transforma os cards em integracoes de verdade
 
 ### 5. Sidebar "Caixa de entrada" no KanbanBoard
 
@@ -60,7 +61,7 @@ Por que depende da etapa 3:
 - Separar visualmente mensagens de tarefas e mensagens comuns.
 
 Por que vem depois:
-- depende da base real de email
+- depende das integracoes Gmail/Outlook ja ativas
 - precisa de modelagem de conversa, rastreio e permissao mais madura
 - faz mais sentido quando a comunicacao por email ja estiver estabilizada
 
@@ -126,8 +127,8 @@ Por que fica por ultimo:
 
 1. Etapa 1 fechada: convites de plano na UI
 2. Etapa 2 fechada: sidebar de arquivos com drag-and-drop
-3. Base Gmail/Outlook
-4. Convite por e-mail
+3. OAuth com Google/Microsoft
+4. Integracoes Gmail/Outlook nas configuracoes
 5. Caixa de entrada no KanbanBoard
 6. Governanca de colaboracao
 7. Arquivos e anexos

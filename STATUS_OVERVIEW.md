@@ -32,19 +32,20 @@ Este arquivo resume o estado atual da base depois das etapas 1 e 2.
 - O app lembra o ultimo contexto valido e usa isso na entrada.
 - `emailNotifs`, `eventReminders` e `deadlineAlerts` ja sao salvos no backend.
 
+### Integrações de conta
+
+- O login OAuth com Google e Microsoft ja existe na pagina de autenticacao.
+- A pagina de Configuracoes ja mostra cards separados para `Gmail`, `Outlook Mail`, `Google Calendar` e `Outlook Calendar`.
+- Essa camada de UI ainda e demo/local state, mas a estrutura de produtos ja esta no lugar.
+
 ## 2. O que ainda falta
 
-### Sidebar de arquivos no KanbanBoard
+### Integracoes Gmail/Outlook nas Configuracoes
 
-- A etapa de drag-and-drop de arquivos para cartoes ja foi concluida.
-- Falta evoluir a experiencia com feedback mais rico de sucesso, falha e contexto.
-- Falta pensar em busca, ordenacao e navegacao melhor na lista de arquivos.
-
-### Convite por e-mail
-
-- Falta a camada real de integracao com Gmail/Outlook.
-- Falta ligar o convite ao envio real feito pelo conector autenticado do usuario.
+- Falta transformar os cards de `Gmail` e `Outlook Mail` em integracoes reais persistidas.
+- Falta usar a conta autenticada para envio e leitura contextual.
 - Falta tratar retry, falha e feedback de envio nesse fluxo.
+- "Convite por e-mail" e o primeiro uso dessa base, nao uma camada separada.
 
 ### Caixa de entrada no KanbanBoard
 
@@ -66,6 +67,7 @@ Este arquivo resume o estado atual da base depois das etapas 1 e 2.
 
 ### Arquivos e anexos
 
+- Falta evoluir a experiencia com feedback mais rico de sucesso, falha e contexto.
 - Falta busca.
 - Falta paginacao.
 - Falta ordenacao.
@@ -106,8 +108,7 @@ Este arquivo resume o estado atual da base depois das etapas 1 e 2.
 
 - A etapa de convites de plano ja foi fechada.
 - A etapa de arquivos com drag-and-drop tambem ja foi fechada.
-- A proxima entrega mais valiosa e a base real de Gmail/Outlook.
-- O fluxo de email vem depois da base Gmail/Outlook.
+- A proxima entrega mais valiosa e o OAuth de Google/Microsoft seguido das integracoes Gmail/Outlook.
 - A caixa de entrada no KanbanBoard depende dessa base de comunicacao.
 - Calendarios externos ficam para o fim e nao bloqueiam o restante do produto.
 - Settings precisa de consolidacao, nao de mais campos soltos.
