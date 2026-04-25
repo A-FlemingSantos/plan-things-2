@@ -9,7 +9,7 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
         display: 'grid',
         placeItems: 'center',
         padding: '32px',
-        background: 'var(--color-white)',
+        background: 'var(--app-bg)',
       }}
     >
       <div
@@ -21,13 +21,13 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
           textAlign: 'left',
         }}
       >
-        <p style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-gray-400)' }}>
+        <p style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
           {eyebrow}
         </p>
-        <h1 style={{ fontSize: 'clamp(32px, 6vw, 56px)', lineHeight: 1.05, letterSpacing: '-0.04em', fontWeight: 'var(--font-weight-regular)' }}>
+        <h1 style={{ fontSize: 'clamp(32px, 6vw, 56px)', lineHeight: 1.05, letterSpacing: '-0.04em', fontWeight: 'var(--font-weight-regular)', color: 'var(--text-1)' }}>
           {title}
         </h1>
-        <p style={{ color: 'var(--color-gray-600)', maxWidth: '48ch' }}>
+        <p style={{ color: 'var(--text-2)', maxWidth: '48ch' }}>
           {description}
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
@@ -40,8 +40,8 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
               minHeight: '48px',
               padding: '0 18px',
               borderRadius: '999px',
-              background: 'var(--color-black)',
-              color: 'var(--color-white)',
+              background: 'var(--text-1)',
+              color: 'var(--text-inverse)',
             }}
           >
             {primaryLabel}
@@ -55,7 +55,7 @@ export default function InfoPage({ eyebrow, title, description, primaryLabel, pr
               minHeight: '48px',
               padding: '0 18px',
               borderRadius: '999px',
-              border: '1px solid var(--color-gray-200)',
+              border: '1px solid var(--border-1)',
             }}
           >
             Ir para o início

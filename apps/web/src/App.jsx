@@ -1,6 +1,8 @@
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from './features/auth/context/AuthContext.jsx'
+import { usePreferences } from './features/preferences/context/PreferencesContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
+import OAuthCallback from './features/auth/pages/OAuthCallback/OAuthCallback.jsx'
 import PasswordRecovery from './features/auth/pages/PasswordRecovery/PasswordRecovery.jsx'
 import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
 import CalendarPage from './features/calendar/pages/CalendarPage/CalendarPage.jsx'
@@ -8,15 +10,58 @@ import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
 import { INFO_PAGES } from './features/info/data/infoPages.js'
 import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
+import AppThemeScope from './features/preferences/components/AppThemeScope/AppThemeScope.jsx'
+import SettingsPage from './features/settings/pages/SettingsPage/SettingsPage.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
+import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import {
   buildCanvasPath,
   buildWorkspaceBoardPath,
   LEGACY_PLAN_ROUTE_ALIASES,
+  normalizePathname,
   ROUTE_ALIASES,
   ROUTES,
 } from './shared/config/routes.js'
+
+function isInternalAppPath(pathname) {
+  const normalized = normalizePathname(pathname ?? '')
+
+  if (!normalized) return false
+
+  if (normalized === '/app') return true
+
+  const internalBases = [
+    ROUTES.workspace,
+    ROUTES.workspaceBoard,
+    ROUTES.canvas,
+    ROUTES.calendar,
+    ROUTES.files,
+    ROUTES.settings,
+  ]
+
+  for (const base of internalBases) {
+    if (normalized === base || normalized.startsWith(`${base}/`)) return true
+  }
+
+  for (const { from } of ROUTE_ALIASES) {
+    const aliasPath = normalizePathname(from)
+    if (normalized === aliasPath || normalized.startsWith(`${aliasPath}/`)) return true
+  }
+
+  const legacyPrefixes = [
+    ...LEGACY_PLAN_ROUTE_ALIASES.board,
+    ...LEGACY_PLAN_ROUTE_ALIASES.canvas,
+  ]
+    .map((pattern) => pattern.replace('/:planId', ''))
+    .map((path) => normalizePathname(path))
+
+  for (const prefix of legacyPrefixes) {
+    if (normalized === prefix || normalized.startsWith(`${prefix}/`)) return true
+  }
+
+  return false
+}
 
 function LegacyPlanRedirect({ buildPath }) {
   const { planId } = useParams()
@@ -24,23 +69,39 @@ function LegacyPlanRedirect({ buildPath }) {
   return <Navigate to={buildPath(planId)} replace />
 }
 
+function PreferredAppEntryRedirect() {
+  const { isAuthenticated } = useAuth()
+  const { resolveInitialRoute } = usePreferences()
+
+  if (!isAuthenticated) {
+    return <Navigate to={ROUTES.workspace} replace />
+  }
+
+  return <Navigate to={resolveInitialRoute()} replace />
+}
+
 function AppBootstrapScreen() {
+  const location = useLocation()
+  const isInternalPath = isInternalAppPath(location.pathname)
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        padding: '32px',
-        background: 'linear-gradient(180deg, #f7f4ec 0%, #f2f6fb 100%)',
-        color: '#1f1f1f',
-      }}
-    >
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Carregando sua sessão...</p>
-        <p style={{ margin: '8px 0 0', color: '#5f646d' }}>Preparando a aplicação com os dados mais recentes.</p>
+    <AppThemeScope preference={isInternalPath ? null : 'system'}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          padding: '32px',
+          background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--app-bg) 100%)',
+          color: 'var(--text-1)',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Carregando sua sessão...</p>
+          <p style={{ margin: '8px 0 0', color: 'var(--text-2)' }}>Preparando a aplicação com os dados mais recentes.</p>
+        </div>
       </div>
-    </div>
+    </AppThemeScope>
   )
 }
 
@@ -53,11 +114,63 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path={ROUTES.home} element={<LandingPage />} />
-      <Route path={ROUTES.login} element={<Auth initialMode="login" />} />
-      <Route path={ROUTES.register} element={<Auth initialMode="register" />} />
-      <Route path={ROUTES.forgot} element={<PasswordRecovery mode="forgot" />} />
-      <Route path={ROUTES.reset} element={<PasswordRecovery mode="reset" />} />
+      <Route
+        path={ROUTES.home}
+        element={(
+          <AppThemeScope preference="system">
+            <LandingPage />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.login}
+        element={(
+          <AppThemeScope preference="system">
+            <Auth initialMode="login" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.register}
+        element={(
+          <AppThemeScope preference="system">
+            <Auth initialMode="register" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.oauthCallback}
+        element={(
+          <AppThemeScope preference="system">
+            <OAuthCallback />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.forgot}
+        element={(
+          <AppThemeScope preference="system">
+            <PasswordRecovery mode="forgot" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path={ROUTES.reset}
+        element={(
+          <AppThemeScope preference="system">
+            <PasswordRecovery mode="reset" />
+          </AppThemeScope>
+        )}
+      />
+      <Route
+        path="/plans/invites/:token"
+        element={(
+          <AppThemeScope preference="system">
+            <InviteAccept />
+          </AppThemeScope>
+        )}
+      />
+      <Route path="/app" element={<PreferredAppEntryRedirect />} />
       <Route path={ROUTES.workspace} element={<Workspace />} />
       <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
       <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />
@@ -65,9 +178,18 @@ export default function App() {
       <Route path={`${ROUTES.canvas}/:planId`} element={<CanvasPage />} />
       <Route path={ROUTES.calendar} element={<CalendarPage />} />
       <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
+      <Route path={ROUTES.settings} element={<SettingsPage />} />
 
       {Object.entries(INFO_PAGES).map(([path, page]) => (
-        <Route key={path} path={path} element={<InfoPage {...page} />} />
+        <Route
+          key={path}
+          path={path}
+          element={(
+            <AppThemeScope preference="system">
+              <InfoPage {...page} />
+            </AppThemeScope>
+          )}
+        />
       ))}
 
       {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import {
   buildCanvasSavePayload,
@@ -25,10 +26,20 @@ function setPlanById(plans, planId, updater) {
 
 export function PlansProvider({ children }) {
   const { accessToken, isAuthenticated, isDemoSession, currentUser, workspace, isReady } = useAuth()
+  const { generalPreferences } = usePreferences()
   const backendEnabled = isAuthenticated && !isDemoSession
   const [plans, setPlans] = useState([])
   const [activePlanId, setActivePlanId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const boardMappingOptions = useMemo(() => ({
+    locale: generalPreferences.language,
+    timeZone: generalPreferences.timezone,
+    dateFormat: generalPreferences.dateFormat,
+  }), [
+    generalPreferences.dateFormat,
+    generalPreferences.language,
+    generalPreferences.timezone,
+  ])
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
   const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
@@ -202,6 +213,56 @@ export function PlansProvider({ children }) {
     return mergedPlan
   }, [accessToken, backendEnabled, getPlanById, plansById])
 
+  const refreshPlanDetails = useCallback(async (planId) => {
+    if (!backendEnabled) {
+      return getPlanById(planId)
+    }
+
+    if (!planId) {
+      return null
+    }
+
+    const currentPlan = plansById.get(planId)
+    if (!currentPlan) return null
+
+    const details = await apiRequest(`/api/plans/${planId}`, {
+      token: accessToken,
+    })
+
+    let mergedPlan = null
+    setPlans((prev) => prev.map((plan) => {
+      if (plan.id !== planId) return plan
+      mergedPlan = mergePlanDetails(plan, details)
+      return mergedPlan
+    }))
+    return mergedPlan
+  }, [accessToken, backendEnabled, getPlanById, plansById])
+
+  const refreshPlans = useCallback(async ({ selectPlanId } = {}) => {
+    if (mode !== 'backend') {
+      return plans
+    }
+
+    const summaries = await apiRequest('/api/plans', {
+      token: accessToken,
+    })
+
+    const mappedPlans = summaries.map((summary, index) => mapPlanSummaryToRecord(summary, index))
+    setPlans(mappedPlans)
+
+    setActivePlanId((current) => {
+      if (selectPlanId && mappedPlans.some((plan) => plan.id === selectPlanId)) {
+        return selectPlanId
+      }
+      if (current && mappedPlans.some((plan) => plan.id === current)) {
+        return current
+      }
+      return mappedPlans[0]?.id ?? null
+    })
+
+    return mappedPlans
+  }, [accessToken, mode, plans])
+
   const loadPlanBoard = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {
       return getPlanById(planId)?.boardColumns ?? []
@@ -213,17 +274,17 @@ export function PlansProvider({ children }) {
     })
 
     setPlans((prev) => prev.map((plan) => (
-      plan.id === planId ? mergeBoardIntoPlan(plan, boardView) : plan
+      plan.id === planId ? mergeBoardIntoPlan(plan, boardView, boardMappingOptions) : plan
     )))
 
-    return mapBoardViewToColumns(boardView)
-  }, [accessToken, backendEnabled, ensurePlanDetails, getPlanById])
+    return mapBoardViewToColumns(boardView, boardMappingOptions)
+  }, [accessToken, backendEnabled, boardMappingOptions, ensurePlanDetails, getPlanById])
 
   const applyBoardView = useCallback((planId, boardView) => {
     setPlans((prev) => prev.map((plan) => (
-      plan.id === planId ? mergeBoardIntoPlan(plan, boardView) : plan
+      plan.id === planId ? mergeBoardIntoPlan(plan, boardView, boardMappingOptions) : plan
     )))
-  }, [])
+  }, [boardMappingOptions])
 
   const loadPlanCanvas = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {
@@ -293,6 +354,8 @@ export function PlansProvider({ children }) {
     updatePlanBoard,
     updatePlanCanvas,
     ensurePlanDetails,
+    refreshPlanDetails,
+    refreshPlans,
     loadPlanBoard,
     applyBoardView,
     loadPlanCanvas,
@@ -306,6 +369,8 @@ export function PlansProvider({ children }) {
     deletePlan,
     currentUser,
     ensurePlanDetails,
+    refreshPlanDetails,
+    refreshPlans,
     getPlanById,
     isLoading,
     loadPlanBoard,

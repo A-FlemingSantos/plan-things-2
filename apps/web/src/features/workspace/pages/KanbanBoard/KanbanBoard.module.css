@@ -8,7 +8,8 @@
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
-  background: var(--color-white);
+  background: var(--app-bg);
+  color: var(--text-1);
   transition: grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -25,8 +26,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-gray-200);
-  background: var(--color-white);
+  border-right: 1px solid var(--border-1);
+  background: var(--surface-1);
   overflow: hidden;
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
   width: 240px;
@@ -55,7 +56,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  color: var(--color-black);
+  color: var(--text-1);
   flex: 1;
   min-width: 0;
   transition: opacity var(--transition-fast);
@@ -66,8 +67,8 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,11 +94,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.collapseBtn:hover { background: var(--color-gray-100); color: var(--color-black); }
+.collapseBtn:hover { background: var(--hover); color: var(--text-1); }
 
 .collapseBtnIcon {
   display: flex;
@@ -111,8 +112,8 @@
   gap: 8px;
   padding: 7px 8px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-gray-200);
-  background: var(--color-gray-50);
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
   cursor: pointer;
   font-family: var(--font-family);
   width: 100%;
@@ -121,22 +122,22 @@
   max-height: 44px;
   margin-bottom: 4px;
 }
-.workspacePicker:hover { border-color: var(--color-gray-300); }
+.workspacePicker:hover { border-color: var(--border-2); }
 .workspacePickerHidden { opacity: 0; max-height: 0; padding: 0 8px; margin-bottom: 0; border-color: transparent; pointer-events: none; }
 
 .wsAvatar {
   width: 20px; height: 20px;
   border-radius: 5px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   font-size: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.wsName { font-size: 12px; color: var(--color-gray-800); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wsChevron { color: var(--color-gray-400); display: flex; flex-shrink: 0; }
+.wsName { font-size: 12px; color: var(--text-2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wsChevron { color: var(--text-3); display: flex; flex-shrink: 0; }
 
 .nav { display: flex; flex-direction: column; gap: 1px; }
 
@@ -148,15 +149,15 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 13px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
 }
-.navItem:hover { background: var(--color-gray-100); color: var(--color-black); }
-.navItemActive { background: var(--color-black) !important; color: var(--color-white) !important; }
+.navItem:hover { background: var(--hover); color: var(--text-1); }
+.navItemActive { background: var(--text-1) !important; color: var(--text-inverse) !important; }
 
 .navIcon { display: flex; align-items: center; flex-shrink: 0; width: 16px; }
 .navLabel { opacity: 1; transition: opacity 200ms ease; }
@@ -168,7 +169,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 14px 10px 10px;
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--border-1);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -180,7 +181,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--color-gray-300);
+  color: var(--text-3);
   margin-bottom: 4px;
   padding: 0 4px;
 }
@@ -193,22 +194,22 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 12px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   cursor: pointer;
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.sidebarPlanItem:hover { background: var(--color-gray-100); color: var(--color-black); }
-.sidebarPlanItemActive { background: var(--color-gray-100); color: var(--color-black); }
+.sidebarPlanItem:hover { background: var(--hover); color: var(--text-1); }
+.sidebarPlanItemActive { background: var(--hover); color: var(--text-1); }
 
 .sidebarPlanDot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .sidebarPlanName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .userSection {
   padding: 10px;
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--border-1);
 }
 
 .userBtn {
@@ -223,15 +224,15 @@
   transition: background var(--transition-fast);
   overflow: hidden;
 }
-.userBtn:hover { background: var(--color-gray-100); }
-.userBtnActive { background: var(--color-gray-100); }
+.userBtn:hover { background: var(--hover); }
+.userBtnActive { background: var(--hover); }
 .userBtnCollapsed { justify-content: center; }
 
 .userAvatar {
   width: 28px; height: 28px;
   border-radius: 50%;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   font-size: 10px;
   display: flex;
   align-items: center;
@@ -243,8 +244,8 @@
 .userDetails { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; transition: opacity 200ms ease; }
 .sidebarCollapsed .userDetails { opacity: 0; }
 
-.userName { font-size: 12px; font-weight: var(--font-weight-regular); color: var(--color-black); white-space: nowrap; }
-.userPlan  { font-size: 11px; color: var(--color-gray-400); font-weight: var(--font-weight-light); }
+.userName { font-size: 12px; font-weight: var(--font-weight-regular); color: var(--text-1); white-space: nowrap; }
+.userPlan  { font-size: 11px; color: var(--text-3); font-weight: var(--font-weight-light); }
 
 /* ════════════════════════════════════════
    BOARD WRAPPER
@@ -255,7 +256,7 @@
   min-height: 100vh;
   min-width: 0;
   overflow: hidden;
-  background: var(--color-gray-50);
+  background: var(--app-bg);
   transition: gap 220ms ease, padding 220ms ease;
 }
 
@@ -272,9 +273,9 @@
   overflow: hidden;
   position: relative;
   background:
-    linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,0)),
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,.12), transparent 35%),
-    var(--cover-bg, var(--cover-fallback, var(--color-gray-50)));
+    linear-gradient(135deg, var(--cover-shine-1), transparent),
+    radial-gradient(circle at 20% 20%, var(--cover-shine-2), transparent 35%),
+    var(--cover-bg, var(--cover-fallback, var(--surface-2)));
   background-position: 50% 50%, 20% 20%, 50% 50%;
   background-size: 210% 210%, 260% 260%, 210% 210%;
   transition: border-radius 180ms ease, border-color 180ms ease;
@@ -286,7 +287,7 @@
 
 .boardWrapperPlannerMounted .boardMain {
   min-height: calc(100vh - 24px);
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -302,11 +303,11 @@
   align-items: flex-end;
   justify-content: space-between;
   padding: 24px 32px 20px;
-  border-bottom: 1px solid var(--color-gray-100);
+  border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
   gap: 20px;
   flex-wrap: wrap;
-  background: var(--color-white);
+  background: var(--surface-1);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -319,12 +320,12 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
-.boardBreadcrumbLink { color: var(--color-gray-400); transition: color var(--transition-fast); }
-.boardBreadcrumbLink:hover { color: var(--color-black); }
-.boardBreadcrumbSep { color: var(--color-gray-300); }
-.boardBreadcrumbCurrent { color: var(--color-gray-600); }
+.boardBreadcrumbLink { color: var(--text-3); transition: color var(--transition-fast); }
+.boardBreadcrumbLink:hover { color: var(--text-1); }
+.boardBreadcrumbSep { color: var(--border-2); }
+.boardBreadcrumbCurrent { color: var(--text-2); }
 
 .boardTitleRow {
   display: flex;
@@ -333,7 +334,7 @@
 }
 
 .boardIcon {
-  color: var(--color-gray-400);
+  color: var(--text-3);
   display: flex;
   flex-shrink: 0;
 }
@@ -342,14 +343,14 @@
   font-size: 20px;
   font-weight: var(--font-weight-regular);
   letter-spacing: -.03em;
-  color: var(--color-black);
+  color: var(--text-1);
   line-height: 1;
 }
 
 .boardCardBadge {
   font-size: 11px;
-  color: var(--color-gray-400);
-  background: var(--color-gray-100);
+  color: var(--text-3);
+  background: var(--surface-3);
   padding: 2px 8px;
   border-radius: 99px;
   font-weight: var(--font-weight-regular);
@@ -367,8 +368,8 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 2px solid var(--color-white);
-  color: var(--color-white);
+  border: 2px solid var(--surface-1);
+  color: var(--text-on-accent);
   font-size: 10px;
   display: flex;
   align-items: center;
@@ -385,22 +386,22 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 1.5px dashed var(--color-gray-300);
-  background: var(--color-white);
-  color: var(--color-gray-400);
+  border: 1.5px dashed var(--border-2);
+  background: var(--surface-2);
+  color: var(--text-3);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   margin-left: -7px;
-  transition: border-color var(--transition-fast), color var(--transition-fast);
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
 }
-.boardMemberAdd:hover { border-color: var(--color-black); color: var(--color-black); }
+.boardMemberAdd:hover { border-color: var(--text-1); color: var(--text-1); background: var(--hover); }
 
 .boardHeaderDivider {
   width: 1px;
   height: 20px;
-  background: var(--color-gray-200);
+  background: var(--border-1);
 }
 
 .boardHeaderBtn {
@@ -412,14 +413,14 @@
   font-family: var(--font-family);
   font-size: 12px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-600);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
-.boardHeaderBtn:hover { border-color: var(--color-gray-400); color: var(--color-black); }
+.boardHeaderBtn:hover { border-color: var(--border-2); color: var(--text-1); }
 
 .boardHeaderBtnPrimary {
   display: inline-flex;
@@ -430,13 +431,215 @@
   font-family: var(--font-family);
   font-size: 12px;
   font-weight: var(--font-weight-regular);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: opacity var(--transition-fast);
 }
 .boardHeaderBtnPrimary:hover { opacity: .82; }
+
+/* ── Members panel (collapsible) ── */
+.planMembersPanel {
+  width: 100%;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: max-height 0.22s ease, opacity 0.18s ease;
+}
+
+.planMembersPanelOpen {
+  max-height: 420px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Members menu (dropdown) ── */
+.planMembersMenu {
+  position: fixed;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(340px, calc(100vh - 120px));
+  overflow: auto;
+  border: 1px solid var(--border-1);
+  border-radius: 14px;
+  background: var(--surface-1);
+  box-shadow: 0 18px 60px rgba(0,0,0,.25);
+  z-index: 20;
+}
+
+.planMembersPanelInner {
+  padding: 10px 12px 12px;
+  background: var(--surface-1);
+}
+
+.planMembersTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 2px 0 10px;
+}
+
+.planMembersTab {
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.planMembersTab span {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--text-1);
+  color: var(--text-inverse);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.planMembersTabActive {
+  background: var(--text-1);
+  color: var(--text-inverse);
+  border-color: var(--text-1);
+}
+
+.planMembersTabActive span {
+  background: var(--surface-1);
+  color: var(--text-1);
+}
+
+.planMembersEmpty {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.planMembersList {
+  display: flex;
+  flex-direction: column;
+}
+
+.planInvitesList {
+  display: grid;
+  gap: 6px;
+}
+
+.planMemberRow,
+.planInviteRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-radius: 10px;
+}
+
+.planMemberRow:hover,
+.planInviteRow:hover {
+  background: var(--hover);
+}
+
+.planMemberAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--surface-1);
+  display: grid;
+  place-items: center;
+  color: var(--text-on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.planMemberInfo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.planInviteInfo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.planMemberName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planMemberEmail {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planMemberRole {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-3);
+  background: transparent;
+  border: 1px solid var(--border-1);
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.planInviteStatus {
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.planInviteStatusPending {
+  background: color-mix(in srgb, var(--color-blue) 14%, transparent);
+  color: var(--color-blue);
+}
+
+.planMemberRemove {
+  margin-left: 10px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border-1);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.planMemberRemove:hover {
+  background: var(--hover);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.planMemberRemove:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
 
 /* ════════════════════════════════════════
    BOARD CANVAS
@@ -506,12 +709,12 @@
 
 .board::-webkit-scrollbar { height: 6px; }
 .board::-webkit-scrollbar-track { background: transparent; }
-.board::-webkit-scrollbar-thumb { background: var(--color-gray-300); border-radius: 99px; }
+.board::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
 
 .boardLoadingBlock {
   display: block;
   border-radius: 999px;
-  background: linear-gradient(90deg, #ebebeb 0%, #f6f6f6 50%, #ebebeb 100%);
+  background: linear-gradient(90deg, var(--skeleton-1) 0%, var(--skeleton-2) 50%, var(--skeleton-1) 100%);
   background-size: 200% 100%;
   animation: boardLoadingPulse 1.2s ease-in-out infinite;
 }
@@ -524,8 +727,8 @@
   gap: 12px;
   padding: 14px;
   border-radius: 14px;
-  border: 1px solid var(--color-gray-200);
-  background: rgba(255,255,255,.88);
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
   box-shadow: var(--shadow-sm);
 }
 
@@ -558,8 +761,8 @@
   gap: 9px;
   padding: 14px;
   border-radius: 12px;
-  border: 1px solid var(--color-gray-100);
-  background: var(--color-white);
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
 }
 
 .boardLoadingCardTitle {
@@ -581,8 +784,8 @@
   margin: 28px 32px 112px;
   padding: 18px;
   border-radius: 12px;
-  border: 1px solid var(--color-gray-200);
-  background: var(--color-white);
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
@@ -592,13 +795,13 @@
 .boardStatusTitle {
   font-size: 15px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   margin: 0;
 }
 
 .boardStatusText {
   font-size: 13px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   line-height: 1.5;
   margin: 0;
 }
@@ -608,9 +811,9 @@
   height: 32px;
   padding: 0 12px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-gray-200);
-  background: var(--color-white);
-  color: var(--color-gray-700);
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 12px;
   cursor: pointer;
@@ -618,8 +821,8 @@
 }
 
 .boardStatusRetry:hover {
-  border-color: var(--color-gray-400);
-  color: var(--color-black);
+  border-color: var(--border-2);
+  color: var(--text-1);
 }
 
 .boardViewToolbar {
@@ -634,10 +837,10 @@
   width: max-content;
   max-width: min(620px, calc(100% - 48px));
   padding: 5px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 8px;
-  background: rgba(255, 255, 255, .94);
-  box-shadow: 0 16px 48px rgba(15, 23, 42, .14), 0 2px 8px rgba(15, 23, 42, .08);
+  background: var(--frosted-bg);
+  box-shadow: var(--shadow-lg);
   backdrop-filter: blur(18px);
   overflow: visible;
   animation: toolbarEnter 180ms ease both;
@@ -652,7 +855,7 @@
   height: 34px;
   padding: 0 12px;
   border-radius: 6px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
@@ -662,14 +865,14 @@
 }
 
 .boardViewToolbarItem:hover {
-  background: var(--color-gray-100);
-  color: var(--color-black);
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .boardViewToolbarItemActive,
 .boardViewToolbarItemActive:hover {
-  background: rgba(66, 144, 218, .12);
-  color: var(--color-blue);
+  background: color-mix(in srgb, var(--focus-ring) 12%, transparent);
+  color: var(--focus-ring);
 }
 
 .boardViewSwitcher {
@@ -685,10 +888,10 @@
   max-height: min(320px, calc(100vh - 180px));
   overflow-y: auto;
   padding: 6px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 8px;
-  background: var(--color-white);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, .16), 0 2px 8px rgba(15, 23, 42, .08);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
   animation: menuRise 160ms ease both;
 }
 
@@ -700,7 +903,7 @@
   min-height: 34px;
   padding: 7px 9px;
   border-radius: 6px;
-  color: var(--color-gray-700);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 13px;
   text-align: left;
@@ -710,8 +913,8 @@
 
 .boardViewMenuItem:hover,
 .boardViewMenuItemActive {
-  background: var(--color-gray-100);
-  color: var(--color-black);
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .boardViewMenuDot {
@@ -730,7 +933,7 @@
 
 .boardViewMenuEmpty {
   padding: 10px 9px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-size: 12px;
 }
 
@@ -756,12 +959,12 @@
   transform: translateX(-50%);
   z-index: 700;
   padding: 10px 18px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: 999px;
   font-size: 12px;
   font-weight: var(--font-weight-regular);
-  box-shadow: 0 12px 32px rgba(0,0,0,.16);
+  box-shadow: var(--shadow-lg);
   animation: fadeUp 0.2s ease both;
 }
 
@@ -776,10 +979,10 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 8px;
-  background: var(--color-white);
-  box-shadow: 0 12px 36px rgba(15, 23, 42, .08);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
   animation: plannerPanelIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transform: translateX(0);
   opacity: 1;
@@ -810,24 +1013,155 @@
   justify-content: space-between;
   gap: 16px;
   padding: 22px 22px 18px;
-  border-bottom: 1px solid var(--color-gray-100);
+  border-bottom: 1px solid var(--border-1);
 }
 
 .plannerEyebrow {
   display: block;
   margin-bottom: 6px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .08em;
 }
 
 .plannerPanelHeader h2 {
-  color: var(--color-black);
+  color: var(--text-1);
   font-size: 20px;
   font-weight: var(--font-weight-regular);
   letter-spacing: -.02em;
   line-height: 1.2;
+}
+
+.plannerTitleWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.plannerTitleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  margin: -6px -10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 20px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px transparent;
+  transition: box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.plannerTitleButton:hover {
+  background: color-mix(in srgb, var(--surface-3) 65%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-3) 38%, transparent);
+}
+
+.plannerTitleButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.plannerTitleCount {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plannerTitleChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transform: rotate(90deg);
+  transition: transform 180ms ease, color var(--transition-fast);
+}
+
+.plannerTitleButton[aria-expanded="true"] .plannerTitleChevron {
+  transform: rotate(-90deg);
+  color: var(--text-1);
+}
+
+.plannerFilterMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 260px;
+  padding: 10px 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
+  z-index: 40;
+}
+
+.plannerFilterItem {
+  width: 100%;
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 18px;
+  border-radius: 10px;
+  color: var(--text-1);
+  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.plannerFilterItem::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--planner-filter-accent, var(--focus-ring));
+  opacity: 0;
+}
+
+.plannerFilterItemActive::before {
+  opacity: 1;
+}
+
+.plannerFilterItem:hover {
+  background: var(--hover);
+}
+
+.plannerFilterItem svg {
+  width: 15px;
+  height: 15px;
+  color: var(--planner-filter-accent, var(--text-2));
+}
+
+.plannerFilterCount {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .plannerCloseButton {
@@ -837,124 +1171,253 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   flex: 0 0 auto;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .plannerCloseButton:hover {
-  background: var(--color-gray-100);
-  color: var(--color-black);
+  background: var(--hover);
+  color: var(--text-1);
 }
 
-.plannerSummary {
+.plannerList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px 18px;
+}
+
+.plannerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plannerSectionHeaderBtn {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 22px 10px;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-2);
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-.plannerSummaryToggle {
+.plannerSectionHeaderBtn:hover {
+  background: color-mix(in srgb, var(--surface-3) 55%, transparent);
+  border-color: color-mix(in srgb, var(--text-3) 38%, transparent);
+  color: var(--text-1);
+}
+
+.plannerSectionChevron {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: var(--color-black);
-  font-size: 14px;
-  font-weight: var(--font-weight-regular);
-  cursor: pointer;
-}
-
-.plannerSummaryToggle svg {
-  transform: rotate(90deg);
-  transition: transform 180ms ease;
-}
-
-.plannerSummaryToggle[aria-expanded="false"] svg {
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-3);
   transform: rotate(0deg);
+  transition: transform 180ms ease, color var(--transition-fast);
 }
 
-.plannerSummary span {
-  color: var(--color-gray-400);
-  font-size: 12px;
+.plannerSectionHeaderBtn[aria-expanded="true"] .plannerSectionChevron {
+  transform: rotate(90deg);
+  color: var(--text-1);
 }
 
-.plannerAgendaList {
-  max-height: 220px;
-  overflow: hidden;
-  transition: max-height 220ms ease, opacity 180ms ease, padding 220ms ease;
+.plannerSectionTitle {
+  flex: 1 1 auto;
+  text-align: left;
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.01em;
+  color: inherit;
 }
 
-.plannerAgendaListCollapsed {
-  max-height: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.plannerAgendaListInner {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0 22px 12px;
-}
-
-.plannerAgendaItem,
-.plannerAgendaEmpty {
-  display: grid;
-  grid-template-columns: 78px minmax(0, 1fr);
+.plannerSectionCount {
+  flex: 0 0 auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
   align-items: center;
-  gap: 4px 8px;
-  min-height: 42px;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--event-color, var(--color-gray-300)) 28%, var(--color-gray-200));
-  border-left: 3px solid var(--event-color, var(--color-blue));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--event-color, var(--color-gray-200)) 9%, white);
-}
-
-.plannerAgendaItem span {
-  color: var(--event-color, var(--color-blue));
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
-.plannerAgendaItem strong,
-.plannerAgendaEmpty strong {
+.plannerSectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plannerListItem {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.plannerListItem:hover {
+  background: color-mix(in srgb, var(--surface-3) 55%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--border-2) 60%, var(--border-1));
+}
+
+.plannerListItem:active {
+  transform: translateY(1px);
+}
+
+.plannerListItemCompleted .plannerListTitle {
+  text-decoration: line-through;
+  color: var(--text-2);
+}
+
+.plannerListLeft,
+.plannerListRight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plannerListBody {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-black);
-  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plannerListTitle {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 14px;
   font-weight: var(--font-weight-regular);
-  line-height: 1.3;
-}
-
-.plannerAgendaItem p,
-.plannerAgendaEmpty p {
-  grid-column: 2;
-  min-width: 0;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-gray-500);
-  font-size: 11px;
-  line-height: 1.4;
 }
 
-.plannerAgendaEmpty {
-  border-color: var(--color-gray-200);
-  border-left-color: var(--color-gray-300);
-  background: var(--color-gray-50);
-  color: var(--color-gray-400);
+.plannerListMeta {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.plannerAgendaEmpty svg {
-  justify-self: center;
+.plannerCheckbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border-2);
+  background: transparent;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.plannerCheckbox:hover {
+  border-color: var(--text-3);
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.plannerCheckboxChecked {
+  border-color: var(--focus-ring);
+  background: var(--focus-ring);
+  color: var(--text-inverse);
+}
+
+.plannerEventDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.plannerEventDot svg {
+  width: 13px;
+  height: 13px;
+}
+
+.plannerStarBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.plannerStarBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.plannerStarBtnActive {
+  color: var(--text-1);
+}
+
+.plannerEmptyState {
+  flex: 1;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 24px 22px;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.plannerEmptyState strong {
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+}
+
+.plannerEmptyState p {
+  margin: 0;
+  max-width: 280px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .inboxPanel {
-  background: #eaf3ff;
+  background: color-mix(in srgb, var(--focus-ring) 10%, var(--surface-2));
+}
+
+.inboxPanelDropActive {
+  background: color-mix(in srgb, var(--focus-ring) 18%, var(--surface-2));
 }
 
 .inboxPanelHeader {
@@ -971,121 +1434,319 @@
   align-items: center;
   min-width: 0;
   gap: 9px;
-  color: #10254a;
+  color: var(--text-1);
 }
 
 .inboxPanelTitle h2 {
-  color: #10254a;
+  color: var(--text-1);
   font-size: 18px;
   font-weight: var(--font-weight-regular);
   line-height: 1.1;
 }
 
-.inboxAddCardButton {
-  height: 38px;
-  margin: 0 12px 30px;
-  padding: 0 14px;
-  border: 1px solid rgba(16, 37, 74, .16);
-  border-radius: 8px;
-  background: var(--color-white);
-  color: #5a6680;
-  font-size: 14px;
-  text-align: left;
-  box-shadow: 0 1px 2px rgba(16, 37, 74, .08);
-}
-
-.inboxAddCardButton:hover {
-  color: #10254a;
-  border-color: rgba(16, 37, 74, .26);
-}
-
-.inboxEmptyState {
+.inboxDropZone {
   display: flex;
-  flex: 1;
-  min-height: 420px;
+  min-height: 190px;
+  margin: 0 14px;
   flex-direction: column;
   align-items: center;
-  gap: 30px;
-  padding: 0 30px;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 24px;
+  border: 1px dashed color-mix(in srgb, var(--focus-ring) 55%, var(--border-1));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+  color: var(--text-2);
   text-align: center;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
-.inboxEmptyState h3 {
-  color: #10254a;
-  font-size: 17px;
+.inboxPanelDropActive .inboxDropZone {
+  border-color: var(--focus-ring);
+  background: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-1));
+  color: var(--text-1);
+}
+
+.inboxDropZone svg {
+  color: var(--focus-ring);
+}
+
+.inboxDropZone strong {
+  color: var(--text-1);
+  font-size: 15px;
   font-weight: var(--font-weight-regular);
   line-height: 1.3;
 }
 
-.inboxEmptyState p {
+.inboxDropZone p {
   max-width: 280px;
-  margin-top: 10px;
-  color: #5d6b86;
+  color: var(--text-2);
   font-size: 13px;
   line-height: 1.55;
 }
 
-.inboxAppsIllustration {
-  position: relative;
-  width: min(260px, 100%);
-  height: 220px;
+.inboxRecipientPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 16px 14px 0;
+  padding: 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-xs);
 }
 
-.inboxAppsIllustration::before {
-  content: "";
-  position: absolute;
-  inset: 36px 28px 28px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(66, 144, 218, .12), transparent 58%),
-    radial-gradient(circle at 30% 70%, rgba(15, 112, 58, .1), transparent 42%);
+.inboxRecipientHeader {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
-.inboxAppBubble {
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  display: inline-flex;
+.inboxRecipientHeader span {
+  color: var(--text-3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.inboxRecipientHeader strong {
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inboxRecipientList {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.inboxRecipientRow {
+  display: grid;
+  grid-template-columns: auto 28px minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, .72);
-  box-shadow: 0 12px 28px rgba(16, 37, 74, .08);
-  font-size: 17px;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.inboxRecipientRow:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.inboxRecipientRow input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--focus-ring);
+}
+
+.inboxRecipientInfo {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.inboxRecipientInfo strong,
+.inboxRecipientInfo small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inboxRecipientInfo strong {
+  color: var(--text-1);
+  font-size: 13px;
   font-weight: var(--font-weight-regular);
 }
 
-.inboxAppBubbleMail {
-  top: 12px;
-  left: 84px;
-  width: 64px;
-  height: 64px;
-  color: #2b7fff;
+.inboxRecipientInfo small {
+  color: var(--text-3);
+  font-size: 12px;
 }
 
-.inboxAppBubbleGmail {
-  top: 78px;
-  right: 14px;
-  color: #d93025;
+.inboxRecipientsEmpty {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
-.inboxAppBubbleOutlook {
-  top: 96px;
-  left: 92px;
-  color: #0f6cbd;
+.inboxRecipientActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
-.inboxAppBubbleSlack {
-  left: 22px;
-  bottom: 48px;
-  color: #0f703a;
+.inboxPrimaryButton,
+.inboxSecondaryButton {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 7px;
+  font-size: 13px;
 }
 
-.inboxAppBubbleTeams {
-  right: 36px;
-  bottom: 28px;
-  color: #6c4bd2;
+.inboxPrimaryButton {
+  border: 1px solid #111827;
+  background: #111827;
+  color: #fff;
+}
+
+.inboxPrimaryButton:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.inboxSecondaryButton {
+  border: 1px solid var(--border-1);
+  background: transparent;
+  color: var(--text-2);
+}
+
+.inboxSecondaryButton:hover {
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.inboxError {
+  margin: 14px 18px 0;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.inboxSentList {
+  display: grid;
+  gap: 10px;
+  margin: 16px 14px 0;
+  padding: 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.inboxSentListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.inboxSentListActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inboxSentListHeader span {
+  color: var(--text-3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.inboxSentListHeader strong {
+  min-width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+}
+
+.inboxClearButton {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border-1);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-3);
+}
+
+.inboxClearButton:hover:not(:disabled) {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b42318;
+}
+
+.inboxClearButton:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.inboxSentItems {
+  display: grid;
+  gap: 8px;
+  max-height: 250px;
+  overflow: auto;
+}
+
+.inboxSentCard {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid var(--border-1);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+}
+
+.inboxSentCardHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.inboxSentCardHeader strong {
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inboxSentCardHeader span {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.inboxSentCard p {
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inboxSentCard small {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.inboxSentEmpty {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .inboxPrivateNote {
@@ -1094,7 +1755,7 @@
   justify-content: center;
   gap: 14px;
   padding: 26px 24px 30px;
-  color: #5d6b86;
+  color: var(--text-2);
   font-size: 13px;
   line-height: 1.45;
   text-align: center;
@@ -1102,69 +1763,6 @@
 
 .inboxPrivateNote svg {
   flex: 0 0 auto;
-}
-
-.plannerTimeline {
-  position: relative;
-  flex: 0 0 600px;
-  min-height: 360px;
-  margin: 0 22px 22px;
-  overflow: hidden;
-  border: 1px solid var(--color-gray-200);
-  border-radius: 8px;
-  background: linear-gradient(180deg, var(--color-white), var(--color-gray-50));
-}
-
-.plannerTimelineRow {
-  display: grid;
-  grid-template-columns: 48px 1fr;
-  min-height: 60px;
-}
-
-.plannerTimelineRow span {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 9px 8px 0 0;
-  color: var(--color-gray-400);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-.plannerTimelineRow div {
-  border-left: 1px solid var(--color-gray-100);
-  border-bottom: 1px solid var(--color-gray-100);
-}
-
-.plannerTimelineEvent {
-  position: absolute;
-  left: 58px;
-  right: 14px;
-  top: var(--event-top);
-  min-height: var(--event-height);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  padding: 8px 10px;
-  border: 1px dashed var(--event-color, var(--color-blue));
-  border-left: 3px solid var(--event-color, var(--color-blue));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--event-color, var(--color-blue)) 9%, white);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
-}
-
-.plannerTimelineEvent span {
-  color: var(--event-color, var(--color-blue));
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-.plannerTimelineEvent strong {
-  color: var(--color-black);
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.25;
 }
 
 @keyframes plannerPanelIn {
@@ -1180,8 +1778,8 @@
   flex-direction: column;
   width: 272px;
   flex-shrink: 0;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
   overflow: visible;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -1194,8 +1792,8 @@
 }
 
 .columnDropTarget {
-  border-color: var(--color-blue);
-  box-shadow: 0 0 0 2px rgba(66, 144, 218, 0.18);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 
 /* Column header */
@@ -1204,7 +1802,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 14px 12px;
-  border-bottom: 1px solid var(--color-gray-100);
+  border-bottom: 1px solid var(--border-1);
   gap: 8px;
   flex-shrink: 0;
 }
@@ -1228,7 +1826,7 @@
 .colTitle {
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   letter-spacing: -.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -1239,19 +1837,19 @@
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   border: none;
   outline: none;
   background: transparent;
   width: 100%;
-  border-bottom: 1.5px solid var(--color-black);
+  border-bottom: 1.5px solid var(--text-1);
   padding-bottom: 1px;
 }
 
 .colCount {
   font-size: 11px;
-  color: var(--color-gray-400);
-  background: var(--color-gray-100);
+  color: var(--text-3);
+  background: var(--surface-3);
   border-radius: 99px;
   padding: 1px 6px;
   flex-shrink: 0;
@@ -1271,11 +1869,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.colActionBtn:hover { background: var(--color-gray-100); color: var(--color-black); }
+.colActionBtn:hover { background: var(--hover); color: var(--text-1); }
 
 /* Column menu */
 .colMenuWrap { position: relative; }
@@ -1284,8 +1882,8 @@
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--menu-bg);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   z-index: 50;
@@ -1307,15 +1905,15 @@
   padding: 8px 10px;
   font-family: var(--font-family);
   font-size: 12px;
-  color: var(--color-gray-800);
+  color: var(--text-2);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: background var(--transition-fast);
   white-space: nowrap;
 }
-.colMenuItem:hover { background: var(--color-gray-50); }
-.colMenuItemDanger { color: var(--color-red); }
-.colMenuItemDanger:hover { background: #fff0f0; }
+.colMenuItem:hover { background: var(--hover); }
+.colMenuItemDanger { color: var(--danger-text); }
+.colMenuItemDanger:hover { background: var(--danger-bg); }
 
 .colMenuColorOpt {
   display: inline-flex;
@@ -1326,7 +1924,7 @@
   border-radius: 4px;
   transition: background var(--transition-fast);
 }
-.colMenuColorOpt:hover { background: var(--color-gray-100); }
+.colMenuColorOpt:hover { background: var(--hover); }
 
 .colMenuColorDot {
   width: 16px;
@@ -1336,7 +1934,7 @@
 
 .colMenuDivider {
   height: 1px;
-  background: var(--color-gray-100);
+  background: var(--border-1);
   margin: 4px 0;
 }
 
@@ -1365,9 +1963,9 @@
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-black);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  color: var(--text-1);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   outline: none;
   resize: none;
@@ -1375,8 +1973,8 @@
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .addCardInput:focus {
-  border-color: var(--color-black);
-  box-shadow: 0 0 0 3px rgba(0,0,0,.05);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
 }
 
 .addCardActions {
@@ -1390,8 +1988,8 @@
   padding: 0 14px;
   font-family: var(--font-family);
   font-size: 12px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: opacity var(--transition-fast);
@@ -1406,11 +2004,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.addCardCancel:hover { background: var(--color-gray-100); color: var(--color-black); }
+.addCardCancel:hover { background: var(--hover); color: var(--text-1); }
 
 /* Add card button at column bottom */
 .colAddBtn {
@@ -1421,20 +2019,20 @@
   padding: 10px 14px;
   font-family: var(--font-family);
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--border-1);
   flex-shrink: 0;
 }
-.colAddBtn:hover { background: var(--color-gray-50); color: var(--color-black); }
+.colAddBtn:hover { background: var(--hover); color: var(--text-1); }
 
 /* ════════════════════════════════════════
    CARD
 ════════════════════════════════════════ */
 .card {
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   padding: 12px 13px;
   cursor: grab;
@@ -1456,7 +2054,7 @@
 
 .card:hover {
   box-shadow: var(--shadow-sm);
-  border-color: var(--color-gray-300);
+  border-color: var(--border-2);
   transform: translateY(-1px);
 }
 
@@ -1469,8 +2067,23 @@
 }
 
 .cardDropTarget {
-  border-color: var(--color-blue);
-  box-shadow: 0 0 0 2px rgba(66, 144, 218, 0.2) !important;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 20%, transparent) !important;
+  transform: none !important;
+}
+
+.cardFileDropTarget {
+  border-color: var(--focus-ring);
+  background: color-mix(in srgb, var(--surface-1) 78%, var(--focus-ring) 22%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 24%, transparent) !important;
+  transform: translateY(-1px);
+}
+
+.cardFileDropDisabled {
+  opacity: .42;
+  filter: grayscale(.2);
+  cursor: not-allowed;
+  box-shadow: none !important;
   transform: none !important;
 }
 
@@ -1489,7 +2102,7 @@
 .cardTitle {
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   line-height: 1.45;
   letter-spacing: -.01em;
 }
@@ -1506,8 +2119,8 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid var(--color-white);
-  color: var(--color-white);
+  border: 2px solid var(--surface-1);
+  color: var(--text-on-accent);
   font-size: 8px;
   display: flex;
   align-items: center;
@@ -1529,7 +2142,7 @@
   align-items: center;
   gap: 3px;
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .cardDue {
@@ -1537,12 +2150,12 @@
   align-items: center;
   gap: 3px;
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-light);
 }
 
 .cardDueUrgent {
-  color: var(--color-red);
+  color: var(--danger-text);
 }
 
 /* ════════════════════════════════════════
@@ -1562,9 +2175,9 @@
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-400);
-  background: rgba(255,255,255,.6);
-  border: 1.5px dashed var(--color-gray-300);
+  color: var(--text-3);
+  background: var(--surface-2);
+  border: 1.5px dashed var(--border-1);
   border-radius: var(--radius-xl);
   cursor: pointer;
   transition:
@@ -1574,14 +2187,14 @@
   white-space: nowrap;
 }
 .addColBtn:hover {
-  background: var(--color-white);
-  border-color: var(--color-black);
-  color: var(--color-black);
+  background: var(--hover);
+  border-color: var(--border-2);
+  color: var(--text-1);
 }
 
 .addColForm {
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
   padding: 12px 12px 10px;
   display: flex;
@@ -1601,23 +2214,23 @@
   padding: 0 10px;
   font-family: var(--font-family);
   font-size: 13px;
-  color: var(--color-black);
-  background: var(--color-gray-50);
-  border: 1px solid var(--color-gray-200);
+  color: var(--text-1);
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   outline: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .addColInput:focus {
-  border-color: var(--color-black);
-  box-shadow: 0 0 0 3px rgba(0,0,0,.05);
-  background: var(--color-white);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
+  background: var(--surface-1);
 }
 
 .inlineComposerError {
   margin: 0;
   font-size: 12px;
-  color: var(--color-red);
+  color: var(--danger-text);
   line-height: 1.45;
 }
 
@@ -1632,8 +2245,8 @@
   padding: 0 14px;
   font-family: var(--font-family);
   font-size: 12px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: opacity var(--transition-fast);
@@ -1648,11 +2261,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.addColCancel:hover { background: var(--color-gray-100); color: var(--color-black); }
+.addColCancel:hover { background: var(--hover); color: var(--text-1); }
 
 /* ════════════════════════════════════════
    MODAL OVERLAY
@@ -1665,7 +2278,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 36px 24px 24px;
-  background: rgba(0,0,0,.15);
+  background: var(--overlay-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   animation: overlayIn 0.18s ease both;
@@ -1689,10 +2302,10 @@
   width: 100%;
   max-width: 1100px;
   max-height: calc(100vh - 60px);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: 20px;
-  box-shadow: var(--shadow-lg), 0 48px 96px rgba(0,0,0,.14);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1712,15 +2325,161 @@
   to   { opacity: 0; transform: translateY(10px) scale(0.97); }
 }
 
+/* ── Invite modal ── */
+.inviteModal {
+  max-width: 560px;
+}
+
+.inviteBody {
+  padding: 18px 22px 22px;
+  display: grid;
+  gap: 14px;
+}
+
+.inviteField {
+  display: grid;
+  gap: 6px;
+}
+
+.inviteLabel {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.inviteInput {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  padding: 0 12px;
+  color: var(--text-1);
+  font-family: var(--font-family);
+  outline: none;
+}
+
+.inviteInput:focus {
+  border-color: var(--border-2);
+}
+
+.inviteError {
+  margin: 0;
+  color: var(--color-red);
+  font-size: 12px;
+}
+
+.inviteActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.inviteSubmit {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--text-1);
+  color: var(--text-inverse);
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.inviteSubmit:hover { opacity: .86; }
+
+.inviteSubmit:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.inviteCancel {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.inviteCancel:hover {
+  background: var(--hover);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.inviteResult {
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 12px 12px 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.inviteResultTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.inviteResultText {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.35;
+}
+
+.inviteMonospace {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: var(--text-1);
+  word-break: break-all;
+}
+
+.inviteResultActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.inviteCopy,
+.inviteCopySecondary {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.inviteCopy:hover,
+.inviteCopySecondary:hover {
+  background: var(--hover);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.inviteResultHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
 /* Modal header */
 .cmHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 22px;
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
-  background: linear-gradient(180deg, #fbfbfb 0%, #f6f6f6 100%);
+  background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%);
 }
 
 .cmHeaderLeft {
@@ -1733,9 +2492,9 @@
   height: 32px;
   padding: 0 10px 0 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-gray-200);
-  background: #ededee;
-  color: #2f3137;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 14px;
   display: inline-flex;
@@ -1746,7 +2505,7 @@
 
 .cmStatusBtnIcon {
   display: flex;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   transform: rotate(90deg);
 }
 
@@ -1763,11 +2522,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.cmIconBtn:hover { background: var(--color-gray-100); color: var(--color-black); }
+.cmIconBtn:hover { background: var(--hover); color: var(--text-1); }
 
 .cmBody {
   display: grid;
@@ -1782,7 +2541,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  border-right: 1px solid var(--color-gray-200);
+  border-right: 1px solid var(--border-1);
   min-width: 0;
 }
 
@@ -1796,7 +2555,7 @@
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 2px solid var(--color-gray-500);
+  border: 2px solid var(--border-2);
   flex-shrink: 0;
 }
 
@@ -1804,7 +2563,7 @@
   font-family: var(--font-family);
   font-size: 28px;
   font-weight: 700;
-  color: #26272c;
+  color: var(--text-1);
   letter-spacing: -.04em;
   line-height: 1.3;
   border: none;
@@ -1821,7 +2580,7 @@
   overflow: hidden;
 }
 .cmTitle:focus {
-  border-bottom-color: var(--color-black);
+  border-bottom-color: var(--text-1);
 }
 
 .cmActiveLabel {
@@ -1842,9 +2601,9 @@
   height: 34px;
   padding: 0 14px;
   border-radius: 6px;
-  border: 1px solid var(--color-gray-200);
-  background: var(--color-white);
-  color: #555b66;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 13px;
   display: inline-flex;
@@ -1855,22 +2614,22 @@
 }
 
 .cmToolbarBtn:hover {
-  border-color: var(--color-gray-300);
-  background: #f8f8f8;
-  color: #24262b;
+  border-color: var(--border-2);
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .cmToolbarBtnActive {
-  border-color: #bfd2ff;
-  background: #eef4ff;
-  color: #214fba;
+  border-color: var(--focus-ring);
+  background: color-mix(in srgb, var(--focus-ring) 10%, var(--surface-1));
+  color: var(--focus-ring);
 }
 
 .cmToolbarBtnChevron {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #565d69;
+  color: var(--text-3);
   flex-shrink: 0;
   transform: rotate(90deg);
 }
@@ -1891,7 +2650,7 @@
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  color: #2d3138;
+  color: var(--text-1);
   font-weight: 600;
 }
 
@@ -1899,9 +2658,9 @@
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 400;
-  color: var(--color-black);
-  background: #fff;
-  border: 1px solid #a6afbb;
+  color: var(--text-1);
+  background: var(--surface-1);
+  border: 1px solid var(--border-2);
   border-radius: 4px;
   outline: none;
   resize: none;
@@ -1912,11 +2671,11 @@
   max-height: 64px;
   overflow: hidden;
 }
-.cmDesc::placeholder { color: var(--color-gray-300); }
+.cmDesc::placeholder { color: var(--text-3); }
 .cmDesc:focus {
-  border-color: var(--color-black);
-  box-shadow: 0 0 0 3px rgba(0,0,0,.04);
-  background: var(--color-white);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px var(--focus-ring-glow);
+  background: var(--surface-1);
 }
 
 .cmSaveRow {
@@ -1950,21 +2709,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #2f343d;
+  color: var(--text-1);
 }
 
 .cmChecklistBlockTitle {
   font-size: 15px;
   font-weight: 700;
-  color: #2f343d;
+  color: var(--text-1);
 }
 
 .cmChecklistDeleteBtn {
   height: 34px;
   padding: 0 14px;
   border-radius: 6px;
-  background: #eceff3;
-  color: #4f5662;
+  background: var(--surface-3);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 14px;
   cursor: pointer;
@@ -1982,14 +2741,14 @@
 
 .cmChecklistProgressLabel {
   font-size: 13px;
-  color: #666d79;
+  color: var(--text-3);
 }
 
 .cmChecklistProgressBar {
   flex: 1;
   height: 8px;
   border-radius: 999px;
-  background: #eceff3;
+  background: var(--surface-3);
   overflow: hidden;
 }
 
@@ -1997,17 +2756,17 @@
   display: block;
   width: 0%;
   height: 100%;
-  background: #2563d8;
+  background: var(--focus-ring);
 }
 
 .cmChecklistItemInput {
   width: 100%;
   min-height: 40px;
   padding: 10px 12px;
-  border: 1px solid #3b6ff6;
+  border: 1px solid var(--focus-ring);
   border-radius: 4px;
-  background: #fff;
-  color: #38404b;
+  background: var(--surface-1);
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 14px;
   resize: vertical;
@@ -2030,9 +2789,9 @@
   width: 20px;
   height: 20px;
   border-radius: 2px;
-  border: 1px solid #9ea6b2;
-  background: #fff;
-  color: #fff;
+  border: 1px solid var(--border-2);
+  background: var(--surface-1);
+  color: var(--text-on-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2045,8 +2804,8 @@
 }
 
 .cmChecklistItemCheckboxActive {
-  background: #2563d8;
-  border-color: #2563d8;
+  background: var(--focus-ring);
+  border-color: var(--focus-ring);
 }
 
 .cmChecklistItemCheckbox svg {
@@ -2056,12 +2815,12 @@
 
 .cmChecklistItemText {
   font-size: 14px;
-  color: #2f343d;
+  color: var(--text-1);
   line-height: 1.45;
 }
 
 .cmChecklistItemTextChecked {
-  color: #7a818c;
+  color: var(--text-3);
   text-decoration: line-through;
 }
 
@@ -2076,8 +2835,8 @@
   height: 36px;
   padding: 0 14px;
   border-radius: 8px;
-  background: #eef1f5;
-  color: #3f4652;
+  background: var(--surface-3);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 500;
@@ -2088,8 +2847,8 @@
   height: 32px;
   padding: 0 14px;
   border-radius: 6px;
-  background: #2563d8;
-  color: #fff;
+  background: var(--focus-ring);
+  color: var(--text-on-accent);
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 700;
@@ -2101,7 +2860,7 @@
   height: 32px;
   padding: 0 2px;
   background: transparent;
-  color: #4e5662;
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 14px;
   display: inline-flex;
@@ -2114,7 +2873,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  color: var(--color-white);
+  color: var(--text-on-accent);
   font-size: 11px;
   display: flex;
   align-items: center;
@@ -2126,14 +2885,14 @@
 
 .cmCommentTime {
   font-size: 13px;
-  color: #2f68d8;
+  color: var(--focus-ring);
 }
 
 .cmSidebar {
   padding: 18px 0 0;
   display: flex;
   flex-direction: column;
-  background: #fbfbfb;
+  background: var(--surface-1);
 }
 
 .cmSidebarHeader {
@@ -2142,7 +2901,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 0 16px 12px;
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--border-1);
 }
 
 .cmSidebarTitle {
@@ -2150,7 +2909,7 @@
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  color: #2f3137;
+  color: var(--text-1);
   font-weight: 600;
 }
 
@@ -2158,8 +2917,8 @@
   height: 34px;
   padding: 0 14px;
   border-radius: 6px;
-  background: #ededee;
-  color: #3e4450;
+  background: var(--surface-2);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 13px;
   cursor: pointer;
@@ -2176,16 +2935,16 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-1);
   overflow: visible;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .cmCommentComposerBoxActive {
-  border-color: #2f68d8;
-  box-shadow: 0 0 0 1px #2f68d8;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring);
 }
 
 .cmCommentToolbar {
@@ -2195,8 +2954,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--color-gray-200);
-  background: #fff;
+  border-bottom: 1px solid var(--border-1);
+  background: var(--surface-1);
   z-index: 2;
   border-radius: 8px 8px 0 0;
 }
@@ -2218,7 +2977,7 @@
   padding: 0 10px;
   border-radius: 6px;
   background: transparent;
-  color: #3c4350;
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: 500;
@@ -2233,20 +2992,20 @@
 
 .cmCommentToolBtn:hover,
 .cmCommentToolIconBtn:hover {
-  background: #f3f4f6;
-  color: #23262d;
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .cmCommentToolBtnActive {
-  background: #eef4ff;
-  color: #214fba;
+  background: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-1));
+  color: var(--focus-ring);
 }
 
 .cmCommentToolBtnIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #565d69;
+  color: var(--text-3);
   transform: rotate(90deg);
   flex-shrink: 0;
 }
@@ -2268,10 +3027,10 @@
   z-index: 1200;
   width: 212px;
   padding: 8px 0;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.16);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -2284,7 +3043,7 @@
   justify-content: space-between;
   gap: 12px;
   background: transparent;
-  color: #23262d;
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 14px;
   text-align: left;
@@ -2293,15 +3052,15 @@
 }
 
 .cmTextMenuItem:hover {
-  background: #eef5ff;
+  background: var(--hover);
 }
 
 .cmTextMenuShortcut {
   flex-shrink: 0;
   padding: 3px 8px;
   border-radius: 6px;
-  background: #f2f3f5;
-  color: #69707c;
+  background: var(--surface-3);
+  color: var(--text-2);
   font-size: 12px;
 }
 
@@ -2310,10 +3069,10 @@
   z-index: 1200;
   width: 280px;
   padding: 10px 0;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.18);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -2330,20 +3089,20 @@
 }
 
 .cmInsertMenuItem:hover {
-  background: #eef5ff;
+  background: var(--hover);
 }
 
 .cmInsertMenuIcon {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  border: 1px solid var(--color-gray-200);
-  color: #4d5562;
+  border: 1px solid var(--border-1);
+  color: var(--text-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .cmInsertMenuContent {
@@ -2355,13 +3114,13 @@
 
 .cmInsertMenuLabel {
   font-size: 14px;
-  color: #22262d;
+  color: var(--text-1);
   font-weight: 600;
 }
 
 .cmInsertMenuDescription {
   font-size: 13px;
-  color: #6f7682;
+  color: var(--text-2);
   line-height: 1.35;
 }
 
@@ -2370,10 +3129,10 @@
   z-index: 1200;
   width: 256px;
   padding: 8px 0;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.18);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -2386,7 +3145,7 @@
   justify-content: space-between;
   gap: 12px;
   background: transparent;
-  color: #2a2e35;
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 14px;
   text-align: left;
@@ -2395,15 +3154,15 @@
 }
 
 .cmListMenuItem:hover {
-  background: #eef5ff;
+  background: var(--hover);
 }
 
 .cmListMenuShortcut {
   flex-shrink: 0;
   padding: 4px 8px;
   border-radius: 6px;
-  background: #f2f3f5;
-  color: #69707c;
+  background: var(--surface-3);
+  color: var(--text-2);
   font-size: 12px;
 }
 
@@ -2414,8 +3173,8 @@
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: 400;
-  color: var(--color-black);
-  background: #fff;
+  color: var(--text-1);
+  background: var(--surface-1);
   border: none;
   outline: none;
   resize: none;
@@ -2427,17 +3186,17 @@
   max-height: 160px;
   overflow-y: auto;
 }
-.cmCommentTextarea::placeholder { color: #7f8590; }
+.cmCommentTextarea::placeholder { color: var(--text-3); }
 .cmCommentTextarea:focus {
-  background: var(--color-white);
+  background: var(--surface-1);
 }
 
 .cmSendBtn {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2472,7 +3231,7 @@
 
 .cmActivityText {
   font-size: 13px;
-  color: #2e3138;
+  color: var(--text-1);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -2488,7 +3247,7 @@
 .cmActivityToggle {
   align-self: flex-start;
   background: transparent;
-  color: #2f68d8;
+  color: var(--focus-ring);
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: 500;
@@ -2505,8 +3264,8 @@
   flex-direction: column;
   gap: 18px;
   padding: 16px;
-  border-top: 1px solid var(--color-gray-200);
-  background: #fff;
+  border-top: 1px solid var(--border-1);
+  background: var(--surface-1);
 }
 
 .cmMeta {
@@ -2522,7 +3281,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-regular);
 }
 
@@ -2540,15 +3299,15 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 12px;
-  color: var(--color-gray-600);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  color: var(--text-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   cursor: pointer;
   transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
   width: 100%;
   text-align: left;
 }
-.cmLabelOpt:hover { border-color: var(--color-gray-300); color: var(--color-black); }
+.cmLabelOpt:hover { border-color: var(--border-2); color: var(--text-1); background: var(--hover); }
 
 .cmLabelDot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
@@ -2559,10 +3318,10 @@
   z-index: 1200;
   width: 220px;
   padding: 10px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.18);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
 }
 
 .cmLabelMenuList {
@@ -2576,9 +3335,9 @@
   width: 100%;
   padding: 9px 10px;
   border-radius: var(--radius-sm);
-  border: 1px dashed var(--color-gray-300);
-  background: #fafafa;
-  color: #4a5260;
+  border: 1px dashed var(--border-2);
+  background: var(--surface-2);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 13px;
   display: inline-flex;
@@ -2590,9 +3349,9 @@
 }
 
 .cmLabelMenuCreate:hover {
-  border-color: #b7c7ee;
-  background: #f4f7ff;
-  color: #214fba;
+  border-color: var(--focus-ring);
+  background: color-mix(in srgb, var(--focus-ring) 10%, var(--surface-2));
+  color: var(--focus-ring);
 }
 
 .cmLabelMenuCreateIcon {
@@ -2606,10 +3365,10 @@
   z-index: 1200;
   width: 240px;
   padding: 10px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.18);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
 }
 
 .cmMembersMenuCreate {
@@ -2617,9 +3376,9 @@
   width: 100%;
   padding: 9px 10px;
   border-radius: var(--radius-sm);
-  border: 1px dashed var(--color-gray-300);
-  background: #fafafa;
-  color: #4a5260;
+  border: 1px dashed var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
   font-family: var(--font-family);
   font-size: 13px;
   display: inline-flex;
@@ -2631,9 +3390,9 @@
 }
 
 .cmMembersMenuCreate:hover {
-  border-color: #b7c7ee;
-  background: #f4f7ff;
-  color: #214fba;
+  border-color: var(--focus-ring);
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .cmMembersMenuCreateIcon {
@@ -2646,10 +3405,10 @@
   position: fixed;
   z-index: 1200;
   width: 320px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.18);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -2664,7 +3423,7 @@
 .cmChecklistMenuTitle {
   font-size: 14px;
   font-weight: 700;
-  color: #4a505c;
+  color: var(--text-1);
 }
 
 .cmChecklistMenuClose {
@@ -2674,7 +3433,7 @@
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  color: #606774;
+  color: var(--text-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2691,17 +3450,17 @@
 .cmChecklistMenuLabel {
   font-size: 13px;
   font-weight: 700;
-  color: #4f5663;
+  color: var(--text-2);
 }
 
 .cmChecklistMenuInput {
   width: 100%;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid #b9c0cb;
+  border: 1px solid var(--border-1);
   border-radius: 4px;
-  background: #fff;
-  color: #39404a;
+  background: var(--surface-1);
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 14px;
 }
@@ -2710,8 +3469,8 @@
   width: 112px;
   height: 34px;
   border-radius: 6px;
-  background: #2563d8;
-  color: #fff;
+  background: var(--focus-ring);
+  color: var(--text-on-accent);
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 700;
@@ -2723,10 +3482,10 @@
   z-index: 1200;
   min-width: 220px;
   padding: 8px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.18);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
 }
 
 .cmChecklistCompactItem {
@@ -2738,7 +3497,7 @@
   gap: 10px;
   border-radius: 8px;
   background: transparent;
-  color: #2f343d;
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 13px;
   text-align: left;
@@ -2747,22 +3506,22 @@
 }
 
 .cmChecklistCompactItem:hover {
-  background: #eef5ff;
+  background: var(--hover);
 }
 
 .cmChecklistCompactItemActive {
-  background: #eef4ff;
-  color: #214fba;
+  background: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-1));
+  color: var(--focus-ring);
 }
 
 .cmChecklistDateMenu {
   position: fixed;
   z-index: 1200;
   width: 272px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.18);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -2777,7 +3536,7 @@
 .cmChecklistDateMenuTitle {
   font-size: 13px;
   font-weight: 700;
-  color: #3a404b;
+  color: var(--text-1);
 }
 
 .cmChecklistDateMenuClose {
@@ -2787,7 +3546,7 @@
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  color: #606774;
+  color: var(--text-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2810,7 +3569,7 @@
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  color: #59606c;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2820,7 +3579,7 @@
 .cmChecklistDateMenuMonthLabel {
   font-size: 13px;
   font-weight: 700;
-  color: #343942;
+  color: var(--text-1);
   text-transform: lowercase;
 }
 
@@ -2829,7 +3588,7 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
   padding: 0 12px 4px;
-  color: #656c78;
+  color: var(--text-3);
   font-size: 11px;
   font-weight: 600;
   text-align: center;
@@ -2845,7 +3604,7 @@
 .cmChecklistDateMenuDay {
   height: 30px;
   border-radius: 6px;
-  color: #39404a;
+  color: var(--text-2);
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -2854,12 +3613,12 @@
 }
 
 .cmChecklistDateMenuDayMuted {
-  color: #98a0ab;
+  color: var(--text-3);
 }
 
 .cmChecklistDateMenuDaySelected {
-  background: #dceafe;
-  color: #2563d8;
+  background: color-mix(in srgb, var(--focus-ring) 16%, var(--surface-1));
+  color: var(--focus-ring);
 }
 
 .cmChecklistDateMenuDayUnderline {
@@ -2884,7 +3643,7 @@
 .cmChecklistDateMenuFieldLabel {
   font-size: 12px;
   font-weight: 700;
-  color: #545b67;
+  color: var(--text-2);
 }
 
 .cmChecklistDateMenuInputRow {
@@ -2899,27 +3658,27 @@
   min-width: 0;
   height: 34px;
   padding: 0 10px;
-  border: 1px solid #c4cad4;
+  border: 1px solid var(--border-1);
   border-radius: 4px;
-  background: #fff;
-  color: #404652;
+  background: var(--surface-1);
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 13px;
 }
 
 .cmChecklistDateMenuInput:disabled {
-  background: #f3f4f6;
-  color: #adb3bc;
+  background: var(--surface-2);
+  color: var(--text-3);
 }
 
 .cmDateMenu {
   position: fixed;
   z-index: 1200;
   width: 304px;
-  border: 1px solid var(--color-gray-200);
+  border: 1px solid var(--border-1);
   border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(18, 24, 40, 0.2);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -2934,7 +3693,7 @@
 .cmDateMenuTitle {
   font-size: 14px;
   font-weight: 700;
-  color: #3a404b;
+  color: var(--text-1);
 }
 
 .cmDateMenuClose {
@@ -2944,7 +3703,7 @@
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  color: #606774;
+  color: var(--text-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2967,7 +3726,7 @@
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  color: #59606c;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2977,7 +3736,7 @@
 .cmDateMenuMonthLabel {
   font-size: 14px;
   font-weight: 700;
-  color: #343942;
+  color: var(--text-1);
   text-transform: lowercase;
 }
 
@@ -2986,7 +3745,7 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   padding: 0 16px 6px;
-  color: #656c78;
+  color: var(--text-3);
   font-size: 12px;
   font-weight: 600;
   text-align: center;
@@ -3002,7 +3761,7 @@
 .cmDateMenuDay {
   height: 34px;
   border-radius: 6px;
-  color: #39404a;
+  color: var(--text-2);
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -3011,12 +3770,12 @@
 }
 
 .cmDateMenuDayMuted {
-  color: #98a0ab;
+  color: var(--text-3);
 }
 
 .cmDateMenuDaySelected {
-  background: #dceafe;
-  color: #2563d8;
+  background: color-mix(in srgb, var(--focus-ring) 16%, var(--surface-1));
+  color: var(--focus-ring);
 }
 
 .cmDateMenuDayUnderline {
@@ -3041,7 +3800,7 @@
 .cmDateMenuFieldLabel {
   font-size: 13px;
   font-weight: 700;
-  color: #545b67;
+  color: var(--text-2);
 }
 
 .cmDateMenuInputRow {
@@ -3055,9 +3814,9 @@
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  border: 1px solid #c5ccd6;
-  background: #fff;
-  color: #fff;
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
+  color: var(--text-on-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3066,8 +3825,8 @@
 }
 
 .cmDateCheckboxActive {
-  background: #2563d8;
-  border-color: #2563d8;
+  background: var(--focus-ring);
+  border-color: var(--focus-ring);
 }
 
 .cmDateCheckbox svg {
@@ -3079,17 +3838,17 @@
 .cmDateMenuSelect {
   height: 38px;
   padding: 0 12px;
-  border: 1px solid #c4cad4;
+  border: 1px solid var(--border-1);
   border-radius: 4px;
-  background: #fff;
-  color: #404652;
+  background: var(--surface-1);
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 14px;
 }
 
 .cmDateMenuInput:disabled {
-  background: #f3f4f6;
-  color: #adb3bc;
+  background: var(--surface-2);
+  color: var(--text-3);
 }
 
 .cmDateMenuInput {
@@ -3121,7 +3880,7 @@
   align-items: center;
   justify-content: center;
   transform: rotate(90deg);
-  color: #69707c;
+  color: var(--text-3);
 }
 
 .cmDateMenuSelectChevron svg {
@@ -3132,7 +3891,7 @@
 .cmDateMenuHint {
   font-size: 12px;
   line-height: 1.4;
-  color: #6d7480;
+  color: var(--text-3);
 }
 
 .cmDateMenuActions {
@@ -3154,13 +3913,13 @@
 }
 
 .cmDateMenuSave {
-  background: #2563d8;
-  color: #fff;
+  background: var(--focus-ring);
+  color: var(--text-on-accent);
 }
 
 .cmDateMenuRemove {
-  background: #f1f3f6;
-  color: #4f5662;
+  background: var(--surface-2);
+  color: var(--text-2);
 }
 
 .cmMemberList {
@@ -3177,21 +3936,21 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 12px;
-  color: var(--color-gray-600);
-  background: var(--color-white);
+  color: var(--text-2);
+  background: var(--surface-1);
   border: 1px solid transparent;
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast);
   width: 100%;
   text-align: left;
 }
-.cmMemberOpt:hover { background: var(--color-gray-50); border-color: var(--color-gray-200); }
-.cmMemberOptActive { background: var(--color-gray-50); border-color: var(--color-gray-200); }
+.cmMemberOpt:hover { background: var(--hover); border-color: var(--border-1); }
+.cmMemberOptActive { background: var(--hover); border-color: var(--border-1); }
 
 .cmMemberAvatar {
   width: 22px; height: 22px;
   border-radius: 50%;
-  color: var(--color-white);
+  color: var(--text-on-accent);
   font-size: 8px;
   display: flex;
   align-items: center;
@@ -3201,7 +3960,7 @@
 }
 
 .cmMemberName { flex: 1; }
-.cmMemberCheck { margin-left: auto; color: var(--color-gray-400); display: flex; }
+.cmMemberCheck { margin-left: auto; color: var(--text-3); display: flex; }
 
 /* Date input */
 .cmDateInput {
@@ -3210,16 +3969,16 @@
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-black);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  color: var(--text-1);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   outline: none;
   width: 100%;
   transition: border-color var(--transition-fast);
 }
-.cmDateInput:focus { border-color: var(--color-black); }
-.cmDateInput::placeholder { color: var(--color-gray-300); }
+.cmDateInput:focus { border-color: var(--focus-ring); }
+.cmDateInput::placeholder { color: var(--text-3); }
 
 .cmSaveBtn {
   width: auto;
@@ -3228,8 +3987,8 @@
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: opacity var(--transition-fast);
@@ -3244,7 +4003,7 @@
 .cmChecklistNotice {
   font-size: 12px;
   line-height: 1.5;
-  color: var(--color-gray-500);
+  color: var(--text-2);
 }
 
 .cmSubmitError {
@@ -3252,7 +4011,7 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #b42318;
+  color: var(--danger-text);
 }
 
 .cmSelectedMembers {
@@ -3267,14 +4026,717 @@
   gap: 8px;
   padding: 6px 10px 6px 6px;
   border-radius: 999px;
-  background: var(--color-gray-50);
-  color: var(--color-gray-700);
+  background: var(--surface-2);
+  color: var(--text-2);
   font-size: 12px;
 }
 
 /* ════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════ */
+.filesPanel {
+  overflow: hidden;
+}
+
+.filesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 18px;
+  overflow-y: auto;
+}
+
+.filesSectionEmpty {
+  margin: 0;
+  padding: 4px 10px 6px 36px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.filesListRow {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  cursor: grab;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.filesListRow[draggable="true"]:hover {
+  border-color: var(--border-2);
+  box-shadow: var(--shadow-xs);
+  transform: translateY(-1px);
+}
+
+.filesListRow[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.filesListRowDragging {
+  opacity: .26;
+  border-color: color-mix(in srgb, var(--border-1) 55%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 58%, transparent);
+  box-shadow: none;
+  transform: none;
+}
+
+.filesDraggedItem {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--focus-ring) 42%, var(--border-1));
+  border-radius: 8px;
+  border-color: color-mix(in srgb, var(--focus-ring) 50%, var(--border-1));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--focus-ring) 10%, transparent), transparent 60%),
+    var(--surface-2);
+  box-shadow:
+    0 18px 38px rgba(15, 23, 42, .22),
+    0 0 0 1px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+  transform: translate3d(0, 0, 0) rotate(-1deg) scale(1.015);
+  will-change: left, top, transform;
+}
+
+.filesListRowMuted {
+  opacity: 0.58;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  border-color: color-mix(in srgb, var(--border-1) 70%, transparent);
+}
+
+.filesListIcon,
+.cmAttachmentIcon,
+.cmFilePickerIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.filesListBody,
+.cmAttachmentBody,
+.cmFilePickerBody {
+  min-width: 0;
+}
+
+.filesListName,
+.cmAttachmentName,
+.cmFilePickerName {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filesListMeta,
+.cmAttachmentMeta,
+.cmFilePickerMeta {
+  margin: 3px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.filesListActions,
+.cmAttachmentActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filesActionButton,
+.cmAttachmentIconBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.filesActionButton:hover,
+.cmAttachmentIconBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.filesActionTextButton,
+.cmAttachmentRemoveBtn {
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.filesActionTextButton:hover,
+.cmAttachmentRemoveBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.filesEmptyState,
+.cmFilePickerEmpty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.filesEmptyState strong,
+.cmFilePickerEmpty strong {
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+}
+
+.filesEmptyState p,
+.cmFilePickerEmpty p {
+  margin: 0;
+  max-width: 260px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.filesEmptyState button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.filesListSkeleton,
+.cmFilePickerSkeleton {
+  height: 58px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+.cmAttachmentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cmAttachmentAddSplit {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  z-index: 6;
+}
+
+.cmAttachmentAddBtn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px 0 0 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-size: 12px;
+}
+
+.cmAttachmentAddToggle {
+  width: 28px;
+  height: 30px;
+  border-left: 1px solid var(--border-1);
+  border-radius: 0 6px 6px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-3);
+  color: var(--text-2);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmAttachmentAddToggleIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(90deg);
+  transition: transform var(--transition-fast);
+}
+
+.cmAttachmentAddToggleIconOpen {
+  transform: rotate(270deg);
+}
+
+.cmAttachmentAddBtn:hover,
+.cmAttachmentAddToggle:hover {
+  background: var(--hover);
+}
+
+.cmAttachmentAddBtn:disabled,
+.cmAttachmentAddToggle:disabled {
+  opacity: .62;
+  cursor: not-allowed;
+}
+
+.cmAttachmentAddMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
+  z-index: 30;
+}
+
+.cmAttachmentAddMenuItem {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 13px;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.cmAttachmentAddMenuItemIcon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+
+.cmAttachmentAddMenuItem:hover {
+  background: var(--hover);
+}
+
+.cmHiddenFileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cmAttachmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmAttachmentRow {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.cmAttachmentEmpty {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.cmFilePicker {
+  position: fixed;
+  width: min(468px, calc(100vw - 56px));
+  max-width: min(468px, calc(100vw - 56px));
+  min-height: 300px;
+  max-height: min(520px, calc(100vh - 140px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  background: var(--popover-bg);
+  color: var(--text-1);
+  box-shadow: var(--shadow-lg);
+  z-index: 1200;
+}
+
+.cmFilePickerControls {
+  display: grid;
+  gap: 10px;
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.cmFilePickerTopRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.cmFilePickerTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cmFilePickerTab {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--border-1);
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cmFilePickerTabActive {
+  background: var(--surface-3);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.cmFilePickerTabIcon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+}
+
+.cmFilePickerTabLabel {
+  flex: 1;
+  text-align: left;
+}
+
+.cmFilePickerTabCount {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hover);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cmFilePickerToolbarRow {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-self: stretch;
+}
+
+.cmFilePickerFilterBtn {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cmFilePickerFilterBtnActive {
+  border-color: var(--border-2);
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.cmFilePickerFilterBtnChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transform: rotate(90deg);
+}
+
+.cmFilePickerFilterBtnChevron svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cmFilePickerTypeMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  padding: 6px;
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
+  z-index: 3;
+}
+
+.cmFilePickerTypeMenuItem {
+  width: 100%;
+  min-height: 32px;
+  padding: 0 9px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: left;
+}
+
+.cmFilePickerTypeMenuItemActive {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.cmFilePickerSearchRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  gap: 8px;
+}
+
+.cmFilePickerSearchField {
+  min-width: 0;
+  height: 38px;
+  border: 1px solid var(--border-1);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: var(--surface-2);
+}
+
+.cmFilePickerSearchIcon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.cmFilePickerSearch {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.cmFilePickerSearch::placeholder {
+  color: var(--text-3);
+}
+
+.cmFilePickerViewBtn {
+  width: 36px;
+  height: 38px;
+  border: 1px solid var(--border-1);
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.cmFilePickerError {
+  margin: 10px 12px 0;
+  color: var(--danger-text);
+  font-size: 12px;
+}
+
+.cmFilePickerList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+}
+
+.cmFilePickerItem {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 68px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  background: var(--surface-2);
+  text-align: left;
+}
+
+.cmFilePickerIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.cmFilePickerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cmFilePickerName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.cmFilePickerMeta {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.cmFilePickerBadge {
+  width: fit-content;
+  min-height: 18px;
+  padding: 0 7px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.cmFilePickerBadgeImage {
+  background: var(--filetype-image-bg);
+  color: var(--filetype-image-fg);
+}
+
+.cmFilePickerBadgeText {
+  background: var(--filetype-doc-bg);
+  color: var(--filetype-doc-fg);
+}
+
+.cmFilePickerBadgePdf {
+  background: var(--filetype-pdf-bg);
+  color: var(--filetype-pdf-fg);
+}
+
+.cmFilePickerBadgeDocument {
+  background: var(--filetype-doc-bg);
+  color: var(--filetype-doc-fg);
+}
+
+.cmFilePickerBadgeArchive {
+  background: var(--filetype-zip-bg);
+  color: var(--filetype-zip-fg);
+}
+
+.cmFilePickerBadgeAll {
+  background: var(--filetype-generic-bg);
+  color: var(--filetype-generic-fg);
+}
+
+.cmFilePickerItemActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmFilePickerAttachBtn {
+  min-width: 92px;
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cmFilePickerAttachBtnDisabled,
+.cmFilePickerAttachBtn:disabled {
+  opacity: 0.54;
+  cursor: default;
+}
+
+.cmFilePickerMoreBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 @media (max-width: 1024px) {
   .boardWrapperWithPlanner { gap: 10px; padding: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }
@@ -3287,7 +4749,7 @@
   }
   .cmBody { grid-template-columns: 1fr; }
   .cmMain { border-right: none; }
-  .cmSidebar { border-top: 1px solid var(--color-gray-200); }
+  .cmSidebar { border-top: 1px solid var(--border-1); }
 }
 
 @media (max-width: 768px) {
@@ -3301,6 +4763,38 @@
     padding: 10px;
   }
   .boardHeader { padding: 16px; }
+  .cmFilePicker {
+    width: min(312px, calc(100vw - 20px));
+    max-width: min(312px, calc(100vw - 20px));
+    max-height: min(460px, calc(100vh - 96px));
+  }
+  .cmFilePickerTabs {
+    grid-template-columns: 1fr;
+  }
+  .cmFilePickerTopRow {
+    grid-template-columns: 1fr;
+  }
+  .cmFilePickerToolbarRow {
+    justify-content: stretch;
+  }
+  .cmFilePickerFilterBtn {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .cmFilePickerSearchRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cmFilePickerViewBtn {
+    display: none;
+  }
+  .cmFilePickerItem {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+  .cmFilePickerItemActions {
+    width: 100%;
+    justify-content: space-between;
+  }
   .boardHeaderLeft,
   .boardHeaderRight {
     width: 100%;
@@ -3373,8 +4867,8 @@
     height: auto;
     max-height: 1200px;
     width: 100%;
-    border: 1px solid var(--color-gray-200);
-    box-shadow: 0 12px 36px rgba(15, 23, 42, .08);
+    border: 1px solid var(--border-1);
+    box-shadow: var(--shadow-lg);
   }
   .plannerPanelClosing {
     width: 100%;
@@ -3387,21 +4881,13 @@
   .plannerPanelHeader {
     padding: 18px 18px 15px;
   }
-  .plannerSummary {
-    padding: 14px 18px 12px;
+  .plannerList {
+    padding: 14px 14px 16px;
   }
-  .plannerAgendaListInner {
-    padding: 0 18px 16px;
-  }
-  .plannerTimeline {
-    margin: 0 18px 18px;
-  }
-  .inboxEmptyState {
-    min-height: 360px;
-    padding: 0 22px;
-  }
-  .inboxAppsIllustration {
-    height: 200px;
+  .inboxDropZone {
+    min-height: 170px;
+    margin: 0 12px;
+    padding: 24px 18px;
   }
 }
 
@@ -3451,21 +4937,23 @@
   .plannerPanelHeader h2 {
     font-size: 18px;
   }
-  .plannerTimelineRow {
-    grid-template-columns: 42px 1fr;
+  .plannerTitleButton {
+    font-size: 18px;
   }
-  .plannerTimelineEvent {
-    left: 50px;
-    right: 10px;
+  .plannerFilterMenu {
+    width: min(280px, calc(100vw - 40px));
+  }
+  .plannerListItem {
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
   }
   .inboxPanelHeader {
     padding: 16px 14px 10px;
   }
-  .inboxAddCardButton {
-    margin-left: 10px;
-    margin-right: 10px;
+  .inboxRecipientActions {
+    flex-direction: column-reverse;
   }
-  .inboxAppsIllustration {
-    transform: scale(.92);
+  .inboxPrimaryButton,
+  .inboxSecondaryButton {
+    width: 100%;
   }
 }

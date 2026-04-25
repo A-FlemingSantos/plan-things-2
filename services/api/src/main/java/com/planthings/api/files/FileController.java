@@ -50,6 +50,11 @@ public class FileController {
     return ApiEnvelope.ok(fileService.upload(file, parentId));
   }
 
+  @PostMapping(value = "/upload/attach/cards/{cardId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ApiEnvelope<FileService.MessageResponse> uploadAndAttachToCard(@RequestPart("file") MultipartFile file, @PathVariable UUID cardId) {
+    return ApiEnvelope.ok(fileService.uploadAndAttachToCard(file, cardId));
+  }
+
   @GetMapping("/{fileId}/download")
   public void download(@PathVariable UUID fileId, HttpServletResponse response) throws Exception {
     FileService.DownloadedFile file = fileService.download(fileId);
@@ -84,8 +89,18 @@ public class FileController {
     return ApiEnvelope.ok(fileService.shareToPlan(fileId, planId));
   }
 
+  @DeleteMapping("/{fileId}/share/plans/{planId}")
+  public ApiEnvelope<FileService.MessageResponse> unshareFromPlan(@PathVariable UUID fileId, @PathVariable UUID planId) {
+    return ApiEnvelope.ok(fileService.unshareFromPlan(fileId, planId));
+  }
+
   @PostMapping("/{fileId}/attach/cards/{cardId}")
   public ApiEnvelope<FileService.MessageResponse> attachToCard(@PathVariable UUID fileId, @PathVariable UUID cardId) {
     return ApiEnvelope.ok(fileService.attachToCard(fileId, cardId));
+  }
+
+  @DeleteMapping("/attachments/{attachmentId}")
+  public ApiEnvelope<FileService.MessageResponse> removeAttachment(@PathVariable UUID attachmentId) {
+    return ApiEnvelope.ok(fileService.removeAttachment(attachmentId));
   }
 }

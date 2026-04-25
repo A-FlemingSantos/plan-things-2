@@ -3,10 +3,15 @@ export default function KanbanCard({
   colId,
   isDragging,
   isDropTarget,
+  draggedFile,
+  isFileDropTarget,
+  isFileDropDisabled,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
+  onFileDragOver,
+  onFileDrop,
   onClick,
   labels,
   members,
@@ -25,17 +30,36 @@ export default function KanbanCard({
         ${styles.card}
         ${isDragging ? styles.cardDragging : ''}
         ${isDropTarget ? styles.cardDropTarget : ''}
+        ${isFileDropTarget ? styles.cardFileDropTarget : ''}
+        ${isFileDropDisabled ? styles.cardFileDropDisabled : ''}
       `}
       role="button"
       tabIndex={0}
       draggable
       onDragStart={() => onDragStart(card.id, colId)}
       onDragOver={(event) => {
+        if (draggedFile) {
+          event.preventDefault()
+          event.stopPropagation()
+          event.dataTransfer.dropEffect = isFileDropDisabled ? 'none' : 'copy'
+          onFileDragOver?.(isFileDropDisabled ? null : card.id)
+          return
+        }
+
         event.preventDefault()
         event.stopPropagation()
         onDragOver({ type: 'card', cardId: card.id, colId })
       }}
       onDrop={(event) => {
+        if (draggedFile) {
+          event.preventDefault()
+          event.stopPropagation()
+          if (!isFileDropDisabled) {
+            onFileDrop?.(draggedFile, card.id)
+          }
+          return
+        }
+
         event.preventDefault()
         event.stopPropagation()
         onDrop({ type: 'card', cardId: card.id, colId })

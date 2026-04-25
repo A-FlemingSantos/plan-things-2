@@ -1,5 +1,5 @@
 .section {
-  background: var(--color-white);
+  background: var(--app-bg);
   padding: var(--section-py) 0;
   overflow: hidden;
 }
@@ -17,7 +17,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: .1em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   margin-bottom: 14px;
 }
 
@@ -30,7 +30,7 @@
 
 .headingLight {
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .allBtn {
@@ -39,8 +39,8 @@
   gap: 8px;
   padding: 10px 20px;
   font-size: 14px;
-  color: var(--color-black);
-  border: 1px solid var(--color-gray-300);
+  color: var(--text-1);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-md);
   white-space: nowrap;
   transition: border-color var(--transition-fast);
@@ -48,7 +48,7 @@
 }
 
 .allBtn:hover {
-  border-color: var(--color-black);
+  border-color: var(--text-1);
 }
 
 .carouselOuter {
@@ -74,8 +74,8 @@
 .card {
   flex: 0 0 var(--ecosystem-card-width);
   min-height: 290px;
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
   padding: 32px 28px 26px;
   display: flex;
@@ -93,7 +93,7 @@
   opacity: 1;
   transform: scale(1);
   box-shadow: var(--shadow-md);
-  border-color: var(--color-gray-300);
+  border-color: var(--border-2);
 }
 
 .cardInactive {
@@ -105,8 +105,8 @@
   width: 48px;
   height: 48px;
   border-radius: var(--radius-md);
-  background: var(--color-gray-50);
-  border: 1px solid var(--color-gray-200);
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -116,28 +116,28 @@
 .cardName {
   font-size: 17px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   letter-spacing: -.01em;
 }
 
 .cardTagline {
   font-size: 14px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-800);
+  color: var(--text-1);
   line-height: 1.4;
 }
 
 .cardSub {
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
   line-height: 1.5;
   flex: 1;
 }
 
 .cardFooter {
   padding-top: 14px;
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--border-1);
 }
 
 .cardCta {
@@ -145,7 +145,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--color-black);
+  color: var(--text-1);
   transition: gap var(--transition-fast);
 }
 
@@ -157,8 +157,8 @@
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -174,23 +174,23 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1.5px solid var(--color-gray-300);
-  background: var(--color-white);
+  border: 1.5px solid var(--border-2);
+  background: var(--surface-1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-black);
+  color: var(--text-1);
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .arrowBtn:hover:not(.arrowDisabled) {
-  border-color: var(--color-black);
+  border-color: var(--text-1);
 }
 
 .arrowDisabled {
-  color: var(--color-gray-300);
-  border-color: var(--color-gray-200);
+  color: var(--text-3);
+  border-color: var(--border-1);
   cursor: default;
 }
 

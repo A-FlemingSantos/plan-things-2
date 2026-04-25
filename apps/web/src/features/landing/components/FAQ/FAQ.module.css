@@ -1,7 +1,7 @@
 .section {
-  background: var(--color-white);
+  background: var(--app-bg);
   padding: var(--section-py) 0;
-  border-top: 1px solid var(--color-gray-100);
+  border-top: 1px solid var(--border-1);
 }
 
 .inner { display: flex; flex-direction: column; gap: 48px; }
@@ -31,17 +31,17 @@
   padding: 8px 18px;
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-600);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-300);
+  color: var(--text-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .controlBtn:hover {
-  color: var(--color-black);
-  border-color: var(--color-black);
+  color: var(--text-1);
+  border-color: var(--text-1);
 }
 
 /* ── List ── */
@@ -63,7 +63,7 @@
 
 .index {
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   width: 28px;
   flex-shrink: 0;
   font-weight: var(--font-weight-regular);
@@ -73,7 +73,7 @@
 .question {
   font-size: 16px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-black);
+  color: var(--text-1);
   flex: 1;
   line-height: 1.4;
   letter-spacing: -.01em;
@@ -84,8 +84,8 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-sm);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -105,13 +105,13 @@
   font-size: 15px;
   font-weight: var(--font-weight-light);
   line-height: 1.7;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   max-width: 680px;
 }
 
 .divider {
   height: 1px;
-  background: var(--color-gray-100);
+  background: var(--border-1);
 }
 
 @keyframes fadeDown {
@@ -129,7 +129,7 @@
 
 .footerCta p {
   font-size: 15px;
-  color: var(--color-gray-600);
+  color: var(--text-2);
 }
 
 .footerLink {
@@ -137,10 +137,10 @@
   align-items: center;
   gap: 6px;
   font-size: 15px;
-  color: var(--color-black);
-  border-bottom: 1px solid var(--color-gray-300);
+  color: var(--text-1);
+  border-bottom: 1px solid var(--border-2);
   padding-bottom: 1px;
   transition: border-color var(--transition-fast);
 }
 
-.footerLink:hover { border-color: var(--color-black); }
+.footerLink:hover { border-color: var(--text-1); }

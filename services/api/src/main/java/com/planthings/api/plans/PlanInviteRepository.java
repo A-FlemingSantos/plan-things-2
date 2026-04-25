@@ -9,6 +9,8 @@ public interface PlanInviteRepository extends JpaRepository<PlanInviteEntity, UU
 
   List<PlanInviteEntity> findByPlanIdOrderByCreatedAtDesc(UUID planId);
 
+  List<PlanInviteEntity> findByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc(String invitedEmail, PlanInviteStatus status);
+
   Optional<PlanInviteEntity> findByToken(String token);
 
   Optional<PlanInviteEntity> findByPlanIdAndInvitedEmailIgnoreCaseAndStatus(UUID planId, String invitedEmail, PlanInviteStatus status);

@@ -6,11 +6,15 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.net.URI;
 
 @Validated
 @RestController
@@ -18,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthService authService;
+  private final OAuthLoginService oauthLoginService;
 
-  public AuthController(AuthService authService) {
+  public AuthController(AuthService authService, OAuthLoginService oauthLoginService) {
     this.authService = authService;
+    this.oauthLoginService = oauthLoginService;
   }
 
   @PostMapping("/auth/register")
@@ -41,6 +47,30 @@ public class AuthController {
   @PostMapping("/auth/reset-password")
   public ApiEnvelope<AuthService.MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
     return ApiEnvelope.ok(authService.resetPassword(request.token(), request.newPassword()));
+  }
+
+  @PostMapping("/auth/oauth/{provider}/start")
+  public ApiEnvelope<OAuthLoginService.AuthorizationStartResponse> startOAuth(
+      @PathVariable String provider,
+      @RequestBody(required = false) OAuthStartRequest request
+  ) {
+    return ApiEnvelope.ok(oauthLoginService.start(provider, request == null ? null : request.redirectTo()));
+  }
+
+  @GetMapping("/auth/oauth/{provider}/callback")
+  public ResponseEntity<Void> oauthCallback(
+      @PathVariable String provider,
+      @RequestParam(required = false) String state,
+      @RequestParam(required = false) String code,
+      @RequestParam(required = false) String error
+  ) {
+    URI redirectUri = oauthLoginService.completeProviderCallback(provider, state, code, error);
+    return ResponseEntity.status(302).location(redirectUri).build();
+  }
+
+  @PostMapping("/auth/oauth/exchange")
+  public ApiEnvelope<AuthService.SessionResponse> exchangeOAuthCode(@Valid @RequestBody OAuthExchangeRequest request) {
+    return ApiEnvelope.ok(oauthLoginService.exchangeCompletionCode(request.code()));
   }
 
   @GetMapping("/me")
@@ -74,6 +104,14 @@ public class AuthController {
       @NotBlank(message = "O token e obrigatorio.") String token,
       @NotBlank(message = "A nova senha e obrigatoria.")
       @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres.") String newPassword
+  ) {
+  }
+
+  public record OAuthStartRequest(String redirectTo) {
+  }
+
+  public record OAuthExchangeRequest(
+      @NotBlank(message = "O codigo de conclusao e obrigatorio.") String code
   ) {
   }
 }

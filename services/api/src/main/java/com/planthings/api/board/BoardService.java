@@ -9,15 +9,22 @@ import com.planthings.api.common.error.ConflictException;
 import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.files.CardAttachmentEntity;
+import com.planthings.api.files.CardAttachmentRepository;
+import com.planthings.api.files.FileEntryEntity;
+import com.planthings.api.files.FileEntryRepository;
+import com.planthings.api.files.FileEntryType;
 import com.planthings.api.plans.PlanAccessService;
 import com.planthings.api.plans.PlanEntity;
 import com.planthings.api.plans.PlanLabelEntity;
 import com.planthings.api.plans.PlanLabelRepository;
 import com.planthings.api.plans.PlanMemberEntity;
 import com.planthings.api.plans.PlanMemberRepository;
+import com.planthings.api.plans.PlanMemberRole;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +34,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 public class BoardService {
@@ -40,10 +48,15 @@ public class BoardService {
   private final BoardChecklistRepository boardChecklistRepository;
   private final BoardChecklistItemRepository boardChecklistItemRepository;
   private final BoardCardAssigneeRepository boardCardAssigneeRepository;
+  private final BoardCardInboxDeliveryRepository boardCardInboxDeliveryRepository;
+  private final BoardCardInboxDeliveryRecipientRepository boardCardInboxDeliveryRecipientRepository;
+  private final CardAttachmentRepository cardAttachmentRepository;
+  private final FileEntryRepository fileEntryRepository;
   private final UserRepository userRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final CalendarService calendarService;
+  private final BoardCardInboxEmailSender boardCardInboxEmailSender;
 
   public BoardService(
       PlanAccessService planAccessService,
@@ -55,10 +68,15 @@ public class BoardService {
       BoardChecklistRepository boardChecklistRepository,
       BoardChecklistItemRepository boardChecklistItemRepository,
       BoardCardAssigneeRepository boardCardAssigneeRepository,
+      BoardCardInboxDeliveryRepository boardCardInboxDeliveryRepository,
+      BoardCardInboxDeliveryRecipientRepository boardCardInboxDeliveryRecipientRepository,
+      CardAttachmentRepository cardAttachmentRepository,
+      FileEntryRepository fileEntryRepository,
       UserRepository userRepository,
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper,
-      CalendarService calendarService
+      CalendarService calendarService,
+      BoardCardInboxEmailSender boardCardInboxEmailSender
   ) {
     this.planAccessService = planAccessService;
     this.planLabelRepository = planLabelRepository;
@@ -69,16 +87,22 @@ public class BoardService {
     this.boardChecklistRepository = boardChecklistRepository;
     this.boardChecklistItemRepository = boardChecklistItemRepository;
     this.boardCardAssigneeRepository = boardCardAssigneeRepository;
+    this.boardCardInboxDeliveryRepository = boardCardInboxDeliveryRepository;
+    this.boardCardInboxDeliveryRecipientRepository = boardCardInboxDeliveryRecipientRepository;
+    this.cardAttachmentRepository = cardAttachmentRepository;
+    this.fileEntryRepository = fileEntryRepository;
     this.userRepository = userRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.calendarService = calendarService;
+    this.boardCardInboxEmailSender = boardCardInboxEmailSender;
   }
 
   public BoardView getBoard(UUID planId) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
-    return buildBoardView(plan);
+    ensureDefaultLabels(planId);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -92,7 +116,7 @@ public class BoardService {
     column.setColor(color == null || color.isBlank() ? "#a0a0a0" : color.trim());
     column.setPositionIndex(boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).size());
     boardColumnRepository.save(column);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -105,7 +129,7 @@ public class BoardService {
       column.setColor(color.trim());
     }
     boardColumnRepository.save(column);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -142,7 +166,7 @@ public class BoardService {
       column.setPositionIndex(i);
     }
     boardColumnRepository.saveAll(columns);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -168,7 +192,7 @@ public class BoardService {
 
     replaceAssignees(card.getId(), assigneeIds);
     calendarService.syncCardEvent(plan, card);
-    return toCardView(card);
+    return toCardView(card, userId, planAccessService.requireMemberRole(planId, userId));
   }
 
   @Transactional
@@ -197,7 +221,7 @@ public class BoardService {
 
     replaceAssignees(card.getId(), assigneeIds);
     calendarService.syncCardEvent(plan, card);
-    return toCardView(card);
+    return toCardView(card, userId, planAccessService.requireMemberRole(planId, userId));
   }
 
   @Transactional
@@ -225,7 +249,7 @@ public class BoardService {
       boardCardRepository.saveAll(sourceCards);
     }
     boardCardRepository.saveAll(targetCards);
-    return buildBoardView(plan);
+    return buildBoardView(plan, userId);
   }
 
   @Transactional
@@ -311,10 +335,49 @@ public class BoardService {
     return toChecklistItemView(item);
   }
 
-  private BoardView buildBoardView(PlanEntity plan) {
+  @Transactional
+  public InboxDeliveryResponse sendCardToInbox(UUID planId, UUID cardId, List<UUID> recipientUserIds) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    PlanEntity plan = planAccessService.requirePlanMember(planId, currentUser.getId());
+    BoardCardEntity card = requireCard(planId, cardId);
+    List<UserEntity> recipients = resolveInboxRecipients(planId, cardId, recipientUserIds);
+    if (recipients.isEmpty()) {
+      throw new BadRequestException("CARTAO_SEM_DESTINATARIOS", "Escolha ao menos um membro para receber este cartao por e-mail.");
+    }
+    if (recipientUserIds != null && !recipientUserIds.isEmpty()) {
+      addAssignees(cardId, recipients.stream().map(UserEntity::getId).toList());
+    }
+
+    BoardCardInboxEmailSender.Delivery delivery = boardCardInboxEmailSender.sendCard(
+        currentUser,
+        plan,
+        card,
+        deriveCardKind(card),
+        recipients
+    );
+    InboxItemView inboxItem = recordInboxDelivery(plan, card, currentUser, delivery, recipients);
+    return new InboxDeliveryResponse(delivery.emailSent(), delivery.sentFrom(), delivery.sentTo(), delivery.messageId(), delivery.threadId(), inboxItem);
+  }
+
+  @Transactional
+  public MessageResponse clearInboxDeliveries(UUID planId) {
+    UUID userId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, userId);
+    List<UUID> deliveryIds = boardCardInboxDeliveryRepository.findByPlanId(planId).stream()
+        .map(BoardCardInboxDeliveryEntity::getId)
+        .toList();
+    if (!deliveryIds.isEmpty()) {
+      boardCardInboxDeliveryRecipientRepository.deleteByDeliveryIdIn(deliveryIds);
+      boardCardInboxDeliveryRepository.deleteByPlanId(planId);
+    }
+    return new MessageResponse("Historico da Inbox limpo com sucesso.");
+  }
+
+  private BoardView buildBoardView(PlanEntity plan, UUID currentUserId) {
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     List<BoardCardEntity> cards = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     Map<UUID, List<BoardCardEntity>> cardsByColumn = cards.stream().collect(Collectors.groupingBy(BoardCardEntity::getColumnId));
+    PlanMemberRole currentRole = planAccessService.requireMemberRole(plan.getId(), currentUserId);
     List<LabelView> labels = planLabelRepository.findByPlanIdOrderByNameAsc(plan.getId()).stream()
         .map(label -> new LabelView(label.getId(), label.getName(), label.getColor()))
         .toList();
@@ -327,13 +390,123 @@ public class BoardService {
             column.getTitle(),
             column.getColor(),
             column.getPositionIndex(),
-            cardsByColumn.getOrDefault(column.getId(), List.of()).stream().map(this::toCardView).toList()
+            cardsByColumn.getOrDefault(column.getId(), List.of()).stream()
+                .map(card -> toCardView(card, currentUserId, currentRole))
+                .toList()
         )).toList(),
-        labels
+        labels,
+        buildInboxItems(plan.getId())
     );
   }
 
-  private BoardCardView toCardView(BoardCardEntity card) {
+  private InboxItemView recordInboxDelivery(
+      PlanEntity plan,
+      BoardCardEntity card,
+      UserEntity sender,
+      BoardCardInboxEmailSender.Delivery delivery,
+      List<UserEntity> recipients
+  ) {
+    BoardCardInboxDeliveryEntity deliveryEntity = new BoardCardInboxDeliveryEntity();
+    deliveryEntity.setPlanId(plan.getId());
+    deliveryEntity.setCardId(card.getId());
+    deliveryEntity.setSentByUserId(sender.getId());
+    deliveryEntity.setSentFrom(delivery.sentFrom());
+    deliveryEntity.setMessageId(delivery.messageId());
+    deliveryEntity.setThreadId(delivery.threadId());
+    boardCardInboxDeliveryRepository.save(deliveryEntity);
+
+    List<BoardCardInboxDeliveryRecipientEntity> recipientEntities = recipients.stream()
+        .map(recipient -> {
+          BoardCardInboxDeliveryRecipientEntity entity = new BoardCardInboxDeliveryRecipientEntity();
+          entity.setDeliveryId(deliveryEntity.getId());
+          entity.setUserId(recipient.getId());
+          entity.setEmail(recipient.getEmail());
+          return entity;
+        })
+        .toList();
+    boardCardInboxDeliveryRecipientRepository.saveAll(recipientEntities);
+
+    return toInboxItemView(
+        deliveryEntity,
+        card,
+        sender,
+        recipientEntities,
+        recipients.stream().collect(Collectors.toMap(UserEntity::getId, user -> user))
+    );
+  }
+
+  private List<InboxItemView> buildInboxItems(UUID planId) {
+    List<BoardCardInboxDeliveryEntity> deliveries = boardCardInboxDeliveryRepository.findTop50ByPlanIdOrderByCreatedAtDesc(planId);
+    if (deliveries.isEmpty()) {
+      return List.of();
+    }
+
+    List<UUID> deliveryIds = deliveries.stream().map(BoardCardInboxDeliveryEntity::getId).toList();
+    Map<UUID, List<BoardCardInboxDeliveryRecipientEntity>> recipientsByDeliveryId = boardCardInboxDeliveryRecipientRepository
+        .findByDeliveryIdIn(deliveryIds)
+        .stream()
+        .collect(Collectors.groupingBy(BoardCardInboxDeliveryRecipientEntity::getDeliveryId));
+    Map<UUID, BoardCardEntity> cardsById = boardCardRepository.findAllById(deliveries.stream()
+            .map(BoardCardInboxDeliveryEntity::getCardId)
+            .collect(Collectors.toSet()))
+        .stream()
+        .collect(Collectors.toMap(BoardCardEntity::getId, card -> card));
+    Set<UUID> userIds = new LinkedHashSet<>();
+    deliveries.forEach(delivery -> userIds.add(delivery.getSentByUserId()));
+    recipientsByDeliveryId.values().stream()
+        .flatMap(List::stream)
+        .map(BoardCardInboxDeliveryRecipientEntity::getUserId)
+        .forEach(userIds::add);
+    Map<UUID, UserEntity> usersById = userRepository.findAllById(userIds).stream()
+        .collect(Collectors.toMap(UserEntity::getId, user -> user));
+
+    return deliveries.stream()
+        .map(delivery -> {
+          BoardCardEntity card = cardsById.get(delivery.getCardId());
+          if (card == null) {
+            return null;
+          }
+          return toInboxItemView(
+              delivery,
+              card,
+              usersById.get(delivery.getSentByUserId()),
+              recipientsByDeliveryId.getOrDefault(delivery.getId(), List.of()),
+              usersById
+          );
+        })
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
+  private InboxItemView toInboxItemView(
+      BoardCardInboxDeliveryEntity delivery,
+      BoardCardEntity card,
+      UserEntity sender,
+      List<BoardCardInboxDeliveryRecipientEntity> recipients,
+      Map<UUID, UserEntity> usersById
+  ) {
+    List<UserSummary> recipientUsers = recipients.stream()
+        .map(recipient -> usersById.get(recipient.getUserId()))
+        .filter(Objects::nonNull)
+        .map(user -> new UserSummary(user.getId(), user.getFullName(), user.getEmail()))
+        .toList();
+
+    return new InboxItemView(
+        delivery.getId(),
+        delivery.getCardId(),
+        card.getTitle(),
+        deriveCardKind(card),
+        sender == null ? null : new UserSummary(sender.getId(), sender.getFullName(), sender.getEmail()),
+        delivery.getSentFrom(),
+        recipients.stream().map(BoardCardInboxDeliveryRecipientEntity::getEmail).toList(),
+        recipientUsers,
+        delivery.getMessageId(),
+        delivery.getThreadId(),
+        brazilDateTimeMapper.toDateTime(delivery.getCreatedAt())
+    );
+  }
+
+  private BoardCardView toCardView(BoardCardEntity card, UUID currentUserId, PlanMemberRole currentRole) {
     UserEntity author = userRepository.findById(card.getAuthorUserId()).orElse(null);
     PlanLabelEntity label = card.getLabelId() == null ? null : planLabelRepository.findById(card.getLabelId()).orElse(null);
     List<UserSummary> assignees = boardCardAssigneeRepository.findByCardId(card.getId()).stream()
@@ -346,6 +519,10 @@ public class BoardService {
         .toList();
     List<ChecklistView> checklists = boardChecklistRepository.findByCardIdOrderByPositionIndexAsc(card.getId()).stream()
         .map(this::toChecklistView)
+        .toList();
+    List<AttachmentView> attachments = cardAttachmentRepository.findByCardId(card.getId()).stream()
+        .map(attachment -> toAttachmentView(attachment, currentUserId, currentRole))
+        .filter(Objects::nonNull)
         .toList();
 
     return new BoardCardView(
@@ -360,10 +537,35 @@ public class BoardService {
         assignees,
         comments,
         checklists,
+        attachments,
         brazilDateTimeMapper.toDateTime(card.getStartAt()),
         brazilDateTimeMapper.toDateTime(card.getDueAt()),
         brazilDateTimeMapper.toDateTime(card.getCreatedAt()),
         brazilDateTimeMapper.toDateTime(card.getUpdatedAt())
+    );
+  }
+
+  private AttachmentView toAttachmentView(CardAttachmentEntity attachment, UUID currentUserId, PlanMemberRole currentRole) {
+    FileEntryEntity file = fileEntryRepository.findById(attachment.getFileEntryId()).orElse(null);
+    if (file == null || file.getDeletedAt() != null || file.getType() != FileEntryType.FILE) {
+      return null;
+    }
+
+    UserEntity attachedBy = userRepository.findById(attachment.getAttachedByUserId()).orElse(null);
+    boolean attachedByCurrentUser = Objects.equals(attachment.getAttachedByUserId(), currentUserId);
+    boolean canRemove = attachedByCurrentUser || currentRole == PlanMemberRole.OWNER || currentRole == PlanMemberRole.ADMIN;
+
+    return new AttachmentView(
+        attachment.getId(),
+        file.getId(),
+        file.getName(),
+        file.getType(),
+        file.getMimeType(),
+        file.getSizeBytes(),
+        attachedBy == null ? null : new UserSummary(attachedBy.getId(), attachedBy.getFullName(), attachedBy.getEmail()),
+        attachedByCurrentUser,
+        canRemove,
+        brazilDateTimeMapper.toDateTime(attachment.getCreatedAt())
     );
   }
 
@@ -448,6 +650,7 @@ public class BoardService {
 
   private void replaceAssignees(UUID cardId, List<UUID> assigneeIds) {
     boardCardAssigneeRepository.deleteByCardId(cardId);
+    boardCardAssigneeRepository.flush();
     if (assigneeIds == null || assigneeIds.isEmpty()) {
       return;
     }
@@ -458,6 +661,70 @@ public class BoardService {
       return entity;
     }).toList();
     boardCardAssigneeRepository.saveAll(assignees);
+  }
+
+  private void addAssignees(UUID cardId, List<UUID> assigneeIds) {
+    if (assigneeIds == null || assigneeIds.isEmpty()) {
+      return;
+    }
+    Set<UUID> existingAssigneeIds = boardCardAssigneeRepository.findByCardId(cardId).stream()
+        .map(BoardCardAssigneeEntity::getUserId)
+        .collect(Collectors.toSet());
+    List<BoardCardAssigneeEntity> assignees = assigneeIds.stream()
+        .filter(Objects::nonNull)
+        .distinct()
+        .filter(assigneeId -> !existingAssigneeIds.contains(assigneeId))
+        .map(assigneeId -> {
+          BoardCardAssigneeEntity entity = new BoardCardAssigneeEntity();
+          entity.setCardId(cardId);
+          entity.setUserId(assigneeId);
+          return entity;
+        })
+        .toList();
+    if (!assignees.isEmpty()) {
+      boardCardAssigneeRepository.saveAll(assignees);
+    }
+  }
+
+  private List<UserEntity> resolveInboxRecipients(UUID planId, UUID cardId, List<UUID> recipientUserIds) {
+    LinkedHashSet<UUID> requestedIds = new LinkedHashSet<>();
+    if (recipientUserIds == null || recipientUserIds.isEmpty()) {
+      boardCardAssigneeRepository.findByCardId(cardId).forEach(assignee -> requestedIds.add(assignee.getUserId()));
+    } else {
+      recipientUserIds.stream().filter(Objects::nonNull).forEach(requestedIds::add);
+    }
+
+    if (requestedIds.isEmpty()) {
+      return List.of();
+    }
+
+    Set<UUID> memberIds = planMemberRepository.findByPlanId(planId).stream()
+        .map(PlanMemberEntity::getUserId)
+        .collect(Collectors.toSet());
+    if (requestedIds.stream().anyMatch(userId -> !memberIds.contains(userId))) {
+      throw new BadRequestException("DESTINATARIO_INVALIDO", "Todos os destinatarios precisam fazer parte do plano.");
+    }
+
+    Set<UUID> existingAssigneeIds = boardCardAssigneeRepository.findByCardId(cardId).stream()
+        .map(BoardCardAssigneeEntity::getUserId)
+        .collect(Collectors.toSet());
+    requestedIds.removeIf(existingAssigneeIds::contains);
+    if (requestedIds.isEmpty()) {
+      return List.of();
+    }
+
+    Map<UUID, UserEntity> usersById = userRepository.findAllById(requestedIds).stream()
+        .collect(Collectors.toMap(UserEntity::getId, user -> user));
+    List<UserEntity> recipients = requestedIds.stream()
+        .map(usersById::get)
+        .filter(Objects::nonNull)
+        .filter(user -> StringUtils.hasText(user.getEmail()))
+        .toList();
+
+    if (recipients.size() != requestedIds.size()) {
+      throw new BadRequestException("DESTINATARIO_INVALIDO", "Nao foi possivel encontrar todos os destinatarios do e-mail.");
+    }
+    return recipients;
   }
 
   private <T> void reorder(List<T> items, BiConsumer<T, Integer> indexSetter) {
@@ -495,7 +762,27 @@ public class BoardService {
     return CardKind.CARTAO;
   }
 
-  public record BoardView(UUID planId, String planName, List<ColumnView> columns, List<LabelView> labels) {
+  private void ensureDefaultLabels(UUID planId) {
+    if (!planLabelRepository.findByPlanIdOrderByNameAsc(planId).isEmpty()) {
+      return;
+    }
+
+    createLabel(planId, "Design", "#d4aef1");
+    createLabel(planId, "Engenharia", "#4290da");
+    createLabel(planId, "Pesquisa", "#f5a623");
+    createLabel(planId, "Marketing", "#ff6766");
+    createLabel(planId, "QA", "#0f703a");
+  }
+
+  private void createLabel(UUID planId, String name, String color) {
+    PlanLabelEntity label = new PlanLabelEntity();
+    label.setPlanId(planId);
+    label.setName(name);
+    label.setColor(color);
+    planLabelRepository.save(label);
+  }
+
+  public record BoardView(UUID planId, String planName, List<ColumnView> columns, List<LabelView> labels, List<InboxItemView> inboxItems) {
   }
 
   public record ColumnView(UUID id, String title, String color, int position, List<BoardCardView> cards) {
@@ -513,6 +800,7 @@ public class BoardService {
       List<UserSummary> assignees,
       List<CommentView> comments,
       List<ChecklistView> checklists,
+      List<AttachmentView> attachments,
       ApiDateTimeDto startAt,
       ApiDateTimeDto dueAt,
       ApiDateTimeDto createdAt,
@@ -535,7 +823,39 @@ public class BoardService {
   public record ChecklistItemView(UUID id, String title, boolean completed, int position, UserSummary assignee, ApiDateTimeDto startAt, ApiDateTimeDto dueAt) {
   }
 
+  public record AttachmentView(
+      UUID id,
+      UUID fileId,
+      String name,
+      FileEntryType type,
+      String mimeType,
+      Long sizeBytes,
+      UserSummary attachedBy,
+      boolean attachedByCurrentUser,
+      boolean canRemove,
+      ApiDateTimeDto createdAt
+  ) {
+  }
+
   public record MessageResponse(String message) {
+  }
+
+  public record InboxDeliveryResponse(boolean emailSent, String sentFrom, List<String> sentTo, String messageId, String threadId, InboxItemView inboxItem) {
+  }
+
+  public record InboxItemView(
+      UUID id,
+      UUID cardId,
+      String cardTitle,
+      CardKind cardKind,
+      UserSummary sentBy,
+      String sentFrom,
+      List<String> sentTo,
+      List<UserSummary> recipients,
+      String messageId,
+      String threadId,
+      ApiDateTimeDto sentAt
+  ) {
   }
 
   public enum CardKind {

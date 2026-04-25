@@ -2,9 +2,9 @@
   position: sticky;
   top: 72px;
   z-index: 90;
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-gray-200);
-  border-top: 1px solid var(--color-gray-200);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-1);
+  border-top: 1px solid var(--border-1);
 }
 
 .bar {
@@ -30,7 +30,7 @@
   display: inline-block;
   padding: 6px 14px;
   font-size: 13px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   border-radius: var(--radius-sm);
   white-space: nowrap;
   transition: color var(--transition-fast);
@@ -43,16 +43,16 @@
   left: 14px;
   right: 14px;
   height: 2px;
-  background: var(--color-black);
+  background: var(--text-1);
   transform: scaleX(0);
   transition: transform var(--transition-normal);
   border-radius: 1px;
 }
 
-.link:hover { color: var(--color-black); }
+.link:hover { color: var(--text-1); }
 
 .link.active {
-  color: var(--color-black);
+  color: var(--text-1);
   font-weight: var(--font-weight-regular);
 }
 
@@ -65,8 +65,8 @@
   padding: 8px 18px;
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-sm);
   white-space: nowrap;
   flex-shrink: 0;

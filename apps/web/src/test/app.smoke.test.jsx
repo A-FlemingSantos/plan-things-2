@@ -16,12 +16,32 @@ function formatTodayAsScheduleDateValue() {
 function formatCalendarHeading(monthOffset = 0) {
   const today = new Date()
   const date = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
-  const months = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-  ]
+  const formatted = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
 
-  return `${months[date.getMonth()]} ${date.getFullYear()}`
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+}
+
+function seedDemoSession(userId = 'demo-user-route') {
+  window.localStorage.setItem('plan-things.session', JSON.stringify({
+    accessToken: 'demo-login-token',
+    demo: true,
+    user: {
+      id: userId,
+      fullName: 'Arthur Santos',
+      email: 'arthur@example.com',
+      locale: 'pt-BR',
+      timeZone: 'America/Sao_Paulo',
+    },
+    workspace: {
+      id: 'demo-workspace',
+      name: 'Workspace de Arthur Santos',
+    },
+  }))
+
+  return userId
 }
 
 describe('App smoke flows', () => {
@@ -60,6 +80,40 @@ describe('App smoke flows', () => {
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
 
+  it('resolves /app to last context when openLastCtx is enabled', async () => {
+    const userId = seedDemoSession('route-last-context-user')
+    window.localStorage.setItem(
+      `plan-things:settings:v1:${userId}`,
+      JSON.stringify({
+        homePage: 'canvas',
+        openLastCtx: true,
+      }),
+    )
+    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
+
+    renderApp('/app')
+
+    expect(await screen.findAllByRole('button', { name: /^meus arquivos$/i })).not.toHaveLength(0)
+    expect(window.location.pathname).toBe('/files')
+  })
+
+  it('resolves /app to homePage when openLastCtx is disabled', async () => {
+    const userId = seedDemoSession('route-home-page-user')
+    window.localStorage.setItem(
+      `plan-things:settings:v1:${userId}`,
+      JSON.stringify({
+        homePage: 'calendar',
+        openLastCtx: false,
+      }),
+    )
+    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
+
+    renderApp('/app')
+
+    expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/calendar')
+  })
+
   it('opens the current plan board from the workspace', async () => {
     const user = userEvent.setup()
 
@@ -70,6 +124,26 @@ describe('App smoke flows', () => {
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
     expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
+  })
+
+  it('marks only the active toolbar view when opening the files panel', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/workspace/board/product-launch-q3')
+
+    const boardButton = await screen.findByRole('button', { name: 'Quadro' })
+    const toolbar = boardButton.closest('div[aria-label="Atalhos do quadro"]')
+    expect(toolbar).not.toBeNull()
+    const filesButton = within(toolbar).getByRole('button', { name: 'Arquivos' })
+
+    expect(boardButton).toHaveAttribute('aria-current', 'page')
+    expect(filesButton).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(filesButton)
+
+    expect(await screen.findByLabelText('Arquivos do plano')).toBeInTheDocument()
+    expect(boardButton).not.toHaveAttribute('aria-current')
+    expect(filesButton).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('keeps legacy seeded due dates in pt-BR after opening and saving the date modal', async () => {
@@ -227,6 +301,35 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
   })
 
+  it('opens the settings page from the shared sidebar account menu', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/files')
+
+    await user.click(await screen.findByRole('button', { name: /arthur santos/i }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Configurações' }))
+
+    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/settings')
+    expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
+  })
+
+  it('keeps save action only in account and uses autosave sections', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/settings')
+
+    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Salvar alterações' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: /salvar preferências/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Notificações' }))
+
+    const switches = screen.getAllByRole('switch')
+    const disabledSwitches = switches.filter((item) => item.hasAttribute('disabled'))
+    expect(disabledSwitches).toHaveLength(2)
+  })
+
   it('navigates into folders in files without breaking the breadcrumb', async () => {
     const user = userEvent.setup()
 
@@ -253,7 +356,8 @@ describe('App smoke flows', () => {
     await user.click(screen.getByRole('button', { name: 'Criar' }))
 
     expect(await screen.findAllByText('Plano Frontend QA')).not.toHaveLength(0)
-    expect(screen.getByText('Atual')).toBeInTheDocument()
+    expect(screen.getByText('Plano atual')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Plano Frontend QA' })).not.toHaveLength(0)
   })
 
   it('keeps the sidebar collapsed state across product screens', async () => {
@@ -266,5 +370,22 @@ describe('App smoke flows', () => {
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /expandir barra lateral/i })).toBeInTheDocument()
+  })
+
+  it('marks the collapsed-by-default sidebar preference as deprecated', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/settings')
+
+    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Preferências gerais' }))
+
+    const collapsedByDefaultLabel = await screen.findByText('Barra lateral recolhida por padrão')
+    const collapsedByDefaultField = collapsedByDefaultLabel.closest('div')?.parentElement
+    const collapsedByDefaultSwitch = within(collapsedByDefaultField).getByRole('switch')
+
+    expect(screen.getByText(/será removida ou substituída/i)).toBeInTheDocument()
+    expect(collapsedByDefaultSwitch).toBeDisabled()
   })
 })

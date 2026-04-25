@@ -2,11 +2,13 @@ export const ROUTES = {
   home: '/',
   login: '/login',
   register: '/cadastro',
+  oauthCallback: '/oauth/callback',
   workspace: '/workspace',
   workspaceBoard: '/workspace/board',
   canvas: '/canvas',
   calendar: '/calendar',
   files: '/files',
+  settings: '/settings',
   forgot: '/forgot',
   reset: '/reset',
   help: '/help',
@@ -15,7 +17,6 @@ export const ROUTES = {
 }
 
 export const ROUTE_ALIASES = [
-  { from: '/app', to: ROUTES.workspace },
   { from: '/app/board', to: ROUTES.workspaceBoard },
   { from: '/kanban', to: ROUTES.workspaceBoard },
   { from: '/workspace/canvas', to: ROUTES.canvas },

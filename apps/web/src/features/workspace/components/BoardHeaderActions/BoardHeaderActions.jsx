@@ -5,8 +5,11 @@ export default function BoardHeaderActions({
   icons,
   styles,
   onAddMember,
+  onOpenMembers,
+  membersButtonRef,
   onFilter,
   onShare,
+  notifications = null,
 }) {
   return (
     <>
@@ -14,10 +17,15 @@ export default function BoardHeaderActions({
         members={members}
         onAddMember={onAddMember}
         AddIcon={icons.Plus}
+        onOpenMembers={onOpenMembers}
+        membersButtonRef={membersButtonRef}
+        MembersIcon={icons.Users}
+        membersTitle="Membros do plano"
       />
 
       <div className={styles.boardHeaderDivider} />
 
+      {notifications}
       <button type="button" className={styles.boardHeaderBtn} onClick={onFilter}>
         <icons.Filter /> Filtrar
       </button>

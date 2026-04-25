@@ -8,7 +8,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--color-white);
+  background: var(--app-bg);
   position: relative;
   isolation: isolate;
 }
@@ -31,7 +31,7 @@
   justify-content: space-between;
   padding: 0 var(--container-px);
   height: 72px;
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
 }
 
@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--color-black);
+  color: var(--text-1);
   transition: opacity var(--transition-fast);
 }
 
@@ -52,8 +52,8 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-sm);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   flex-shrink: 0;
 }
 
@@ -61,12 +61,12 @@
   font-size: 15px;
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.01em;
-  color: var(--color-black);
+  color: var(--text-1);
 }
 
 .modeToggleTop {
   font-size: 13px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -74,17 +74,17 @@
   transition: color var(--transition-fast);
 }
 
-.modeToggleTop:hover { color: var(--color-black); }
+.modeToggleTop:hover { color: var(--text-1); }
 
 .modeToggleAction {
-  color: var(--color-black);
-  border-bottom: 1px solid var(--color-gray-300);
+  color: var(--text-1);
+  border-bottom: 1px solid var(--border-2);
   padding-bottom: 1px;
   transition: border-color var(--transition-fast);
 }
 
 .modeToggleTop:hover .modeToggleAction {
-  border-color: var(--color-black);
+  border-color: var(--text-1);
 }
 
 /* ── Center area ── */
@@ -121,7 +121,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-regular);
 }
 
@@ -130,12 +130,12 @@
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.035em;
   line-height: 1.1;
-  color: var(--color-black);
+  color: var(--text-1);
 }
 
 .titleLight {
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 /* ── Form ── */
@@ -167,21 +167,21 @@
 .label {
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-800);
+  color: var(--text-2);
   letter-spacing: -0.005em;
 }
 
 .forgotLink {
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   border-bottom: 1px solid transparent;
   padding-bottom: 1px;
   transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .forgotLink:hover {
-  color: var(--color-black);
-  border-color: var(--color-gray-300);
+  color: var(--text-1);
+  border-color: var(--border-2);
 }
 
 /* Input */
@@ -192,9 +192,9 @@
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  color: var(--color-black);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  color: var(--text-1);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   outline: none;
   transition:
@@ -204,16 +204,16 @@
 }
 
 .input::placeholder {
-  color: var(--color-gray-300);
+  color: var(--text-3);
 }
 
 .input:hover {
-  border-color: var(--color-gray-300);
+  border-color: var(--border-2);
 }
 
 .input:focus {
-  border-color: var(--color-black);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px var(--focus-ring-bg);
 }
 
 /* Password wrap */
@@ -230,7 +230,7 @@
   right: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-gray-400);
+  color: var(--text-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,7 +238,7 @@
   padding: 4px;
 }
 
-.eyeBtn:hover { color: var(--color-black); }
+.eyeBtn:hover { color: var(--text-1); }
 
 /* Password strength */
 .strengthRow {
@@ -252,7 +252,7 @@
 .strengthBar {
   flex: 1;
   height: 3px;
-  background: var(--color-gray-100);
+  background: var(--surface-3);
   border-radius: 2px;
   transition: background var(--transition-normal);
 }
@@ -263,7 +263,7 @@
 
 .strengthLabel {
   font-size: 11px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   width: 36px;
   text-align: right;
   flex-shrink: 0;
@@ -281,8 +281,8 @@
   width: 18px;
   height: 18px;
   border-radius: 5px;
-  border: 1.5px solid var(--color-gray-300);
-  background: var(--color-white);
+  border: 1.5px solid var(--border-2);
+  background: var(--surface-1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -294,32 +294,32 @@
 }
 
 .checkboxChecked {
-  background: var(--color-black);
-  border-color: var(--color-black);
+  background: var(--text-1);
+  border-color: var(--text-1);
 }
 
 .agreeText {
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-600);
+  color: var(--text-2);
   line-height: 1.5;
 }
 
 .agreeLink {
-  color: var(--color-black);
-  border-bottom: 1px solid var(--color-gray-300);
+  color: var(--text-1);
+  border-bottom: 1px solid var(--border-2);
   padding-bottom: 1px;
   transition: border-color var(--transition-fast);
 }
 
-.agreeLink:hover { border-color: var(--color-black); }
+.agreeLink:hover { border-color: var(--text-1); }
 
 /* Submit button */
 .submitBtn {
   width: 100%;
   height: 48px;
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-regular);
@@ -365,12 +365,12 @@
 .dividerLine {
   flex: 1;
   height: 1px;
-  background: var(--color-gray-200);
+  background: var(--border-1);
 }
 
 .dividerText {
   font-size: 12px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   white-space: nowrap;
   letter-spacing: 0.01em;
 }
@@ -392,9 +392,9 @@
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: var(--font-weight-regular);
-  color: var(--color-gray-800);
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  color: var(--text-2);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   transition:
     border-color var(--transition-fast),
@@ -404,8 +404,9 @@
 }
 
 .oauthBtn:hover:not(:disabled) {
-  border-color: var(--color-gray-400);
-  background: var(--color-gray-50);
+  border-color: var(--border-2);
+  background: var(--surface-2);
+  color: var(--text-1);
 }
 
 .oauthBtn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -427,28 +428,28 @@
 .switchRow {
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
   text-align: center;
 }
 
 .switchBtn {
   font-family: var(--font-family);
   font-size: 13px;
-  color: var(--color-black);
-  border-bottom: 1px solid var(--color-gray-300);
+  color: var(--text-1);
+  border-bottom: 1px solid var(--border-2);
   padding-bottom: 1px;
   transition: border-color var(--transition-fast);
 }
 
-.switchBtn:hover { border-color: var(--color-black); }
+.switchBtn:hover { border-color: var(--text-1); }
 
 /* ── Spinners ── */
 .spinner {
   display: block;
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: var(--color-white);
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -457,8 +458,8 @@
   display: block;
   width: 15px;
   height: 15px;
-  border: 1.5px solid var(--color-gray-200);
-  border-top-color: var(--color-gray-600);
+  border: 1.5px solid var(--border-1);
+  border-top-color: var(--text-2);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -473,7 +474,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 22px var(--container-px);
-  border-top: 1px solid var(--color-gray-200);
+  border-top: 1px solid var(--border-1);
   flex-shrink: 0;
   gap: 16px;
   flex-wrap: wrap;
@@ -482,7 +483,7 @@
 .footer p {
   font-size: 12px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .footerLinks {
@@ -493,11 +494,11 @@
 .footerLinks a {
   font-size: 12px;
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
   transition: color var(--transition-fast);
 }
 
-.footerLinks a:hover { color: var(--color-black); }
+.footerLinks a:hover { color: var(--text-1); }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {

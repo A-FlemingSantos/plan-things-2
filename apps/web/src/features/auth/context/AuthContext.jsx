@@ -125,6 +125,18 @@ export function AuthProvider({ children }) {
     return nextSession
   }
 
+  const patchSession = ({ user, workspace } = {}) => {
+    if (!session) return null
+
+    const nextSession = {
+      ...session,
+      user: user ? { ...session.user, ...user } : session.user,
+      workspace: workspace ? { ...session.workspace, ...workspace } : session.workspace,
+    }
+
+    return saveSession(nextSession)
+  }
+
   const login = async (credentials) => {
     if (isTestEnvironment()) {
       return saveSession(createDemoSession('login', credentials))
@@ -184,6 +196,40 @@ export function AuthProvider({ children }) {
     })
   }
 
+  const startOAuthLogin = async (provider, options = {}) => {
+    if (isTestEnvironment()) {
+      return {
+        authorizationUrl: `${window.location.origin}/oauth/callback?code=demo-${provider}-oauth-code`,
+      }
+    }
+
+    return apiRequest(`/api/auth/oauth/${provider}/start`, {
+      method: 'POST',
+      body: {
+        redirectTo: options.redirectTo,
+      },
+    })
+  }
+
+  const completeOAuthLogin = async (code) => {
+    if (isTestEnvironment() && String(code).startsWith('demo-')) {
+      return saveSession(createDemoSession('oauth', {
+        fullName: 'Arthur Santos',
+        email: 'arthur@example.com',
+      }))
+    }
+
+    const response = await apiRequest('/api/auth/oauth/exchange', {
+      method: 'POST',
+      body: { code },
+    })
+
+    return saveSession({
+      ...response,
+      demo: false,
+    })
+  }
+
   const logout = () => {
     saveSession(null)
   }
@@ -199,6 +245,9 @@ export function AuthProvider({ children }) {
     register,
     forgotPassword,
     resetPassword,
+    startOAuthLogin,
+    completeOAuthLogin,
+    patchSession,
     logout,
   }), [isReady, session])
 

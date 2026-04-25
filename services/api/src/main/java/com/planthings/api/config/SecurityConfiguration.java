@@ -37,8 +37,10 @@ public class SecurityConfiguration {
         .sessionManagement(configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/forgot-password", "/api/auth/reset-password")
+            .requestMatchers(HttpMethod.GET, "/api/settings/integrations/gmail/callback").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/oauth/*/start", "/api/auth/oauth/exchange")
             .permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/auth/oauth/*/callback").permitAll()
             .anyRequest()
             .authenticated()
         )

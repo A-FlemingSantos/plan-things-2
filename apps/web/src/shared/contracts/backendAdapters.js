@@ -73,61 +73,251 @@ function toDate(value) {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
-function parseBrazilDateValue(value) {
+const DEFAULT_TIME_ZONE = 'America/Sao_Paulo'
+const DEFAULT_LOCALE = 'pt-BR'
+
+function normalizeShortMonthLabel(value) {
+  return String(value ?? '').replace('.', '').trim().toLowerCase()
+}
+
+function normalizeTimeZone(value) {
+  const normalized = typeof value === 'string' ? value.trim() : ''
+  if (!normalized) return DEFAULT_TIME_ZONE
+
+  try {
+    return new Intl.DateTimeFormat('en-US', { timeZone: normalized }).resolvedOptions().timeZone
+  } catch {
+    return DEFAULT_TIME_ZONE
+  }
+}
+
+function parseTimeValue(value, fallback = '09:00') {
+  const [hoursRaw = '09', minutesRaw = '00'] = String(value || fallback).split(':')
+  const hours = Number.parseInt(hoursRaw, 10)
+  const minutes = Number.parseInt(minutesRaw, 10)
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return parseTimeValue(fallback, '09:00')
+  }
+
+  return {
+    hours: Math.max(0, Math.min(23, hours)),
+    minutes: Math.max(0, Math.min(59, minutes)),
+  }
+}
+
+function parseDateValue(value, preferredFormat = 'dd/MM/yyyy') {
   if (!value || typeof value !== 'string') return null
-  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
-  if (!match) return null
-  const [, dayValue, monthValue, yearValue] = match
-  let year = Number(yearValue)
-  if (yearValue.length === 2) {
+  const normalized = value.trim()
+
+  const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch
+    return {
+      year: Number(year),
+      month: Number(month),
+      day: Number(day),
+    }
+  }
+
+  const slashMatch = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+  if (!slashMatch) return null
+
+  const first = Number(slashMatch[1])
+  const second = Number(slashMatch[2])
+  const rawYear = slashMatch[3]
+  let year = Number(rawYear)
+  if (rawYear.length === 2) {
     year += 2000
   }
+
+  let day = first
+  let month = second
+
+  if (preferredFormat === 'MM/dd/yyyy') {
+    day = second
+    month = first
+  } else if (first <= 12 && second > 12) {
+    day = second
+    month = first
+  }
+
+  const hasValidMonthDay = (candidateDay, candidateMonth) => (
+    candidateMonth >= 1
+    && candidateMonth <= 12
+    && candidateDay >= 1
+    && candidateDay <= 31
+  )
+
+  if (!hasValidMonthDay(day, month)) {
+    const swappedDay = month
+    const swappedMonth = day
+    if (!hasValidMonthDay(swappedDay, swappedMonth)) {
+      return null
+    }
+    day = swappedDay
+    month = swappedMonth
+  }
+
+  return { year, month, day }
+}
+
+function zonedPartsFromDate(date, timeZone, locale = 'en-CA') {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  })
+  const partByType = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value]),
+  )
+
   return {
-    year,
-    month: Number(monthValue),
-    day: Number(dayValue),
+    year: Number(partByType.year),
+    month: Number(partByType.month),
+    day: Number(partByType.day),
+    hour: Number(partByType.hour),
+    minute: Number(partByType.minute),
+    second: Number(partByType.second),
   }
 }
 
-function createOffsetDateTime(dateValue, timeValue = '09:00') {
-  const parsedDate = parseBrazilDateValue(dateValue)
-  if (!parsedDate) return null
-  const [hours = '09', minutes = '00'] = String(timeValue || '09:00').split(':')
-
-  return `${parsedDate.year}-${String(parsedDate.month).padStart(2, '0')}-${String(parsedDate.day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00-03:00`
+function zoneOffsetMinutesAt(instantMs, timeZone) {
+  const parts = zonedPartsFromDate(new Date(instantMs), timeZone)
+  const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
+  return Math.round((asUtc - instantMs) / 60000)
 }
 
-function formatDateInputFromIso(value) {
+function resolveInstantMsForZonedDateTime(dateParts, timeParts, timeZone) {
+  const desiredUtc = Date.UTC(
+    dateParts.year,
+    dateParts.month - 1,
+    dateParts.day,
+    timeParts.hours,
+    timeParts.minutes,
+    0,
+    0,
+  )
+
+  let instant = desiredUtc
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const zoned = zonedPartsFromDate(new Date(instant), timeZone)
+    const currentUtc = Date.UTC(
+      zoned.year,
+      zoned.month - 1,
+      zoned.day,
+      zoned.hour,
+      zoned.minute,
+      zoned.second,
+      0,
+    )
+    const delta = desiredUtc - currentUtc
+    instant += delta
+
+    if (delta === 0) {
+      break
+    }
+  }
+
+  return instant
+}
+
+function formatOffset(offsetMinutes) {
+  const sign = offsetMinutes >= 0 ? '+' : '-'
+  const absolute = Math.abs(offsetMinutes)
+  const hours = Math.floor(absolute / 60)
+  const minutes = absolute % 60
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+function toDateKeyByTimeZone(value, timeZone = DEFAULT_TIME_ZONE) {
   const date = toDate(value)
-  if (!date) return ''
-  return new Intl.DateTimeFormat('pt-BR').format(date)
+  if (!date) return null
+  const parts = zonedPartsFromDate(date, normalizeTimeZone(timeZone))
+  return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
 }
 
-function formatTimeInputFromIso(value) {
+function createOffsetDateTime(dateValue, timeValue = '09:00', options = {}) {
+  const preferredDateFormat = options.dateFormat ?? 'dd/MM/yyyy'
+  const parsedDate = parseDateValue(dateValue, preferredDateFormat)
+  if (!parsedDate) return null
+  const parsedTime = parseTimeValue(timeValue)
+  const timeZone = normalizeTimeZone(options.timeZone)
+  const instantMs = resolveInstantMsForZonedDateTime(parsedDate, parsedTime, timeZone)
+  const offsetMinutes = zoneOffsetMinutesAt(instantMs, timeZone)
+
+  return `${String(parsedDate.year).padStart(4, '0')}-${String(parsedDate.month).padStart(2, '0')}-${String(parsedDate.day).padStart(2, '0')}T${String(parsedTime.hours).padStart(2, '0')}:${String(parsedTime.minutes).padStart(2, '0')}:00${formatOffset(offsetMinutes)}`
+}
+
+function formatDateInputFromIso(value, options = {}) {
+  const dateKey = toDateKeyByTimeZone(value, options.timeZone)
+  if (!dateKey) return ''
+  const [year, month, day] = dateKey.split('-')
+  const dateFormat = options.dateFormat ?? 'dd/MM/yyyy'
+
+  if (dateFormat === 'MM/dd/yyyy') {
+    return `${month}/${day}/${year}`
+  }
+
+  if (dateFormat === 'yyyy-MM-dd') {
+    return `${year}-${month}-${day}`
+  }
+
+  return `${day}/${month}/${year}`
+}
+
+function formatTimeInputFromIso(value, options = {}) {
   const date = toDate(value)
   if (!date) return '09:00'
-  return new Intl.DateTimeFormat('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date)
+  const timeZone = normalizeTimeZone(options.timeZone)
+  const { hour, minute } = zonedPartsFromDate(date, timeZone)
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
-function formatCardDueLabel(dueAt) {
-  const date = toDate(dueAt?.iso)
+function formatCompactDayMonthFromIso(value, options = {}) {
+  const date = toDate(value)
   if (!date) return ''
+  const locale = options.locale ?? DEFAULT_LOCALE
+  const timeZone = normalizeTimeZone(options.timeZone)
+  const parts = new Intl.DateTimeFormat(locale, {
+    timeZone,
+    day: 'numeric',
+    month: 'short',
+  }).formatToParts(date)
+  const partByType = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  const day = partByType.day ?? ''
+  const month = normalizeShortMonthLabel(partByType.month ?? '')
+  return `${day} ${month}`.trim()
+}
 
-  const today = new Date()
-  const sameDay =
-    today.getFullYear() === date.getFullYear() &&
-    today.getMonth() === date.getMonth() &&
-    today.getDate() === date.getDate()
+function dayOfMonthFromDateKey(dateKey) {
+  if (!dateKey || typeof dateKey !== 'string') return null
+  const [, , day] = dateKey.split('-')
+  const numeric = Number(day)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
+function formatCardDueLabel(dueAt, options = {}) {
+  const timeZone = normalizeTimeZone(options.timeZone)
+  const dueDateKey = toDateKeyByTimeZone(dueAt?.iso, timeZone)
+  if (!dueDateKey) return ''
+
+  const todayDateKey = toDateKeyByTimeZone(new Date(), timeZone)
+  const sameDay = todayDateKey && todayDateKey === dueDateKey
 
   if (sameDay) {
     return 'Hoje'
   }
 
-  return shortMonthLabel(date)
+  return formatCompactDayMonthFromIso(dueAt?.iso, options)
 }
 
 function buildMemberColor(index) {
@@ -237,7 +427,14 @@ function mapBoardComment(comment) {
   }
 }
 
-function mapBoardCard(card) {
+function mapBoardCard(card, options = {}) {
+  const timeZone = normalizeTimeZone(options.timeZone)
+  const locale = options.locale ?? DEFAULT_LOCALE
+  const dateFormat = options.dateFormat ?? 'dd/MM/yyyy'
+  const dueDateKey = toDateKeyByTimeZone(card.dueAt?.iso, timeZone)
+  const startDateKey = toDateKeyByTimeZone(card.startAt?.iso, timeZone)
+  const selectedCalendarDay = dayOfMonthFromDateKey(dueDateKey ?? startDateKey) ?? 7
+
   return {
     id: card.id,
     columnId: card.columnId,
@@ -245,19 +442,39 @@ function mapBoardCard(card) {
     description: card.description ?? '',
     labelId: card.label?.id ?? '',
     memberIds: card.assignees.map((member) => member.id),
-    dueDate: formatCardDueLabel(card.dueAt),
+    dueDate: formatCardDueLabel(card.dueAt, { locale, timeZone }),
     startAt: card.startAt ?? null,
     dueAt: card.dueAt ?? null,
     comments: card.comments.map(mapBoardComment),
+    attachments: Array.isArray(card.attachments)
+      ? card.attachments.map((attachment) => ({
+          id: attachment.id,
+          fileId: attachment.fileId,
+          name: attachment.name,
+          type: attachment.type === 'FOLDER' ? 'folder' : getFileTypeFromName(attachment.name),
+          mimeType: attachment.mimeType ?? '',
+          size: attachment.sizeBytes ?? 0,
+          attachedBy: attachment.attachedBy ?? null,
+          attachedByCurrentUser: Boolean(attachment.attachedByCurrentUser),
+          canRemove: Boolean(attachment.canRemove),
+          createdAt: attachment.createdAt ?? null,
+        }))
+      : [],
     kind: card.kind,
     schedule: {
-      selectedCalendarDay: toDate(card.dueAt?.iso)?.getDate() ?? toDate(card.startAt?.iso)?.getDate() ?? 7,
+      selectedCalendarDay,
       startEnabled: Boolean(card.startAt?.iso),
-      startDateValue: formatDateInputFromIso(card.startAt?.iso),
+      startDateValue: formatDateInputFromIso(card.startAt?.iso, {
+        dateFormat,
+        timeZone,
+      }),
       dueEnabled: Boolean(card.dueAt?.iso),
-      dueDateValue: formatDateInputFromIso(card.dueAt?.iso),
-      dueTimeValue: formatTimeInputFromIso(card.dueAt?.iso),
-      displayLabel: formatCardDueLabel(card.dueAt),
+      dueDateValue: formatDateInputFromIso(card.dueAt?.iso, {
+        dateFormat,
+        timeZone,
+      }),
+      dueTimeValue: formatTimeInputFromIso(card.dueAt?.iso, { timeZone }),
+      displayLabel: formatCardDueLabel(card.dueAt, { locale, timeZone }),
       preserveDisplayLabel: false,
     },
     checklists: card.checklists ?? [],
@@ -265,25 +482,44 @@ function mapBoardCard(card) {
   }
 }
 
-export function mapBoardViewToColumns(boardView) {
+function mapBoardInboxItem(item) {
+  return {
+    id: item.id,
+    cardId: item.cardId,
+    cardTitle: item.cardTitle ?? 'Cartão',
+    cardKind: item.cardKind ?? 'CARTAO',
+    sentBy: item.sentBy ?? null,
+    sentFrom: item.sentFrom ?? '',
+    sentTo: Array.isArray(item.sentTo) ? item.sentTo : [],
+    recipients: Array.isArray(item.recipients) ? item.recipients : [],
+    messageId: item.messageId ?? '',
+    threadId: item.threadId ?? '',
+    sentAt: item.sentAt ?? null,
+  }
+}
+
+export function mapBoardViewToColumns(boardView, options = {}) {
   return boardView.columns.map((column) => ({
     id: column.id,
     title: column.title,
     color: column.color,
-    cards: column.cards.map(mapBoardCard),
+    cards: column.cards.map((card) => mapBoardCard(card, options)),
   }))
 }
 
-export function mergeBoardIntoPlan(plan, boardView) {
+export function mergeBoardIntoPlan(plan, boardView, options = {}) {
   return {
     ...plan,
-    boardColumns: mapBoardViewToColumns(boardView),
+    boardColumns: mapBoardViewToColumns(boardView, options),
     labelsMeta: boardView.labels.map((label) => ({
       id: label.id,
       text: label.name,
       name: label.name,
       color: label.color,
     })),
+    inboxItems: Array.isArray(boardView.inboxItems)
+      ? boardView.inboxItems.map(mapBoardInboxItem)
+      : [],
     tasks: boardView.columns.reduce((sum, column) => sum + column.cards.length, 0),
     boardLoaded: true,
   }
@@ -308,12 +544,20 @@ export function buildCanvasSavePayload(canvasState, expectedVersion) {
   }
 }
 
-export function buildBoardCardPayload(card) {
+export function buildBoardCardPayload(card, options = {}) {
+  const dateFormat = options.dateFormat ?? 'dd/MM/yyyy'
+  const timeZone = normalizeTimeZone(options.timeZone)
   const startAt = card.schedule?.startEnabled
-    ? createOffsetDateTime(card.schedule.startDateValue, '09:00')
+    ? createOffsetDateTime(card.schedule.startDateValue, '09:00', {
+        dateFormat,
+        timeZone,
+      })
     : null
   const dueAt = card.schedule?.dueEnabled
-    ? createOffsetDateTime(card.schedule.dueDateValue, card.schedule.dueTimeValue || '09:00')
+    ? createOffsetDateTime(card.schedule.dueDateValue, card.schedule.dueTimeValue || '09:00', {
+        dateFormat,
+        timeZone,
+      })
     : null
 
   return {
@@ -343,7 +587,8 @@ function mapBackendEventSource(event) {
   }
 }
 
-export function mapCalendarEventsToSnapshot(events) {
+export function mapCalendarEventsToSnapshot(events, options = {}) {
+  const timeZone = normalizeTimeZone(options.timeZone)
   const sources = []
   const seen = new Set()
 
@@ -370,9 +615,9 @@ export function mapCalendarEventsToSnapshot(events) {
         id: event.id,
         title: event.title,
         description: event.description ?? '',
-        date: dateSourceIso?.slice(0, 10),
-        start: startsAt ? formatTimeInputFromIso(event.startsAt?.iso) : '09:00',
-        end: endsAt ? formatTimeInputFromIso(event.endsAt?.iso) : '10:00',
+        date: toDateKeyByTimeZone(dateSourceIso, timeZone) ?? dateSourceIso?.slice(0, 10),
+        start: startsAt ? formatTimeInputFromIso(event.startsAt?.iso, { timeZone }) : '09:00',
+        end: endsAt ? formatTimeInputFromIso(event.endsAt?.iso, { timeZone }) : '10:00',
         calendar: event.generatedFromCard ? 'Plano vinculado' : 'Calendario interno',
         sourceId: source.id,
         color: source.color,
@@ -384,16 +629,20 @@ export function mapCalendarEventsToSnapshot(events) {
   })
 }
 
-export function buildCalendarEventPayload(event) {
-  const [year, month, day] = String(event.date).split('-')
-  const dateValue = `${day}/${month}/${year}`
-
+export function buildCalendarEventPayload(event, options = {}) {
+  const timeZone = normalizeTimeZone(options.timeZone)
   return {
     title: event.title,
     description: event.description ?? '',
     location: event.location ?? '',
-    startsAt: createOffsetDateTime(dateValue, event.start),
-    endsAt: createOffsetDateTime(dateValue, event.end),
+    startsAt: createOffsetDateTime(event.date, event.start, {
+      dateFormat: 'yyyy-MM-dd',
+      timeZone,
+    }),
+    endsAt: createOffsetDateTime(event.date, event.end, {
+      dateFormat: 'yyyy-MM-dd',
+      timeZone,
+    }),
   }
 }
 
@@ -414,6 +663,8 @@ export function buildLibraryTreeFromApi(items) {
       owner: 'me',
       deleted: Boolean(item.deleted),
       parentId: item.parentId ?? null,
+      sharedByCurrentUser: Boolean(item.sharedByCurrentUser),
+      canUnshare: Boolean(item.canUnshare),
       children: [],
     })
   })

@@ -36,6 +36,7 @@ management:
         include: health,info
 
 app:
+  frontend-base-url: ${APP_FRONTEND_BASE_URL:http://localhost:5173}
   jwt:
     secret: 5f388f9c8130f6dba1f0fba57fa6a2c98f22d8e5edc94a77b701e4cb7b25c438
     issuer: plan-things-api
@@ -45,3 +46,52 @@ app:
     tag: pt-BR
   time:
     zone-id: America/Sao_Paulo
+  oauth:
+    frontend-callback-url: ${APP_OAUTH_FRONTEND_CALLBACK_URL:http://localhost:5173/oauth/callback}
+    state-minutes: ${APP_OAUTH_STATE_MINUTES:10}
+    completion-code-minutes: ${APP_OAUTH_COMPLETION_CODE_MINUTES:5}
+    allowed-redirect-paths:
+      - /
+      - /app
+      - /workspace
+      - /canvas
+      - /calendar
+      - /files
+      - /settings
+      - /plans/invites
+    providers:
+      google:
+        client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+        client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+        authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+        token-uri: https://oauth2.googleapis.com/token
+        redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:http://localhost:8080/api/auth/oauth/google/callback}
+        issuer: https://accounts.google.com
+        jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+        scopes:
+          - openid
+          - profile
+          - email
+      microsoft:
+        client-id: ${MICROSOFT_OAUTH_CLIENT_ID:}
+        client-secret: ${MICROSOFT_OAUTH_CLIENT_SECRET:}
+        authorization-uri: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+        token-uri: https://login.microsoftonline.com/common/oauth2/v2.0/token
+        redirect-uri: ${MICROSOFT_OAUTH_REDIRECT_URI:http://localhost:8080/api/auth/oauth/microsoft/callback}
+        issuer: https://login.microsoftonline.com/common/v2.0
+        jwk-set-uri: https://login.microsoftonline.com/common/discovery/v2.0/keys
+        scopes:
+          - openid
+          - profile
+          - email
+  integrations:
+    token-key-base64: ${APP_INTEGRATION_TOKEN_KEY_B64:}
+    gmail:
+      redirect-uri: ${GMAIL_INTEGRATION_REDIRECT_URI:http://localhost:8080/api/settings/integrations/gmail/callback}
+      frontend-return-url: ${GMAIL_INTEGRATION_FRONTEND_RETURN_URL:http://localhost:5173/settings}
+      state-minutes: ${GMAIL_INTEGRATION_STATE_MINUTES:10}
+      scopes:
+        - openid
+        - profile
+        - email
+        - https://www.googleapis.com/auth/gmail.send

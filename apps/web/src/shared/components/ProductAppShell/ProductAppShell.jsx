@@ -1,8 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import ProductSidebar from '../ProductSidebar/ProductSidebar.jsx'
 
-const SIDEBAR_STORAGE_KEY = 'plan-things:sidebar-collapsed'
+const SIDEBAR_STORAGE_PREFIX = 'plan-things:sidebar-collapsed:v1:'
+
+function buildSidebarStorageKey(userId) {
+  return `${SIDEBAR_STORAGE_PREFIX}${userId || 'anonymous'}`
+}
+
+function readSidebarCollapsedState(storageKey) {
+  if (typeof window === 'undefined') return false
+
+  const persistedSidebarValue = window.localStorage.getItem(storageKey)
+  return persistedSidebarValue === 'true'
+}
 
 export default function ProductAppShell({
   styles,
@@ -22,10 +33,13 @@ export default function ProductAppShell({
   children,
 }) {
   const { workspace, currentUser } = useAuth()
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true'
-  })
+  const sidebarStorageKey = useMemo(
+    () => buildSidebarStorageKey(currentUser?.id),
+    [currentUser?.id],
+  )
+  const [collapsed, setCollapsed] = useState(() => (
+    readSidebarCollapsedState(sidebarStorageKey)
+  ))
   const ContentTag = contentTag
   const resolvedWorkspaceName = workspaceName ?? workspace?.name ?? 'Workspace'
   const resolvedWorkspaceInitial = workspaceInitial
@@ -38,15 +52,25 @@ export default function ProductAppShell({
     typeof bottomContent === 'function' ? bottomContent({ collapsed }) : bottomContent
 
   useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed))
-  }, [collapsed])
+    setCollapsed(readSidebarCollapsedState(sidebarStorageKey))
+  }, [sidebarStorageKey])
+
+  const handleToggleCollapse = () => {
+    setCollapsed((value) => {
+      const next = !value
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(sidebarStorageKey, String(next))
+      }
+      return next
+    })
+  }
 
   return (
     <div className={`${styles.shell} ${collapsed ? styles.shellCollapsed : ''}`}>
       <ProductSidebar
         styles={styles}
         collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed((value) => !value)}
+        onToggleCollapse={handleToggleCollapse}
         activeNav={activeNav}
         onNavItemClick={onNavItemClick}
         navItems={navItems}

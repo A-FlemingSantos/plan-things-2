@@ -14,6 +14,7 @@ import { usePlans } from '../../../workspace/context/PlansContext.jsx'
 import { useResolvedPlanRoute } from '../../../workspace/hooks/useResolvedPlanRoute.js'
 import { useCanvasInteractions } from '../../hooks/useCanvasInteractions.js'
 import { useCanvasState } from '../../hooks/useCanvasState.js'
+import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import styles from './CanvasPage.module.css'
 
 /* ═══════════════════════════════════════════════════════
@@ -24,12 +25,12 @@ const MIN_ZOOM  = 0.2
 const MAX_ZOOM  = 3
 
 const CARD_COLORS = [
-  { id: 'stone',  accent: '#1a1a1a', bg: '#ffffff', border: '#e0e0e0' },
-  { id: 'blue',   accent: '#4290da', bg: '#f0f7ff', border: '#bdd8f5' },
-  { id: 'purple', accent: '#9b7ec8', bg: '#f7f3ff', border: '#d8c8f0' },
-  { id: 'green',  accent: '#0f703a', bg: '#f0fbf4', border: '#b3e0c6' },
-  { id: 'red',    accent: '#d94f4f', bg: '#fff4f4', border: '#f5c6c6' },
-  { id: 'amber',  accent: '#c47800', bg: '#fffbf0', border: '#f0d8a0' },
+  { id: 'stone',  accent: 'var(--canvas-card-stone-accent)', bg: 'var(--canvas-card-stone-bg)', border: 'var(--canvas-card-stone-border)' },
+  { id: 'blue',   accent: 'var(--canvas-card-blue-accent)', bg: 'var(--canvas-card-blue-bg)', border: 'var(--canvas-card-blue-border)' },
+  { id: 'purple', accent: 'var(--canvas-card-purple-accent)', bg: 'var(--canvas-card-purple-bg)', border: 'var(--canvas-card-purple-border)' },
+  { id: 'green',  accent: 'var(--canvas-card-green-accent)', bg: 'var(--canvas-card-green-bg)', border: 'var(--canvas-card-green-border)' },
+  { id: 'red',    accent: 'var(--canvas-card-red-accent)', bg: 'var(--canvas-card-red-bg)', border: 'var(--canvas-card-red-border)' },
+  { id: 'amber',  accent: 'var(--canvas-card-amber-accent)', bg: 'var(--canvas-card-amber-bg)', border: 'var(--canvas-card-amber-border)' },
 ]
 
 const TOOLS = [
@@ -222,19 +223,20 @@ export default function CanvasPage() {
   )
 
   return (
-    <ProductAppShell
-      styles={styles}
-      activeNav={activeNav}
-      onNavItemClick={handleNavItemClick}
-      navItems={NAV.map(({ id, Icon }) => ({ id, label: NAV_LABELS[id], Icon }))}
-      LogoIcon={Ic.Logo}
-      CollapseIcon={SidebarCollapseIcon}
-      ChevronIcon={Ic.Chevron}
-      HintIcon={Ic.Popover}
-      secondaryContent={renderSidebarSecondaryContent}
-      bottomContent={renderSidebarBottomContent}
+    <AppThemeScope>
+      <ProductAppShell
+        styles={styles}
+        activeNav={activeNav}
+        onNavItemClick={handleNavItemClick}
+        navItems={NAV.map(({ id, Icon }) => ({ id, label: NAV_LABELS[id], Icon }))}
+        LogoIcon={Ic.Logo}
+        CollapseIcon={SidebarCollapseIcon}
+        ChevronIcon={Ic.Chevron}
+        HintIcon={Ic.Popover}
+        secondaryContent={renderSidebarSecondaryContent}
+        bottomContent={renderSidebarBottomContent}
         contentClassName={styles.canvasWrapper}
-    >
+      >
         <PlanPageHeader
           title={canvasHeaderTitle}
           breadcrumbCurrent={canvasHeaderTitle}
@@ -374,6 +376,7 @@ export default function CanvasPage() {
             )}
           </>
         )}
-    </ProductAppShell>
+      </ProductAppShell>
+    </AppThemeScope>
   )
 }

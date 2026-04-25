@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,9 @@ public class PlanService {
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
+  private final PlanInviteEmailSender planInviteEmailSender;
   private final Clock clock;
+  private final String frontendBaseUrl;
 
   public PlanService(
       PlanRepository planRepository,
@@ -58,7 +61,9 @@ public class PlanService {
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
       BrazilDateTimeMapper brazilDateTimeMapper,
-      Clock clock
+      PlanInviteEmailSender planInviteEmailSender,
+      Clock clock,
+      @Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl
   ) {
     this.planRepository = planRepository;
     this.planMemberRepository = planMemberRepository;
@@ -73,7 +78,9 @@ public class PlanService {
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
+    this.planInviteEmailSender = planInviteEmailSender;
     this.clock = clock;
+    this.frontendBaseUrl = normalizeFrontendBaseUrl(frontendBaseUrl);
   }
 
   public List<PlanSummary> listAccessiblePlans() {
@@ -169,6 +176,8 @@ public class PlanService {
   public InviteResponse inviteMember(UUID planId, String email) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     planAccessService.requirePlanManager(planId, currentUser.getId());
+    PlanEntity plan = planRepository.findById(planId)
+        .orElseThrow(() -> new NotFoundException("PLANO_NAO_ENCONTRADO", "Plano nao encontrado."));
 
     String normalizedEmail = normalizeEmail(email);
     planInviteRepository.findByPlanIdAndInvitedEmailIgnoreCaseAndStatus(planId, normalizedEmail, PlanInviteStatus.PENDING)
@@ -189,19 +198,28 @@ public class PlanService {
     invite.setToken(UUID.randomUUID().toString());
     invite.setStatus(PlanInviteStatus.PENDING);
     invite.setExpiresAt(OffsetDateTime.now(clock).plusDays(7));
-    planInviteRepository.save(invite);
+    ApiDateTimeDto expiresAt = brazilDateTimeMapper.toDateTime(invite.getExpiresAt());
+    PlanInviteEmailSender.Delivery delivery = planInviteEmailSender.sendInvite(
+        currentUser,
+        normalizedEmail,
+        plan.getName(),
+        buildInviteUrl(invite.getToken()),
+        expiresAt
+    );
 
+    planInviteRepository.save(invite);
     return new InviteResponse(
         invite.getId(),
         invite.getInvitedEmail(),
         invite.getStatus(),
         invite.getToken(),
-        brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
+        expiresAt,
+        new InviteDeliveryResponse(delivery.emailSent(), delivery.sentTo(), delivery.sentFrom())
     );
   }
 
   @Transactional
-  public MessageResponse acceptInvite(String token) {
+  public AcceptInviteResponse acceptInvite(String token) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     PlanInviteEntity invite = planInviteRepository.findByToken(token)
         .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
@@ -231,7 +249,90 @@ public class PlanService {
     invite.setStatus(PlanInviteStatus.ACCEPTED);
     invite.setRespondedAt(OffsetDateTime.now(clock));
     planInviteRepository.save(invite);
-    return new MessageResponse("Convite aceito com sucesso.");
+    return new AcceptInviteResponse(invite.getPlanId(), "Convite aceito com sucesso.");
+  }
+
+  @Transactional
+  public List<InviteResponse> listInvites(UUID planId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+
+    OffsetDateTime now = OffsetDateTime.now(clock);
+    List<PlanInviteEntity> invites = planInviteRepository.findByPlanIdOrderByCreatedAtDesc(planId);
+    List<PlanInviteEntity> expiredInvites = invites.stream()
+        .filter(invite -> invite.getStatus() == PlanInviteStatus.PENDING)
+        .filter(invite -> invite.getExpiresAt().isBefore(now))
+        .peek(invite -> invite.setStatus(PlanInviteStatus.EXPIRED))
+        .toList();
+    if (!expiredInvites.isEmpty()) {
+      planInviteRepository.saveAll(expiredInvites);
+    }
+
+    return invites.stream().map(this::toInviteResponse).toList();
+  }
+
+  @Transactional
+  public List<InvitePreviewResponse> listPendingInvitesForCurrentUser() {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    OffsetDateTime now = OffsetDateTime.now(clock);
+    List<PlanInviteEntity> invites = planInviteRepository
+        .findByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc(currentUser.getEmail(), PlanInviteStatus.PENDING);
+    List<PlanInviteEntity> expiredInvites = invites.stream()
+        .filter(invite -> invite.getExpiresAt().isBefore(now))
+        .peek(invite -> invite.setStatus(PlanInviteStatus.EXPIRED))
+        .toList();
+    if (!expiredInvites.isEmpty()) {
+      planInviteRepository.saveAll(expiredInvites);
+    }
+
+    return invites.stream()
+        .filter(invite -> invite.getStatus() == PlanInviteStatus.PENDING)
+        .map(this::toInvitePreviewResponse)
+        .toList();
+  }
+
+  @Transactional
+  public InvitePreviewResponse getInvitePreview(String token) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    PlanInviteEntity invite = planInviteRepository.findByToken(token)
+        .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
+
+    if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
+      throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
+    }
+
+    if (invite.getStatus() == PlanInviteStatus.PENDING && invite.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
+      invite.setStatus(PlanInviteStatus.EXPIRED);
+      planInviteRepository.save(invite);
+    }
+
+    return toInvitePreviewResponse(invite);
+  }
+
+  @Transactional
+  public MessageResponse revokeInvite(UUID planId, UUID inviteId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+
+    PlanInviteEntity invite = planInviteRepository.findById(inviteId)
+        .filter(candidate -> candidate.getPlanId().equals(planId))
+        .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos este convite para o plano informado."));
+
+    if (invite.getStatus() != PlanInviteStatus.PENDING) {
+      throw new BadRequestException("CONVITE_INVALIDO", "Este convite nao esta mais disponivel para revogacao.");
+    }
+
+    OffsetDateTime now = OffsetDateTime.now(clock);
+    if (invite.getExpiresAt().isBefore(now)) {
+      invite.setStatus(PlanInviteStatus.EXPIRED);
+      planInviteRepository.save(invite);
+      throw new BadRequestException("CONVITE_EXPIRADO", "Este convite expirou.");
+    }
+
+    invite.setStatus(PlanInviteStatus.REVOKED);
+    invite.setRespondedAt(now);
+    planInviteRepository.save(invite);
+    return new MessageResponse("Convite revogado com sucesso.");
   }
 
   @Transactional
@@ -242,6 +343,16 @@ public class PlanService {
 
     if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
       throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
+    }
+
+    if (invite.getStatus() != PlanInviteStatus.PENDING) {
+      throw new BadRequestException("CONVITE_INVALIDO", "Este convite nao esta mais disponivel para recusa.");
+    }
+
+    if (invite.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
+      invite.setStatus(PlanInviteStatus.EXPIRED);
+      planInviteRepository.save(invite);
+      throw new BadRequestException("CONVITE_EXPIRADO", "Este convite expirou.");
     }
 
     invite.setStatus(PlanInviteStatus.DECLINED);
@@ -326,6 +437,31 @@ public class PlanService {
         user.getEmail(),
         member.getRole(),
         brazilDateTimeMapper.toDateTime(member.getCreatedAt())
+    );
+  }
+
+  private InviteResponse toInviteResponse(PlanInviteEntity invite) {
+    return new InviteResponse(
+        invite.getId(),
+        invite.getInvitedEmail(),
+        invite.getStatus(),
+        invite.getToken(),
+        brazilDateTimeMapper.toDateTime(invite.getExpiresAt()),
+        null
+    );
+  }
+
+  private InvitePreviewResponse toInvitePreviewResponse(PlanInviteEntity invite) {
+    PlanEntity plan = planRepository.findById(invite.getPlanId())
+        .orElseThrow(() -> new NotFoundException("PLANO_NAO_ENCONTRADO", "Nao encontramos o plano deste convite."));
+    return new InvitePreviewResponse(
+        invite.getId(),
+        invite.getPlanId(),
+        plan.getName(),
+        invite.getInvitedEmail(),
+        invite.getStatus(),
+        invite.getToken(),
+        brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
     );
   }
 
@@ -417,6 +553,21 @@ public class PlanService {
     return normalized;
   }
 
+  private String normalizeFrontendBaseUrl(String value) {
+    String normalized = value == null ? "" : value.trim();
+    if (normalized.isBlank()) {
+      return "http://localhost:5173";
+    }
+    while (normalized.endsWith("/")) {
+      normalized = normalized.substring(0, normalized.length() - 1);
+    }
+    return normalized;
+  }
+
+  private String buildInviteUrl(String token) {
+    return frontendBaseUrl + "/plans/invites/" + token;
+  }
+
   public record PlanSummary(
       UUID id,
       String name,
@@ -453,8 +604,30 @@ public class PlanService {
       String invitedEmail,
       PlanInviteStatus status,
       String token,
+      ApiDateTimeDto expiresAt,
+      InviteDeliveryResponse delivery
+  ) {
+  }
+
+  public record InviteDeliveryResponse(
+      boolean emailSent,
+      String sentTo,
+      String sentFrom
+  ) {
+  }
+
+  public record InvitePreviewResponse(
+      UUID inviteId,
+      UUID planId,
+      String planName,
+      String invitedEmail,
+      PlanInviteStatus status,
+      String token,
       ApiDateTimeDto expiresAt
   ) {
+  }
+
+  public record AcceptInviteResponse(UUID planId, String message) {
   }
 
   public record LabelSummary(UUID id, String name, String color) {

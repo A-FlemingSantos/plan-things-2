@@ -7,13 +7,13 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 2px solid var(--color-white);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 2px solid var(--surface-1);
+  box-shadow: var(--shadow-xs);
   display: grid;
   place-items: center;
   font-size: .7rem;
   font-weight: 700;
-  color: var(--color-white);
+  color: var(--text-on-accent);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -30,17 +30,37 @@
   width: 32px;
   height: 32px;
   margin-left: 8px;
-  border: 1px dashed var(--color-gray-300);
+  border: 1px dashed var(--border-2);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface-1);
   display: grid;
   place-items: center;
-  color: var(--color-gray-500);
+  color: var(--text-2);
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
 }
 
 .addButton:hover {
-  border-color: var(--color-black);
-  color: var(--color-black);
+  border-color: var(--text-1);
+  color: var(--text-1);
+}
+
+.membersButton {
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 50%;
+  background: var(--surface-1);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+
+.membersButton:hover {
+  border-color: var(--border-2);
+  color: var(--text-1);
+  background: var(--hover);
 }

@@ -3,31 +3,10 @@
   isolation: isolate;
   overflow: hidden;
   padding-top: 72px; /* offset for fixed navbar */
-  background: url('/minimal-drift.jpg') center center / cover no-repeat;
+  background: var(--app-bg);
   min-height: 100vh;
   display: flex;
   align-items: center;
-}
-
-.hero::before,
-.hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.hero::before {
-  background: inherit;
-  filter: blur(26px);
-  transform: scale(1.08);
-  z-index: -2;
-}
-
-.hero::after {
-  background: linear-gradient(135deg, rgb(255 255 255 / 0.76), rgb(255 255 255 / 0.58));
-  backdrop-filter: blur(10px);
-  z-index: -1;
 }
 
 .inner {
@@ -54,7 +33,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: .1em;
-  color: var(--color-gray-400);
+  color: var(--text-3);
   font-weight: var(--font-weight-regular);
 }
 
@@ -63,21 +42,21 @@
   font-weight: var(--font-weight-regular);
   line-height: 1.08;
   letter-spacing: -.035em;
-  color: var(--color-black);
+  color: var(--text-1);
   max-width: 700px;
   text-wrap: pretty;
 }
 
 .headlineLight {
   font-weight: var(--font-weight-light);
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .subtext {
   font-size: 17px;
   font-weight: var(--font-weight-light);
   line-height: 1.65;
-  color: var(--color-gray-600);
+  color: var(--text-2);
   max-width: 440px;
 }
 
@@ -94,8 +73,8 @@
   padding: 13px 28px;
   font-size: 15px;
   font-weight: var(--font-weight-regular);
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--text-1);
+  color: var(--text-inverse);
   border-radius: var(--radius-md);
   transition: opacity var(--transition-fast);
   letter-spacing: -.01em;
@@ -110,16 +89,16 @@
   font-size: 15px;
   font-weight: var(--font-weight-regular);
   background: transparent;
-  color: var(--color-black);
-  border: 1px solid var(--color-gray-300);
+  color: var(--text-1);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-md);
   transition: border-color var(--transition-fast), background var(--transition-fast);
   letter-spacing: -.01em;
 }
 
 .ctaSecondary:hover {
-  border-color: var(--color-black);
-  background: var(--color-gray-50);
+  border-color: var(--text-1);
+  background: var(--surface-2);
 }
 
 /* ── Social proof ── */
@@ -137,7 +116,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 2px solid var(--color-white);
+  border: 2px solid var(--surface-1);
   display: block;
 }
 
@@ -145,11 +124,11 @@
 
 .proofText {
   font-size: 13px;
-  color: var(--color-gray-400);
+  color: var(--text-3);
 }
 
 .proofText strong {
-  color: var(--color-black);
+  color: var(--text-1);
   font-weight: var(--font-weight-regular);
 }
 
@@ -168,7 +147,7 @@
   transform: translateX(-50%);
   width: 70%;
   height: 24px;
-  background: var(--color-gray-100);
+  background: var(--surface-3);
   border-radius: 50%;
   filter: blur(12px);
   z-index: -1;
@@ -181,7 +160,7 @@
   transform: translateX(-50%);
   width: 50%;
   height: 8px;
-  background: var(--color-gray-300);
+  background: var(--border-2);
   border-radius: 50%;
   filter: blur(6px);
 }

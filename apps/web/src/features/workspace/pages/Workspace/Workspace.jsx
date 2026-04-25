@@ -6,7 +6,9 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
+import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
@@ -827,7 +829,7 @@ export default function Workspace() {
   )
 
   return (
-    <>
+    <AppThemeScope>
       <ProductAppShell
         styles={styles}
         activeNav={activeNav}
@@ -868,6 +870,7 @@ export default function Workspace() {
                   </button>
                 )}
               </div>
+              <InviteNotifications />
               <button className={styles.newPlanBtn} onClick={openNewPlan}>
                 <PlusIcon />
                 Novo plano
@@ -1001,6 +1004,6 @@ export default function Workspace() {
           {notification}
         </div>
       )}
-    </>
+    </AppThemeScope>
   )
 }

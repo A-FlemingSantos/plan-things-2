@@ -9,5 +9,7 @@ public interface FilePlanShareRepository extends JpaRepository<FilePlanShareEnti
 
   List<FilePlanShareEntity> findByPlanId(UUID planId);
 
+  List<FilePlanShareEntity> findByFileEntryId(UUID fileEntryId);
+
   Optional<FilePlanShareEntity> findByPlanIdAndFileEntryId(UUID planId, UUID fileEntryId);
 }

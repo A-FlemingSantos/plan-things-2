@@ -74,6 +74,16 @@ export default function SidebarAccountMenu({
     }
   }, [])
 
+  const handleItemClick = (id) => {
+    setOpen(false)
+    if (id === 'logout' && isAuthenticated) {
+      logout()
+      navigate(ROUTES.login)
+    } else if (id === 'settings') {
+      navigate(ROUTES.settings)
+    }
+  }
+
   return (
     <div ref={containerRef} className={menuStyles.container}>
       <SidebarUserCard
@@ -117,13 +127,7 @@ export default function SidebarAccountMenu({
                 ].filter(Boolean).join(' ')}
                 role="menuitem"
                 style={{ animationDelay: `${index * 28}ms` }}
-                onClick={() => {
-                  setOpen(false)
-                  if (id === 'logout' && isAuthenticated) {
-                    logout()
-                    navigate(ROUTES.login)
-                  }
-                }}
+                onClick={() => handleItemClick(id)}
               >
                 <span className={menuStyles.icon}><Icon /></span>
                 {label}

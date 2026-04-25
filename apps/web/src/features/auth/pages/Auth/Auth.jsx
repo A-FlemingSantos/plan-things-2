@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
 
@@ -78,7 +79,8 @@ function CheckIcon() {
 export default function Auth({ initialMode = 'login' }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login, register } = useAuth()
+  const { login, register, startOAuthLogin } = useAuth()
+  const { resolveInitialRoute } = usePreferences()
   const [mode, setMode]           = useState(initialMode)   // 'login' | 'register'
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
@@ -98,20 +100,23 @@ export default function Auth({ initialMode = 'login' }) {
     setLoading('email')
 
     try {
+      let session = null
+
       if (isRegister) {
-        await register({
+        session = await register({
           fullName: name,
           email,
           password,
         })
       } else {
-        await login({
+        session = await login({
           email,
           password,
         })
       }
 
-      navigate(ROUTES.workspace)
+      const redirectTo = location.state?.redirectTo
+      navigate(redirectTo ? String(redirectTo) : resolveInitialRoute(session?.user?.id), { replace: true })
     } catch (error) {
       setErrorMessage(error.message ?? 'Nao foi possivel concluir a autenticacao.')
     } finally {
@@ -119,14 +124,22 @@ export default function Auth({ initialMode = 'login' }) {
     }
   }
 
-  const handleOAuth = (provider) => {
+  const handleOAuth = async (provider) => {
     setNoticeMessage('')
     setErrorMessage('')
     setLoading(provider)
-    setTimeout(() => {
-      setErrorMessage(`Login com ${provider} ainda nao esta disponivel.`)
+
+    try {
+      const redirectTo = location.state?.redirectTo
+      const response = await startOAuthLogin(provider, {
+        redirectTo: redirectTo ? String(redirectTo) : undefined,
+      })
+
+      window.location.assign(response.authorizationUrl)
+    } catch (error) {
+      setErrorMessage(error.message ?? `Nao foi possivel iniciar o login com ${provider}.`)
       setLoading(null)
-    }, 800)
+    }
   }
 
   useEffect(() => {
@@ -152,7 +165,7 @@ export default function Auth({ initialMode = 'login' }) {
           <span className={styles.logoText}>Plan Things</span>
         </Link>
 
-        <Link to={alternateHref} className={styles.modeToggleTop}>
+        <Link to={alternateHref} className={styles.modeToggleTop} state={location.state}>
           {isRegister ? 'Já tem uma conta?' : 'Não tem uma conta?'}
           <span className={styles.modeToggleAction}>
             {isRegister ? 'Entrar' : 'Cadastrar-se'}
@@ -308,7 +321,6 @@ export default function Auth({ initialMode = 'login' }) {
             {[
               { id: 'google',    label: 'Google',    Icon: GoogleIcon    },
               { id: 'microsoft', label: 'Microsoft',  Icon: MicrosoftIcon },
-              { id: 'github',    label: 'GitHub',     Icon: GitHubIcon    },
             ].map(({ id, label, Icon }) => (
               <button
                 key={id}
@@ -330,7 +342,7 @@ export default function Auth({ initialMode = 'login' }) {
           <p className={styles.switchRow}>
             {isRegister ? 'Já tem uma conta?' : 'Ainda não tem uma conta?'}
             {' '}
-            <Link to={alternateHref} className={styles.switchBtn}>
+            <Link to={alternateHref} className={styles.switchBtn} state={location.state}>
               {isRegister ? 'Entrar' : 'Cadastrar-se'}
             </Link>
           </p>

@@ -3,18 +3,21 @@ package com.planthings.api.workspace;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.calendar.CalendarEventRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
+import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
 import com.planthings.api.files.FileEntryRepository;
 import com.planthings.api.plans.PlanMemberRepository;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class WorkspaceService {
 
   private final PersonalWorkspaceService personalWorkspaceService;
   private final PlanMemberRepository planMemberRepository;
+  private final WorkspaceRepository workspaceRepository;
   private final FileEntryRepository fileEntryRepository;
   private final CalendarEventRepository calendarEventRepository;
   private final AuthenticatedUserService authenticatedUserService;
@@ -23,6 +26,7 @@ public class WorkspaceService {
   public WorkspaceService(
       PersonalWorkspaceService personalWorkspaceService,
       PlanMemberRepository planMemberRepository,
+      WorkspaceRepository workspaceRepository,
       FileEntryRepository fileEntryRepository,
       CalendarEventRepository calendarEventRepository,
       AuthenticatedUserService authenticatedUserService,
@@ -30,6 +34,7 @@ public class WorkspaceService {
   ) {
     this.personalWorkspaceService = personalWorkspaceService;
     this.planMemberRepository = planMemberRepository;
+    this.workspaceRepository = workspaceRepository;
     this.fileEntryRepository = fileEntryRepository;
     this.calendarEventRepository = calendarEventRepository;
     this.authenticatedUserService = authenticatedUserService;
@@ -55,6 +60,32 @@ public class WorkspaceService {
     );
   }
 
+  @Transactional
+  public WorkspaceSummary updateCurrentWorkspaceName(String name) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
+
+    workspace.setName(requireName(name));
+    workspaceRepository.save(workspace);
+
+    return new WorkspaceSummary(
+        workspace.getId(),
+        workspace.getName(),
+        brazilDateTimeMapper.toDateTime(workspace.getCreatedAt())
+    );
+  }
+
+  private String requireName(String value) {
+    String normalized = value == null ? "" : value.trim();
+    if (normalized.isBlank()) {
+      throw new BadRequestException("NOME_WORKSPACE_OBRIGATORIO", "O nome do workspace e obrigatorio.");
+    }
+    if (normalized.length() > 120) {
+      throw new BadRequestException("NOME_WORKSPACE_INVALIDO", "O nome do workspace deve ter no maximo 120 caracteres.");
+    }
+    return normalized;
+  }
+
   public record WorkspaceDashboard(
       UUID id,
       String name,
@@ -67,5 +98,12 @@ public class WorkspaceService {
   }
 
   public record WorkspaceOwner(UUID id, String fullName, String email) {
+  }
+
+  public record WorkspaceSummary(
+      UUID id,
+      String name,
+      ApiDateTimeDto createdAt
+  ) {
   }
 }

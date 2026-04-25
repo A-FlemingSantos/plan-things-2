@@ -65,10 +65,10 @@ export default function ConnectionsSVG({
     <svg className={styles.connectionsSvg} style={{ pointerEvents: 'none' }}>
       <defs>
         <marker id="arrowNormal" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-          <path d="M0 0.5 L7.5 3 L0 5.5 Z" fill="#a0a0a0" />
+          <path d="M0 0.5 L7.5 3 L0 5.5 Z" fill="var(--text-3)" />
         </marker>
         <marker id="arrowDelete" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-          <path d="M0 0.5 L7.5 3 L0 5.5 Z" fill="#ff6766" />
+          <path d="M0 0.5 L7.5 3 L0 5.5 Z" fill="var(--danger-text)" />
         </marker>
       </defs>
 
@@ -96,7 +96,7 @@ export default function ConnectionsSVG({
             />
             <path
               d={path}
-              stroke={isDeleteMode ? '#ff6766' : '#c8c8c8'}
+              stroke={isDeleteMode ? 'var(--danger-text)' : 'var(--border-2)'}
               strokeWidth={isDeleteMode ? 2 : 1.5}
               fill="none"
               strokeDasharray={isDeleteMode ? '4 3' : 'none'}
@@ -110,7 +110,7 @@ export default function ConnectionsSVG({
       {inProgress ? (
         <path
           d={inProgress}
-          stroke="#4290da"
+          stroke="var(--focus-ring)"
           strokeWidth={1.5}
           fill="none"
           strokeDasharray="6 4"
