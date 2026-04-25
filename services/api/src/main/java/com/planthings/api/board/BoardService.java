@@ -359,6 +359,20 @@ public class BoardService {
     return new InboxDeliveryResponse(delivery.emailSent(), delivery.sentFrom(), delivery.sentTo(), delivery.messageId(), delivery.threadId(), inboxItem);
   }
 
+  @Transactional
+  public MessageResponse clearInboxDeliveries(UUID planId) {
+    UUID userId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, userId);
+    List<UUID> deliveryIds = boardCardInboxDeliveryRepository.findByPlanId(planId).stream()
+        .map(BoardCardInboxDeliveryEntity::getId)
+        .toList();
+    if (!deliveryIds.isEmpty()) {
+      boardCardInboxDeliveryRecipientRepository.deleteByDeliveryIdIn(deliveryIds);
+      boardCardInboxDeliveryRepository.deleteByPlanId(planId);
+    }
+    return new MessageResponse("Historico da Inbox limpo com sucesso.");
+  }
+
   private BoardView buildBoardView(PlanEntity plan, UUID currentUserId) {
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     List<BoardCardEntity> cards = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());

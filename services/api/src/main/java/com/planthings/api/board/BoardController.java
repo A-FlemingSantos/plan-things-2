@@ -83,6 +83,11 @@ public class BoardController {
     return ApiEnvelope.ok(boardService.sendCardToInbox(planId, cardId, recipientUserIds));
   }
 
+  @DeleteMapping("/inbox/deliveries")
+  public ApiEnvelope<BoardService.MessageResponse> clearInboxDeliveries(@PathVariable UUID planId) {
+    return ApiEnvelope.ok(boardService.clearInboxDeliveries(planId));
+  }
+
   @PostMapping("/cards/{cardId}/comments")
   public ApiEnvelope<BoardService.CommentView> addComment(@PathVariable UUID planId, @PathVariable UUID cardId, @Valid @RequestBody CommentRequest request) {
     return ApiEnvelope.ok(boardService.addComment(planId, cardId, request.message()));

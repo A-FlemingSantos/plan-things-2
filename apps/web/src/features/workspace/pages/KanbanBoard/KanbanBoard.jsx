@@ -349,6 +349,7 @@ export default function KanbanBoard() {
   const [inboxSendingCardId, setInboxSendingCardId] = useState('')
   const [inboxError, setInboxError] = useState('')
   const [inboxItems, setInboxItems] = useState([])
+  const [isClearingInbox, setIsClearingInbox] = useState(false)
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
   const [isFilesOpen, setIsFilesOpen] = useState(false)
@@ -1414,6 +1415,32 @@ export default function KanbanBoard() {
     ])
   }
 
+  const clearInboxDeliveries = async () => {
+    if (!activePlan?.id || !isBackendDriven) {
+      showNotification('Histórico da Inbox fica disponível apenas quando a sessão está conectada ao backend.')
+      return
+    }
+    if (!inboxItems.length || isClearingInbox) return
+
+    setIsClearingInbox(true)
+    setInboxError('')
+
+    try {
+      await apiRequest(`/api/plans/${activePlan.id}/board/inbox/deliveries`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      setInboxItems([])
+      showNotification('Envios da Inbox limpos.')
+    } catch (error) {
+      const message = error?.message ?? 'Não foi possível limpar os envios da Inbox.'
+      setInboxError(message)
+      showNotification(message)
+    } finally {
+      setIsClearingInbox(false)
+    }
+  }
+
   const sendCardToInbox = async (card, recipientUserIds = []) => {
     if (!activePlan?.id || !isBackendDriven || !card?.id) {
       showNotification('Envio por Gmail fica disponível apenas quando a sessão está conectada ao backend.')
@@ -1627,7 +1654,19 @@ export default function KanbanBoard() {
       <section className={styles.inboxSentList} aria-label="Cartões enviados pela Inbox">
         <div className={styles.inboxSentListHeader}>
           <span>Enviados</span>
-          <strong>{inboxItems.length}</strong>
+          <div className={styles.inboxSentListActions}>
+            <strong>{inboxItems.length}</strong>
+            <button
+              type="button"
+              className={styles.inboxClearButton}
+              aria-label="Limpar envios da Inbox"
+              title="Limpar envios da Inbox"
+              onClick={clearInboxDeliveries}
+              disabled={!inboxItems.length || isClearingInbox}
+            >
+              <Icon.Trash />
+            </button>
+          </div>
         </div>
         {inboxItems.length ? (
           <div className={styles.inboxSentItems}>

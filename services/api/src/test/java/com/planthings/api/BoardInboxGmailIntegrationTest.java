@@ -24,6 +24,7 @@ import org.springframework.http.MediaType;
 
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -130,6 +131,40 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + ownerToken))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.columns[0].cards[0].assignees[0].id").value(memberId));
+  }
+
+  @Test
+  void shouldClearPersistedInboxDeliveries() throws Exception {
+    JsonNode ownerSession = register("Clear Owner", "clear-owner@example.com");
+    String ownerToken = ownerSession.path("accessToken").asText();
+    String ownerId = ownerSession.path("user").path("id").asText();
+    JsonNode memberSession = register("Clear Member", "clear-member@example.com");
+    String memberId = memberSession.path("user").path("id").asText();
+    String planId = createPlan(ownerToken, "Plano Limpar Inbox").path("plan").path("id").asText();
+    addMember(planId, memberId);
+    saveGmailConnection(ownerId, "clear-owner@example.com", GmailIntegrationProperties.GMAIL_SEND_SCOPE);
+    String cardId = createCard(ownerToken, planId, "Limpar historico", "", null);
+
+    mockMvc.perform(post("/api/plans/" + planId + "/board/cards/" + cardId + "/inbox/send")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "recipientUserIds": ["%s"]
+                }
+                """.formatted(memberId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.inboxItem.cardId").value(cardId));
+
+    mockMvc.perform(delete("/api/plans/" + planId + "/board/inbox/deliveries")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Historico da Inbox limpo com sucesso."));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.inboxItems.length()").value(0));
   }
 
   @Test

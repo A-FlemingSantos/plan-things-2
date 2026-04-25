@@ -295,6 +295,39 @@ describe('KanbanBoard Inbox Gmail flow', () => {
     expect(screen.getByText('25/04/2026 09:30')).toBeInTheDocument()
   })
 
+  it('clears the persistent Inbox history from the sent list', async () => {
+    apiMock.apiRequest.mockResolvedValue({ message: 'Historico da Inbox limpo com sucesso.' })
+    activePlan.inboxItems = [
+      {
+        id: 'delivery-existing',
+        cardId: 'card-1',
+        cardTitle: 'Enviar resumo',
+        sentFrom: 'arthur@example.com',
+        sentTo: ['member@example.com'],
+        recipients: [
+          {
+            id: 'user-2',
+            fullName: 'Inbox Member',
+            email: 'member@example.com',
+          },
+        ],
+        sentAt: { text: '25/04/2026 09:30' },
+      },
+    ]
+
+    renderBoard()
+    await userEvent.click(screen.getByRole('button', { name: /Caixa de entrada/i }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Limpar envios da Inbox' }))
+
+    await waitFor(() => {
+      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/plans/plan-1/board/inbox/deliveries', {
+        method: 'DELETE',
+        token: 'test-token',
+      })
+    })
+    expect(await screen.findByText('Nenhum cartão enviado pela Inbox ainda.')).toBeInTheDocument()
+  })
+
   it('asks for members when the dropped card has no assignees', async () => {
     boardState.columns[0].cards[0] = {
       ...boardState.columns[0].cards[0],
