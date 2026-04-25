@@ -84,6 +84,8 @@ class PlanInviteGmailIntegrationTest extends ApiIntegrationTestSupport {
     assertTrue(decodedMime.contains("Content-Transfer-Encoding: base64"));
 
     String decodedTextPart = decodeBase64Part(decodedMime, "Content-Type: text/plain; charset=UTF-8");
+    assertTrue(decodedTextPart.contains("Olá,"));
+    assertTrue(decodedTextPart.contains("convidou você para participar"));
     assertTrue(decodedTextPart.contains("Plano Gmail"));
     assertTrue(decodedTextPart.contains("http://localhost:5173/plans/invites/" + invite.path("token").asText()));
   }

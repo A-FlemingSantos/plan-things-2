@@ -111,9 +111,9 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
     String safeExpiresText = htmlEscape(expiresText);
 
     String textBody = """
-        Ola,
+        Olá,
 
-        %s convidou voce para participar do plano %s no Plan Things.
+        %s convidou você para participar do plano %s no Plan Things.
 
         Acesse o convite:
         %s
@@ -125,8 +125,8 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
         <!doctype html>
         <html>
           <body style="font-family:Arial,sans-serif;color:#111827;line-height:1.5">
-            <p>Ola,</p>
-            <p><strong>%s</strong> convidou voce para participar do plano <strong>%s</strong> no Plan Things.</p>
+            <p>Olá,</p>
+            <p><strong>%s</strong> convidou você para participar do plano <strong>%s</strong> no Plan Things.</p>
             <p>
               <a href="%s" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 14px;border-radius:6px">
                 Aceitar convite
