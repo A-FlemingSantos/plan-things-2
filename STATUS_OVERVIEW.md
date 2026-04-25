@@ -130,3 +130,11 @@ Google Calendar fica como integracao opcional e por ultimo. A funcao dessa frent
 ## Leitura pratica
 
 Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e primeiro a integracao Gmail nas Configuracoes. Depois vem o envio de convite por e-mail pelo owner/admin do plano usando essa integracao, depois a Inbox da sidebar no KanbanBoard para disparar email automatico a partir do cartao do KanbanBoard e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
+
+## Leitura futura da Inbox Gmail
+
+A Inbox atual da sidebar deve continuar sendo, primeiro, um destino operacional para disparo de email a partir de cards. A leitura real da caixa Gmail e uma implementacao futura separada, porque muda o tipo de permissao Google e adiciona infraestrutura de sincronizacao. Na pratica, quando essa frente entrar, o produto deixa de apenas enviar emails e passa tambem a importar mensagens selecionadas da conta Gmail conectada para dentro do contexto do plano.
+
+O caminho direto para implementar isso e expandir a integracao Gmail ja existente em `Settings`: adicionar um novo consentimento com escopo de leitura minimo (`gmail.readonly` ou `gmail.metadata`, conforme a necessidade real), salvar os escopos concedidos, criar uma tabela de mensagens importadas com `gmailMessageId`, remetente, assunto, snippet, data e vinculo opcional ao plano/card, e expor endpoints para listar, atualizar e marcar mensagens como processadas. Para sincronizacao continua, usar `users.watch` da Gmail API com Google Cloud Pub/Sub, guardar `historyId` por conta conectada e renovar o watch periodicamente; para uma primeira versao mais simples, fazer sync manual por botao usando `messages.list` + `messages.get`, sem Pub/Sub.
+
+Essa frente deve ser tratada como etapa propria depois do envio por Gmail estar estavel. Ela exige revisao da tela de consentimento do Google, porque leitura de Gmail envolve escopos mais sensiveis/restritos que `gmail.send`, e nao deve ser misturada com a entrega de convite por email ou com a Inbox de disparo automatico do KanbanBoard.

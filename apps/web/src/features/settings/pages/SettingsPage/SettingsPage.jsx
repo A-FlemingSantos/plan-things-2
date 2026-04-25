@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import {
   DEFAULT_LOCAL_PREFERENCES,
@@ -61,9 +62,28 @@ const SECTIONS = [
   { id: 'notifications', label: 'Notificações',             Icon: Ic.Bell     },
   { id: 'security',      label: 'Privacidade e segurança',  Icon: Ic.Shield   },
 ]
+const SECTION_IDS = new Set(SECTIONS.map(({ id }) => id))
+
+const EMPTY_GMAIL_INTEGRATION = {
+  connected: false,
+  email: null,
+  scopes: [],
+  connectedAt: null,
+  lastError: null,
+}
 
 function normalizeSaveState(state) {
   return state === 'saving' || state === 'saved' || state === 'error' ? state : 'idle'
+}
+
+function normalizeGmailIntegration(source = {}) {
+  return {
+    connected: Boolean(source.connected),
+    email: source.email ?? null,
+    scopes: Array.isArray(source.scopes) ? source.scopes : [],
+    connectedAt: source.connectedAt ?? null,
+    lastError: source.lastError ?? null,
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -119,12 +139,12 @@ function SaveButton({ saved, onClick, label = 'Salvar alterações', savedLabel 
   )
 }
 
-function AutoSaveStatus({ state = 'idle', errorMessage = '' }) {
+function AutoSaveStatus({ state = 'idle', errorMessage = '', successMessage = '' }) {
   if (state === 'saving') {
     return <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusSaving}`}>Salvando...</p>
   }
   if (state === 'saved') {
-    return <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusSaved}`}>Salvo automaticamente</p>
+    return <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusSaved}`}>{successMessage || 'Salvo automaticamente'}</p>
   }
   if (state === 'error') {
     return (
@@ -152,6 +172,7 @@ export default function SettingsPage() {
     updateNotifications,
   } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const location = useLocation()
   const backendEnabled = isAuthenticated && !isDemoSession
 
   const [activeSection, setActiveSection] = useState('account')
@@ -185,13 +206,12 @@ export default function SettingsPage() {
   const [notificationsSaveState, setNotificationsSaveState] = useState('idle')
   const [notificationsError, setNotificationsError] = useState('')
 
-  // ── Integrations (demo state)
-  const [integrationStatus, setIntegrationStatus] = useState({
-    'google-calendar': false,
-    'outlook-calendar': false,
-    'gmail': false,
-    'outlook-mail': false,
-  })
+  // ── Integrations state
+  const [gmailIntegration, setGmailIntegration] = useState(EMPTY_GMAIL_INTEGRATION)
+  const [integrationsLoadState, setIntegrationsLoadState] = useState('idle')
+  const [gmailActionState, setGmailActionState] = useState('idle')
+  const [gmailFeedbackState, setGmailFeedbackState] = useState('idle')
+  const [gmailFeedback, setGmailFeedback] = useState('')
 
   const workspaceRequestRef = useRef(0)
   const language = generalPreferences.language
@@ -209,6 +229,59 @@ export default function SettingsPage() {
     setFullName(currentUser?.fullName ?? '')
     setWsName(workspace?.name ?? '')
   }, [currentUser?.fullName, workspace?.name])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const section = params.get('section')
+    const gmail = params.get('gmail')
+    const gmailError = params.get('error')
+
+    if (SECTION_IDS.has(section)) {
+      setActiveSection(section)
+    }
+
+    if (gmail === 'connected') {
+      setGmailFeedbackState('saved')
+      setGmailFeedback('Gmail conectado com sucesso.')
+    } else if (gmail === 'error') {
+      setGmailFeedbackState('error')
+      setGmailFeedback(gmailError ? `Nao foi possivel conectar o Gmail (${gmailError}).` : 'Nao foi possivel conectar o Gmail.')
+    }
+  }, [location.search])
+
+  useEffect(() => {
+    if (!backendEnabled || !accessToken) {
+      setGmailIntegration(EMPTY_GMAIL_INTEGRATION)
+      setIntegrationsLoadState('idle')
+      return
+    }
+
+    let active = true
+    setIntegrationsLoadState('saving')
+
+    async function loadIntegrations() {
+      try {
+        const snapshot = await apiRequest('/api/settings', {
+          token: accessToken,
+        })
+
+        if (!active) return
+        setGmailIntegration(normalizeGmailIntegration(snapshot?.integrations?.gmail))
+        setIntegrationsLoadState('saved')
+      } catch (error) {
+        if (!active) return
+        setIntegrationsLoadState('error')
+        setGmailFeedbackState('error')
+        setGmailFeedback(error?.message ?? 'Nao foi possivel carregar as integracoes.')
+      }
+    }
+
+    loadIntegrations()
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, backendEnabled, location.search])
 
   const persistGeneralPreferences = async (nextPreferences) => {
     setGeneralError('')
@@ -419,6 +492,57 @@ export default function SettingsPage() {
     }
 
     persistNotifications(next)
+  }
+
+  const handleConnectGmail = async () => {
+    if (!backendEnabled || !accessToken) {
+      setGmailFeedbackState('error')
+      setGmailFeedback('Entre com uma conta real para conectar o Gmail.')
+      return
+    }
+
+    setGmailActionState('saving')
+    setGmailFeedbackState('saving')
+    setGmailFeedback('Abrindo permissao do Google...')
+
+    try {
+      const response = await apiRequest('/api/settings/integrations/gmail/start', {
+        method: 'POST',
+        token: accessToken,
+      })
+
+      window.location.assign(response.authorizationUrl)
+    } catch (error) {
+      setGmailActionState('error')
+      setGmailFeedbackState('error')
+      setGmailFeedback(error?.message ?? 'Nao foi possivel iniciar a conexao Gmail.')
+    }
+  }
+
+  const handleDisconnectGmail = async () => {
+    if (!backendEnabled || !accessToken) {
+      return
+    }
+
+    setGmailActionState('saving')
+    setGmailFeedbackState('saving')
+    setGmailFeedback('Desconectando Gmail...')
+
+    try {
+      const response = await apiRequest('/api/settings/integrations/gmail', {
+        method: 'DELETE',
+        token: accessToken,
+      })
+
+      setGmailIntegration(normalizeGmailIntegration(response?.gmail))
+      setGmailActionState('idle')
+      setGmailFeedbackState('saved')
+      setGmailFeedback('Gmail desconectado.')
+    } catch (error) {
+      setGmailActionState('error')
+      setGmailFeedbackState('error')
+      setGmailFeedback(error?.message ?? 'Nao foi possivel desconectar o Gmail.')
+    }
   }
 
   const accountSaved = normalizeSaveState(accountSaveState) === 'saved'
@@ -772,86 +896,65 @@ export default function SettingsPage() {
   /* ── Section: Integrações ── */
   const renderIntegrations = () => {
     const calendarIntegrations = [
-      { id: 'google-calendar', name: 'Google Calendar', Icon: Ic.Google, color: '#1a73e8' },
-      { id: 'outlook-calendar', name: 'Outlook Calendar', Icon: Ic.Outlook, color: '#0078d4' },
+      { id: 'google-calendar', name: 'Google Calendar', Icon: Ic.Google, color: '#1a73e8', status: 'Em breve' },
     ]
-    const emailIntegrations = [
-      { id: 'gmail', name: 'Gmail', Icon: Ic.Google, color: '#ea4335' },
-      { id: 'outlook-mail', name: 'Outlook Mail', Icon: Ic.Outlook, color: '#0078d4' },
-    ]
-    const toggleIntegration = (id) => {
-      setIntegrationStatus(prev => ({ ...prev, [id]: !prev[id] }))
-    }
+    const gmailBusy = gmailActionState === 'saving'
+    const gmailStatusText = !backendEnabled
+      ? 'Disponível ao entrar com uma conta real'
+      : gmailBusy
+        ? 'Conectando...'
+        : gmailIntegration.connected
+          ? `Conectado · ${gmailIntegration.email}`
+          : gmailIntegration.lastError
+            ? 'Falha na conexão · tente novamente'
+            : 'Não conectado'
 
     return (
       <>
         <SectionGroup title="Calendários">
-          {calendarIntegrations.map(({ id, name, Icon, color }) => (
+          {calendarIntegrations.map(({ id, name, Icon, color, status }) => (
             <div key={id} className={styles.integrationCard}>
               <div className={styles.integrationIconBox} style={{ color }}>
                 <Icon />
               </div>
               <div className={styles.integrationMeta}>
                 <p className={styles.integrationName}>{name}</p>
-                <p className={styles.integrationStatus}>
-                  {integrationStatus[id]
-                    ? 'Conectado · Sincronizado agora'
-                    : 'Não conectado'}
-                </p>
+                <p className={styles.integrationStatus}>{status}</p>
               </div>
               <div className={styles.integrationActions}>
-                {integrationStatus[id] && (
-                  <button type="button" className={styles.btnGhost}>Sincronizar</button>
-                )}
-                <button
-                  type="button"
-                  className={integrationStatus[id] ? styles.btnGhost : styles.btnSecondary}
-                  onClick={() => toggleIntegration(id)}
-                >
-                  {integrationStatus[id] ? 'Desconectar' : 'Conectar'}
-                </button>
+                <button type="button" className={styles.btnSecondary} disabled>Conectar</button>
               </div>
             </div>
           ))}
         </SectionGroup>
 
         <SectionGroup title="E-mail e captura">
-          {emailIntegrations.map(({ id, name, Icon, color }) => (
-            <div key={id} className={styles.integrationCard}>
-              <div className={styles.integrationIconBox} style={{ color }}>
-                <Icon />
-              </div>
-              <div className={styles.integrationMeta}>
-                <p className={styles.integrationName}>{name}</p>
-                <p className={styles.integrationStatus}>
-                  {integrationStatus[id]
-                    ? 'Conectado · Sincronizado agora'
-                    : 'Não conectado'}
-                </p>
-              </div>
-              <div className={styles.integrationActions}>
-                {integrationStatus[id] && (
-                  <button type="button" className={styles.btnGhost}>Sincronizar</button>
-                )}
-                <button
-                  type="button"
-                  className={integrationStatus[id] ? styles.btnGhost : styles.btnSecondary}
-                  onClick={() => toggleIntegration(id)}
-                >
-                  {integrationStatus[id] ? 'Desconectar' : 'Conectar'}
-                </button>
-              </div>
+          <div className={styles.integrationCard}>
+            <div className={styles.integrationIconBox} style={{ color: '#ea4335' }}>
+              <Ic.Google />
             </div>
-          ))}
-        </SectionGroup>
-
-        <SectionGroup title="Sincronização">
-          <div className={styles.syncRow}>
-            <div>
-              <p className={styles.syncTitle}>Sincronização automática</p>
-              <p className={styles.syncHint}>Dados sincronizados a cada 15 minutos quando há conexão ativa.</p>
+            <div className={styles.integrationMeta}>
+              <p className={styles.integrationName}>Gmail</p>
+              <p className={styles.integrationStatus}>{gmailStatusText}</p>
+              {gmailIntegration.connectedAt?.text && (
+                <p className={styles.integrationStatus}>Conectado em {gmailIntegration.connectedAt.text}</p>
+              )}
             </div>
-            <button type="button" className={styles.btnSecondary}>Sincronizar agora</button>
+            <div className={styles.integrationActions}>
+              <button
+                type="button"
+                className={gmailIntegration.connected ? styles.btnGhost : styles.btnSecondary}
+                onClick={gmailIntegration.connected ? handleDisconnectGmail : handleConnectGmail}
+                disabled={!backendEnabled || gmailBusy || integrationsLoadState === 'saving'}
+              >
+                {gmailBusy
+                  ? 'Aguarde'
+                  : gmailIntegration.connected ? 'Desconectar' : 'Conectar'}
+              </button>
+            </div>
+          </div>
+          <div className={styles.rowActions}>
+            <AutoSaveStatus state={gmailFeedbackState} errorMessage={gmailFeedback} successMessage={gmailFeedback} />
           </div>
         </SectionGroup>
       </>

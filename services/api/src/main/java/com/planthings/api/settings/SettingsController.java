@@ -4,9 +4,14 @@ import com.planthings.api.common.api.ApiEnvelope;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.net.URI;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,9 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class SettingsController {
 
   private final SettingsService settingsService;
+  private final GmailIntegrationService gmailIntegrationService;
 
-  public SettingsController(SettingsService settingsService) {
+  public SettingsController(SettingsService settingsService, GmailIntegrationService gmailIntegrationService) {
     this.settingsService = settingsService;
+    this.gmailIntegrationService = gmailIntegrationService;
   }
 
   @GetMapping
@@ -55,6 +62,26 @@ public class SettingsController {
   @PatchMapping("/password")
   public ApiEnvelope<SettingsService.MessageResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
     return ApiEnvelope.ok(settingsService.changePassword(request.currentPassword(), request.newPassword()));
+  }
+
+  @PostMapping("/integrations/gmail/start")
+  public ApiEnvelope<GmailIntegrationService.AuthorizationStartResponse> startGmailIntegration() {
+    return ApiEnvelope.ok(gmailIntegrationService.startAuthorization());
+  }
+
+  @GetMapping("/integrations/gmail/callback")
+  public ResponseEntity<Void> gmailCallback(
+      @RequestParam(required = false) String state,
+      @RequestParam(required = false) String code,
+      @RequestParam(required = false) String error
+  ) {
+    URI redirectUri = gmailIntegrationService.completeProviderCallback(state, code, error);
+    return ResponseEntity.status(302).location(redirectUri).build();
+  }
+
+  @DeleteMapping("/integrations/gmail")
+  public ApiEnvelope<GmailIntegrationService.IntegrationsSettings> disconnectGmailIntegration() {
+    return ApiEnvelope.ok(gmailIntegrationService.disconnectGmail());
   }
 
   public record UpdateAccountRequest(

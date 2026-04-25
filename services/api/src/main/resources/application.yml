@@ -83,3 +83,14 @@ app:
           - openid
           - profile
           - email
+  integrations:
+    token-key-base64: ${APP_INTEGRATION_TOKEN_KEY_B64:}
+    gmail:
+      redirect-uri: ${GMAIL_INTEGRATION_REDIRECT_URI:http://localhost:8080/api/settings/integrations/gmail/callback}
+      frontend-return-url: ${GMAIL_INTEGRATION_FRONTEND_RETURN_URL:http://localhost:5173/settings}
+      state-minutes: ${GMAIL_INTEGRATION_STATE_MINUTES:10}
+      scopes:
+        - openid
+        - profile
+        - email
+        - https://www.googleapis.com/auth/gmail.send

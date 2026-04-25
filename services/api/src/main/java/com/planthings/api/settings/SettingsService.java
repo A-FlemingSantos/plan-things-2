@@ -32,17 +32,20 @@ public class SettingsService {
   private final AuthenticatedUserService authenticatedUserService;
   private final UserRepository userRepository;
   private final UserSettingsRepository userSettingsRepository;
+  private final GmailIntegrationService gmailIntegrationService;
   private final PasswordEncoder passwordEncoder;
 
   public SettingsService(
       AuthenticatedUserService authenticatedUserService,
       UserRepository userRepository,
       UserSettingsRepository userSettingsRepository,
+      GmailIntegrationService gmailIntegrationService,
       PasswordEncoder passwordEncoder
   ) {
     this.authenticatedUserService = authenticatedUserService;
     this.userRepository = userRepository;
     this.userSettingsRepository = userSettingsRepository;
+    this.gmailIntegrationService = gmailIntegrationService;
     this.passwordEncoder = passwordEncoder;
   }
 
@@ -64,7 +67,8 @@ public class SettingsService {
             userSettings.isEmailNotifs(),
             userSettings.isEventReminders(),
             userSettings.isDeadlineAlerts()
-        )
+        ),
+        gmailIntegrationService.getIntegrationsForUser(user.getId())
     );
   }
 
@@ -253,7 +257,8 @@ public class SettingsService {
   public record SettingsSnapshot(
       AccountSettings account,
       PreferencesSettings preferences,
-      NotificationSettings notifications
+      NotificationSettings notifications,
+      GmailIntegrationService.IntegrationsSettings integrations
   ) {
   }
 

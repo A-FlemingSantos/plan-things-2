@@ -20,3 +20,5 @@ app:
     issuer: plan-things-api-test
     access-token-minutes: 180
     password-reset-minutes: 30
+  integrations:
+    token-key-base64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=

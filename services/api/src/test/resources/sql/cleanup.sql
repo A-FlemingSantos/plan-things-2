@@ -16,6 +16,8 @@ DELETE FROM plan_members;
 DELETE FROM plans;
 DELETE FROM workspaces;
 DELETE FROM user_settings;
+DELETE FROM gmail_oauth_states;
+DELETE FROM gmail_connections;
 DELETE FROM oauth_login_codes;
 DELETE FROM oauth_login_states;
 DELETE FROM user_external_identities;
