@@ -1,46 +1,21 @@
 package com.planthings.api.settings;
 
-import com.planthings.api.auth.OAuthProperties;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.common.api.ApiDateTimeDto;
-import com.planthings.api.common.error.ApiException;
-import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.plans.PlanInviteEmailSender;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Service
 public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
 
-  private static final String GOOGLE_PROVIDER = "google";
+  private final GmailMessageSender gmailMessageSender;
 
-  private final GmailConnectionRepository connectionRepository;
-  private final OAuthProperties oauthProperties;
-  private final GmailApiClient gmailApiClient;
-  private final IntegrationTokenCipher tokenCipher;
-  private final GmailConnectionStatusService connectionStatusService;
-
-  public GmailPlanInviteEmailSender(
-      GmailConnectionRepository connectionRepository,
-      OAuthProperties oauthProperties,
-      GmailApiClient gmailApiClient,
-      IntegrationTokenCipher tokenCipher,
-      GmailConnectionStatusService connectionStatusService
-  ) {
-    this.connectionRepository = connectionRepository;
-    this.oauthProperties = oauthProperties;
-    this.gmailApiClient = gmailApiClient;
-    this.tokenCipher = tokenCipher;
-    this.connectionStatusService = connectionStatusService;
+  public GmailPlanInviteEmailSender(GmailMessageSender gmailMessageSender) {
+    this.gmailMessageSender = gmailMessageSender;
   }
 
   @Override
-  @Transactional
   public Delivery sendInvite(
       UserEntity inviter,
       String invitedEmail,
@@ -48,50 +23,11 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
       String inviteUrl,
       ApiDateTimeDto expiresAt
   ) {
-    GmailConnectionEntity connection = connectionRepository.findByUserId(inviter.getId())
-        .filter(item -> item.getRevokedAt() == null)
-        .orElseThrow(() -> new BadRequestException("GMAIL_NAO_CONECTADO", "Conecte o Gmail em Configuracoes antes de enviar convites por e-mail."));
-
-    requireSendScope(connection.getScopes());
-    OAuthProperties.Provider providerConfig = requireGoogleProviderConfig();
-
-    try {
-      String refreshToken = tokenCipher.decrypt(connection.getEncryptedRefreshToken());
-      GmailApiClient.GmailAccessToken accessToken = gmailApiClient.refreshAccessToken(providerConfig, refreshToken);
-      if (StringUtils.hasText(accessToken.scope())) {
-        requireSendScope(accessToken.scope());
-      }
-
-      String rawMessage = encodeMimeMessage(buildInviteMime(connection.getEmail(), invitedEmail, inviter.getFullName(), planName, inviteUrl, expiresAt));
-      gmailApiClient.sendMessage(accessToken.accessToken(), rawMessage);
-      connectionStatusService.rememberLastError(connection.getId(), null);
-      return new Delivery(true, invitedEmail, connection.getEmail());
-    } catch (ApiException exception) {
-      connectionStatusService.rememberLastError(connection.getId(), exception.getCode());
-      throw exception;
-    } catch (RuntimeException exception) {
-      connectionStatusService.rememberLastError(connection.getId(), "GMAIL_ENVIO_CONVITE_FALHOU");
-      throw new BadRequestException("GMAIL_ENVIO_CONVITE_FALHOU", "Nao foi possivel enviar o convite pelo Gmail.");
-    }
-  }
-
-  private void requireSendScope(String scopes) {
-    boolean hasSendScope = Arrays.stream((scopes == null ? "" : scopes).trim().split("\\s+"))
-        .anyMatch(GmailIntegrationProperties.GMAIL_SEND_SCOPE::equals);
-    if (!hasSendScope) {
-      throw new BadRequestException("GMAIL_SCOPE_AUSENTE", "A conexao Gmail nao tem permissao para enviar e-mails.");
-    }
-  }
-
-  private OAuthProperties.Provider requireGoogleProviderConfig() {
-    OAuthProperties.Provider providerConfig = oauthProperties.getProviders().get(GOOGLE_PROVIDER);
-    if (providerConfig == null
-        || !StringUtils.hasText(providerConfig.getClientId())
-        || !StringUtils.hasText(providerConfig.getClientSecret())
-        || !StringUtils.hasText(providerConfig.getTokenUri())) {
-      throw new BadRequestException("PROVEDOR_OAUTH_INDISPONIVEL", "A conexao Google ainda nao esta configurada.");
-    }
-    return providerConfig;
+    GmailMessageSender.Delivery delivery = gmailMessageSender.send(
+        inviter,
+        senderEmail -> GmailMimeSupport.encodeMimeMessage(buildInviteMime(senderEmail, invitedEmail, inviter.getFullName(), planName, inviteUrl, expiresAt))
+    );
+    return new Delivery(delivery.emailSent(), invitedEmail, delivery.sentFrom());
   }
 
   private String buildInviteMime(
@@ -104,11 +40,11 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
   ) {
     String boundary = "planthings-" + UUID.randomUUID();
     String subject = "Convite para o plano " + planName + " - Plan Things";
-    String safePlanName = htmlEscape(planName);
-    String safeInviterName = htmlEscape(inviterName);
-    String safeInviteUrl = htmlEscape(inviteUrl);
+    String safePlanName = GmailMimeSupport.htmlEscape(planName);
+    String safeInviterName = GmailMimeSupport.htmlEscape(inviterName);
+    String safeInviteUrl = GmailMimeSupport.htmlEscape(inviteUrl);
     String expiresText = expiresAt == null ? "" : expiresAt.text();
-    String safeExpiresText = htmlEscape(expiresText);
+    String safeExpiresText = GmailMimeSupport.htmlEscape(expiresText);
 
     String textBody = """
         Olá,
@@ -139,9 +75,9 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
         """.formatted(safeInviterName, safePlanName, safeInviteUrl, safeInviteUrl, safeInviteUrl, safeExpiresText);
 
     return String.join("\r\n",
-        "From: " + headerValue(senderEmail),
-        "To: " + headerValue(invitedEmail),
-        "Subject: " + encodedHeader(subject),
+        "From: " + GmailMimeSupport.headerValue(senderEmail),
+        "To: " + GmailMimeSupport.headerValue(invitedEmail),
+        "Subject: " + GmailMimeSupport.encodedHeader(subject),
         "MIME-Version: 1.0",
         "Content-Type: multipart/alternative; boundary=\"" + boundary + "\"",
         "",
@@ -149,40 +85,15 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
         "Content-Type: text/plain; charset=UTF-8",
         "Content-Transfer-Encoding: base64",
         "",
-        encodedBody(textBody),
+        GmailMimeSupport.encodedBody(textBody),
         "--" + boundary,
         "Content-Type: text/html; charset=UTF-8",
         "Content-Transfer-Encoding: base64",
         "",
-        encodedBody(htmlBody),
+        GmailMimeSupport.encodedBody(htmlBody),
         "--" + boundary + "--",
         ""
     );
-  }
-
-  private String encodeMimeMessage(String mimeMessage) {
-    return Base64.getUrlEncoder().withoutPadding().encodeToString(mimeMessage.getBytes(StandardCharsets.UTF_8));
-  }
-
-  private String encodedHeader(String value) {
-    return "=?UTF-8?B?" + Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8)) + "?=";
-  }
-
-  private String encodedBody(String value) {
-    byte[] lineSeparator = "\r\n".getBytes(StandardCharsets.US_ASCII);
-    return Base64.getMimeEncoder(76, lineSeparator).encodeToString(value.getBytes(StandardCharsets.UTF_8));
-  }
-
-  private String headerValue(String value) {
-    return (value == null ? "" : value).replace("\r", "").replace("\n", "");
-  }
-
-  private String htmlEscape(String value) {
-    return (value == null ? "" : value)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;");
   }
 
 }

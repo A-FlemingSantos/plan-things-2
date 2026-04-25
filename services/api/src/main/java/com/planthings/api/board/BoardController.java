@@ -73,6 +73,16 @@ public class BoardController {
     return ApiEnvelope.ok(boardService.deleteCard(planId, cardId));
   }
 
+  @PostMapping("/cards/{cardId}/inbox/send")
+  public ApiEnvelope<BoardService.InboxDeliveryResponse> sendCardToInbox(
+      @PathVariable UUID planId,
+      @PathVariable UUID cardId,
+      @RequestBody(required = false) InboxSendRequest request
+  ) {
+    List<UUID> recipientUserIds = request == null ? List.of() : request.recipientUserIds();
+    return ApiEnvelope.ok(boardService.sendCardToInbox(planId, cardId, recipientUserIds));
+  }
+
   @PostMapping("/cards/{cardId}/comments")
   public ApiEnvelope<BoardService.CommentView> addComment(@PathVariable UUID planId, @PathVariable UUID cardId, @Valid @RequestBody CommentRequest request) {
     return ApiEnvelope.ok(boardService.addComment(planId, cardId, request.message()));
@@ -111,6 +121,9 @@ public class BoardController {
   }
 
   public record MoveCardRequest(UUID targetColumnId, int targetPosition) {
+  }
+
+  public record InboxSendRequest(List<UUID> recipientUserIds) {
   }
 
   public record CommentRequest(@NotBlank(message = "O comentario e obrigatorio.") String message) {

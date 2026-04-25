@@ -24,6 +24,7 @@ import com.planthings.api.plans.PlanMemberRole;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +34,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 public class BoardService {
@@ -52,6 +54,7 @@ public class BoardService {
   private final AuthenticatedUserService authenticatedUserService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final CalendarService calendarService;
+  private final BoardCardInboxEmailSender boardCardInboxEmailSender;
 
   public BoardService(
       PlanAccessService planAccessService,
@@ -68,7 +71,8 @@ public class BoardService {
       UserRepository userRepository,
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper,
-      CalendarService calendarService
+      CalendarService calendarService,
+      BoardCardInboxEmailSender boardCardInboxEmailSender
   ) {
     this.planAccessService = planAccessService;
     this.planLabelRepository = planLabelRepository;
@@ -85,6 +89,7 @@ public class BoardService {
     this.authenticatedUserService = authenticatedUserService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.calendarService = calendarService;
+    this.boardCardInboxEmailSender = boardCardInboxEmailSender;
   }
 
   public BoardView getBoard(UUID planId) {
@@ -324,6 +329,26 @@ public class BoardService {
     return toChecklistItemView(item);
   }
 
+  @Transactional
+  public InboxDeliveryResponse sendCardToInbox(UUID planId, UUID cardId, List<UUID> recipientUserIds) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    PlanEntity plan = planAccessService.requirePlanMember(planId, currentUser.getId());
+    BoardCardEntity card = requireCard(planId, cardId);
+    List<UserEntity> recipients = resolveInboxRecipients(planId, cardId, recipientUserIds);
+    if (recipients.isEmpty()) {
+      throw new BadRequestException("CARTAO_SEM_DESTINATARIOS", "Escolha ao menos um membro para receber este cartao por e-mail.");
+    }
+
+    BoardCardInboxEmailSender.Delivery delivery = boardCardInboxEmailSender.sendCard(
+        currentUser,
+        plan,
+        card,
+        deriveCardKind(card),
+        recipients
+    );
+    return new InboxDeliveryResponse(delivery.emailSent(), delivery.sentFrom(), delivery.sentTo(), delivery.messageId(), delivery.threadId());
+  }
+
   private BoardView buildBoardView(PlanEntity plan, UUID currentUserId) {
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     List<BoardCardEntity> cards = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
@@ -506,6 +531,39 @@ public class BoardService {
     boardCardAssigneeRepository.saveAll(assignees);
   }
 
+  private List<UserEntity> resolveInboxRecipients(UUID planId, UUID cardId, List<UUID> recipientUserIds) {
+    LinkedHashSet<UUID> requestedIds = new LinkedHashSet<>();
+    if (recipientUserIds == null || recipientUserIds.isEmpty()) {
+      boardCardAssigneeRepository.findByCardId(cardId).forEach(assignee -> requestedIds.add(assignee.getUserId()));
+    } else {
+      recipientUserIds.stream().filter(Objects::nonNull).forEach(requestedIds::add);
+    }
+
+    if (requestedIds.isEmpty()) {
+      return List.of();
+    }
+
+    Set<UUID> memberIds = planMemberRepository.findByPlanId(planId).stream()
+        .map(PlanMemberEntity::getUserId)
+        .collect(Collectors.toSet());
+    if (requestedIds.stream().anyMatch(userId -> !memberIds.contains(userId))) {
+      throw new BadRequestException("DESTINATARIO_INVALIDO", "Todos os destinatarios precisam fazer parte do plano.");
+    }
+
+    Map<UUID, UserEntity> usersById = userRepository.findAllById(requestedIds).stream()
+        .collect(Collectors.toMap(UserEntity::getId, user -> user));
+    List<UserEntity> recipients = requestedIds.stream()
+        .map(usersById::get)
+        .filter(Objects::nonNull)
+        .filter(user -> StringUtils.hasText(user.getEmail()))
+        .toList();
+
+    if (recipients.size() != requestedIds.size()) {
+      throw new BadRequestException("DESTINATARIO_INVALIDO", "Nao foi possivel encontrar todos os destinatarios do e-mail.");
+    }
+    return recipients;
+  }
+
   private <T> void reorder(List<T> items, BiConsumer<T, Integer> indexSetter) {
     for (int i = 0; i < items.size(); i++) {
       indexSetter.accept(items.get(i), i);
@@ -617,6 +675,9 @@ public class BoardService {
   }
 
   public record MessageResponse(String message) {
+  }
+
+  public record InboxDeliveryResponse(boolean emailSent, String sentFrom, List<String> sentTo, String messageId, String threadId) {
   }
 
   public enum CardKind {

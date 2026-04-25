@@ -148,6 +148,24 @@ function describeInviteError(error) {
   return `${messageByCode[code]} Código: ${code}.`
 }
 
+function describeInboxError(error) {
+  const messageByCode = {
+    CARTAO_SEM_DESTINATARIOS: 'Escolha ao menos um membro para receber este cartão por e-mail.',
+    DESTINATARIO_INVALIDO: 'Todos os destinatários precisam fazer parte deste plano.',
+    GMAIL_NAO_CONECTADO: 'Gmail não conectado para este usuário. Conecte o Gmail em Configurações e tente novamente.',
+    GMAIL_SCOPE_AUSENTE: 'A conexão Gmail não tem permissão de envio. Reconecte o Gmail em Configurações.',
+    GMAIL_TOKEN_REFRESH_FALHOU: 'Não foi possível renovar a autorização Gmail. Reconecte o Gmail em Configurações.',
+    GMAIL_ENVIO_CONVITE_FALHOU: 'O Gmail recusou o envio do e-mail. Verifique a conta conectada e tente novamente.',
+    GMAIL_API_NAO_HABILITADA: 'A API do Gmail não está habilitada no projeto Google Cloud. Habilite Gmail API e tente novamente.',
+  }
+
+  if (!messageByCode[error?.code]) {
+    return error?.message ?? 'Não foi possível enviar o cartão por e-mail.'
+  }
+
+  return `${messageByCode[error.code]} Código: ${error.code}.`
+}
+
 function dateKeyFromTimeZoneInstant(value, timeZone) {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return null
@@ -325,6 +343,11 @@ export default function KanbanBoard() {
   const [isBoardSwitcherOpen, setIsBoardSwitcherOpen] = useState(false)
   const [isInboxOpen, setIsInboxOpen] = useState(false)
   const [isInboxPanelMounted, setIsInboxPanelMounted] = useState(false)
+  const [isInboxDropActive, setIsInboxDropActive] = useState(false)
+  const [inboxRecipientCard, setInboxRecipientCard] = useState(null)
+  const [inboxSelectedMemberIds, setInboxSelectedMemberIds] = useState([])
+  const [inboxSendingCardId, setInboxSendingCardId] = useState('')
+  const [inboxError, setInboxError] = useState('')
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
   const [isFilesOpen, setIsFilesOpen] = useState(false)
@@ -363,6 +386,7 @@ export default function KanbanBoard() {
   })
   const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
   const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
+  const inboxSelectableMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : []
   const canManageMembers = isBackendDriven && (activePlan?.role === 'OWNER' || activePlan?.role === 'ADMIN')
 
   const refreshMembersMenuPosition = () => {
@@ -945,6 +969,10 @@ export default function KanbanBoard() {
 
   const closeInbox = () => {
     setIsInboxOpen(false)
+    setIsInboxDropActive(false)
+    setInboxRecipientCard(null)
+    setInboxSelectedMemberIds([])
+    setInboxError('')
     if (inboxCloseTimerRef.current) {
       clearTimeout(inboxCloseTimerRef.current)
     }
@@ -997,6 +1025,17 @@ export default function KanbanBoard() {
     if (!isFilesPanelMounted) return
     reloadFileLists()
   }, [activePlan?.id, isFilesPanelMounted])
+
+  useEffect(() => {
+    if (!isInboxPanelMounted) return
+    if (!isBackendDriven) return
+    if (!activePlan?.id) return
+    if (activePlan?.membersMeta?.length) return
+
+    ensurePlanDetails(activePlan.id).catch((error) => {
+      setInboxError(error?.message ?? 'Não foi possível carregar os membros deste plano.')
+    })
+  }, [activePlan?.id, activePlan?.membersMeta?.length, ensurePlanDetails, isBackendDriven, isInboxPanelMounted])
 
   const isFilesSectionOpen = (sectionId) => filesSectionOpenById?.[sectionId] !== false
 
@@ -1332,6 +1371,88 @@ export default function KanbanBoard() {
     }
   }, [isBoardSwitcherOpen])
 
+  const findBoardCard = (cardId) => (
+    columns.flatMap((column) => column.cards).find((card) => card.id === cardId) ?? null
+  )
+
+  const sendCardToInbox = async (card, recipientUserIds = []) => {
+    if (!activePlan?.id || !isBackendDriven || !card?.id) {
+      showNotification('Envio por Gmail fica disponível apenas quando a sessão está conectada ao backend.')
+      return
+    }
+
+    setInboxSendingCardId(card.id)
+    setInboxError('')
+
+    try {
+      const delivery = await apiRequest(`/api/plans/${activePlan.id}/board/cards/${card.id}/inbox/send`, {
+        method: 'POST',
+        token: accessToken,
+        body: recipientUserIds.length ? { recipientUserIds } : {},
+      })
+      const total = Array.isArray(delivery?.sentTo) ? delivery.sentTo.length : 0
+      showNotification(total > 1 ? `E-mail enviado para ${total} membros.` : 'E-mail enviado para 1 membro.')
+      setInboxRecipientCard(null)
+      setInboxSelectedMemberIds([])
+    } catch (error) {
+      const message = describeInboxError(error)
+      setInboxError(message)
+      showNotification(message)
+    } finally {
+      setInboxSendingCardId('')
+    }
+  }
+
+  const handleInboxDrop = async (event) => {
+    if (draggedFile) return
+    event.preventDefault()
+    setIsInboxDropActive(false)
+
+    const cardId = dragState?.cardId
+    handleDragEnd()
+    if (!cardId) return
+
+    const card = findBoardCard(cardId)
+    if (!card) {
+      showNotification('Não foi possível identificar o cartão arrastado.')
+      return
+    }
+
+    if ((card.memberIds ?? []).length) {
+      await sendCardToInbox(card)
+      return
+    }
+
+    setInboxRecipientCard(card)
+    setInboxSelectedMemberIds([])
+    setInboxError('')
+  }
+
+  const handleInboxDragOver = (event) => {
+    if (draggedFile || !dragState?.cardId) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'copy'
+    setIsInboxDropActive(true)
+  }
+
+  const toggleInboxRecipient = (memberId) => {
+    setInboxSelectedMemberIds((current) => (
+      current.includes(memberId)
+        ? current.filter((id) => id !== memberId)
+        : [...current, memberId]
+    ))
+  }
+
+  const submitInboxRecipients = () => {
+    if (!inboxRecipientCard) return
+    if (!inboxSelectedMemberIds.length) {
+      setInboxError('Escolha ao menos um membro para receber este cartão por e-mail.')
+      return
+    }
+
+    sendCardToInbox(inboxRecipientCard, inboxSelectedMemberIds)
+  }
+
   const renderSidebarSecondaryContent = ({ collapsed }) => (
     collapsed ? null : (
       <PlanSidebarSection
@@ -1349,8 +1470,12 @@ export default function KanbanBoard() {
   const renderInboxPanel = () => (
     <aside
       id="board-inbox-panel"
-      className={`${styles.plannerPanel} ${styles.inboxPanel} ${isInboxOpen ? '' : styles.plannerPanelClosing}`}
+      className={`${styles.plannerPanel} ${styles.inboxPanel} ${isInboxOpen ? '' : styles.plannerPanelClosing} ${isInboxDropActive ? styles.inboxPanelDropActive : ''}`}
       aria-label="Caixa de entrada"
+      onDragOver={handleInboxDragOver}
+      onDragEnter={handleInboxDragOver}
+      onDragLeave={() => setIsInboxDropActive(false)}
+      onDrop={handleInboxDrop}
     >
       <div className={styles.inboxPanelHeader}>
         <div className={styles.inboxPanelTitle}>
@@ -1367,28 +1492,74 @@ export default function KanbanBoard() {
         </button>
       </div>
 
-      <button type="button" className={styles.inboxAddCardButton}>
-        Adicionar um cartão
-      </button>
-
-      <section className={styles.inboxEmptyState} aria-label="Conectar aplicativos">
-        <div>
-          <h3>Consolide suas tarefas</h3>
-          <p>Conecte Gmail e Outlook para transformar mensagens em cartões sem sair do seu fluxo.</p>
-        </div>
-
-        <div className={styles.inboxAppsIllustration} aria-hidden="true">
-          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleMail}`}><Icon.Inbox /></span>
-          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleGmail}`}>M</span>
-          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleOutlook}`}>O</span>
-          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleSlack}`}>#</span>
-          <span className={`${styles.inboxAppBubble} ${styles.inboxAppBubbleTeams}`}>T</span>
-        </div>
+      <section className={styles.inboxDropZone} aria-label="Enviar cartão por Gmail">
+        <Icon.Send />
+        <strong>Solte um cartão para enviar por Gmail</strong>
+        <p>O e-mail será enviado pela conta Gmail conectada para os responsáveis do cartão.</p>
       </section>
+
+      {inboxRecipientCard ? (
+        <section className={styles.inboxRecipientPicker} aria-label="Escolher destinatários">
+          <div className={styles.inboxRecipientHeader}>
+            <span>Destinatários</span>
+            <strong>{inboxRecipientCard.title}</strong>
+          </div>
+
+          <div className={styles.inboxRecipientList}>
+            {inboxSelectableMembers.length ? inboxSelectableMembers.map((member) => {
+              const memberName = member.name ?? member.fullName ?? 'Membro'
+              const checked = inboxSelectedMemberIds.includes(member.id)
+
+              return (
+                <label key={member.id} className={styles.inboxRecipientRow}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleInboxRecipient(member.id)}
+                  />
+                  <span className={styles.planMemberAvatar} style={{ background: member.color }}>
+                    {member.initials}
+                  </span>
+                  <span className={styles.inboxRecipientInfo}>
+                    <strong>{memberName}</strong>
+                    <small>{member.email}</small>
+                  </span>
+                </label>
+              )
+            }) : (
+              <p className={styles.inboxRecipientsEmpty}>Carregando membros do plano...</p>
+            )}
+          </div>
+
+          <div className={styles.inboxRecipientActions}>
+            <button
+              type="button"
+              className={styles.inboxSecondaryButton}
+              onClick={() => {
+                setInboxRecipientCard(null)
+                setInboxSelectedMemberIds([])
+                setInboxError('')
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className={styles.inboxPrimaryButton}
+              onClick={submitInboxRecipients}
+              disabled={!inboxSelectedMemberIds.length || inboxSendingCardId === inboxRecipientCard.id}
+            >
+              {inboxSendingCardId === inboxRecipientCard.id ? 'Enviando...' : 'Enviar e-mail'}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {inboxError ? <p className={styles.inboxError} role="alert">{inboxError}</p> : null}
 
       <div className={styles.inboxPrivateNote}>
         <Icon.Lock />
-        <span>A Caixa de Entrada é visível apenas para você</span>
+        <span>Envios usam somente a permissão Gmail de envio</span>
       </div>
     </aside>
   )
