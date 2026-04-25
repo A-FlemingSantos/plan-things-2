@@ -63,17 +63,23 @@ Indice de execucao das etapas. O detalhamento de contexto, estado atual e deciso
 
 6. Inbox da sidebar no KanbanBoard
    - Estado: concluida
-   - Usa a integracao Gmail ja concluida para transformar a Inbox em destino de drop: ao soltar um cartao, o sistema envia email pela conta Gmail conectada apenas para novos membros selecionados e atribui esses membros ao cartao.
+   - Usa a integracao Gmail ja concluida para transformar a Inbox em destino de drop: ao soltar um cartao, o sistema envia email pela conta Gmail conectada apenas para novos membros selecionados, atribui esses membros ao cartao, lista os envios de forma persistente e permite limpar o historico pela sidebar.
    - Arquivos:
      `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
      `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css`
      `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.inbox.test.jsx`
+     `apps/web/src/shared/contracts/backendAdapters.js`
      `services/api/src/main/java/com/planthings/api/board/BoardController.java`
      `services/api/src/main/java/com/planthings/api/board/BoardService.java`
      `services/api/src/main/java/com/planthings/api/board/BoardCardInboxEmailSender.java`
+     `services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryEntity.java`
+     `services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryRecipientEntity.java`
+     `services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryRepository.java`
+     `services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryRecipientRepository.java`
      `services/api/src/main/java/com/planthings/api/settings/GmailMessageSender.java`
      `services/api/src/main/java/com/planthings/api/settings/GmailMimeSupport.java`
      `services/api/src/main/java/com/planthings/api/settings/GmailPlanInviteEmailSender.java`
+     `services/api/src/main/resources/db/migration/V9__board_card_inbox_deliveries.sql`
      `services/api/src/test/java/com/planthings/api/BoardInboxGmailIntegrationTest.java`
 
 ## Proximas etapas

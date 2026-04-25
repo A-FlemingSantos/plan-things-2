@@ -1,6 +1,6 @@
 # Status Overview - Colaboracao e Settings
 
-O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de arquivos no KanbanBoard ja aceita drag-and-drop, o login com Google ja e a identidade real da conta, a integracao Gmail nas Configuracoes ja existe como conexao real, o convite por e-mail pelo owner/admin ja e enviado via Gmail conectado e a Inbox da sidebar no KanbanBoard ja funciona como destino operacional de envio por Gmail a partir de cards. A proxima fase nao e uma lista solta de pendencias; ela continua essas bases com governanca de colaboracao, refinamento de arquivos/anexos, ajustes finais de Settings e, por ultimo, integracoes externas opcionais. Microsoft, Outlook e SMTP generico nao entram no produto.
+O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de arquivos no KanbanBoard ja aceita drag-and-drop, o login com Google ja e a identidade real da conta, a integracao Gmail nas Configuracoes ja existe como conexao real, o convite por e-mail pelo owner/admin ja e enviado via Gmail conectado e a Inbox da sidebar no KanbanBoard ja funciona como destino operacional de envio por Gmail a partir de cards, com historico persistente e limpeza manual dos envios. A proxima fase nao e uma lista solta de pendencias; ela continua essas bases com governanca de colaboracao, refinamento de arquivos/anexos, ajustes finais de Settings e, por ultimo, integracoes externas opcionais. Microsoft, Outlook e SMTP generico nao entram no produto.
 
 ## O que ja existe
 
@@ -53,19 +53,25 @@ O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de ar
 
 ---
 
-**Inbox da sidebar no KanbanBoard.** A funcao dessa area e transformar a sidebar em um gatilho operacional: quando o usuario arrasta um cartao do KanbanBoard para a Inbox, o sistema monta um email com template baseado nas informacoes desse cartao e envia pela conta Gmail conectada do usuario. Na pratica, o app abre um seletor de membros do plano, mostra apenas membros que ainda nao fazem parte do cartao, envia o email somente para esses novos membros e os atribui automaticamente ao cartao apos o envio bem-sucedido. Essa entrega usa apenas `gmail.send`; leitura real da caixa Gmail continua fora desta etapa.
+**Inbox da sidebar no KanbanBoard.** A funcao dessa area e transformar a sidebar em um gatilho operacional: quando o usuario arrasta um cartao do KanbanBoard para a Inbox, o sistema monta um email com template baseado nas informacoes desse cartao e envia pela conta Gmail conectada do usuario. Na pratica, o app abre um seletor de membros do plano, mostra apenas membros que ainda nao fazem parte do cartao, envia o email somente para esses novos membros e os atribui automaticamente ao cartao apos o envio bem-sucedido. Cada envio fica listado de forma persistente na sidebar, com remetente, destinatarios, data e referencia ao cartao, e pode ser removido do historico pelo icone de lixeira. Essa entrega usa apenas `gmail.send`; leitura real da caixa Gmail continua fora desta etapa.
 
 ---
 
 `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
 `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css`
 `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.inbox.test.jsx`
+`apps/web/src/shared/contracts/backendAdapters.js`
 `services/api/src/main/java/com/planthings/api/board/BoardController.java`
 `services/api/src/main/java/com/planthings/api/board/BoardService.java`
 `services/api/src/main/java/com/planthings/api/board/BoardCardInboxEmailSender.java`
+`services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryEntity.java`
+`services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryRecipientEntity.java`
+`services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryRepository.java`
+`services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryRecipientRepository.java`
 `services/api/src/main/java/com/planthings/api/settings/GmailMessageSender.java`
 `services/api/src/main/java/com/planthings/api/settings/GmailMimeSupport.java`
 `services/api/src/main/java/com/planthings/api/settings/GmailPlanInviteEmailSender.java`
+`services/api/src/main/resources/db/migration/V9__board_card_inbox_deliveries.sql`
 `services/api/src/test/java/com/planthings/api/BoardInboxGmailIntegrationTest.java`
 
 ---
@@ -130,7 +136,7 @@ Google Calendar fica como integracao opcional e por ultimo. A funcao dessa frent
 
 ## Leitura pratica
 
-Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e a governanca de colaboracao, agora que a Inbox da sidebar no KanbanBoard ja dispara email por Gmail e atribui novos membros ao cartao. Depois entram refino de arquivos/anexos, ajustes finais de Settings e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
+Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e a governanca de colaboracao, agora que a Inbox da sidebar no KanbanBoard ja dispara email por Gmail, atribui novos membros ao cartao, registra os envios persistidos e permite limpar esse historico. Depois entram refino de arquivos/anexos, ajustes finais de Settings e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
 
 ## Leitura futura da Inbox Gmail
 
@@ -138,4 +144,4 @@ A Inbox atual da sidebar deve continuar sendo, primeiro, um destino operacional 
 
 O caminho direto para implementar isso e expandir a integracao Gmail ja existente em `Settings`: adicionar um novo consentimento com escopo de leitura minimo (`gmail.readonly` ou `gmail.metadata`, conforme a necessidade real), salvar os escopos concedidos, criar uma tabela de mensagens importadas com `gmailMessageId`, remetente, assunto, snippet, data e vinculo opcional ao plano/card, e expor endpoints para listar, atualizar e marcar mensagens como processadas. Para sincronizacao continua, usar `users.watch` da Gmail API com Google Cloud Pub/Sub, guardar `historyId` por conta conectada e renovar o watch periodicamente; para uma primeira versao mais simples, fazer sync manual por botao usando `messages.list` + `messages.get`, sem Pub/Sub.
 
-Essa frente deve ser tratada como etapa propria depois da Inbox de disparo por Gmail estar estavel. Ela exige revisao da tela de consentimento do Google, porque leitura de Gmail envolve escopos mais sensiveis/restritos que `gmail.send`, e nao deve ser misturada com a entrega de convite por email ou com a Inbox de disparo automatico do KanbanBoard.
+Essa frente deve ser tratada como etapa propria depois da Inbox de disparo por Gmail estar estavel. O historico persistente atual registra apenas os envios feitos pelo proprio Plan Things e nao depende de leitura da caixa Gmail. Uma leitura real exige revisao da tela de consentimento do Google, porque leitura de Gmail envolve escopos mais sensiveis/restritos que `gmail.send`, e nao deve ser misturada com a entrega de convite por email ou com a Inbox de disparo automatico do KanbanBoard.
