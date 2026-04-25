@@ -348,6 +348,7 @@ export default function KanbanBoard() {
   const [inboxSelectedMemberIds, setInboxSelectedMemberIds] = useState([])
   const [inboxSendingCardId, setInboxSendingCardId] = useState('')
   const [inboxError, setInboxError] = useState('')
+  const [inboxItems, setInboxItems] = useState([])
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
   const [isFilesOpen, setIsFilesOpen] = useState(false)
@@ -1040,6 +1041,10 @@ export default function KanbanBoard() {
     })
   }, [activePlan?.id, activePlan?.membersMeta?.length, ensurePlanDetails, isBackendDriven, isInboxPanelMounted])
 
+  useEffect(() => {
+    setInboxItems(Array.isArray(activePlan?.inboxItems) ? activePlan.inboxItems : [])
+  }, [activePlan?.id, activePlan?.inboxItems])
+
   const isFilesSectionOpen = (sectionId) => filesSectionOpenById?.[sectionId] !== false
 
   const toggleFilesSection = (sectionId) => {
@@ -1401,6 +1406,14 @@ export default function KanbanBoard() {
     })
   }
 
+  const prependInboxItem = (item) => {
+    if (!item?.id) return
+    setInboxItems((current) => [
+      item,
+      ...current.filter((existing) => existing.id !== item.id),
+    ])
+  }
+
   const sendCardToInbox = async (card, recipientUserIds = []) => {
     if (!activePlan?.id || !isBackendDriven || !card?.id) {
       showNotification('Envio por Gmail fica disponível apenas quando a sessão está conectada ao backend.')
@@ -1426,6 +1439,7 @@ export default function KanbanBoard() {
       const total = Array.isArray(delivery?.sentTo) ? delivery.sentTo.length : 0
       showNotification(total > 1 ? `E-mail enviado para ${total} membros.` : 'E-mail enviado para 1 membro.')
       mergeInboxRecipientsIntoCard(card.id, newRecipientUserIds)
+      prependInboxItem(delivery?.inboxItem)
       setInboxRecipientCard(null)
       setInboxSelectedMemberIds([])
     } catch (error) {
@@ -1480,6 +1494,28 @@ export default function KanbanBoard() {
     }
 
     sendCardToInbox(inboxRecipientCard, inboxSelectedMemberIds)
+  }
+
+  const renderInboxItem = (item) => {
+    const recipients = Array.isArray(item.recipients) && item.recipients.length
+      ? item.recipients.map((recipient) => recipient.fullName || recipient.email).filter(Boolean)
+      : (Array.isArray(item.sentTo) ? item.sentTo : [])
+    const recipientLabel = recipients.length
+      ? recipients.join(', ')
+      : 'Destinatários registrados'
+    const sentByName = item.sentBy?.fullName || item.sentFrom || 'Gmail conectado'
+    const sentAtLabel = item.sentAt?.text ?? 'Agora'
+
+    return (
+      <article key={item.id} className={styles.inboxSentCard}>
+        <div className={styles.inboxSentCardHeader}>
+          <strong>{item.cardTitle ?? 'Cartão enviado'}</strong>
+          <span>{sentAtLabel}</span>
+        </div>
+        <p>{recipientLabel}</p>
+        <small>Enviado por {sentByName}</small>
+      </article>
+    )
   }
 
   const renderSidebarSecondaryContent = ({ collapsed }) => (
@@ -1587,6 +1623,20 @@ export default function KanbanBoard() {
       ) : null}
 
       {inboxError ? <p className={styles.inboxError} role="alert">{inboxError}</p> : null}
+
+      <section className={styles.inboxSentList} aria-label="Cartões enviados pela Inbox">
+        <div className={styles.inboxSentListHeader}>
+          <span>Enviados</span>
+          <strong>{inboxItems.length}</strong>
+        </div>
+        {inboxItems.length ? (
+          <div className={styles.inboxSentItems}>
+            {inboxItems.map(renderInboxItem)}
+          </div>
+        ) : (
+          <p className={styles.inboxSentEmpty}>Nenhum cartão enviado pela Inbox ainda.</p>
+        )}
+      </section>
 
       <div className={styles.inboxPrivateNote}>
         <Icon.Lock />

@@ -80,13 +80,27 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.sentFrom").value("inbox-owner@example.com"))
         .andExpect(jsonPath("$.data.sentTo[0]").value("inbox-member@example.com"))
         .andExpect(jsonPath("$.data.messageId").value("message-id"))
-        .andExpect(jsonPath("$.data.threadId").value("thread-id"));
+        .andExpect(jsonPath("$.data.threadId").value("thread-id"))
+        .andExpect(jsonPath("$.data.inboxItem.cardId").value(cardId))
+        .andExpect(jsonPath("$.data.inboxItem.cardTitle").value("Preparar pauta"))
+        .andExpect(jsonPath("$.data.inboxItem.recipients[0].id").value(memberId));
 
     String decodedMime = gmailApiClient.decodedRawMessage();
     assertTrue(decodedMime.contains("To: inbox-member@example.com"));
     assertTrue(decodedMime.contains("From: inbox-owner@example.com"));
     assertTrue(decodeBase64Part(decodedMime, "Content-Type: text/plain; charset=UTF-8").contains("Preparar pauta"));
     assertTrue(decodeBase64Part(decodedMime, "Content-Type: text/plain; charset=UTF-8").contains("http://localhost:5173/workspace/board/" + planId));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.inboxItems[0].cardId").value(cardId))
+        .andExpect(jsonPath("$.data.inboxItems[0].cardTitle").value("Preparar pauta"))
+        .andExpect(jsonPath("$.data.inboxItems[0].sentFrom").value("inbox-owner@example.com"))
+        .andExpect(jsonPath("$.data.inboxItems[0].sentTo[0]").value("inbox-member@example.com"))
+        .andExpect(jsonPath("$.data.inboxItems[0].recipients[0].id").value(memberId))
+        .andExpect(jsonPath("$.data.inboxItems[0].messageId").value("message-id"))
+        .andExpect(jsonPath("$.data.inboxItems[0].threadId").value("thread-id"));
   }
 
   @Test

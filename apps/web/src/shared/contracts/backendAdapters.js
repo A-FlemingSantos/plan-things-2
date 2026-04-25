@@ -482,6 +482,22 @@ function mapBoardCard(card, options = {}) {
   }
 }
 
+function mapBoardInboxItem(item) {
+  return {
+    id: item.id,
+    cardId: item.cardId,
+    cardTitle: item.cardTitle ?? 'Cartão',
+    cardKind: item.cardKind ?? 'CARTAO',
+    sentBy: item.sentBy ?? null,
+    sentFrom: item.sentFrom ?? '',
+    sentTo: Array.isArray(item.sentTo) ? item.sentTo : [],
+    recipients: Array.isArray(item.recipients) ? item.recipients : [],
+    messageId: item.messageId ?? '',
+    threadId: item.threadId ?? '',
+    sentAt: item.sentAt ?? null,
+  }
+}
+
 export function mapBoardViewToColumns(boardView, options = {}) {
   return boardView.columns.map((column) => ({
     id: column.id,
@@ -501,6 +517,9 @@ export function mergeBoardIntoPlan(plan, boardView, options = {}) {
       name: label.name,
       color: label.color,
     })),
+    inboxItems: Array.isArray(boardView.inboxItems)
+      ? boardView.inboxItems.map(mapBoardInboxItem)
+      : [],
     tasks: boardView.columns.reduce((sum, column) => sum + column.cards.length, 0),
     boardLoaded: true,
   }

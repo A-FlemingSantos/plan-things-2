@@ -48,6 +48,8 @@ public class BoardService {
   private final BoardChecklistRepository boardChecklistRepository;
   private final BoardChecklistItemRepository boardChecklistItemRepository;
   private final BoardCardAssigneeRepository boardCardAssigneeRepository;
+  private final BoardCardInboxDeliveryRepository boardCardInboxDeliveryRepository;
+  private final BoardCardInboxDeliveryRecipientRepository boardCardInboxDeliveryRecipientRepository;
   private final CardAttachmentRepository cardAttachmentRepository;
   private final FileEntryRepository fileEntryRepository;
   private final UserRepository userRepository;
@@ -66,6 +68,8 @@ public class BoardService {
       BoardChecklistRepository boardChecklistRepository,
       BoardChecklistItemRepository boardChecklistItemRepository,
       BoardCardAssigneeRepository boardCardAssigneeRepository,
+      BoardCardInboxDeliveryRepository boardCardInboxDeliveryRepository,
+      BoardCardInboxDeliveryRecipientRepository boardCardInboxDeliveryRecipientRepository,
       CardAttachmentRepository cardAttachmentRepository,
       FileEntryRepository fileEntryRepository,
       UserRepository userRepository,
@@ -83,6 +87,8 @@ public class BoardService {
     this.boardChecklistRepository = boardChecklistRepository;
     this.boardChecklistItemRepository = boardChecklistItemRepository;
     this.boardCardAssigneeRepository = boardCardAssigneeRepository;
+    this.boardCardInboxDeliveryRepository = boardCardInboxDeliveryRepository;
+    this.boardCardInboxDeliveryRecipientRepository = boardCardInboxDeliveryRecipientRepository;
     this.cardAttachmentRepository = cardAttachmentRepository;
     this.fileEntryRepository = fileEntryRepository;
     this.userRepository = userRepository;
@@ -349,7 +355,8 @@ public class BoardService {
         deriveCardKind(card),
         recipients
     );
-    return new InboxDeliveryResponse(delivery.emailSent(), delivery.sentFrom(), delivery.sentTo(), delivery.messageId(), delivery.threadId());
+    InboxItemView inboxItem = recordInboxDelivery(plan, card, currentUser, delivery, recipients);
+    return new InboxDeliveryResponse(delivery.emailSent(), delivery.sentFrom(), delivery.sentTo(), delivery.messageId(), delivery.threadId(), inboxItem);
   }
 
   private BoardView buildBoardView(PlanEntity plan, UUID currentUserId) {
@@ -373,7 +380,115 @@ public class BoardService {
                 .map(card -> toCardView(card, currentUserId, currentRole))
                 .toList()
         )).toList(),
-        labels
+        labels,
+        buildInboxItems(plan.getId())
+    );
+  }
+
+  private InboxItemView recordInboxDelivery(
+      PlanEntity plan,
+      BoardCardEntity card,
+      UserEntity sender,
+      BoardCardInboxEmailSender.Delivery delivery,
+      List<UserEntity> recipients
+  ) {
+    BoardCardInboxDeliveryEntity deliveryEntity = new BoardCardInboxDeliveryEntity();
+    deliveryEntity.setPlanId(plan.getId());
+    deliveryEntity.setCardId(card.getId());
+    deliveryEntity.setSentByUserId(sender.getId());
+    deliveryEntity.setSentFrom(delivery.sentFrom());
+    deliveryEntity.setMessageId(delivery.messageId());
+    deliveryEntity.setThreadId(delivery.threadId());
+    boardCardInboxDeliveryRepository.save(deliveryEntity);
+
+    List<BoardCardInboxDeliveryRecipientEntity> recipientEntities = recipients.stream()
+        .map(recipient -> {
+          BoardCardInboxDeliveryRecipientEntity entity = new BoardCardInboxDeliveryRecipientEntity();
+          entity.setDeliveryId(deliveryEntity.getId());
+          entity.setUserId(recipient.getId());
+          entity.setEmail(recipient.getEmail());
+          return entity;
+        })
+        .toList();
+    boardCardInboxDeliveryRecipientRepository.saveAll(recipientEntities);
+
+    return toInboxItemView(
+        deliveryEntity,
+        card,
+        sender,
+        recipientEntities,
+        recipients.stream().collect(Collectors.toMap(UserEntity::getId, user -> user))
+    );
+  }
+
+  private List<InboxItemView> buildInboxItems(UUID planId) {
+    List<BoardCardInboxDeliveryEntity> deliveries = boardCardInboxDeliveryRepository.findTop50ByPlanIdOrderByCreatedAtDesc(planId);
+    if (deliveries.isEmpty()) {
+      return List.of();
+    }
+
+    List<UUID> deliveryIds = deliveries.stream().map(BoardCardInboxDeliveryEntity::getId).toList();
+    Map<UUID, List<BoardCardInboxDeliveryRecipientEntity>> recipientsByDeliveryId = boardCardInboxDeliveryRecipientRepository
+        .findByDeliveryIdIn(deliveryIds)
+        .stream()
+        .collect(Collectors.groupingBy(BoardCardInboxDeliveryRecipientEntity::getDeliveryId));
+    Map<UUID, BoardCardEntity> cardsById = boardCardRepository.findAllById(deliveries.stream()
+            .map(BoardCardInboxDeliveryEntity::getCardId)
+            .collect(Collectors.toSet()))
+        .stream()
+        .collect(Collectors.toMap(BoardCardEntity::getId, card -> card));
+    Set<UUID> userIds = new LinkedHashSet<>();
+    deliveries.forEach(delivery -> userIds.add(delivery.getSentByUserId()));
+    recipientsByDeliveryId.values().stream()
+        .flatMap(List::stream)
+        .map(BoardCardInboxDeliveryRecipientEntity::getUserId)
+        .forEach(userIds::add);
+    Map<UUID, UserEntity> usersById = userRepository.findAllById(userIds).stream()
+        .collect(Collectors.toMap(UserEntity::getId, user -> user));
+
+    return deliveries.stream()
+        .map(delivery -> {
+          BoardCardEntity card = cardsById.get(delivery.getCardId());
+          if (card == null) {
+            return null;
+          }
+          return toInboxItemView(
+              delivery,
+              card,
+              usersById.get(delivery.getSentByUserId()),
+              recipientsByDeliveryId.getOrDefault(delivery.getId(), List.of()),
+              usersById
+          );
+        })
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
+  private InboxItemView toInboxItemView(
+      BoardCardInboxDeliveryEntity delivery,
+      BoardCardEntity card,
+      UserEntity sender,
+      List<BoardCardInboxDeliveryRecipientEntity> recipients,
+      Map<UUID, UserEntity> usersById
+  ) {
+    List<UserSummary> recipientUsers = recipients.stream()
+        .map(recipient -> usersById.get(recipient.getUserId()))
+        .filter(Objects::nonNull)
+        .map(user -> new UserSummary(user.getId(), user.getFullName(), user.getEmail()))
+        .toList();
+
+    return new InboxItemView(
+        delivery.getId(),
+        delivery.getCardId(),
+        card.getTitle(),
+        deriveCardKind(card),
+        sender == null ? null : new UserSummary(sender.getId(), sender.getFullName(), sender.getEmail()),
+        delivery.getSentFrom(),
+        recipients.stream().map(BoardCardInboxDeliveryRecipientEntity::getEmail).toList(),
+        recipientUsers,
+        delivery.getMessageId(),
+        delivery.getThreadId(),
+        brazilDateTimeMapper.toDateTime(delivery.getCreatedAt())
     );
   }
 
@@ -653,7 +768,7 @@ public class BoardService {
     planLabelRepository.save(label);
   }
 
-  public record BoardView(UUID planId, String planName, List<ColumnView> columns, List<LabelView> labels) {
+  public record BoardView(UUID planId, String planName, List<ColumnView> columns, List<LabelView> labels, List<InboxItemView> inboxItems) {
   }
 
   public record ColumnView(UUID id, String title, String color, int position, List<BoardCardView> cards) {
@@ -711,7 +826,22 @@ public class BoardService {
   public record MessageResponse(String message) {
   }
 
-  public record InboxDeliveryResponse(boolean emailSent, String sentFrom, List<String> sentTo, String messageId, String threadId) {
+  public record InboxDeliveryResponse(boolean emailSent, String sentFrom, List<String> sentTo, String messageId, String threadId, InboxItemView inboxItem) {
+  }
+
+  public record InboxItemView(
+      UUID id,
+      UUID cardId,
+      String cardTitle,
+      CardKind cardKind,
+      UserSummary sentBy,
+      String sentFrom,
+      List<String> sentTo,
+      List<UserSummary> recipients,
+      String messageId,
+      String threadId,
+      ApiDateTimeDto sentAt
+  ) {
   }
 
   public enum CardKind {

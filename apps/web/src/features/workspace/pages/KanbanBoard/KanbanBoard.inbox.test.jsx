@@ -197,6 +197,7 @@ describe('KanbanBoard Inbox Gmail flow', () => {
     plansMock.refreshPlanDetails.mockReset()
     plansMock.loadPlanBoard.mockReset()
     boardState.updateColumns.mockReset()
+    activePlan.inboxItems = []
     plansMock.ensurePlanDetails.mockResolvedValue(activePlan)
     plansMock.refreshPlanDetails.mockResolvedValue(activePlan)
     plansMock.loadPlanBoard.mockResolvedValue(boardState.columns)
@@ -231,6 +232,21 @@ describe('KanbanBoard Inbox Gmail flow', () => {
       sentTo: ['new-member@example.com'],
       messageId: 'message-id',
       threadId: 'thread-id',
+      inboxItem: {
+        id: 'delivery-1',
+        cardId: 'card-1',
+        cardTitle: 'Enviar resumo',
+        sentFrom: 'arthur@example.com',
+        sentTo: ['new-member@example.com'],
+        recipients: [
+          {
+            id: 'user-3',
+            fullName: 'New Member',
+            email: 'new-member@example.com',
+          },
+        ],
+        sentAt: { text: '25/04/2026 10:00' },
+      },
     })
 
     renderBoard()
@@ -249,6 +265,34 @@ describe('KanbanBoard Inbox Gmail flow', () => {
       })
     })
     expect(boardState.columns[0].cards[0].memberIds).toEqual(['user-2', 'user-3'])
+    expect(await screen.findByText('25/04/2026 10:00')).toBeInTheDocument()
+  })
+
+  it('lists cards already sent through the persistent Inbox history', async () => {
+    activePlan.inboxItems = [
+      {
+        id: 'delivery-existing',
+        cardId: 'card-1',
+        cardTitle: 'Enviar resumo',
+        sentFrom: 'arthur@example.com',
+        sentTo: ['member@example.com'],
+        recipients: [
+          {
+            id: 'user-2',
+            fullName: 'Inbox Member',
+            email: 'member@example.com',
+          },
+        ],
+        sentAt: { text: '25/04/2026 09:30' },
+      },
+    ]
+
+    renderBoard()
+    await userEvent.click(screen.getByRole('button', { name: /Caixa de entrada/i }))
+
+    expect(await screen.findByLabelText('Cartões enviados pela Inbox')).toHaveTextContent('Enviar resumo')
+    expect(screen.getByText('Inbox Member')).toBeInTheDocument()
+    expect(screen.getByText('25/04/2026 09:30')).toBeInTheDocument()
   })
 
   it('asks for members when the dropped card has no assignees', async () => {
