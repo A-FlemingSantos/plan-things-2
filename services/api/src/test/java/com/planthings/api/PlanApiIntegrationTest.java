@@ -1,9 +1,13 @@
 package com.planthings.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.planthings.api.plans.PlanInviteEmailSender;
 import com.planthings.api.workspace.WorkspaceRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 
 import java.util.UUID;
@@ -228,5 +232,16 @@ class PlanApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.error.code").value("CONVITE_INVALIDO"));
+  }
+
+  @TestConfiguration
+  static class FakeInviteEmailConfig {
+
+    @Bean
+    @Primary
+    PlanInviteEmailSender fakePlanInviteEmailSender() {
+      return (inviter, invitedEmail, planName, inviteUrl, expiresAt) ->
+          new PlanInviteEmailSender.Delivery(true, invitedEmail, inviter.getEmail());
+    }
   }
 }

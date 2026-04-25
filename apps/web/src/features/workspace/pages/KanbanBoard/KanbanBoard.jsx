@@ -123,6 +123,31 @@ function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+const GMAIL_INVITE_ERROR_CODES = new Set([
+  'GMAIL_NAO_CONECTADO',
+  'GMAIL_SCOPE_AUSENTE',
+  'GMAIL_TOKEN_REFRESH_FALHOU',
+  'GMAIL_ENVIO_CONVITE_FALHOU',
+  'GMAIL_API_NAO_HABILITADA',
+])
+
+function describeInviteError(error) {
+  if (!GMAIL_INVITE_ERROR_CODES.has(error?.code)) {
+    return error?.message ?? 'Não foi possível enviar o convite.'
+  }
+
+  const code = error.code
+  const messageByCode = {
+    GMAIL_NAO_CONECTADO: 'Gmail não conectado para este usuário. Conecte o Gmail em Configurações e tente novamente.',
+    GMAIL_SCOPE_AUSENTE: 'A conexão Gmail não tem permissão de envio. Reconecte o Gmail em Configurações.',
+    GMAIL_TOKEN_REFRESH_FALHOU: 'Não foi possível renovar a autorização Gmail. Reconecte o Gmail em Configurações.',
+    GMAIL_ENVIO_CONVITE_FALHOU: 'O Gmail recusou o envio do convite. Verifique a conta conectada e tente novamente.',
+    GMAIL_API_NAO_HABILITADA: 'A API do Gmail não está habilitada no projeto Google Cloud. Habilite Gmail API e tente novamente.',
+  }
+
+  return `${messageByCode[code]} Código: ${code}.`
+}
+
 function dateKeyFromTimeZoneInstant(value, timeZone) {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return null
@@ -588,35 +613,6 @@ export default function KanbanBoard() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isInviteOpen])
 
-  const copyText = async (text, successMessage = 'Copiado.') => {
-    const normalized = String(text ?? '').trim()
-    if (!normalized) return
-
-    try {
-      await navigator.clipboard.writeText(normalized)
-      showNotification(successMessage)
-      return
-    } catch {
-      // noop
-    }
-
-    try {
-      const textarea = document.createElement('textarea')
-      textarea.value = normalized
-      textarea.setAttribute('readonly', '')
-      textarea.style.position = 'fixed'
-      textarea.style.top = '-1000px'
-      textarea.style.left = '-1000px'
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      textarea.remove()
-      showNotification(successMessage)
-    } catch {
-      showNotification('Não foi possível copiar automaticamente.')
-    }
-  }
-
   const submitInvite = async () => {
     if (!activePlan?.id || !isBackendDriven) return
     if (!canManageMembers) return
@@ -639,7 +635,7 @@ export default function KanbanBoard() {
       setInviteResult(result)
       await loadPlanInvites()
     } catch (error) {
-      setInviteError(error?.message ?? 'Não foi possível criar o convite.')
+      setInviteError(describeInviteError(error))
     } finally {
       setInviteSubmitting(false)
     }
@@ -2130,7 +2126,7 @@ export default function KanbanBoard() {
                   onClick={submitInvite}
                   disabled={inviteSubmitting || !inviteEmail.trim()}
                 >
-                  {inviteSubmitting ? 'Convidando...' : 'Convidar'}
+                  {inviteSubmitting ? 'Enviando...' : 'Convidar'}
                 </button>
 
                 <button type="button" className={styles.inviteCancel} onClick={closeInviteModal} disabled={inviteSubmitting}>
@@ -2138,28 +2134,12 @@ export default function KanbanBoard() {
                 </button>
               </div>
 
-              {inviteResult?.token ? (
+              {inviteResult?.invitedEmail ? (
                 <div className={styles.inviteResult}>
-                  <p className={styles.inviteResultTitle}>Convite criado</p>
+                  <p className={styles.inviteResultTitle}>Convite enviado</p>
                   <p className={styles.inviteResultText}>
-                    Link: <span className={styles.inviteMonospace}>{`${window.location.origin}/plans/invites/${inviteResult.token}`}</span>
+                    Convite enviado para {inviteResult.invitedEmail}.
                   </p>
-                  <div className={styles.inviteResultActions}>
-                    <button
-                      type="button"
-                      className={styles.inviteCopy}
-                      onClick={() => copyText(`${window.location.origin}/plans/invites/${inviteResult.token}`, 'Link copiado.')}
-                    >
-                      Copiar link
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.inviteCopySecondary}
-                      onClick={() => copyText(inviteResult.token, 'Token copiado.')}
-                    >
-                      Copiar token
-                    </button>
-                  </div>
                   {inviteResult.expiresAt?.text ? (
                     <p className={styles.inviteResultHint}>Expira em {inviteResult.expiresAt.text}.</p>
                   ) : null}

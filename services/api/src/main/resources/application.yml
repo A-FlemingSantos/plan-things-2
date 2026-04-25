@@ -36,6 +36,7 @@ management:
         include: health,info
 
 app:
+  frontend-base-url: ${APP_FRONTEND_BASE_URL:http://localhost:5173}
   jwt:
     secret: 5f388f9c8130f6dba1f0fba57fa6a2c98f22d8e5edc94a77b701e4cb7b25c438
     issuer: plan-things-api

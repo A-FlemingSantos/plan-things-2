@@ -43,6 +43,24 @@ public class IntegrationTokenCipher {
     }
   }
 
+  public String decrypt(String ciphertext) {
+    byte[] key = requireKey();
+    String[] parts = ciphertext == null ? new String[0] : ciphertext.split(":", 3);
+    if (parts.length != 3 || !VERSION.equals(parts[0])) {
+      throw new BadRequestException("INTEGRACAO_TOKEN_CRIPTO_FALHOU", "Nao foi possivel recuperar o token da integracao.");
+    }
+
+    try {
+      byte[] iv = Base64.getUrlDecoder().decode(parts[1]);
+      byte[] encrypted = Base64.getUrlDecoder().decode(parts[2]);
+      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+      cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(TAG_BITS, iv));
+      return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
+    } catch (Exception exception) {
+      throw new BadRequestException("INTEGRACAO_TOKEN_CRIPTO_FALHOU", "Nao foi possivel recuperar o token da integracao.");
+    }
+  }
+
   private byte[] requireKey() {
     if (!StringUtils.hasText(tokenKeyBase64)) {
       throw new BadRequestException("INTEGRACAO_TOKEN_KEY_AUSENTE", "A chave de criptografia das integracoes nao foi configurada.");

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,9 @@ public class PlanService {
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
+  private final PlanInviteEmailSender planInviteEmailSender;
   private final Clock clock;
+  private final String frontendBaseUrl;
 
   public PlanService(
       PlanRepository planRepository,
@@ -58,7 +61,9 @@ public class PlanService {
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
       BrazilDateTimeMapper brazilDateTimeMapper,
-      Clock clock
+      PlanInviteEmailSender planInviteEmailSender,
+      Clock clock,
+      @Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl
   ) {
     this.planRepository = planRepository;
     this.planMemberRepository = planMemberRepository;
@@ -73,7 +78,9 @@ public class PlanService {
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
+    this.planInviteEmailSender = planInviteEmailSender;
     this.clock = clock;
+    this.frontendBaseUrl = normalizeFrontendBaseUrl(frontendBaseUrl);
   }
 
   public List<PlanSummary> listAccessiblePlans() {
@@ -169,6 +176,8 @@ public class PlanService {
   public InviteResponse inviteMember(UUID planId, String email) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     planAccessService.requirePlanManager(planId, currentUser.getId());
+    PlanEntity plan = planRepository.findById(planId)
+        .orElseThrow(() -> new NotFoundException("PLANO_NAO_ENCONTRADO", "Plano nao encontrado."));
 
     String normalizedEmail = normalizeEmail(email);
     planInviteRepository.findByPlanIdAndInvitedEmailIgnoreCaseAndStatus(planId, normalizedEmail, PlanInviteStatus.PENDING)
@@ -189,14 +198,23 @@ public class PlanService {
     invite.setToken(UUID.randomUUID().toString());
     invite.setStatus(PlanInviteStatus.PENDING);
     invite.setExpiresAt(OffsetDateTime.now(clock).plusDays(7));
-    planInviteRepository.save(invite);
+    ApiDateTimeDto expiresAt = brazilDateTimeMapper.toDateTime(invite.getExpiresAt());
+    PlanInviteEmailSender.Delivery delivery = planInviteEmailSender.sendInvite(
+        currentUser,
+        normalizedEmail,
+        plan.getName(),
+        buildInviteUrl(invite.getToken()),
+        expiresAt
+    );
 
+    planInviteRepository.save(invite);
     return new InviteResponse(
         invite.getId(),
         invite.getInvitedEmail(),
         invite.getStatus(),
         invite.getToken(),
-        brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
+        expiresAt,
+        new InviteDeliveryResponse(delivery.emailSent(), delivery.sentTo(), delivery.sentFrom())
     );
   }
 
@@ -428,7 +446,8 @@ public class PlanService {
         invite.getInvitedEmail(),
         invite.getStatus(),
         invite.getToken(),
-        brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
+        brazilDateTimeMapper.toDateTime(invite.getExpiresAt()),
+        null
     );
   }
 
@@ -534,6 +553,21 @@ public class PlanService {
     return normalized;
   }
 
+  private String normalizeFrontendBaseUrl(String value) {
+    String normalized = value == null ? "" : value.trim();
+    if (normalized.isBlank()) {
+      return "http://localhost:5173";
+    }
+    while (normalized.endsWith("/")) {
+      normalized = normalized.substring(0, normalized.length() - 1);
+    }
+    return normalized;
+  }
+
+  private String buildInviteUrl(String token) {
+    return frontendBaseUrl + "/plans/invites/" + token;
+  }
+
   public record PlanSummary(
       UUID id,
       String name,
@@ -570,7 +604,15 @@ public class PlanService {
       String invitedEmail,
       PlanInviteStatus status,
       String token,
-      ApiDateTimeDto expiresAt
+      ApiDateTimeDto expiresAt,
+      InviteDeliveryResponse delivery
+  ) {
+  }
+
+  public record InviteDeliveryResponse(
+      boolean emailSent,
+      String sentTo,
+      String sentFrom
   ) {
   }
 
