@@ -61,12 +61,22 @@ Indice de execucao das etapas. O detalhamento de contexto, estado atual e deciso
      `apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
      `apps/web/src/features/workspace/components/InviteNotifications/InviteNotifications.jsx`
 
-## Proximas etapas
-
 6. Inbox da sidebar no KanbanBoard
-   - Usa a integracao Gmail ja concluida para disparar email automatico a partir de um cartao do KanbanBoard.
+   - Estado: concluida
+   - Usa a integracao Gmail ja concluida para transformar a Inbox em destino de drop: ao soltar um cartao, o sistema envia email pela conta Gmail conectada apenas para novos membros selecionados e atribui esses membros ao cartao.
    - Arquivos:
      `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+     `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css`
+     `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.inbox.test.jsx`
+     `services/api/src/main/java/com/planthings/api/board/BoardController.java`
+     `services/api/src/main/java/com/planthings/api/board/BoardService.java`
+     `services/api/src/main/java/com/planthings/api/board/BoardCardInboxEmailSender.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailMessageSender.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailMimeSupport.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailPlanInviteEmailSender.java`
+     `services/api/src/test/java/com/planthings/api/BoardInboxGmailIntegrationTest.java`
+
+## Proximas etapas
 
 7. Governanca de colaboracao
    - Arquivos:

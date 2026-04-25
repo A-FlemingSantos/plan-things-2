@@ -1,6 +1,6 @@
 # Status Overview - Colaboracao e Settings
 
-O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de arquivos no KanbanBoard ja aceita drag-and-drop, o login com Google ja e a identidade real da conta, a integracao Gmail nas Configuracoes ja existe como conexao real e o convite por e-mail pelo owner/admin ja e enviado via Gmail conectado. A proxima fase nao e uma lista solta de pendencias; ela continua essas bases. Agora vem a Inbox da sidebar no KanbanBoard como gatilho de email automatico a partir do cartao do KanbanBoard, depois as frentes de consolidacao e, por ultimo, integracoes externas opcionais. Microsoft, Outlook e SMTP generico nao entram no produto.
+O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de arquivos no KanbanBoard ja aceita drag-and-drop, o login com Google ja e a identidade real da conta, a integracao Gmail nas Configuracoes ja existe como conexao real, o convite por e-mail pelo owner/admin ja e enviado via Gmail conectado e a Inbox da sidebar no KanbanBoard ja funciona como destino operacional de envio por Gmail a partir de cards. A proxima fase nao e uma lista solta de pendencias; ela continua essas bases com governanca de colaboracao, refinamento de arquivos/anexos, ajustes finais de Settings e, por ultimo, integracoes externas opcionais. Microsoft, Outlook e SMTP generico nao entram no produto.
 
 ## O que ja existe
 
@@ -53,6 +53,23 @@ O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de ar
 
 ---
 
+**Inbox da sidebar no KanbanBoard.** A funcao dessa area e transformar a sidebar em um gatilho operacional: quando o usuario arrasta um cartao do KanbanBoard para a Inbox, o sistema monta um email com template baseado nas informacoes desse cartao e envia pela conta Gmail conectada do usuario. Na pratica, o app abre um seletor de membros do plano, mostra apenas membros que ainda nao fazem parte do cartao, envia o email somente para esses novos membros e os atribui automaticamente ao cartao apos o envio bem-sucedido. Essa entrega usa apenas `gmail.send`; leitura real da caixa Gmail continua fora desta etapa.
+
+---
+
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css`
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.inbox.test.jsx`
+`services/api/src/main/java/com/planthings/api/board/BoardController.java`
+`services/api/src/main/java/com/planthings/api/board/BoardService.java`
+`services/api/src/main/java/com/planthings/api/board/BoardCardInboxEmailSender.java`
+`services/api/src/main/java/com/planthings/api/settings/GmailMessageSender.java`
+`services/api/src/main/java/com/planthings/api/settings/GmailMimeSupport.java`
+`services/api/src/main/java/com/planthings/api/settings/GmailPlanInviteEmailSender.java`
+`services/api/src/test/java/com/planthings/api/BoardInboxGmailIntegrationTest.java`
+
+---
+
 **OAuth e identidade de conta.** A funcao dessa camada e fechar a identidade da conta dentro do proprio Plan Things, usando `AuthService.SessionResponse` e JWT proprio. Na pratica, o usuario clica em Google na tela de login, volta do callback e entra logado com a sessao da aplicacao, sem precisar de uma sessao paralela do provider. Tokens externos nao sao persistidos. Microsoft nao faz parte do roadmap do produto.
 
 ---
@@ -64,14 +81,6 @@ O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de ar
 ---
 
 ## O que ainda falta
-
-**Inbox da sidebar no KanbanBoard.** A funcao dessa area e transformar a sidebar em um gatilho operacional: quando o usuario arrasta um cartao do KanbanBoard (tarefa ou evento) para la, o sistema monta um email com template baseado nas informacoes desse cartao e envia automaticamente para todos os membros atribuidos a esse cartao. Na pratica, o usuario solta o cartao na Inbox, o app gera a mensagem com os dados daquele trabalho e dispara para os destinatarios certos. Ela agora pode reutilizar a integracao Gmail ativa e o cliente de envio ja criado para convites.
-
----
-
-`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
-
----
 
 **Governanca de colaboracao.** A funcao dessa camada e registrar quem convidou, aceitou, recusou e revogou, alem de quem anexou e descompartilhou arquivos, para que a colaboracao tenha rastreabilidade real. Na pratica, cada evento importante do plano precisa aparecer no historico de atividade com contexto suficiente para auditoria.
 
@@ -121,7 +130,7 @@ Google Calendar fica como integracao opcional e por ultimo. A funcao dessa frent
 
 ## Leitura pratica
 
-Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e a Inbox da sidebar no KanbanBoard para disparar email automatico a partir do cartao usando a integracao Gmail ja concluida. Depois entram governanca de colaboracao, refino de arquivos/anexos, ajustes finais de Settings e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
+Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e a governanca de colaboracao, agora que a Inbox da sidebar no KanbanBoard ja dispara email por Gmail e atribui novos membros ao cartao. Depois entram refino de arquivos/anexos, ajustes finais de Settings e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
 
 ## Leitura futura da Inbox Gmail
 
