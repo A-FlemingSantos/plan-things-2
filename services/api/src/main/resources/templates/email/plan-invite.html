@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Convite Plan Things</title>
+    <style>
+      html,
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #000000 !important;
+      }
+
+      body,
+      table,
+      td,
+      a {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+
+      table {
+        border-collapse: collapse !important;
+      }
+
+      @media screen and (max-width: 760px) {
+        .page {
+          padding: 72px 31px 56px !important;
+        }
+
+        .shell {
+          width: 356px !important;
+        }
+      }
+
+      @media screen and (max-width: 520px) {
+        .page {
+          padding: 40px 18px !important;
+        }
+
+        .brand {
+          font-size: 21px !important;
+        }
+
+        .headline,
+        .plan-title {
+          font-size: 20px !important;
+        }
+
+        .card-pad {
+          padding-left: 16px !important;
+          padding-right: 16px !important;
+        }
+
+        .avatar-cell {
+          width: 68px !important;
+        }
+
+        .avatar {
+          width: 46px !important;
+          height: 46px !important;
+          line-height: 46px !important;
+        }
+
+        .sender-name {
+          font-size: 15px !important;
+        }
+
+        .sender-copy,
+        .body-copy,
+        .link-copy {
+          font-size: 14px !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#000000;color:#ffffff;font-family:Arial,Helvetica,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;background:#000000">
+      <tr>
+        <td class="page" align="center" style="padding:72px 31px 56px;background:#000000">
+          <table class="shell" role="presentation" width="356" cellspacing="0" cellpadding="0" style="width:356px;max-width:100%;margin:0 auto">
+            <tr>
+              <td style="padding:0 0 18px;border-bottom:1px solid #141414">
+                <div class="brand" style="margin:0;color:#ffffff;font-size:21px;line-height:1.15;font-weight:700;letter-spacing:0">Plan Things</div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:20px 4px 16px">
+                <div class="headline" style="color:#f4f4f5;font-size:19px;line-height:1.22;font-weight:400;letter-spacing:0">Você foi convidado para o plano</div>
+                <div class="plan-title" style="margin-top:1px;color:#ffffff;font-size:20px;line-height:1.2;font-weight:700;letter-spacing:0">{{PLAN_NAME}}</div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="border:1px solid #1b1b1b;border-radius:8px;background:#020202;overflow:hidden">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%">
+                  <tr>
+                    <td class="card-pad" style="padding:17px 16px 18px">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%">
+                        <tr>
+                          <td class="avatar-cell" width="68" valign="top" style="width:68px;padding-top:0">
+                            <div class="avatar" style="width:46px;height:46px;border-radius:50%;background:#151515;color:#ffffff;text-align:center;font-size:20px;line-height:46px;font-weight:700;box-shadow:inset 0 0 0 1px #202020">{{INVITER_INITIAL}}</div>
+                          </td>
+                          <td valign="middle">
+                            <div class="sender-name" style="color:#ffffff;font-size:15px;line-height:1.22;font-weight:700;letter-spacing:0">{{INVITER_NAME}}</div>
+                            <div class="sender-copy" style="margin-top:4px;color:#b8b8b8;font-size:14px;line-height:1.42;font-weight:400;letter-spacing:0">convidou você para participar do plano <strong style="color:#ffffff;font-weight:700">{{PLAN_NAME}}</strong> no Plan Things.</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:0 16px">
+                      <div style="height:1px;line-height:1px;background:#121212;font-size:1px">&nbsp;</div>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="card-pad" style="padding:18px 31px 0 16px">
+                      <p class="body-copy" style="margin:0 0 12px;color:#f7f7f7;font-size:14px;line-height:1.55;font-weight:400">Olá,</p>
+                      <p class="body-copy" style="margin:0 0 18px;color:#f7f7f7;font-size:14px;line-height:1.65;font-weight:400"><strong style="color:#ffffff;font-weight:700">{{INVITER_NAME}}</strong> convidou você para participar do plano <strong style="color:#ffffff;font-weight:700">{{PLAN_NAME}}</strong> no Plan Things.</p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="width:100%;border-collapse:separate;border-spacing:0;background:#ffffff;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-radius:5px">
+                        <tr>
+                          <td bgcolor="#ffffff" style="background:#ffffff;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-radius:5px;padding:1px">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#ffffff" style="width:100%;background:#ffffff;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-collapse:separate;border-spacing:0;border-radius:4px">
+                              <tr>
+                                <td align="center" bgcolor="#ffffff" style="background:#ffffff;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-radius:4px;box-shadow:inset 0 0 0 9999px #ffffff;mso-padding-alt:12px 16px">
+                                  <a href="{{INVITE_URL}}" style="display:block;background:#ffffff;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);color:#000001;text-decoration:none;text-align:center;font-size:14px;line-height:1.2;font-weight:700;padding:12px 16px;border-radius:4px;box-shadow:inset 0 0 0 9999px #ffffff"><span style="color:#000001;background:#ffffff;background-color:#ffffff">Aceitar convite</span></a>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="card-pad" style="padding:17px 31px 18px 16px">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%">
+                        <tr>
+                          <td width="32" valign="top" style="width:32px;padding-top:2px">
+                            <span style="display:block;width:22px;height:22px;color:#ffffff;font-size:18px;line-height:22px;font-family:Arial,Helvetica,sans-serif;text-align:center;text-decoration:none">↗</span>
+                          </td>
+                          <td valign="top" class="link-copy" style="color:#d4d4d4;font-size:14px;line-height:1.58;font-weight:400">
+                            <div style="color:#f7f7f7;font-weight:700">Ou acesse este link:</div>
+                            <div style="margin-top:9px;color:#cfcfcf;word-break:break-word;overflow-wrap:anywhere">
+                              <a href="{{INVITE_URL}}" style="color:#cfcfcf;text-decoration:none">{{INVITE_URL_DISPLAY}}</a>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="padding:0 16px">
+                      <div style="height:1px;line-height:1px;background:#121212;font-size:1px">&nbsp;</div>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="card-pad" style="padding:15px 31px 15px 16px">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%">
+                        <tr>
+                          <td width="32" valign="middle" style="width:32px">
+                            <span style="display:block;width:22px;height:22px;color:#ffffff;font-size:18px;line-height:22px;font-family:Arial,Helvetica,sans-serif;text-align:center;text-decoration:none">◷</span>
+                          </td>
+                          <td valign="middle" class="body-copy" style="color:#a8a8a8;font-size:13px;line-height:1.45;font-weight:400">Este convite expira em <strong style="color:#ffffff;font-weight:700">{{EXPIRES_AT}}</strong>.</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding-top:16px">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-top:1px solid #111111">
+                  <tr>
+                    <td align="center" style="padding-top:15px">
+                      <div style="color:#ffffff;font-size:13px;line-height:1.25;font-weight:700;letter-spacing:0">Plan Things</div>
+                      <div style="margin-top:2px;color:#8b8b8b;font-size:11px;line-height:1.35;font-weight:400">Organize. Planeje. Execute.</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
