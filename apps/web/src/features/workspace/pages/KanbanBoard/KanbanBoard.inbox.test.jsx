@@ -12,6 +12,7 @@ const apiMock = vi.hoisted(() => ({
 
 const boardState = vi.hoisted(() => ({
   columns: [],
+  updateColumns: vi.fn(),
 }))
 
 const activePlan = vi.hoisted(() => ({
@@ -36,6 +37,14 @@ const activePlan = vi.hoisted(() => ({
       color: '#4290da',
       name: 'Inbox Member',
       email: 'member@example.com',
+      role: 'MEMBER',
+    },
+    {
+      id: 'user-3',
+      initials: 'NM',
+      color: '#16a34a',
+      name: 'New Member',
+      email: 'new-member@example.com',
       role: 'MEMBER',
     },
   ],
@@ -92,7 +101,7 @@ vi.mock('../../hooks/useBoardColumns.js', () => ({
   useBoardColumns: () => ({
     columns: boardState.columns,
     totalCards: boardState.columns.reduce((sum, column) => sum + column.cards.length, 0),
-    updateColumns: vi.fn(),
+    updateColumns: boardState.updateColumns,
     createColumn: vi.fn(),
     deleteColumn: vi.fn(),
     renameColumn: vi.fn(),
@@ -187,9 +196,13 @@ describe('KanbanBoard Inbox Gmail flow', () => {
     plansMock.ensurePlanDetails.mockReset()
     plansMock.refreshPlanDetails.mockReset()
     plansMock.loadPlanBoard.mockReset()
+    boardState.updateColumns.mockReset()
     plansMock.ensurePlanDetails.mockResolvedValue(activePlan)
     plansMock.refreshPlanDetails.mockResolvedValue(activePlan)
     plansMock.loadPlanBoard.mockResolvedValue(boardState.columns)
+    boardState.updateColumns.mockImplementation((updater) => {
+      boardState.columns = typeof updater === 'function' ? updater(boardState.columns) : updater
+    })
     boardState.columns = [
       {
         id: 'col-1',
@@ -211,11 +224,11 @@ describe('KanbanBoard Inbox Gmail flow', () => {
     ]
   })
 
-  it('sends dropped cards directly when the card has assignees', async () => {
+  it('asks only for members not already assigned when the dropped card has assignees', async () => {
     apiMock.apiRequest.mockResolvedValue({
       emailSent: true,
       sentFrom: 'arthur@example.com',
-      sentTo: ['member@example.com'],
+      sentTo: ['new-member@example.com'],
       messageId: 'message-id',
       threadId: 'thread-id',
     })
@@ -223,13 +236,19 @@ describe('KanbanBoard Inbox Gmail flow', () => {
     renderBoard()
     await openInboxAndDropCard('Enviar resumo')
 
+    expect(await screen.findByText('Destinatários')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Inbox Member/i)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByLabelText(/New Member/i))
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar e-mail' }))
+
     await waitFor(() => {
       expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/plans/plan-1/board/cards/card-1/inbox/send', {
         method: 'POST',
         token: 'test-token',
-        body: {},
+        body: { recipientUserIds: ['user-3'] },
       })
     })
+    expect(boardState.columns[0].cards[0].memberIds).toEqual(['user-2', 'user-3'])
   })
 
   it('asks for members when the dropped card has no assignees', async () => {
@@ -257,9 +276,14 @@ describe('KanbanBoard Inbox Gmail flow', () => {
         body: { recipientUserIds: ['user-2'] },
       })
     })
+    expect(boardState.columns[0].cards[0].memberIds).toEqual(['user-2'])
   })
 
   it('shows Gmail errors without moving the card', async () => {
+    boardState.columns[0].cards[0] = {
+      ...boardState.columns[0].cards[0],
+      memberIds: [],
+    }
     apiMock.apiRequest.mockRejectedValue(new ApiClientError('Conecte o Gmail.', {
       code: 'GMAIL_NAO_CONECTADO',
       status: 400,
@@ -267,6 +291,8 @@ describe('KanbanBoard Inbox Gmail flow', () => {
 
     renderBoard()
     await openInboxAndDropCard('Enviar resumo')
+    await userEvent.click(screen.getByLabelText(/Inbox Member/i))
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar e-mail' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Gmail não conectado/i)
   })

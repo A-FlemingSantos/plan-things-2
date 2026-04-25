@@ -386,7 +386,10 @@ export default function KanbanBoard() {
   })
   const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
   const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
-  const inboxSelectableMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : []
+  const inboxAssignedMemberIds = new Set(inboxRecipientCard?.memberIds ?? [])
+  const inboxSelectableMembers = activePlan?.membersMeta?.length
+    ? activePlan.membersMeta.filter((member) => !inboxAssignedMemberIds.has(member.id))
+    : []
   const canManageMembers = isBackendDriven && (activePlan?.role === 'OWNER' || activePlan?.role === 'ADMIN')
 
   const refreshMembersMenuPosition = () => {
@@ -1375,9 +1378,39 @@ export default function KanbanBoard() {
     columns.flatMap((column) => column.cards).find((card) => card.id === cardId) ?? null
   )
 
+  const mergeInboxRecipientsIntoCard = (cardId, recipientUserIds) => {
+    const selectedIds = [...new Set(recipientUserIds.filter(Boolean))]
+    if (!selectedIds.length) return
+
+    const mergeMemberIds = (card) => [...new Set([...(card.memberIds ?? []), ...selectedIds])]
+    updateColumns((currentColumns) => currentColumns.map((column) => ({
+      ...column,
+      cards: column.cards.map((card) => (
+        card.id === cardId ? { ...card, memberIds: mergeMemberIds(card) } : card
+      )),
+    })))
+    setActiveCard((current) => {
+      if (current?.card?.id !== cardId) return current
+      return {
+        ...current,
+        card: {
+          ...current.card,
+          memberIds: mergeMemberIds(current.card),
+        },
+      }
+    })
+  }
+
   const sendCardToInbox = async (card, recipientUserIds = []) => {
     if (!activePlan?.id || !isBackendDriven || !card?.id) {
       showNotification('Envio por Gmail fica disponível apenas quando a sessão está conectada ao backend.')
+      return
+    }
+    const newRecipientUserIds = recipientUserIds.filter((id) => !(card.memberIds ?? []).includes(id))
+    if (!newRecipientUserIds.length) {
+      const message = 'Escolha ao menos um novo membro para receber este cartão por e-mail.'
+      setInboxError(message)
+      showNotification(message)
       return
     }
 
@@ -1388,10 +1421,11 @@ export default function KanbanBoard() {
       const delivery = await apiRequest(`/api/plans/${activePlan.id}/board/cards/${card.id}/inbox/send`, {
         method: 'POST',
         token: accessToken,
-        body: recipientUserIds.length ? { recipientUserIds } : {},
+        body: { recipientUserIds: newRecipientUserIds },
       })
       const total = Array.isArray(delivery?.sentTo) ? delivery.sentTo.length : 0
       showNotification(total > 1 ? `E-mail enviado para ${total} membros.` : 'E-mail enviado para 1 membro.')
+      mergeInboxRecipientsIntoCard(card.id, newRecipientUserIds)
       setInboxRecipientCard(null)
       setInboxSelectedMemberIds([])
     } catch (error) {
@@ -1418,11 +1452,6 @@ export default function KanbanBoard() {
       return
     }
 
-    if ((card.memberIds ?? []).length) {
-      await sendCardToInbox(card)
-      return
-    }
-
     setInboxRecipientCard(card)
     setInboxSelectedMemberIds([])
     setInboxError('')
@@ -1446,7 +1475,7 @@ export default function KanbanBoard() {
   const submitInboxRecipients = () => {
     if (!inboxRecipientCard) return
     if (!inboxSelectedMemberIds.length) {
-      setInboxError('Escolha ao menos um membro para receber este cartão por e-mail.')
+      setInboxError('Escolha ao menos um novo membro para receber este cartão por e-mail.')
       return
     }
 
@@ -1495,7 +1524,7 @@ export default function KanbanBoard() {
       <section className={styles.inboxDropZone} aria-label="Enviar cartão por Gmail">
         <Icon.Send />
         <strong>Solte um cartão para enviar por Gmail</strong>
-        <p>O e-mail será enviado pela conta Gmail conectada para os responsáveis do cartão.</p>
+        <p>O e-mail será enviado pela conta Gmail conectada para membros que ainda não fazem parte do cartão.</p>
       </section>
 
       {inboxRecipientCard ? (
@@ -1527,7 +1556,9 @@ export default function KanbanBoard() {
                 </label>
               )
             }) : (
-              <p className={styles.inboxRecipientsEmpty}>Carregando membros do plano...</p>
+              <p className={styles.inboxRecipientsEmpty}>
+                {activePlan?.membersMeta?.length ? 'Todos os membros do plano já fazem parte deste cartão.' : 'Carregando membros do plano...'}
+              </p>
             )}
           </div>
 

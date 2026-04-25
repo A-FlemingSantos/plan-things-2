@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -55,7 +56,7 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
-  void shouldSendCardToAssignedMembersWithConnectedGmail() throws Exception {
+  void shouldSendCardToNewManualMembersWithConnectedGmail() throws Exception {
     JsonNode ownerSession = register("Inbox Owner", "inbox-owner@example.com");
     String ownerToken = ownerSession.path("accessToken").asText();
     String ownerId = ownerSession.path("user").path("id").asText();
@@ -64,12 +65,16 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
     String planId = createPlan(ownerToken, "Plano Inbox").path("plan").path("id").asText();
     addMember(planId, memberId);
     saveGmailConnection(ownerId, "inbox-owner@example.com", GmailIntegrationProperties.GMAIL_SEND_SCOPE);
-    String cardId = createCard(ownerToken, planId, "Preparar pauta", "Card enviado pela Inbox", memberId);
+    String cardId = createCard(ownerToken, planId, "Preparar pauta", "Card enviado pela Inbox", null);
 
     mockMvc.perform(post("/api/plans/" + planId + "/board/cards/" + cardId + "/inbox/send")
             .header("Authorization", "Bearer " + ownerToken)
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{}"))
+            .content("""
+                {
+                  "recipientUserIds": ["%s"]
+                }
+                """.formatted(memberId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.emailSent").value(true))
         .andExpect(jsonPath("$.data.sentFrom").value("inbox-owner@example.com"))
@@ -106,6 +111,44 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
                 """.formatted(memberId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.sentTo[0]").value("manual-member@example.com"));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].cards[0].assignees[0].id").value(memberId));
+  }
+
+  @Test
+  void shouldOnlySendCardToManualRecipientsNotAlreadyAssigned() throws Exception {
+    JsonNode ownerSession = register("Existing Owner", "existing-owner@example.com");
+    String ownerToken = ownerSession.path("accessToken").asText();
+    String ownerId = ownerSession.path("user").path("id").asText();
+    JsonNode assignedSession = register("Already Assigned", "already-assigned@example.com");
+    String assignedId = assignedSession.path("user").path("id").asText();
+    JsonNode newMemberSession = register("New Assignee", "new-assignee@example.com");
+    String newMemberId = newMemberSession.path("user").path("id").asText();
+    String planId = createPlan(ownerToken, "Plano Novos Destinatarios").path("plan").path("id").asText();
+    addMember(planId, assignedId);
+    addMember(planId, newMemberId);
+    saveGmailConnection(ownerId, "existing-owner@example.com", GmailIntegrationProperties.GMAIL_SEND_SCOPE);
+    String cardId = createCard(ownerToken, planId, "Avisar apenas novos", "", assignedId);
+
+    mockMvc.perform(post("/api/plans/" + planId + "/board/cards/" + cardId + "/inbox/send")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "recipientUserIds": ["%s", "%s"]
+                }
+                """.formatted(assignedId, newMemberId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.sentTo.length()").value(1))
+        .andExpect(jsonPath("$.data.sentTo[0]").value("new-assignee@example.com"));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].cards[0].assignees[*].id", hasItems(assignedId, newMemberId)));
   }
 
   @Test
@@ -137,12 +180,16 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
     String ownerToken = ownerSession.path("accessToken").asText();
     String ownerId = ownerSession.path("user").path("id").asText();
     String planId = createPlan(ownerToken, "Plano sem Gmail").path("plan").path("id").asText();
-    String cardId = createCard(ownerToken, planId, "Sem Gmail", "", ownerId);
+    String cardId = createCard(ownerToken, planId, "Sem Gmail", "", null);
 
     mockMvc.perform(post("/api/plans/" + planId + "/board/cards/" + cardId + "/inbox/send")
             .header("Authorization", "Bearer " + ownerToken)
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{}"))
+            .content("""
+                {
+                  "recipientUserIds": ["%s"]
+                }
+                """.formatted(ownerId)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error.code").value("GMAIL_NAO_CONECTADO"));
   }
@@ -154,12 +201,16 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
     String ownerId = ownerSession.path("user").path("id").asText();
     String planId = createPlan(ownerToken, "Plano sem escopo").path("plan").path("id").asText();
     saveGmailConnection(ownerId, "scope-inbox-owner@example.com", "openid email");
-    String cardId = createCard(ownerToken, planId, "Sem escopo", "", ownerId);
+    String cardId = createCard(ownerToken, planId, "Sem escopo", "", null);
 
     mockMvc.perform(post("/api/plans/" + planId + "/board/cards/" + cardId + "/inbox/send")
             .header("Authorization", "Bearer " + ownerToken)
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{}"))
+            .content("""
+                {
+                  "recipientUserIds": ["%s"]
+                }
+                """.formatted(ownerId)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error.code").value("GMAIL_SCOPE_AUSENTE"));
   }

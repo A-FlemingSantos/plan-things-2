@@ -338,6 +338,9 @@ public class BoardService {
     if (recipients.isEmpty()) {
       throw new BadRequestException("CARTAO_SEM_DESTINATARIOS", "Escolha ao menos um membro para receber este cartao por e-mail.");
     }
+    if (recipientUserIds != null && !recipientUserIds.isEmpty()) {
+      addAssignees(cardId, recipients.stream().map(UserEntity::getId).toList());
+    }
 
     BoardCardInboxEmailSender.Delivery delivery = boardCardInboxEmailSender.sendCard(
         currentUser,
@@ -531,6 +534,29 @@ public class BoardService {
     boardCardAssigneeRepository.saveAll(assignees);
   }
 
+  private void addAssignees(UUID cardId, List<UUID> assigneeIds) {
+    if (assigneeIds == null || assigneeIds.isEmpty()) {
+      return;
+    }
+    Set<UUID> existingAssigneeIds = boardCardAssigneeRepository.findByCardId(cardId).stream()
+        .map(BoardCardAssigneeEntity::getUserId)
+        .collect(Collectors.toSet());
+    List<BoardCardAssigneeEntity> assignees = assigneeIds.stream()
+        .filter(Objects::nonNull)
+        .distinct()
+        .filter(assigneeId -> !existingAssigneeIds.contains(assigneeId))
+        .map(assigneeId -> {
+          BoardCardAssigneeEntity entity = new BoardCardAssigneeEntity();
+          entity.setCardId(cardId);
+          entity.setUserId(assigneeId);
+          return entity;
+        })
+        .toList();
+    if (!assignees.isEmpty()) {
+      boardCardAssigneeRepository.saveAll(assignees);
+    }
+  }
+
   private List<UserEntity> resolveInboxRecipients(UUID planId, UUID cardId, List<UUID> recipientUserIds) {
     LinkedHashSet<UUID> requestedIds = new LinkedHashSet<>();
     if (recipientUserIds == null || recipientUserIds.isEmpty()) {
@@ -548,6 +574,14 @@ public class BoardService {
         .collect(Collectors.toSet());
     if (requestedIds.stream().anyMatch(userId -> !memberIds.contains(userId))) {
       throw new BadRequestException("DESTINATARIO_INVALIDO", "Todos os destinatarios precisam fazer parte do plano.");
+    }
+
+    Set<UUID> existingAssigneeIds = boardCardAssigneeRepository.findByCardId(cardId).stream()
+        .map(BoardCardAssigneeEntity::getUserId)
+        .collect(Collectors.toSet());
+    requestedIds.removeIf(existingAssigneeIds::contains);
+    if (requestedIds.isEmpty()) {
+      return List.of();
     }
 
     Map<UUID, UserEntity> usersById = userRepository.findAllById(requestedIds).stream()
