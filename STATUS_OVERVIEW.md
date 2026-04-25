@@ -1,187 +1,132 @@
 # Status Overview - Colaboracao e Settings
 
-Este documento resume o estado real do projeto depois das etapas 1, 2 e 3. O foco aqui e dizer onde cada coisa mora no codigo e qual e o estado atual de cada area.
+O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de arquivos no KanbanBoard ja aceita drag-and-drop e o login com Google ja e a identidade real da conta. A proxima fase nao e uma lista solta de pendencias; ela continua essas tres bases. Primeiro vem a integracao Gmail nas Configuracoes, depois o envio de convite por e-mail pelo owner/admin do plano usando essa conexao, depois a Inbox da sidebar no KanbanBoard como gatilho de email automatico a partir do cartao do KanbanBoard, e so depois as frentes de consolidacao. Microsoft, Outlook e SMTP generico nao entram no produto.
 
-## 1. O que ja existe hoje
+## O que ja existe
 
-### Convites de plano
+**Convites de plano.** A funcao dessa parte e controlar o ingresso de pessoas no plano, dar visibilidade ao gestor e deixar o estado do convite claro para quem recebe o link. Na pratica, o owner/admin lista e revoga convites no quadro e o usuario convidado aceita ou recusa pelo link/token. O backend cria, lista, revoga, aceita e recusa convites; o usuario convidado abre o token e responde; e o quadro mostra o que foi enviado.
 
-Onde isso vive no projeto:
-- backend de convites em `services/api/src/main/java/com/planthings/api/plans/PlanController.java`
-- aceitação e recusa por token em `apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
-- painel de membros e convites em `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+---
 
-Estado atual:
-- o backend cria, lista, revoga, aceita e recusa convites de plano
-- o gestor do plano consegue ver convites enviados e remover convites pendentes
-- o usuario convidado consegue abrir o convite por token e aceitar ou recusar
-- existe notificacao global de convite em `Workspace`, `Board`, `Calendar` e `Files`
-- o quadro tem uma aba de convites para os convites enviados do plano
+`services/api/src/main/java/com/planthings/api/plans/PlanController.java`
+`apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
 
-### Arquivos e anexos
+---
 
-Onde isso vive no projeto:
-- arquivos do plano em `services/api/src/main/java/com/planthings/api/files/FileController.java`
-- suporte a anexos em `services/api/src/main/java/com/planthings/api/board/BoardService.java`
-- sidebar de arquivos no quadro em `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
-- componentes de cartao e coluna em `apps/web/src/features/workspace/components/KanbanCard/KanbanCard.jsx` e `apps/web/src/features/workspace/components/KanbanColumn/KanbanColumn.jsx`
+**Arquivos e anexos.** A funcao dessa area e servir como biblioteca operacional do plano: qualquer membro pode anexar arquivos a um cartao, os arquivos do `Plano` e da `Biblioteca` podem ser arrastados para o card e o preview custom ajuda a entender o que esta sendo movido. Na pratica, o arquivo sai da sidebar e entra no cartao por drag-and-drop, sem romper o movimento normal dos cards.
 
-Estado atual:
-- arquivos do plano podem ser listados, compartilhados, descompartilhados e baixados
-- cartoes aceitam anexos
-- qualquer membro do plano pode anexar arquivos a um cartao
-- nao existe restricao de papel para anexar
-- a sidebar `Arquivos` aceita drag-and-drop de arquivos das secoes `Plano` e `Biblioteca`
-- o frontend separa o drag de arquivos do drag de mover cartoes
-- o frontend controla um preview custom do arquivo arrastado
-- o backend continua validando permissao, compartilhamento automatico da Biblioteca e anexos duplicados
-- anexos podem ser removidos
+---
 
-### Settings e preferencias
+`services/api/src/main/java/com/planthings/api/files/FileController.java`
+`services/api/src/main/java/com/planthings/api/board/BoardService.java`
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
 
-Onde isso vive no projeto:
-- pagina de settings em `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
-- seção de preferencia inicial, layout e notificacoes na mesma pagina
+---
 
-Estado atual:
-- `locale`, `timeZone`, `dateFormat`, `timeFormat` e `theme` ja sao persistidos e validados
-- `homePage` e `openLastCtx` interferem na rota inicial do usuario
-- o app lembra o ultimo contexto valido e usa isso na entrada
-- `emailNotifs`, `eventReminders` e `deadlineAlerts` ja sao salvos no backend
+**Settings e preferencias.** A funcao dessa area e organizar a entrada no app e as preferencias basicas do usuario, nao criar integracao externa. Na pratica, o usuario escolhe a pagina inicial, o app lembra o ultimo contexto e o layout ainda depende de ajustes em `density` e na antiga barra lateral recolhida por padrao, para que a abertura da aplicacao fique previsivel.
 
-### OAuth e identidade de conta
+---
 
-Onde isso vive no projeto:
-- tela de login em `apps/web/src/features/auth/pages/Auth/Auth.jsx`
-- rota `/oauth/callback`
-- contexto de autenticacao do frontend
-- endpoints OAuth/OIDC do backend e troca do completion code pela sessao do Plan Things
+`apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+`services/api/src/main/java/com/planthings/api/plans/PlanController.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanService.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java`
+`apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
+`apps/web/src/features/workspace/components/InviteNotifications/InviteNotifications.jsx`
 
-Estado atual:
-- o fluxo OAuth/OIDC com Google existe para identidade de login da conta
-- o backend usa Authorization Code Flow com escopos minimos `openid profile email`
-- a sessao interna continua sendo a do Plan Things, com `AuthService.SessionResponse` e JWT proprio
-- tokens externos nao sao persistidos
-- o frontend inicia o OAuth real, trata o callback e conclui o login na sessao da aplicacao
-- Microsoft nao faz parte do roadmap do produto
+---
 
-Observacao importante:
-- a tela de login ainda pode mostrar botao de Microsoft como artefato visual, mas isso nao deve ser tratado como suporte de produto
+**OAuth e identidade de conta.** A funcao dessa camada e fechar a identidade da conta dentro do proprio Plan Things, usando `AuthService.SessionResponse` e JWT proprio. Na pratica, o usuario clica em Google na tela de login, volta do callback e entra logado com a sessao da aplicacao, sem precisar de uma sessao paralela do provider. Tokens externos nao sao persistidos. Microsoft nao faz parte do roadmap do produto.
 
-## 2. O que ainda falta agora
+---
 
-### Gmail nas Configuracoes e convite por e-mail do plano
+`apps/web/src/features/auth/pages/Auth/Auth.jsx`
+`/oauth/callback`
+`AuthContext`
 
-Onde isso vive no projeto:
-- `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
-- funcao `renderIntegrations()`
-- `SectionGroup title="E-mail e captura"`
-- card `Gmail`
-- fluxo de convite de plano no backend, que sera o consumidor desse envio
+---
 
-O que falta:
-- transformar o card `Gmail` em integracao real persistida
-- usar a conta autenticada para envio e leitura contextual
-- tratar retry, falha e feedback de envio
-- conectar o convite por e-mail ao Gmail real
+## O que ainda falta
 
-O que nao entra:
-- Outlook
-- Microsoft
-- SMTP generico do sistema
+**Integracao Gmail nas Configuracoes.** A funcao dessa frente e transformar o Gmail em conexao real e persistida para o owner/admin do plano, porque essa integracao vira a base tecnica das proximas etapas de email. Na pratica, o usuario abre a secao `E-mail e captura`, conecta o card `Gmail` e passa a ter uma conta Gmail real vinculada ao perfil do owner/admin do plano. Hoje isso ainda vive em estado de demo/local state; o objetivo aqui e trocar o mock por conexao confiavel, com falha e retry. Outlook, Microsoft e SMTP generico ficam fora.
 
-### Inbox da sidebar no KanbanBoard
+---
 
-Onde isso vive no projeto:
-- `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
-- funcao `renderInboxPanel()`
-- aside com `id="board-inbox-panel"`
+`apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
 
-O que falta:
-- arrastar um cartao de tarefa ou evento para a sidebar
-- gerar e enviar e-mail com template dinamico para os membros do cartao
-- exibir e-mails recebidos ligados a tarefas delegadas
-- separar visualmente mensagens de tarefas e mensagens comuns
+---
 
-### Governanca de colaboracao
+**Envio de convite por e-mail pelo owner/admin do plano.** A funcao dessa frente e substituir o convite interno que hoje nasce no modal de convites do `KanbanBoard` (`openInviteModal`/`submitInvite`) e faz `POST /api/plans/{planId}/invites`, guardando apenas convite, token e expiração, por um email real disparado a partir da conta Gmail vinculada ao owner/admin do plano. Na pratica, o owner/admin continua abrindo o modal de convites no `KanbanBoard`, mas agora o envio deixa de ser interno e passa a sair como e-mail real da conta autenticada. O `CardModal` nao participa desse fluxo. Essa etapa depende da integracao Gmail ja existir.
 
-Onde isso deve viver:
-- backend de convites, anexos e compartilhamento
-- trilha de auditoria do plano
+---
 
-O que falta:
-- registrar quem convidou, aceitou, recusou e revogou
-- registrar quem anexou e quem descompartilhou
-- manter historico visivel de atividade do plano
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+`services/api/src/main/java/com/planthings/api/plans/PlanController.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanService.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java`
+`apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
+`apps/web/src/features/workspace/components/InviteNotifications/InviteNotifications.jsx`
 
-### Arquivos e anexos
+---
 
-Onde isso vive no projeto:
-- `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`, funcao `renderFilesPanel()`
-- `apps/web/src/features/files/pages/FilesPage/FilesPage.jsx`
-- backend de arquivos e anexos
+**Inbox da sidebar no KanbanBoard.** A funcao dessa area e transformar a sidebar em um gatilho operacional: quando o usuario arrasta um cartao do KanbanBoard (tarefa ou evento) para la, o sistema monta um email com template baseado nas informacoes desse cartao e envia automaticamente para todos os membros atribuidos a esse cartao. Na pratica, o usuario solta o cartao na Inbox, o app gera a mensagem com os dados daquele trabalho e dispara para os destinatarios certos. Ela depende da integracao Gmail ja ativa.
 
-O que falta:
-- busca
-- paginacao
-- ordenacao
-- melhor sinalizacao de origem e contexto de cada arquivo
+---
 
-### Settings
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
 
-Onde isso vive no projeto:
-- `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
+---
 
-O que falta:
-- `density` ainda nao esta persistida nem aplicada globalmente
-- a opcao `Barra lateral recolhida por padrao` esta desabilitada e funciona como transicao
-- `dailySummary` e `weeklySummary` continuam desabilitados
-- `emailNotifs`, `eventReminders` e `deadlineAlerts` ainda nao dirigem uma camada completa de notificacoes do produto
+**Governanca de colaboracao.** A funcao dessa camada e registrar quem convidou, aceitou, recusou e revogou, alem de quem anexou e descompartilhou arquivos, para que a colaboracao tenha rastreabilidade real. Na pratica, cada evento importante do plano precisa aparecer no historico de atividade com contexto suficiente para auditoria.
 
-### Calendarios externos
+---
 
-Onde isso vive no projeto:
-- `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
-- `SectionGroup title="Calendarios"`
-- `apps/web/src/features/calendar/data/calendarRepository.js`
+`services/api/src/main/java/com/planthings/api/plans/PlanController.java`
+`services/api/src/main/java/com/planthings/api/files/FileController.java`
+`services/api/src/main/java/com/planthings/api/board/BoardService.java`
 
-O que falta:
-- Google Calendar como integracao opcional e por ultimo
-- mapear eventos e tarefas internas para a conta conectada
-- decidir nivel de sincronizacao, conflitos, recorrencia e exclusao
-- garantir um modelo temporal canonico interno com `UTC` + `ISO-8601`
+---
 
-O que nao entra:
-- Microsoft Calendar
-- Outlook Calendar
+**Refino de arquivos e anexos.** A funcao dessa frente e dar escala ao uso da biblioteca com busca, paginacao, ordenacao e melhor sinalizacao de origem e contexto. Na pratica, o usuario precisa encontrar, filtrar e reconhecer arquivos sem depender de listas longas ou de abrir cada item.
 
-## 3. O que fica fora de escopo
+---
 
-- Microsoft
-- Outlook
-- SMTP generico
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+`apps/web/src/features/files/pages/FilesPage/FilesPage.jsx`
 
-## 4. Decisao importante sobre convite por e-mail
+---
 
-- `convite por e-mail` significa apenas convite de plano
-- o envio usa Gmail conectado
-- quando essa etapa entrar, o envio sai pelo fluxo autenticado do proprio usuario
-- ate la, o fluxo continua baseado em link/token, notificacao interna e aceitacao/recusa
+**Settings e entrada no app.** A funcao aqui e reduzir ambiguidade na entrada do app, simplificar `homePage` + `openLastCtx`, decidir o destino da antiga barra lateral recolhida por padrao e persistir `density` de forma global. Na pratica, o usuario ajusta preferencia de entrada, layout e comportamento inicial sem opcoes que se sobrepoem.
 
-## 5. O que o produto ainda precisa decidir
+---
 
-- se `homePage` + `openLastCtx` continuam do jeito atual ou se a entrada no app sera simplificada
-- como a experiencia de settings vai tratar a opcao antiga de barra lateral recolhida por padrao
-- quando vale conectar notificacoes de settings a eventos reais do produto
-- se auditoria deve vir antes de realtime
-- como o app vai evoluir para multi-workspace sem aumentar a complexidade da entrada
-- como o calendario externo vai converter entre horario canonico e formatos de exibicao sem quebrar a preferencia do usuario
+`apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
 
-## 6. Leitura pratica
+---
 
-- convites de plano ja estao prontos
-- arquivos com drag-and-drop ja estao prontos
-- OAuth com Google ja esta pronto
-- a proxima entrega util e Gmail nas Configuracoes, porque e isso que viabiliza convite por e-mail
-- depois disso vem a Inbox da sidebar
-- Google Calendar fica para o fim
+## Fora de escopo
+
+Microsoft, Outlook e SMTP generico nao fazem parte do produto. Eles nao sao o proximo passo e nao devem aparecer como pendencia a ser perseguida.
+
+## Convite por e-mail
+
+Por agora, `convite por e-mail` significa exclusivamente o envio de convite do plano pelo owner/admin usando a conta Gmail conectada. Ate a integracao Gmail existir de verdade, o fluxo continua baseado em link/token, notificacao interna e aceitacao ou recusa. Depois que a integracao existir, esse passo substitui o convite interno do `KanbanBoard` por email real.
+
+## Calendarios externos
+
+Google Calendar fica como integracao opcional e por ultimo. A funcao dessa frente e sincronizar tarefas e eventos com uma conta conectada usando `UTC` e `ISO-8601` como base temporal interna, deixando `locale`, `dateFormat`, `timeFormat` e `timeZone` apenas para exibicao. Na pratica, o usuario conecta a conta Google Calendar e o app passa a refletir tarefas e eventos nessa fonte externa sem misturar o formato de tela com o formato de sync. Microsoft Calendar e Outlook Calendar nao entram.
+
+---
+
+`apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
+`apps/web/src/features/calendar/data/calendarRepository.js`
+
+---
+
+## Leitura pratica
+
+Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e primeiro a integracao Gmail nas Configuracoes. Depois vem o envio de convite por e-mail pelo owner/admin do plano usando essa integracao, depois a Inbox da sidebar no KanbanBoard para disparar email automatico a partir do cartao do KanbanBoard e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
