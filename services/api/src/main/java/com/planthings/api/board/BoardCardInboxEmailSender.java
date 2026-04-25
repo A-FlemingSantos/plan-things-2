@@ -6,13 +6,19 @@ import com.planthings.api.common.time.BrazilDateTimeMapper;
 import com.planthings.api.plans.PlanEntity;
 import com.planthings.api.settings.GmailMessageSender;
 import com.planthings.api.settings.GmailMimeSupport;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class BoardCardInboxEmailSender {
+
+  private static final String CARD_INBOX_TEMPLATE = loadCardInboxTemplate();
 
   private final GmailMessageSender gmailMessageSender;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
@@ -56,7 +62,7 @@ public class BoardCardInboxEmailSender {
       List<String> recipientEmails
   ) {
     String boundary = "planthings-card-" + UUID.randomUUID();
-    String subject = "[Plan Things] " + card.getTitle() + " - " + plan.getName();
+    String subject = "[Plan Things] Tarefa atribuída: " + card.getTitle();
     String cardUrl = frontendBaseUrl + "/workspace/board/" + plan.getId();
     String senderName = sender.getFullName();
     String kindLabel = kindLabel(kind);
@@ -68,13 +74,14 @@ public class BoardCardInboxEmailSender {
     String description = card.getDescription() == null || card.getDescription().isBlank()
         ? "Sem descrição."
         : card.getDescription();
+    String safeCardUrl = GmailMimeSupport.htmlEscape(cardUrl);
 
     String textBody = """
         Olá,
 
-        %s enviou um cartão do plano %s pelo Plan Things.
+        %s atribuiu uma tarefa a você no plano %s.
 
-        Cartão: %s
+        Tarefa: %s
         Tipo: %s
         Responsáveis: %s
         Início: %s
@@ -83,33 +90,11 @@ public class BoardCardInboxEmailSender {
         Descrição:
         %s
 
-        Abrir no Plan Things:
+        Abrir tarefa no Plan Things:
         %s
         """.formatted(senderName, plan.getName(), card.getTitle(), kindLabel, assigneeNames, emptyDash(startText), emptyDash(dueText), description, cardUrl);
 
-    String htmlBody = """
-        <!doctype html>
-        <html>
-          <body style="font-family:Arial,sans-serif;color:#111827;line-height:1.5">
-            <p>Olá,</p>
-            <p><strong>%s</strong> enviou um cartão do plano <strong>%s</strong> pelo Plan Things.</p>
-            <table style="border-collapse:collapse;margin:16px 0">
-              <tr><td style="padding:4px 12px 4px 0;color:#6b7280">Cartão</td><td style="padding:4px 0"><strong>%s</strong></td></tr>
-              <tr><td style="padding:4px 12px 4px 0;color:#6b7280">Tipo</td><td style="padding:4px 0">%s</td></tr>
-              <tr><td style="padding:4px 12px 4px 0;color:#6b7280">Responsáveis</td><td style="padding:4px 0">%s</td></tr>
-              <tr><td style="padding:4px 12px 4px 0;color:#6b7280">Início</td><td style="padding:4px 0">%s</td></tr>
-              <tr><td style="padding:4px 12px 4px 0;color:#6b7280">Prazo</td><td style="padding:4px 0">%s</td></tr>
-            </table>
-            <p style="white-space:pre-line">%s</p>
-            <p>
-              <a href="%s" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 14px;border-radius:6px">
-                Abrir cartão no quadro
-              </a>
-            </p>
-            <p style="color:#6b7280;font-size:13px">Ou acesse este link: <a href="%s">%s</a></p>
-          </body>
-        </html>
-        """.formatted(
+    String htmlBody = renderCardInboxTemplate(
         GmailMimeSupport.htmlEscape(senderName),
         GmailMimeSupport.htmlEscape(plan.getName()),
         GmailMimeSupport.htmlEscape(card.getTitle()),
@@ -117,10 +102,9 @@ public class BoardCardInboxEmailSender {
         GmailMimeSupport.htmlEscape(assigneeNames),
         GmailMimeSupport.htmlEscape(emptyDash(startText)),
         GmailMimeSupport.htmlEscape(emptyDash(dueText)),
-        GmailMimeSupport.htmlEscape(description),
-        GmailMimeSupport.htmlEscape(cardUrl),
-        GmailMimeSupport.htmlEscape(cardUrl),
-        GmailMimeSupport.htmlEscape(cardUrl)
+        GmailMimeSupport.htmlEscape(description).replace("\n", "<br>"),
+        safeCardUrl,
+        safeCardUrl.replace("/workspace/board/", "/workspace/<br>board/")
     );
 
     return String.join("\r\n",
@@ -158,6 +142,40 @@ public class BoardCardInboxEmailSender {
   private String normalizeFrontendBaseUrl(String value) {
     String normalized = value == null || value.isBlank() ? "http://localhost:5173" : value.trim();
     return normalized.replaceAll("/+$", "");
+  }
+
+  private static String renderCardInboxTemplate(
+      String safeSenderName,
+      String safePlanName,
+      String safeCardTitle,
+      String safeKindLabel,
+      String safeAssigneeNames,
+      String safeStartText,
+      String safeDueText,
+      String safeDescription,
+      String safeCardUrl,
+      String safeCardUrlDisplay
+  ) {
+    return CARD_INBOX_TEMPLATE
+        .replace("{{SENDER_NAME}}", safeSenderName)
+        .replace("{{PLAN_NAME}}", safePlanName)
+        .replace("{{CARD_TITLE}}", safeCardTitle)
+        .replace("{{KIND_LABEL}}", safeKindLabel)
+        .replace("{{ASSIGNEE_NAMES}}", safeAssigneeNames)
+        .replace("{{START_AT}}", safeStartText)
+        .replace("{{DUE_AT}}", safeDueText)
+        .replace("{{DESCRIPTION}}", safeDescription)
+        .replace("{{CARD_URL}}", safeCardUrl)
+        .replace("{{CARD_URL_DISPLAY}}", safeCardUrlDisplay);
+  }
+
+  private static String loadCardInboxTemplate() {
+    try {
+      return new ClassPathResource("templates/email/board-card-inbox.html")
+          .getContentAsString(StandardCharsets.UTF_8);
+    } catch (IOException exception) {
+      throw new UncheckedIOException("Could not load board card inbox email template.", exception);
+    }
   }
 
   public record Delivery(boolean emailSent, String sentFrom, List<String> sentTo, String messageId, String threadId) {

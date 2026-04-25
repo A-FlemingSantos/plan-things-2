@@ -3,11 +3,17 @@ package com.planthings.api.settings;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.plans.PlanInviteEmailSender;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
+
+  private static final String INVITE_TEMPLATE = loadInviteTemplate();
 
   private final GmailMessageSender gmailMessageSender;
 
@@ -43,8 +49,12 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
     String safePlanName = GmailMimeSupport.htmlEscape(planName);
     String safeInviterName = GmailMimeSupport.htmlEscape(inviterName);
     String safeInviteUrl = GmailMimeSupport.htmlEscape(inviteUrl);
+    String safeInviteUrlDisplay = safeInviteUrl.replace("/plans/invites/", "/plans/<br>invites/");
     String expiresText = expiresAt == null ? "" : expiresAt.text();
     String safeExpiresText = GmailMimeSupport.htmlEscape(expiresText);
+    String inviterInitial = GmailMimeSupport.htmlEscape(inviterName == null || inviterName.isBlank()
+        ? "P"
+        : inviterName.substring(0, 1).toUpperCase());
 
     String textBody = """
         Olá,
@@ -57,22 +67,14 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
         Este convite expira em %s.
         """.formatted(inviterName, planName, inviteUrl, expiresText);
 
-    String htmlBody = """
-        <!doctype html>
-        <html>
-          <body style="font-family:Arial,sans-serif;color:#111827;line-height:1.5">
-            <p>Olá,</p>
-            <p><strong>%s</strong> convidou você para participar do plano <strong>%s</strong> no Plan Things.</p>
-            <p>
-              <a href="%s" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 14px;border-radius:6px">
-                Aceitar convite
-              </a>
-            </p>
-            <p>Ou acesse este link: <a href="%s">%s</a></p>
-            <p style="color:#6b7280;font-size:13px">Este convite expira em %s.</p>
-          </body>
-        </html>
-        """.formatted(safeInviterName, safePlanName, safeInviteUrl, safeInviteUrl, safeInviteUrl, safeExpiresText);
+    String htmlBody = renderInviteTemplate(
+        safePlanName,
+        safeInviterName,
+        inviterInitial,
+        safeInviteUrl,
+        safeInviteUrlDisplay,
+        safeExpiresText
+    );
 
     return String.join("\r\n",
         "From: " + GmailMimeSupport.headerValue(senderEmail),
@@ -94,6 +96,32 @@ public class GmailPlanInviteEmailSender implements PlanInviteEmailSender {
         "--" + boundary + "--",
         ""
     );
+  }
+
+  private static String renderInviteTemplate(
+      String safePlanName,
+      String safeInviterName,
+      String safeInviterInitial,
+      String safeInviteUrl,
+      String safeInviteUrlDisplay,
+      String safeExpiresText
+  ) {
+    return INVITE_TEMPLATE
+        .replace("{{PLAN_NAME}}", safePlanName)
+        .replace("{{INVITER_NAME}}", safeInviterName)
+        .replace("{{INVITER_INITIAL}}", safeInviterInitial)
+        .replace("{{INVITE_URL}}", safeInviteUrl)
+        .replace("{{INVITE_URL_DISPLAY}}", safeInviteUrlDisplay)
+        .replace("{{EXPIRES_AT}}", safeExpiresText);
+  }
+
+  private static String loadInviteTemplate() {
+    try {
+      return new ClassPathResource("templates/email/plan-invite.html")
+          .getContentAsString(StandardCharsets.UTF_8);
+    } catch (IOException exception) {
+      throw new UncheckedIOException("Could not load plan invite email template.", exception);
+    }
   }
 
 }
