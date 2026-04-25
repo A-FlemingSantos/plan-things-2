@@ -1,16 +1,22 @@
 # Status Overview - Colaboracao e Settings
 
-O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de arquivos no KanbanBoard ja aceita drag-and-drop e o login com Google ja e a identidade real da conta. A proxima fase nao e uma lista solta de pendencias; ela continua essas tres bases. Primeiro vem a integracao Gmail nas Configuracoes, depois o envio de convite por e-mail pelo owner/admin do plano usando essa conexao, depois a Inbox da sidebar no KanbanBoard como gatilho de email automatico a partir do cartao do KanbanBoard, e so depois as frentes de consolidacao. Microsoft, Outlook e SMTP generico nao entram no produto.
+O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de arquivos no KanbanBoard ja aceita drag-and-drop, o login com Google ja e a identidade real da conta, a integracao Gmail nas Configuracoes ja existe como conexao real e o convite por e-mail pelo owner/admin ja e enviado via Gmail conectado. A proxima fase nao e uma lista solta de pendencias; ela continua essas bases. Agora vem a Inbox da sidebar no KanbanBoard como gatilho de email automatico a partir do cartao do KanbanBoard, depois as frentes de consolidacao e, por ultimo, integracoes externas opcionais. Microsoft, Outlook e SMTP generico nao entram no produto.
 
 ## O que ja existe
 
-**Convites de plano.** A funcao dessa parte e controlar o ingresso de pessoas no plano, dar visibilidade ao gestor e deixar o estado do convite claro para quem recebe o link. Na pratica, o owner/admin lista e revoga convites no quadro e o usuario convidado aceita ou recusa pelo link/token. O backend cria, lista, revoga, aceita e recusa convites; o usuario convidado abre o token e responde; e o quadro mostra o que foi enviado.
+**Convites de plano.** A funcao dessa parte e controlar o ingresso de pessoas no plano, dar visibilidade ao gestor e deixar o estado do convite claro para quem recebe o link. Na pratica, o owner/admin lista e revoga convites no quadro, envia novos convites por Gmail conectado e o usuario convidado aceita ou recusa pelo link/token recebido por e-mail. O backend cria o convite somente depois do envio Gmail bem-sucedido, lista, revoga, aceita e recusa convites; o quadro mostra confirmacao de envio e nao expoe mais o token como copia manual.
 
 ---
 
 `services/api/src/main/java/com/planthings/api/plans/PlanController.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanService.java`
+`services/api/src/main/java/com/planthings/api/plans/PlanInviteEmailSender.java`
+`services/api/src/main/java/com/planthings/api/settings/GmailPlanInviteEmailSender.java`
+`services/api/src/main/java/com/planthings/api/settings/DefaultGmailApiClient.java`
 `apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
 `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.invites.test.jsx`
+`services/api/src/test/java/com/planthings/api/PlanInviteGmailIntegrationTest.java`
 
 ---
 
@@ -24,11 +30,19 @@ O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de ar
 
 ---
 
-**Settings e preferencias.** A funcao dessa area e organizar a entrada no app e as preferencias basicas do usuario, nao criar integracao externa. Na pratica, o usuario escolhe a pagina inicial, o app lembra o ultimo contexto e o layout ainda depende de ajustes em `density` e na antiga barra lateral recolhida por padrao, para que a abertura da aplicacao fique previsivel.
+**Settings e preferencias.** A funcao dessa area e organizar a entrada no app, as preferencias basicas do usuario e as conexoes externas aprovadas. Na pratica, o usuario escolhe a pagina inicial, o app lembra o ultimo contexto e o card Gmail na secao `E-mail e captura` conecta uma conta Google real para envio. A conexao Gmail e persistida no backend, exige o mesmo e-mail da conta Plan Things, usa `gmail.send`, guarda refresh token criptografado e mostra status conectado/desconectado/erro. Outlook, Microsoft e SMTP generico ficam fora.
 
 ---
 
 `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
+`services/api/src/main/java/com/planthings/api/settings/SettingsController.java`
+`services/api/src/main/java/com/planthings/api/settings/SettingsService.java`
+`services/api/src/main/java/com/planthings/api/settings/GmailConnectionEntity.java`
+`services/api/src/main/java/com/planthings/api/settings/GmailConnectionRepository.java`
+`services/api/src/main/java/com/planthings/api/settings/GmailIntegrationProperties.java`
+`services/api/src/main/java/com/planthings/api/settings/IntegrationTokenCipher.java`
+`services/api/src/main/resources/db/migration/V8__gmail_integrations.sql`
+`services/api/src/test/java/com/planthings/api/GmailIntegrationApiIntegrationTest.java`
 `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
 `services/api/src/main/java/com/planthings/api/plans/PlanController.java`
 `services/api/src/main/java/com/planthings/api/plans/PlanService.java`
@@ -51,29 +65,7 @@ O estado do projeto hoje e este: convites de plano ja funcionam, a sidebar de ar
 
 ## O que ainda falta
 
-**Integracao Gmail nas Configuracoes.** A funcao dessa frente e transformar o Gmail em conexao real e persistida para o owner/admin do plano, porque essa integracao vira a base tecnica das proximas etapas de email. Na pratica, o usuario abre a secao `E-mail e captura`, conecta o card `Gmail` e passa a ter uma conta Gmail real vinculada ao perfil do owner/admin do plano. Hoje isso ainda vive em estado de demo/local state; o objetivo aqui e trocar o mock por conexao confiavel, com falha e retry. Outlook, Microsoft e SMTP generico ficam fora.
-
----
-
-`apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
-
----
-
-**Envio de convite por e-mail pelo owner/admin do plano.** A funcao dessa frente e substituir o convite interno que hoje nasce no modal de convites do `KanbanBoard` (`openInviteModal`/`submitInvite`) e faz `POST /api/plans/{planId}/invites`, guardando apenas convite, token e expiração, por um email real disparado a partir da conta Gmail vinculada ao owner/admin do plano. Na pratica, o owner/admin continua abrindo o modal de convites no `KanbanBoard`, mas agora o envio deixa de ser interno e passa a sair como e-mail real da conta autenticada. O `CardModal` nao participa desse fluxo. Essa etapa depende da integracao Gmail ja existir.
-
----
-
-`apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
-`services/api/src/main/java/com/planthings/api/plans/PlanController.java`
-`services/api/src/main/java/com/planthings/api/plans/PlanService.java`
-`services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java`
-`services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java`
-`apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
-`apps/web/src/features/workspace/components/InviteNotifications/InviteNotifications.jsx`
-
----
-
-**Inbox da sidebar no KanbanBoard.** A funcao dessa area e transformar a sidebar em um gatilho operacional: quando o usuario arrasta um cartao do KanbanBoard (tarefa ou evento) para la, o sistema monta um email com template baseado nas informacoes desse cartao e envia automaticamente para todos os membros atribuidos a esse cartao. Na pratica, o usuario solta o cartao na Inbox, o app gera a mensagem com os dados daquele trabalho e dispara para os destinatarios certos. Ela depende da integracao Gmail ja ativa.
+**Inbox da sidebar no KanbanBoard.** A funcao dessa area e transformar a sidebar em um gatilho operacional: quando o usuario arrasta um cartao do KanbanBoard (tarefa ou evento) para la, o sistema monta um email com template baseado nas informacoes desse cartao e envia automaticamente para todos os membros atribuidos a esse cartao. Na pratica, o usuario solta o cartao na Inbox, o app gera a mensagem com os dados daquele trabalho e dispara para os destinatarios certos. Ela agora pode reutilizar a integracao Gmail ativa e o cliente de envio ja criado para convites.
 
 ---
 
@@ -114,7 +106,7 @@ Microsoft, Outlook e SMTP generico nao fazem parte do produto. Eles nao sao o pr
 
 ## Convite por e-mail
 
-Por agora, `convite por e-mail` significa exclusivamente o envio de convite do plano pelo owner/admin usando a conta Gmail conectada. Ate a integracao Gmail existir de verdade, o fluxo continua baseado em link/token, notificacao interna e aceitacao ou recusa. Depois que a integracao existir, esse passo substitui o convite interno do `KanbanBoard` por email real.
+Por agora, `convite por e-mail` significa exclusivamente o envio de convite do plano pelo owner/admin usando a conta Gmail conectada. Esse fluxo ja substituiu a copia manual do token no modal do `KanbanBoard`: o backend renova o access token via refresh token criptografado, monta uma mensagem MIME em PT-BR, envia por `users.messages.send` e so persiste o convite pendente quando o Gmail confirma o envio. A aceitacao ou recusa continua acontecendo pelo link publico `/plans/invites/{token}`.
 
 ## Calendarios externos
 
@@ -129,7 +121,7 @@ Google Calendar fica como integracao opcional e por ultimo. A funcao dessa frent
 
 ## Leitura pratica
 
-Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e primeiro a integracao Gmail nas Configuracoes. Depois vem o envio de convite por e-mail pelo owner/admin do plano usando essa integracao, depois a Inbox da sidebar no KanbanBoard para disparar email automatico a partir do cartao do KanbanBoard e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
+Se eu resumir a situacao sem perder a funcao de cada parte, a proxima entrega util e a Inbox da sidebar no KanbanBoard para disparar email automatico a partir do cartao usando a integracao Gmail ja concluida. Depois entram governanca de colaboracao, refino de arquivos/anexos, ajustes finais de Settings e, por fim, Google Calendar como extensao opcional. O que ja existe hoje precisa ser consolidado e tornado mais visivel, nao reescrito do zero.
 
 ## Leitura futura da Inbox Gmail
 
@@ -137,4 +129,4 @@ A Inbox atual da sidebar deve continuar sendo, primeiro, um destino operacional 
 
 O caminho direto para implementar isso e expandir a integracao Gmail ja existente em `Settings`: adicionar um novo consentimento com escopo de leitura minimo (`gmail.readonly` ou `gmail.metadata`, conforme a necessidade real), salvar os escopos concedidos, criar uma tabela de mensagens importadas com `gmailMessageId`, remetente, assunto, snippet, data e vinculo opcional ao plano/card, e expor endpoints para listar, atualizar e marcar mensagens como processadas. Para sincronizacao continua, usar `users.watch` da Gmail API com Google Cloud Pub/Sub, guardar `historyId` por conta conectada e renovar o watch periodicamente; para uma primeira versao mais simples, fazer sync manual por botao usando `messages.list` + `messages.get`, sem Pub/Sub.
 
-Essa frente deve ser tratada como etapa propria depois do envio por Gmail estar estavel. Ela exige revisao da tela de consentimento do Google, porque leitura de Gmail envolve escopos mais sensiveis/restritos que `gmail.send`, e nao deve ser misturada com a entrega de convite por email ou com a Inbox de disparo automatico do KanbanBoard.
+Essa frente deve ser tratada como etapa propria depois da Inbox de disparo por Gmail estar estavel. Ela exige revisao da tela de consentimento do Google, porque leitura de Gmail envolve escopos mais sensiveis/restritos que `gmail.send`, e nao deve ser misturada com a entrega de convite por email ou com a Inbox de disparo automatico do KanbanBoard.

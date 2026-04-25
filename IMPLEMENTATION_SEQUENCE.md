@@ -27,26 +27,44 @@ Indice de execucao das etapas. O detalhamento de contexto, estado atual e deciso
      `apps/web/src/features/auth/pages/OAuthCallback/OAuthCallback.jsx`
      `apps/web/src/features/auth/context/AuthContext.jsx`
 
-## Proximas etapas
-
 4. Integracao Gmail nas Configuracoes
-   - Base tecnica para as proximas etapas de email.
+   - Estado: concluida
+   - Conexao real e persistida com Gmail para envio, usando OAuth Google com `gmail.send`, refresh token criptografado e status recuperado pelo backend.
    - Arquivos:
      `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx`
+     `services/api/src/main/java/com/planthings/api/settings/SettingsController.java`
+     `services/api/src/main/java/com/planthings/api/settings/SettingsService.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailConnectionEntity.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailConnectionRepository.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailIntegrationProperties.java`
+     `services/api/src/main/java/com/planthings/api/settings/IntegrationTokenCipher.java`
+     `services/api/src/main/resources/db/migration/V8__gmail_integrations.sql`
+     `services/api/src/test/java/com/planthings/api/GmailIntegrationApiIntegrationTest.java`
 
 5. Envio de convite por e-mail pelo owner/admin do plano
-   - Usa a integracao Gmail para substituir o convite interno do KanbanBoard por email real.
+   - Estado: concluida
+   - Usa a integracao Gmail conectada pelo owner/admin para enviar convite real por e-mail antes de persistir o convite pendente.
    - Arquivos:
      `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
+     `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.invites.test.jsx`
      `services/api/src/main/java/com/planthings/api/plans/PlanController.java`
      `services/api/src/main/java/com/planthings/api/plans/PlanService.java`
      `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java`
      `services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java`
+     `services/api/src/main/java/com/planthings/api/plans/PlanInviteEmailSender.java`
+     `services/api/src/main/java/com/planthings/api/settings/DefaultGmailApiClient.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailApiClient.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailConnectionStatusService.java`
+     `services/api/src/main/java/com/planthings/api/settings/GmailPlanInviteEmailSender.java`
+     `services/api/src/test/java/com/planthings/api/PlanInviteGmailIntegrationTest.java`
+     `services/api/src/test/java/com/planthings/api/settings/DefaultGmailApiClientTest.java`
      `apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx`
      `apps/web/src/features/workspace/components/InviteNotifications/InviteNotifications.jsx`
 
+## Proximas etapas
+
 6. Inbox da sidebar no KanbanBoard
-   - Usa a integracao Gmail para disparar email automatico a partir de um cartao do KanbanBoard.
+   - Usa a integracao Gmail ja concluida para disparar email automatico a partir de um cartao do KanbanBoard.
    - Arquivos:
      `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
 
