@@ -1,6 +1,9 @@
 services:
   workspace:
-    image: mcr.microsoft.com/devcontainers/java:1-21-bookworm
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: plan-things-devcontainer
     command: sleep infinity
     working_dir: /workspaces/plan-things-2
     volumes:

@@ -7,8 +7,7 @@
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "24"
-    },
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    }
   },
   "forwardPorts": [5173, 8080],
   "portsAttributes": {
