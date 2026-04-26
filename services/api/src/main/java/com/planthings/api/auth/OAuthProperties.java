@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.oauth")
 public class OAuthProperties {
 
-  private URI frontendCallbackUrl = URI.create("http://localhost:5173/oauth/callback");
+  private URI frontendCallbackUrl;
   private long stateMinutes = 10;
   private long completionCodeMinutes = 5;
   private List<String> allowedRedirectPaths = new ArrayList<>(List.of("/"));

@@ -1,7 +1,13 @@
 package com.planthings.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.planthings.api.auth.UserRepository;
+import com.planthings.api.plans.PlanMemberEntity;
+import com.planthings.api.plans.PlanMemberRepository;
+import com.planthings.api.plans.PlanMemberRole;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -15,6 +21,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class FileApiIntegrationTest extends ApiIntegrationTestSupport {
+
+  @Autowired
+  private PlanMemberRepository planMemberRepository;
+
+  @Autowired
+  private UserRepository userRepository;
 
   @Test
   void shouldUploadShareTrashAndRestoreFiles() throws Exception {
@@ -132,21 +144,9 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     JsonNode createdPlan = createPlan(ownerToken, "Plano com permissoes de arquivos");
     String planId = createdPlan.path("plan").path("id").asText();
 
-    JsonNode invite = readJson(mockMvc.perform(post("/api/plans/" + planId + "/invites")
-            .header("Authorization", "Bearer " + ownerToken)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {
-                  "email": "member-files@example.com"
-                }
-                """))
-        .andExpect(status().isOk())
-        .andReturn()).path("data");
-
     String memberToken = registerAndGetToken("Member", "member-files@example.com", "12345678");
-    mockMvc.perform(post("/api/plans/invites/" + invite.path("token").asText() + "/accept")
-            .header("Authorization", "Bearer " + memberToken))
-        .andExpect(status().isOk());
+    String memberId = userRepository.findByEmailIgnoreCase("member-files@example.com").orElseThrow().getId().toString();
+    addMember(planId, memberId);
 
     JsonNode board = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
             .header("Authorization", "Bearer " + ownerToken))
@@ -444,6 +444,14 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data").path("id").asText();
+  }
+
+  private void addMember(String planId, String userId) {
+    PlanMemberEntity member = new PlanMemberEntity();
+    member.setPlanId(UUID.fromString(planId));
+    member.setUserId(UUID.fromString(userId));
+    member.setRole(PlanMemberRole.MEMBER);
+    planMemberRepository.save(member);
   }
 
   private JsonNode findAttachmentByFileId(JsonNode board, String fileId) {

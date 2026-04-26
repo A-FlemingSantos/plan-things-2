@@ -12,8 +12,8 @@ public class GmailIntegrationProperties {
 
   public static final String GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 
-  private URI redirectUri = URI.create("http://localhost:8080/api/settings/integrations/gmail/callback");
-  private URI frontendReturnUrl = URI.create("http://localhost:5173/settings");
+  private URI redirectUri;
+  private URI frontendReturnUrl;
   private long stateMinutes = 10;
   private List<String> scopes = new ArrayList<>(List.of(
       "openid",

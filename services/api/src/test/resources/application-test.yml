@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=plan_things_test;encrypt=false;trustServerCertificate=true
-    username: sa
-    password: sa-9MNP6LI
+    url: ${SPRING_DATASOURCE_URL:jdbc:sqlserver://localhost:1433;databaseName=plan_things_test;encrypt=false;trustServerCertificate=true}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -17,7 +17,7 @@ spring:
 app:
   frontend-base-url: http://localhost:5173
   jwt:
-    secret: 5f388f9c8130f6dba1f0fba57fa6a2c98f22d8e5edc94a77b701e4cb7b25c438
+    secret: ${APP_JWT_SECRET:dev-only-test-jwt-secret-change-me-00000000000000000000000000000000}
     issuer: plan-things-api-test
     access-token-minutes: 180
     password-reset-minutes: 30
