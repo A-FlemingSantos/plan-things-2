@@ -65,12 +65,12 @@ plan-things/
 
 ## Requisitos
 
-- Node.js e npm.
+- Node.js 24 e npm 11, alinhados ao ambiente de desenvolvimento atual.
 - Java 21.
 - Maven disponível no ambiente.
-- SQL Server local acessível pela API.
+- Docker com Docker Compose para o SQL Server em container, ou SQL Server local acessível pela API.
 
-Por padrão, a API usa `jdbc:sqlserver://localhost:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true`. Ajuste as configurações por variáveis de ambiente ou pelo arquivo de configuração local quando necessário.
+Por padrão, a API usa `jdbc:sqlserver://localhost:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true`, usuário `sa` e exige `SPRING_DATASOURCE_PASSWORD` por variável de ambiente. Ajuste as configurações por variáveis de ambiente ou pelo arquivo de configuração local quando necessário.
 
 ## Como rodar
 
@@ -84,6 +84,14 @@ Rode a API:
 
 ```sh
 cd services/api
+SPRING_DATASOURCE_PASSWORD=<senha-local> mvn spring-boot:run
+```
+
+No PowerShell:
+
+```powershell
+cd services/api
+$env:SPRING_DATASOURCE_PASSWORD="<senha-local>"
 mvn spring-boot:run
 ```
 
@@ -94,6 +102,58 @@ npm run dev
 ```
 
 O Vite abre o frontend em `http://localhost:5173` e encaminha chamadas `/api` para `http://localhost:8080`.
+
+## Desenvolvimento local com Docker
+
+O repositório inclui um compose de desenvolvimento para SQL Server:
+
+```sh
+MSSQL_SA_PASSWORD=ChangeThis-12345 docker compose -f .devcontainer/docker-compose.yml up -d sqlserver sqlserver-init
+```
+
+No PowerShell:
+
+```powershell
+$env:MSSQL_SA_PASSWORD="ChangeThis-12345"
+docker compose -f .devcontainer/docker-compose.yml up -d sqlserver sqlserver-init
+```
+
+Depois rode a API e o frontend normalmente. O compose publica o SQL Server em `127.0.0.1:1433`, usa volume Docker para preservar dados de desenvolvimento e cria `plan_things_db` se o banco ainda não existir.
+
+Se usar um SQL Server local já existente, defina `SPRING_DATASOURCE_PASSWORD` antes de iniciar a API.
+
+## GitHub Codespaces
+
+O ambiente Codespaces usa `.devcontainer/devcontainer.json` e `.devcontainer/docker-compose.yml`.
+
+Antes de criar ou reconstruir o Codespace, configure os secrets do Codespaces:
+
+- `MSSQL_SA_PASSWORD`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `APP_INTEGRATION_TOKEN_KEY_B64`
+- `APP_JWT_SECRET`
+
+Dentro do Codespace, os comandos principais são:
+
+```sh
+cd services/api
+mvn spring-boot:run
+```
+
+Em outro terminal:
+
+```sh
+npm run dev:codespaces --workspace apps/web
+```
+
+As portas esperadas são:
+
+- `5173`: frontend Vite, pública.
+- `8080`: API Spring Boot, pública para callbacks OAuth/Gmail.
+- `1433`: SQL Server, privado.
+
+O frontend continua chamando `/api` por proxy Vite. Em Codespaces, o proxy aponta para `http://localhost:8080` dentro do container de workspace.
 
 ## Comandos principais
 
@@ -112,6 +172,15 @@ No backend:
 
 ```sh
 cd services/api
+SPRING_DATASOURCE_PASSWORD=<senha-local> mvn test
+SPRING_DATASOURCE_PASSWORD=<senha-local> mvn spring-boot:run
+```
+
+No PowerShell:
+
+```powershell
+cd services/api
+$env:SPRING_DATASOURCE_PASSWORD="<senha-local>"
 mvn test
 mvn spring-boot:run
 ```
@@ -128,18 +197,44 @@ npm --workspace apps/web run test:run
 
 A API possui defaults para desenvolvimento local, mas algumas integrações precisam de configuração real:
 
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+- `APP_CORS_ALLOWED_ORIGINS`
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 - `GOOGLE_OAUTH_REDIRECT_URI`
 - `GMAIL_INTEGRATION_REDIRECT_URI`
 - `GMAIL_INTEGRATION_FRONTEND_RETURN_URL`
 - `APP_INTEGRATION_TOKEN_KEY_B64`
+- `APP_JWT_SECRET`
 - `APP_FRONTEND_BASE_URL`
 - `APP_OAUTH_FRONTEND_CALLBACK_URL`
 
 A integração Gmail atual usa o escopo `gmail.send`. Leitura real de caixa Gmail e Google Calendar são frentes futuras separadas.
 
-No frontend, `VITE_API_BASE_URL` pode ser usado quando a API não estiver no mesmo host/proxy padrão.
+No frontend, o padrão recomendado é usar `/api` via proxy Vite. `VITE_API_PROXY_TARGET` controla o destino do proxy e usa `http://localhost:8080` como default. `VITE_API_BASE_URL` ainda pode ser usado em cenários especiais em que a API não esteja no mesmo host/proxy padrão.
+
+O backend permite CORS para a origem de `APP_FRONTEND_BASE_URL`. Use `APP_CORS_ALLOWED_ORIGINS` somente para origens extras, separadas por virgula, quando o frontend chamar a API diretamente em vez de passar pelo proxy `/api`.
+
+### OAuth Google em ambiente remoto
+
+Use um OAuth Client Google separado para Codespaces/dev remoto. O Google exige redirect URIs exatas, então cada Codespace pode precisar de URIs próprias:
+
+```text
+https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/api/auth/oauth/google/callback
+https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/api/settings/integrations/gmail/callback
+```
+
+As URLs de retorno do frontend no Codespaces seguem este formato:
+
+```text
+APP_FRONTEND_BASE_URL=https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}
+APP_OAUTH_FRONTEND_CALLBACK_URL=https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/oauth/callback
+GMAIL_INTEGRATION_FRONTEND_RETURN_URL=https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/settings
+```
+
+Essas configurações ficam fora do Git: use GitHub Codespaces Secrets, variáveis do shell ou `.env.local` local não versionado.
 
 ## Banco de dados
 
@@ -163,6 +258,14 @@ Backend:
 
 ```sh
 cd services/api
+SPRING_DATASOURCE_PASSWORD=<senha-local> mvn test
+```
+
+No PowerShell:
+
+```powershell
+cd services/api
+$env:SPRING_DATASOURCE_PASSWORD="<senha-local>"
 mvn test
 ```
 

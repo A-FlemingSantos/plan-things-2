@@ -19,6 +19,14 @@ class DatasourceSafetyGuardTest {
   }
 
   @Test
+  void shouldAllowOfficialApplicationDatabaseFromContainerHostOutsideTestProfile() {
+    MockEnvironment environment = new MockEnvironment()
+        .withProperty("spring.datasource.url", "jdbc:sqlserver://sqlserver:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true");
+
+    assertDoesNotThrow(() -> DatasourceSafetyGuard.validate(environment));
+  }
+
+  @Test
   void shouldBlockInvalidDatabaseOutsideTestProfile() {
     MockEnvironment environment = new MockEnvironment()
         .withProperty("spring.datasource.url", "jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=false");

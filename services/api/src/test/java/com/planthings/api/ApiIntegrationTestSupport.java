@@ -27,9 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public abstract class ApiIntegrationTestSupport {
 
-  private static final String SQL_SERVER_HOST = "localhost:1433";
-  private static final String SQL_SERVER_USER = "sa";
-  private static final String SQL_SERVER_PASSWORD = "sa-9MNP6LI";
+  private static final String DEFAULT_SQL_SERVER_HOST = "localhost:1433";
+  private static final String DEFAULT_SQL_SERVER_USER = "sa";
   private static final String TEST_DATABASE_NAME = "plan_things_test_" + System.currentTimeMillis();
 
   @Autowired
@@ -40,22 +39,26 @@ public abstract class ApiIntegrationTestSupport {
 
   @DynamicPropertySource
   static void registerTestDatabaseProperties(DynamicPropertyRegistry registry) {
-    ensureTestDatabaseExists();
+    String sqlServerHost = sqlServerHost();
+    String sqlServerUser = envOrDefault("TEST_SQL_SERVER_USERNAME", envOrDefault("SPRING_DATASOURCE_USERNAME", DEFAULT_SQL_SERVER_USER));
+    String sqlServerPassword = requiredEnv("TEST_SQL_SERVER_PASSWORD", "SPRING_DATASOURCE_PASSWORD");
 
-    String jdbcUrl = "jdbc:sqlserver://" + SQL_SERVER_HOST
+    ensureTestDatabaseExists(sqlServerHost, sqlServerUser, sqlServerPassword);
+
+    String jdbcUrl = "jdbc:sqlserver://" + sqlServerHost
         + ";databaseName=" + TEST_DATABASE_NAME
         + ";encrypt=false;trustServerCertificate=true";
 
     registry.add("spring.datasource.url", () -> jdbcUrl);
-    registry.add("spring.datasource.username", () -> SQL_SERVER_USER);
-    registry.add("spring.datasource.password", () -> SQL_SERVER_PASSWORD);
+    registry.add("spring.datasource.username", () -> sqlServerUser);
+    registry.add("spring.datasource.password", () -> sqlServerPassword);
   }
 
-  private static void ensureTestDatabaseExists() {
-    String masterJdbcUrl = "jdbc:sqlserver://" + SQL_SERVER_HOST
+  private static void ensureTestDatabaseExists(String sqlServerHost, String sqlServerUser, String sqlServerPassword) {
+    String masterJdbcUrl = "jdbc:sqlserver://" + sqlServerHost
         + ";databaseName=master;encrypt=false;trustServerCertificate=true";
 
-    try (Connection connection = DriverManager.getConnection(masterJdbcUrl, SQL_SERVER_USER, SQL_SERVER_PASSWORD);
+    try (Connection connection = DriverManager.getConnection(masterJdbcUrl, sqlServerUser, sqlServerPassword);
          Statement statement = connection.createStatement()) {
       statement.execute("""
           IF DB_ID('%s') IS NULL
@@ -66,6 +69,53 @@ public abstract class ApiIntegrationTestSupport {
     } catch (Exception exception) {
       throw new IllegalStateException("Nao foi possivel preparar a base isolada de testes.", exception);
     }
+  }
+
+  private static String sqlServerHost() {
+    String explicitHost = System.getenv("TEST_SQL_SERVER_HOST");
+    if (hasText(explicitHost)) {
+      return explicitHost;
+    }
+
+    String datasourceUrl = System.getenv("SPRING_DATASOURCE_URL");
+    String parsedHost = sqlServerHostFromJdbcUrl(datasourceUrl);
+    return hasText(parsedHost) ? parsedHost : DEFAULT_SQL_SERVER_HOST;
+  }
+
+  private static String sqlServerHostFromJdbcUrl(String datasourceUrl) {
+    if (!hasText(datasourceUrl) || !datasourceUrl.startsWith("jdbc:sqlserver://")) {
+      return null;
+    }
+
+    String withoutPrefix = datasourceUrl.substring("jdbc:sqlserver://".length());
+    int paramsStart = withoutPrefix.indexOf(';');
+    String host = paramsStart >= 0 ? withoutPrefix.substring(0, paramsStart) : withoutPrefix;
+    return hasText(host) ? host : null;
+  }
+
+  private static String envOrDefault(String name, String defaultValue) {
+    String value = System.getenv(name);
+    return hasText(value) ? value : defaultValue;
+  }
+
+  private static String requiredEnv(String preferredName, String fallbackName) {
+    String preferredValue = System.getenv(preferredName);
+    if (hasText(preferredValue)) {
+      return preferredValue;
+    }
+
+    String fallbackValue = System.getenv(fallbackName);
+    if (hasText(fallbackValue)) {
+      return fallbackValue;
+    }
+
+    throw new IllegalStateException(
+        "Defina " + preferredName + " ou " + fallbackName + " para executar os testes de integracao com SQL Server."
+    );
+  }
+
+  private static boolean hasText(String value) {
+    return value != null && !value.isBlank();
   }
 
   protected String registerAndGetToken(String name, String email, String password) throws Exception {

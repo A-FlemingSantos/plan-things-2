@@ -1,6 +1,8 @@
 # Plano de Transicao Hibrida Local + GitHub Codespaces
 
-Este documento mapeia a transicao do projeto para continuar rodando em Windows/localhost e tambem em GitHub Codespaces/Ubuntu. Ele registra decisoes, arquivos impactados, variaveis, riscos e fases de implementacao. Nao implementa `.devcontainer` ainda.
+Este documento mapeia a transicao do projeto para continuar rodando em Windows/localhost e tambem em GitHub Codespaces/Ubuntu. Ele registra decisoes, arquivos impactados, variaveis, riscos e fases de implementacao.
+
+Status atual: a implementacao incremental ja iniciou. Configuracao por env, Vite/proxy, SQL Server compose, `.devcontainer`, documentacao, CORS opcional e ajustes de testes/backend ja foram aplicados em etapas separadas.
 
 ## Decisoes
 
@@ -18,15 +20,17 @@ Este documento mapeia a transicao do projeto para continuar rodando em Windows/l
 - O frontend ja tem cliente HTTP com suporte a `VITE_API_BASE_URL`, mas hoje pode operar por URL relativa.
 - O Vite usa proxy `/api` fixo para `http://localhost:8080`.
 - O backend habilita CORS via Spring Security, mas nao ha uma configuracao explicita de origens.
-- Nao existe `.devcontainer/`, compose Docker, `.env.example` ou script de bootstrap para Codespaces.
+- Ja existe `.devcontainer/`, compose Docker, `.env.example` e script de bootstrap para Codespaces.
 
 ## Arquivos Que Precisarao Mudar
 
 ### Backend Config
 
 - `services/api/src/main/resources/application.yml`
-  - Parametrizar `spring.datasource.url`, `spring.datasource.username` e `spring.datasource.password` com env vars.
-  - Trocar `app.jwt.secret` hardcoded por `${APP_JWT_SECRET:...}` ou exigir env fora de dev local.
+  - Status: parametrizado com env vars.
+  - `spring.datasource.url`, `spring.datasource.username` e `spring.datasource.password` aceitam env vars.
+  - `SPRING_DATASOURCE_PASSWORD` nao tem default versionado.
+  - `app.jwt.secret` aceita `APP_JWT_SECRET`.
   - Manter defaults localhost para local Windows.
   - Confirmar env vars para URLs absolutas:
     - `APP_FRONTEND_BASE_URL`
@@ -37,36 +41,38 @@ Este documento mapeia a transicao do projeto para continuar rodando em Windows/l
   - Manter `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` e `APP_INTEGRATION_TOKEN_KEY_B64` sem default sensivel.
 
 - `services/api/src/test/resources/application-test.yml`
+  - Status: parametrizado com env vars.
+  - `SPRING_DATASOURCE_PASSWORD` nao tem default versionado.
   - Remover dependencia rigida de `localhost:1433` e senha fixa para permitir container/CI/dev remoto.
   - Manter defaults locais aceitaveis para testes em Windows.
 
 - `services/api/src/main/java/com/planthings/api/auth/OAuthProperties.java`
-  - Revisar defaults Java de localhost para alinhar com `application.yml`.
+  - Status: defaults Java de localhost removidos para `frontendCallbackUrl`; `application.yml` e env vars sao a fonte.
   - Risco GitNexus: MEDIUM para `OAuthProperties`.
 
 - `services/api/src/main/java/com/planthings/api/settings/GmailIntegrationProperties.java`
-  - Revisar defaults Java de localhost para alinhar com env/config.
+  - Status: defaults Java de localhost removidos para redirect e retorno frontend; `application.yml` e env vars sao a fonte.
   - Risco GitNexus: LOW.
 
 - `services/api/src/main/java/com/planthings/api/config/SecurityConfiguration.java`
-  - Se o proxy Vite relativo for mantido como padrao, CORS pode continuar minimalista.
-  - Ainda assim, preparar uma configuracao opcional por env para cenarios em que o frontend chame a API diretamente.
+  - Status: CORS explicito adicionado com origem baseada em `app.frontend-base-url` e extras via `APP_CORS_ALLOWED_ORIGINS`.
   - Risco GitNexus: LOW para `securityFilterChain`.
 
 - `services/api/src/main/java/com/planthings/api/config/DatasourceSafetyGuard.java`
-  - Avaliar se o guard deve aceitar apenas `databaseName=plan_things_db` fora do profile `test`.
-  - Para Codespaces, pode continuar igual se o container usar a mesma base `plan_things_db`.
+  - Status: regra mantida; teste adicionado para `sqlserver:1433` com `databaseName=plan_things_db`.
   - Risco GitNexus: LOW.
 
 ### Backend Links e OAuth
 
 - `services/api/src/main/java/com/planthings/api/plans/PlanService.java`
   - Usa `app.frontend-base-url` para links de convite.
+  - Status: fallback Java de localhost removido; `app.frontend-base-url` precisa estar configurado.
   - Garantir que Codespaces injete `APP_FRONTEND_BASE_URL=https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`.
   - Risco GitNexus: LOW para a classe.
 
 - `services/api/src/main/java/com/planthings/api/board/BoardCardInboxEmailSender.java`
   - Usa `app.frontend-base-url` para links de cards enviados por Gmail.
+  - Status: fallback Java de localhost removido; `app.frontend-base-url` precisa estar configurado.
   - Mesmo tratamento de `APP_FRONTEND_BASE_URL`.
   - Risco GitNexus: LOW para a classe.
 
@@ -83,12 +89,10 @@ Este documento mapeia a transicao do projeto para continuar rodando em Windows/l
 ### Frontend
 
 - `apps/web/vite.config.js`
-  - Configurar servidor Vite para escutar em `0.0.0.0` no Codespaces.
-  - Manter proxy relativo `/api`.
-  - Tornar alvo do proxy configuravel, por exemplo `VITE_API_PROXY_TARGET`, com default `http://localhost:8080`.
+  - Status: Vite carrega envs, aceita `VITE_DEV_HOST` e usa `VITE_API_PROXY_TARGET` com default `http://localhost:8080`.
 
 - `apps/web/package.json`
-  - Opcional: adicionar script `dev:codespaces` com `vite --host 0.0.0.0`.
+  - Status: script `dev:codespaces` adicionado.
   - Alternativa: manter comando explicito `npm run dev -- --host 0.0.0.0`.
 
 - `apps/web/src/shared/api/apiClient.js`
@@ -98,8 +102,8 @@ Este documento mapeia a transicao do projeto para continuar rodando em Windows/l
 ### Testes
 
 - `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java`
-  - Hoje cria banco em `localhost:1433` com `sa` e senha fixa.
-  - Parametrizar por env vars de teste, mantendo defaults locais.
+  - Status: parametrizado por `TEST_SQL_SERVER_*` e `SPRING_DATASOURCE_*`, mantendo defaults locais.
+  - A senha de SQL Server agora e obrigatoria via `TEST_SQL_SERVER_PASSWORD` ou `SPRING_DATASOURCE_PASSWORD`.
 
 - Testes com URLs localhost:
   - `services/api/src/test/java/com/planthings/api/OAuthApiIntegrationTest.java`
@@ -112,37 +116,36 @@ Este documento mapeia a transicao do projeto para continuar rodando em Windows/l
 ### Devcontainer e Documentacao
 
 - `.devcontainer/devcontainer.json`
-  - Novo arquivo futuro.
+  - Status: criado com Java 21, Node 24, Docker outside-of-Docker e portas `5173`/`8080`.
 
 - `.devcontainer/docker-compose.yml`
-  - Novo arquivo futuro para SQL Server com volume.
+  - Status: criado para SQL Server com volume e init de `plan_things_db`.
 
 - `.devcontainer/postCreateCommand.sh`
-  - Novo arquivo futuro para instalar deps, validar Java/Node/Maven e mostrar URLs.
+  - Status: criado para validar ferramentas, instalar npm deps e mostrar comandos/URLs.
 
 - `.devcontainer/codespaces.env.example`
-  - Novo arquivo futuro com variaveis sem secrets reais.
+  - Status: criado com variaveis sem secrets reais.
 
 - `README.md`
-  - Documentar local Windows e Codespaces.
-  - Documentar OAuth clients separados, ports e secrets.
+  - Status: atualizado com local Windows, Codespaces, OAuth clients separados, ports, secrets e CORS.
 
 - `.gitignore`
-  - Garantir ignore de `.env`, `.env.local`, `.env.*.local` e arquivos de secret.
+  - Status: ja ignorava envs locais; `.codex-dev/` tambem foi ignorado.
 
 ## Pontos Com Localhost, Portas Fixas e Secrets
 
 - `services/api/src/main/resources/application.yml`
   - `jdbc:sqlserver://localhost:1433`
   - usuario `sa`
-  - senha `sa-9MNP6LI`
+  - senha local antiga hardcoded
   - JWT secret hardcoded
   - frontend `http://localhost:5173`
   - backend callbacks `http://localhost:8080`
 
 - `services/api/src/test/resources/application-test.yml`
   - `jdbc:sqlserver://localhost:1433`
-  - senha `sa-9MNP6LI`
+  - senha local antiga hardcoded
   - JWT secret hardcoded
 
 - `apps/web/vite.config.js`
@@ -151,7 +154,7 @@ Este documento mapeia a transicao do projeto para continuar rodando em Windows/l
 - `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java`
   - `SQL_SERVER_HOST = "localhost:1433"`
   - `SQL_SERVER_USER = "sa"`
-  - `SQL_SERVER_PASSWORD = "sa-9MNP6LI"`
+  - `SQL_SERVER_PASSWORD` com senha local antiga hardcoded
 
 - `services/api/src/main/java/com/planthings/api/auth/OAuthProperties.java`
   - default `http://localhost:5173/oauth/callback`
@@ -173,6 +176,7 @@ Este documento mapeia a transicao do projeto para continuar rodando em Windows/l
 - `SPRING_DATASOURCE_URL`
 - `SPRING_DATASOURCE_USERNAME`
 - `SPRING_DATASOURCE_PASSWORD`
+- `APP_CORS_ALLOWED_ORIGINS`
 - `APP_FRONTEND_BASE_URL`
 - `APP_OAUTH_FRONTEND_CALLBACK_URL`
 - `GOOGLE_OAUTH_REDIRECT_URI`

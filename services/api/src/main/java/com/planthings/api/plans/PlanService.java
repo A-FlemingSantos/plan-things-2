@@ -63,7 +63,7 @@ public class PlanService {
       BrazilDateTimeMapper brazilDateTimeMapper,
       PlanInviteEmailSender planInviteEmailSender,
       Clock clock,
-      @Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl
+      @Value("${app.frontend-base-url}") String frontendBaseUrl
   ) {
     this.planRepository = planRepository;
     this.planMemberRepository = planMemberRepository;
@@ -556,7 +556,7 @@ public class PlanService {
   private String normalizeFrontendBaseUrl(String value) {
     String normalized = value == null ? "" : value.trim();
     if (normalized.isBlank()) {
-      return "http://localhost:5173";
+      throw new IllegalArgumentException("app.frontend-base-url must be configured.");
     }
     while (normalized.endsWith("/")) {
       normalized = normalized.substring(0, normalized.length() - 1);

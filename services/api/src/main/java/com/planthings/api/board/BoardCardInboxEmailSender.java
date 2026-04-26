@@ -27,7 +27,7 @@ public class BoardCardInboxEmailSender {
   public BoardCardInboxEmailSender(
       GmailMessageSender gmailMessageSender,
       BrazilDateTimeMapper brazilDateTimeMapper,
-      @Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl
+      @Value("${app.frontend-base-url}") String frontendBaseUrl
   ) {
     this.gmailMessageSender = gmailMessageSender;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
@@ -140,7 +140,10 @@ public class BoardCardInboxEmailSender {
   }
 
   private String normalizeFrontendBaseUrl(String value) {
-    String normalized = value == null || value.isBlank() ? "http://localhost:5173" : value.trim();
+    String normalized = value == null ? "" : value.trim();
+    if (normalized.isBlank()) {
+      throw new IllegalArgumentException("app.frontend-base-url must be configured.");
+    }
     return normalized.replaceAll("/+$", "");
   }
 

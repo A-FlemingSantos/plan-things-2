@@ -3,8 +3,13 @@ package com.planthings.api.config;
 import com.planthings.api.auth.UserRepository;
 import com.planthings.api.common.security.JwtAuthenticationFilter;
 import com.planthings.api.common.security.SecurityUser;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -20,6 +25,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableMethodSecurity
@@ -51,6 +59,23 @@ public class SecurityConfiguration {
   }
 
   @Bean
+  public CorsConfigurationSource corsConfigurationSource(
+      @Value("${app.frontend-base-url}") String frontendBaseUrl,
+      @Value("${app.cors.allowed-origins:}") String extraAllowedOrigins
+  ) {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(allowedOrigins(frontendBaseUrl, extraAllowedOrigins));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+    configuration.setExposedHeaders(List.of("Location"));
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/api/**", configuration);
+    source.registerCorsConfiguration("/actuator/**", configuration);
+    return source;
+  }
+
+  @Bean
   public UserDetailsService userDetailsService(UserRepository userRepository) {
     return username -> userRepository.findByEmailIgnoreCase(username)
         .map(user -> new SecurityUser(user.getId(), user.getEmail(), user.getPasswordHash()))
@@ -76,5 +101,32 @@ public class SecurityConfiguration {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
+  }
+
+  private static List<String> allowedOrigins(String frontendBaseUrl, String extraAllowedOrigins) {
+    LinkedHashSet<String> origins = new LinkedHashSet<>();
+    addOrigin(origins, frontendBaseUrl);
+
+    if (extraAllowedOrigins != null && !extraAllowedOrigins.isBlank()) {
+      Arrays.stream(extraAllowedOrigins.split(","))
+          .map(String::trim)
+          .filter(origin -> !origin.isBlank())
+          .forEach(origin -> addOrigin(origins, origin));
+    }
+
+    return List.copyOf(origins);
+  }
+
+  private static void addOrigin(LinkedHashSet<String> origins, String value) {
+    if (value == null || value.isBlank()) {
+      return;
+    }
+    String trimmed = value.trim();
+    if ("*".equals(trimmed)) {
+      origins.add(trimmed);
+      return;
+    }
+    URI uri = URI.create(trimmed);
+    origins.add(uri.getScheme() + "://" + uri.getAuthority());
   }
 }

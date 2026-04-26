@@ -17,5 +17,6 @@ pnpm-debug.log*
 
 .vscode/
 .idea/
+.codex-dev/
 .gitnexus
 .mvn-home/
