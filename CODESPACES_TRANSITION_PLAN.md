@@ -255,7 +255,7 @@ Responsabilidades futuras:
 - Servico `sqlserver`.
 - Imagem SQL Server Linux.
 - `ACCEPT_EULA=Y`.
-- `MSSQL_SA_PASSWORD` vindo de env/secret.
+- `MSSQL_SA_PASSWORD` vindo de env/secret, com fallback dev-only para nao bloquear a criacao do Codespace quando o secret ainda nao existir.
 - Volume Docker para `/var/opt/mssql`.
 - Porta `1433` acessivel para o backend dentro do Codespace.
 
@@ -315,7 +315,7 @@ Env esperado no Codespaces:
 ```sh
 export SPRING_DATASOURCE_URL="jdbc:sqlserver://sqlserver:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true"
 export SPRING_DATASOURCE_USERNAME="sa"
-export SPRING_DATASOURCE_PASSWORD="$MSSQL_SA_PASSWORD"
+export SPRING_DATASOURCE_PASSWORD="${MSSQL_SA_PASSWORD:-PlanThingsDevSql-2026!}"
 export APP_FRONTEND_BASE_URL="$WEB_URL"
 export APP_OAUTH_FRONTEND_CALLBACK_URL="$WEB_URL/oauth/callback"
 export GOOGLE_OAUTH_REDIRECT_URI="$API_URL/api/auth/oauth/google/callback"

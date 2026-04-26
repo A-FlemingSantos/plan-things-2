@@ -8,7 +8,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true
       SPRING_DATASOURCE_USERNAME: sa
-      SPRING_DATASOURCE_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD before starting SQL Server}
+      SPRING_DATASOURCE_PASSWORD: ${MSSQL_SA_PASSWORD:-PlanThingsDevSql-2026!}
       VITE_API_PROXY_TARGET: http://localhost:8080
     depends_on:
       sqlserver-init:
@@ -19,7 +19,7 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD before starting SQL Server}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-PlanThingsDevSql-2026!}
     ports:
       - "127.0.0.1:1433:1433"
     volumes:
@@ -41,7 +41,7 @@ services:
       sqlserver:
         condition: service_healthy
     environment:
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD before starting SQL Server}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-PlanThingsDevSql-2026!}
     command:
       - /bin/bash
       - -lc

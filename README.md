@@ -126,13 +126,14 @@ Se usar um SQL Server local já existente, defina `SPRING_DATASOURCE_PASSWORD` a
 
 O ambiente Codespaces usa `.devcontainer/devcontainer.json` e `.devcontainer/docker-compose.yml`.
 
-Antes de criar ou reconstruir o Codespace, configure os secrets do Codespaces:
+Antes de testar login/OAuth/Gmail no Codespace, configure os secrets do Codespaces:
 
-- `MSSQL_SA_PASSWORD`
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 - `APP_INTEGRATION_TOKEN_KEY_B64`
 - `APP_JWT_SECRET`
+
+`MSSQL_SA_PASSWORD` tambem pode ser configurado como secret para trocar a senha do SQL Server de desenvolvimento. Se ele nao existir, o devcontainer usa um fallback apenas para ambiente local/remoto de desenvolvimento, suficiente para o Codespace sair do recovery mode.
 
 Dentro do Codespace, os comandos principais são:
 
