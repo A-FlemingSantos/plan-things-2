@@ -5,10 +5,16 @@
   "workspaceFolder": "/workspaces/plan-things-2",
   "runServices": ["sqlserver", "sqlserver-init"],
   "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "installMaven": "true",
+      "installGradle": "false"
+    },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "24"
     }
   },
+  "remoteUser": "vscode",
   "forwardPorts": [5173, 8080],
   "portsAttributes": {
     "5173": {

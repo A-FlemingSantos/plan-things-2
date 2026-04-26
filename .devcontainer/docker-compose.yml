@@ -1,9 +1,6 @@
 services:
   workspace:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: plan-things-devcontainer
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
     command: sleep infinity
     working_dir: /workspaces/plan-things-2
     volumes:

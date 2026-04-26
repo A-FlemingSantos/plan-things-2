@@ -116,10 +116,8 @@ Status atual: a implementacao incremental ja iniciou. Configuracao por env, Vite
 ### Devcontainer e Documentacao
 
 - `.devcontainer/devcontainer.json`
-  - Status: criado com Java 21, Node 24 e portas `5173`/`8080`.
-
-- `.devcontainer/Dockerfile`
-  - Status: criado para remover fonte apt antiga do Yarn antes da instalacao de features do Dev Container.
+  - Status: criado com base Ubuntu do Dev Containers, Java 21, Maven, Node 24 e portas `5173`/`8080`.
+  - A imagem do workspace deve permanecer Ubuntu, alinhada ao alvo original Codespaces/Ubuntu.
 
 - `.devcontainer/docker-compose.yml`
   - Status: criado para SQL Server com volume e init de `plan_things_db`.
@@ -244,7 +242,7 @@ Portas:
 
 Responsabilidades futuras:
 
-- Usar imagem com Java 21, Node.js, npm e Maven.
+- Usar base Ubuntu do Dev Containers com Java 21, Node.js, npm e Maven instalados por features.
 - Subir `docker-compose.yml`.
 - Encaminhar portas `5173` e `8080`.
 - Deixar `1433` privada.
