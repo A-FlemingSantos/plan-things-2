@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: 'Selawik';
-  src: url('https://cdn.rawgit.com/microsoft/Selawik/master/Selawik-Light.ttf') format('truetype');
+  src: url('../../assets/fonts/selawik/selawkl.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -12,7 +12,7 @@
 
 @font-face {
   font-family: 'Selawik';
-  src: url('https://cdn.rawgit.com/microsoft/Selawik/master/Selawik.ttf') format('truetype');
+  src: url('../../assets/fonts/selawik/selawk.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
