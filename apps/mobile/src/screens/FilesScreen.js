@@ -1,22 +1,27 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
 import {
   Archive,
   ArrowDown,
   Check,
   Clock3,
   Code2,
+  FileSpreadsheet,
   FileText,
   Folder,
+  FolderPlus,
   Grid2X2,
   Image,
   List,
   MoreHorizontal,
   Plus,
+  Presentation,
+  ScanLine,
   Search,
   SlidersHorizontal,
   Star,
   Trash2,
+  Upload,
   UsersRound,
 } from 'lucide-react-native'
 import { files } from '../data/demoData'
@@ -44,14 +49,29 @@ const viewOptions = [
   { id: 'grid', label: 'Bloco', icon: Grid2X2 },
 ]
 
-export default function FilesScreen() {
+const quickCreateOptions = [
+  { id: 'folder', label: 'Pasta', icon: FolderPlus },
+  { id: 'scan', label: 'Digitalizar', icon: ScanLine },
+  { id: 'upload', label: 'Carregar', icon: Upload },
+]
+
+const documentCreateOptions = [
+  { id: 'word', label: 'Documento do Word', icon: FileText },
+  { id: 'powerpoint', label: 'Apresentação do PowerPoint', icon: Presentation },
+  { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet },
+]
+
+export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const { width } = useWindowDimensions()
   const [query, setQuery] = useState('')
   const [activeSection, setActiveSection] = useState('mine')
   const [displayMode, setDisplayMode] = useState('list')
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
+  const [newItemSheetVisible, setNewItemSheetVisible] = useState(false)
   const [controlsCompact, setControlsCompactState] = useState(false)
   const compactProgress = useRef(new Animated.Value(0)).current
+  const sheetProgress = useRef(new Animated.Value(0)).current
+  const sheetDragY = useRef(new Animated.Value(0)).current
   const isCompact = useRef(false)
   const lastScrollY = useRef(0)
   const filteredFiles = useMemo(() => {
@@ -71,6 +91,50 @@ export default function FilesScreen() {
       useNativeDriver: false,
     }).start()
   }, [compactProgress])
+
+  const openNewItemSheet = useCallback(() => {
+    sheetDragY.setValue(0)
+    setNewItemSheetVisible(true)
+    Animated.timing(sheetProgress, {
+      toValue: 1,
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start()
+  }, [sheetDragY, sheetProgress])
+
+  const closeNewItemSheet = useCallback(() => {
+    sheetDragY.setValue(0)
+    Animated.timing(sheetProgress, {
+      toValue: 0,
+      duration: 210,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) setNewItemSheetVisible(false)
+    })
+  }, [sheetDragY, sheetProgress])
+
+  const sheetPanResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+    onPanResponderMove: (_, gestureState) => {
+      sheetDragY.setValue(Math.max(gestureState.dy, 0))
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy > 72 || gestureState.vy > 0.65) {
+        closeNewItemSheet()
+        return
+      }
+
+      Animated.spring(sheetDragY, {
+        toValue: 0,
+        damping: 18,
+        stiffness: 190,
+        mass: 0.7,
+        useNativeDriver: true,
+      }).start()
+    },
+  }), [closeNewItemSheet, sheetDragY])
 
   const handleScroll = useCallback((event) => {
     const nextY = Math.max(event.nativeEvent.contentOffset.y, 0)
@@ -125,6 +189,21 @@ export default function FilesScreen() {
   const compactOpacity = compactProgress.interpolate({
     inputRange: [0, 0.55, 1],
     outputRange: [0, 0, 1],
+  })
+  const sheetTranslateY = Animated.add(
+    sheetProgress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [560, 0],
+    }),
+    sheetDragY,
+  ).interpolate({
+    inputRange: [0, 560],
+    outputRange: [0, 560],
+    extrapolate: 'clamp',
+  })
+  const sheetOverlayOpacity = sheetProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.52],
   })
 
   return (
@@ -322,10 +401,79 @@ export default function FilesScreen() {
           </Animated.View>
           <Animated.View style={[styles.compactDivider, { opacity: compactOpacity }]} />
           <Animated.View style={{ marginLeft: addMargin }}>
-            <Pressable style={styles.addButton} accessibilityRole="button" accessibilityLabel="Adicionar arquivo">
+            <Pressable
+              style={styles.addButton}
+              onPress={openNewItemSheet}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar arquivo"
+            >
               <Plus size={30} color={theme.colors.white} strokeWidth={1.7} />
             </Pressable>
           </Animated.View>
+        </Animated.View>
+      </View>
+
+      <View
+        style={[styles.sheetLayer, { bottom: -bottomOverlayOffset }]}
+        pointerEvents={newItemSheetVisible ? 'box-none' : 'none'}
+      >
+        <Animated.View style={[styles.sheetOverlay, { opacity: sheetOverlayOpacity }]}>
+          <Pressable
+            style={styles.sheetOverlayPress}
+            onPress={closeNewItemSheet}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar menu de adicionar"
+          />
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.addSheet,
+            {
+              paddingBottom: 24 + bottomOverlayOffset,
+              transform: [{ translateY: sheetTranslateY }],
+            },
+          ]}
+          {...sheetPanResponder.panHandlers}
+        >
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Adicionar novo</Text>
+
+          <View style={styles.quickCreateGrid}>
+            {quickCreateOptions.map((option) => {
+              const OptionIcon = option.icon
+              return (
+                <Pressable
+                  key={option.id}
+                  style={styles.quickCreateButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={option.label}
+                >
+                  <OptionIcon size={24} color={theme.colors.text1} strokeWidth={1.55} />
+                  <Text style={styles.quickCreateLabel}>{option.label}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+
+          <View style={styles.documentCreateList}>
+            {documentCreateOptions.map((option) => {
+              const OptionIcon = option.icon
+              return (
+                <Pressable
+                  key={option.id}
+                  style={styles.documentCreateRow}
+                  accessibilityRole="button"
+                  accessibilityLabel={option.label}
+                >
+                  <View style={styles.documentCreateIcon}>
+                    <OptionIcon size={18} color={theme.colors.text1} strokeWidth={1.55} />
+                  </View>
+                  <Text style={styles.documentCreateLabel}>{option.label}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
         </Animated.View>
       </View>
     </View>
@@ -568,6 +716,95 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.colors.text1,
     outlineStyle: 'none',
+  },
+  sheetLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+  },
+  sheetOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: theme.colors.black,
+  },
+  sheetOverlayPress: {
+    flex: 1,
+  },
+  addSheet: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
+    paddingTop: 14,
+    paddingRight: 26,
+    paddingBottom: 24,
+    paddingLeft: 26,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: theme.colors.surface1,
+    shadowColor: theme.colors.black,
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -5 },
+    elevation: 14,
+  },
+  sheetHandle: {
+    width: 48,
+    height: 5,
+    alignSelf: 'center',
+    marginBottom: 20,
+    borderRadius: 999,
+    backgroundColor: theme.colors.gray600,
+  },
+  sheetTitle: {
+    color: theme.colors.text1,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginBottom: 22,
+  },
+  quickCreateGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  quickCreateButton: {
+    flex: 1,
+    minHeight: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface2,
+    outlineStyle: 'none',
+  },
+  quickCreateLabel: {
+    color: theme.colors.text1,
+    fontSize: 13,
+    lineHeight: 17,
+  },
+  documentCreateList: {
+    gap: 12,
+  },
+  documentCreateRow: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    outlineStyle: 'none',
+  },
+  documentCreateIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface2,
+  },
+  documentCreateLabel: {
+    flex: 1,
+    color: theme.colors.text1,
+    fontSize: 18,
+    lineHeight: 23,
   },
   grid: {
     flexDirection: 'row',
