@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native'
-import { Grid2X2, Plus, Search, X } from 'lucide-react-native'
+import { Grid2X2, List, Plus, Search, X } from 'lucide-react-native'
 import { plans } from '../data/demoData'
 import { theme } from '../theme/tokens'
 
@@ -78,6 +78,19 @@ function PlanCover({ cover }) {
   )
 }
 
+function MiniPlanCover({ cover }) {
+  return (
+    <View style={[styles.miniCover, { backgroundColor: cover.color }]}>
+      <View style={[styles.miniCoverGlow, { backgroundColor: cover.shades[2] }]} />
+      <View style={styles.miniCoverColumns}>
+        {cover.shades.map((shade) => (
+          <View key={shade} style={[styles.miniCoverColumn, { backgroundColor: shade }]} />
+        ))}
+      </View>
+    </View>
+  )
+}
+
 function PlanCard({ plan, width, active }) {
   return (
     <Pressable
@@ -111,8 +124,42 @@ function PlanCard({ plan, width, active }) {
   )
 }
 
+function PlanListRow({ plan, active }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.planListRow,
+        active && styles.planListRowActive,
+        pressed && styles.planCardPressed,
+      ]}
+    >
+      <MiniPlanCover cover={plan.cover} />
+      <View style={styles.planListBody}>
+        <View style={styles.planListTop}>
+          <Text style={styles.planListName} numberOfLines={1}>{plan.name}</Text>
+          <Text style={styles.planListCount}>{plan.tasks}</Text>
+        </View>
+        <Text style={styles.planListDescription} numberOfLines={1}>{plan.description}</Text>
+        <View style={styles.planListMetaRow}>
+          <Text
+            style={[
+              styles.cardTag,
+              { backgroundColor: plan.cover.tint, color: plan.cover.color },
+            ]}
+            numberOfLines={1}
+          >
+            {plan.cover.tag}
+          </Text>
+          <Text style={styles.cardDate}>{plan.date}</Text>
+        </View>
+      </View>
+    </Pressable>
+  )
+}
+
 export default function HomeScreen({ session }) {
   const [search, setSearch] = useState('')
+  const [viewMode, setViewMode] = useState('grid')
   const { width } = useWindowDimensions()
   const gap = 10
   const contentWidth = Math.min(width, 430) - theme.spacing.screenX * 2
@@ -188,9 +235,41 @@ export default function HomeScreen({ session }) {
           <Text style={styles.sectionTitle}>Todos os planos</Text>
           <Text style={styles.planCount}>{filteredPlans.length}</Text>
         </View>
+        <View style={styles.viewToggle}>
+          <Pressable
+            style={[
+              styles.viewToggleBtn,
+              viewMode === 'grid' && styles.viewToggleBtnActive,
+            ]}
+            onPress={() => setViewMode('grid')}
+            accessibilityRole="button"
+            accessibilityLabel="Visualizacao em grade"
+          >
+            <Grid2X2
+              size={15}
+              color={viewMode === 'grid' ? theme.colors.text1 : theme.colors.text3}
+              strokeWidth={1.8}
+            />
+          </Pressable>
+          <Pressable
+            style={[
+              styles.viewToggleBtn,
+              viewMode === 'list' && styles.viewToggleBtnActive,
+            ]}
+            onPress={() => setViewMode('list')}
+            accessibilityRole="button"
+            accessibilityLabel="Visualizacao em lista"
+          >
+            <List
+              size={16}
+              color={viewMode === 'list' ? theme.colors.text1 : theme.colors.text3}
+              strokeWidth={1.8}
+            />
+          </Pressable>
+        </View>
       </View>
 
-      {filteredPlans.length ? (
+      {filteredPlans.length && viewMode === 'grid' ? (
         <View style={[styles.grid, { columnGap: gap, rowGap: gap }]}>
           {filteredPlans.map((plan, index) => (
             <PlanCard
@@ -205,6 +284,22 @@ export default function HomeScreen({ session }) {
               <Plus size={15} color={theme.colors.text2} strokeWidth={1.8} />
             </View>
             <Text style={styles.newPlanCardLabel}>Novo plano</Text>
+          </Pressable>
+        </View>
+      ) : filteredPlans.length ? (
+        <View style={styles.planList}>
+          {filteredPlans.map((plan, index) => (
+            <PlanListRow
+              key={plan.id}
+              plan={plan}
+              active={index === 0 && !search}
+            />
+          ))}
+          <Pressable style={styles.newPlanListRow}>
+            <View style={styles.newPlanIcon}>
+              <Plus size={15} color={theme.colors.text2} strokeWidth={1.8} />
+            </View>
+            <Text style={styles.newPlanListLabel}>Novo plano</Text>
           </Pressable>
         </View>
       ) : (
@@ -346,6 +441,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
     marginBottom: 12,
   },
   sectionLeft: {
@@ -368,6 +464,29 @@ const styles = StyleSheet.create({
     color: theme.colors.text2,
     fontSize: 12,
     textAlign: 'center',
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 2,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface2,
+  },
+  viewToggleBtn: {
+    width: 32,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 7,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: theme.colors.surface1,
+    shadowColor: theme.colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
   },
   grid: {
     flexDirection: 'row',
@@ -419,6 +538,35 @@ const styles = StyleSheet.create({
   coverColumn: {
     flex: 1,
     borderRadius: 6,
+    opacity: 0.72,
+  },
+  miniCover: {
+    width: 58,
+    height: 48,
+    overflow: 'hidden',
+    borderRadius: 9,
+  },
+  miniCoverGlow: {
+    position: 'absolute',
+    width: 46,
+    height: 46,
+    borderRadius: 999,
+    opacity: 0.32,
+    right: -16,
+    top: -12,
+  },
+  miniCoverColumns: {
+    position: 'absolute',
+    left: 7,
+    right: 7,
+    top: 7,
+    bottom: 7,
+    flexDirection: 'row',
+    gap: 3,
+  },
+  miniCoverColumn: {
+    flex: 1,
+    borderRadius: 4,
     opacity: 0.72,
   },
   cardBody: {
@@ -485,6 +633,74 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface3,
   },
   newPlanCardLabel: {
+    color: theme.colors.text2,
+    fontSize: 13,
+  },
+  planList: {
+    gap: 9,
+  },
+  planListRow: {
+    minHeight: 76,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface1,
+  },
+  planListRowActive: {
+    borderColor: theme.colors.focus,
+    shadowColor: theme.colors.focus,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 2,
+  },
+  planListBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  planListTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  planListName: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.text1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  planListCount: {
+    color: theme.colors.text2,
+    fontSize: 12,
+  },
+  planListDescription: {
+    color: theme.colors.text3,
+    fontSize: 12,
+  },
+  planListMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  newPlanListRow: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 13,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.border2,
+    borderRadius: 10,
+  },
+  newPlanListLabel: {
     color: theme.colors.text2,
     fontSize: 13,
   },
