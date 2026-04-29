@@ -259,8 +259,8 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               >
                 <SectionIcon
                   size={23}
-                  color={isActive ? theme.colors.white : theme.colors.text2}
-                  fill={isActive ? theme.colors.text1 : 'none'}
+                  color={isActive ? theme.colors.text1 : theme.colors.text2}
+                  fill="none"
                   strokeWidth={1.7}
                 />
                 <Text style={[styles.sectionLabel, isActive && styles.sectionLabelActive]} numberOfLines={1}>
@@ -314,8 +314,8 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                     </Text>
                     <OptionIcon
                       size={27}
-                      color={isSelected ? theme.colors.white : theme.colors.text2}
-                      fill={isSelected ? theme.colors.text1 : 'none'}
+                      color={isSelected ? theme.colors.text1 : theme.colors.text2}
+                      fill="none"
                       strokeWidth={1.7}
                     />
                   </Pressable>
