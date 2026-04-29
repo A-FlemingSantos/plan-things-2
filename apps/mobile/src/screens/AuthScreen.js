@@ -1,16 +1,18 @@
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ArrowRight } from 'lucide-react-native'
-import LogoMark from '../components/LogoMark'
 import { theme } from '../theme/tokens'
 
+const nextStepsImage = require('../../assets/illustrations/Next steps-pana-graphite.png')
+
 export default function AuthScreen({ onEnter }) {
-  const [mode, setMode] = useState('login')
+  const [mode, setMode] = useState('welcome')
   const [name, setName] = useState('Arthur Santos')
   const [email, setEmail] = useState('arthur@example.com')
   const [password, setPassword] = useState('')
   const isRegister = mode === 'register'
+  const isWelcome = mode === 'welcome'
 
   const submit = () => {
     onEnter(mode, { name, email, password })
@@ -19,17 +21,41 @@ export default function AuthScreen({ onEnter }) {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.page}>
-        <View style={styles.top}>
-          <View style={styles.brand}>
-            <LogoMark size={32} />
-            <Text style={styles.brandText}>Plan Things</Text>
+        {!isWelcome ? (
+          <View style={styles.top}>
+            <View style={styles.brand}>
+              <Text style={styles.brandText}>Plan Things</Text>
+            </View>
+            <Pressable onPress={() => setMode('welcome')} hitSlop={10}>
+              <Text style={styles.switchTop}>Voltar</Text>
+            </Pressable>
           </View>
-          <Pressable onPress={() => setMode(isRegister ? 'login' : 'register')} hitSlop={10}>
-            <Text style={styles.switchTop}>{isRegister ? 'Entrar' : 'Cadastro'}</Text>
-          </Pressable>
-        </View>
+        ) : null}
 
-        <View style={styles.content}>
+        {isWelcome ? (
+          <View style={styles.welcomeContent}>
+            <View style={styles.welcomeHero}>
+              <View style={styles.welcomeBrand}>
+                <Text style={styles.welcomeBrandText}>Plan Things</Text>
+              </View>
+              <Image source={nextStepsImage} style={styles.heroImage} resizeMode="contain" />
+            </View>
+
+            <View style={styles.welcomeActions}>
+              <Text style={styles.welcomeSlogan}>Acompanhe tarefas e conversas sem perder o ritmo.</Text>
+              <Pressable style={[styles.primaryButton, styles.welcomeButton]} onPress={() => setMode('register')}>
+                <Text style={styles.primaryButtonText}>Cadastrar-se</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.secondaryButton, styles.welcomeButton, styles.welcomeSecondaryButton]}
+                onPress={() => setMode('login')}
+              >
+                <Text style={styles.secondaryButtonText}>Entrar</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.content}>
           <View style={styles.heading}>
             <Text style={styles.eyebrow}>{isRegister ? 'Novo por aqui' : 'Bem-vindo de volta'}</Text>
             <Text style={styles.title}>{isRegister ? 'Crie sua conta.' : 'Entre na sua conta.'}</Text>
@@ -75,6 +101,7 @@ export default function AuthScreen({ onEnter }) {
             <Text style={styles.devButtonText}>Entrar em modo dev</Text>
           </Pressable>
         </View>
+        )}
 
         <Text style={styles.footer}>Demo-first · sem API real nesta base</Text>
       </KeyboardAvoidingView>
@@ -110,6 +137,53 @@ const styles = StyleSheet.create({
   switchTop: {
     color: theme.colors.text2,
     fontSize: 13,
+  },
+  welcomeContent: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    paddingTop: 52,
+    paddingBottom: 42,
+  },
+  welcomeHero: {
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  welcomeBrand: {
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  welcomeBrandText: {
+    color: theme.colors.text1,
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  heroImage: {
+    width: '122%',
+    height: 420,
+    alignSelf: 'center',
+  },
+  welcomeActions: {
+    gap: 12,
+    paddingBottom: 48,
+    marginTop: 'auto',
+  },
+  welcomeButton: {
+    width: '92%',
+    height: 44,
+    borderRadius: theme.radius.sm,
+    alignSelf: 'center',
+  },
+  welcomeSecondaryButton: {
+    borderColor: theme.colors.border2,
+  },
+  welcomeSlogan: {
+    color: theme.colors.text1,
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 10,
+    marginBottom: 8,
   },
   content: {
     flex: 1,
@@ -163,6 +237,20 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: theme.colors.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    height: 50,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    color: theme.colors.text1,
     fontSize: 15,
     fontWeight: '600',
   },
