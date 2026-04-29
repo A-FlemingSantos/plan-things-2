@@ -11,7 +11,7 @@ import {
   Folder,
   FolderPlus,
   Grid2X2,
-  Image,
+  Image as ImageIcon,
   List,
   MoreHorizontal,
   Plus,
@@ -32,7 +32,7 @@ const fileIcons = {
   pdf: FileText,
   doc: FileText,
   code: Code2,
-  image: Image,
+  image: ImageIcon,
 }
 
 const fileSections = [
@@ -61,22 +61,12 @@ const documentCreateOptions = [
   { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet },
 ]
 
-function SolidFileIcon({ icon: Icon, type, size }) {
-  if (type === 'code') {
-    return (
-      <View style={[styles.solidLineIcon, { width: size, height: size }]}>
-        <Icon size={size - 9} color={theme.colors.white} strokeWidth={2.3} />
-      </View>
-    )
-  }
-
+function SolidFileIcon({ type = 'doc', size }) {
+  const Icon = fileIcons[type] ?? FileText
   return (
-    <Icon
-      size={size}
-      color={theme.colors.white}
-      fill={theme.colors.text1}
-      strokeWidth={1.9}
-    />
+    <View style={[styles.fileIconTile, { width: size, height: size, borderRadius: Math.max(7, size * 0.22) }]}>
+      <Icon size={Math.round(size * 0.58)} color={theme.colors.white} strokeWidth={2.05} />
+    </View>
   )
 }
 
@@ -338,11 +328,10 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
         {displayMode === 'list' ? (
           <View style={styles.list}>
             {filteredFiles.map((file) => {
-              const Icon = fileIcons[file.type] ?? FileText
               return (
                 <View key={file.id} style={styles.fileRow}>
                   <View style={styles.fileIcon}>
-                    <SolidFileIcon icon={Icon} type={file.type} size={33} />
+                    <SolidFileIcon type={file.type} size={33} />
                   </View>
                   <View style={styles.fileBody}>
                     <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
@@ -367,12 +356,11 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
         ) : (
           <View style={styles.grid}>
             {filteredFiles.map((file) => {
-              const Icon = fileIcons[file.type] ?? FileText
               return (
                 <View key={file.id} style={styles.gridItem}>
                   <View style={styles.gridTop}>
                     <View style={styles.gridIcon}>
-                      <SolidFileIcon icon={Icon} type={file.type} size={32} />
+                      <SolidFileIcon type={file.type} size={32} />
                     </View>
                     <Pressable style={styles.gridMoreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
                       <MoreHorizontal size={21} color={theme.colors.text2} strokeWidth={2} />
@@ -874,10 +862,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.colors.surface2,
   },
-  solidLineIcon: {
+  fileIconTile: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 7,
     backgroundColor: theme.colors.text1,
   },
   documentCreateLabel: {
