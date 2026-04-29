@@ -35,34 +35,6 @@ const fileIcons = {
   image: Image,
 }
 
-const fileTypeStyles = {
-  folder: {
-    icon: theme.colors.blue,
-    bg: 'rgba(66, 144, 218, 0.10)',
-    border: 'rgba(66, 144, 218, 0.20)',
-  },
-  pdf: {
-    icon: theme.colors.red,
-    bg: 'rgba(255, 103, 102, 0.10)',
-    border: 'rgba(255, 103, 102, 0.20)',
-  },
-  doc: {
-    icon: theme.colors.blue,
-    bg: 'rgba(66, 144, 218, 0.10)',
-    border: 'rgba(66, 144, 218, 0.20)',
-  },
-  code: {
-    icon: theme.colors.green,
-    bg: 'rgba(15, 112, 58, 0.10)',
-    border: 'rgba(15, 112, 58, 0.18)',
-  },
-  image: {
-    icon: theme.colors.purple,
-    bg: 'rgba(212, 174, 241, 0.28)',
-    border: 'rgba(212, 174, 241, 0.52)',
-  },
-}
-
 const fileSections = [
   { id: 'mine', label: 'Meus arquivos', icon: Folder },
   { id: 'shared', label: 'Compartilhado', icon: UsersRound },
@@ -84,10 +56,29 @@ const quickCreateOptions = [
 ]
 
 const documentCreateOptions = [
-  { id: 'word', label: 'Documento do Word', icon: FileText, color: theme.colors.blue, bg: 'rgba(66, 144, 218, 0.10)' },
-  { id: 'powerpoint', label: 'Apresentação do PowerPoint', icon: Presentation, color: theme.colors.red, bg: 'rgba(255, 103, 102, 0.10)' },
-  { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet, color: theme.colors.green, bg: 'rgba(15, 112, 58, 0.10)' },
+  { id: 'word', label: 'Documento do Word', icon: FileText },
+  { id: 'powerpoint', label: 'Apresentação do PowerPoint', icon: Presentation },
+  { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet },
 ]
+
+function SolidFileIcon({ icon: Icon, type, size }) {
+  if (type === 'code') {
+    return (
+      <View style={[styles.solidLineIcon, { width: size, height: size }]}>
+        <Icon size={size - 9} color={theme.colors.white} strokeWidth={2.3} />
+      </View>
+    )
+  }
+
+  return (
+    <Icon
+      size={size}
+      color={theme.colors.white}
+      fill={theme.colors.text1}
+      strokeWidth={1.9}
+    />
+  )
+}
 
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const { width } = useWindowDimensions()
@@ -278,7 +269,8 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               >
                 <SectionIcon
                   size={23}
-                  color={isActive ? theme.colors.blue : theme.colors.text2}
+                  color={isActive ? theme.colors.white : theme.colors.text2}
+                  fill={isActive ? theme.colors.text1 : 'none'}
                   strokeWidth={1.7}
                 />
                 <Text style={[styles.sectionLabel, isActive && styles.sectionLabelActive]} numberOfLines={1}>
@@ -303,7 +295,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               accessibilityLabel="Filtrar arquivos"
               accessibilityState={{ expanded: viewMenuOpen }}
             >
-              <SlidersHorizontal size={20} color={viewMenuOpen ? theme.colors.blue : theme.colors.text2} strokeWidth={1.7} />
+              <SlidersHorizontal size={20} color={viewMenuOpen ? theme.colors.text1 : theme.colors.text2} strokeWidth={1.7} />
             </Pressable>
           </View>
 
@@ -325,14 +317,15 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                     accessibilityState={{ selected: isSelected }}
                   >
                     <View style={styles.viewMenuCheck}>
-                      {isSelected ? <Check size={23} color={theme.colors.blue} strokeWidth={1.8} /> : null}
+                      {isSelected ? <Check size={23} color={theme.colors.text1} strokeWidth={1.8} /> : null}
                     </View>
                     <Text style={[styles.viewMenuLabel, isSelected && styles.viewMenuLabelActive]}>
                       {option.label}
                     </Text>
                     <OptionIcon
                       size={27}
-                      color={isSelected ? theme.colors.blue : theme.colors.text2}
+                      color={isSelected ? theme.colors.white : theme.colors.text2}
+                      fill={isSelected ? theme.colors.text1 : 'none'}
                       strokeWidth={1.7}
                     />
                   </Pressable>
@@ -346,11 +339,10 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           <View style={styles.list}>
             {filteredFiles.map((file) => {
               const Icon = fileIcons[file.type] ?? FileText
-              const typeStyle = fileTypeStyles[file.type] ?? fileTypeStyles.doc
               return (
                 <View key={file.id} style={styles.fileRow}>
-                  <View style={[styles.fileIcon, { backgroundColor: typeStyle.bg, borderColor: typeStyle.border }]}>
-                    <Icon size={30} color={typeStyle.icon} strokeWidth={1.55} />
+                  <View style={styles.fileIcon}>
+                    <SolidFileIcon icon={Icon} type={file.type} size={33} />
                   </View>
                   <View style={styles.fileBody}>
                     <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
@@ -376,12 +368,11 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           <View style={styles.grid}>
             {filteredFiles.map((file) => {
               const Icon = fileIcons[file.type] ?? FileText
-              const typeStyle = fileTypeStyles[file.type] ?? fileTypeStyles.doc
               return (
                 <View key={file.id} style={styles.gridItem}>
                   <View style={styles.gridTop}>
-                    <View style={[styles.gridIcon, { backgroundColor: typeStyle.bg, borderColor: typeStyle.border }]}>
-                      <Icon size={31} color={typeStyle.icon} strokeWidth={1.55} />
+                    <View style={styles.gridIcon}>
+                      <SolidFileIcon icon={Icon} type={file.type} size={32} />
                     </View>
                     <Pressable style={styles.gridMoreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
                       <MoreHorizontal size={21} color={theme.colors.text2} strokeWidth={2} />
@@ -514,8 +505,8 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                   accessibilityRole="button"
                   accessibilityLabel={option.label}
                 >
-                  <View style={[styles.documentCreateIcon, { backgroundColor: option.bg }]}>
-                    <OptionIcon size={18} color={option.color} strokeWidth={1.55} />
+                  <View style={styles.documentCreateIcon}>
+                    <OptionIcon size={18} color={theme.colors.white} fill={theme.colors.text1} strokeWidth={1.55} />
                   </View>
                   <Text style={styles.documentCreateLabel}>{option.label}</Text>
                 </Pressable>
@@ -588,7 +579,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   sectionIndicatorActive: {
-    backgroundColor: theme.colors.blue,
+    backgroundColor: theme.colors.text1,
   },
   controlsWrap: {
     position: 'relative',
@@ -620,7 +611,7 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   },
   filterButtonActive: {
-    backgroundColor: 'rgba(66, 144, 218, 0.10)',
+    backgroundColor: theme.colors.surface3,
   },
   viewMenu: {
     position: 'absolute',
@@ -655,7 +646,7 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   },
   viewMenuOptionActive: {
-    backgroundColor: 'rgba(66, 144, 218, 0.08)',
+    backgroundColor: theme.colors.surface3,
   },
   viewMenuCheck: {
     width: 27,
@@ -743,11 +734,8 @@ const styles = StyleSheet.create({
   fileIcon: {
     width: 50,
     height: 50,
-    borderRadius: 8,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface2,
   },
   fileBody: {
     flex: 1,
@@ -774,10 +762,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: 'rgba(15, 112, 58, 0.10)',
+    backgroundColor: theme.colors.surface3,
   },
   sharedBadgeText: {
-    color: theme.colors.green,
+    color: theme.colors.text1,
     fontSize: 11,
     lineHeight: 14,
     fontWeight: '600',
@@ -886,6 +874,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.colors.surface2,
   },
+  solidLineIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 7,
+    backgroundColor: theme.colors.text1,
+  },
   documentCreateLabel: {
     flex: 1,
     color: theme.colors.text1,
@@ -917,11 +911,8 @@ const styles = StyleSheet.create({
   gridIcon: {
     width: 42,
     height: 42,
-    borderRadius: 8,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface1,
   },
   gridMoreButton: {
     width: 30,
