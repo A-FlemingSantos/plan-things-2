@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Path, Rect } from 'react-native-svg'
 import { theme } from '../theme/tokens'
@@ -21,7 +21,7 @@ export default function AuthScreen({ onEnter }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.page}>
+      <View style={styles.page}>
         {isWelcome ? (
           <View style={styles.welcomeContent}>
             <View style={styles.welcomeHero}>
@@ -177,7 +177,7 @@ export default function AuthScreen({ onEnter }) {
         )}
 
         {isWelcome ? <Text style={styles.footer}>Demo-first · sem API real nesta base</Text> : null}
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   )
 }

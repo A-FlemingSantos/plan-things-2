@@ -8,7 +8,8 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "android": {
-      "package": "com.planthings.mobile"
+      "package": "com.planthings.mobile",
+      "softwareKeyboardLayoutMode": "pan"
     },
     "ios": {
       "supportsTablet": true,
