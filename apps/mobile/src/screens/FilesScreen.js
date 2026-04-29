@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
 import {
   Archive,
@@ -35,6 +35,34 @@ const fileIcons = {
   image: Image,
 }
 
+const fileTypeStyles = {
+  folder: {
+    icon: theme.colors.blue,
+    bg: 'rgba(66, 144, 218, 0.10)',
+    border: 'rgba(66, 144, 218, 0.20)',
+  },
+  pdf: {
+    icon: theme.colors.red,
+    bg: 'rgba(255, 103, 102, 0.10)',
+    border: 'rgba(255, 103, 102, 0.20)',
+  },
+  doc: {
+    icon: theme.colors.blue,
+    bg: 'rgba(66, 144, 218, 0.10)',
+    border: 'rgba(66, 144, 218, 0.20)',
+  },
+  code: {
+    icon: theme.colors.green,
+    bg: 'rgba(15, 112, 58, 0.10)',
+    border: 'rgba(15, 112, 58, 0.18)',
+  },
+  image: {
+    icon: theme.colors.purple,
+    bg: 'rgba(212, 174, 241, 0.28)',
+    border: 'rgba(212, 174, 241, 0.52)',
+  },
+}
+
 const fileSections = [
   { id: 'mine', label: 'Meus arquivos', icon: Folder },
   { id: 'shared', label: 'Compartilhado', icon: UsersRound },
@@ -56,9 +84,9 @@ const quickCreateOptions = [
 ]
 
 const documentCreateOptions = [
-  { id: 'word', label: 'Documento do Word', icon: FileText },
-  { id: 'powerpoint', label: 'Apresentação do PowerPoint', icon: Presentation },
-  { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet },
+  { id: 'word', label: 'Documento do Word', icon: FileText, color: theme.colors.blue, bg: 'rgba(66, 144, 218, 0.10)' },
+  { id: 'powerpoint', label: 'Apresentação do PowerPoint', icon: Presentation, color: theme.colors.red, bg: 'rgba(255, 103, 102, 0.10)' },
+  { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet, color: theme.colors.green, bg: 'rgba(15, 112, 58, 0.10)' },
 ]
 
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
@@ -72,6 +100,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const compactProgress = useRef(new Animated.Value(0)).current
   const sheetProgress = useRef(new Animated.Value(0)).current
   const sheetDragY = useRef(new Animated.Value(0)).current
+  const scrollRef = useRef(null)
   const isCompact = useRef(false)
   const lastScrollY = useRef(0)
   const filteredFiles = useMemo(() => {
@@ -93,6 +122,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   }, [compactProgress])
 
   const openNewItemSheet = useCallback(() => {
+    setViewMenuOpen(false)
     sheetDragY.setValue(0)
     setNewItemSheetVisible(true)
     Animated.timing(sheetProgress, {
@@ -148,6 +178,14 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
 
     lastScrollY.current = nextY
   }, [setControlsCompact])
+
+  useEffect(() => {
+    lastScrollY.current = 0
+    isCompact.current = false
+    setControlsCompactState(false)
+    compactProgress.setValue(0)
+    scrollRef.current?.scrollTo({ y: 0, animated: false })
+  }, [compactProgress])
 
   const expandedRailWidth = Math.max(260, width - 68)
   const railWidth = compactProgress.interpolate({
@@ -209,6 +247,8 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   return (
     <View style={styles.page}>
       <ScrollView
+        ref={scrollRef}
+        style={styles.scroller}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
@@ -221,6 +261,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
 
         <ScrollView
           horizontal
+          style={styles.sectionTabsScroller}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.sectionTabs}
         >
@@ -237,7 +278,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               >
                 <SectionIcon
                   size={23}
-                  color={isActive ? theme.colors.text1 : theme.colors.text2}
+                  color={isActive ? theme.colors.blue : theme.colors.text2}
                   strokeWidth={1.7}
                 />
                 <Text style={[styles.sectionLabel, isActive && styles.sectionLabelActive]} numberOfLines={1}>
@@ -256,13 +297,13 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               <Text style={styles.sortText}>Nome</Text>
             </View>
             <Pressable
-              style={styles.filterButton}
+              style={[styles.filterButton, viewMenuOpen && styles.filterButtonActive]}
               onPress={() => setViewMenuOpen((isOpen) => !isOpen)}
               accessibilityRole="button"
               accessibilityLabel="Filtrar arquivos"
               accessibilityState={{ expanded: viewMenuOpen }}
             >
-              <SlidersHorizontal size={20} color={theme.colors.text2} strokeWidth={1.7} />
+              <SlidersHorizontal size={20} color={viewMenuOpen ? theme.colors.blue : theme.colors.text2} strokeWidth={1.7} />
             </Pressable>
           </View>
 
@@ -275,7 +316,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 return (
                   <Pressable
                     key={option.id}
-                    style={styles.viewMenuOption}
+                    style={[styles.viewMenuOption, isSelected && styles.viewMenuOptionActive]}
                     onPress={() => {
                       setDisplayMode(option.id)
                       setViewMenuOpen(false)
@@ -284,14 +325,14 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                     accessibilityState={{ selected: isSelected }}
                   >
                     <View style={styles.viewMenuCheck}>
-                      {isSelected ? <Check size={23} color={theme.colors.text2} strokeWidth={1.8} /> : null}
+                      {isSelected ? <Check size={23} color={theme.colors.blue} strokeWidth={1.8} /> : null}
                     </View>
                     <Text style={[styles.viewMenuLabel, isSelected && styles.viewMenuLabelActive]}>
                       {option.label}
                     </Text>
                     <OptionIcon
                       size={27}
-                      color={isSelected ? theme.colors.text1 : theme.colors.text2}
+                      color={isSelected ? theme.colors.blue : theme.colors.text2}
                       strokeWidth={1.7}
                     />
                   </Pressable>
@@ -305,17 +346,24 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           <View style={styles.list}>
             {filteredFiles.map((file) => {
               const Icon = fileIcons[file.type] ?? FileText
-              const iconColor = file.type === 'folder' ? theme.colors.text1 : theme.colors.text2
+              const typeStyle = fileTypeStyles[file.type] ?? fileTypeStyles.doc
               return (
                 <View key={file.id} style={styles.fileRow}>
-                  <View style={styles.fileIcon}>
-                    <Icon size={30} color={iconColor} strokeWidth={1.5} />
+                  <View style={[styles.fileIcon, { backgroundColor: typeStyle.bg, borderColor: typeStyle.border }]}>
+                    <Icon size={30} color={typeStyle.icon} strokeWidth={1.55} />
                   </View>
                   <View style={styles.fileBody}>
                     <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                    <Text style={styles.fileMeta} numberOfLines={1}>
-                      {file.size || '0 KB'} · {file.modified}{file.shared ? ' · compartilhado' : ''}
-                    </Text>
+                    <View style={styles.fileMetaRow}>
+                      <Text style={styles.fileMeta} numberOfLines={1}>
+                        {file.size || '0 KB'} · {file.modified}
+                      </Text>
+                      {file.shared ? (
+                        <View style={styles.sharedBadge}>
+                          <Text style={styles.sharedBadgeText}>compartilhado</Text>
+                        </View>
+                      ) : null}
+                    </View>
                   </View>
                   <Pressable style={styles.moreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
                     <MoreHorizontal size={22} color={theme.colors.text2} strokeWidth={2} />
@@ -328,12 +376,12 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           <View style={styles.grid}>
             {filteredFiles.map((file) => {
               const Icon = fileIcons[file.type] ?? FileText
-              const iconColor = file.type === 'folder' ? theme.colors.text1 : theme.colors.text2
+              const typeStyle = fileTypeStyles[file.type] ?? fileTypeStyles.doc
               return (
                 <View key={file.id} style={styles.gridItem}>
                   <View style={styles.gridTop}>
-                    <View style={styles.gridIcon}>
-                      <Icon size={31} color={iconColor} strokeWidth={1.5} />
+                    <View style={[styles.gridIcon, { backgroundColor: typeStyle.bg, borderColor: typeStyle.border }]}>
+                      <Icon size={31} color={typeStyle.icon} strokeWidth={1.55} />
                     </View>
                     <Pressable style={styles.gridMoreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
                       <MoreHorizontal size={21} color={theme.colors.text2} strokeWidth={2} />
@@ -466,8 +514,8 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                   accessibilityRole="button"
                   accessibilityLabel={option.label}
                 >
-                  <View style={styles.documentCreateIcon}>
-                    <OptionIcon size={18} color={theme.colors.text1} strokeWidth={1.55} />
+                  <View style={[styles.documentCreateIcon, { backgroundColor: option.bg }]}>
+                    <OptionIcon size={18} color={option.color} strokeWidth={1.55} />
                   </View>
                   <Text style={styles.documentCreateLabel}>{option.label}</Text>
                 </Pressable>
@@ -485,10 +533,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.appBg,
   },
+  scroller: {
+    flex: 1,
+  },
   content: {
+    flexGrow: 1,
     paddingHorizontal: theme.spacing.screenX,
     paddingTop: 20,
-    paddingBottom: 220,
+    paddingBottom: 104,
   },
   header: {
     marginBottom: 18,
@@ -508,6 +560,10 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingRight: 24,
     paddingBottom: 16,
+  },
+  sectionTabsScroller: {
+    height: 88,
+    flexGrow: 0,
   },
   sectionTab: {
     width: 112,
@@ -532,7 +588,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   sectionIndicatorActive: {
-    backgroundColor: theme.colors.text1,
+    backgroundColor: theme.colors.blue,
   },
   controlsWrap: {
     position: 'relative',
@@ -558,9 +614,13 @@ const styles = StyleSheet.create({
   filterButton: {
     width: 38,
     height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     outlineStyle: 'none',
+  },
+  filterButtonActive: {
+    backgroundColor: 'rgba(66, 144, 218, 0.10)',
   },
   viewMenu: {
     position: 'absolute',
@@ -589,7 +649,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
+    borderRadius: 8,
     outlineStyle: 'none',
+  },
+  viewMenuOptionActive: {
+    backgroundColor: 'rgba(66, 144, 218, 0.08)',
   },
   viewMenuCheck: {
     width: 27,
@@ -678,6 +744,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.surface2,
@@ -695,6 +762,25 @@ const styles = StyleSheet.create({
   fileMeta: {
     color: theme.colors.text2,
     fontSize: 14,
+  },
+  fileMetaRow: {
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  sharedBadge: {
+    flexShrink: 0,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: 'rgba(15, 112, 58, 0.10)',
+  },
+  sharedBadgeText: {
+    color: theme.colors.green,
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
   },
   moreButton: {
     width: 42,
@@ -832,6 +918,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.surface1,
