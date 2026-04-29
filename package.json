@@ -14,6 +14,9 @@
   "scripts": {
     "prepare": "husky install",
     "dev": "npm --workspace apps/web run dev",
+    "mobile:start": "npm --workspace apps/mobile run start",
+    "mobile:android": "npm --workspace apps/mobile run android",
+    "mobile:android:device": "npm --workspace apps/mobile run android:device",
     "build": "npm --workspace apps/web run build",
     "preview": "npm --workspace apps/web run preview",
     "test": "npm --workspace apps/web run test",
