@@ -32,6 +32,14 @@ npm run mobile:android
 
 Esse comando nao exige Android SDK nem `adb`; ele apenas abre o Metro/Expo para o Expo Go.
 
+Para visualizar no navegador:
+
+```sh
+npm run mobile:web
+```
+
+Tambem funciona iniciar com `npm run mobile:start` e pressionar `w` no terminal do Expo.
+
 Se quiser abrir automaticamente em um emulador ou dispositivo via cabo, configure o Android SDK e `ANDROID_HOME`, garanta que `adb` esteja no `PATH`, e rode:
 
 ```sh
