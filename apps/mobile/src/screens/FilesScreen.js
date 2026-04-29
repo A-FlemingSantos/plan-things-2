@@ -3,11 +3,14 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, V
 import {
   Archive,
   ArrowDown,
+  Check,
   Clock3,
   Code2,
   FileText,
   Folder,
+  Grid2X2,
   Image,
+  List,
   MoreHorizontal,
   Plus,
   Search,
@@ -36,10 +39,17 @@ const fileSections = [
   { id: 'trash', label: 'Lixeira', icon: Trash2 },
 ]
 
+const viewOptions = [
+  { id: 'list', label: 'Lista', icon: List },
+  { id: 'grid', label: 'Bloco', icon: Grid2X2 },
+]
+
 export default function FilesScreen() {
   const { width } = useWindowDimensions()
   const [query, setQuery] = useState('')
   const [activeSection, setActiveSection] = useState('mine')
+  const [displayMode, setDisplayMode] = useState('list')
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
   const [controlsCompact, setControlsCompactState] = useState(false)
   const compactProgress = useRef(new Animated.Value(0)).current
   const isCompact = useRef(false)
@@ -160,38 +170,105 @@ export default function FilesScreen() {
           })}
         </ScrollView>
 
-        <View style={styles.controls}>
-          <View style={styles.sort}>
-            <ArrowDown size={17} color={theme.colors.text2} strokeWidth={1.8} />
-            <Text style={styles.sortText}>Nome</Text>
+        <View style={styles.controlsWrap}>
+          <View style={styles.controls}>
+            <View style={styles.sort}>
+              <ArrowDown size={17} color={theme.colors.text2} strokeWidth={1.8} />
+              <Text style={styles.sortText}>Nome</Text>
+            </View>
+            <Pressable
+              style={styles.filterButton}
+              onPress={() => setViewMenuOpen((isOpen) => !isOpen)}
+              accessibilityRole="button"
+              accessibilityLabel="Filtrar arquivos"
+              accessibilityState={{ expanded: viewMenuOpen }}
+            >
+              <SlidersHorizontal size={20} color={theme.colors.text2} strokeWidth={1.7} />
+            </Pressable>
           </View>
-          <Pressable style={styles.filterButton} accessibilityRole="button" accessibilityLabel="Filtrar arquivos">
-            <SlidersHorizontal size={20} color={theme.colors.text2} strokeWidth={1.7} />
-          </Pressable>
+
+          {viewMenuOpen ? (
+            <View style={styles.viewMenu}>
+              <Text style={styles.viewMenuTitle}>Exibir como:</Text>
+              {viewOptions.map((option) => {
+                const OptionIcon = option.icon
+                const isSelected = displayMode === option.id
+                return (
+                  <Pressable
+                    key={option.id}
+                    style={styles.viewMenuOption}
+                    onPress={() => {
+                      setDisplayMode(option.id)
+                      setViewMenuOpen(false)
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                  >
+                    <View style={styles.viewMenuCheck}>
+                      {isSelected ? <Check size={23} color={theme.colors.text2} strokeWidth={1.8} /> : null}
+                    </View>
+                    <Text style={[styles.viewMenuLabel, isSelected && styles.viewMenuLabelActive]}>
+                      {option.label}
+                    </Text>
+                    <OptionIcon
+                      size={27}
+                      color={isSelected ? theme.colors.text1 : theme.colors.text2}
+                      strokeWidth={1.7}
+                    />
+                  </Pressable>
+                )
+              })}
+            </View>
+          ) : null}
         </View>
 
-        <View style={styles.list}>
-          {filteredFiles.map((file) => {
-            const Icon = fileIcons[file.type] ?? FileText
-            const iconColor = file.type === 'folder' ? theme.colors.text1 : theme.colors.text2
-            return (
-              <View key={file.id} style={styles.fileRow}>
-                <View style={styles.fileIcon}>
-                  <Icon size={30} color={iconColor} strokeWidth={1.5} />
+        {displayMode === 'list' ? (
+          <View style={styles.list}>
+            {filteredFiles.map((file) => {
+              const Icon = fileIcons[file.type] ?? FileText
+              const iconColor = file.type === 'folder' ? theme.colors.text1 : theme.colors.text2
+              return (
+                <View key={file.id} style={styles.fileRow}>
+                  <View style={styles.fileIcon}>
+                    <Icon size={30} color={iconColor} strokeWidth={1.5} />
+                  </View>
+                  <View style={styles.fileBody}>
+                    <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
+                    <Text style={styles.fileMeta} numberOfLines={1}>
+                      {file.size || '0 KB'} · {file.modified}{file.shared ? ' · compartilhado' : ''}
+                    </Text>
+                  </View>
+                  <Pressable style={styles.moreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
+                    <MoreHorizontal size={22} color={theme.colors.text2} strokeWidth={2} />
+                  </Pressable>
                 </View>
-                <View style={styles.fileBody}>
-                  <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                  <Text style={styles.fileMeta} numberOfLines={1}>
-                    {file.size || '0 KB'} · {file.modified}{file.shared ? ' · compartilhado' : ''}
+              )
+            })}
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {filteredFiles.map((file) => {
+              const Icon = fileIcons[file.type] ?? FileText
+              const iconColor = file.type === 'folder' ? theme.colors.text1 : theme.colors.text2
+              return (
+                <View key={file.id} style={styles.gridItem}>
+                  <View style={styles.gridTop}>
+                    <View style={styles.gridIcon}>
+                      <Icon size={31} color={iconColor} strokeWidth={1.5} />
+                    </View>
+                    <Pressable style={styles.gridMoreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
+                      <MoreHorizontal size={21} color={theme.colors.text2} strokeWidth={2} />
+                    </Pressable>
+                  </View>
+                  <Text style={styles.gridName} numberOfLines={2}>{file.name}</Text>
+                  <Text style={styles.gridMeta} numberOfLines={1}>
+                    {file.size || '0 KB'} · {file.modified}
                   </Text>
                 </View>
-                <Pressable style={styles.moreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
-                  <MoreHorizontal size={22} color={theme.colors.text2} strokeWidth={2} />
-                </Pressable>
-              </View>
-            )
-          })}
-        </View>
+              )
+            })}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.floatingWrap} pointerEvents="box-none">
@@ -309,12 +386,16 @@ const styles = StyleSheet.create({
   sectionIndicatorActive: {
     backgroundColor: theme.colors.text1,
   },
+  controlsWrap: {
+    position: 'relative',
+    zIndex: 3,
+    marginBottom: 18,
+  },
   controls: {
     minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 18,
   },
   sort: {
     flexDirection: 'row',
@@ -331,6 +412,48 @@ const styles = StyleSheet.create({
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
+    outlineStyle: 'none',
+  },
+  viewMenu: {
+    position: 'absolute',
+    top: 45,
+    right: 0,
+    width: 222,
+    paddingTop: 18,
+    paddingRight: 18,
+    paddingBottom: 14,
+    paddingLeft: 18,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface1,
+    shadowColor: theme.colors.black,
+    shadowOpacity: 0.13,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  viewMenuTitle: {
+    color: theme.colors.text1,
+    fontSize: 17,
+    marginBottom: 13,
+  },
+  viewMenuOption: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    outlineStyle: 'none',
+  },
+  viewMenuCheck: {
+    width: 27,
+    alignItems: 'center',
+  },
+  viewMenuLabel: {
+    flex: 1,
+    color: theme.colors.text1,
+    fontSize: 18,
+  },
+  viewMenuLabelActive: {
+    fontWeight: '500',
   },
   floatingWrap: {
     position: 'absolute',
@@ -395,6 +518,7 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 2,
+    zIndex: 1,
   },
   fileRow: {
     minHeight: 76,
@@ -443,5 +567,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.text1,
+    outlineStyle: 'none',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    zIndex: 1,
+  },
+  gridItem: {
+    width: '48%',
+    minHeight: 138,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface2,
+  },
+  gridTop: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  gridIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface1,
+  },
+  gridMoreButton: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridName: {
+    color: theme.colors.text1,
+    fontSize: 15,
+    lineHeight: 19,
+    fontWeight: '500',
+    minHeight: 38,
+  },
+  gridMeta: {
+    color: theme.colors.text2,
+    fontSize: 12,
+    marginTop: 6,
   },
 })
