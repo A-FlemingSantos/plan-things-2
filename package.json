@@ -11,6 +11,9 @@
     "lint-staged": "^15.4.3",
     "sharp": "^0.34.3"
   },
+  "overrides": {
+    "react-native-svg": "15.8.0"
+  },
   "scripts": {
     "prepare": "husky install",
     "dev": "npm --workspace apps/web run dev",
@@ -28,5 +31,8 @@
     "apps/web/src/shared/assets/background-collections/**/*.{webp,png,jpg,jpeg,avif}": [
       "node scripts/generate-background-thumbs.mjs"
     ]
+  },
+  "dependencies": {
+    "react-native-svg": "15.8.0"
   }
 }
