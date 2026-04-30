@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native'
 import { Grid2X2, List, Plus, Search, X } from 'lucide-react-native'
-import { plans } from '../data/demoData'
+import { boardColumns, plans } from '../data/demoData'
+import MobileKanbanBoard from './MobileKanbanBoard'
 import { theme } from '../theme/tokens'
 
 const coverThemes = [
@@ -91,9 +92,10 @@ function MiniPlanCover({ cover }) {
   )
 }
 
-function PlanCard({ plan, width, active }) {
+function PlanCard({ plan, width, active, onPress }) {
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.planCard,
         active && styles.planCardActive,
@@ -124,9 +126,10 @@ function PlanCard({ plan, width, active }) {
   )
 }
 
-function PlanListRow({ plan, active }) {
+function PlanListRow({ plan, active, onPress }) {
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.planListRow,
         active && styles.planListRowActive,
@@ -160,6 +163,7 @@ function PlanListRow({ plan, active }) {
 export default function HomeScreen({ session }) {
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState('grid')
+  const [boardPlan, setBoardPlan] = useState(null)
   const { width } = useWindowDimensions()
   const gap = 10
   const contentWidth = Math.min(width, 430) - theme.spacing.screenX * 2
@@ -177,6 +181,16 @@ export default function HomeScreen({ session }) {
     ].some((value) => value.toLowerCase().includes(term))
   })
   const currentPlan = enrichedPlans[0]
+
+  if (boardPlan) {
+    return (
+      <MobileKanbanBoard
+        plan={boardPlan}
+        columns={boardColumns}
+        onBack={() => setBoardPlan(null)}
+      />
+    )
+  }
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -224,7 +238,7 @@ export default function HomeScreen({ session }) {
           </View>
           <Text style={styles.currentPlanText} numberOfLines={2}>{currentPlan.description}</Text>
         </View>
-        <Pressable style={styles.currentPlanAction}>
+        <Pressable style={styles.currentPlanAction} onPress={() => setBoardPlan(currentPlan)}>
           <Grid2X2 size={14} color={theme.colors.text1} strokeWidth={1.8} />
           <Text style={styles.currentPlanActionText}>Abrir quadro</Text>
         </Pressable>
@@ -277,6 +291,7 @@ export default function HomeScreen({ session }) {
               plan={plan}
               width={cardWidth}
               active={index === 0 && !search}
+              onPress={() => setBoardPlan(plan)}
             />
           ))}
           <Pressable style={[styles.newPlanCard, { width: cardWidth }]}>
@@ -293,6 +308,7 @@ export default function HomeScreen({ session }) {
               key={plan.id}
               plan={plan}
               active={index === 0 && !search}
+              onPress={() => setBoardPlan(plan)}
             />
           ))}
           <Pressable style={styles.newPlanListRow}>
