@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -103,7 +104,33 @@ function DetailAction({ icon: Icon, label }) {
   )
 }
 
+function DetailSectionAction({ disabled = false, icon: Icon = Plus, label, onPress }) {
+  return (
+    <Pressable
+      style={[styles.detailSectionAction, disabled && styles.detailSectionActionDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+    >
+      <Icon size={14} color={disabled ? theme.colors.text3 : theme.colors.white} strokeWidth={1.9} />
+      <Text style={[styles.detailSectionActionText, disabled && styles.detailSectionActionTextDisabled]}>{label}</Text>
+    </Pressable>
+  )
+}
+
+function DetailSecondaryAction({ icon: Icon = Plus, label }) {
+  return (
+    <Pressable style={styles.detailSecondaryAction} accessibilityRole="button">
+      <Icon size={14} color={theme.colors.text1} strokeWidth={1.8} />
+      <Text style={styles.detailSecondaryActionText}>{label}</Text>
+    </Pressable>
+  )
+}
+
 function CardDetailScreen({ card, column, onClose }) {
+  const [savedDescription, setSavedDescription] = useState(card.description ?? '')
+  const [descriptionValue, setDescriptionValue] = useState(savedDescription)
   const slideProgress = useRef(new Animated.Value(1)).current
   const { height } = useWindowDimensions()
   const label = findLabel(card.labelId)
@@ -111,6 +138,7 @@ function CardDetailScreen({ card, column, onClose }) {
   const comments = Array.isArray(card.comments) ? card.comments : []
   const attachments = Array.isArray(card.attachments) ? card.attachments : []
   const checklists = Array.isArray(card.checklists) ? card.checklists : []
+  const hasDescriptionChanges = descriptionValue !== savedDescription
   const translateY = slideProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, height],
@@ -136,6 +164,11 @@ function CardDetailScreen({ card, column, onClose }) {
         onClose()
       }
     })
+  }
+
+  const concludeDescriptionEdit = () => {
+    setSavedDescription(descriptionValue)
+    Keyboard.dismiss()
   }
 
   return (
@@ -207,44 +240,73 @@ function CardDetailScreen({ card, column, onClose }) {
 
           <View style={styles.detailSection}>
             <View style={styles.detailSectionHeader}>
-              <AlignLeft size={17} color={theme.colors.text1} strokeWidth={1.8} />
-              <Text style={styles.detailSectionTitle}>Descrição</Text>
+              <View style={styles.detailSectionTitleWrap}>
+                <AlignLeft size={17} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.detailSectionTitle}>Descrição</Text>
+              </View>
+              <DetailSectionAction
+                disabled={!hasDescriptionChanges}
+                icon={CheckSquare}
+                label="Concluir"
+                onPress={concludeDescriptionEdit}
+              />
             </View>
-            <View style={styles.detailDescriptionBox}>
-              <Text style={card.description ? styles.detailDescriptionText : styles.detailEmptyText}>
-                {card.description || 'Adicionar uma descrição para orientar o trabalho deste cartão.'}
-              </Text>
-            </View>
+            <TextInput
+              style={styles.detailDescriptionInput}
+              value={descriptionValue}
+              onChangeText={setDescriptionValue}
+              multiline
+              textAlignVertical="top"
+              placeholder="Adicionar uma descrição para orientar o trabalho deste cartão."
+              placeholderTextColor={theme.colors.text3}
+              accessibilityLabel="Descrição do cartão"
+            />
           </View>
 
           <View style={styles.detailSection}>
             <View style={styles.detailSectionHeader}>
-              <Paperclip size={17} color={theme.colors.text1} strokeWidth={1.8} />
-              <Text style={styles.detailSectionTitle}>Anexos</Text>
+              <View style={styles.detailSectionTitleWrap}>
+                <Paperclip size={17} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.detailSectionTitle}>Anexos</Text>
+              </View>
+              <DetailSectionAction icon={Paperclip} label="Adicionar" />
             </View>
             <View style={styles.detailInfoRow}>
               <Text style={styles.detailInfoText}>
                 {attachments.length ? `${attachments.length} arquivo(s) anexado(s)` : 'Nenhum arquivo anexado a este cartão.'}
               </Text>
             </View>
+            <View style={styles.detailSecondaryActions}>
+              <DetailSecondaryAction icon={Paperclip} label="Biblioteca" />
+              <DetailSecondaryAction icon={Plus} label="Meu dispositivo" />
+            </View>
           </View>
 
           <View style={styles.detailSection}>
             <View style={styles.detailSectionHeader}>
-              <CheckSquare size={17} color={theme.colors.text1} strokeWidth={1.8} />
-              <Text style={styles.detailSectionTitle}>Checklist</Text>
+              <View style={styles.detailSectionTitleWrap}>
+                <CheckSquare size={17} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.detailSectionTitle}>Checklist</Text>
+              </View>
+              <DetailSectionAction icon={CheckSquare} label="Adicionar" />
             </View>
             <View style={styles.detailInfoRow}>
               <Text style={styles.detailInfoText}>
                 {checklists.length ? `${checklists.length} checklist(s) neste cartão` : 'Nenhum checklist criado ainda.'}
               </Text>
             </View>
+            <View style={styles.detailSecondaryActions}>
+              <DetailSecondaryAction icon={CheckSquare} label="Criar checklist" />
+              <DetailSecondaryAction icon={Plus} label="Adicionar item" />
+            </View>
           </View>
 
           <View style={styles.detailSection}>
             <View style={styles.detailSectionHeader}>
-              <MessageCircle size={17} color={theme.colors.text1} strokeWidth={1.8} />
-              <Text style={styles.detailSectionTitle}>Comentários e atividade</Text>
+              <View style={styles.detailSectionTitleWrap}>
+                <MessageCircle size={17} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.detailSectionTitle}>Comentários e atividade</Text>
+              </View>
             </View>
 
             <View style={styles.detailComposer}>
@@ -960,15 +1022,56 @@ const styles = StyleSheet.create({
   detailSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 9,
     marginBottom: 10,
   },
+  detailSectionTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
   detailSectionTitle: {
+    flexShrink: 1,
     color: theme.colors.text1,
     fontSize: 16,
     fontWeight: '600',
   },
+  detailSectionAction: {
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
+    minHeight: 31,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    borderRadius: 9,
+    backgroundColor: theme.colors.text1,
+  },
+  detailSectionActionDisabled: {
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface3,
+  },
+  detailSectionActionText: {
+    color: theme.colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  detailSectionActionTextDisabled: {
+    color: theme.colors.text3,
+  },
   detailDescriptionBox: {
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
     minHeight: 86,
     justifyContent: 'center',
     padding: 13,
@@ -979,6 +1082,22 @@ const styles = StyleSheet.create({
   },
   detailDescriptionText: {
     color: theme.colors.text2,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  detailDescriptionInput: {
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
+    minHeight: 112,
+    padding: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.text1,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface1,
+    color: theme.colors.text1,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -999,6 +1118,33 @@ const styles = StyleSheet.create({
   detailInfoText: {
     color: theme.colors.text2,
     fontSize: 13,
+  },
+  detailSecondaryActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 9,
+  },
+  detailSecondaryAction: {
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 11,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface1,
+  },
+  detailSecondaryActionText: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '600',
   },
   detailComposer: {
     minHeight: 46,
