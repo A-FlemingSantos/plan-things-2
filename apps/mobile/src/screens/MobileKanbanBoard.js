@@ -16,13 +16,18 @@ import {
 import {
   AlignLeft,
   ArrowLeft,
+  Check,
   CheckSquare,
+  ChevronDown,
   Clock3,
   MessageCircle,
   MoreHorizontal,
+  Kanban,
+  ListChecks,
   Paperclip,
   Plus,
   Send,
+  Star,
   Tag,
   Users,
   X,
@@ -385,10 +390,67 @@ function BoardColumn({ column, width, onLayout, onOpenCard }) {
   )
 }
 
+function TaskListRow({ card, column, isDone, onPress }) {
+  const label = findLabel(card.labelId)
+  const members = findMembers(card.memberIds)
+  const metaText = card.dueDate || label?.text || column.title
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.taskListRow, pressed && styles.cardPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Abrir tarefa ${card.title}`}
+    >
+      <View style={[styles.taskCheck, isDone && styles.taskCheckDone]}>
+        {isDone ? <Check size={13} color={theme.colors.white} strokeWidth={2.2} /> : null}
+      </View>
+
+      <View style={styles.taskListBody}>
+        <Text
+          style={[styles.taskListTitle, isDone && styles.taskListTitleDone]}
+          numberOfLines={2}
+        >
+          {card.title}
+        </Text>
+        <View style={styles.taskListMetaRow}>
+          <Clock3
+            size={11}
+            color={isDone ? theme.colors.red : theme.colors.text3}
+            strokeWidth={1.9}
+          />
+          <Text
+            style={[styles.taskListMeta, isDone && styles.taskListMetaDone]}
+            numberOfLines={1}
+          >
+            {metaText}
+          </Text>
+          {members.length ? (
+            <View style={styles.taskMiniMembers}>
+              {members.slice(0, 2).map((member) => (
+                <View key={member.id} style={[styles.taskMiniAvatar, { backgroundColor: member.color }]} />
+              ))}
+            </View>
+          ) : null}
+        </View>
+      </View>
+
+      <Pressable
+        style={styles.taskStarButton}
+        accessibilityRole="button"
+        accessibilityLabel={`Favoritar ${card.title}`}
+      >
+        <Star size={18} color={theme.colors.text2} strokeWidth={1.7} />
+      </Pressable>
+    </Pressable>
+  )
+}
+
 export default function MobileKanbanBoard({ plan, columns, onBack }) {
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
   const [columnHeights, setColumnHeights] = useState({})
   const [selectedCardEntry, setSelectedCardEntry] = useState(null)
+  const [boardView, setBoardView] = useState('lists')
   const verticalScrollRef = useRef(null)
   const scrollRef = useRef(null)
   const { width } = useWindowDimensions()
@@ -398,6 +460,20 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     () => columns.reduce((sum, column) => sum + column.cards.length, 0),
     [columns],
   )
+  const taskGroups = useMemo(() => {
+    const flatTasks = columns.flatMap((column) => (
+      column.cards.map((card) => ({
+        card,
+        column,
+        isDone: column.title.toLowerCase().includes('conclu'),
+      }))
+    ))
+
+    return {
+      active: flatTasks.filter((task) => !task.isDone),
+      done: flatTasks.filter((task) => task.isDone),
+    }
+  }, [columns])
 
   const scrollBoardToTop = () => {
     requestAnimationFrame(() => {
@@ -442,6 +518,15 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     scrollRef.current?.scrollTo({ x: index * pageWidth, animated: true })
   }
 
+  const changeBoardView = (nextView) => {
+    if (nextView === boardView) {
+      return
+    }
+
+    setBoardView(nextView)
+    scrollBoardToTop()
+  }
+
   return (
     <View style={styles.page}>
       <View style={styles.header}>
@@ -465,71 +550,140 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
         </Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.columnTabs}
-        contentContainerStyle={styles.columnTabsContent}
-      >
-        {columns.map((column, index) => {
-          const isActive = index === activeColumnIndex
+      {boardView === 'lists' ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.columnTabs}
+          contentContainerStyle={styles.columnTabsContent}
+        >
+          {columns.map((column, index) => {
+            const isActive = index === activeColumnIndex
 
-          return (
-            <Pressable
-              key={column.id}
-              style={[styles.columnTab, isActive && styles.columnTabActive]}
-              onPress={() => goToColumn(index)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-            >
-              <View style={[styles.columnTabDot, { backgroundColor: column.color }]} />
-              <Text style={[styles.columnTabText, isActive && styles.columnTabTextActive]} numberOfLines={1}>
-                {column.title}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </ScrollView>
+            return (
+              <Pressable
+                key={column.id}
+                style={[styles.columnTab, isActive && styles.columnTabActive]}
+                onPress={() => goToColumn(index)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
+              >
+                <View style={[styles.columnTabDot, { backgroundColor: column.color }]} />
+                <Text style={[styles.columnTabText, isActive && styles.columnTabTextActive]} numberOfLines={1}>
+                  {column.title}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </ScrollView>
+      ) : null}
 
       <ScrollView
         ref={verticalScrollRef}
         style={styles.boardScroll}
-        contentContainerStyle={styles.boardScrollContent}
+        contentContainerStyle={[
+          styles.boardScrollContent,
+          boardView === 'tasks' && styles.tasksScrollContent,
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          pagingEnabled
-          decelerationRate="fast"
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleMomentumEnd}
-          style={[styles.boardPager, activeColumnHeight ? { height: activeColumnHeight } : null]}
-        >
-          {columns.map((column) => (
-            <BoardColumn
-              key={column.id}
-              column={column}
-              width={pageWidth}
-              onLayout={(event) => handleColumnLayout(column.id, event)}
-              onOpenCard={(card, cardColumn) => setSelectedCardEntry({ card, column: cardColumn })}
-            />
-          ))}
-        </ScrollView>
+        {boardView === 'lists' ? (
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            decelerationRate="fast"
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleMomentumEnd}
+            style={[styles.boardPager, activeColumnHeight ? { height: activeColumnHeight } : null]}
+          >
+            {columns.map((column) => (
+              <BoardColumn
+                key={column.id}
+                column={column}
+                width={pageWidth}
+                onLayout={(event) => handleColumnLayout(column.id, event)}
+                onOpenCard={(card, cardColumn) => setSelectedCardEntry({ card, column: cardColumn })}
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.tasksView}>
+            <View style={styles.tasksHeader}>
+              <Text style={styles.tasksTitle}>Tarefas</Text>
+              <Pressable style={styles.tasksMoreButton} accessibilityRole="button" accessibilityLabel="Mais opções">
+                <MoreHorizontal size={18} color={theme.colors.text2} strokeWidth={1.9} />
+              </Pressable>
+            </View>
+
+            <View style={styles.taskListGroup}>
+              {taskGroups.active.map(({ card, column, isDone }) => (
+                <TaskListRow
+                  key={card.id}
+                  card={card}
+                  column={column}
+                  isDone={isDone}
+                  onPress={() => setSelectedCardEntry({ card, column })}
+                />
+              ))}
+            </View>
+
+            {taskGroups.done.length ? (
+              <View style={styles.completedTasksBlock}>
+                <View style={styles.completedHeader}>
+                  <ChevronDown size={15} color={theme.colors.text2} strokeWidth={2} />
+                  <Text style={styles.completedTitle}>Concluída</Text>
+                  <Text style={styles.completedCount}>{taskGroups.done.length}</Text>
+                </View>
+
+                <View style={styles.taskListGroup}>
+                  {taskGroups.done.map(({ card, column, isDone }) => (
+                    <TaskListRow
+                      key={card.id}
+                      card={card}
+                      column={column}
+                      isDone={isDone}
+                      onPress={() => setSelectedCardEntry({ card, column })}
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            <Pressable style={styles.tasksFab} accessibilityRole="button" accessibilityLabel="Adicionar tarefa">
+              <Plus size={30} color={theme.colors.white} strokeWidth={1.8} />
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
 
-      <View pointerEvents="box-none" style={styles.pageDots}>
-        {columns.map((column, index) => (
-          <Pressable
-            key={`dot-${column.id}`}
-            style={[
-              styles.pageDot,
-              index === activeColumnIndex && styles.pageDotActive,
-            ]}
-            onPress={() => goToColumn(index)}
-            accessibilityLabel={`Ir para ${column.title}`}
-          />
-        ))}
+      <View pointerEvents="box-none" style={styles.viewToolbarOverlay}>
+        <View style={styles.viewToolbar}>
+          {[
+            { id: 'lists', label: 'Listas', icon: Kanban },
+            { id: 'tasks', label: 'Tarefas', icon: ListChecks },
+          ].map((item) => {
+            const isActive = boardView === item.id
+            const Icon = item.icon
+
+            return (
+              <Pressable
+                key={item.id}
+                style={[styles.viewButton, isActive && styles.viewButtonActive]}
+                onPress={() => changeBoardView(item.id)}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                accessibilityState={{ selected: isActive }}
+              >
+                <Icon
+                  size={18}
+                  color={isActive ? theme.colors.white : theme.colors.text2}
+                  strokeWidth={1.9}
+                />
+              </Pressable>
+            )
+          })}
+        </View>
       </View>
 
       {selectedCardEntry ? (
@@ -622,6 +776,50 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 7,
   },
+  viewToolbar: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    padding: 4,
+    borderWidth: 1,
+    borderBottomColor: theme.colors.border1,
+    borderColor: theme.colors.border1,
+    borderRadius: 14,
+    backgroundColor: theme.colors.surface1,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 8px 22px rgba(0, 0, 0, 0.16)',
+        outlineStyle: 'none',
+      },
+      default: {
+        shadowColor: theme.colors.black,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.16,
+        shadowRadius: 12,
+        elevation: 5,
+      },
+    }),
+  },
+  viewToolbarOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 80,
+    alignItems: 'center',
+  },
+  viewButton: {
+    width: 42,
+    minWidth: 42,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+    backgroundColor: theme.colors.surface2,
+  },
+  viewButtonActive: {
+    backgroundColor: theme.colors.text1,
+  },
   columnTabs: {
     height: 54,
     flexGrow: 0,
@@ -668,6 +866,10 @@ const styles = StyleSheet.create({
   },
   boardScrollContent: {
     paddingBottom: 92,
+  },
+  tasksScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
   boardPager: {
     flexGrow: 0,
@@ -839,24 +1041,167 @@ const styles = StyleSheet.create({
     color: theme.colors.text2,
     fontSize: 13,
   },
-  pageDots: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 80,
+  tasksView: {
+    minHeight: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    paddingBottom: 116,
+    backgroundColor: theme.colors.surface2,
+  },
+  tasksHeader: {
+    minHeight: 38,
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 9,
+  },
+  tasksTitle: {
+    color: theme.colors.text1,
+    fontSize: 27,
+    lineHeight: 33,
+    fontWeight: '500',
+  },
+  tasksMoreButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
+    borderRadius: 8,
   },
-  pageDot: {
-    width: 7,
-    height: 7,
+  taskListGroup: {
+    gap: 6,
+  },
+  taskListRow: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface1,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
+        outlineStyle: 'none',
+      },
+      default: {
+        shadowColor: theme.colors.black,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        elevation: 1,
+      },
+    }),
+  },
+  taskCheck: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#70777b',
     borderRadius: 999,
-    backgroundColor: theme.colors.border2,
   },
-  pageDotActive: {
-    width: 21,
-    backgroundColor: theme.colors.text1,
+  taskCheckDone: {
+    borderColor: '#566877',
+    backgroundColor: '#566877',
+  },
+  taskListBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  taskListTitle: {
+    color: '#303337',
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '400',
+  },
+  taskListTitleDone: {
+    color: '#747474',
+    textDecorationLine: 'line-through',
+  },
+  taskListMetaRow: {
+    minHeight: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  taskListMeta: {
+    flexShrink: 1,
+    color: '#747474',
+    fontSize: 12,
+  },
+  taskListMetaDone: {
+    color: '#b23b43',
+  },
+  taskMiniMembers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 2,
+  },
+  taskMiniAvatar: {
+    width: 10,
+    height: 10,
+    marginLeft: -3,
+    borderWidth: 1,
+    borderColor: theme.colors.surface1,
+    borderRadius: 999,
+  },
+  taskStarButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+  },
+  completedTasksBlock: {
+    marginTop: 16,
+  },
+  completedHeader: {
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    marginBottom: 7,
+  },
+  completedTitle: {
+    color: '#5d6870',
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  completedCount: {
+    color: '#5d6870',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  tasksFab: {
+    position: 'absolute',
+    right: 28,
+    bottom: 96,
+    width: 68,
+    height: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    backgroundColor: '#566877',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 8px 18px rgba(0, 0, 0, 0.20)',
+        outlineStyle: 'none',
+      },
+      default: {
+        shadowColor: theme.colors.black,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 5,
+      },
+    }),
   },
   detailScreen: {
     flex: 1,
