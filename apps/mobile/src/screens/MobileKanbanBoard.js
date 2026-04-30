@@ -4,6 +4,7 @@ import {
   Easing,
   Keyboard,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -719,9 +720,9 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
   )
 }
 
-function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard }) {
+function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard, ...accessibilityProps }) {
   return (
-    <View style={[styles.columnPage, { width }]} onLayout={onLayout}>
+    <View style={[styles.columnPage, { width }]} onLayout={onLayout} {...accessibilityProps}>
       <View style={styles.column}>
         <View style={styles.columnHeader}>
           <View style={styles.columnTitleWrap}>
@@ -816,10 +817,11 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   const [newCardColumnId, setNewCardColumnId] = useState(columns[0]?.id ?? null)
   const [tasksOptionsOpen, setTasksOptionsOpen] = useState(false)
   const verticalScrollRef = useRef(null)
-  const scrollRef = useRef(null)
+  const boardTranslateX = useRef(new Animated.Value(0)).current
   const { width } = useWindowDimensions()
   const pageWidth = Math.min(width, 430)
-  const activeColumnHeight = columnHeights[boardColumnsState[activeColumnIndex]?.id]
+  const activeColumn = boardColumnsState[activeColumnIndex] ?? boardColumnsState[0]
+  const activeColumnHeight = activeColumn ? columnHeights[activeColumn.id] : 0
   const totalCards = useMemo(
     () => boardColumnsState.reduce((sum, column) => sum + column.cards.length, 0),
     [boardColumnsState],
@@ -843,9 +845,14 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     setBoardColumnsState(cloneBoardColumns(columns))
     setActiveColumnIndex(0)
     setColumnHeights({})
+    boardTranslateX.setValue(0)
     setSelectedCardEntry(null)
     setNewCardColumnId(columns[0]?.id ?? null)
-  }, [columns, plan.id])
+  }, [boardTranslateX, columns, plan.id])
+
+  useEffect(() => {
+    boardTranslateX.setValue(-activeColumnIndex * pageWidth)
+  }, [activeColumnIndex, boardTranslateX, pageWidth])
 
   const scrollBoardToTop = () => {
     requestAnimationFrame(() => {
@@ -868,27 +875,95 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     })
   }
 
-  const handleMomentumEnd = (event) => {
-    const offsetX = event.nativeEvent.contentOffset.x
-    const nextIndex = Math.round(offsetX / pageWidth)
+  const animateToColumn = (index, options = {}) => {
+    const safeIndex = Math.max(0, Math.min(index, boardColumnsState.length - 1))
+    const shouldScrollTop = options.scrollTop ?? true
 
-    if (nextIndex === activeColumnIndex) {
+    if (safeIndex === activeColumnIndex) {
+      Animated.spring(boardTranslateX, {
+        toValue: -activeColumnIndex * pageWidth,
+        damping: 22,
+        stiffness: 210,
+        mass: 0.8,
+        useNativeDriver: true,
+      }).start()
       return
     }
 
-    setActiveColumnIndex(nextIndex)
-    scrollBoardToTop()
+    boardTranslateX.stopAnimation()
+    Animated.timing(boardTranslateX, {
+      toValue: -safeIndex * pageWidth,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setActiveColumnIndex(safeIndex)
+        boardTranslateX.setValue(-safeIndex * pageWidth)
+        if (shouldScrollTop) {
+          scrollBoardToTop()
+        }
+      }
+    })
   }
 
   const goToColumn = (index) => {
-    if (index === activeColumnIndex) {
-      return
-    }
-
-    setActiveColumnIndex(index)
-    scrollBoardToTop()
-    scrollRef.current?.scrollTo({ x: index * pageWidth, animated: true })
+    animateToColumn(index)
   }
+
+  const cancelColumnDrag = () => {
+    Animated.spring(boardTranslateX, {
+      toValue: -activeColumnIndex * pageWidth,
+      damping: 22,
+      stiffness: 210,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const boardSwipeResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gestureState) => (
+      boardView === 'lists'
+        && Math.abs(gestureState.dx) > 8
+        && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.1
+    ),
+    onMoveShouldSetPanResponderCapture: (_, gestureState) => (
+      boardView === 'lists'
+        && Math.abs(gestureState.dx) > 8
+        && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.1
+    ),
+    onPanResponderGrant: () => {
+      boardTranslateX.stopAnimation()
+    },
+    onPanResponderMove: (_, gestureState) => {
+      const hasPrevious = activeColumnIndex > 0
+      const hasNext = activeColumnIndex < boardColumnsState.length - 1
+      let nextX = gestureState.dx
+
+      if ((!hasPrevious && nextX > 0) || (!hasNext && nextX < 0)) {
+        nextX *= 0.22
+      }
+
+      boardTranslateX.setValue((-activeColumnIndex * pageWidth) + nextX)
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      const shouldAdvance = gestureState.dx < -pageWidth * 0.22 || gestureState.vx < -0.55
+      const shouldGoBack = gestureState.dx > pageWidth * 0.22 || gestureState.vx > 0.55
+
+      if (shouldAdvance && activeColumnIndex < boardColumnsState.length - 1) {
+        animateToColumn(activeColumnIndex + 1)
+        return
+      }
+
+      if (shouldGoBack && activeColumnIndex > 0) {
+        animateToColumn(activeColumnIndex - 1)
+        return
+      }
+
+      cancelColumnDrag()
+    },
+    onPanResponderTerminate: cancelColumnDrag,
+  }), [activeColumnIndex, boardColumnsState.length, boardTranslateX, boardView, pageWidth])
 
   const changeBoardView = (nextView) => {
     if (nextView === boardView) {
@@ -1055,26 +1130,25 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
         showsVerticalScrollIndicator={false}
       >
         {boardView === 'lists' ? (
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            decelerationRate="fast"
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleMomentumEnd}
-            style={[styles.boardPager, activeColumnHeight ? { height: activeColumnHeight } : null]}
-          >
-            {boardColumnsState.map((column) => (
-              <BoardColumn
-                key={column.id}
-                column={column}
-                width={pageWidth}
-                onAddCard={(columnId) => openAddCardSheet(columnId, false)}
-                onLayout={(event) => handleColumnLayout(column.id, event)}
-                onOpenCard={(card, cardColumn) => setSelectedCardEntry({ card, column: cardColumn })}
-              />
-            ))}
-          </ScrollView>
+          <View style={styles.boardSwipeArea} {...boardSwipeResponder.panHandlers}>
+            <View style={[styles.columnMotionViewport, activeColumnHeight ? { height: activeColumnHeight } : null, { width: pageWidth }]}>
+              <Animated.View style={[styles.columnMotionTrack, { transform: [{ translateX: boardTranslateX }] }]}>
+                {boardColumnsState.map((column, index) => (
+                  <BoardColumn
+                    key={column.id}
+                    column={column}
+                    width={pageWidth}
+                    onAddCard={(columnId) => openAddCardSheet(columnId, false)}
+                    onLayout={(event) => handleColumnLayout(column.id, event)}
+                    onOpenCard={(card, cardColumn) => setSelectedCardEntry({ card, column: cardColumn })}
+                    aria-hidden={index !== activeColumnIndex}
+                    accessibilityElementsHidden={index !== activeColumnIndex}
+                    importantForAccessibility={index === activeColumnIndex ? 'auto' : 'no-hide-descendants'}
+                  />
+                ))}
+              </Animated.View>
+            </View>
+          </View>
         ) : (
           <View style={styles.tasksView}>
             <View style={styles.tasksHeader}>
@@ -1416,8 +1490,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 24,
   },
-  boardPager: {
-    flexGrow: 0,
+  boardSwipeArea: {
+    alignItems: 'center',
+  },
+  columnMotionViewport: {
+    overflow: 'hidden',
+  },
+  columnMotionTrack: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   columnPage: {
     paddingHorizontal: theme.spacing.screenX,
