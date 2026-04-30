@@ -15,11 +15,14 @@ import {
 } from 'react-native'
 import {
   AlignLeft,
+  Archive,
   ArrowLeft,
   Check,
   CheckSquare,
   ChevronDown,
   Clock3,
+  Copy,
+  FileText,
   MessageCircle,
   MoreHorizontal,
   Kanban,
@@ -29,10 +32,12 @@ import {
   Send,
   Star,
   Tag,
+  Trash2,
   Users,
   X,
 } from 'lucide-react-native'
 import { boardLabels, boardMembers } from '../data/demoData'
+import BottomSheet from '../components/BottomSheet'
 import { theme } from '../theme/tokens'
 
 function findLabel(labelId) {
@@ -43,6 +48,36 @@ function findMembers(memberIds = []) {
   return memberIds
     .map((memberId) => boardMembers.find((member) => member.id === memberId))
     .filter(Boolean)
+}
+
+function cloneBoardColumns(columns = []) {
+  return columns.map((column) => ({
+    ...column,
+    cards: column.cards.map((card) => ({
+      ...card,
+      memberIds: [...(card.memberIds ?? [])],
+      comments: [...(card.comments ?? [])],
+      attachments: [...(card.attachments ?? [])],
+      checklists: (card.checklists ?? []).map((checklist) => ({
+        ...checklist,
+        items: [...(checklist.items ?? [])],
+      })),
+    })),
+  }))
+}
+
+function createLocalCard(title) {
+  return {
+    id: `mobile-card-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    title,
+    description: '',
+    labelId: null,
+    memberIds: [],
+    dueDate: '',
+    comments: [],
+    attachments: [],
+    checklists: [],
+  }
 }
 
 function BoardCard({ card, onPress }) {
@@ -100,9 +135,9 @@ function BoardCard({ card, onPress }) {
   )
 }
 
-function DetailAction({ icon: Icon, label }) {
+function DetailAction({ icon: Icon, label, onPress }) {
   return (
-    <Pressable style={styles.detailAction} accessibilityRole="button">
+    <Pressable style={styles.detailAction} onPress={onPress} accessibilityRole="button">
       <Icon size={15} color={theme.colors.text1} strokeWidth={1.8} />
       <Text style={styles.detailActionText}>{label}</Text>
     </Pressable>
@@ -124,25 +159,32 @@ function DetailSectionAction({ disabled = false, icon: Icon = Plus, label, onPre
   )
 }
 
-function DetailSecondaryAction({ icon: Icon = Plus, label }) {
+function DetailSecondaryAction({ icon: Icon = Plus, label, onPress }) {
   return (
-    <Pressable style={styles.detailSecondaryAction} accessibilityRole="button">
+    <Pressable style={styles.detailSecondaryAction} onPress={onPress} accessibilityRole="button">
       <Icon size={14} color={theme.colors.text1} strokeWidth={1.8} />
       <Text style={styles.detailSecondaryActionText}>{label}</Text>
     </Pressable>
   )
 }
 
-function CardDetailScreen({ card, column, onClose }) {
+function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDuplicateCard, onMoveCard, onUpdateCard }) {
   const [savedDescription, setSavedDescription] = useState(card.description ?? '')
   const [descriptionValue, setDescriptionValue] = useState(savedDescription)
+  const [labelId, setLabelId] = useState(card.labelId ?? null)
+  const [memberIds, setMemberIds] = useState(card.memberIds ?? [])
+  const [dueDate, setDueDate] = useState(card.dueDate ?? '')
+  const [dateInput, setDateInput] = useState(card.dueDate ?? '')
+  const [comments, setComments] = useState(Array.isArray(card.comments) ? card.comments : [])
+  const [commentValue, setCommentValue] = useState('')
+  const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
+  const [checklists, setChecklists] = useState(Array.isArray(card.checklists) ? card.checklists : [])
+  const [checklistInput, setChecklistInput] = useState('')
+  const [activeSheet, setActiveSheet] = useState(null)
   const slideProgress = useRef(new Animated.Value(1)).current
   const { height } = useWindowDimensions()
-  const label = findLabel(card.labelId)
-  const members = findMembers(card.memberIds)
-  const comments = Array.isArray(card.comments) ? card.comments : []
-  const attachments = Array.isArray(card.attachments) ? card.attachments : []
-  const checklists = Array.isArray(card.checklists) ? card.checklists : []
+  const label = findLabel(labelId)
+  const members = findMembers(memberIds)
   const hasDescriptionChanges = descriptionValue !== savedDescription
   const translateY = slideProgress.interpolate({
     inputRange: [0, 1],
@@ -173,7 +215,119 @@ function CardDetailScreen({ card, column, onClose }) {
 
   const concludeDescriptionEdit = () => {
     setSavedDescription(descriptionValue)
+    onUpdateCard(card.id, { description: descriptionValue })
     Keyboard.dismiss()
+  }
+
+  const commitCardPatch = (patch) => {
+    onUpdateCard(card.id, patch)
+  }
+
+  const toggleMember = (memberId) => {
+    const nextMemberIds = memberIds.includes(memberId)
+      ? memberIds.filter((id) => id !== memberId)
+      : [...memberIds, memberId]
+
+    setMemberIds(nextMemberIds)
+    commitCardPatch({ memberIds: nextMemberIds })
+  }
+
+  const selectLabel = (nextLabelId) => {
+    setLabelId(nextLabelId)
+    commitCardPatch({ labelId: nextLabelId })
+    setActiveSheet(null)
+  }
+
+  const saveDueDate = () => {
+    const nextDueDate = dateInput.trim()
+    setDueDate(nextDueDate)
+    commitCardPatch({ dueDate: nextDueDate })
+    setActiveSheet(null)
+  }
+
+  const clearDueDate = () => {
+    setDateInput('')
+    setDueDate('')
+    commitCardPatch({ dueDate: '' })
+    setActiveSheet(null)
+  }
+
+  const ensureChecklist = () => {
+    if (checklists.length) return checklists
+
+    return [{
+      id: `checklist-${Date.now()}`,
+      title: 'Checklist',
+      items: [],
+    }]
+  }
+
+  const addChecklistItem = () => {
+    const text = checklistInput.trim()
+    const baseChecklists = ensureChecklist()
+    if (!text && checklists.length) return
+
+    const nextChecklists = baseChecklists.map((checklist, index) => (
+      index === 0
+        ? {
+            ...checklist,
+            items: text
+              ? [...(checklist.items ?? []), { id: `item-${Date.now()}`, text, checked: false }]
+              : checklist.items,
+          }
+        : checklist
+    ))
+
+    setChecklists(nextChecklists)
+    setChecklistInput('')
+    commitCardPatch({ checklists: nextChecklists })
+  }
+
+  const toggleChecklistItem = (itemId) => {
+    const nextChecklists = checklists.map((checklist) => ({
+      ...checklist,
+      items: (checklist.items ?? []).map((item) => (
+        item.id === itemId ? { ...item, checked: !item.checked } : item
+      )),
+    }))
+
+    setChecklists(nextChecklists)
+    commitCardPatch({ checklists: nextChecklists })
+  }
+
+  const addAttachment = (source) => {
+    const nextAttachments = [
+      ...attachments,
+      {
+        id: `attachment-${Date.now()}`,
+        name: source === 'library' ? 'Arquivo da biblioteca' : 'Arquivo do dispositivo',
+        source,
+        addedAt: 'agora',
+      },
+    ]
+
+    setAttachments(nextAttachments)
+    commitCardPatch({ attachments: nextAttachments })
+    setActiveSheet(null)
+  }
+
+  const sendComment = () => {
+    const text = commentValue.trim()
+    if (!text) return
+
+    const nextComments = [
+      {
+        id: `comment-${Date.now()}`,
+        author: 'm1',
+        text,
+        time: 'agora',
+      },
+      ...comments,
+    ]
+
+    setComments(nextComments)
+    setCommentValue('')
+    commitCardPatch({ comments: nextComments })
   }
 
   return (
@@ -191,6 +345,7 @@ function CardDetailScreen({ card, column, onClose }) {
           <Text style={styles.detailTopbarTitle} numberOfLines={1}>Cartão</Text>
           <Pressable
             style={styles.detailIconButton}
+            onPress={() => setActiveSheet('more')}
             accessibilityRole="button"
             accessibilityLabel="Mais opções"
           >
@@ -230,17 +385,17 @@ function CardDetailScreen({ card, column, onClose }) {
               <Text style={styles.detailMetaLabel}>Data</Text>
               <View style={styles.detailDuePill}>
                 <Clock3 size={13} color={theme.colors.text2} strokeWidth={1.8} />
-                <Text style={styles.detailDueText}>{card.dueDate || 'Sem data'}</Text>
+                <Text style={styles.detailDueText}>{dueDate || 'Sem data'}</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.detailActionGrid}>
-            <DetailAction icon={Users} label="Membros" />
-            <DetailAction icon={Tag} label="Etiquetas" />
-            <DetailAction icon={Clock3} label="Data" />
-            <DetailAction icon={CheckSquare} label="Checklist" />
-            <DetailAction icon={Paperclip} label="Anexo" />
+            <DetailAction icon={Users} label="Membros" onPress={() => setActiveSheet('members')} />
+            <DetailAction icon={Tag} label="Etiquetas" onPress={() => setActiveSheet('labels')} />
+            <DetailAction icon={Clock3} label="Data" onPress={() => setActiveSheet('date')} />
+            <DetailAction icon={CheckSquare} label="Checklist" onPress={() => setActiveSheet('checklist')} />
+            <DetailAction icon={Paperclip} label="Anexo" onPress={() => setActiveSheet('attachments')} />
           </View>
 
           <View style={styles.detailSection}>
@@ -274,16 +429,27 @@ function CardDetailScreen({ card, column, onClose }) {
                 <Paperclip size={17} color={theme.colors.text1} strokeWidth={1.8} />
                 <Text style={styles.detailSectionTitle}>Anexos</Text>
               </View>
-              <DetailSectionAction icon={Paperclip} label="Adicionar" />
+              <DetailSectionAction icon={Paperclip} label="Adicionar" onPress={() => setActiveSheet('attachments')} />
             </View>
             <View style={styles.detailInfoRow}>
               <Text style={styles.detailInfoText}>
                 {attachments.length ? `${attachments.length} arquivo(s) anexado(s)` : 'Nenhum arquivo anexado a este cartão.'}
               </Text>
             </View>
+            {attachments.length ? (
+              <View style={styles.detailAttachmentList}>
+                {attachments.map((attachment) => (
+                  <View key={attachment.id} style={styles.detailAttachmentItem}>
+                    <FileText size={14} color={theme.colors.text1} strokeWidth={1.8} />
+                    <Text style={styles.detailAttachmentName} numberOfLines={1}>{attachment.name}</Text>
+                    <Text style={styles.detailAttachmentTime}>{attachment.addedAt ?? 'agora'}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
             <View style={styles.detailSecondaryActions}>
-              <DetailSecondaryAction icon={Paperclip} label="Biblioteca" />
-              <DetailSecondaryAction icon={Plus} label="Meu dispositivo" />
+              <DetailSecondaryAction icon={Paperclip} label="Biblioteca" onPress={() => addAttachment('library')} />
+              <DetailSecondaryAction icon={Plus} label="Meu dispositivo" onPress={() => addAttachment('device')} />
             </View>
           </View>
 
@@ -293,16 +459,37 @@ function CardDetailScreen({ card, column, onClose }) {
                 <CheckSquare size={17} color={theme.colors.text1} strokeWidth={1.8} />
                 <Text style={styles.detailSectionTitle}>Checklist</Text>
               </View>
-              <DetailSectionAction icon={CheckSquare} label="Adicionar" />
+              <DetailSectionAction icon={CheckSquare} label="Adicionar" onPress={() => setActiveSheet('checklist')} />
             </View>
             <View style={styles.detailInfoRow}>
               <Text style={styles.detailInfoText}>
                 {checklists.length ? `${checklists.length} checklist(s) neste cartão` : 'Nenhum checklist criado ainda.'}
               </Text>
             </View>
+            {checklists.length ? (
+              <View style={styles.detailChecklistList}>
+                {checklists[0].items?.length ? checklists[0].items.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={styles.detailChecklistItem}
+                    onPress={() => toggleChecklistItem(item.id)}
+                    accessibilityRole="button"
+                  >
+                    <View style={[styles.detailChecklistCheck, item.checked && styles.detailChecklistCheckDone]}>
+                      {item.checked ? <Check size={11} color={theme.colors.white} strokeWidth={2.1} /> : null}
+                    </View>
+                    <Text style={[styles.detailChecklistText, item.checked && styles.detailChecklistTextDone]} numberOfLines={1}>
+                      {item.text}
+                    </Text>
+                  </Pressable>
+                )) : (
+                  <Text style={styles.detailEmptyText}>Checklist criado. Adicione o primeiro item.</Text>
+                )}
+              </View>
+            ) : null}
             <View style={styles.detailSecondaryActions}>
-              <DetailSecondaryAction icon={CheckSquare} label="Criar checklist" />
-              <DetailSecondaryAction icon={Plus} label="Adicionar item" />
+              <DetailSecondaryAction icon={CheckSquare} label="Criar checklist" onPress={addChecklistItem} />
+              <DetailSecondaryAction icon={Plus} label="Adicionar item" onPress={() => setActiveSheet('checklist')} />
             </View>
           </View>
 
@@ -317,15 +504,20 @@ function CardDetailScreen({ card, column, onClose }) {
             <View style={styles.detailComposer}>
               <TextInput
                 style={styles.detailCommentInput}
+                value={commentValue}
+                onChangeText={setCommentValue}
                 placeholder="Escrever comentário..."
                 placeholderTextColor={theme.colors.text3}
               />
               <Pressable
-                style={styles.detailSendButton}
+                style={[styles.detailSendButton, !commentValue.trim() && styles.detailSendButtonDisabled]}
+                onPress={sendComment}
+                disabled={!commentValue.trim()}
                 accessibilityRole="button"
                 accessibilityLabel="Enviar comentário"
+                accessibilityState={{ disabled: !commentValue.trim() }}
               >
-                <Send size={15} color={theme.colors.white} strokeWidth={1.9} />
+                <Send size={15} color={commentValue.trim() ? theme.colors.white : theme.colors.text3} strokeWidth={1.9} />
               </Pressable>
             </View>
 
@@ -355,12 +547,179 @@ function CardDetailScreen({ card, column, onClose }) {
             </View>
           </View>
         </ScrollView>
+
+        <BottomSheet visible={Boolean(activeSheet)} onClose={() => setActiveSheet(null)} title={
+          activeSheet === 'more' ? 'Opções do cartão'
+            : activeSheet === 'members' ? 'Membros'
+              : activeSheet === 'labels' ? 'Etiquetas'
+                : activeSheet === 'date' ? 'Data'
+                  : activeSheet === 'checklist' ? 'Checklist'
+                    : activeSheet === 'move' ? 'Mover cartão'
+                      : 'Anexo'
+        }>
+          {activeSheet === 'more' ? (
+            <View style={styles.sheetActionList}>
+              <Pressable style={styles.sheetActionRow} onPress={() => setActiveSheet('move')} accessibilityRole="button">
+                <Kanban size={18} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.sheetActionText}>Mover</Text>
+              </Pressable>
+              <Pressable
+                style={styles.sheetActionRow}
+                onPress={() => {
+                  onDuplicateCard(card.id)
+                  setActiveSheet(null)
+                }}
+                accessibilityRole="button"
+              >
+                <Copy size={18} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.sheetActionText}>Copiar</Text>
+              </Pressable>
+              <Pressable
+                style={styles.sheetActionRow}
+                onPress={() => {
+                  onDeleteCard(card.id)
+                  setActiveSheet(null)
+                  close()
+                }}
+                accessibilityRole="button"
+              >
+                <Archive size={18} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.sheetActionText}>Arquivar</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.sheetActionRow, styles.sheetActionDanger]}
+                onPress={() => {
+                  onDeleteCard(card.id)
+                  setActiveSheet(null)
+                  close()
+                }}
+                accessibilityRole="button"
+              >
+                <Trash2 size={18} color={theme.colors.red} strokeWidth={1.8} />
+                <Text style={[styles.sheetActionText, styles.sheetActionDangerText]}>Excluir</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {activeSheet === 'move' ? (
+            <View style={styles.sheetActionList}>
+              {columns.map((targetColumn) => (
+                <Pressable
+                  key={targetColumn.id}
+                  style={styles.sheetActionRow}
+                  onPress={() => {
+                    onMoveCard(card.id, targetColumn.id)
+                    setActiveSheet(null)
+                    close()
+                  }}
+                  accessibilityRole="button"
+                >
+                  <View style={[styles.sheetColorDot, { backgroundColor: targetColumn.color }]} />
+                  <Text style={styles.sheetActionText}>{targetColumn.title}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          {activeSheet === 'members' ? (
+            <View style={styles.sheetChipList}>
+              {boardMembers.map((member) => {
+                const isSelected = memberIds.includes(member.id)
+                return (
+                  <Pressable
+                    key={member.id}
+                    style={[styles.sheetMemberRow, isSelected && styles.sheetMemberRowActive]}
+                    onPress={() => toggleMember(member.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                  >
+                    <View style={[styles.detailMemberAvatar, { backgroundColor: member.color }]}>
+                      <Text style={styles.detailMemberInitials}>{member.initials}</Text>
+                    </View>
+                    <Text style={styles.sheetActionText}>{member.initials}</Text>
+                    {isSelected ? <Check size={16} color={theme.colors.text1} strokeWidth={2} /> : null}
+                  </Pressable>
+                )
+              })}
+            </View>
+          ) : null}
+
+          {activeSheet === 'labels' ? (
+            <View style={styles.sheetChipList}>
+              {boardLabels.map((item) => {
+                const isSelected = labelId === item.id
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.sheetLabelOption, { backgroundColor: item.color }]}
+                    onPress={() => selectLabel(item.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                  >
+                    <Text style={styles.sheetLabelText}>{item.text}</Text>
+                    {isSelected ? <Check size={16} color={theme.colors.white} strokeWidth={2} /> : null}
+                  </Pressable>
+                )
+              })}
+            </View>
+          ) : null}
+
+          {activeSheet === 'date' ? (
+            <View>
+              <TextInput
+                value={dateInput}
+                onChangeText={setDateInput}
+                placeholder="Ex.: 12 ago"
+                placeholderTextColor={theme.colors.text3}
+                style={styles.sheetInput}
+                selectionColor={theme.colors.text1}
+              />
+              <View style={styles.sheetButtonRow}>
+                <Pressable style={styles.sheetSecondaryButton} onPress={clearDueDate} accessibilityRole="button">
+                  <Text style={styles.sheetSecondaryButtonText}>Remover</Text>
+                </Pressable>
+                <Pressable style={styles.sheetPrimaryButton} onPress={saveDueDate} accessibilityRole="button">
+                  <Text style={styles.sheetPrimaryButtonText}>Salvar</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+
+          {activeSheet === 'checklist' ? (
+            <View>
+              <TextInput
+                value={checklistInput}
+                onChangeText={setChecklistInput}
+                placeholder="Novo item"
+                placeholderTextColor={theme.colors.text3}
+                style={styles.sheetInput}
+                selectionColor={theme.colors.text1}
+              />
+              <Pressable style={styles.sheetPrimaryButton} onPress={addChecklistItem} accessibilityRole="button">
+                <Text style={styles.sheetPrimaryButtonText}>{checklists.length ? 'Adicionar item' : 'Criar checklist'}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {activeSheet === 'attachments' ? (
+            <View style={styles.sheetActionList}>
+              <Pressable style={styles.sheetActionRow} onPress={() => addAttachment('library')} accessibilityRole="button">
+                <Paperclip size={18} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.sheetActionText}>Biblioteca</Text>
+              </Pressable>
+              <Pressable style={styles.sheetActionRow} onPress={() => addAttachment('device')} accessibilityRole="button">
+                <Plus size={18} color={theme.colors.text1} strokeWidth={1.8} />
+                <Text style={styles.sheetActionText}>Meu dispositivo</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </BottomSheet>
       </Animated.View>
     </Modal>
   )
 }
 
-function BoardColumn({ column, width, onLayout, onOpenCard }) {
+function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard }) {
   return (
     <View style={[styles.columnPage, { width }]} onLayout={onLayout}>
       <View style={styles.column}>
@@ -370,7 +729,7 @@ function BoardColumn({ column, width, onLayout, onOpenCard }) {
             <Text style={styles.columnTitle}>{column.title}</Text>
             <Text style={styles.columnCount}>{column.cards.length}</Text>
           </View>
-          <Pressable style={styles.columnAction} accessibilityLabel="Adicionar cartão">
+          <Pressable style={styles.columnAction} onPress={() => onAddCard(column.id)} accessibilityLabel="Adicionar cartão">
             <Plus size={15} color={theme.colors.text2} strokeWidth={1.8} />
           </Pressable>
         </View>
@@ -380,7 +739,7 @@ function BoardColumn({ column, width, onLayout, onOpenCard }) {
             <BoardCard key={card.id} card={card} onPress={() => onOpenCard(card, column)} />
           ))}
 
-          <Pressable style={styles.addCard}>
+          <Pressable style={styles.addCard} onPress={() => onAddCard(column.id)} accessibilityRole="button">
             <Plus size={14} color={theme.colors.text2} strokeWidth={1.8} />
             <Text style={styles.addCardText}>Adicionar cartão</Text>
           </Pressable>
@@ -447,21 +806,26 @@ function TaskListRow({ card, column, isDone, onPress }) {
 }
 
 export default function MobileKanbanBoard({ plan, columns, onBack }) {
+  const [boardColumnsState, setBoardColumnsState] = useState(() => cloneBoardColumns(columns))
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
   const [columnHeights, setColumnHeights] = useState({})
   const [selectedCardEntry, setSelectedCardEntry] = useState(null)
   const [boardView, setBoardView] = useState('lists')
+  const [addCardSheet, setAddCardSheet] = useState(null)
+  const [newCardTitle, setNewCardTitle] = useState('')
+  const [newCardColumnId, setNewCardColumnId] = useState(columns[0]?.id ?? null)
+  const [tasksOptionsOpen, setTasksOptionsOpen] = useState(false)
   const verticalScrollRef = useRef(null)
   const scrollRef = useRef(null)
   const { width } = useWindowDimensions()
   const pageWidth = Math.min(width, 430)
-  const activeColumnHeight = columnHeights[columns[activeColumnIndex]?.id]
+  const activeColumnHeight = columnHeights[boardColumnsState[activeColumnIndex]?.id]
   const totalCards = useMemo(
-    () => columns.reduce((sum, column) => sum + column.cards.length, 0),
-    [columns],
+    () => boardColumnsState.reduce((sum, column) => sum + column.cards.length, 0),
+    [boardColumnsState],
   )
   const taskGroups = useMemo(() => {
-    const flatTasks = columns.flatMap((column) => (
+    const flatTasks = boardColumnsState.flatMap((column) => (
       column.cards.map((card) => ({
         card,
         column,
@@ -473,7 +837,15 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
       active: flatTasks.filter((task) => !task.isDone),
       done: flatTasks.filter((task) => task.isDone),
     }
-  }, [columns])
+  }, [boardColumnsState])
+
+  useEffect(() => {
+    setBoardColumnsState(cloneBoardColumns(columns))
+    setActiveColumnIndex(0)
+    setColumnHeights({})
+    setSelectedCardEntry(null)
+    setNewCardColumnId(columns[0]?.id ?? null)
+  }, [columns, plan.id])
 
   const scrollBoardToTop = () => {
     requestAnimationFrame(() => {
@@ -527,6 +899,101 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     scrollBoardToTop()
   }
 
+  const updateCard = (cardId, patch) => {
+    setBoardColumnsState((currentColumns) => currentColumns.map((column) => ({
+      ...column,
+      cards: column.cards.map((card) => (
+        card.id === cardId ? { ...card, ...patch } : card
+      )),
+    })))
+    setSelectedCardEntry((entry) => (
+      entry?.card.id === cardId
+        ? { ...entry, card: { ...entry.card, ...patch } }
+        : entry
+    ))
+  }
+
+  const deleteCard = (cardId) => {
+    setBoardColumnsState((currentColumns) => currentColumns.map((column) => ({
+      ...column,
+      cards: column.cards.filter((card) => card.id !== cardId),
+    })))
+    setSelectedCardEntry((entry) => (entry?.card.id === cardId ? null : entry))
+  }
+
+  const duplicateCard = (cardId) => {
+    setBoardColumnsState((currentColumns) => currentColumns.map((column) => {
+      const sourceCard = column.cards.find((card) => card.id === cardId)
+      if (!sourceCard) return column
+
+      return {
+        ...column,
+        cards: [
+          ...column.cards,
+          {
+            ...sourceCard,
+            id: `mobile-card-copy-${Date.now()}`,
+            title: `${sourceCard.title} (cópia)`,
+            comments: [...(sourceCard.comments ?? [])],
+            attachments: [...(sourceCard.attachments ?? [])],
+            checklists: (sourceCard.checklists ?? []).map((checklist) => ({
+              ...checklist,
+              items: [...(checklist.items ?? [])],
+            })),
+          },
+        ],
+      }
+    }))
+  }
+
+  const moveCard = (cardId, targetColumnId) => {
+    let movingCard = null
+
+    setBoardColumnsState((currentColumns) => {
+      const withoutCard = currentColumns.map((column) => {
+        const found = column.cards.find((card) => card.id === cardId)
+        if (found) movingCard = found
+
+        return {
+          ...column,
+          cards: column.cards.filter((card) => card.id !== cardId),
+        }
+      })
+
+      if (!movingCard) return currentColumns
+
+      return withoutCard.map((column) => (
+        column.id === targetColumnId
+          ? { ...column, cards: [...column.cards, movingCard] }
+          : column
+      ))
+    })
+  }
+
+  const openAddCardSheet = (columnId, allowColumnChoice = false) => {
+    setNewCardTitle('')
+    setNewCardColumnId(columnId ?? boardColumnsState[activeColumnIndex]?.id ?? boardColumnsState[0]?.id)
+    setAddCardSheet({ allowColumnChoice })
+  }
+
+  const closeAddCardSheet = () => {
+    setAddCardSheet(null)
+  }
+
+  const submitNewCard = () => {
+    const title = newCardTitle.trim()
+    if (!title || !newCardColumnId) return
+    const newCard = createLocalCard(title)
+
+    setBoardColumnsState((currentColumns) => currentColumns.map((column) => (
+      column.id === newCardColumnId
+        ? { ...column, cards: [...column.cards, newCard] }
+        : column
+    )))
+    setNewCardTitle('')
+    closeAddCardSheet()
+  }
+
   return (
     <View style={styles.page}>
       <View style={styles.header}>
@@ -557,7 +1024,7 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
           style={styles.columnTabs}
           contentContainerStyle={styles.columnTabsContent}
         >
-          {columns.map((column, index) => {
+          {boardColumnsState.map((column, index) => {
             const isActive = index === activeColumnIndex
 
             return (
@@ -597,11 +1064,12 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
             onMomentumScrollEnd={handleMomentumEnd}
             style={[styles.boardPager, activeColumnHeight ? { height: activeColumnHeight } : null]}
           >
-            {columns.map((column) => (
+            {boardColumnsState.map((column) => (
               <BoardColumn
                 key={column.id}
                 column={column}
                 width={pageWidth}
+                onAddCard={(columnId) => openAddCardSheet(columnId, false)}
                 onLayout={(event) => handleColumnLayout(column.id, event)}
                 onOpenCard={(card, cardColumn) => setSelectedCardEntry({ card, column: cardColumn })}
               />
@@ -611,7 +1079,12 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
           <View style={styles.tasksView}>
             <View style={styles.tasksHeader}>
               <Text style={styles.tasksTitle}>Tarefas</Text>
-              <Pressable style={styles.tasksMoreButton} accessibilityRole="button" accessibilityLabel="Mais opções">
+              <Pressable
+                style={styles.tasksMoreButton}
+                onPress={() => setTasksOptionsOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Mais opções"
+              >
                 <MoreHorizontal size={18} color={theme.colors.text2} strokeWidth={1.9} />
               </Pressable>
             </View>
@@ -656,7 +1129,12 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
 
       {boardView === 'tasks' ? (
         <View pointerEvents="box-none" style={styles.tasksFabOverlay}>
-          <Pressable style={styles.tasksFab} accessibilityRole="button" accessibilityLabel="Adicionar tarefa">
+          <Pressable
+            style={styles.tasksFab}
+            onPress={() => openAddCardSheet(boardColumnsState[0]?.id, true)}
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar tarefa"
+          >
             <Plus size={18} color={theme.colors.white} strokeWidth={2} />
           </Pressable>
         </View>
@@ -695,9 +1173,71 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
         <CardDetailScreen
           card={selectedCardEntry.card}
           column={selectedCardEntry.column}
+          columns={boardColumnsState}
           onClose={() => setSelectedCardEntry(null)}
+          onDeleteCard={deleteCard}
+          onDuplicateCard={duplicateCard}
+          onMoveCard={moveCard}
+          onUpdateCard={updateCard}
         />
       ) : null}
+
+      <BottomSheet visible={Boolean(addCardSheet)} onClose={closeAddCardSheet} title={addCardSheet?.allowColumnChoice ? 'Adicionar tarefa' : 'Adicionar cartão'}>
+        <TextInput
+          value={newCardTitle}
+          onChangeText={setNewCardTitle}
+          placeholder="Título do cartão"
+          placeholderTextColor={theme.colors.text3}
+          style={styles.sheetInput}
+          selectionColor={theme.colors.text1}
+          autoCorrect={false}
+        />
+        {addCardSheet?.allowColumnChoice ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.addCardColumnChoices}>
+            {boardColumnsState.map((column) => {
+              const isSelected = newCardColumnId === column.id
+              return (
+                <Pressable
+                  key={column.id}
+                  style={[styles.addCardColumnChoice, isSelected && styles.addCardColumnChoiceActive]}
+                  onPress={() => setNewCardColumnId(column.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <View style={[styles.sheetColorDot, { backgroundColor: column.color }]} />
+                  <Text style={[styles.addCardColumnChoiceText, isSelected && styles.addCardColumnChoiceTextActive]} numberOfLines={1}>
+                    {column.title}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        ) : null}
+        <Pressable
+          style={[styles.sheetPrimaryButton, !newCardTitle.trim() && styles.sheetPrimaryButtonDisabled]}
+          onPress={submitNewCard}
+          disabled={!newCardTitle.trim()}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !newCardTitle.trim() }}
+        >
+          <Text style={[styles.sheetPrimaryButtonText, !newCardTitle.trim() && styles.sheetPrimaryButtonTextDisabled]}>
+            Criar
+          </Text>
+        </Pressable>
+      </BottomSheet>
+
+      <BottomSheet visible={tasksOptionsOpen} onClose={() => setTasksOptionsOpen(false)} title="Tarefas">
+        <View style={styles.sheetActionList}>
+          <Pressable style={styles.sheetActionRow} onPress={() => setTasksOptionsOpen(false)} accessibilityRole="button">
+            <Clock3 size={18} color={theme.colors.text1} strokeWidth={1.8} />
+            <Text style={styles.sheetActionText}>Ordenar por prazo</Text>
+          </Pressable>
+          <Pressable style={styles.sheetActionRow} onPress={() => setTasksOptionsOpen(false)} accessibilityRole="button">
+            <CheckSquare size={18} color={theme.colors.text1} strokeWidth={1.8} />
+            <Text style={styles.sheetActionText}>Mostrar concluídas</Text>
+          </Pressable>
+        </View>
+      </BottomSheet>
     </View>
   )
 }
@@ -1529,6 +2069,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: theme.colors.text1,
   },
+  detailSendButtonDisabled: {
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface3,
+  },
   detailActivityList: {
     gap: 12,
     marginTop: 14,
@@ -1566,5 +2111,210 @@ const styles = StyleSheet.create({
   detailActivityTime: {
     color: theme.colors.text3,
     fontSize: 11,
+  },
+  detailAttachmentList: {
+    gap: 7,
+    marginTop: 9,
+  },
+  detailAttachmentItem: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface2,
+  },
+  detailAttachmentName: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  detailAttachmentTime: {
+    color: theme.colors.text3,
+    fontSize: 11,
+  },
+  detailChecklistList: {
+    gap: 7,
+    marginTop: 9,
+  },
+  detailChecklistItem: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 10,
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface2,
+  },
+  detailChecklistCheck: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: theme.colors.text2,
+    borderRadius: 6,
+  },
+  detailChecklistCheckDone: {
+    borderColor: theme.colors.text1,
+    backgroundColor: theme.colors.text1,
+  },
+  detailChecklistText: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.text1,
+    fontSize: 13,
+  },
+  detailChecklistTextDone: {
+    color: theme.colors.text3,
+    textDecorationLine: 'line-through',
+  },
+  sheetActionList: {
+    gap: 8,
+  },
+  sheetActionRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface2,
+  },
+  sheetActionText: {
+    flex: 1,
+    color: theme.colors.text1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  sheetActionDanger: {
+    backgroundColor: '#fff0f0',
+  },
+  sheetActionDangerText: {
+    color: theme.colors.red,
+  },
+  sheetColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+  },
+  sheetChipList: {
+    gap: 9,
+  },
+  sheetMemberRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 11,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface2,
+  },
+  sheetMemberRowActive: {
+    borderColor: theme.colors.text1,
+    backgroundColor: theme.colors.surface1,
+  },
+  sheetLabelOption: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingHorizontal: 13,
+    borderRadius: 10,
+  },
+  sheetLabelText: {
+    color: theme.colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sheetInput: {
+    minHeight: 46,
+    paddingHorizontal: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.text1,
+    borderRadius: 9,
+    color: theme.colors.text1,
+    fontSize: 15,
+    marginBottom: 12,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
+  },
+  sheetButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  sheetPrimaryButton: {
+    minHeight: 43,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    backgroundColor: theme.colors.text1,
+  },
+  sheetPrimaryButtonDisabled: {
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface3,
+  },
+  sheetPrimaryButtonText: {
+    color: theme.colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sheetPrimaryButtonTextDisabled: {
+    color: theme.colors.text3,
+  },
+  sheetSecondaryButton: {
+    minHeight: 43,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface1,
+  },
+  sheetSecondaryButtonText: {
+    color: theme.colors.text1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  addCardColumnChoices: {
+    gap: 8,
+    paddingBottom: 10,
+  },
+  addCardColumnChoice: {
+    maxWidth: 128,
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface2,
+  },
+  addCardColumnChoiceActive: {
+    borderColor: theme.colors.text1,
+    backgroundColor: theme.colors.text1,
+  },
+  addCardColumnChoiceText: {
+    flexShrink: 1,
+    color: theme.colors.text2,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  addCardColumnChoiceTextActive: {
+    color: theme.colors.white,
   },
 })

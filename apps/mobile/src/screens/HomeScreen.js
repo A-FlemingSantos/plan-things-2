@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native'
-import { Grid2X2, List, Plus, Search, X } from 'lucide-react-native'
+import { Check, Grid2X2, List, Plus, Search, X } from 'lucide-react-native'
 import { boardColumns, plans } from '../data/demoData'
+import BottomSheet from '../components/BottomSheet'
 import MobileKanbanBoard from './MobileKanbanBoard'
 import { theme } from '../theme/tokens'
 
@@ -56,7 +57,11 @@ const planMeta = [
 ]
 
 function getPlanViewModel(plan, index) {
-  const cover = coverThemes[index % coverThemes.length]
+  const baseCover = coverThemes.find((coverTheme) => coverTheme.id === plan.coverThemeId) ?? coverThemes[index % coverThemes.length]
+  const cover = {
+    ...baseCover,
+    tag: plan.tag ?? baseCover.tag,
+  }
   const meta = planMeta[index % planMeta.length]
 
   return {
@@ -161,15 +166,20 @@ function PlanListRow({ plan, active, onPress }) {
 }
 
 export default function HomeScreen({ session }) {
+  const [localPlans, setLocalPlans] = useState(plans)
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState('grid')
   const [boardPlan, setBoardPlan] = useState(null)
+  const [newPlanSheetOpen, setNewPlanSheetOpen] = useState(false)
+  const [newPlanName, setNewPlanName] = useState('')
+  const [selectedCoverId, setSelectedCoverId] = useState(coverThemes[0].id)
   const { width } = useWindowDimensions()
   const gap = 10
   const contentWidth = Math.min(width, 430) - theme.spacing.screenX * 2
   const cardWidth = (contentWidth - gap) / 2
 
-  const enrichedPlans = useMemo(() => plans.map(getPlanViewModel), [])
+  const enrichedPlans = useMemo(() => localPlans.map(getPlanViewModel), [localPlans])
+  const selectedCover = coverThemes.find((cover) => cover.id === selectedCoverId) ?? coverThemes[0]
   const filteredPlans = enrichedPlans.filter((plan) => {
     const term = search.trim().toLowerCase()
     if (!term) return true
@@ -181,6 +191,34 @@ export default function HomeScreen({ session }) {
     ].some((value) => value.toLowerCase().includes(term))
   })
   const currentPlan = enrichedPlans[0]
+
+  const openNewPlanSheet = () => {
+    setNewPlanName('')
+    setSelectedCoverId(coverThemes[0].id)
+    setNewPlanSheetOpen(true)
+  }
+
+  const closeNewPlanSheet = () => {
+    setNewPlanSheetOpen(false)
+  }
+
+  const createPlan = () => {
+    const name = newPlanName.trim()
+    if (!name) return
+
+    const newPlan = {
+      id: `mobile-plan-${Date.now()}`,
+      name,
+      tasks: 0,
+      color: selectedCover.color,
+      coverThemeId: selectedCover.id,
+      tag: selectedCover.tag,
+    }
+
+    setLocalPlans((currentPlans) => [newPlan, ...currentPlans])
+    setSearch('')
+    closeNewPlanSheet()
+  }
 
   if (boardPlan) {
     return (
@@ -199,7 +237,7 @@ export default function HomeScreen({ session }) {
           <Text style={styles.pageTitle}>Início</Text>
           <Text style={styles.pageSubtitle}>Bom dia, {session.user.fullName.split(' ')[0]}.</Text>
         </View>
-        <Pressable style={styles.newPlanBtn}>
+        <Pressable style={styles.newPlanBtn} onPress={openNewPlanSheet} accessibilityRole="button" accessibilityLabel="Criar novo plano">
           <Plus size={16} color={theme.colors.white} strokeWidth={2} />
         </Pressable>
       </View>
@@ -294,7 +332,7 @@ export default function HomeScreen({ session }) {
               onPress={() => setBoardPlan(plan)}
             />
           ))}
-          <Pressable style={[styles.newPlanCard, { width: cardWidth }]}>
+          <Pressable style={[styles.newPlanCard, { width: cardWidth }]} onPress={openNewPlanSheet} accessibilityRole="button">
             <View style={styles.newPlanIcon}>
               <Plus size={15} color={theme.colors.text2} strokeWidth={1.8} />
             </View>
@@ -311,7 +349,7 @@ export default function HomeScreen({ session }) {
               onPress={() => setBoardPlan(plan)}
             />
           ))}
-          <Pressable style={styles.newPlanListRow}>
+          <Pressable style={styles.newPlanListRow} onPress={openNewPlanSheet} accessibilityRole="button">
             <View style={styles.newPlanIcon}>
               <Plus size={15} color={theme.colors.text2} strokeWidth={1.8} />
             </View>
@@ -327,6 +365,77 @@ export default function HomeScreen({ session }) {
           </Pressable>
         </View>
       )}
+
+      <BottomSheet visible={newPlanSheetOpen} onClose={closeNewPlanSheet} title="Criar plano">
+        <View style={styles.planSheetPreview}>
+          <PlanCover cover={selectedCover} />
+          <View style={styles.planSheetPreviewBody}>
+            <Text style={styles.planSheetPreviewName} numberOfLines={1}>
+              {newPlanName.trim() || 'Novo plano'}
+            </Text>
+            <Text
+              style={[
+                styles.cardTag,
+                { backgroundColor: selectedCover.tint, color: selectedCover.color },
+              ]}
+            >
+              {selectedCover.tag}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.planSheetLabel}>Nome</Text>
+        <TextInput
+          value={newPlanName}
+          onChangeText={setNewPlanName}
+          placeholder="Ex.: Planejamento mobile"
+          placeholderTextColor={theme.colors.text3}
+          style={styles.planSheetInput}
+          selectionColor={theme.colors.text1}
+          autoCorrect={false}
+        />
+
+        <Text style={styles.planSheetLabel}>Categoria e capa</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.planThemeRow}>
+          {coverThemes.map((cover) => {
+            const isSelected = selectedCoverId === cover.id
+
+            return (
+              <Pressable
+                key={cover.id}
+                style={[styles.planThemeOption, isSelected && styles.planThemeOptionActive]}
+                onPress={() => setSelectedCoverId(cover.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+              >
+                <View style={[styles.planThemeSwatch, { backgroundColor: cover.color }]}>
+                  {cover.shades.map((shade) => (
+                    <View key={shade} style={[styles.planThemeSwatchBar, { backgroundColor: shade }]} />
+                  ))}
+                </View>
+                <Text style={styles.planThemeLabel}>{cover.tag}</Text>
+                {isSelected ? (
+                  <View style={styles.planThemeCheck}>
+                    <Check size={12} color={theme.colors.white} strokeWidth={2.1} />
+                  </View>
+                ) : null}
+              </Pressable>
+            )
+          })}
+        </ScrollView>
+
+        <Pressable
+          style={[styles.planSheetSubmit, !newPlanName.trim() && styles.planSheetSubmitDisabled]}
+          onPress={createPlan}
+          disabled={!newPlanName.trim()}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !newPlanName.trim() }}
+        >
+          <Text style={[styles.planSheetSubmitText, !newPlanName.trim() && styles.planSheetSubmitTextDisabled]}>
+            Criar plano
+          </Text>
+        </Pressable>
+      </BottomSheet>
     </ScrollView>
   )
 }
@@ -746,5 +855,117 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontSize: 13,
     fontWeight: '600',
+  },
+  planSheetPreview: {
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface1,
+    marginBottom: 16,
+  },
+  planSheetPreviewBody: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingHorizontal: 13,
+  },
+  planSheetPreviewName: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.text1,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  planSheetLabel: {
+    color: theme.colors.text2,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  planSheetInput: {
+    minHeight: 46,
+    paddingHorizontal: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.text1,
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface1,
+    color: theme.colors.text1,
+    fontSize: 15,
+    marginBottom: 16,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+  },
+  planThemeRow: {
+    gap: 9,
+    paddingRight: 6,
+    paddingBottom: 4,
+  },
+  planThemeOption: {
+    position: 'relative',
+    width: 94,
+    minHeight: 86,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface2,
+  },
+  planThemeOptionActive: {
+    borderColor: theme.colors.text1,
+    backgroundColor: theme.colors.surface1,
+  },
+  planThemeSwatch: {
+    height: 42,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    gap: 3,
+    padding: 5,
+    borderRadius: 7,
+    marginBottom: 8,
+  },
+  planThemeSwatchBar: {
+    flex: 1,
+    borderRadius: 4,
+    opacity: 0.82,
+  },
+  planThemeLabel: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  planThemeCheck: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    backgroundColor: theme.colors.text1,
+  },
+  planSheetSubmit: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    backgroundColor: theme.colors.text1,
+    marginTop: 16,
+  },
+  planSheetSubmitDisabled: {
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface3,
+  },
+  planSheetSubmitText: {
+    color: theme.colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  planSheetSubmitTextDisabled: {
+    color: theme.colors.text3,
   },
 })

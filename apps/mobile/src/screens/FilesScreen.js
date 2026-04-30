@@ -25,6 +25,7 @@ import {
   UsersRound,
 } from 'lucide-react-native'
 import { files } from '../data/demoData'
+import BottomSheet from '../components/BottomSheet'
 import { theme } from '../theme/tokens'
 
 const fileIcons = {
@@ -72,11 +73,16 @@ function SolidFileIcon({ type = 'doc', size }) {
 
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const { width } = useWindowDimensions()
+  const [localFiles, setLocalFiles] = useState(() => files.map((file) => ({ ...file, section: 'mine' })))
   const [query, setQuery] = useState('')
   const [activeSection, setActiveSection] = useState('mine')
   const [displayMode, setDisplayMode] = useState('list')
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
   const [newItemSheetVisible, setNewItemSheetVisible] = useState(false)
+  const [selectedFileId, setSelectedFileId] = useState(null)
+  const [fileSheetMode, setFileSheetMode] = useState('menu')
+  const [renameValue, setRenameValue] = useState('')
+  const [createFlow, setCreateFlow] = useState(null)
   const [controlsCompact, setControlsCompactState] = useState(false)
   const compactProgress = useRef(new Animated.Value(0)).current
   const sheetProgress = useRef(new Animated.Value(0)).current
@@ -84,11 +90,23 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const scrollRef = useRef(null)
   const isCompact = useRef(false)
   const lastScrollY = useRef(0)
+  const selectedFile = localFiles.find((file) => file.id === selectedFileId) ?? null
+  const CreateFlowIcon = createFlow?.icon
   const filteredFiles = useMemo(() => {
     const normalized = query.trim().toLowerCase()
-    if (!normalized) return files
-    return files.filter((file) => file.name.toLowerCase().includes(normalized))
-  }, [query])
+    const sectionFiles = localFiles.filter((file) => {
+      if (activeSection === 'trash') return file.trashed
+      if (file.trashed) return false
+      if (activeSection === 'archived') return file.archived
+      if (file.archived) return false
+      if (activeSection === 'shared') return file.shared
+      if (activeSection === 'favorites') return file.favorite
+      return true
+    })
+
+    if (!normalized) return sectionFiles
+    return sectionFiles.filter((file) => file.name.toLowerCase().includes(normalized))
+  }, [activeSection, localFiles, query])
 
   const setControlsCompact = useCallback((nextCompact) => {
     if (isCompact.current === nextCompact) return
@@ -104,6 +122,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
 
   const openNewItemSheet = useCallback(() => {
     setViewMenuOpen(false)
+    setCreateFlow(null)
     sheetDragY.setValue(0)
     setNewItemSheetVisible(true)
     Animated.timing(sheetProgress, {
@@ -112,6 +131,14 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start()
+  }, [sheetDragY, sheetProgress])
+
+  const openCreateFlow = useCallback((option) => {
+    sheetProgress.stopAnimation()
+    sheetProgress.setValue(0)
+    sheetDragY.setValue(0)
+    setNewItemSheetVisible(false)
+    setCreateFlow(option)
   }, [sheetDragY, sheetProgress])
 
   const closeNewItemSheet = useCallback(() => {
@@ -167,6 +194,45 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
     compactProgress.setValue(0)
     scrollRef.current?.scrollTo({ y: 0, animated: false })
   }, [compactProgress])
+
+  const openFileMenu = (file) => {
+    setSelectedFileId(file.id)
+    setRenameValue(file.name)
+    setFileSheetMode('menu')
+  }
+
+  const closeFileSheet = () => {
+    setSelectedFileId(null)
+    setFileSheetMode('menu')
+  }
+
+  const updateSelectedFile = (patch) => {
+    if (!selectedFileId) return
+    setLocalFiles((currentFiles) => currentFiles.map((file) => (
+      file.id === selectedFileId ? { ...file, ...patch } : file
+    )))
+  }
+
+  const renameSelectedFile = () => {
+    const name = renameValue.trim()
+    if (!name) return
+    updateSelectedFile({ name, modified: 'agora' })
+    closeFileSheet()
+  }
+
+  const moveSelectedFile = (section) => {
+    const patch = section === 'shared'
+      ? { shared: true, section: 'shared', modified: 'agora' }
+      : { section, archived: section === 'archived', favorite: section === 'favorites', modified: 'agora' }
+
+    updateSelectedFile(patch)
+    closeFileSheet()
+  }
+
+  const deleteSelectedFile = () => {
+    updateSelectedFile({ trashed: true, archived: false, modified: 'agora' })
+    closeFileSheet()
+  }
 
   const expandedRailWidth = Math.max(260, width - 68)
   const railWidth = compactProgress.interpolate({
@@ -346,7 +412,12 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                       ) : null}
                     </View>
                   </View>
-                  <Pressable style={styles.moreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
+                  <Pressable
+                    style={styles.moreButton}
+                    onPress={() => openFileMenu(file)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mais opções para ${file.name}`}
+                  >
                     <MoreHorizontal size={22} color={theme.colors.text2} strokeWidth={2} />
                   </Pressable>
                 </View>
@@ -362,7 +433,12 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                     <View style={styles.gridIcon}>
                       <SolidFileIcon type={file.type} size={32} />
                     </View>
-                    <Pressable style={styles.gridMoreButton} accessibilityRole="button" accessibilityLabel={`Mais opções para ${file.name}`}>
+                    <Pressable
+                      style={styles.gridMoreButton}
+                      onPress={() => openFileMenu(file)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Mais opções para ${file.name}`}
+                    >
                       <MoreHorizontal size={21} color={theme.colors.text2} strokeWidth={2} />
                     </Pressable>
                   </View>
@@ -473,6 +549,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 <Pressable
                   key={option.id}
                   style={styles.quickCreateButton}
+                  onPress={() => openCreateFlow(option)}
                   accessibilityRole="button"
                   accessibilityLabel={option.label}
                 >
@@ -490,6 +567,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 <Pressable
                   key={option.id}
                   style={styles.documentCreateRow}
+                  onPress={() => openCreateFlow(option)}
                   accessibilityRole="button"
                   accessibilityLabel={option.label}
                 >
@@ -503,6 +581,128 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           </View>
         </Animated.View>
       </View>
+
+      <BottomSheet visible={Boolean(selectedFile)} onClose={closeFileSheet} title={fileSheetMode === 'menu' ? selectedFile?.name : fileSheetMode === 'rename' ? 'Renomear' : 'Mover para'}>
+        {fileSheetMode === 'menu' ? (
+          <View style={styles.fileActionList}>
+            <View style={styles.fileActionMeta}>
+              <SolidFileIcon type={selectedFile?.type} size={36} />
+              <View style={styles.fileActionMetaBody}>
+                <Text style={styles.fileActionTitle} numberOfLines={1}>{selectedFile?.name}</Text>
+                <Text style={styles.fileActionSubtitle}>{selectedFile?.size || '0 KB'} · {selectedFile?.modified}</Text>
+              </View>
+            </View>
+
+            <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('details')} accessibilityRole="button">
+              <FileText size={18} color={theme.colors.text1} strokeWidth={1.8} />
+              <Text style={styles.fileActionLabel}>Abrir detalhes</Text>
+            </Pressable>
+            <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('rename')} accessibilityRole="button">
+              <Text style={styles.fileActionIconText}>Aa</Text>
+              <Text style={styles.fileActionLabel}>Renomear</Text>
+            </Pressable>
+            <Pressable
+              style={styles.fileActionRow}
+              onPress={() => {
+                updateSelectedFile({ shared: true, modified: 'agora' })
+                closeFileSheet()
+              }}
+              accessibilityRole="button"
+            >
+              <UsersRound size={18} color={theme.colors.text1} strokeWidth={1.8} />
+              <Text style={styles.fileActionLabel}>Compartilhar</Text>
+            </Pressable>
+            <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('move')} accessibilityRole="button">
+              <Folder size={18} color={theme.colors.text1} strokeWidth={1.8} />
+              <Text style={styles.fileActionLabel}>Mover</Text>
+            </Pressable>
+            <Pressable style={[styles.fileActionRow, styles.fileActionDanger]} onPress={deleteSelectedFile} accessibilityRole="button">
+              <Trash2 size={18} color={theme.colors.red} strokeWidth={1.8} />
+              <Text style={[styles.fileActionLabel, styles.fileActionDangerText]}>Excluir</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {fileSheetMode === 'details' ? (
+          <View style={styles.fileDetails}>
+            <Text style={styles.fileDetailsLabel}>Nome</Text>
+            <Text style={styles.fileDetailsValue}>{selectedFile?.name}</Text>
+            <Text style={styles.fileDetailsLabel}>Tipo</Text>
+            <Text style={styles.fileDetailsValue}>{selectedFile?.type === 'folder' ? 'Pasta' : 'Arquivo'}</Text>
+            <Text style={styles.fileDetailsLabel}>Compartilhamento</Text>
+            <Text style={styles.fileDetailsValue}>{selectedFile?.shared ? 'Compartilhado' : 'Privado'}</Text>
+          </View>
+        ) : null}
+
+        {fileSheetMode === 'rename' ? (
+          <View>
+            <TextInput
+              value={renameValue}
+              onChangeText={setRenameValue}
+              style={styles.fileRenameInput}
+              selectionColor={theme.colors.text1}
+              autoCorrect={false}
+            />
+            <Pressable
+              style={[styles.filePrimaryButton, !renameValue.trim() && styles.filePrimaryButtonDisabled]}
+              onPress={renameSelectedFile}
+              disabled={!renameValue.trim()}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !renameValue.trim() }}
+            >
+              <Text style={[styles.filePrimaryButtonText, !renameValue.trim() && styles.filePrimaryButtonTextDisabled]}>Salvar nome</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {fileSheetMode === 'move' ? (
+          <View style={styles.fileActionList}>
+            {[
+              { id: 'mine', label: 'Meus arquivos', icon: Folder },
+              { id: 'shared', label: 'Compartilhado', icon: UsersRound },
+              { id: 'favorites', label: 'Favoritos', icon: Star },
+              { id: 'archived', label: 'Arquivados', icon: Archive },
+            ].map((target) => {
+              const TargetIcon = target.icon
+              return (
+                <Pressable key={target.id} style={styles.fileActionRow} onPress={() => moveSelectedFile(target.id)} accessibilityRole="button">
+                  <TargetIcon size={18} color={theme.colors.text1} strokeWidth={1.8} />
+                  <Text style={styles.fileActionLabel}>{target.label}</Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        ) : null}
+      </BottomSheet>
+
+      <BottomSheet visible={Boolean(createFlow)} onClose={() => setCreateFlow(null)} title={createFlow ? createFlow.label : ''}>
+        <View style={styles.createFlowPanel}>
+          {createFlow ? (
+            <>
+              <View style={styles.createFlowIcon}>
+                {CreateFlowIcon ? <CreateFlowIcon size={23} color={theme.colors.text1} strokeWidth={1.7} /> : null}
+              </View>
+              <Text style={styles.createFlowTitle}>{createFlow.label}</Text>
+              <Text style={styles.createFlowText}>
+                {createFlow.id === 'folder'
+                  ? 'Informe os dados da pasta antes de criar no workspace.'
+                  : createFlow.id === 'scan' || createFlow.id === 'upload'
+                    ? 'Este seletor fica pronto para conectar o recurso nativo do dispositivo.'
+                    : 'Configure o documento antes de adicionar ao workspace.'}
+              </Text>
+              <TextInput
+                style={styles.createFlowInput}
+                placeholder={createFlow.id === 'folder' ? 'Nome da pasta' : 'Nome do item'}
+                placeholderTextColor={theme.colors.text3}
+                selectionColor={theme.colors.text1}
+              />
+              <Pressable style={styles.filePrimaryButton} onPress={() => setCreateFlow(null)} accessibilityRole="button">
+                <Text style={styles.filePrimaryButtonText}>Concluir</Text>
+              </Pressable>
+            </>
+          ) : null}
+        </View>
+      </BottomSheet>
     </View>
   )
 }
@@ -918,5 +1118,145 @@ const styles = StyleSheet.create({
     color: theme.colors.text2,
     fontSize: 12,
     marginTop: 6,
+  },
+  fileActionList: {
+    gap: 8,
+  },
+  fileActionMeta: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 11,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface2,
+    marginBottom: 4,
+  },
+  fileActionMetaBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  fileActionTitle: {
+    color: theme.colors.text1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  fileActionSubtitle: {
+    color: theme.colors.text2,
+    fontSize: 12,
+  },
+  fileActionRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface2,
+    outlineStyle: 'none',
+  },
+  fileActionIconText: {
+    width: 18,
+    color: theme.colors.text1,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  fileActionLabel: {
+    flex: 1,
+    color: theme.colors.text1,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  fileActionDanger: {
+    backgroundColor: '#fff0f0',
+  },
+  fileActionDangerText: {
+    color: theme.colors.red,
+  },
+  fileDetails: {
+    gap: 5,
+  },
+  fileDetailsLabel: {
+    color: theme.colors.text3,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginTop: 8,
+  },
+  fileDetailsValue: {
+    color: theme.colors.text1,
+    fontSize: 16,
+  },
+  fileRenameInput: {
+    minHeight: 46,
+    paddingHorizontal: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.text1,
+    borderRadius: 9,
+    color: theme.colors.text1,
+    fontSize: 15,
+    marginBottom: 12,
+    outlineStyle: 'none',
+  },
+  filePrimaryButton: {
+    minHeight: 43,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    backgroundColor: theme.colors.text1,
+  },
+  filePrimaryButtonDisabled: {
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface3,
+  },
+  filePrimaryButtonText: {
+    color: theme.colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  filePrimaryButtonTextDisabled: {
+    color: theme.colors.text3,
+  },
+  createFlowPanel: {
+    alignItems: 'center',
+  },
+  createFlowIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface2,
+    marginBottom: 10,
+  },
+  createFlowTitle: {
+    color: theme.colors.text1,
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  createFlowText: {
+    color: theme.colors.text2,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  createFlowInput: {
+    alignSelf: 'stretch',
+    minHeight: 46,
+    paddingHorizontal: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 9,
+    color: theme.colors.text1,
+    fontSize: 15,
+    marginBottom: 12,
+    outlineStyle: 'none',
   },
 })
