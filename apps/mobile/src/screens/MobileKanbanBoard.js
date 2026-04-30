@@ -1111,8 +1111,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   taskCheckDone: {
-    borderColor: '#566877',
-    backgroundColor: '#566877',
+    borderColor: theme.colors.black,
+    backgroundColor: theme.colors.black,
   },
   taskListBody: {
     flex: 1,
