@@ -107,6 +107,12 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     [columns],
   )
 
+  const scrollBoardToTop = () => {
+    requestAnimationFrame(() => {
+      verticalScrollRef.current?.scrollTo({ y: 0, animated: true })
+    })
+  }
+
   const handleColumnLayout = (columnId, event) => {
     const nextHeight = Math.ceil(event.nativeEvent.layout.height)
 
@@ -125,13 +131,22 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   const handleMomentumEnd = (event) => {
     const offsetX = event.nativeEvent.contentOffset.x
     const nextIndex = Math.round(offsetX / pageWidth)
+
+    if (nextIndex === activeColumnIndex) {
+      return
+    }
+
     setActiveColumnIndex(nextIndex)
-    verticalScrollRef.current?.scrollTo({ y: 0, animated: false })
+    scrollBoardToTop()
   }
 
   const goToColumn = (index) => {
+    if (index === activeColumnIndex) {
+      return
+    }
+
     setActiveColumnIndex(index)
-    verticalScrollRef.current?.scrollTo({ y: 0, animated: false })
+    scrollBoardToTop()
     scrollRef.current?.scrollTo({ x: index * pageWidth, animated: true })
   }
 
