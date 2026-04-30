@@ -1,13 +1,20 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { Animated, Easing, Modal, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { Animated, Easing, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { theme } from '../theme/tokens'
 
 export default function BottomSheet({ children, onClose, title, visible }) {
   const progress = useRef(new Animated.Value(0)).current
   const dragY = useRef(new Animated.Value(0)).current
+  const { height } = useWindowDimensions()
+  const hiddenOffset = Math.max(height, 640)
+  const maxSheetHeight = Math.max(300, height - 42)
 
   useEffect(() => {
-    if (!visible) return
+    if (!visible) {
+      progress.setValue(0)
+      dragY.setValue(0)
+      return
+    }
 
     dragY.setValue(0)
     Animated.timing(progress, {
@@ -18,7 +25,7 @@ export default function BottomSheet({ children, onClose, title, visible }) {
     }).start()
   }, [dragY, progress, visible])
 
-  const close = () => {
+  const close = useCallback(() => {
     dragY.setValue(0)
     Animated.timing(progress, {
       toValue: 0,
@@ -28,7 +35,7 @@ export default function BottomSheet({ children, onClose, title, visible }) {
     }).start(({ finished }) => {
       if (finished) onClose?.()
     })
-  }
+  }, [dragY, onClose, progress])
 
   const panResponder = useMemo(() => PanResponder.create({
     onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 8 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
@@ -49,17 +56,17 @@ export default function BottomSheet({ children, onClose, title, visible }) {
         useNativeDriver: true,
       }).start()
     },
-  }), [dragY])
+  }), [close, dragY])
 
   const translateY = Animated.add(
     progress.interpolate({
       inputRange: [0, 1],
-      outputRange: [540, 0],
+      outputRange: [hiddenOffset, 0],
     }),
     dragY,
   ).interpolate({
-    inputRange: [0, 540],
-    outputRange: [0, 540],
+    inputRange: [0, hiddenOffset],
+    outputRange: [0, hiddenOffset],
     extrapolate: 'clamp',
   })
   const overlayOpacity = progress.interpolate({
@@ -68,16 +75,33 @@ export default function BottomSheet({ children, onClose, title, visible }) {
   })
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={close}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      hardwareAccelerated
+      presentationStyle="overFullScreen"
+      onRequestClose={close}
+    >
       <View style={styles.layer}>
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
           <Pressable style={styles.overlayPress} onPress={close} accessibilityRole="button" accessibilityLabel="Fechar painel" />
         </Animated.View>
 
-        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]} {...panResponder.panHandlers}>
-          <View style={styles.handle} />
-          {title ? <Text style={styles.title}>{title}</Text> : null}
-          {children}
+        <Animated.View style={[styles.sheet, { maxHeight: maxSheetHeight, transform: [{ translateY }] }]}>
+          <View style={styles.dragArea} {...panResponder.panHandlers}>
+            <View style={styles.handle} />
+            {title ? <Text style={styles.title}>{title}</Text> : null}
+          </View>
+          <ScrollView
+            style={styles.contentScroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>
@@ -110,6 +134,12 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 12,
   },
+  dragArea: {
+    marginRight: -22,
+    marginLeft: -22,
+    paddingRight: 22,
+    paddingLeft: 22,
+  },
   handle: {
     width: 46,
     height: 5,
@@ -125,5 +155,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 16,
+  },
+  contentScroll: {
+    flexGrow: 0,
+  },
+  content: {
+    paddingBottom: 2,
   },
 })
