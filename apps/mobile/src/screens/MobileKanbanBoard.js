@@ -650,12 +650,17 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
               </View>
             ) : null}
 
-            <Pressable style={styles.tasksFab} accessibilityRole="button" accessibilityLabel="Adicionar tarefa">
-              <Plus size={30} color={theme.colors.white} strokeWidth={1.8} />
-            </Pressable>
           </View>
         )}
       </ScrollView>
+
+      {boardView === 'tasks' ? (
+        <View pointerEvents="box-none" style={styles.tasksFabOverlay}>
+          <Pressable style={styles.tasksFab} accessibilityRole="button" accessibilityLabel="Adicionar tarefa">
+            <Plus size={18} color={theme.colors.white} strokeWidth={2} />
+          </Pressable>
+        </View>
+      ) : null}
 
       <View pointerEvents="box-none" style={styles.viewToolbarOverlay}>
         <View style={styles.viewToolbar}>
@@ -1180,28 +1185,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tasksFab: {
-    position: 'absolute',
-    right: 28,
-    bottom: 96,
-    width: 68,
-    height: 68,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
-    backgroundColor: '#566877',
+    backgroundColor: theme.colors.black,
     ...Platform.select({
       web: {
-        boxShadow: '0 8px 18px rgba(0, 0, 0, 0.20)',
+        boxShadow: '0 5px 13px rgba(0, 0, 0, 0.20)',
         outlineStyle: 'none',
       },
       default: {
         shadowColor: theme.colors.black,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+        elevation: 4,
       },
     }),
+  },
+  tasksFabOverlay: {
+    position: 'absolute',
+    right: 24,
+    bottom: 80,
   },
   detailScreen: {
     flex: 1,
