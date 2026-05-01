@@ -81,6 +81,17 @@ function createLocalCard(title) {
   }
 }
 
+function createLocalColumn(title, index = 0) {
+  const columnColors = [theme.colors.blue, theme.colors.green, theme.colors.purple, theme.colors.red, theme.colors.text1]
+
+  return {
+    id: `mobile-column-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    title,
+    color: columnColors[index % columnColors.length],
+    cards: [],
+  }
+}
+
 function BoardCard({ card, onPress }) {
   const label = findLabel(card.labelId)
   const members = findMembers(card.memberIds)
@@ -814,7 +825,9 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   const [selectedCardEntry, setSelectedCardEntry] = useState(null)
   const [boardView, setBoardView] = useState('lists')
   const [addCardSheet, setAddCardSheet] = useState(null)
+  const [addListSheetOpen, setAddListSheetOpen] = useState(false)
   const [newCardTitle, setNewCardTitle] = useState('')
+  const [newListTitle, setNewListTitle] = useState('')
   const [newCardColumnId, setNewCardColumnId] = useState(columns[0]?.id ?? null)
   const [tasksOptionsOpen, setTasksOptionsOpen] = useState(false)
   const verticalScrollRef = useRef(null)
@@ -851,6 +864,8 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     setColumnHeights({})
     boardTranslateX.setValue(0)
     setSelectedCardEntry(null)
+    setAddListSheetOpen(false)
+    setNewListTitle('')
     setNewCardColumnId(columns[0]?.id ?? null)
   }, [boardTranslateX, columns, plan.id])
 
@@ -1077,6 +1092,34 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     closeAddCardSheet()
   }
 
+  const openAddListSheet = () => {
+    setNewListTitle('')
+    setAddListSheetOpen(true)
+  }
+
+  const closeAddListSheet = () => {
+    setAddListSheetOpen(false)
+    setNewListTitle('')
+  }
+
+  const submitNewList = () => {
+    const title = newListTitle.trim()
+    if (!title) return
+    const newIndex = boardColumnsState.length
+    const newColumn = createLocalColumn(title, newIndex)
+
+    setBoardColumnsState((currentColumns) => [...currentColumns, newColumn])
+    setColumnHeights((currentHeights) => ({
+      ...currentHeights,
+      [newColumn.id]: 0,
+    }))
+    setActiveColumnIndex(newIndex)
+    setTargetColumnIndex(null)
+    boardTranslateX.setValue(-newIndex * pageWidth)
+    scrollBoardToTop()
+    closeAddListSheet()
+  }
+
   return (
     <View style={styles.page}>
       <View style={styles.header}>
@@ -1101,31 +1144,42 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
       </View>
 
       {boardView === 'lists' ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.columnTabs}
-          contentContainerStyle={styles.columnTabsContent}
-        >
-          {boardColumnsState.map((column, index) => {
-            const isActive = index === activeColumnIndex
+        <View style={styles.columnTabsBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.columnTabs}
+            contentContainerStyle={styles.columnTabsContent}
+          >
+            {boardColumnsState.map((column, index) => {
+              const isActive = index === activeColumnIndex
 
-            return (
-              <Pressable
-                key={column.id}
-                style={[styles.columnTab, isActive && styles.columnTabActive]}
-                onPress={() => goToColumn(index)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
-              >
-                <View style={[styles.columnTabDot, { backgroundColor: column.color }]} />
-                <Text style={[styles.columnTabText, isActive && styles.columnTabTextActive]} numberOfLines={1}>
-                  {column.title}
-                </Text>
-              </Pressable>
-            )
-          })}
-        </ScrollView>
+              return (
+                <Pressable
+                  key={column.id}
+                  style={[styles.columnTab, isActive && styles.columnTabActive]}
+                  onPress={() => goToColumn(index)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <View style={[styles.columnTabDot, { backgroundColor: column.color }]} />
+                  <Text style={[styles.columnTabText, isActive && styles.columnTabTextActive]} numberOfLines={1}>
+                    {column.title}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+          <Pressable
+            style={styles.addListButton}
+            onPress={openAddListSheet}
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar lista"
+          >
+            <Plus size={16} color={theme.colors.white} strokeWidth={2.2} />
+            <Text style={styles.addListButtonText}>Lista</Text>
+          </Pressable>
+        </View>
       ) : null}
 
       <ScrollView
@@ -1308,6 +1362,30 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
         </Pressable>
       </BottomSheet>
 
+      <BottomSheet visible={addListSheetOpen} onClose={closeAddListSheet} title="Adicionar lista">
+        <TextInput
+          value={newListTitle}
+          onChangeText={setNewListTitle}
+          placeholder="Nome da lista..."
+          placeholderTextColor={theme.colors.text3}
+          style={styles.sheetInput}
+          selectionColor={theme.colors.text1}
+          autoCorrect={false}
+          accessibilityLabel="Nome da lista"
+        />
+        <Pressable
+          style={[styles.sheetPrimaryButton, !newListTitle.trim() && styles.sheetPrimaryButtonDisabled]}
+          onPress={submitNewList}
+          disabled={!newListTitle.trim()}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !newListTitle.trim() }}
+        >
+          <Text style={[styles.sheetPrimaryButtonText, !newListTitle.trim() && styles.sheetPrimaryButtonTextDisabled]}>
+            Adicionar lista
+          </Text>
+        </Pressable>
+      </BottomSheet>
+
       <BottomSheet visible={tasksOptionsOpen} onClose={() => setTasksOptionsOpen(false)} title="Tarefas">
         <View style={styles.sheetActionList}>
           <Pressable style={styles.sheetActionRow} onPress={() => setTasksOptionsOpen(false)} accessibilityRole="button">
@@ -1447,13 +1525,21 @@ const styles = StyleSheet.create({
   viewButtonActive: {
     backgroundColor: theme.colors.text1,
   },
-  columnTabs: {
+  columnTabsBar: {
     height: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingRight: theme.spacing.screenX,
     flexGrow: 0,
     flexShrink: 0,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border1,
     backgroundColor: theme.colors.surface1,
+  },
+  columnTabs: {
+    flex: 1,
+    height: 54,
   },
   columnTabsContent: {
     minHeight: 54,
@@ -1487,6 +1573,21 @@ const styles = StyleSheet.create({
   },
   columnTabTextActive: {
     color: theme.colors.white,
+  },
+  addListButton: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    borderRadius: 9,
+    backgroundColor: theme.colors.text1,
+  },
+  addListButtonText: {
+    color: theme.colors.white,
+    fontSize: 12,
+    fontWeight: '600',
   },
   boardScroll: {
     flex: 1,
