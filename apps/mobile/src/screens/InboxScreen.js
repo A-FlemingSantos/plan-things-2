@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native'
-import { Bell, Home, Paperclip, Search, SquarePen } from 'lucide-react-native'
+import { Bell, Paperclip, Search, SquarePen } from 'lucide-react-native'
 import { StatusBar } from 'expo-status-bar'
 import { inboxThreads } from '../data/demoData'
 import { theme } from '../theme/tokens'
@@ -25,61 +25,7 @@ export default function InboxScreen() {
 
   return (
     <View style={styles.page}>
-      <StatusBar style="light" backgroundColor={stylesVars.accent} />
-
-      <View style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Ir para Home" style={styles.iconButton}>
-            <Home size={22} color={theme.colors.white} strokeWidth={1.9} />
-          </Pressable>
-          <Text style={styles.headerTitle} numberOfLines={1}>Caixa de Entrada</Text>
-          <View style={styles.headerActions}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Notificações" style={styles.iconButton}>
-              <Bell size={21} color={theme.colors.white} strokeWidth={1.9} />
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Buscar" style={styles.iconButton}>
-              <Search size={21} color={theme.colors.white} strokeWidth={1.9} />
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.headerControlsRow}>
-          <View style={styles.segment}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: activeMailbox === 'highlights' }}
-              onPress={() => setActiveMailbox('highlights')}
-              style={({ pressed }) => [
-                styles.segmentItem,
-                activeMailbox === 'highlights' && styles.segmentItemActive,
-                pressed && styles.segmentItemPressed,
-              ]}
-            >
-              <Text style={[styles.segmentText, activeMailbox === 'highlights' && styles.segmentTextActive]}>
-                Destaques
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: activeMailbox === 'others' }}
-              onPress={() => setActiveMailbox('others')}
-              style={({ pressed }) => [
-                styles.segmentItem,
-                activeMailbox === 'others' && styles.segmentItemActive,
-                pressed && styles.segmentItemPressed,
-              ]}
-            >
-              <Text style={[styles.segmentText, activeMailbox === 'others' && styles.segmentTextActive]}>
-                Outros
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable accessibilityRole="button" accessibilityLabel="Filtrar" style={styles.filterButton}>
-            <Text style={styles.filterText}>Filtrar</Text>
-          </Pressable>
-        </View>
-      </View>
+      <StatusBar style="dark" />
 
       <SectionList
         sections={sections}
@@ -87,6 +33,63 @@ export default function InboxScreen() {
         stickySectionHeadersEnabled
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={(
+          <View style={styles.header}>
+            <View style={styles.topbar}>
+              <View style={styles.topbarText}>
+                <Text style={styles.pageTitle}>Caixa de Entrada</Text>
+                <Text style={styles.pageSubtitle}>
+                  {activeMailbox === 'highlights' ? 'Destaques' : 'Outros'} · {sections.reduce((acc, section) => acc + section.data.length, 0)}
+                </Text>
+              </View>
+              <View style={styles.topbarActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Notificações" style={styles.actionBtn}>
+                  <Bell size={18} color={theme.colors.white} strokeWidth={1.9} />
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel="Buscar" style={styles.actionBtn}>
+                  <Search size={18} color={theme.colors.white} strokeWidth={1.9} />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.controlsRow}>
+              <View style={styles.segment}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activeMailbox === 'highlights' }}
+                  onPress={() => setActiveMailbox('highlights')}
+                  style={({ pressed }) => [
+                    styles.segmentItem,
+                    activeMailbox === 'highlights' && styles.segmentItemActive,
+                    pressed && styles.segmentItemPressed,
+                  ]}
+                >
+                  <Text style={[styles.segmentText, activeMailbox === 'highlights' && styles.segmentTextActive]}>
+                    Destaques
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: activeMailbox === 'others' }}
+                  onPress={() => setActiveMailbox('others')}
+                  style={({ pressed }) => [
+                    styles.segmentItem,
+                    activeMailbox === 'others' && styles.segmentItemActive,
+                    pressed && styles.segmentItemPressed,
+                  ]}
+                >
+                  <Text style={[styles.segmentText, activeMailbox === 'others' && styles.segmentTextActive]}>
+                    Outros
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Pressable accessibilityRole="button" accessibilityLabel="Filtrar" style={styles.filterButton}>
+                <Text style={styles.filterText}>Filtrar</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
         renderSectionHeader={({ section }) => (
           section.title ? (
             <View style={styles.sectionHeader}>
@@ -143,37 +146,46 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.appBg,
   },
   header: {
-    backgroundColor: stylesVars.accent,
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 10,
-    paddingBottom: 12,
+    paddingTop: 20,
+    paddingBottom: 14,
   },
-  headerTopRow: {
+  topbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    minHeight: 42,
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 14,
   },
-  iconButton: {
-    width: 38,
-    height: 38,
+  topbarText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  pageTitle: {
+    color: theme.colors.text1,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '400',
+  },
+  pageSubtitle: {
+    color: theme.colors.text3,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  topbarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  actionBtn: {
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 19,
+    borderRadius: 999,
+    backgroundColor: theme.colors.text1,
   },
-  headerTitle: {
-    flex: 1,
-    color: theme.colors.white,
-    fontSize: 22,
-    fontWeight: '500',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  headerControlsRow: {
-    marginTop: 10,
+  controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -182,43 +194,50 @@ const styles = StyleSheet.create({
   segment: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    padding: 2,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface2,
   },
   segmentItem: {
-    paddingHorizontal: 14,
-    height: 36,
-    borderRadius: 999,
+    paddingHorizontal: 16,
+    height: 34,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   segmentItemActive: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.surface1,
+    shadowColor: theme.colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
   },
   segmentItemPressed: {
     opacity: 0.9,
   },
   segmentText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 14,
-    fontWeight: '500',
+    color: theme.colors.text3,
+    fontSize: 13,
   },
   segmentTextActive: {
-    color: stylesVars.accent,
+    color: theme.colors.text1,
+    fontWeight: '600',
   },
   filterButton: {
-    height: 36,
-    paddingHorizontal: 16,
-    borderRadius: 999,
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.18)',
+    backgroundColor: theme.colors.text1,
   },
   filterText: {
     color: theme.colors.white,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
   },
   listContent: {
     paddingBottom: 148,
