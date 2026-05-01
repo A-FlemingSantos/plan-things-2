@@ -38,14 +38,6 @@ const fileIcons = {
   image: ImageIcon,
 }
 
-const fileTypeTone = {
-  folder: { background: theme.colors.blue, icon: theme.colors.white },
-  pdf: { background: theme.colors.red, icon: theme.colors.white },
-  doc: { background: theme.colors.amber, icon: theme.colors.white },
-  code: { background: theme.colors.green, icon: theme.colors.white },
-  image: { background: theme.colors.purple, icon: theme.colors.white },
-}
-
 const fileSections = [
   { id: 'mine', label: 'Meus arquivos', icon: Folder },
   { id: 'shared', label: 'Compartilhado', icon: UsersRound },
@@ -67,9 +59,13 @@ const documentCreateOptions = [
   { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet },
 ]
 
-function SolidFileIcon({ type = 'doc', size }) {
+function SolidFileIcon({ type = 'doc', size, variant = 'tile' }) {
   const Icon = fileIcons[type] ?? FileText
-  const tone = fileTypeTone[type] ?? fileTypeTone.doc
+
+  if (variant === 'plain') {
+    return <Icon size={size} color={theme.colors.text1} strokeWidth={2.1} />
+  }
+
   return (
     <View
       style={[
@@ -78,11 +74,10 @@ function SolidFileIcon({ type = 'doc', size }) {
           width: size,
           height: size,
           borderRadius: Math.max(7, size * 0.22),
-          backgroundColor: tone.background,
         },
       ]}
     >
-      <Icon size={Math.round(size * 0.58)} color={tone.icon} strokeWidth={2.05} />
+      <Icon size={Math.round(size * 0.58)} color={theme.colors.text1} strokeWidth={2.1} />
     </View>
   )
 }
@@ -370,11 +365,9 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
 
           return (
             <View style={styles.gridItem}>
-              <View style={styles.gridTop}>
-                <View style={styles.gridIcon}>
-                  <SolidFileIcon type={file.type} size={32} />
-                </View>
-                <View style={styles.gridActions}>
+              <View style={styles.gridHero}>
+                <SolidFileIcon type={file.type} size={64} variant="plain" />
+                <View style={styles.gridHeroActions}>
                   <Pressable
                     style={styles.starButton}
                     onPress={() => {
@@ -1386,6 +1379,9 @@ const styles = StyleSheet.create({
   fileIconTile: {
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
   },
   documentCreateLabel: {
     flex: 1,
@@ -1411,6 +1407,26 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface2,
     marginBottom: 12,
+  },
+  gridHero: {
+    height: 112,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  gridHeroActions: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   gridTop: {
     minHeight: 40,
