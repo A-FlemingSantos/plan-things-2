@@ -809,6 +809,7 @@ function TaskListRow({ card, column, isDone, onPress }) {
 export default function MobileKanbanBoard({ plan, columns, onBack }) {
   const [boardColumnsState, setBoardColumnsState] = useState(() => cloneBoardColumns(columns))
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
+  const [targetColumnIndex, setTargetColumnIndex] = useState(null)
   const [columnHeights, setColumnHeights] = useState({})
   const [selectedCardEntry, setSelectedCardEntry] = useState(null)
   const [boardView, setBoardView] = useState('lists')
@@ -821,7 +822,9 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   const { width } = useWindowDimensions()
   const pageWidth = Math.min(width, 430)
   const activeColumn = boardColumnsState[activeColumnIndex] ?? boardColumnsState[0]
-  const activeColumnHeight = activeColumn ? columnHeights[activeColumn.id] : 0
+  const heightColumnIndex = targetColumnIndex ?? activeColumnIndex
+  const heightColumn = boardColumnsState[heightColumnIndex] ?? activeColumn
+  const activeColumnHeight = heightColumn ? columnHeights[heightColumn.id] : 0
   const totalCards = useMemo(
     () => boardColumnsState.reduce((sum, column) => sum + column.cards.length, 0),
     [boardColumnsState],
@@ -844,6 +847,7 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   useEffect(() => {
     setBoardColumnsState(cloneBoardColumns(columns))
     setActiveColumnIndex(0)
+    setTargetColumnIndex(null)
     setColumnHeights({})
     boardTranslateX.setValue(0)
     setSelectedCardEntry(null)
@@ -880,6 +884,7 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     const shouldScrollTop = options.scrollTop ?? true
 
     if (safeIndex === activeColumnIndex) {
+      setTargetColumnIndex(null)
       Animated.spring(boardTranslateX, {
         toValue: -activeColumnIndex * pageWidth,
         damping: 22,
@@ -891,6 +896,7 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     }
 
     boardTranslateX.stopAnimation()
+    setTargetColumnIndex(safeIndex)
     Animated.timing(boardTranslateX, {
       toValue: -safeIndex * pageWidth,
       duration: 260,
@@ -899,6 +905,7 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     }).start(({ finished }) => {
       if (finished) {
         setActiveColumnIndex(safeIndex)
+        setTargetColumnIndex(null)
         boardTranslateX.setValue(-safeIndex * pageWidth)
         if (shouldScrollTop) {
           scrollBoardToTop()
@@ -912,6 +919,7 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   }
 
   const cancelColumnDrag = () => {
+    setTargetColumnIndex(null)
     Animated.spring(boardTranslateX, {
       toValue: -activeColumnIndex * pageWidth,
       damping: 22,
