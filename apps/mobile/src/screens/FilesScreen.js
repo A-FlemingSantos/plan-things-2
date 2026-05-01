@@ -444,7 +444,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               return (
                 <View key={file.id} style={styles.fileRow}>
                   <View style={styles.fileIcon}>
-                    <SolidFileIcon type={file.type} size={33} />
+                    <SolidFileIcon type={file.type} size={32} />
                   </View>
                   <View style={styles.fileBody}>
                     <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
@@ -977,12 +977,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   emptyState: {
-    padding: 18,
+    alignItems: 'center',
+    padding: 22,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface2,
-    alignItems: 'center',
     marginBottom: 18,
   },
   emptyIcon: {
@@ -1199,9 +1199,9 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   },
   list: {
+    zIndex: 1,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border1,
-    zIndex: 1,
   },
   fileRow: {
     minHeight: 72,
@@ -1213,8 +1213,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border1,
   },
   fileIcon: {
-    width: 50,
-    height: 50,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1400,7 +1400,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
+    backgroundColor: theme.colors.surface2,
   },
   gridTop: {
     minHeight: 40,
