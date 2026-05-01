@@ -1,0 +1,34 @@
+# Varredura de UI mobile — elementos sem funcionalidade/comportamento
+
+## Escopo analisado
+
+- `apps/mobile/src/screens`
+- `apps/mobile/src/components`
+
+Critério usado: elementos de UI que aparentam ser acionáveis (ex.: `Pressable`, botões de ação, linhas de configuração com affordance de navegação) mas não possuem `onPress`/handler efetivo, ou não disparam qualquer fluxo funcional além de renderização estática.
+
+## Achados
+
+| Tela                              | Elemento                                                                               | Evidência técnica                                             | Comportamento atual             | Comportamento esperado (inferido)                                 | Local                                          |
+| --------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------- |
+| Home                              | Botão circular com `+` no topo (`newPlanBtn`)                                          | `Pressable` sem `onPress`                                     | Não reage a toque com ação real | Criar novo plano (modal/sheet/form)                               | `apps/mobile/src/screens/HomeScreen.js`        |
+| Home                              | Card "Novo plano" na visualização em grade (`newPlanCard`)                             | `Pressable` sem `onPress`                                     | Sem ação funcional              | Criar novo plano a partir do contexto de listagem                 | `apps/mobile/src/screens/HomeScreen.js`        |
+| Home                              | Linha "Novo plano" na visualização em lista (`newPlanListRow`)                         | `Pressable` sem `onPress`                                     | Sem ação funcional              | Criar novo plano na visão lista                                   | `apps/mobile/src/screens/HomeScreen.js`        |
+| Files | Botão "mais opções" por item na visualização lista (`moreButton`)                      | `Pressable` sem `onPress`                                     | Não abre menu contextual        | Abrir menu de ações (renomear, mover, compartilhar, excluir etc.) | `apps/mobile/src/screens/FilesScreen.js`       |
+| Files                             | Botão "mais opções" por item na visualização grid (`gridMoreButton`)                   | `Pressable` sem `onPress`                                     | Não abre menu contextual        | Abrir menu contextual no card de arquivo                          | `apps/mobile/src/screens/FilesScreen.js`       |
+| Kanban (detalhe do cartão)        | Botão de topo "Mais opções" (ícone `MoreHorizontal`)                                   | `Pressable` sem `onPress`                                     | Não executa ação                | Abrir menu de opções do cartão (arquivar, mover, excluir etc.)    | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (detalhe do cartão)        | Ações rápidas: Membros, Etiquetas, Data, Checklist, Anexo (`DetailAction`)             | Componente renderiza `Pressable` sem `onPress`                | Toque não executa nada          | Abrir editores/seletores específicos de cada ação                 | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (detalhe do cartão)        | Ação "Adicionar" em Anexos                                                             | `DetailSectionAction` habilitada, porém sem `onPress` passado | Botão habilitado sem efeito     | Abrir picker de anexos                                            | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (detalhe do cartão)        | Ações secundárias de anexo: "Biblioteca" e "Meu dispositivo" (`DetailSecondaryAction`) | `Pressable` sem `onPress` no componente base                  | Sem efeito                      | Abrir biblioteca interna e seletor de arquivos do dispositivo     | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (detalhe do cartão)        | Ação "Adicionar" em Checklist                                                          | `DetailSectionAction` habilitada, sem `onPress` passado       | Sem efeito                      | Criar checklist no cartão                                         | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (detalhe do cartão)        | Ações secundárias: "Criar checklist" e "Adicionar item"                                | `DetailSecondaryAction` sem `onPress`                         | Sem efeito                      | Criar checklist e adicionar item imediatamente                    | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (detalhe do cartão)        | Botão de enviar comentário (ícone `Send`)                                              | `Pressable` sem `onPress`                                     | Não publica comentário          | Enviar comentário e atualizar feed de atividade                   | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (coluna)                   | Botão `+` no cabeçalho da coluna (`columnAction`)                                      | `Pressable` sem `onPress`                                     | Sem efeito                      | Abrir criação rápida de cartão na coluna                          | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (coluna)                   | CTA "Adicionar cartão" ao final da coluna (`addCard`)                                  | `Pressable` sem `onPress`                                     | Sem efeito                      | Inserir novo cartão na coluna                                     | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (modo tarefas)             | Botão "Mais opções" no cabeçalho de tarefas (`tasksMoreButton`)                        | `Pressable` sem `onPress`                                     | Sem efeito                      | Abrir menu de ordenação/filtros/ações de lote                     | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+| Kanban (modo tarefas)             | FAB "Adicionar tarefa" (`tasksFab`)                                                    | `Pressable` sem `onPress`                                     | Sem efeito                      | Criar nova tarefa/cartão rapidamente                              | `apps/mobile/src/screens/MobileKanbanBoard.js` |
+
+## Observações
+
+- Existem controles que **possuem comportamento apenas visual/local** (ex.: trocar aba destacada, alternar modo de visualização), mas sem conexão com backend/persistência. Eles não foram marcados aqui quando há reação de estado perceptível ao toque.
+- Este relatório foca no que está completamente sem ação funcional acionável no contexto atual.
