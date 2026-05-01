@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Animated, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Animated, Easing, FlatList, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   Archive,
   ArrowDown,
@@ -314,121 +314,97 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
 
   return (
     <View style={styles.page}>
-      <ScrollView
+      <FlatList
+        key={displayMode}
         style={styles.scroller}
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topbar}>
-          <View style={styles.topbarText}>
-            <Text style={styles.pageTitle}>Arquivos</Text>
-            <Text style={styles.pageSubtitle} numberOfLines={1}>
-              {activeSectionLabel} · {filteredFiles.length} itens
-            </Text>
-          </View>
-          <View style={styles.topbarActions}>
-            <Pressable
-              style={styles.iconButton}
-              onPress={() => setSortSheetOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Ordenar arquivos"
-            >
-              <ArrowDownUp size={18} color={theme.colors.text1} strokeWidth={1.9} />
-            </Pressable>
-            <Pressable
-              style={styles.newButton}
-              onPress={openNewItemSheet}
-              accessibilityRole="button"
-              accessibilityLabel="Adicionar arquivo"
-            >
-              <Plus size={18} color={theme.colors.white} strokeWidth={2} />
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.searchWrap}>
-          <Search size={15} color={theme.colors.text3} strokeWidth={1.8} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Buscar na biblioteca..."
-            placeholderTextColor={theme.colors.text3}
-            style={styles.searchInput}
-            selectionColor={theme.colors.text1}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {query ? (
-            <Pressable style={styles.searchClear} onPress={() => setQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Limpar busca">
-              <X size={14} color={theme.colors.text2} strokeWidth={1.8} />
-            </Pressable>
-          ) : null}
-        </View>
-
-        <ScrollView
-          horizontal
-          style={styles.sectionChipsScroller}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.sectionChips}
-        >
-          {fileSections.map((section) => {
-            const SectionIcon = section.icon
-            const isActive = activeSection === section.id
-            const count = sectionCounts[section.id] ?? 0
+        data={filteredFiles}
+        keyExtractor={(file) => String(file.id)}
+        numColumns={displayMode === 'grid' ? 2 : 1}
+        columnWrapperStyle={displayMode === 'grid' ? styles.gridRow : undefined}
+        renderItem={({ item: file, index }) => {
+          if (displayMode === 'list') {
             return (
-              <Pressable
-                key={section.id}
-                style={[styles.sectionChip, isActive && styles.sectionChipActive]}
-                onPress={() => setActiveSection(section.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
-              >
-                <SectionIcon size={15} color={isActive ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.9} />
-                <Text style={[styles.sectionChipLabel, isActive && styles.sectionChipLabelActive]} numberOfLines={1}>
-                  {section.label}
-                </Text>
-                <View style={[styles.sectionChipCount, isActive && styles.sectionChipCountActive]}>
-                  <Text style={[styles.sectionChipCountText, isActive && styles.sectionChipCountTextActive]}>{count}</Text>
+              <View style={[styles.fileRow, index === 0 && styles.fileRowFirst]}>
+                <View style={styles.fileIcon}>
+                  <SolidFileIcon type={file.type} size={32} />
                 </View>
-              </Pressable>
+                <View style={styles.fileBody}>
+                  <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
+                  <View style={styles.fileMetaRow}>
+                    <Text style={styles.fileMeta} numberOfLines={1}>
+                      {file.size || '0 KB'} · {file.modified}
+                    </Text>
+                    {file.shared ? (
+                      <View style={styles.sharedBadge}>
+                        <Text style={styles.sharedBadgeText}>compartilhado</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+                <View style={styles.fileActions}>
+                  <Pressable
+                    style={styles.starButton}
+                    onPress={() => {
+                      setLocalFiles((currentFiles) => currentFiles.map((item) => (
+                        item.id === file.id ? { ...item, favorite: !item.favorite, modified: 'agora' } : item
+                      )))
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
+                  >
+                    <Star size={18} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
+                  </Pressable>
+                  <Pressable
+                    style={styles.moreButton}
+                    onPress={() => openFileMenu(file)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mais opções para ${file.name}`}
+                  >
+                    <MoreHorizontal size={20} color={theme.colors.text2} strokeWidth={2} />
+                  </Pressable>
+                </View>
+              </View>
             )
-          })}
-        </ScrollView>
+          }
 
-        <View style={styles.toolbar}>
-          <View style={styles.viewToggle}>
-            <Pressable
-              style={[styles.viewToggleBtn, displayMode === 'grid' && styles.viewToggleBtnActive]}
-              onPress={() => setDisplayMode('grid')}
-              accessibilityRole="button"
-              accessibilityLabel="Visualizacao em grade"
-            >
-              <Grid2X2 size={15} color={displayMode === 'grid' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
-            </Pressable>
-            <Pressable
-              style={[styles.viewToggleBtn, displayMode === 'list' && styles.viewToggleBtnActive]}
-              onPress={() => setDisplayMode('list')}
-              accessibilityRole="button"
-              accessibilityLabel="Visualizacao em lista"
-            >
-              <List size={16} color={displayMode === 'list' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={styles.sortButton}
-            onPress={() => setSortSheetOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Abrir opções de ordenação"
-          >
-            <Text style={styles.sortButtonText} numberOfLines={1}>
-              Ordenar: {activeSection === 'recent' ? 'Modificado' : sortKey === 'modified' ? 'Modificado' : sortKey === 'size' ? 'Tamanho' : 'Nome'}
-            </Text>
-            <ArrowDown size={16} color={theme.colors.text3} strokeWidth={1.8} />
-          </Pressable>
-        </View>
-
-        {filteredFiles.length === 0 ? (
+          return (
+            <View style={styles.gridItem}>
+              <View style={styles.gridTop}>
+                <View style={styles.gridIcon}>
+                  <SolidFileIcon type={file.type} size={32} />
+                </View>
+                <View style={styles.gridActions}>
+                  <Pressable
+                    style={styles.starButton}
+                    onPress={() => {
+                      setLocalFiles((currentFiles) => currentFiles.map((item) => (
+                        item.id === file.id ? { ...item, favorite: !item.favorite, modified: 'agora' } : item
+                      )))
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
+                  >
+                    <Star size={18} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
+                  </Pressable>
+                  <Pressable
+                    style={styles.gridMoreButton}
+                    onPress={() => openFileMenu(file)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mais opções para ${file.name}`}
+                  >
+                    <MoreHorizontal size={20} color={theme.colors.text2} strokeWidth={2} />
+                  </Pressable>
+                </View>
+              </View>
+              <Text style={styles.gridName} numberOfLines={2}>{file.name}</Text>
+              <Text style={styles.gridMeta} numberOfLines={1}>
+                {file.size || '0 KB'} · {file.modified}
+              </Text>
+            </View>
+          )
+        }}
+        ListEmptyComponent={(
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Folder size={18} color={theme.colors.text3} strokeWidth={1.8} />
@@ -438,95 +414,121 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               {query ? 'Tente buscar por outro termo.' : 'Envie arquivos, crie pastas e organize sua biblioteca.'}
             </Text>
           </View>
-        ) : displayMode === 'list' ? (
-          <View style={styles.list}>
-            {filteredFiles.map((file) => {
-              return (
-                <View key={file.id} style={styles.fileRow}>
-                  <View style={styles.fileIcon}>
-                    <SolidFileIcon type={file.type} size={32} />
-                  </View>
-                  <View style={styles.fileBody}>
-                    <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
-                    <View style={styles.fileMetaRow}>
-                      <Text style={styles.fileMeta} numberOfLines={1}>
-                        {file.size || '0 KB'} · {file.modified}
-                      </Text>
-                      {file.shared ? (
-                        <View style={styles.sharedBadge}>
-                          <Text style={styles.sharedBadgeText}>compartilhado</Text>
-                        </View>
-                      ) : null}
+        )}
+        ListHeaderComponent={(
+          <View>
+            <View style={styles.topbar}>
+              <View style={styles.topbarText}>
+                <Text style={styles.pageTitle}>Arquivos</Text>
+                <Text style={styles.pageSubtitle} numberOfLines={1}>
+                  {activeSectionLabel} · {filteredFiles.length} itens
+                </Text>
+              </View>
+              <View style={styles.topbarActions}>
+                <Pressable
+                  style={styles.iconButton}
+                  onPress={() => setSortSheetOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ordenar arquivos"
+                >
+                  <ArrowDownUp size={18} color={theme.colors.text1} strokeWidth={1.9} />
+                </Pressable>
+                <Pressable
+                  style={styles.newButton}
+                  onPress={openNewItemSheet}
+                  accessibilityRole="button"
+                  accessibilityLabel="Adicionar arquivo"
+                >
+                  <Plus size={18} color={theme.colors.white} strokeWidth={2} />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.searchWrap}>
+              <Search size={15} color={theme.colors.text3} strokeWidth={1.8} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Buscar na biblioteca..."
+                placeholderTextColor={theme.colors.text3}
+                style={styles.searchInput}
+                selectionColor={theme.colors.text1}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {query ? (
+                <Pressable style={styles.searchClear} onPress={() => setQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Limpar busca">
+                  <X size={14} color={theme.colors.text2} strokeWidth={1.8} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            <ScrollView
+              horizontal
+              style={styles.sectionChipsScroller}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sectionChips}
+            >
+              {fileSections.map((section) => {
+                const SectionIcon = section.icon
+                const isActive = activeSection === section.id
+                const count = sectionCounts[section.id] ?? 0
+                return (
+                  <Pressable
+                    key={section.id}
+                    style={[styles.sectionChip, isActive && styles.sectionChipActive]}
+                    onPress={() => setActiveSection(section.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isActive }}
+                  >
+                    <SectionIcon size={15} color={isActive ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.9} />
+                    <Text style={[styles.sectionChipLabel, isActive && styles.sectionChipLabelActive]} numberOfLines={1}>
+                      {section.label}
+                    </Text>
+                    <View style={[styles.sectionChipCount, isActive && styles.sectionChipCountActive]}>
+                      <Text style={[styles.sectionChipCountText, isActive && styles.sectionChipCountTextActive]}>{count}</Text>
                     </View>
-                  </View>
-                  <View style={styles.fileActions}>
-                    <Pressable
-                      style={styles.starButton}
-                      onPress={() => {
-                        setLocalFiles((currentFiles) => currentFiles.map((item) => (
-                          item.id === file.id ? { ...item, favorite: !item.favorite, modified: 'agora' } : item
-                        )))
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
-                    >
-                      <Star size={18} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
-                    </Pressable>
-                    <Pressable
-                      style={styles.moreButton}
-                      onPress={() => openFileMenu(file)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Mais opções para ${file.name}`}
-                    >
-                      <MoreHorizontal size={20} color={theme.colors.text2} strokeWidth={2} />
-                    </Pressable>
-                  </View>
-                </View>
-              )
-            })}
-          </View>
-        ) : (
-          <View style={styles.grid}>
-            {filteredFiles.map((file) => {
-              return (
-                <View key={file.id} style={styles.gridItem}>
-                  <View style={styles.gridTop}>
-                    <View style={styles.gridIcon}>
-                      <SolidFileIcon type={file.type} size={32} />
-                    </View>
-                    <View style={styles.gridActions}>
-                      <Pressable
-                        style={styles.starButton}
-                        onPress={() => {
-                          setLocalFiles((currentFiles) => currentFiles.map((item) => (
-                            item.id === file.id ? { ...item, favorite: !item.favorite, modified: 'agora' } : item
-                          )))
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
-                      >
-                        <Star size={18} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
-                      </Pressable>
-                      <Pressable
-                        style={styles.gridMoreButton}
-                        onPress={() => openFileMenu(file)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Mais opções para ${file.name}`}
-                      >
-                        <MoreHorizontal size={20} color={theme.colors.text2} strokeWidth={2} />
-                      </Pressable>
-                    </View>
-                  </View>
-                  <Text style={styles.gridName} numberOfLines={2}>{file.name}</Text>
-                  <Text style={styles.gridMeta} numberOfLines={1}>
-                    {file.size || '0 KB'} · {file.modified}
-                  </Text>
-                </View>
-              )
-            })}
+                  </Pressable>
+                )
+              })}
+            </ScrollView>
+
+            <View style={styles.toolbar}>
+              <View style={styles.viewToggle}>
+                <Pressable
+                  style={[styles.viewToggleBtn, displayMode === 'grid' && styles.viewToggleBtnActive]}
+                  onPress={() => setDisplayMode('grid')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Visualizacao em grade"
+                >
+                  <Grid2X2 size={15} color={displayMode === 'grid' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
+                </Pressable>
+                <Pressable
+                  style={[styles.viewToggleBtn, displayMode === 'list' && styles.viewToggleBtnActive]}
+                  onPress={() => setDisplayMode('list')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Visualizacao em lista"
+                >
+                  <List size={16} color={displayMode === 'list' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={styles.sortButton}
+                onPress={() => setSortSheetOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir opções de ordenação"
+              >
+                <Text style={styles.sortButtonText} numberOfLines={1}>
+                  Ordenar: {activeSection === 'recent' ? 'Modificado' : sortKey === 'modified' ? 'Modificado' : sortKey === 'size' ? 'Tamanho' : 'Nome'}
+                </Text>
+                <ArrowDown size={16} color={theme.colors.text3} strokeWidth={1.8} />
+              </Pressable>
+            </View>
           </View>
         )}
-      </ScrollView>
+        showsVerticalScrollIndicator={false}
+      />
 
       <View
         style={[styles.sheetLayer, { bottom: -bottomOverlayOffset }]}
@@ -1212,6 +1214,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border1,
   },
+  fileRowFirst: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border1,
+  },
   fileIcon: {
     width: 42,
     height: 42,
@@ -1393,14 +1399,18 @@ const styles = StyleSheet.create({
     gap: 12,
     zIndex: 1,
   },
+  gridRow: {
+    gap: 12,
+  },
   gridItem: {
-    width: '48%',
+    flex: 1,
     minHeight: 138,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface2,
+    marginBottom: 12,
   },
   gridTop: {
     minHeight: 40,
