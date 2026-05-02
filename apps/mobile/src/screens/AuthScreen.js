@@ -15,8 +15,16 @@ function notify(message) {
   Alert.alert('Plan Things', message)
 }
 
+function oauthErrorMessage(errorCode) {
+  if (errorCode === 'OAUTH_PROVIDER_ERROR') return 'O provedor cancelou ou recusou o login.'
+  if (errorCode === 'OAUTH_CODE_AUSENTE') return 'O provedor nao retornou o codigo de login.'
+  if (errorCode === 'ESTADO_OAUTH_EXPIRADO') return 'A validacao do login expirou. Tente novamente.'
+  if (errorCode === 'ESTADO_OAUTH_INVALIDO') return 'Nao foi possivel validar este login. Tente novamente.'
+  return 'Nao foi possivel concluir o login com o provedor.'
+}
+
 export default function AuthScreen() {
-  const { login, register, startOAuthLogin } = useAuth()
+  const { clearOAuthError, login, oauthError, register, startOAuthLogin } = useAuth()
   const [mode, setMode] = useState('welcome')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -96,6 +104,15 @@ export default function AuthScreen() {
             <View style={styles.authHeading}>
               <Text style={styles.authTitle}>{isRegister ? 'Comece sua rotina.' : 'Bem-vindo\nde volta!'}</Text>
             </View>
+
+            {oauthError ? (
+              <View style={styles.oauthError}>
+                <Text style={styles.oauthErrorText}>{oauthErrorMessage(oauthError)}</Text>
+                <Pressable onPress={clearOAuthError} hitSlop={8} accessibilityRole="button">
+                  <Text style={styles.oauthErrorDismiss}>Fechar</Text>
+                </Pressable>
+              </View>
+            ) : null}
 
             <View style={styles.form}>
               {isRegister ? (
@@ -315,6 +332,29 @@ const styles = StyleSheet.create({
     lineHeight: 44,
     fontWeight: '400',
     textAlign: 'center',
+  },
+  oauthError: {
+    width: '92%',
+    alignSelf: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#ffd3d3',
+    borderRadius: theme.radius.sm,
+    backgroundColor: '#fff5f5',
+    marginBottom: 14,
+  },
+  oauthErrorText: {
+    color: theme.colors.red,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  oauthErrorDismiss: {
+    color: theme.colors.red,
+    fontSize: 12,
+    fontWeight: '800',
   },
   form: {
     gap: 12,

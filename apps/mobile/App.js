@@ -13,7 +13,6 @@ const linking = {
   prefixes: ['planthings://'],
   config: {
     screens: {
-      OAuthCallback: 'oauth/callback',
       App: {
         screens: {
           home: '',

@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Animated, Easing, FlatList, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
+import { getFileSizeBytes, getFileTimestamp } from '@plan-things/shared-client/files'
 import {
-  Archive,
   ArrowDown,
   ArrowDownUp,
   Check,
@@ -45,20 +45,19 @@ const fileSections = [
   { id: 'shared', label: 'Compartilhado', icon: UsersRound },
   { id: 'recent', label: 'Recentes', icon: Clock3 },
   { id: 'favorites', label: 'Favoritos', icon: Star },
-  { id: 'archived', label: 'Arquivados', icon: Archive },
   { id: 'trash', label: 'Lixeira', icon: Trash2 },
 ]
 
 const quickCreateOptions = [
   { id: 'folder', label: 'Pasta', icon: FolderPlus },
-  { id: 'scan', label: 'Digitalizar', icon: ScanLine },
+  { id: 'scan', label: 'Digitalizar', icon: ScanLine, disabled: true },
   { id: 'upload', label: 'Carregar', icon: Upload },
 ]
 
 const documentCreateOptions = [
-  { id: 'word', label: 'Documento do Word', icon: FileText },
-  { id: 'powerpoint', label: 'Apresentação do PowerPoint', icon: Presentation },
-  { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet },
+  { id: 'word', label: 'Documento do Word', icon: FileText, disabled: true },
+  { id: 'powerpoint', label: 'Apresentação do PowerPoint', icon: Presentation, disabled: true },
+  { id: 'excel', label: 'Planilha do Excel', icon: FileSpreadsheet, disabled: true },
 ]
 
 function SolidFileIcon({ type = 'doc', size, variant = 'tile' }) {
@@ -84,39 +83,6 @@ function SolidFileIcon({ type = 'doc', size, variant = 'tile' }) {
   )
 }
 
-function parseFileSize(input) {
-  if (!input) return 0
-  const trimmed = String(input).trim().toUpperCase()
-  const match = trimmed.match(/(\d+(?:[.,]\d+)?)\s*(B|KB|MB|GB)/)
-  if (!match) return 0
-  const raw = match[1].replace(',', '.')
-  const value = Number(raw)
-  if (!Number.isFinite(value)) return 0
-  const unit = match[2]
-  const factor = unit === 'GB' ? 1024 ** 3 : unit === 'MB' ? 1024 ** 2 : unit === 'KB' ? 1024 : 1
-  return value * factor
-}
-
-function parseModifiedToMinutesAgo(input) {
-  const value = String(input ?? '').trim().toLowerCase()
-  if (!value) return Number.POSITIVE_INFINITY
-  if (value === 'agora') return 0
-  if (value === 'ontem') return 24 * 60
-
-  const match = value.match(/^há\s*(\d+)\s*(min|minutos|h|horas|hora|dia|dias|semana|semanas)$/)
-  if (!match) return Number.POSITIVE_INFINITY
-
-  const amount = Number(match[1])
-  if (!Number.isFinite(amount)) return Number.POSITIVE_INFINITY
-
-  const unit = match[2]
-  if (unit === 'min' || unit === 'minutos') return amount
-  if (unit === 'h' || unit === 'hora' || unit === 'horas') return amount * 60
-  if (unit === 'dia' || unit === 'dias') return amount * 24 * 60
-  if (unit === 'semana' || unit === 'semanas') return amount * 7 * 24 * 60
-  return Number.POSITIVE_INFINITY
-}
-
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const {
     files: localFiles,
@@ -139,7 +105,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const [newItemSheetVisible, setNewItemSheetVisible] = useState(false)
   const [selectedFileId, setSelectedFileId] = useState(null)
   const [fileSheetMode, setFileSheetMode] = useState('menu')
-  const [renameValue, setRenameValue] = useState('')
+  const [fileError, setFileError] = useState(null)
   const [createFlow, setCreateFlow] = useState(null)
   const [createName, setCreateName] = useState('')
   const sheetProgress = useRef(new Animated.Value(0)).current
@@ -154,7 +120,6 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       shared: 0,
       recent: 0,
       favorites: 0,
-      archived: 0,
       trash: 0,
     }
 
@@ -165,7 +130,6 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       }
 
       counts.recent += 1
-      if (file.archived) counts.archived += 1
       if (file.favorite) counts.favorites += 1
       if (file.shared) counts.shared += 1
       if ((file.section ?? 'mine') === 'mine') counts.mine += 1
@@ -180,7 +144,6 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       if (activeSection === 'trash') return Boolean(file.trashed)
       if (file.trashed) return false
 
-      if (activeSection === 'archived') return Boolean(file.archived)
       if (activeSection === 'favorites') return Boolean(file.favorite)
       if (activeSection === 'shared') return Boolean(file.shared)
       if (activeSection === 'mine') return (file.section ?? 'mine') === 'mine'
@@ -197,10 +160,10 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
 
     const sorted = [...searched].sort((a, b) => {
       if (effectiveSortKey === 'size') {
-        return parseFileSize(a.size) - parseFileSize(b.size)
+        return getFileSizeBytes(a) - getFileSizeBytes(b)
       }
       if (effectiveSortKey === 'modified') {
-        return parseModifiedToMinutesAgo(a.modified) - parseModifiedToMinutesAgo(b.modified)
+        return getFileTimestamp(a) - getFileTimestamp(b)
       }
       return String(a.name).localeCompare(String(b.name), 'pt-BR', { sensitivity: 'base' })
     })
@@ -221,6 +184,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   }, [sheetDragY, sheetProgress])
 
   const openCreateFlow = useCallback((option) => {
+    if (option.disabled) return
     sheetProgress.stopAnimation()
     sheetProgress.setValue(0)
     sheetDragY.setValue(0)
@@ -263,13 +227,14 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
 
   const openFileMenu = (file) => {
     setSelectedFileId(file.id)
-    setRenameValue(file.name)
+    setFileError(null)
     setFileSheetMode('menu')
   }
 
   const closeFileSheet = () => {
     setSelectedFileId(null)
     setFileSheetMode('menu')
+    setFileError(null)
   }
 
   const updateSelectedFile = (patch) => {
@@ -290,25 +255,6 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
     }
   }
 
-  const renameSelectedFile = () => {
-    const name = renameValue.trim()
-    if (!name) return
-    closeFileSheet()
-  }
-
-  const moveSelectedFile = (section) => {
-    if (section === 'favorites') {
-      updateSelectedFile({ favorite: true })
-    }
-    if (section === 'shared') {
-      updateSelectedFile({ shared: true })
-    }
-    if (section === 'mine' && selectedFile?.trashed) {
-      void restoreFile(selectedFile.id)
-    }
-    closeFileSheet()
-  }
-
   const deleteSelectedFile = () => {
     if (selectedFile?.trashed) {
       void restoreFile(selectedFile.id)
@@ -316,6 +262,17 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       updateSelectedFile({ trashed: true })
     }
     closeFileSheet()
+  }
+
+  const downloadSelectedFile = async () => {
+    if (!selectedFile || selectedFile.type === 'folder') return
+    setFileError(null)
+    try {
+      await downloadFile(selectedFile)
+      closeFileSheet()
+    } catch (error) {
+      setFileError(error?.message ?? 'Nao foi possivel baixar o arquivo.')
+    }
   }
 
   const submitCreateFlow = async () => {
@@ -594,13 +551,16 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               return (
                 <Pressable
                   key={option.id}
-                  style={styles.quickCreateButton}
+                  style={[styles.quickCreateButton, option.disabled && styles.quickCreateButtonDisabled]}
                   onPress={() => openCreateFlow(option)}
+                  disabled={option.disabled}
                   accessibilityRole="button"
+                  accessibilityState={{ disabled: Boolean(option.disabled) }}
                   accessibilityLabel={option.label}
                 >
-                  <OptionIcon size={24} color={theme.colors.text1} strokeWidth={1.55} />
+                  <OptionIcon size={24} color={option.disabled ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.55} />
                   <Text style={styles.quickCreateLabel}>{option.label}</Text>
+                  {option.disabled ? <Text style={styles.comingSoonText}>Em breve</Text> : null}
                 </Pressable>
               )
             })}
@@ -612,15 +572,22 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               return (
                 <Pressable
                   key={option.id}
-                  style={styles.documentCreateRow}
+                  style={[styles.documentCreateRow, option.disabled && styles.documentCreateRowDisabled]}
                   onPress={() => openCreateFlow(option)}
+                  disabled={option.disabled}
                   accessibilityRole="button"
+                  accessibilityState={{ disabled: Boolean(option.disabled) }}
                   accessibilityLabel={option.label}
                 >
                   <View style={styles.documentCreateIcon}>
                     <OptionIcon size={18} color={theme.colors.white} fill={theme.colors.text1} strokeWidth={1.55} />
                   </View>
                   <Text style={styles.documentCreateLabel}>{option.label}</Text>
+                  {option.disabled ? (
+                    <View style={styles.comingSoonBadge}>
+                      <Text style={styles.comingSoonBadgeText}>Em breve</Text>
+                    </View>
+                  ) : null}
                 </Pressable>
               )
             })}
@@ -628,7 +595,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
         </Animated.View>
       </View>
 
-      <BottomSheet visible={Boolean(selectedFile)} onClose={closeFileSheet} title={fileSheetMode === 'menu' ? selectedFile?.name : fileSheetMode === 'rename' ? 'Renomear' : 'Mover para'}>
+      <BottomSheet visible={Boolean(selectedFile)} onClose={closeFileSheet} title={fileSheetMode === 'details' ? 'Detalhes' : selectedFile?.name}>
         {fileSheetMode === 'menu' ? (
           <View style={styles.fileActionList}>
             <View style={styles.fileActionMeta}>
@@ -638,6 +605,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               <Text style={styles.fileActionSubtitle}>{selectedFile?.sizeLabel || selectedFile?.size || '0 KB'} · {selectedFile?.modified}</Text>
               </View>
             </View>
+            {fileError ? <Text style={styles.fileInlineError}>{fileError}</Text> : null}
 
             <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('details')} accessibilityRole="button">
               <FileText size={18} color={theme.colors.text1} strokeWidth={1.8} />
@@ -654,9 +622,12 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               <Star size={18} color={theme.colors.text1} strokeWidth={1.8} />
               <Text style={styles.fileActionLabel}>{selectedFile?.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}</Text>
             </Pressable>
-            <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('rename')} accessibilityRole="button">
-              <Text style={styles.fileActionIconText}>Aa</Text>
+            <Pressable style={[styles.fileActionRow, styles.fileActionRowDisabled]} disabled accessibilityRole="button" accessibilityState={{ disabled: true }}>
+              <Text style={[styles.fileActionIconText, styles.fileActionIconTextDisabled]}>Aa</Text>
               <Text style={styles.fileActionLabel}>Renomear</Text>
+              <View style={styles.comingSoonBadge}>
+                <Text style={styles.comingSoonBadgeText}>Em breve</Text>
+              </View>
             </Pressable>
             <Pressable
               style={styles.fileActionRow}
@@ -670,19 +641,26 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               <Text style={styles.fileActionLabel}>Compartilhar</Text>
             </Pressable>
             <Pressable
-              style={styles.fileActionRow}
-              onPress={() => {
-                if (selectedFile?.id) void downloadFile(selectedFile.id)
-                closeFileSheet()
-              }}
+              style={[styles.fileActionRow, selectedFile?.type === 'folder' && styles.fileActionRowDisabled]}
+              onPress={downloadSelectedFile}
+              disabled={selectedFile?.type === 'folder'}
               accessibilityRole="button"
+              accessibilityState={{ disabled: selectedFile?.type === 'folder' }}
             >
-              <Download size={18} color={theme.colors.text1} strokeWidth={1.8} />
+              <Download size={18} color={selectedFile?.type === 'folder' ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.8} />
               <Text style={styles.fileActionLabel}>Baixar</Text>
+              {selectedFile?.type === 'folder' ? (
+                <View style={styles.comingSoonBadge}>
+                  <Text style={styles.comingSoonBadgeText}>Em breve</Text>
+                </View>
+              ) : null}
             </Pressable>
-            <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('move')} accessibilityRole="button">
-              <Folder size={18} color={theme.colors.text1} strokeWidth={1.8} />
+            <Pressable style={[styles.fileActionRow, styles.fileActionRowDisabled]} disabled accessibilityRole="button" accessibilityState={{ disabled: true }}>
+              <Folder size={18} color={theme.colors.text3} strokeWidth={1.8} />
               <Text style={styles.fileActionLabel}>Mover</Text>
+              <View style={styles.comingSoonBadge}>
+                <Text style={styles.comingSoonBadgeText}>Em breve</Text>
+              </View>
             </Pressable>
             <Pressable style={[styles.fileActionRow, styles.fileActionDanger]} onPress={deleteSelectedFile} accessibilityRole="button">
               <Trash2 size={18} color={theme.colors.red} strokeWidth={1.8} />
@@ -702,45 +680,6 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           </View>
         ) : null}
 
-        {fileSheetMode === 'rename' ? (
-          <View>
-            <TextInput
-              value={renameValue}
-              onChangeText={setRenameValue}
-              style={styles.fileRenameInput}
-              selectionColor={theme.colors.text1}
-              autoCorrect={false}
-            />
-            <Pressable
-              style={[styles.filePrimaryButton, !renameValue.trim() && styles.filePrimaryButtonDisabled]}
-              onPress={renameSelectedFile}
-              disabled={!renameValue.trim()}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !renameValue.trim() }}
-            >
-              <Text style={[styles.filePrimaryButtonText, !renameValue.trim() && styles.filePrimaryButtonTextDisabled]}>Salvar nome</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {fileSheetMode === 'move' ? (
-          <View style={styles.fileActionList}>
-            {[
-              { id: 'mine', label: 'Meus arquivos', icon: Folder },
-              { id: 'shared', label: 'Compartilhado', icon: UsersRound },
-              { id: 'favorites', label: 'Favoritos', icon: Star },
-              { id: 'archived', label: 'Arquivados', icon: Archive },
-            ].map((target) => {
-              const TargetIcon = target.icon
-              return (
-                <Pressable key={target.id} style={styles.fileActionRow} onPress={() => moveSelectedFile(target.id)} accessibilityRole="button">
-                  <TargetIcon size={18} color={theme.colors.text1} strokeWidth={1.8} />
-                  <Text style={styles.fileActionLabel}>{target.label}</Text>
-                </Pressable>
-              )
-            })}
-          </View>
-        ) : null}
       </BottomSheet>
 
       <BottomSheet visible={sortSheetOpen} onClose={() => setSortSheetOpen(false)} title="Ordenar arquivos">
@@ -1401,10 +1340,19 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface2,
     outlineStyle: 'none',
   },
+  quickCreateButtonDisabled: {
+    opacity: 0.66,
+  },
   quickCreateLabel: {
     color: theme.colors.text1,
     fontSize: 13,
     lineHeight: 17,
+  },
+  comingSoonText: {
+    color: theme.colors.text3,
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '700',
   },
   documentCreateList: {
     gap: 18,
@@ -1415,6 +1363,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     outlineStyle: 'none',
+  },
+  documentCreateRowDisabled: {
+    opacity: 0.68,
   },
   documentCreateIcon: {
     width: 24,
@@ -1436,6 +1387,20 @@ const styles = StyleSheet.create({
     color: theme.colors.text1,
     fontSize: 17,
     lineHeight: 21,
+  },
+  comingSoonBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
+  },
+  comingSoonBadgeText: {
+    color: theme.colors.text3,
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: '800',
   },
   grid: {
     flexDirection: 'row',
@@ -1556,6 +1521,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface2,
     outlineStyle: 'none',
   },
+  fileActionRowDisabled: {
+    opacity: 0.72,
+  },
   fileActionIconText: {
     width: 18,
     color: theme.colors.text1,
@@ -1563,11 +1531,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  fileActionIconTextDisabled: {
+    color: theme.colors.text3,
+  },
   fileActionLabel: {
     flex: 1,
     color: theme.colors.text1,
     fontSize: 15,
     fontWeight: '500',
+  },
+  fileInlineError: {
+    color: theme.colors.red,
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.red,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface2,
   },
   fileActionDanger: {
     backgroundColor: '#fff0f0',

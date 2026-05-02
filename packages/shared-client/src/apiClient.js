@@ -37,6 +37,7 @@ export async function apiRequest(path, options = {}) {
     responseType = 'json',
     baseUrl = '',
     origin,
+    relative,
     fetchImpl = globalThis.fetch,
   } = options
 
@@ -60,7 +61,7 @@ export async function apiRequest(path, options = {}) {
   let response
 
   try {
-    response = await fetchImpl(buildApiUrl(path, query, { baseUrl, origin }), init)
+    response = await fetchImpl(buildApiUrl(path, query, { baseUrl, origin, relative }), init)
   } catch {
     throw new ApiClientError('Nao foi possivel conectar ao backend.', {
       code: 'ERRO_CONEXAO',

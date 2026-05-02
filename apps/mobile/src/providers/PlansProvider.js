@@ -142,19 +142,21 @@ export function PlansProvider({ children }) {
   }, [loadPlan, request])
 
   const createChecklist = useCallback(async (planId, cardId, title) => {
-    await request(`/api/plans/${planId}/board/cards/${cardId}/checklists`, {
+    const checklist = await request(`/api/plans/${planId}/board/cards/${cardId}/checklists`, {
       method: 'POST',
       body: { title },
     })
     await loadPlan(planId)
+    return checklist
   }, [loadPlan, request])
 
   const createChecklistItem = useCallback(async (planId, checklistId, title) => {
-    await request(`/api/plans/${planId}/board/checklists/${checklistId}/items`, {
+    const item = await request(`/api/plans/${planId}/board/checklists/${checklistId}/items`, {
       method: 'POST',
       body: { title },
     })
     await loadPlan(planId)
+    return item
   }, [loadPlan, request])
 
   const updateChecklistItem = useCallback(async (planId, item) => {
@@ -172,23 +174,26 @@ export function PlansProvider({ children }) {
   }, [loadPlan, request])
 
   const attachFileToCard = useCallback(async (planId, fileId, cardId) => {
-    await request(`/api/files/${fileId}/attach/cards/${cardId}`, { method: 'POST' })
+    const response = await request(`/api/files/${fileId}/attach/cards/${cardId}`, { method: 'POST' })
     await loadPlan(planId)
+    return response
   }, [loadPlan, request])
 
   const uploadAndAttachToCard = useCallback(async (planId, file, cardId) => {
     const formData = new FormData()
     formData.append('file', file)
-    await request(`/api/files/upload/attach/cards/${cardId}`, {
+    const response = await request(`/api/files/upload/attach/cards/${cardId}`, {
       method: 'POST',
       body: formData,
     })
     await loadPlan(planId)
+    return response
   }, [loadPlan, request])
 
   const removeAttachment = useCallback(async (planId, attachmentId) => {
-    await request(`/api/files/attachments/${attachmentId}`, { method: 'DELETE' })
+    const response = await request(`/api/files/attachments/${attachmentId}`, { method: 'DELETE' })
     await loadPlan(planId)
+    return response
   }, [loadPlan, request])
 
   const value = useMemo(() => ({

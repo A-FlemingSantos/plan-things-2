@@ -14,7 +14,6 @@ import {
   Link,
   LogOut,
   Mail,
-  Newspaper,
   Palette,
   Shield,
   Smartphone,
@@ -113,10 +112,11 @@ function InlineButton({ label, onPress, tone = 'secondary', disabled = false }) 
 
 export default function SettingsScreen() {
   const { session, accessToken, logout, patchSession } = useAuth()
-  const [dailySummaryEnabled, setDailySummaryEnabled] = useState(true)
-  const [mentionsEnabled, setMentionsEnabled] = useState(true)
-  const [remindersEnabled, setRemindersEnabled] = useState(true)
-  const [productNewsEnabled, setProductNewsEnabled] = useState(false)
+  const [emailNotifsEnabled, setEmailNotifsEnabled] = useState(true)
+  const [eventRemindersEnabled, setEventRemindersEnabled] = useState(true)
+  const [deadlineAlertsEnabled, setDeadlineAlertsEnabled] = useState(true)
+  const [settingsError, setSettingsError] = useState(null)
+  const [notificationsSaving, setNotificationsSaving] = useState(false)
   const [activeSheet, setActiveSheet] = useState(null)
   const [settingsSnapshot, setSettingsSnapshot] = useState(null)
   const [fullNameValue, setFullNameValue] = useState('')
@@ -135,19 +135,16 @@ export default function SettingsScreen() {
     const snapshot = await request('/api/settings')
     setSettingsSnapshot(snapshot)
     if (snapshot?.notifications) {
-      setDailySummaryEnabled(Boolean(snapshot.notifications.emailNotifs))
-      setMentionsEnabled(Boolean(snapshot.notifications.emailNotifs))
-      setRemindersEnabled(Boolean(snapshot.notifications.deadlineAlerts))
-      setProductNewsEnabled(Boolean(snapshot.notifications.eventReminders))
+      setEmailNotifsEnabled(Boolean(snapshot.notifications.emailNotifs))
+      setEventRemindersEnabled(Boolean(snapshot.notifications.eventReminders))
+      setDeadlineAlertsEnabled(Boolean(snapshot.notifications.deadlineAlerts))
     }
     if (snapshot?.account) {
       setFullNameValue(snapshot.account.fullName ?? session?.user?.fullName ?? '')
       void patchSession({ user: snapshot.account })
     }
-    if (snapshot?.workspace) {
-      setWorkspaceNameValue(snapshot.workspace.name ?? session?.workspace?.name ?? '')
-    }
-  }, [accessToken, patchSession, request])
+    setWorkspaceNameValue(session?.workspace?.name ?? '')
+  }, [accessToken, patchSession, request, session?.user?.fullName, session?.workspace?.name])
 
   useEffect(() => {
     loadSettings()
@@ -163,22 +160,33 @@ export default function SettingsScreen() {
   }, [loadSettings])
 
   const persistNotifications = async (next) => {
-    setDailySummaryEnabled(next.emailNotifs)
-    setMentionsEnabled(next.emailNotifs)
-    setRemindersEnabled(next.deadlineAlerts)
-    setProductNewsEnabled(next.eventReminders)
-    await request('/api/settings/notifications', {
-      method: 'PATCH',
-      body: next,
-    })
-    await loadSettings()
+    setNotificationsSaving(true)
+    setSettingsError(null)
+    try {
+      const notifications = await request('/api/settings/notifications', {
+        method: 'PATCH',
+        body: next,
+      })
+      setEmailNotifsEnabled(Boolean(notifications.emailNotifs))
+      setEventRemindersEnabled(Boolean(notifications.eventReminders))
+      setDeadlineAlertsEnabled(Boolean(notifications.deadlineAlerts))
+      setSettingsSnapshot((current) => ({
+        ...current,
+        notifications,
+      }))
+    } catch (error) {
+      setSettingsError(error?.message ?? 'Nao foi possivel salvar as notificacoes.')
+      await loadSettings()
+    } finally {
+      setNotificationsSaving(false)
+    }
   }
 
   const updateNotification = (field, value) => {
     const current = {
-      emailNotifs: dailySummaryEnabled || mentionsEnabled,
-      eventReminders: productNewsEnabled,
-      deadlineAlerts: remindersEnabled,
+      emailNotifs: emailNotifsEnabled,
+      eventReminders: eventRemindersEnabled,
+      deadlineAlerts: deadlineAlertsEnabled,
     }
     void persistNotifications({ ...current, [field]: value })
   }
@@ -356,12 +364,12 @@ export default function SettingsScreen() {
 
       <SectionCard
         title="Integrações"
-        hint="Conecte serviços para automatizar sua caixa de entrada."
+        hint="Conecte serviços para envio e recursos futuros."
       >
         <Row
           icon={Mail}
           label="Gmail"
-          hint="Importe mensagens e envie resumos."
+          hint="Conecte sua conta para envio de mensagens pelo Gmail."
           right={<InlineButton label={gmail?.connected ? 'Gerenciar' : 'Conectar'} onPress={() => setActiveSheet('gmail')} />}
         />
         <Row
@@ -377,14 +385,16 @@ export default function SettingsScreen() {
         title="Notificações"
         hint="Controle quando o app chama sua atenção."
       >
+        {settingsError ? <Text style={styles.inlineError}>{settingsError}</Text> : null}
         <Row
           icon={BellRing}
-          label="Resumo diário"
-          hint="Receba um resumo com pendências do dia."
+          label="Notificações por e-mail"
+          hint="Receba avisos importantes no e-mail da conta."
           right={(
             <Switch
-              value={dailySummaryEnabled}
+              value={emailNotifsEnabled}
               onValueChange={(value) => updateNotification('emailNotifs', value)}
+              disabled={notificationsSaving}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.border2}
@@ -392,13 +402,14 @@ export default function SettingsScreen() {
           )}
         />
         <Row
-          icon={AtSign}
-          label="Menções"
-          hint="Quando alguém mencionar você em uma tarefa."
+          icon={CalendarClock}
+          label="Lembretes de eventos"
+          hint="Alertas para eventos do workspace."
           right={(
             <Switch
-              value={mentionsEnabled}
-              onValueChange={(value) => updateNotification('emailNotifs', value)}
+              value={eventRemindersEnabled}
+              onValueChange={(value) => updateNotification('eventReminders', value)}
+              disabled={notificationsSaving}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.border2}
@@ -411,8 +422,9 @@ export default function SettingsScreen() {
           hint="Alertas para tarefas próximas do vencimento."
           right={(
             <Switch
-              value={remindersEnabled}
+              value={deadlineAlertsEnabled}
               onValueChange={(value) => updateNotification('deadlineAlerts', value)}
+              disabled={notificationsSaving}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.border2}
@@ -420,18 +432,11 @@ export default function SettingsScreen() {
           )}
         />
         <Row
-          icon={Newspaper}
-          label="Novidades do produto"
-          hint="Atualizações e notas de versão."
-          right={(
-            <Switch
-              value={productNewsEnabled}
-              onValueChange={(value) => updateNotification('eventReminders', value)}
-              trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
-              thumbColor={theme.colors.white}
-              ios_backgroundColor={theme.colors.border2}
-            />
-          )}
+          icon={AtSign}
+          label="Menções"
+          hint="Preferência separada ainda não está disponível."
+          right={<Pill label="Em breve" />}
+          disabled
         />
       </SectionCard>
 
@@ -820,6 +825,17 @@ const styles = StyleSheet.create({
     color: theme.colors.text2,
     fontSize: 12,
     lineHeight: 16,
+  },
+  inlineError: {
+    color: theme.colors.red,
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.red,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface2,
   },
   rowRight: {
     alignItems: 'flex-end',

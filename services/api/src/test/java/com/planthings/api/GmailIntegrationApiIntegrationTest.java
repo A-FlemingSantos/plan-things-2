@@ -32,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "app.oauth.providers.google.jwk-set-uri=https://www.googleapis.com/oauth2/v3/certs",
     "app.integrations.gmail.redirect-uri=http://localhost/api/settings/integrations/gmail/callback",
     "app.integrations.gmail.frontend-return-url=http://localhost/settings",
+    "app.integrations.gmail.mobile-return-url=planthings://settings",
     "app.integrations.token-key-base64=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 })
 class GmailIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
@@ -121,10 +122,55 @@ class GmailIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
     assertEquals("GMAIL_REFRESH_TOKEN_AUSENTE", queryParam(location, "error"));
   }
 
+  @Test
+  void shouldPreserveMobileReturnUrlWhenGmailAddressDiffers() throws Exception {
+    String token = registerAndGetToken("Gmail Owner", "gmail-owner@example.com", "12345678");
+    String state = startGmailAndReturnState(token, "mobile");
+
+    MvcResult callback = mockMvc.perform(get("/api/settings/integrations/gmail/callback")
+            .queryParam("state", state)
+            .queryParam("code", "gmail-other"))
+        .andExpect(status().isFound())
+        .andReturn();
+
+    String location = callback.getResponse().getHeader("Location");
+    assertTrue(location.startsWith("planthings://settings"));
+    assertEquals("error", queryParam(location, "gmail"));
+    assertEquals("GMAIL_EMAIL_DIVERGENTE", queryParam(location, "error"));
+  }
+
+  @Test
+  void shouldPreserveMobileReturnUrlWhenRefreshTokenIsMissing() throws Exception {
+    String token = registerAndGetToken("Gmail Owner", "gmail-owner@example.com", "12345678");
+    String state = startGmailAndReturnState(token, "mobile");
+
+    MvcResult callback = mockMvc.perform(get("/api/settings/integrations/gmail/callback")
+            .queryParam("state", state)
+            .queryParam("code", "gmail-no-refresh"))
+        .andExpect(status().isFound())
+        .andReturn();
+
+    String location = callback.getResponse().getHeader("Location");
+    assertTrue(location.startsWith("planthings://settings"));
+    assertEquals("error", queryParam(location, "gmail"));
+    assertEquals("GMAIL_REFRESH_TOKEN_AUSENTE", queryParam(location, "error"));
+  }
+
   private String startGmailAndReturnState(String token) throws Exception {
+    return startGmailAndReturnState(token, null);
+  }
+
+  private String startGmailAndReturnState(String token, String client) throws Exception {
+    String body = client == null ? "{}" : """
+        {
+          "client": "%s"
+        }
+        """.formatted(client);
+
     JsonNode start = readJson(mockMvc.perform(post("/api/settings/integrations/gmail/start")
             .header("Authorization", "Bearer " + token)
-            .contentType(MediaType.APPLICATION_JSON))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
         .andExpect(status().isOk())
         .andReturn());
 

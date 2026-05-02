@@ -82,6 +82,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [isReady, setIsReady] = useState(false)
   const [oauthRedirectTo, setOauthRedirectTo] = useState(null)
+  const [oauthError, setOauthError] = useState(null)
   const sessionRef = useRef(null)
 
   const saveSession = useCallback(async (nextSession) => {
@@ -143,6 +144,13 @@ export function AuthProvider({ children }) {
     if (payload.redirectTo) {
       setOauthRedirectTo(payload.redirectTo)
     }
+    if (payload.error) {
+      setOauthError(payload.error)
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/')
+      }
+      return
+    }
     if (payload.code) {
       await completeOAuthLogin(payload.code)
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -179,6 +187,7 @@ export function AuthProvider({ children }) {
   }, [saveSession])
 
   const startOAuthLogin = useCallback(async (provider, options = {}) => {
+    setOauthError(null)
     const response = await mobileApiRequest(`/api/auth/oauth/${provider}/start`, {
       method: 'POST',
       body: {
@@ -192,6 +201,10 @@ export function AuthProvider({ children }) {
     }
 
     return response
+  }, [])
+
+  const clearOAuthError = useCallback(() => {
+    setOauthError(null)
   }, [])
 
   const patchSession = useCallback(async ({ user, workspace } = {}) => {
@@ -213,13 +226,15 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(session?.accessToken),
     isReady,
     oauthRedirectTo,
+    oauthError,
+    clearOAuthError,
     login,
     register,
     startOAuthLogin,
     completeOAuthLogin,
     patchSession,
     logout,
-  }), [completeOAuthLogin, isReady, login, logout, oauthRedirectTo, patchSession, register, session, startOAuthLogin])
+  }), [clearOAuthError, completeOAuthLogin, isReady, login, logout, oauthError, oauthRedirectTo, patchSession, register, session, startOAuthLogin])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

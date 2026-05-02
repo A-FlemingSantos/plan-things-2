@@ -19,6 +19,27 @@ function mapBoardComment(comment) {
   }
 }
 
+function mapBoardChecklistItem(item = {}) {
+  const title = item.title ?? item.text ?? ''
+  const completed = Boolean(item.completed ?? item.checked)
+
+  return {
+    ...item,
+    title,
+    text: title,
+    completed,
+    checked: completed,
+  }
+}
+
+function mapBoardChecklist(checklist = {}) {
+  return {
+    ...checklist,
+    title: checklist.title ?? 'Checklist',
+    items: (checklist.items ?? []).map(mapBoardChecklistItem),
+  }
+}
+
 export function mapBoardCard(card, options = {}) {
   const timeZone = normalizeTimeZone(options.timeZone)
   const locale = options.locale ?? 'pt-BR'
@@ -60,7 +81,7 @@ export function mapBoardCard(card, options = {}) {
       displayLabel: formatCardDueLabel(card.dueAt, { locale, timeZone }),
       preserveDisplayLabel: false,
     },
-    checklists: card.checklists ?? [],
+    checklists: (card.checklists ?? []).map(mapBoardChecklist),
     raw: card,
   }
 }

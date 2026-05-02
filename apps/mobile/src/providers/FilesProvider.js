@@ -1,9 +1,27 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { Platform } from 'react-native'
+import * as FileSystem from 'expo-file-system'
+import * as Sharing from 'expo-sharing'
 import { mapApiFileItem } from '@plan-things/shared-client/files'
-import { mobileApiRequest } from '../services/api'
+import { mobileApiRequest, mobileApiUrl } from '../services/api'
 import { useAuth } from './AuthProvider'
 
 const FilesContext = createContext(null)
+
+function sanitizeFilename(name = 'arquivo') {
+  return String(name).replace(/[\\/:*?"<>|]+/g, '-').trim() || 'arquivo'
+}
+
+function triggerWebDownload(blob, filename) {
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.URL.revokeObjectURL(url)
+}
 
 export function FilesProvider({ children }) {
   const { accessToken } = useAuth()
@@ -21,6 +39,12 @@ export function FilesProvider({ children }) {
       request('/api/files', { query: { trash: true } }),
     ])
     setFiles([...(active ?? []), ...(trash ?? [])].map(mapApiFileItem))
+  }, [accessToken, request])
+
+  const loadPlanFiles = useCallback(async (planId) => {
+    if (!accessToken || !planId) return []
+    const items = await request(`/api/files/plans/${planId}`)
+    return (items ?? []).map(mapApiFileItem)
   }, [accessToken, request])
 
   useEffect(() => {
@@ -46,9 +70,35 @@ export function FilesProvider({ children }) {
     await loadFiles()
   }, [loadFiles, request])
 
-  const downloadFile = useCallback((fileId) => request(`/api/files/${fileId}/download`, {
-    responseType: 'blob',
-  }), [request])
+  const downloadFile = useCallback(async (file) => {
+    const fileId = typeof file === 'string' ? file : file?.id
+    const filename = sanitizeFilename(typeof file === 'string' ? 'arquivo' : file?.name)
+    if (!fileId) return null
+
+    if (Platform.OS === 'web') {
+      const blob = await request(`/api/files/${fileId}/download`, {
+        responseType: 'blob',
+      })
+      triggerWebDownload(blob, filename)
+      return null
+    }
+
+    const destination = `${FileSystem.documentDirectory}${filename}`
+    const result = await FileSystem.downloadAsync(
+      mobileApiUrl(`/api/files/${fileId}/download`),
+      destination,
+      {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      },
+    )
+    if (result.status >= 400) {
+      throw new Error('Nao foi possivel baixar o arquivo.')
+    }
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(result.uri)
+    }
+    return result.uri
+  }, [accessToken, request])
 
   const toggleFavorite = useCallback(async (file) => {
     await request(`/api/files/${file.id}/${file.favorite ? 'unfavorite' : 'favorite'}`, { method: 'POST' })
@@ -80,6 +130,7 @@ export function FilesProvider({ children }) {
   const value = useMemo(() => ({
     files,
     loadFiles,
+    loadPlanFiles,
     createFolder,
     uploadFile,
     downloadFile,
@@ -88,7 +139,7 @@ export function FilesProvider({ children }) {
     restoreFile,
     shareToPlan,
     unshareFromPlan,
-  }), [createFolder, downloadFile, files, loadFiles, restoreFile, shareToPlan, toggleFavorite, trashFile, unshareFromPlan, uploadFile])
+  }), [createFolder, downloadFile, files, loadFiles, loadPlanFiles, restoreFile, shareToPlan, toggleFavorite, trashFile, unshareFromPlan, uploadFile])
 
   return <FilesContext.Provider value={value}>{children}</FilesContext.Provider>
 }

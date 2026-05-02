@@ -99,12 +99,15 @@ public class GmailIntegrationService {
 
   @Transactional
   public URI completeProviderCallback(String state, String code, String error) {
+    String callbackClient = "web";
+
     try {
       GmailOAuthStateEntity stateEntity = consumeState(state);
+      callbackClient = stateEntity.getClient();
 
       if (StringUtils.hasText(error)) {
         rememberLastError(stateEntity.getUserId(), "GMAIL_PROVIDER_ERROR");
-        return buildFrontendReturn("error", "GMAIL_PROVIDER_ERROR", stateEntity.getClient());
+        return buildFrontendReturn("error", "GMAIL_PROVIDER_ERROR", callbackClient);
       }
 
       if (!StringUtils.hasText(code)) {
@@ -123,11 +126,11 @@ public class GmailIntegrationService {
 
       validateGmailIdentity(user, tokenResponse);
       saveConnection(user, tokenResponse);
-      return buildFrontendReturn("connected", null, stateEntity.getClient());
+      return buildFrontendReturn("connected", null, callbackClient);
     } catch (ApiException exception) {
-      return buildFrontendReturn("error", exception.getCode(), "web");
+      return buildFrontendReturn("error", exception.getCode(), callbackClient);
     } catch (RuntimeException exception) {
-      return buildFrontendReturn("error", "GMAIL_TOKEN_EXCHANGE_FALHOU", "web");
+      return buildFrontendReturn("error", "GMAIL_TOKEN_EXCHANGE_FALHOU", callbackClient);
     }
   }
 

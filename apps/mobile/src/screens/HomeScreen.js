@@ -65,8 +65,10 @@ function getPlanViewModel(plan, index) {
   const meta = planMeta[index % planMeta.length]
 
   return {
-    ...plan,
     ...meta,
+    ...plan,
+    description: plan.description || meta.description,
+    date: plan.date || meta.date,
     cover,
   }
 }

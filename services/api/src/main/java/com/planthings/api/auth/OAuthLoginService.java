@@ -84,32 +84,40 @@ public class OAuthLoginService {
 
   public URI completeProviderCallback(String provider, String state, String code, String error) {
     String normalizedProvider = normalizeProvider(provider);
+    String callbackClient = "web";
 
     try {
       if (StringUtils.hasText(error)) {
         OAuthLoginStateEntity stateEntity = consumeStateIfPresent(normalizedProvider, state);
-        return buildFrontendCallback(null, null, "OAUTH_PROVIDER_ERROR", stateEntity == null ? "web" : stateEntity.getClient());
+        if (stateEntity != null) {
+          callbackClient = stateEntity.getClient();
+        }
+        return buildFrontendCallback(null, null, "OAUTH_PROVIDER_ERROR", callbackClient);
       }
 
       if (!StringUtils.hasText(code)) {
         OAuthLoginStateEntity stateEntity = consumeStateIfPresent(normalizedProvider, state);
-        return buildFrontendCallback(null, null, "OAUTH_CODE_AUSENTE", stateEntity == null ? "web" : stateEntity.getClient());
+        if (stateEntity != null) {
+          callbackClient = stateEntity.getClient();
+        }
+        return buildFrontendCallback(null, null, "OAUTH_CODE_AUSENTE", callbackClient);
       }
 
       OAuthProperties.Provider providerConfig = requireProviderConfig(normalizedProvider);
       OAuthLoginStateEntity stateEntity = Objects.requireNonNull(transactionTemplate.execute(
           status -> consumeState(normalizedProvider, state)
       ));
+      callbackClient = stateEntity.getClient();
       OAuthIdentity identity = providerClient.exchangeCode(normalizedProvider, providerConfig, code, stateEntity.getNonce());
 
       return Objects.requireNonNull(transactionTemplate.execute(
           status -> createCompletionCode(identity, stateEntity)
       ));
     } catch (ApiException exception) {
-      return buildFrontendCallback(null, null, exception.getCode(), "web");
+      return buildFrontendCallback(null, null, exception.getCode(), callbackClient);
     } catch (RuntimeException exception) {
       logger.warn("Unexpected OAuth callback failure for provider={}", normalizedProvider, exception);
-      return buildFrontendCallback(null, null, "OAUTH_CALLBACK_FALHOU", "web");
+      return buildFrontendCallback(null, null, "OAUTH_CALLBACK_FALHOU", callbackClient);
     }
   }
 

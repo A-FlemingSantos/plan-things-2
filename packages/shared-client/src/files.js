@@ -67,6 +67,17 @@ export function mapApiFileItem(item = {}) {
   })
 }
 
+export function getFileSizeBytes(file = {}) {
+  const size = Number(file.size)
+  return Number.isFinite(size) ? size : 0
+}
+
+export function getFileTimestamp(file = {}) {
+  const value = file.modifiedAtIso ?? file.createdAtIso
+  const timestamp = Date.parse(value ?? '')
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
 export function buildLibraryTreeFromApi(items = []) {
   const normalized = items.map(mapApiFileItem)
   const byId = new Map(normalized.map((item) => [item.id, { ...item, children: item.type === 'folder' ? [] : undefined }]))

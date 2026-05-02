@@ -17,7 +17,6 @@ import {
 import * as DocumentPicker from 'expo-document-picker'
 import {
   AlignLeft,
-  Archive,
   ArrowLeft,
   Check,
   CheckSquare,
@@ -45,6 +44,7 @@ import { theme } from '../theme/tokens'
 
 let boardLabels = []
 let boardMembers = []
+const EMPTY_COLUMNS = []
 
 function findLabel(labelId) {
   return boardLabels.find((label) => label.id === labelId) ?? null
@@ -72,6 +72,15 @@ function cloneBoardColumns(columns = []) {
   }))
 }
 
+function findCardEntry(columns = [], cardId) {
+  for (const column of columns) {
+    const card = column.cards.find((item) => item.id === cardId)
+    if (card) return { card, column }
+  }
+
+  return null
+}
+
 function createLocalCard(title) {
   return {
     id: `mobile-card-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -81,6 +90,7 @@ function createLocalCard(title) {
     labelId: null,
     memberIds: [],
     dueDate: '',
+    schedule: normalizeSchedule(),
     comments: [],
     attachments: [],
     checklists: [],
@@ -98,10 +108,79 @@ function createLocalColumn(title, index = 0) {
   }
 }
 
+function padDatePart(value) {
+  return String(value).padStart(2, '0')
+}
+
+function dateValueFromDate(date) {
+  return `${padDatePart(date.getDate())}/${padDatePart(date.getMonth() + 1)}/${date.getFullYear()}`
+}
+
+function parseDateValue(value) {
+  const match = String(value ?? '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (!match) return null
+  const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function formatShortDateLabel(value) {
+  const date = parseDateValue(value)
+  if (!date) return ''
+  return `${padDatePart(date.getDate())}/${padDatePart(date.getMonth() + 1)}`
+}
+
+function buildCalendarDays(anchorDate, selectedValue) {
+  const firstOfMonth = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1)
+  const cursor = new Date(firstOfMonth)
+  cursor.setDate(firstOfMonth.getDate() - firstOfMonth.getDay())
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(cursor)
+    date.setDate(cursor.getDate() + index)
+    const value = dateValueFromDate(date)
+    return {
+      date,
+      value,
+      day: date.getDate(),
+      muted: date.getMonth() !== anchorDate.getMonth(),
+      selected: selectedValue === value,
+    }
+  })
+}
+
+function normalizeSchedule(source = {}, legacyDueDate = '') {
+  const fallbackDueDate = source.dueDateValue || ''
+  const dueEnabled = Boolean(source.dueEnabled || fallbackDueDate)
+  const startEnabled = Boolean(source.startEnabled || source.startDateValue)
+  const dueDateValue = dueEnabled ? fallbackDueDate : ''
+  const startDateValue = startEnabled ? (source.startDateValue || dueDateValue) : ''
+
+  return {
+    selectedCalendarDay: source.selectedCalendarDay || dueDateValue || startDateValue || null,
+    startEnabled,
+    startDateValue,
+    dueEnabled,
+    dueDateValue,
+    dueTimeValue: source.dueTimeValue ?? '',
+    displayLabel: source.displayLabel || (dueDateValue ? formatShortDateLabel(dueDateValue) : legacyDueDate),
+    preserveDisplayLabel: false,
+  }
+}
+
+function normalizeAttachment(attachment = {}) {
+  return {
+    ...attachment,
+    id: attachment.id ?? attachment.fileId ?? `attachment-${Date.now()}`,
+    name: attachment.name ?? 'Arquivo',
+    addedAt: attachment.addedAt ?? attachment.createdAt?.text ?? 'agora',
+  }
+}
+
 function BoardCard({ card, onPress }) {
   const label = findLabel(card.labelId)
   const members = findMembers(card.memberIds)
-  const hasMeta = Boolean(card.dueDate || card.comments?.length || members.length)
+  const dueLabel = card.dueDate || card.schedule?.displayLabel
+  const hasMeta = Boolean(dueLabel || card.comments?.length || members.length)
 
   return (
     <Pressable
@@ -124,10 +203,10 @@ function BoardCard({ card, onPress }) {
       {hasMeta ? (
         <View style={styles.cardFooter}>
           <View style={styles.cardMeta}>
-            {card.dueDate ? (
+            {dueLabel ? (
               <View style={styles.metaPill}>
                 <Clock3 size={12} color={theme.colors.text2} strokeWidth={1.8} />
-                <Text style={styles.metaText}>{card.dueDate}</Text>
+                <Text style={styles.metaText}>{dueLabel}</Text>
               </View>
             ) : null}
             {card.comments?.length ? (
@@ -186,28 +265,82 @@ function DetailSecondaryAction({ icon: Icon = Plus, label, onPress }) {
   )
 }
 
-function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDuplicateCard, onMoveCard, onUpdateCard }) {
+function CardDetailScreen({
+  card,
+  column,
+  columns,
+  files,
+  planFiles,
+  onAttachFile,
+  onClose,
+  onDeleteCard,
+  onDuplicateCard,
+  onMoveCard,
+  onRemoveAttachment,
+  onUpdateCard,
+  onUploadFile,
+}) {
   const [savedDescription, setSavedDescription] = useState(card.description ?? '')
   const [descriptionValue, setDescriptionValue] = useState(savedDescription)
   const [labelId, setLabelId] = useState(card.labelId ?? null)
   const [memberIds, setMemberIds] = useState(card.memberIds ?? [])
-  const [dueDate, setDueDate] = useState(card.dueDate ?? '')
-  const [dateInput, setDateInput] = useState(card.dueDate ?? '')
+  const [schedule, setSchedule] = useState(() => normalizeSchedule(card.schedule, card.dueDate))
+  const [calendarAnchor, setCalendarAnchor] = useState(() => (
+    parseDateValue(card.schedule?.dueDateValue || card.schedule?.startDateValue) ?? new Date()
+  ))
   const [comments, setComments] = useState(Array.isArray(card.comments) ? card.comments : [])
   const [commentValue, setCommentValue] = useState('')
-  const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
+  const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments.map(normalizeAttachment) : [])
   const [checklists, setChecklists] = useState(Array.isArray(card.checklists) ? card.checklists : [])
   const [checklistInput, setChecklistInput] = useState('')
+  const [attachmentError, setAttachmentError] = useState(null)
   const [activeSheet, setActiveSheet] = useState(null)
   const slideProgress = useRef(new Animated.Value(1)).current
   const { height } = useWindowDimensions()
   const label = findLabel(labelId)
   const members = findMembers(memberIds)
   const hasDescriptionChanges = descriptionValue !== savedDescription
+  const dueDate = schedule.dueEnabled ? (schedule.displayLabel || formatShortDateLabel(schedule.dueDateValue)) : ''
+  const selectedCalendarValue = schedule.dueEnabled ? schedule.dueDateValue : schedule.startDateValue
+  const calendarDays = useMemo(
+    () => buildCalendarDays(calendarAnchor, selectedCalendarValue),
+    [calendarAnchor, selectedCalendarValue],
+  )
+  const availablePlanFiles = useMemo(() => (
+    (planFiles ?? []).filter((file) => file.type !== 'folder' && !file.trashed)
+  ), [planFiles])
+  const availableLibraryFiles = useMemo(() => (
+    (files ?? []).filter((file) => file.type !== 'folder' && !file.trashed)
+  ), [files])
   const translateY = slideProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, height],
   })
+
+  useEffect(() => {
+    const nextDescription = card.description ?? ''
+    setSavedDescription(nextDescription)
+    setDescriptionValue(nextDescription)
+    setCommentValue('')
+    setChecklistInput('')
+    setAttachmentError(null)
+    setActiveSheet(null)
+  }, [card.id])
+
+  useEffect(() => {
+    const nextSchedule = normalizeSchedule(card.schedule, card.dueDate)
+    const nextCalendarAnchor = parseDateValue(nextSchedule.dueDateValue || nextSchedule.startDateValue)
+
+    setLabelId(card.labelId ?? null)
+    setMemberIds(card.memberIds ?? [])
+    setSchedule(nextSchedule)
+    if (nextCalendarAnchor) {
+      setCalendarAnchor(nextCalendarAnchor)
+    }
+    setComments(Array.isArray(card.comments) ? card.comments : [])
+    setAttachments(Array.isArray(card.attachments) ? card.attachments.map(normalizeAttachment) : [])
+    setChecklists(Array.isArray(card.checklists) ? card.checklists : [])
+  }, [card.attachments, card.checklists, card.comments, card.dueDate, card.id, card.labelId, card.memberIds, card.schedule])
 
   useEffect(() => {
     Animated.timing(slideProgress, {
@@ -256,17 +389,58 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
     setActiveSheet(null)
   }
 
-  const saveDueDate = () => {
-    const nextDueDate = dateInput.trim()
-    setDueDate(nextDueDate)
-    commitCardPatch({ dueDate: nextDueDate })
+  const commitSchedule = (nextSchedule) => {
+    const normalized = normalizeSchedule(nextSchedule)
+    setSchedule(normalized)
+    commitCardPatch({
+      dueDate: normalized.dueEnabled ? (normalized.displayLabel || formatShortDateLabel(normalized.dueDateValue)) : '',
+      schedule: normalized,
+    })
+  }
+
+  const toggleScheduleFlag = (field) => {
+    setSchedule((current) => {
+      const today = dateValueFromDate(new Date())
+      const enabledKey = field === 'start' ? 'startEnabled' : 'dueEnabled'
+      const valueKey = field === 'start' ? 'startDateValue' : 'dueDateValue'
+      const nextEnabled = !current[enabledKey]
+      const next = {
+        ...current,
+        [enabledKey]: nextEnabled,
+        [valueKey]: nextEnabled ? (current[valueKey] || current.dueDateValue || current.startDateValue || today) : '',
+      }
+
+      if (nextEnabled) {
+        const nextDate = parseDateValue(next[valueKey])
+        if (nextDate) setCalendarAnchor(nextDate)
+      }
+
+      return normalizeSchedule(next)
+    })
+  }
+
+  const selectCalendarDate = (value) => {
+    setSchedule((current) => {
+      const editingDue = current.dueEnabled || !current.startEnabled
+      return normalizeSchedule({
+        ...current,
+        [editingDue ? 'dueEnabled' : 'startEnabled']: true,
+        [editingDue ? 'dueDateValue' : 'startDateValue']: value,
+        selectedCalendarDay: value,
+        displayLabel: editingDue ? formatShortDateLabel(value) : current.displayLabel,
+      })
+    })
+  }
+
+  const saveSchedule = () => {
+    commitSchedule(schedule)
     setActiveSheet(null)
   }
 
-  const clearDueDate = () => {
-    setDateInput('')
-    setDueDate('')
-    commitCardPatch({ dueDate: '' })
+  const clearSchedule = () => {
+    const emptySchedule = normalizeSchedule()
+    setSchedule(emptySchedule)
+    commitCardPatch({ dueDate: '', schedule: emptySchedule })
     setActiveSheet(null)
   }
 
@@ -290,7 +464,16 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
         ? {
             ...checklist,
             items: text
-              ? [...(checklist.items ?? []), { id: `item-${Date.now()}`, text, checked: false }]
+              ? [
+                  ...(checklist.items ?? []),
+                  {
+                    id: `item-${Date.now()}`,
+                    title: text,
+                    text,
+                    completed: false,
+                    checked: false,
+                  },
+                ]
               : checklist.items,
           }
         : checklist
@@ -305,7 +488,13 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
     const nextChecklists = checklists.map((checklist) => ({
       ...checklist,
       items: (checklist.items ?? []).map((item) => (
-        item.id === itemId ? { ...item, checked: !item.checked } : item
+        item.id === itemId
+          ? {
+              ...item,
+              checked: !Boolean(item.checked ?? item.completed),
+              completed: !Boolean(item.checked ?? item.completed),
+            }
+          : item
       )),
     }))
 
@@ -313,20 +502,67 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
     commitCardPatch({ checklists: nextChecklists })
   }
 
-  const addAttachment = (source) => {
-    const nextAttachments = [
-      ...attachments,
-      {
-        id: `attachment-${Date.now()}`,
-        name: source === 'library' ? 'Arquivo da biblioteca' : 'Arquivo do dispositivo',
-        source,
-        addedAt: 'agora',
-      },
-    ]
-
-    setAttachments(nextAttachments)
-    commitCardPatch({ attachments: nextAttachments })
+  const attachLibraryFile = async (file) => {
+    if (!file) return
+    setAttachmentError(null)
+    const optimistic = normalizeAttachment({
+      id: `attachment-${file.id}`,
+      fileId: file.id,
+      name: file.name,
+      source: 'library',
+      addedAt: 'agora',
+      canRemove: false,
+    })
+    setAttachments((current) => (
+      current.some((attachment) => attachment.fileId === file.id)
+        ? current
+        : [...current, optimistic]
+    ))
     setActiveSheet(null)
+    try {
+      await onAttachFile(card.id, file)
+    } catch (error) {
+      setAttachmentError(error?.message ?? 'Nao foi possivel anexar o arquivo.')
+      setAttachments((current) => current.filter((attachment) => attachment.id !== optimistic.id))
+    }
+  }
+
+  const uploadDeviceAttachment = async () => {
+    setAttachmentError(null)
+    let optimisticId = null
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true })
+      const asset = result.assets?.[0]
+      if (!asset) return
+      const optimistic = normalizeAttachment({
+        id: `attachment-upload-${Date.now()}`,
+        name: asset.name,
+        source: 'device',
+        addedAt: 'agora',
+        canRemove: false,
+      })
+      optimisticId = optimistic.id
+      setAttachments((current) => [...current, optimistic])
+      setActiveSheet(null)
+      await onUploadFile(card.id, asset)
+    } catch (error) {
+      setAttachmentError(error?.message ?? 'Nao foi possivel enviar o arquivo.')
+      if (optimisticId) {
+        setAttachments((current) => current.filter((attachment) => attachment.id !== optimisticId))
+      }
+    }
+  }
+
+  const removeAttachmentItem = async (attachment) => {
+    setAttachmentError(null)
+    const previousAttachments = attachments
+    setAttachments((current) => current.filter((item) => item.id !== attachment.id))
+    try {
+      await onRemoveAttachment(card.id, attachment)
+    } catch (error) {
+      setAttachmentError(error?.message ?? 'Nao foi possivel remover o anexo.')
+      setAttachments(previousAttachments)
+    }
   }
 
   const sendComment = () => {
@@ -454,6 +690,7 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
                 {attachments.length ? `${attachments.length} arquivo(s) anexado(s)` : 'Nenhum arquivo anexado a este cartão.'}
               </Text>
             </View>
+            {attachmentError ? <Text style={styles.detailInlineError}>{attachmentError}</Text> : null}
             {attachments.length ? (
               <View style={styles.detailAttachmentList}>
                 {attachments.map((attachment) => (
@@ -461,13 +698,23 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
                     <FileText size={14} color={theme.colors.text1} strokeWidth={1.8} />
                     <Text style={styles.detailAttachmentName} numberOfLines={1}>{attachment.name}</Text>
                     <Text style={styles.detailAttachmentTime}>{attachment.addedAt ?? 'agora'}</Text>
+                    {attachment.canRemove !== false ? (
+                      <Pressable
+                        style={styles.detailAttachmentRemove}
+                        onPress={() => removeAttachmentItem(attachment)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remover anexo ${attachment.name}`}
+                      >
+                        <X size={13} color={theme.colors.text2} strokeWidth={2} />
+                      </Pressable>
+                    ) : null}
                   </View>
                 ))}
               </View>
             ) : null}
             <View style={styles.detailSecondaryActions}>
-              <DetailSecondaryAction icon={Paperclip} label="Biblioteca" onPress={() => addAttachment('library')} />
-              <DetailSecondaryAction icon={Plus} label="Meu dispositivo" onPress={() => addAttachment('device')} />
+              <DetailSecondaryAction icon={Paperclip} label="Biblioteca" onPress={() => setActiveSheet('attachment-library')} />
+              <DetailSecondaryAction icon={Plus} label="Meu dispositivo" onPress={uploadDeviceAttachment} />
             </View>
           </View>
 
@@ -486,21 +733,24 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
             </View>
             {checklists.length ? (
               <View style={styles.detailChecklistList}>
-                {checklists[0].items?.length ? checklists[0].items.map((item) => (
-                  <Pressable
-                    key={item.id}
-                    style={styles.detailChecklistItem}
-                    onPress={() => toggleChecklistItem(item.id)}
-                    accessibilityRole="button"
-                  >
-                    <View style={[styles.detailChecklistCheck, item.checked && styles.detailChecklistCheckDone]}>
-                      {item.checked ? <Check size={11} color={theme.colors.white} strokeWidth={2.1} /> : null}
-                    </View>
-                    <Text style={[styles.detailChecklistText, item.checked && styles.detailChecklistTextDone]} numberOfLines={1}>
-                      {item.text}
-                    </Text>
-                  </Pressable>
-                )) : (
+                {checklists[0].items?.length ? checklists[0].items.map((item) => {
+                  const done = Boolean(item.checked ?? item.completed)
+                  return (
+                    <Pressable
+                      key={item.id}
+                      style={styles.detailChecklistItem}
+                      onPress={() => toggleChecklistItem(item.id)}
+                      accessibilityRole="button"
+                    >
+                      <View style={[styles.detailChecklistCheck, done && styles.detailChecklistCheckDone]}>
+                        {done ? <Check size={11} color={theme.colors.white} strokeWidth={2.1} /> : null}
+                      </View>
+                      <Text style={[styles.detailChecklistText, done && styles.detailChecklistTextDone]} numberOfLines={1}>
+                        {item.text ?? item.title}
+                      </Text>
+                    </Pressable>
+                  )
+                }) : (
                   <Text style={styles.detailEmptyText}>Checklist criado. Adicione o primeiro item.</Text>
                 )}
               </View>
@@ -573,7 +823,8 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
                 : activeSheet === 'date' ? 'Data'
                   : activeSheet === 'checklist' ? 'Checklist'
                     : activeSheet === 'move' ? 'Mover cartão'
-                      : 'Anexo'
+                      : activeSheet === 'attachment-library' ? 'Selecionar arquivo'
+                        : 'Anexo'
         }>
           {activeSheet === 'more' ? (
             <View style={styles.sheetActionList}>
@@ -591,18 +842,6 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
               >
                 <Copy size={18} color={theme.colors.text1} strokeWidth={1.8} />
                 <Text style={styles.sheetActionText}>Copiar</Text>
-              </Pressable>
-              <Pressable
-                style={styles.sheetActionRow}
-                onPress={() => {
-                  onDeleteCard(card.id)
-                  setActiveSheet(null)
-                  close()
-                }}
-                accessibilityRole="button"
-              >
-                <Archive size={18} color={theme.colors.text1} strokeWidth={1.8} />
-                <Text style={styles.sheetActionText}>Arquivar</Text>
               </Pressable>
               <Pressable
                 style={[styles.sheetActionRow, styles.sheetActionDanger]}
@@ -683,20 +922,87 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
           ) : null}
 
           {activeSheet === 'date' ? (
-            <View>
+            <View style={styles.scheduleEditor}>
+              <View style={styles.scheduleToggleList}>
+                <Pressable style={styles.scheduleToggleRow} onPress={() => toggleScheduleFlag('start')} accessibilityRole="checkbox" accessibilityState={{ checked: schedule.startEnabled }}>
+                  <View style={[styles.scheduleCheckbox, schedule.startEnabled && styles.scheduleCheckboxChecked]}>
+                    {schedule.startEnabled ? <Check size={12} color={theme.colors.white} strokeWidth={2.2} /> : null}
+                  </View>
+                  <View style={styles.scheduleToggleText}>
+                    <Text style={styles.scheduleToggleLabel}>Início</Text>
+                    <Text style={styles.scheduleToggleHint}>{schedule.startDateValue || 'Sem data de início'}</Text>
+                  </View>
+                </Pressable>
+                <Pressable style={styles.scheduleToggleRow} onPress={() => toggleScheduleFlag('due')} accessibilityRole="checkbox" accessibilityState={{ checked: schedule.dueEnabled }}>
+                  <View style={[styles.scheduleCheckbox, schedule.dueEnabled && styles.scheduleCheckboxChecked]}>
+                    {schedule.dueEnabled ? <Check size={12} color={theme.colors.white} strokeWidth={2.2} /> : null}
+                  </View>
+                  <View style={styles.scheduleToggleText}>
+                    <Text style={styles.scheduleToggleLabel}>Prazo</Text>
+                    <Text style={styles.scheduleToggleHint}>{schedule.dueDateValue || 'Sem prazo'}</Text>
+                  </View>
+                </Pressable>
+              </View>
+
+              <View style={styles.calendarHeader}>
+                <Pressable
+                  style={styles.calendarNavButton}
+                  onPress={() => setCalendarAnchor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+                  accessibilityRole="button"
+                  accessibilityLabel="Mês anterior"
+                >
+                  <Text style={styles.calendarNavText}>{'<'}</Text>
+                </Pressable>
+                <Text style={styles.calendarTitle}>
+                  {calendarAnchor.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                </Text>
+                <Pressable
+                  style={styles.calendarNavButton}
+                  onPress={() => setCalendarAnchor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+                  accessibilityRole="button"
+                  accessibilityLabel="Próximo mês"
+                >
+                  <Text style={styles.calendarNavText}>{'>'}</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.calendarGrid}>
+                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((weekday, index) => (
+                  <Text key={`${weekday}-${index}`} style={styles.calendarWeekday}>{weekday}</Text>
+                ))}
+                {calendarDays.map((day) => (
+                  <Pressable
+                    key={day.value}
+                    style={[
+                      styles.calendarDay,
+                      day.muted && styles.calendarDayMuted,
+                      day.selected && styles.calendarDaySelected,
+                    ]}
+                    onPress={() => selectCalendarDate(day.value)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: day.selected }}
+                  >
+                    <Text style={[styles.calendarDayText, day.muted && styles.calendarDayTextMuted, day.selected && styles.calendarDayTextSelected]}>
+                      {day.day}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
               <TextInput
-                value={dateInput}
-                onChangeText={setDateInput}
-                placeholder="Ex.: 12 ago"
+                value={schedule.dueTimeValue}
+                onChangeText={(value) => setSchedule((current) => normalizeSchedule({ ...current, dueTimeValue: value }))}
+                placeholder="Hora do prazo, ex.: 17:30"
                 placeholderTextColor={theme.colors.text3}
                 style={styles.sheetInput}
                 selectionColor={theme.colors.text1}
+                keyboardType="numbers-and-punctuation"
               />
               <View style={styles.sheetButtonRow}>
-                <Pressable style={styles.sheetSecondaryButton} onPress={clearDueDate} accessibilityRole="button">
+                <Pressable style={styles.sheetSecondaryButton} onPress={clearSchedule} accessibilityRole="button">
                   <Text style={styles.sheetSecondaryButtonText}>Remover</Text>
                 </Pressable>
-                <Pressable style={styles.sheetPrimaryButton} onPress={saveDueDate} accessibilityRole="button">
+                <Pressable style={styles.sheetPrimaryButton} onPress={saveSchedule} accessibilityRole="button">
                   <Text style={styles.sheetPrimaryButtonText}>Salvar</Text>
                 </Pressable>
               </View>
@@ -721,15 +1027,55 @@ function CardDetailScreen({ card, column, columns, onClose, onDeleteCard, onDupl
 
           {activeSheet === 'attachments' ? (
             <View style={styles.sheetActionList}>
-              <Pressable style={styles.sheetActionRow} onPress={() => addAttachment('library')} accessibilityRole="button">
+              <Pressable style={styles.sheetActionRow} onPress={() => setActiveSheet('attachment-library')} accessibilityRole="button">
                 <Paperclip size={18} color={theme.colors.text1} strokeWidth={1.8} />
                 <Text style={styles.sheetActionText}>Biblioteca</Text>
               </Pressable>
-              <Pressable style={styles.sheetActionRow} onPress={() => addAttachment('device')} accessibilityRole="button">
+              <Pressable style={styles.sheetActionRow} onPress={uploadDeviceAttachment} accessibilityRole="button">
                 <Plus size={18} color={theme.colors.text1} strokeWidth={1.8} />
                 <Text style={styles.sheetActionText}>Meu dispositivo</Text>
               </Pressable>
             </View>
+          ) : null}
+
+          {activeSheet === 'attachment-library' ? (
+            <ScrollView style={styles.attachmentPickerScroll} contentContainerStyle={styles.attachmentPickerContent}>
+              <Text style={styles.attachmentPickerSectionTitle}>Plano</Text>
+              {availablePlanFiles.length ? availablePlanFiles.map((file) => (
+                <Pressable
+                  key={`plan-${file.id}`}
+                  style={styles.attachmentPickerRow}
+                  onPress={() => attachLibraryFile(file)}
+                  accessibilityRole="button"
+                >
+                  <FileText size={16} color={theme.colors.text1} strokeWidth={1.8} />
+                  <View style={styles.attachmentPickerBody}>
+                    <Text style={styles.attachmentPickerName} numberOfLines={1}>{file.name}</Text>
+                    <Text style={styles.attachmentPickerMeta}>{file.sizeLabel || file.modified || 'Arquivo do plano'}</Text>
+                  </View>
+                </Pressable>
+              )) : (
+                <Text style={styles.detailEmptyText}>Nenhum arquivo do plano disponível.</Text>
+              )}
+
+              <Text style={styles.attachmentPickerSectionTitle}>Biblioteca</Text>
+              {availableLibraryFiles.length ? availableLibraryFiles.map((file) => (
+                <Pressable
+                  key={`library-${file.id}`}
+                  style={styles.attachmentPickerRow}
+                  onPress={() => attachLibraryFile(file)}
+                  accessibilityRole="button"
+                >
+                  <FileText size={16} color={theme.colors.text1} strokeWidth={1.8} />
+                  <View style={styles.attachmentPickerBody}>
+                    <Text style={styles.attachmentPickerName} numberOfLines={1}>{file.name}</Text>
+                    <Text style={styles.attachmentPickerMeta}>{file.sizeLabel || file.modified || 'Arquivo da biblioteca'}</Text>
+                  </View>
+                </Pressable>
+              )) : (
+                <Text style={styles.detailEmptyText}>Nenhum arquivo da biblioteca disponível.</Text>
+              )}
+            </ScrollView>
           ) : null}
         </BottomSheet>
       </Animated.View>
@@ -770,7 +1116,7 @@ function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard, ...access
 function TaskListRow({ card, column, isDone, onPress }) {
   const label = findLabel(card.labelId)
   const members = findMembers(card.memberIds)
-  const metaText = card.dueDate || label?.text || column.title
+  const metaText = card.dueDate || card.schedule?.displayLabel || label?.text || column.title
 
   return (
     <Pressable
@@ -838,14 +1184,16 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     updateChecklistItem,
     attachFileToCard,
     uploadAndAttachToCard,
+    removeAttachment,
   } = usePlans()
-  const { files } = useFiles()
+  const { files, loadPlanFiles } = useFiles()
   const planId = route?.params?.planId ?? propPlan?.id
   const plan = plans.find((item) => item.id === planId) ?? propPlan
-  const columns = plan?.boardColumns ?? propColumns ?? []
+  const columns = plan?.boardColumns ?? propColumns ?? EMPTY_COLUMNS
   const [boardColumnsState, setBoardColumnsState] = useState(() => cloneBoardColumns(columns))
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
   const [targetColumnIndex, setTargetColumnIndex] = useState(null)
+  const [dragPreviewColumnIndex, setDragPreviewColumnIndex] = useState(null)
   const [columnHeights, setColumnHeights] = useState({})
   const [selectedCardEntry, setSelectedCardEntry] = useState(null)
   const [boardView, setBoardView] = useState('lists')
@@ -855,14 +1203,22 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
   const [newListTitle, setNewListTitle] = useState('')
   const [newCardColumnId, setNewCardColumnId] = useState(columns[0]?.id ?? null)
   const [tasksOptionsOpen, setTasksOptionsOpen] = useState(false)
+  const [planFiles, setPlanFiles] = useState([])
   const verticalScrollRef = useRef(null)
+  const columnTabsRef = useRef(null)
   const boardTranslateX = useRef(new Animated.Value(0)).current
+  const previousPlanIdRef = useRef(null)
+  const boardColumnsRef = useRef(boardColumnsState)
+  const activeColumnIndexRef = useRef(activeColumnIndex)
+  const selectedCardEntryRef = useRef(selectedCardEntry)
   const { width } = useWindowDimensions()
   const pageWidth = Math.min(width, 430)
-  const activeColumn = boardColumnsState[activeColumnIndex] ?? boardColumnsState[0]
-  const heightColumnIndex = targetColumnIndex ?? activeColumnIndex
-  const heightColumn = boardColumnsState[heightColumnIndex] ?? activeColumn
-  const activeColumnHeight = heightColumn ? columnHeights[heightColumn.id] : 0
+  const motionViewportHeight = [activeColumnIndex, targetColumnIndex, dragPreviewColumnIndex]
+    .reduce((maxHeight, index) => {
+      if (!Number.isInteger(index)) return maxHeight
+      const column = boardColumnsState[index]
+      return column ? Math.max(maxHeight, columnHeights[column.id] ?? 0) : maxHeight
+    }, 0)
   const totalCards = useMemo(
     () => boardColumnsState.reduce((sum, column) => sum + column.cards.length, 0),
     [boardColumnsState],
@@ -872,23 +1228,23 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
   boardMembers = plan?.membersMeta ?? []
 
   useEffect(() => {
+    boardColumnsRef.current = boardColumnsState
+  }, [boardColumnsState])
+
+  useEffect(() => {
+    activeColumnIndexRef.current = activeColumnIndex
+  }, [activeColumnIndex])
+
+  useEffect(() => {
+    selectedCardEntryRef.current = selectedCardEntry
+  }, [selectedCardEntry])
+
+  useEffect(() => {
     if (planId) {
       loadPlan(planId)
     }
   }, [loadPlan, planId])
 
-  useEffect(() => {
-    setBoardColumnsState(cloneBoardColumns(columns))
-    setNewCardColumnId(columns[0]?.id ?? null)
-  }, [columns, planId])
-
-  if (!plan) {
-    return (
-      <View style={styles.page}>
-        <Text style={styles.title}>Carregando plano...</Text>
-      </View>
-    )
-  }
   const taskGroups = useMemo(() => {
     const flatTasks = boardColumnsState.flatMap((column) => (
       column.cards.map((card) => ({
@@ -905,20 +1261,90 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
   }, [boardColumnsState])
 
   useEffect(() => {
-    setBoardColumnsState(cloneBoardColumns(columns))
-    setActiveColumnIndex(0)
+    const previousPlanId = previousPlanIdRef.current
+    const isSamePlan = previousPlanId === planId
+    const previousColumns = boardColumnsRef.current
+    const currentIndex = activeColumnIndexRef.current
+    const selectedEntry = selectedCardEntryRef.current
+    const nextColumns = cloneBoardColumns(columns)
+    const fallbackIndex = Math.max(0, Math.min(currentIndex, nextColumns.length - 1))
+    const preferredColumnId = selectedEntry?.column?.id ?? previousColumns[currentIndex]?.id
+    const preferredIndex = preferredColumnId
+      ? nextColumns.findIndex((column) => column.id === preferredColumnId)
+      : -1
+    const nextActiveIndex = preferredIndex >= 0 ? preferredIndex : fallbackIndex
+
+    previousPlanIdRef.current = planId
+    setBoardColumnsState(nextColumns)
     setTargetColumnIndex(null)
-    setColumnHeights({})
-    boardTranslateX.setValue(0)
-    setSelectedCardEntry(null)
-    setAddListSheetOpen(false)
-    setNewListTitle('')
-    setNewCardColumnId(columns[0]?.id ?? null)
-  }, [boardTranslateX, columns, plan.id])
+    setDragPreviewColumnIndex(null)
+
+    if (!isSamePlan) {
+      setActiveColumnIndex(0)
+      setColumnHeights({})
+      boardTranslateX.setValue(0)
+      setSelectedCardEntry(null)
+      setAddListSheetOpen(false)
+      setNewListTitle('')
+      setNewCardColumnId(nextColumns[0]?.id ?? null)
+      return
+    }
+
+    setActiveColumnIndex(nextActiveIndex)
+    boardTranslateX.setValue(-nextActiveIndex * pageWidth)
+    setSelectedCardEntry((entry) => {
+      if (!entry) return entry
+      return findCardEntry(nextColumns, entry.card.id)
+    })
+    setNewCardColumnId((currentColumnId) => (
+      nextColumns.some((column) => column.id === currentColumnId)
+        ? currentColumnId
+        : nextColumns[nextActiveIndex]?.id ?? nextColumns[0]?.id ?? null
+    ))
+  }, [boardTranslateX, columns, pageWidth, planId])
+
+  useEffect(() => {
+    let active = true
+    if (!planId) {
+      setPlanFiles([])
+      return undefined
+    }
+
+    loadPlanFiles(planId)
+      .then((items) => {
+        if (active) setPlanFiles(items ?? [])
+      })
+      .catch(() => {
+        if (active) setPlanFiles([])
+      })
+
+    return () => {
+      active = false
+    }
+  }, [loadPlanFiles, planId])
 
   useEffect(() => {
     boardTranslateX.setValue(-activeColumnIndex * pageWidth)
   }, [activeColumnIndex, boardTranslateX, pageWidth])
+
+  useEffect(() => {
+    if (boardView !== 'lists') return
+
+    requestAnimationFrame(() => {
+      columnTabsRef.current?.scrollTo({
+        x: Math.max(0, (activeColumnIndex * 111) - theme.spacing.screenX),
+        animated: true,
+      })
+    })
+  }, [activeColumnIndex, boardColumnsState.length, boardView])
+
+  if (!plan) {
+    return (
+      <View style={styles.page}>
+        <Text style={styles.title}>Carregando plano...</Text>
+      </View>
+    )
+  }
 
   const scrollBoardToTop = () => {
     requestAnimationFrame(() => {
@@ -944,6 +1370,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
   const animateToColumn = (index, options = {}) => {
     const safeIndex = Math.max(0, Math.min(index, boardColumnsState.length - 1))
     const shouldScrollTop = options.scrollTop ?? true
+    setDragPreviewColumnIndex(null)
 
     if (safeIndex === activeColumnIndex) {
       setTargetColumnIndex(null)
@@ -982,6 +1409,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
 
   const cancelColumnDrag = () => {
     setTargetColumnIndex(null)
+    setDragPreviewColumnIndex(null)
     Animated.spring(boardTranslateX, {
       toValue: -activeColumnIndex * pageWidth,
       damping: 22,
@@ -1004,16 +1432,25 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     ),
     onPanResponderGrant: () => {
       boardTranslateX.stopAnimation()
+      setDragPreviewColumnIndex(null)
     },
     onPanResponderMove: (_, gestureState) => {
       const hasPrevious = activeColumnIndex > 0
       const hasNext = activeColumnIndex < boardColumnsState.length - 1
       let nextX = gestureState.dx
+      const nextPreviewIndex = nextX < 0 && hasNext
+        ? activeColumnIndex + 1
+        : nextX > 0 && hasPrevious
+          ? activeColumnIndex - 1
+          : null
 
       if ((!hasPrevious && nextX > 0) || (!hasNext && nextX < 0)) {
         nextX *= 0.22
       }
 
+      setDragPreviewColumnIndex((currentIndex) => (
+        currentIndex === nextPreviewIndex ? currentIndex : nextPreviewIndex
+      ))
       boardTranslateX.setValue((-activeColumnIndex * pageWidth) + nextX)
     },
     onPanResponderRelease: (_, gestureState) => {
@@ -1077,7 +1514,13 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       const previousChecklistIds = new Set(previousChecklists.map((checklist) => checklist.id))
       const createdChecklist = patch.checklists.find((checklist) => !previousChecklistIds.has(checklist.id))
       if (createdChecklist) {
-        void createChecklist(planId, cardId, createdChecklist.title ?? 'Checklist')
+        void (async () => {
+          const checklist = await createChecklist(planId, cardId, createdChecklist.title ?? 'Checklist')
+          const firstItem = (createdChecklist.items ?? []).find((item) => item.title || item.text)
+          if (firstItem) {
+            await createChecklistItem(planId, checklist?.id ?? createdChecklist.id, firstItem.title ?? firstItem.text)
+          }
+        })()
         return
       }
 
@@ -1088,36 +1531,18 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
         .flatMap((checklist) => (checklist.items ?? []).map((item) => ({ ...item, checklistId: checklist.id })))
         .find((item) => {
           const previous = previousItems.get(item.id)
-          return !previous || Boolean(previous.checked) !== Boolean(item.checked)
+          return !previous || Boolean(previous.checked ?? previous.completed) !== Boolean(item.checked ?? item.completed)
         })
       if (changedItem) {
         if (previousItems.has(changedItem.id)) {
-          void updateChecklistItem(planId, changedItem)
+          void updateChecklistItem(planId, {
+            ...changedItem,
+            title: changedItem.title ?? changedItem.text,
+            completed: Boolean(changedItem.completed ?? changedItem.checked),
+          })
         } else {
-          void createChecklistItem(planId, changedItem.checklistId, changedItem.text ?? changedItem.title)
+          void createChecklistItem(planId, changedItem.checklistId, changedItem.title ?? changedItem.text)
         }
-      }
-      return
-    }
-
-    if (patch.attachments) {
-      const previousIds = new Set((currentCard.attachments ?? []).map((attachment) => attachment.id))
-      const created = patch.attachments.find((attachment) => !previousIds.has(attachment.id))
-      if (created?.source === 'library') {
-        const file = files.find((item) => item.type !== 'folder' && !item.trashed)
-        if (file) {
-          void attachFileToCard(planId, file.id, cardId)
-        }
-      } else if (created?.source === 'device') {
-        void DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true }).then((result) => {
-          const asset = result.assets?.[0]
-          if (!asset) return
-          return uploadAndAttachToCard(planId, {
-            uri: asset.uri,
-            name: asset.name,
-            type: asset.mimeType ?? 'application/octet-stream',
-          }, cardId)
-        })
       }
       return
     }
@@ -1189,6 +1614,25 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     }
   }
 
+  const attachCardFile = async (cardId, file) => {
+    if (!planId || !file?.id) return
+    await attachFileToCard(planId, file.id, cardId)
+  }
+
+  const uploadCardFile = async (cardId, asset) => {
+    if (!planId || !asset) return
+    await uploadAndAttachToCard(planId, {
+      uri: asset.uri,
+      name: asset.name,
+      type: asset.mimeType ?? 'application/octet-stream',
+    }, cardId)
+  }
+
+  const removeCardAttachment = async (_cardId, attachment) => {
+    if (!planId || !attachment?.id) return
+    await removeAttachment(planId, attachment.id)
+  }
+
   const openAddCardSheet = (columnId, allowColumnChoice = false) => {
     setNewCardTitle('')
     setNewCardColumnId(columnId ?? boardColumnsState[activeColumnIndex]?.id ?? boardColumnsState[0]?.id)
@@ -1239,6 +1683,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     }))
     setActiveColumnIndex(newIndex)
     setTargetColumnIndex(null)
+    setDragPreviewColumnIndex(null)
     boardTranslateX.setValue(-newIndex * pageWidth)
     scrollBoardToTop()
     closeAddListSheet()
@@ -1273,6 +1718,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       {boardView === 'lists' ? (
         <View style={styles.columnTabsBar}>
           <ScrollView
+            ref={columnTabsRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.columnTabs}
@@ -1320,7 +1766,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       >
         {boardView === 'lists' ? (
           <View style={styles.boardSwipeArea} {...boardSwipeResponder.panHandlers}>
-            <View style={[styles.columnMotionViewport, activeColumnHeight ? { height: activeColumnHeight } : null, { width: pageWidth }]}>
+            <View style={[styles.columnMotionViewport, motionViewportHeight ? { height: motionViewportHeight } : null, { width: pageWidth }]}>
               <Animated.View style={[styles.columnMotionTrack, { transform: [{ translateX: boardTranslateX }] }]}>
                 {boardColumnsState.map((column, index) => (
                   <BoardColumn
@@ -1437,11 +1883,16 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
           card={selectedCardEntry.card}
           column={selectedCardEntry.column}
           columns={boardColumnsState}
+          files={files}
+          planFiles={planFiles}
+          onAttachFile={attachCardFile}
           onClose={() => setSelectedCardEntry(null)}
           onDeleteCard={deleteCard}
           onDuplicateCard={duplicateCard}
           onMoveCard={moveCard}
+          onRemoveAttachment={removeCardAttachment}
           onUpdateCard={updateCard}
+          onUploadFile={uploadCardFile}
         />
       ) : null}
 
@@ -2442,6 +2893,14 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: theme.colors.surface2,
   },
+  detailAttachmentRemove: {
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface1,
+  },
   detailAttachmentName: {
     flex: 1,
     minWidth: 0,
@@ -2452,6 +2911,18 @@ const styles = StyleSheet.create({
   detailAttachmentTime: {
     color: theme.colors.text3,
     fontSize: 11,
+  },
+  detailInlineError: {
+    color: theme.colors.red,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.red,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface2,
   },
   detailChecklistList: {
     gap: 7,
@@ -2518,6 +2989,119 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 999,
   },
+  scheduleEditor: {
+    gap: 12,
+  },
+  scheduleToggleList: {
+    gap: 8,
+  },
+  scheduleToggleRow: {
+    minHeight: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface2,
+  },
+  scheduleCheckbox: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: theme.colors.text2,
+    borderRadius: 6,
+    backgroundColor: theme.colors.surface1,
+  },
+  scheduleCheckboxChecked: {
+    borderColor: theme.colors.text1,
+    backgroundColor: theme.colors.text1,
+  },
+  scheduleToggleText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  scheduleToggleLabel: {
+    color: theme.colors.text1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  scheduleToggleHint: {
+    color: theme.colors.text2,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  calendarHeader: {
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  calendarTitle: {
+    flex: 1,
+    color: theme.colors.text1,
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+    textTransform: 'capitalize',
+  },
+  calendarNavButton: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface2,
+  },
+  calendarNavText: {
+    color: theme.colors.text1,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  calendarWeekday: {
+    width: '13.2%',
+    marginBottom: 2,
+    color: theme.colors.text3,
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  calendarDay: {
+    width: '13.2%',
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    backgroundColor: theme.colors.surface2,
+  },
+  calendarDayMuted: {
+    opacity: 0.48,
+  },
+  calendarDaySelected: {
+    backgroundColor: theme.colors.text1,
+  },
+  calendarDayText: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  calendarDayTextMuted: {
+    color: theme.colors.text3,
+  },
+  calendarDayTextSelected: {
+    color: theme.colors.white,
+  },
   sheetChipList: {
     gap: 9,
   },
@@ -2564,6 +3148,45 @@ const styles = StyleSheet.create({
         outlineStyle: 'none',
       },
     }),
+  },
+  attachmentPickerScroll: {
+    maxHeight: 420,
+  },
+  attachmentPickerContent: {
+    gap: 8,
+    paddingBottom: 6,
+  },
+  attachmentPickerSectionTitle: {
+    color: theme.colors.text3,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  attachmentPickerRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface2,
+  },
+  attachmentPickerBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  attachmentPickerName: {
+    color: theme.colors.text1,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  attachmentPickerMeta: {
+    color: theme.colors.text2,
+    fontSize: 11,
+    marginTop: 2,
   },
   sheetButtonRow: {
     flexDirection: 'row',

@@ -30,6 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
     "app.oauth.frontend-callback-url=http://localhost/oauth/callback",
+    "app.oauth.web-callback-url=http://localhost/oauth/callback",
+    "app.oauth.mobile-callback-url=planthings://oauth/callback",
     "app.oauth.providers.google.client-id=test-google-client",
     "app.oauth.providers.google.client-secret=test-google-secret",
     "app.oauth.providers.google.authorization-uri=https://accounts.google.com/o/oauth2/v2/auth",
@@ -192,6 +194,21 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldPreserveMobileCallbackWhenFailureHappensAfterStateConsumption() throws Exception {
+    String state = startOAuthAndReturnState("google", null, "mobile");
+
+    MvcResult callback = mockMvc.perform(get("/api/auth/oauth/google/callback")
+            .queryParam("state", state)
+            .queryParam("code", "google-exchange-fails"))
+        .andExpect(status().isFound())
+        .andReturn();
+
+    String location = callback.getResponse().getHeader("Location");
+    assertTrue(location.startsWith("planthings://oauth/callback"));
+    assertEquals("OAUTH_CALLBACK_FALHOU", queryParam(location, "error"));
+  }
+
+  @Test
   void shouldPreserveOnlyAllowedRedirectPaths() throws Exception {
     String allowedLocation = completeProviderCallbackLocation("google", "google-new", "/settings?tab=account");
     assertEquals("/settings?tab=account", queryParam(allowedLocation, "redirectTo"));
@@ -242,11 +259,33 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   private String startOAuthAndReturnState(String provider, String redirectTo) throws Exception {
-    String body = redirectTo == null ? "{}" : """
+    return startOAuthAndReturnState(provider, redirectTo, null);
+  }
+
+  private String startOAuthAndReturnState(String provider, String redirectTo, String client) throws Exception {
+    String body;
+    if (redirectTo == null && client == null) {
+      body = "{}";
+    } else if (redirectTo == null) {
+      body = """
+        {
+          "client": "%s"
+        }
+        """.formatted(client);
+    } else if (client == null) {
+      body = """
         {
           "redirectTo": "%s"
         }
         """.formatted(redirectTo);
+    } else {
+      body = """
+        {
+          "redirectTo": "%s",
+          "client": "%s"
+        }
+        """.formatted(redirectTo, client);
+    }
 
     JsonNode start = readJson(mockMvc.perform(post("/api/auth/oauth/" + provider + "/start")
             .contentType(MediaType.APPLICATION_JSON)
