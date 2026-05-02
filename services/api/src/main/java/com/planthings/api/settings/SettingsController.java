@@ -65,8 +65,10 @@ public class SettingsController {
   }
 
   @PostMapping("/integrations/gmail/start")
-  public ApiEnvelope<GmailIntegrationService.AuthorizationStartResponse> startGmailIntegration() {
-    return ApiEnvelope.ok(gmailIntegrationService.startAuthorization());
+  public ApiEnvelope<GmailIntegrationService.AuthorizationStartResponse> startGmailIntegration(
+      @RequestBody(required = false) GmailStartRequest request
+  ) {
+    return ApiEnvelope.ok(gmailIntegrationService.startAuthorization(request == null ? null : request.client()));
   }
 
   @GetMapping("/integrations/gmail/callback")
@@ -110,5 +112,8 @@ public class SettingsController {
       @NotBlank(message = "A nova senha e obrigatoria.")
       @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres.") String newPassword
   ) {
+  }
+
+  public record GmailStartRequest(String client) {
   }
 }

@@ -22,6 +22,9 @@ public class OAuthLoginStateEntity extends BaseEntity {
   @Column(length = 500)
   private String redirectPath;
 
+  @Column(nullable = false, length = 20)
+  private String client = "web";
+
   @Column(nullable = false)
   private OffsetDateTime expiresAt;
 
@@ -57,6 +60,14 @@ public class OAuthLoginStateEntity extends BaseEntity {
 
   public void setRedirectPath(String redirectPath) {
     this.redirectPath = redirectPath;
+  }
+
+  public String getClient() {
+    return client;
+  }
+
+  public void setClient(String client) {
+    this.client = client;
   }
 
   public OffsetDateTime getExpiresAt() {

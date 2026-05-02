@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native'
 import { Check, Grid2X2, List, Plus, Search, X } from 'lucide-react-native'
-import { boardColumns, plans } from '../data/demoData'
 import BottomSheet from '../components/BottomSheet'
-import MobileKanbanBoard from './MobileKanbanBoard'
+import { useAuth } from '../providers/AuthProvider'
+import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
 
 const coverThemes = [
@@ -165,11 +165,11 @@ function PlanListRow({ plan, active, onPress }) {
   )
 }
 
-export default function HomeScreen({ session }) {
-  const [localPlans, setLocalPlans] = useState(plans)
+export default function HomeScreen({ navigation }) {
+  const { session } = useAuth()
+  const { plans, createPlan: createRemotePlan } = usePlans()
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState('grid')
-  const [boardPlan, setBoardPlan] = useState(null)
   const [newPlanSheetOpen, setNewPlanSheetOpen] = useState(false)
   const [newPlanName, setNewPlanName] = useState('')
   const [selectedCoverId, setSelectedCoverId] = useState(coverThemes[0].id)
@@ -178,7 +178,7 @@ export default function HomeScreen({ session }) {
   const contentWidth = Math.min(width, 430) - theme.spacing.screenX * 2
   const cardWidth = (contentWidth - gap) / 2
 
-  const enrichedPlans = useMemo(() => localPlans.map(getPlanViewModel), [localPlans])
+  const enrichedPlans = useMemo(() => plans.map(getPlanViewModel), [plans])
   const selectedCover = coverThemes.find((cover) => cover.id === selectedCoverId) ?? coverThemes[0]
   const filteredPlans = enrichedPlans.filter((plan) => {
     const term = search.trim().toLowerCase()
@@ -202,32 +202,24 @@ export default function HomeScreen({ session }) {
     setNewPlanSheetOpen(false)
   }
 
-  const createPlan = () => {
+  const createPlan = async () => {
     const name = newPlanName.trim()
     if (!name) return
 
-    const newPlan = {
-      id: `mobile-plan-${Date.now()}`,
+    const newPlan = await createRemotePlan({
       name,
-      tasks: 0,
-      color: selectedCover.color,
+      description: '',
+      cover: selectedCover.color,
       coverThemeId: selectedCover.id,
-      tag: selectedCover.tag,
-    }
+    })
 
-    setLocalPlans((currentPlans) => [newPlan, ...currentPlans])
     setSearch('')
     closeNewPlanSheet()
+    navigation.navigate('Board', { planId: newPlan.id })
   }
 
-  if (boardPlan) {
-    return (
-      <MobileKanbanBoard
-        plan={boardPlan}
-        columns={boardColumns}
-        onBack={() => setBoardPlan(null)}
-      />
-    )
+  const openPlan = (plan) => {
+    navigation.navigate('Board', { planId: plan.id })
   }
 
   return (
@@ -260,27 +252,29 @@ export default function HomeScreen({ session }) {
         ) : null}
       </View>
 
-      <View style={styles.currentPlanPanel}>
-        <View style={styles.currentPlanCopy}>
-          <Text style={styles.currentPlanEyebrow}>Plano atual</Text>
-          <View style={styles.currentPlanTitleRow}>
-            <Text style={styles.currentPlanTitle} numberOfLines={1}>{currentPlan.name}</Text>
-            <Text
-              style={[
-                styles.currentPlanTag,
-                { backgroundColor: currentPlan.cover.tint, color: currentPlan.cover.color },
-              ]}
-            >
-              {currentPlan.cover.tag}
-            </Text>
+      {currentPlan ? (
+        <View style={styles.currentPlanPanel}>
+          <View style={styles.currentPlanCopy}>
+            <Text style={styles.currentPlanEyebrow}>Plano atual</Text>
+            <View style={styles.currentPlanTitleRow}>
+              <Text style={styles.currentPlanTitle} numberOfLines={1}>{currentPlan.name}</Text>
+              <Text
+                style={[
+                  styles.currentPlanTag,
+                  { backgroundColor: currentPlan.cover.tint, color: currentPlan.cover.color },
+                ]}
+              >
+                {currentPlan.cover.tag}
+              </Text>
+            </View>
+            <Text style={styles.currentPlanText} numberOfLines={2}>{currentPlan.description}</Text>
           </View>
-          <Text style={styles.currentPlanText} numberOfLines={2}>{currentPlan.description}</Text>
+          <Pressable style={styles.currentPlanAction} onPress={() => openPlan(currentPlan)}>
+            <Grid2X2 size={14} color={theme.colors.text1} strokeWidth={1.8} />
+            <Text style={styles.currentPlanActionText}>Abrir quadro</Text>
+          </Pressable>
         </View>
-        <Pressable style={styles.currentPlanAction} onPress={() => setBoardPlan(currentPlan)}>
-          <Grid2X2 size={14} color={theme.colors.text1} strokeWidth={1.8} />
-          <Text style={styles.currentPlanActionText}>Abrir quadro</Text>
-        </Pressable>
-      </View>
+      ) : null}
 
       <View style={styles.sectionHeader}>
         <View style={styles.sectionLeft}>
@@ -329,7 +323,7 @@ export default function HomeScreen({ session }) {
               plan={plan}
               width={cardWidth}
               active={index === 0 && !search}
-              onPress={() => setBoardPlan(plan)}
+              onPress={() => openPlan(plan)}
             />
           ))}
           <Pressable style={[styles.newPlanCard, { width: cardWidth }]} onPress={openNewPlanSheet} accessibilityRole="button">
@@ -346,7 +340,7 @@ export default function HomeScreen({ session }) {
               key={plan.id}
               plan={plan}
               active={index === 0 && !search}
-              onPress={() => setBoardPlan(plan)}
+              onPress={() => openPlan(plan)}
             />
           ))}
           <Pressable style={styles.newPlanListRow} onPress={openNewPlanSheet} accessibilityRole="button">

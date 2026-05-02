@@ -1,34 +1,44 @@
-import { useCallback, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import BottomTabs from '../components/BottomTabs'
 import HomeScreen from './HomeScreen'
-import InboxScreen from './InboxScreen'
 import FilesScreen from './FilesScreen'
 import SettingsScreen from './SettingsScreen'
+import MobileKanbanBoard from './MobileKanbanBoard'
 import { theme } from '../theme/tokens'
 
 const bottomTabsOverlayHeight = 69
+const Tab = createBottomTabNavigator()
+const HomeStack = createNativeStackNavigator()
 
-export default function AppShell({ session, onLogout }) {
-  const [activeTab, setActiveTab] = useState('home')
+function HomeStackScreen() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeList" component={HomeScreen} />
+      <HomeStack.Screen name="Board" component={MobileKanbanBoard} />
+    </HomeStack.Navigator>
+  )
+}
 
-  const handleTabChange = useCallback((nextTab) => {
-    setActiveTab(nextTab)
-  }, [])
-
+export default function AppShell() {
   return (
     <View style={styles.shell}>
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         <View style={styles.page}>
-          {activeTab === 'home' ? <HomeScreen session={session} /> : null}
-          {activeTab === 'inbox' ? <InboxScreen /> : null}
-          {activeTab === 'files' ? (
-            <FilesScreen bottomOverlayOffset={bottomTabsOverlayHeight} />
-          ) : null}
-          {activeTab === 'settings' ? <SettingsScreen session={session} onLogout={onLogout} /> : null}
+          <Tab.Navigator
+            initialRouteName="home"
+            screenOptions={{ headerShown: false }}
+            tabBar={(props) => <BottomTabs {...props} />}
+          >
+            <Tab.Screen name="home" component={HomeStackScreen} />
+            <Tab.Screen name="files">
+              {() => <FilesScreen bottomOverlayOffset={bottomTabsOverlayHeight} />}
+            </Tab.Screen>
+            <Tab.Screen name="settings" component={SettingsScreen} />
+          </Tab.Navigator>
         </View>
-        <BottomTabs activeTab={activeTab} onChange={handleTabChange} />
       </SafeAreaView>
     </View>
   )

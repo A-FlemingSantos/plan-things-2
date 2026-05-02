@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
 import {
   AlarmClock,
   AtSign,
@@ -23,6 +23,8 @@ import {
   Users,
 } from 'lucide-react-native'
 import BottomSheet from '../components/BottomSheet'
+import { useAuth } from '../providers/AuthProvider'
+import { mobileApiRequest } from '../services/api'
 import { theme } from '../theme/tokens'
 
 function SectionCard({ title, hint, children }) {
@@ -109,16 +111,149 @@ function InlineButton({ label, onPress, tone = 'secondary', disabled = false }) 
   )
 }
 
-export default function SettingsScreen({ session, onLogout }) {
+export default function SettingsScreen() {
+  const { session, accessToken, logout, patchSession } = useAuth()
   const [dailySummaryEnabled, setDailySummaryEnabled] = useState(true)
   const [mentionsEnabled, setMentionsEnabled] = useState(true)
   const [remindersEnabled, setRemindersEnabled] = useState(true)
   const [productNewsEnabled, setProductNewsEnabled] = useState(false)
   const [activeSheet, setActiveSheet] = useState(null)
+  const [settingsSnapshot, setSettingsSnapshot] = useState(null)
+  const [fullNameValue, setFullNameValue] = useState('')
+  const [workspaceNameValue, setWorkspaceNameValue] = useState('')
+  const [currentPasswordValue, setCurrentPasswordValue] = useState('')
+  const [newPasswordValue, setNewPasswordValue] = useState('')
+  const gmail = settingsSnapshot?.integrations?.gmail
+
+  const request = useCallback((path, options = {}) => mobileApiRequest(path, {
+    ...options,
+    token: accessToken,
+  }), [accessToken])
+
+  const loadSettings = useCallback(async () => {
+    if (!accessToken) return
+    const snapshot = await request('/api/settings')
+    setSettingsSnapshot(snapshot)
+    if (snapshot?.notifications) {
+      setDailySummaryEnabled(Boolean(snapshot.notifications.emailNotifs))
+      setMentionsEnabled(Boolean(snapshot.notifications.emailNotifs))
+      setRemindersEnabled(Boolean(snapshot.notifications.deadlineAlerts))
+      setProductNewsEnabled(Boolean(snapshot.notifications.eventReminders))
+    }
+    if (snapshot?.account) {
+      setFullNameValue(snapshot.account.fullName ?? session?.user?.fullName ?? '')
+      void patchSession({ user: snapshot.account })
+    }
+    if (snapshot?.workspace) {
+      setWorkspaceNameValue(snapshot.workspace.name ?? session?.workspace?.name ?? '')
+    }
+  }, [accessToken, patchSession, request])
+
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      if (url.startsWith('planthings://settings')) {
+        void loadSettings()
+      }
+    })
+    return () => subscription.remove()
+  }, [loadSettings])
+
+  const persistNotifications = async (next) => {
+    setDailySummaryEnabled(next.emailNotifs)
+    setMentionsEnabled(next.emailNotifs)
+    setRemindersEnabled(next.deadlineAlerts)
+    setProductNewsEnabled(next.eventReminders)
+    await request('/api/settings/notifications', {
+      method: 'PATCH',
+      body: next,
+    })
+    await loadSettings()
+  }
+
+  const updateNotification = (field, value) => {
+    const current = {
+      emailNotifs: dailySummaryEnabled || mentionsEnabled,
+      eventReminders: productNewsEnabled,
+      deadlineAlerts: remindersEnabled,
+    }
+    void persistNotifications({ ...current, [field]: value })
+  }
+
+  const connectGmail = async () => {
+    const response = await request('/api/settings/integrations/gmail/start', {
+      method: 'POST',
+      body: { client: 'mobile' },
+    })
+    if (response?.authorizationUrl) {
+      await Linking.openURL(response.authorizationUrl)
+    }
+  }
+
+  const disconnectGmail = async () => {
+    await request('/api/settings/integrations/gmail', { method: 'DELETE' })
+    await loadSettings()
+  }
+
+  const saveAccount = async () => {
+    const account = await request('/api/settings/account', {
+      method: 'PATCH',
+      body: { fullName: fullNameValue.trim() },
+    })
+    await patchSession({ user: account })
+    await loadSettings()
+    closeSheet()
+  }
+
+  const savePreferences = async (patch = {}) => {
+    const preferences = settingsSnapshot?.preferences ?? {}
+    await request('/api/settings/preferences', {
+      method: 'PATCH',
+      body: {
+        locale: patch.locale ?? preferences.locale ?? session?.user?.locale ?? 'pt-BR',
+        timeZone: patch.timeZone ?? preferences.timeZone ?? session?.user?.timeZone ?? 'America/Sao_Paulo',
+        theme: patch.theme ?? preferences.theme ?? 'system',
+        dateFormat: patch.dateFormat ?? preferences.dateFormat ?? 'dd/MM/yyyy',
+        timeFormat: patch.timeFormat ?? preferences.timeFormat ?? '24h',
+      },
+    })
+    await loadSettings()
+    closeSheet()
+  }
+
+  const saveWorkspace = async () => {
+    const workspace = await request('/api/workspace', {
+      method: 'PATCH',
+      body: { name: workspaceNameValue.trim() },
+    })
+    await patchSession({ workspace })
+    await loadSettings()
+    closeSheet()
+  }
+
+  const savePassword = async () => {
+    await request('/api/settings/password', {
+      method: 'PATCH',
+      body: {
+        currentPassword: currentPasswordValue,
+        newPassword: newPasswordValue,
+      },
+    })
+    setCurrentPasswordValue('')
+    setNewPasswordValue('')
+    closeSheet()
+  }
 
   const firstName = useMemo(() => session.user.fullName.split(' ')[0] ?? session.user.fullName, [session.user.fullName])
   const workspaceInitial = useMemo(() => session.workspace.initial ?? (session.workspace.name?.[0] ?? 'W'), [session.workspace.initial, session.workspace.name])
   const closeSheet = () => setActiveSheet(null)
+
+  if (!session) {
+    return null
+  }
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -143,7 +278,7 @@ export default function SettingsScreen({ session, onLogout }) {
             <Text style={styles.identityWorkspace} numberOfLines={1}>{session.workspace.name}</Text>
           </View>
         </View>
-        <Pill label="demo" />
+        <Pill label="real" />
       </View>
 
       <SectionCard
@@ -166,9 +301,9 @@ export default function SettingsScreen({ session, onLogout }) {
         <Row
           icon={LogOut}
           label="Sair"
-          hint="Encerra a sessão do modo dev neste dispositivo."
+          hint="Encerra a sessão neste dispositivo."
           danger
-          onPress={onLogout}
+          onPress={logout}
         />
       </SectionCard>
 
@@ -227,7 +362,7 @@ export default function SettingsScreen({ session, onLogout }) {
           icon={Mail}
           label="Gmail"
           hint="Importe mensagens e envie resumos."
-          right={<InlineButton label="Conectar" onPress={() => setActiveSheet('gmail')} />}
+          right={<InlineButton label={gmail?.connected ? 'Gerenciar' : 'Conectar'} onPress={() => setActiveSheet('gmail')} />}
         />
         <Row
           icon={Link}
@@ -249,7 +384,7 @@ export default function SettingsScreen({ session, onLogout }) {
           right={(
             <Switch
               value={dailySummaryEnabled}
-              onValueChange={setDailySummaryEnabled}
+              onValueChange={(value) => updateNotification('emailNotifs', value)}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.border2}
@@ -263,7 +398,7 @@ export default function SettingsScreen({ session, onLogout }) {
           right={(
             <Switch
               value={mentionsEnabled}
-              onValueChange={setMentionsEnabled}
+              onValueChange={(value) => updateNotification('emailNotifs', value)}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.border2}
@@ -277,7 +412,7 @@ export default function SettingsScreen({ session, onLogout }) {
           right={(
             <Switch
               value={remindersEnabled}
-              onValueChange={setRemindersEnabled}
+              onValueChange={(value) => updateNotification('deadlineAlerts', value)}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.border2}
@@ -291,7 +426,7 @@ export default function SettingsScreen({ session, onLogout }) {
           right={(
             <Switch
               value={productNewsEnabled}
-              onValueChange={setProductNewsEnabled}
+              onValueChange={(value) => updateNotification('eventReminders', value)}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
               thumbColor={theme.colors.white}
               ios_backgroundColor={theme.colors.border2}
@@ -374,10 +509,15 @@ export default function SettingsScreen({ session, onLogout }) {
             <Text style={styles.sheetTitle}>{session.user.fullName}</Text>
             <Text style={styles.sheetHint}>{session.user.email}</Text>
             <View style={styles.sheetDivider} />
-            <Text style={styles.sheetBodyText}>
-              Esta é uma versão demo do Ajustes mobile. Em um app completo, você poderia alterar nome, foto e preferências da conta.
-            </Text>
+            <TextInput
+              value={fullNameValue}
+              onChangeText={setFullNameValue}
+              style={styles.sheetInput}
+              selectionColor={theme.colors.text1}
+              autoCapitalize="words"
+            />
             <View style={styles.sheetActions}>
+              <InlineButton label="Salvar" tone="primary" onPress={saveAccount} disabled={!fullNameValue.trim()} />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
             </View>
           </View>
@@ -396,6 +536,7 @@ export default function SettingsScreen({ session, onLogout }) {
               <Text style={styles.sheetOptionText}>English (US)</Text>
             </View>
             <View style={styles.sheetActions}>
+              <InlineButton label="Salvar" tone="primary" onPress={() => savePreferences({ locale: 'pt-BR' })} />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
             </View>
           </View>
@@ -407,6 +548,7 @@ export default function SettingsScreen({ session, onLogout }) {
               O app usa o fuso do dispositivo para exibir datas e horários. Em breve, você poderá definir manualmente.
             </Text>
             <View style={styles.sheetActions}>
+              <InlineButton label="Salvar" tone="primary" onPress={() => savePreferences({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })} />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
             </View>
           </View>
@@ -417,10 +559,14 @@ export default function SettingsScreen({ session, onLogout }) {
             <Text style={styles.sheetTitle}>{session.workspace.name}</Text>
             <Text style={styles.sheetHint}>Workspace atual</Text>
             <View style={styles.sheetDivider} />
-            <Text style={styles.sheetBodyText}>
-              Em breve: convites, permissões e gestão de membros direto do mobile.
-            </Text>
+            <TextInput
+              value={workspaceNameValue}
+              onChangeText={setWorkspaceNameValue}
+              style={styles.sheetInput}
+              selectionColor={theme.colors.text1}
+            />
             <View style={styles.sheetActions}>
+              <InlineButton label="Salvar" tone="primary" onPress={saveWorkspace} disabled={!workspaceNameValue.trim()} />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
             </View>
           </View>
@@ -429,18 +575,46 @@ export default function SettingsScreen({ session, onLogout }) {
         {activeSheet === 'gmail' ? (
           <View style={styles.sheetBlock}>
             <Text style={styles.sheetTitle}>Integração com Gmail</Text>
-            <Text style={styles.sheetHint}>Conecte para enviar resumos e organizar a Inbox.</Text>
+            <Text style={styles.sheetHint}>{gmail?.connected ? gmail.email : 'Conecte para enviar resumos.'}</Text>
             <View style={styles.sheetDivider} />
             <Text style={styles.sheetBodyText}>
-              Em breve: fluxo de conexão OAuth, escolha de labels e sincronização com sua Caixa de Entrada.
+              {gmail?.connected ? 'Gmail conectado neste workspace.' : 'O Google abrirá o consentimento e voltará para o app ao concluir.'}
             </Text>
             <View style={styles.sheetActions}>
+              <InlineButton label={gmail?.connected ? 'Desconectar' : 'Conectar'} tone={gmail?.connected ? 'danger' : 'primary'} onPress={gmail?.connected ? disconnectGmail : connectGmail} />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
             </View>
           </View>
         ) : null}
 
-        {activeSheet === 'password' || activeSheet === 'export' || activeSheet === 'sessions' || activeSheet === 'delete' ? (
+        {activeSheet === 'password' ? (
+          <View style={styles.sheetBlock}>
+            <TextInput
+              value={currentPasswordValue}
+              onChangeText={setCurrentPasswordValue}
+              style={styles.sheetInput}
+              selectionColor={theme.colors.text1}
+              secureTextEntry
+              placeholder="Senha atual"
+              placeholderTextColor={theme.colors.text3}
+            />
+            <TextInput
+              value={newPasswordValue}
+              onChangeText={setNewPasswordValue}
+              style={styles.sheetInput}
+              selectionColor={theme.colors.text1}
+              secureTextEntry
+              placeholder="Nova senha"
+              placeholderTextColor={theme.colors.text3}
+            />
+            <View style={styles.sheetActions}>
+              <InlineButton label="Salvar" tone="primary" onPress={savePassword} disabled={!currentPasswordValue || newPasswordValue.length < 8} />
+              <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
+            </View>
+          </View>
+        ) : null}
+
+        {activeSheet === 'export' || activeSheet === 'sessions' || activeSheet === 'delete' ? (
           <View style={styles.sheetBlock}>
             <Text style={styles.sheetBodyText}>
               Ação disponível em uma atualização futura. Esta tela já segue a mesma estrutura e linguagem do Ajustes do web, adaptada para mobile.
@@ -808,7 +982,18 @@ const styles = StyleSheet.create({
   sheetActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    gap: 8,
     marginTop: 6,
+  },
+  sheetInput: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: theme.radius.sm,
+    color: theme.colors.text1,
+    backgroundColor: theme.colors.surface1,
+    fontSize: 14,
   },
   sheetOption: {
     flexDirection: 'row',

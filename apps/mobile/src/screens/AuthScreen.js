@@ -1,22 +1,61 @@
 import { useState } from 'react'
-import { Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Path, Rect } from 'react-native-svg'
+import { useAuth } from '../providers/AuthProvider'
 import { theme } from '../theme/tokens'
 
 const nextStepsImage = require('../../assets/illustrations/Next steps-pana-graphite.png')
 
-export default function AuthScreen({ onEnter }) {
+function notify(message) {
+  if (Platform.OS === 'web') {
+    window.alert(message)
+    return
+  }
+  Alert.alert('Plan Things', message)
+}
+
+export default function AuthScreen() {
+  const { login, register, startOAuthLogin } = useAuth()
   const [mode, setMode] = useState('welcome')
-  const [name, setName] = useState('Arthur Santos')
-  const [email, setEmail] = useState('arthur@example.com')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [focusedField, setFocusedField] = useState(null)
+  const [loading, setLoading] = useState(false)
   const isRegister = mode === 'register'
   const isWelcome = mode === 'welcome'
 
-  const submit = () => {
-    onEnter(mode, { name, email, password })
+  const submit = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      if (isRegister) {
+        await register({ fullName: name, email, password })
+      } else {
+        await login({ email, password })
+      }
+    } catch (error) {
+      notify(error?.message ?? 'Nao foi possivel autenticar.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogle = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      await startOAuthLogin('google')
+    } catch (error) {
+      notify(error?.message ?? 'Nao foi possivel iniciar o login com Google.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const soon = () => {
+    notify('Em breve')
   }
 
   return (
@@ -116,7 +155,7 @@ export default function AuthScreen({ onEnter }) {
             </View>
 
             <View style={styles.providerList}>
-              <Pressable style={styles.providerButton} onPress={submit}>
+              <Pressable style={styles.providerButton} onPress={handleGoogle}>
                 <View style={styles.providerIcon}>
                   <Svg width={21} height={21} viewBox="0 0 48 48">
                     <Path
@@ -139,7 +178,7 @@ export default function AuthScreen({ onEnter }) {
                 </View>
                 <Text style={styles.providerText}>Continuar com o Google</Text>
               </Pressable>
-              <Pressable style={styles.providerButton} onPress={submit}>
+              <Pressable style={styles.providerButton} onPress={soon}>
                 <View style={styles.providerIcon}>
                   <Svg width={21} height={21} viewBox="0 0 23 23">
                     <Rect x="1" y="1" width="10" height="10" fill="#F25022" />
@@ -150,7 +189,7 @@ export default function AuthScreen({ onEnter }) {
                 </View>
                 <Text style={styles.providerText}>Continuar com a Microsoft</Text>
               </Pressable>
-              <Pressable style={styles.providerButton} onPress={submit}>
+              <Pressable style={styles.providerButton} onPress={soon}>
                 <View style={styles.providerIcon}>
                   <Svg width={21} height={21} viewBox="0 0 16 16">
                     <Path
@@ -161,7 +200,7 @@ export default function AuthScreen({ onEnter }) {
                 </View>
                 <Text style={styles.providerText}>Continuar com a Apple</Text>
               </Pressable>
-              <Pressable style={styles.providerButton} onPress={submit}>
+              <Pressable style={styles.providerButton} onPress={soon}>
                 <View style={styles.providerIcon}>
                   <Svg width={20} height={20} viewBox="0 0 16 16">
                     <Path
@@ -176,7 +215,6 @@ export default function AuthScreen({ onEnter }) {
           </View>
         )}
 
-        {isWelcome ? <Text style={styles.footer}>Demo-first · sem API real nesta base</Text> : null}
       </View>
     </SafeAreaView>
   )

@@ -131,6 +131,7 @@ describe('SettingsPage Gmail integration', () => {
       expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/settings/integrations/gmail/start', {
         method: 'POST',
         token: 'test-token',
+        body: { client: 'web' },
       })
     })
     expect(within(gmailCard).getByRole('button', { name: 'Aguarde' })).toBeDisabled()

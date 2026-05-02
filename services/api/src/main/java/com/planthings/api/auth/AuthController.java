@@ -54,7 +54,11 @@ public class AuthController {
       @PathVariable String provider,
       @RequestBody(required = false) OAuthStartRequest request
   ) {
-    return ApiEnvelope.ok(oauthLoginService.start(provider, request == null ? null : request.redirectTo()));
+    return ApiEnvelope.ok(oauthLoginService.start(
+        provider,
+        request == null ? null : request.redirectTo(),
+        request == null ? null : request.client()
+    ));
   }
 
   @GetMapping("/auth/oauth/{provider}/callback")
@@ -107,7 +111,7 @@ public class AuthController {
   ) {
   }
 
-  public record OAuthStartRequest(String redirectTo) {
+  public record OAuthStartRequest(String redirectTo, String client) {
   }
 
   public record OAuthExchangeRequest(

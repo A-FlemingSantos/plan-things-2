@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import * as DocumentPicker from 'expo-document-picker'
 import {
   AlignLeft,
   Archive,
@@ -37,9 +38,13 @@ import {
   Users,
   X,
 } from 'lucide-react-native'
-import { boardLabels, boardMembers } from '../data/demoData'
 import BottomSheet from '../components/BottomSheet'
+import { useFiles } from '../providers/FilesProvider'
+import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
+
+let boardLabels = []
+let boardMembers = []
 
 function findLabel(labelId) {
   return boardLabels.find((label) => label.id === labelId) ?? null
@@ -71,6 +76,7 @@ function createLocalCard(title) {
   return {
     id: `mobile-card-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     title,
+    columnId: null,
     description: '',
     labelId: null,
     memberIds: [],
@@ -817,7 +823,26 @@ function TaskListRow({ card, column, isDone, onPress }) {
   )
 }
 
-export default function MobileKanbanBoard({ plan, columns, onBack }) {
+export default function MobileKanbanBoard({ route, navigation, plan: propPlan, columns: propColumns, onBack }) {
+  const {
+    plans,
+    loadPlan,
+    createColumn,
+    createCard,
+    updateCard: persistCard,
+    deleteCard: persistDeleteCard,
+    moveCard: persistMoveCard,
+    addComment,
+    createChecklist,
+    createChecklistItem,
+    updateChecklistItem,
+    attachFileToCard,
+    uploadAndAttachToCard,
+  } = usePlans()
+  const { files } = useFiles()
+  const planId = route?.params?.planId ?? propPlan?.id
+  const plan = plans.find((item) => item.id === planId) ?? propPlan
+  const columns = plan?.boardColumns ?? propColumns ?? []
   const [boardColumnsState, setBoardColumnsState] = useState(() => cloneBoardColumns(columns))
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
   const [targetColumnIndex, setTargetColumnIndex] = useState(null)
@@ -842,6 +867,28 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     () => boardColumnsState.reduce((sum, column) => sum + column.cards.length, 0),
     [boardColumnsState],
   )
+
+  boardLabels = plan?.labelsMeta ?? []
+  boardMembers = plan?.membersMeta ?? []
+
+  useEffect(() => {
+    if (planId) {
+      loadPlan(planId)
+    }
+  }, [loadPlan, planId])
+
+  useEffect(() => {
+    setBoardColumnsState(cloneBoardColumns(columns))
+    setNewCardColumnId(columns[0]?.id ?? null)
+  }, [columns, planId])
+
+  if (!plan) {
+    return (
+      <View style={styles.page}>
+        <Text style={styles.title}>Carregando plano...</Text>
+      </View>
+    )
+  }
   const taskGroups = useMemo(() => {
     const flatTasks = boardColumnsState.flatMap((column) => (
       column.cards.map((card) => ({
@@ -998,6 +1045,10 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   }
 
   const updateCard = (cardId, patch) => {
+    const currentColumn = boardColumnsState.find((column) => column.cards.some((card) => card.id === cardId))
+    const currentCard = currentColumn?.cards.find((card) => card.id === cardId)
+    const nextCard = currentCard ? { ...currentCard, ...patch } : null
+
     setBoardColumnsState((currentColumns) => currentColumns.map((column) => ({
       ...column,
       cards: column.cards.map((card) => (
@@ -1009,6 +1060,69 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
         ? { ...entry, card: { ...entry.card, ...patch } }
         : entry
     ))
+
+    if (!planId || !nextCard) return
+
+    if (patch.comments) {
+      const previousIds = new Set((currentCard.comments ?? []).map((comment) => comment.id))
+      const created = patch.comments.find((comment) => !previousIds.has(comment.id))
+      if (created?.text) {
+        void addComment(planId, cardId, created.text)
+      }
+      return
+    }
+
+    if (patch.checklists) {
+      const previousChecklists = currentCard.checklists ?? []
+      const previousChecklistIds = new Set(previousChecklists.map((checklist) => checklist.id))
+      const createdChecklist = patch.checklists.find((checklist) => !previousChecklistIds.has(checklist.id))
+      if (createdChecklist) {
+        void createChecklist(planId, cardId, createdChecklist.title ?? 'Checklist')
+        return
+      }
+
+      const previousItems = new Map(previousChecklists.flatMap((checklist) => (
+        (checklist.items ?? []).map((item) => [item.id, item])
+      )))
+      const changedItem = patch.checklists
+        .flatMap((checklist) => (checklist.items ?? []).map((item) => ({ ...item, checklistId: checklist.id })))
+        .find((item) => {
+          const previous = previousItems.get(item.id)
+          return !previous || Boolean(previous.checked) !== Boolean(item.checked)
+        })
+      if (changedItem) {
+        if (previousItems.has(changedItem.id)) {
+          void updateChecklistItem(planId, changedItem)
+        } else {
+          void createChecklistItem(planId, changedItem.checklistId, changedItem.text ?? changedItem.title)
+        }
+      }
+      return
+    }
+
+    if (patch.attachments) {
+      const previousIds = new Set((currentCard.attachments ?? []).map((attachment) => attachment.id))
+      const created = patch.attachments.find((attachment) => !previousIds.has(attachment.id))
+      if (created?.source === 'library') {
+        const file = files.find((item) => item.type !== 'folder' && !item.trashed)
+        if (file) {
+          void attachFileToCard(planId, file.id, cardId)
+        }
+      } else if (created?.source === 'device') {
+        void DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true }).then((result) => {
+          const asset = result.assets?.[0]
+          if (!asset) return
+          return uploadAndAttachToCard(planId, {
+            uri: asset.uri,
+            name: asset.name,
+            type: asset.mimeType ?? 'application/octet-stream',
+          }, cardId)
+        })
+      }
+      return
+    }
+
+    void persistCard(planId, nextCard)
   }
 
   const deleteCard = (cardId) => {
@@ -1017,6 +1131,9 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
       cards: column.cards.filter((card) => card.id !== cardId),
     })))
     setSelectedCardEntry((entry) => (entry?.card.id === cardId ? null : entry))
+    if (planId) {
+      void persistDeleteCard(planId, cardId)
+    }
   }
 
   const duplicateCard = (cardId) => {
@@ -1066,6 +1183,10 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
           : column
       ))
     })
+    if (planId) {
+      const targetColumn = boardColumnsState.find((column) => column.id === targetColumnId)
+      void persistMoveCard(planId, cardId, targetColumnId, targetColumn?.cards.length ?? 0)
+    }
   }
 
   const openAddCardSheet = (columnId, allowColumnChoice = false) => {
@@ -1081,7 +1202,7 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
   const submitNewCard = () => {
     const title = newCardTitle.trim()
     if (!title || !newCardColumnId) return
-    const newCard = createLocalCard(title)
+    const newCard = { ...createLocalCard(title), columnId: newCardColumnId }
 
     setBoardColumnsState((currentColumns) => currentColumns.map((column) => (
       column.id === newCardColumnId
@@ -1090,6 +1211,9 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     )))
     setNewCardTitle('')
     closeAddCardSheet()
+    if (planId) {
+      void createCard(planId, newCard)
+    }
   }
 
   const openAddListSheet = () => {
@@ -1118,13 +1242,16 @@ export default function MobileKanbanBoard({ plan, columns, onBack }) {
     boardTranslateX.setValue(-newIndex * pageWidth)
     scrollBoardToTop()
     closeAddListSheet()
+    if (planId) {
+      void createColumn(planId, { title, color: newColumn.color })
+    }
   }
 
   return (
     <View style={styles.page}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Pressable style={styles.backButton} onPress={onBack} accessibilityLabel="Voltar para Home">
+          <Pressable style={styles.backButton} onPress={onBack ?? (() => navigation?.goBack())} accessibilityLabel="Voltar para Home">
             <ArrowLeft size={19} color={theme.colors.text1} strokeWidth={1.9} />
           </Pressable>
           <View style={styles.headerMetaPill}>

@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 public class OAuthProperties {
 
   private URI frontendCallbackUrl;
+  private URI webCallbackUrl;
+  private URI mobileCallbackUrl;
   private long stateMinutes = 10;
   private long completionCodeMinutes = 5;
   private List<String> allowedRedirectPaths = new ArrayList<>(List.of("/"));
@@ -24,6 +26,22 @@ public class OAuthProperties {
 
   public void setFrontendCallbackUrl(URI frontendCallbackUrl) {
     this.frontendCallbackUrl = frontendCallbackUrl;
+  }
+
+  public URI getWebCallbackUrl() {
+    return webCallbackUrl == null ? frontendCallbackUrl : webCallbackUrl;
+  }
+
+  public void setWebCallbackUrl(URI webCallbackUrl) {
+    this.webCallbackUrl = webCallbackUrl;
+  }
+
+  public URI getMobileCallbackUrl() {
+    return mobileCallbackUrl == null ? URI.create("planthings://oauth/callback") : mobileCallbackUrl;
+  }
+
+  public void setMobileCallbackUrl(URI mobileCallbackUrl) {
+    this.mobileCallbackUrl = mobileCallbackUrl;
   }
 
   public long getStateMinutes() {

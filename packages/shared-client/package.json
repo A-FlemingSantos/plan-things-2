@@ -1,0 +1,15 @@
+{
+  "name": "@plan-things/shared-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./api": "./src/apiClient.js",
+    "./plans": "./src/plans.js",
+    "./board": "./src/board.js",
+    "./files": "./src/files.js",
+    "./settings": "./src/settings.js",
+    "./dates": "./src/dates.js"
+  }
+}

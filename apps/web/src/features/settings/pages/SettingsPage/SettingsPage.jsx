@@ -509,6 +509,7 @@ export default function SettingsPage() {
       const response = await apiRequest('/api/settings/integrations/gmail/start', {
         method: 'POST',
         token: accessToken,
+        body: { client: 'web' },
       })
 
       window.location.assign(response.authorizationUrl)

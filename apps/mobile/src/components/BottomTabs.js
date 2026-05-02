@@ -1,32 +1,39 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Files, Home, Inbox, Settings } from 'lucide-react-native'
+import { Files, Home, Settings } from 'lucide-react-native'
 import { theme } from '../theme/tokens'
 
 const icons = {
   home: Home,
-  inbox: Inbox,
   files: Files,
   settings: Settings,
 }
 
 export const tabs = [
   { id: 'home', label: 'Home' },
-  { id: 'inbox', label: 'Inbox' },
   { id: 'files', label: 'Arquivos' },
   { id: 'settings', label: 'Ajustes' },
 ]
 
-export default function BottomTabs({ activeTab, onChange }) {
+export default function BottomTabs({ activeTab, onChange, state, navigation }) {
+  const currentTab = state?.routes[state.index]?.name ?? activeTab
+  const handleChange = (tabId) => {
+    if (navigation) {
+      navigation.navigate(tabId)
+      return
+    }
+    onChange?.(tabId)
+  }
+
   return (
     <View style={styles.wrap}>
       {tabs.map((tab) => {
         const Icon = icons[tab.id]
-        const active = activeTab === tab.id
+        const active = currentTab === tab.id
         return (
           <Pressable
             key={tab.id}
             style={[styles.item, active && styles.itemActive]}
-            onPress={() => onChange(tab.id)}
+            onPress={() => handleChange(tab.id)}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
           >

@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "workspaces": [
     "apps/*",
-    "services/*"
+    "services/*",
+    "packages/*"
   ],
   "devDependencies": {
     "husky": "^9.1.7",

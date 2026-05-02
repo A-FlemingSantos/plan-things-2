@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Animated, Easing, FlatList, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import * as DocumentPicker from 'expo-document-picker'
 import {
   Archive,
   ArrowDown,
@@ -26,8 +27,9 @@ import {
   UsersRound,
   X,
 } from 'lucide-react-native'
-import { files } from '../data/demoData'
 import BottomSheet from '../components/BottomSheet'
+import { useFiles } from '../providers/FilesProvider'
+import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
 
 const fileIcons = {
@@ -116,7 +118,18 @@ function parseModifiedToMinutesAgo(input) {
 }
 
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
-  const [localFiles, setLocalFiles] = useState(() => files.map((file) => ({ ...file, section: 'mine' })))
+  const {
+    files: localFiles,
+    createFolder,
+    uploadFile,
+    downloadFile,
+    toggleFavorite,
+    trashFile,
+    restoreFile,
+    shareToPlan,
+    unshareFromPlan,
+  } = useFiles()
+  const { plans } = usePlans()
   const [query, setQuery] = useState('')
   const [activeSection, setActiveSection] = useState('mine')
   const [displayMode, setDisplayMode] = useState('list')
@@ -128,6 +141,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const [fileSheetMode, setFileSheetMode] = useState('menu')
   const [renameValue, setRenameValue] = useState('')
   const [createFlow, setCreateFlow] = useState(null)
+  const [createName, setCreateName] = useState('')
   const sheetProgress = useRef(new Animated.Value(0)).current
   const sheetDragY = useRef(new Animated.Value(0)).current
   const selectedFile = localFiles.find((file) => file.id === selectedFileId) ?? null
@@ -259,36 +273,69 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   }
 
   const updateSelectedFile = (patch) => {
-    if (!selectedFileId) return
-    setLocalFiles((currentFiles) => currentFiles.map((file) => (
-      file.id === selectedFileId ? { ...file, ...patch } : file
-    )))
+    if (!selectedFileId || !selectedFile) return
+    if (patch.favorite !== undefined) {
+      void toggleFavorite(selectedFile)
+    }
+    if (patch.shared !== undefined) {
+      const firstPlanId = plans[0]?.id
+      if (patch.shared) {
+        void shareToPlan(selectedFileId, firstPlanId)
+      } else {
+        void unshareFromPlan(selectedFileId, firstPlanId)
+      }
+    }
+    if (patch.trashed) {
+      void trashFile(selectedFileId)
+    }
   }
 
   const renameSelectedFile = () => {
     const name = renameValue.trim()
     if (!name) return
-    updateSelectedFile({ name, modified: 'agora' })
     closeFileSheet()
   }
 
   const moveSelectedFile = (section) => {
-    const patch = {
-      section,
-      shared: section === 'shared',
-      favorite: section === 'favorites',
-      archived: section === 'archived',
-      trashed: false,
-      modified: 'agora',
+    if (section === 'favorites') {
+      updateSelectedFile({ favorite: true })
     }
-
-    updateSelectedFile(patch)
+    if (section === 'shared') {
+      updateSelectedFile({ shared: true })
+    }
+    if (section === 'mine' && selectedFile?.trashed) {
+      void restoreFile(selectedFile.id)
+    }
     closeFileSheet()
   }
 
   const deleteSelectedFile = () => {
-    updateSelectedFile({ trashed: true, archived: false, modified: 'agora' })
+    if (selectedFile?.trashed) {
+      void restoreFile(selectedFile.id)
+    } else {
+      updateSelectedFile({ trashed: true })
+    }
     closeFileSheet()
+  }
+
+  const submitCreateFlow = async () => {
+    if (!createFlow) return
+    const name = createName.trim() || createFlow.label
+    if (createFlow.id === 'folder') {
+      await createFolder(name)
+    } else if (createFlow.id === 'upload') {
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true })
+      const asset = result.assets?.[0]
+      if (asset) {
+        await uploadFile({
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType ?? 'application/octet-stream',
+        })
+      }
+    }
+    setCreateName('')
+    setCreateFlow(null)
   }
 
   const sheetTranslateY = Animated.add(
@@ -328,7 +375,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                   <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
                   <View style={styles.fileMetaRow}>
                     <Text style={styles.fileMeta} numberOfLines={1}>
-                      {file.size || '0 KB'} · {file.modified}
+                      {file.sizeLabel || file.size || '0 KB'} · {file.modified}
                     </Text>
                     {file.shared ? (
                       <View style={styles.sharedBadge}>
@@ -340,11 +387,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 <View style={styles.fileActions}>
                   <Pressable
                     style={styles.starButton}
-                    onPress={() => {
-                      setLocalFiles((currentFiles) => currentFiles.map((item) => (
-                        item.id === file.id ? { ...item, favorite: !item.favorite, modified: 'agora' } : item
-                      )))
-                    }}
+                    onPress={() => toggleFavorite(file)}
                     accessibilityRole="button"
                     accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
                   >
@@ -370,11 +413,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 <View style={styles.gridHeroActions}>
                   <Pressable
                     style={styles.starButton}
-                    onPress={() => {
-                      setLocalFiles((currentFiles) => currentFiles.map((item) => (
-                        item.id === file.id ? { ...item, favorite: !item.favorite, modified: 'agora' } : item
-                      )))
-                    }}
+                    onPress={() => toggleFavorite(file)}
                     accessibilityRole="button"
                     accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
                   >
@@ -392,7 +431,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               </View>
               <Text style={styles.gridName} numberOfLines={2}>{file.name}</Text>
               <Text style={styles.gridMeta} numberOfLines={1}>
-                {file.size || '0 KB'} · {file.modified}
+                {file.sizeLabel || file.size || '0 KB'} · {file.modified}
               </Text>
             </View>
           )
@@ -596,7 +635,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               <SolidFileIcon type={selectedFile?.type} size={36} />
               <View style={styles.fileActionMetaBody}>
                 <Text style={styles.fileActionTitle} numberOfLines={1}>{selectedFile?.name}</Text>
-                <Text style={styles.fileActionSubtitle}>{selectedFile?.size || '0 KB'} · {selectedFile?.modified}</Text>
+              <Text style={styles.fileActionSubtitle}>{selectedFile?.sizeLabel || selectedFile?.size || '0 KB'} · {selectedFile?.modified}</Text>
               </View>
             </View>
 
@@ -607,7 +646,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
             <Pressable
               style={styles.fileActionRow}
               onPress={() => {
-                updateSelectedFile({ favorite: !selectedFile?.favorite, modified: 'agora' })
+                updateSelectedFile({ favorite: !selectedFile?.favorite })
                 closeFileSheet()
               }}
               accessibilityRole="button"
@@ -622,7 +661,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
             <Pressable
               style={styles.fileActionRow}
               onPress={() => {
-                updateSelectedFile({ shared: true, modified: 'agora' })
+                updateSelectedFile({ shared: !selectedFile?.shared })
                 closeFileSheet()
               }}
               accessibilityRole="button"
@@ -630,9 +669,16 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               <UsersRound size={18} color={theme.colors.text1} strokeWidth={1.8} />
               <Text style={styles.fileActionLabel}>Compartilhar</Text>
             </Pressable>
-            <Pressable style={styles.fileActionRow} onPress={closeFileSheet} accessibilityRole="button">
+            <Pressable
+              style={styles.fileActionRow}
+              onPress={() => {
+                if (selectedFile?.id) void downloadFile(selectedFile.id)
+                closeFileSheet()
+              }}
+              accessibilityRole="button"
+            >
               <Download size={18} color={theme.colors.text1} strokeWidth={1.8} />
-              <Text style={styles.fileActionLabel}>Baixar (demo)</Text>
+              <Text style={styles.fileActionLabel}>Baixar</Text>
             </Pressable>
             <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('move')} accessibilityRole="button">
               <Folder size={18} color={theme.colors.text1} strokeWidth={1.8} />
@@ -640,7 +686,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
             </Pressable>
             <Pressable style={[styles.fileActionRow, styles.fileActionDanger]} onPress={deleteSelectedFile} accessibilityRole="button">
               <Trash2 size={18} color={theme.colors.red} strokeWidth={1.8} />
-              <Text style={[styles.fileActionLabel, styles.fileActionDangerText]}>Mover para lixeira</Text>
+              <Text style={[styles.fileActionLabel, styles.fileActionDangerText]}>{selectedFile?.trashed ? 'Restaurar' : 'Mover para lixeira'}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -770,8 +816,10 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 placeholder={createFlow.id === 'folder' ? 'Nome da pasta' : 'Nome do item'}
                 placeholderTextColor={theme.colors.text3}
                 selectionColor={theme.colors.text1}
+                value={createName}
+                onChangeText={setCreateName}
               />
-              <Pressable style={styles.filePrimaryButton} onPress={() => setCreateFlow(null)} accessibilityRole="button">
+              <Pressable style={styles.filePrimaryButton} onPress={submitCreateFlow} accessibilityRole="button">
                 <Text style={styles.filePrimaryButtonText}>Concluir</Text>
               </Pressable>
             </>
