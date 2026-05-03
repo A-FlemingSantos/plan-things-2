@@ -1091,7 +1091,9 @@
 }
 
 .planCoverImage {
-  background-size: 160% 160%, 200% 200%, cover;
+  background: var(--cover-bg, var(--cover-fallback, var(--surface-3)));
+  background-position: 50% 50%;
+  background-size: cover;
 }
 
 .planCardCover {

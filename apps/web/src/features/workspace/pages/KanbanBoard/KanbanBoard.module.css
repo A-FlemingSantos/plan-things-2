@@ -282,7 +282,9 @@
 }
 
 .boardMainImageCover {
-  background-size: 210% 210%, 260% 260%, cover;
+  background: var(--cover-bg, var(--cover-fallback, var(--surface-2)));
+  background-position: 50% 50%;
+  background-size: cover;
 }
 
 .boardWrapperPlannerMounted .boardMain {
@@ -692,7 +694,7 @@
   }
 
   .boardMainImageCover {
-    background-size: 180% 180%, 220% 220%, cover;
+    background-size: cover;
   }
 }
 
@@ -703,7 +705,7 @@
   }
 
   .boardMainImageCover {
-    background-size: 160% 160%, 200% 200%, cover;
+    background-size: cover;
   }
 }
 
