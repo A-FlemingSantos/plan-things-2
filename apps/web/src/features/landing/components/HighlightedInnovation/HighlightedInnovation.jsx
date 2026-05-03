@@ -1,49 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import highlightedBackground from '../../../../../minimal-drift.jpg'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './HighlightedInnovation.module.css'
 
 export default function HighlightedInnovation() {
-  const stageRef = useRef(null)
-  const [scrollProgress, setScrollProgress] = useState(0)
-
-  useEffect(() => {
-    const updateProgress = () => {
-      const stage = stageRef.current
-      if (!stage) return
-
-      const rect = stage.getBoundingClientRect()
-      const viewportHeight = window.innerHeight || 1
-      const earlyStartOffset = viewportHeight * 0.5
-      const totalTravel = Math.max(rect.height - viewportHeight + earlyStartOffset * 2, 1)
-      const current = Math.min(Math.max(earlyStartOffset - rect.top, 0), totalTravel)
-      setScrollProgress(current / totalTravel)
-    }
-
-    updateProgress()
-    window.addEventListener('scroll', updateProgress, { passive: true })
-    window.addEventListener('resize', updateProgress)
-
-    return () => {
-      window.removeEventListener('scroll', updateProgress)
-      window.removeEventListener('resize', updateProgress)
-    }
-  }, [])
-
-  const focusStrength = 1 - Math.abs(scrollProgress - 0.5) / 0.5
-  const scale = 0.86 + focusStrength * 0.14
-  const radius = 40 - focusStrength * 40
-
   return (
-    <div className={styles.stage} ref={stageRef}>
+    <div className={styles.stage}>
       <div className={styles.stickyFrame}>
         <div
           className={styles.section}
           style={{
             backgroundImage: `url(${highlightedBackground})`,
-            transform: `scale(${scale})`,
-            borderRadius: `${radius}px`,
           }}
         >
           <div className={styles.overlay} aria-hidden />
