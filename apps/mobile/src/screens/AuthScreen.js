@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Path, Rect } from 'react-native-svg'
 import { useAuth } from '../providers/AuthProvider'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 const nextStepsImage = require('../../assets/illustrations/Next steps-pana-graphite.png')
 
@@ -24,6 +25,7 @@ function oauthErrorMessage(errorCode) {
 }
 
 export default function AuthScreen() {
+  styles = useThemedStyles(createStyles)
   const { clearOAuthError, login, oauthError, register, startOAuthLogin } = useAuth()
   const [mode, setMode] = useState('welcome')
   const [name, setName] = useState('')
@@ -210,7 +212,7 @@ export default function AuthScreen() {
                 <View style={styles.providerIcon}>
                   <Svg width={21} height={21} viewBox="0 0 16 16">
                     <Path
-                      fill={theme.colors.black}
+                      fill={theme.colors.text1}
                       d="M11.18.01c-.03-.04-1.26.02-2.32 1.17-1.07 1.16-.9 2.48-.88 2.52.02.03 1.52.09 2.47-1.26.96-1.35.76-2.39.73-2.43Zm3.32 11.73c-.05-.1-2.33-1.23-2.11-3.42.21-2.19 1.67-2.79 1.69-2.86.03-.06-.59-.79-1.25-1.15a3.7 3.7 0 0 0-1.56-.44c-.11 0-.48-.09-1.25.12-.51.14-1.65.59-1.97.61-.32.02-1.26-.52-2.27-.67-.64-.12-1.33.13-1.82.33-.49.19-1.42.75-2.07 2.23-.66 1.49-.31 3.83-.07 4.56.24.73.62 1.93 1.27 2.8.58.98 1.34 1.67 1.66 1.9.32.23 1.22.39 1.84.07.5-.31 1.41-.49 1.77-.47.36.01 1.06.15 1.78.54.57.19 1.11.11 1.65-.11.55-.22 1.33-1.06 2.24-2.76.35-.79.51-1.22.47-1.28Z"
                     />
                   </Svg>
@@ -221,7 +223,7 @@ export default function AuthScreen() {
                 <View style={styles.providerIcon}>
                   <Svg width={20} height={20} viewBox="0 0 16 16">
                     <Path
-                      fill={theme.colors.black}
+                      fill={theme.colors.text1}
                       d="M3.65 1.33a.68.68 0 0 0-1.01-.06L1.61 2.3C1.12 2.78.94 3.47 1.15 4.07a17.6 17.6 0 0 0 4.17 6.61 17.6 17.6 0 0 0 6.61 4.17c.6.21 1.29.03 1.77-.45l1.03-1.04a.68.68 0 0 0-.06-1.01l-2.3-1.8a.68.68 0 0 0-.58-.12l-2.2.55a1.75 1.75 0 0 1-1.65-.46L5.48 8.06a1.75 1.75 0 0 1-.46-1.65l.55-2.2a.68.68 0 0 0-.12-.58L3.65 1.33Z"
                     />
                   </Svg>
@@ -237,7 +239,7 @@ export default function AuthScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
@@ -340,9 +342,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#ffd3d3',
+    borderColor: theme.colors.dangerBorder,
     borderRadius: theme.radius.sm,
-    backgroundColor: '#fff5f5',
+    backgroundColor: theme.colors.dangerBgSoft,
     marginBottom: 14,
   },
   oauthErrorText: {
@@ -390,7 +392,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -489,3 +491,5 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
 })
+
+let styles = createStyles(theme)

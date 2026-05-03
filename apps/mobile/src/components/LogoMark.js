@@ -1,6 +1,9 @@
 import { View, StyleSheet } from 'react-native'
+import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 export default function LogoMark({ size = 30, inverted = false }) {
+  styles = useThemedStyles(createStyles)
   const gap = Math.max(2, Math.round(size * 0.1))
   const padding = 4
   const block = (size - padding * 2 - gap) / 2
@@ -12,6 +15,7 @@ export default function LogoMark({ size = 30, inverted = false }) {
           key={index}
           style={[
             styles.block,
+            inverted && styles.blockInverted,
             {
               width: block,
               height: block,
@@ -25,18 +29,23 @@ export default function LogoMark({ size = 30, inverted = false }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   mark: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 4,
     borderRadius: 8,
-    backgroundColor: '#000',
+    backgroundColor: theme.colors.text1,
   },
   markInverted: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.textInverse,
   },
   block: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.textInverse,
+  },
+  blockInverted: {
+    backgroundColor: theme.colors.text1,
   },
 })
+
+let styles = createStyles(theme)

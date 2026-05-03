@@ -41,6 +41,7 @@ import BottomSheet from '../components/BottomSheet'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 let boardLabels = []
 let boardMembers = []
@@ -250,7 +251,7 @@ function DetailSectionAction({ disabled = false, icon: Icon = Plus, label, onPre
       accessibilityRole="button"
       accessibilityState={{ disabled }}
     >
-      <Icon size={14} color={disabled ? theme.colors.text3 : theme.colors.white} strokeWidth={1.9} />
+      <Icon size={14} color={disabled ? theme.colors.text3 : theme.colors.textInverse} strokeWidth={1.9} />
       <Text style={[styles.detailSectionActionText, disabled && styles.detailSectionActionTextDisabled]}>{label}</Text>
     </Pressable>
   )
@@ -743,7 +744,7 @@ function CardDetailScreen({
                       accessibilityRole="button"
                     >
                       <View style={[styles.detailChecklistCheck, done && styles.detailChecklistCheckDone]}>
-                        {done ? <Check size={11} color={theme.colors.white} strokeWidth={2.1} /> : null}
+                        {done ? <Check size={11} color={theme.colors.textInverse} strokeWidth={2.1} /> : null}
                       </View>
                       <Text style={[styles.detailChecklistText, done && styles.detailChecklistTextDone]} numberOfLines={1}>
                         {item.text ?? item.title}
@@ -785,7 +786,7 @@ function CardDetailScreen({
                 accessibilityLabel="Enviar comentário"
                 accessibilityState={{ disabled: !commentValue.trim() }}
               >
-                <Send size={15} color={commentValue.trim() ? theme.colors.white : theme.colors.text3} strokeWidth={1.9} />
+                <Send size={15} color={commentValue.trim() ? theme.colors.textInverse : theme.colors.text3} strokeWidth={1.9} />
               </Pressable>
             </View>
 
@@ -926,7 +927,7 @@ function CardDetailScreen({
               <View style={styles.scheduleToggleList}>
                 <Pressable style={styles.scheduleToggleRow} onPress={() => toggleScheduleFlag('start')} accessibilityRole="checkbox" accessibilityState={{ checked: schedule.startEnabled }}>
                   <View style={[styles.scheduleCheckbox, schedule.startEnabled && styles.scheduleCheckboxChecked]}>
-                    {schedule.startEnabled ? <Check size={12} color={theme.colors.white} strokeWidth={2.2} /> : null}
+                    {schedule.startEnabled ? <Check size={12} color={theme.colors.textInverse} strokeWidth={2.2} /> : null}
                   </View>
                   <View style={styles.scheduleToggleText}>
                     <Text style={styles.scheduleToggleLabel}>Início</Text>
@@ -935,7 +936,7 @@ function CardDetailScreen({
                 </Pressable>
                 <Pressable style={styles.scheduleToggleRow} onPress={() => toggleScheduleFlag('due')} accessibilityRole="checkbox" accessibilityState={{ checked: schedule.dueEnabled }}>
                   <View style={[styles.scheduleCheckbox, schedule.dueEnabled && styles.scheduleCheckboxChecked]}>
-                    {schedule.dueEnabled ? <Check size={12} color={theme.colors.white} strokeWidth={2.2} /> : null}
+                    {schedule.dueEnabled ? <Check size={12} color={theme.colors.textInverse} strokeWidth={2.2} /> : null}
                   </View>
                   <View style={styles.scheduleToggleText}>
                     <Text style={styles.scheduleToggleLabel}>Prazo</Text>
@@ -1126,7 +1127,7 @@ function TaskListRow({ card, column, isDone, onPress }) {
       accessibilityLabel={`Abrir tarefa ${card.title}`}
     >
       <View style={[styles.taskCheck, isDone && styles.taskCheckDone]}>
-        {isDone ? <Check size={13} color={theme.colors.white} strokeWidth={2.2} /> : null}
+        {isDone ? <Check size={13} color={theme.colors.textInverse} strokeWidth={2.2} /> : null}
       </View>
 
       <View style={styles.taskListBody}>
@@ -1170,6 +1171,7 @@ function TaskListRow({ card, column, isDone, onPress }) {
 }
 
 export default function MobileKanbanBoard({ route, navigation, plan: propPlan, columns: propColumns, onBack }) {
+  styles = useThemedStyles(createStyles)
   const {
     plans,
     loadPlan,
@@ -1749,7 +1751,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
             accessibilityRole="button"
             accessibilityLabel="Adicionar lista"
           >
-            <Plus size={16} color={theme.colors.white} strokeWidth={2.2} />
+            <Plus size={16} color={theme.colors.textInverse} strokeWidth={2.2} />
             <Text style={styles.addListButtonText}>Lista</Text>
           </Pressable>
         </View>
@@ -1844,7 +1846,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
             accessibilityRole="button"
             accessibilityLabel="Adicionar tarefa"
           >
-            <Plus size={18} color={theme.colors.white} strokeWidth={2} />
+            <Plus size={18} color={theme.colors.textInverse} strokeWidth={2} />
           </Pressable>
         </View>
       ) : null}
@@ -1869,7 +1871,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
               >
                 <Icon
                   size={18}
-                  color={isActive ? theme.colors.white : theme.colors.text2}
+                  color={isActive ? theme.colors.textInverse : theme.colors.text2}
                   strokeWidth={1.9}
                 />
               </Pressable>
@@ -1980,7 +1982,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
@@ -2150,7 +2152,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   columnTabTextActive: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
   },
   addListButton: {
     minHeight: 34,
@@ -2163,7 +2165,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.text1,
   },
   addListButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -2415,12 +2417,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#70777b',
+    borderColor: theme.colors.text2,
     borderRadius: 999,
   },
   taskCheckDone: {
-    borderColor: theme.colors.black,
-    backgroundColor: theme.colors.black,
+    borderColor: theme.colors.text1,
+    backgroundColor: theme.colors.text1,
   },
   taskListBody: {
     flex: 1,
@@ -2428,13 +2430,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   taskListTitle: {
-    color: '#303337',
+    color: theme.colors.text1,
     fontSize: 16,
     lineHeight: 20,
     fontWeight: '400',
   },
   taskListTitleDone: {
-    color: '#747474',
+    color: theme.colors.text3,
     textDecorationLine: 'line-through',
   },
   taskListMetaRow: {
@@ -2445,11 +2447,11 @@ const styles = StyleSheet.create({
   },
   taskListMeta: {
     flexShrink: 1,
-    color: '#747474',
+    color: theme.colors.text3,
     fontSize: 12,
   },
   taskListMetaDone: {
-    color: '#b23b43',
+    color: theme.colors.red,
   },
   taskMiniMembers: {
     flexDirection: 'row',
@@ -2483,12 +2485,12 @@ const styles = StyleSheet.create({
     marginBottom: 7,
   },
   completedTitle: {
-    color: '#5d6870',
+    color: theme.colors.text2,
     fontSize: 16,
     fontWeight: '400',
   },
   completedCount: {
-    color: '#5d6870',
+    color: theme.colors.text2,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -2498,7 +2500,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
-    backgroundColor: theme.colors.black,
+    backgroundColor: theme.colors.text1,
     ...Platform.select({
       web: {
         boxShadow: '0 5px 13px rgba(0, 0, 0, 0.20)',
@@ -2719,7 +2721,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface3,
   },
   detailSectionActionText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -2979,7 +2981,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sheetActionDanger: {
-    backgroundColor: '#fff0f0',
+    backgroundColor: theme.colors.dangerBg,
   },
   sheetActionDangerText: {
     color: theme.colors.red,
@@ -3100,7 +3102,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text3,
   },
   calendarDayTextSelected: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
   },
   sheetChipList: {
     gap: 9,
@@ -3206,7 +3208,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface3,
   },
   sheetPrimaryButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -3255,6 +3257,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addCardColumnChoiceTextActive: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
   },
 })
+
+let styles = createStyles(theme)

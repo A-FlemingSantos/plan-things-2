@@ -8,6 +8,7 @@ import FilesScreen from './FilesScreen'
 import SettingsScreen from './SettingsScreen'
 import MobileKanbanBoard from './MobileKanbanBoard'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 const bottomTabsOverlayHeight = 69
 const Tab = createBottomTabNavigator()
@@ -23,6 +24,8 @@ function HomeStackScreen() {
 }
 
 export default function AppShell() {
+  styles = useThemedStyles(createStyles)
+
   return (
     <View style={styles.shell}>
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -44,7 +47,7 @@ export default function AppShell() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   shell: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
@@ -58,3 +61,5 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
 })
+
+let styles = createStyles(theme)

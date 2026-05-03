@@ -5,6 +5,7 @@ import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
 import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 const coverThemes = [
   {
@@ -168,6 +169,7 @@ function PlanListRow({ plan, active, onPress }) {
 }
 
 export default function HomeScreen({ navigation }) {
+  styles = useThemedStyles(createStyles)
   const { session } = useAuth()
   const { plans, createPlan: createRemotePlan } = usePlans()
   const [search, setSearch] = useState('')
@@ -232,7 +234,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.pageSubtitle}>Bom dia, {session.user.fullName.split(' ')[0]}.</Text>
         </View>
         <Pressable style={styles.newPlanBtn} onPress={openNewPlanSheet} accessibilityRole="button" accessibilityLabel="Criar novo plano">
-          <Plus size={16} color={theme.colors.white} strokeWidth={2} />
+          <Plus size={16} color={theme.colors.textInverse} strokeWidth={2} />
         </Pressable>
       </View>
 
@@ -412,7 +414,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.planThemeLabel}>{cover.tag}</Text>
                 {isSelected ? (
                   <View style={styles.planThemeCheck}>
-                    <Check size={12} color={theme.colors.white} strokeWidth={2.1} />
+                    <Check size={12} color={theme.colors.textInverse} strokeWidth={2.1} />
                   </View>
                 ) : null}
               </Pressable>
@@ -436,7 +438,7 @@ export default function HomeScreen({ navigation }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
@@ -848,7 +850,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.text1,
   },
   emptyStateBtnText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -957,7 +959,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface3,
   },
   planSheetSubmitText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -965,3 +967,5 @@ const styles = StyleSheet.create({
     color: theme.colors.text3,
   },
 })
+
+let styles = createStyles(theme)

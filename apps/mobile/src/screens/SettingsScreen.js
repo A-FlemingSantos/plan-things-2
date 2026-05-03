@@ -25,6 +25,7 @@ import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
 import { mobileApiRequest } from '../services/api'
 import { theme } from '../theme/tokens'
+import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
 
 function SectionCard({ title, hint, children }) {
   return (
@@ -110,8 +111,22 @@ function InlineButton({ label, onPress, tone = 'secondary', disabled = false }) 
   )
 }
 
+const themeOptions = [
+  { id: 'system', label: 'Sistema', hint: 'Segue a aparência do dispositivo.' },
+  { id: 'light', label: 'Claro', hint: 'Fundo claro e controles escuros.' },
+  { id: 'dark', label: 'Escuro', hint: 'Preto como base e neutros em branco.' },
+]
+
+const themeLabels = {
+  system: 'Sistema',
+  light: 'Claro',
+  dark: 'Escuro',
+}
+
 export default function SettingsScreen() {
+  styles = useThemedStyles(createStyles)
   const { session, accessToken, logout, patchSession } = useAuth()
+  const { effectiveTheme, setThemePreference, themePreference } = useMobileTheme()
   const [emailNotifsEnabled, setEmailNotifsEnabled] = useState(true)
   const [eventRemindersEnabled, setEventRemindersEnabled] = useState(true)
   const [deadlineAlertsEnabled, setDeadlineAlertsEnabled] = useState(true)
@@ -143,8 +158,11 @@ export default function SettingsScreen() {
       setFullNameValue(snapshot.account.fullName ?? session?.user?.fullName ?? '')
       void patchSession({ user: snapshot.account })
     }
+    if (snapshot?.preferences?.theme) {
+      setThemePreference(snapshot.preferences.theme)
+    }
     setWorkspaceNameValue(session?.workspace?.name ?? '')
-  }, [accessToken, patchSession, request, session?.user?.fullName, session?.workspace?.name])
+  }, [accessToken, patchSession, request, session?.user?.fullName, session?.workspace?.name, setThemePreference])
 
   useEffect(() => {
     loadSettings()
@@ -218,18 +236,33 @@ export default function SettingsScreen() {
 
   const savePreferences = async (patch = {}) => {
     const preferences = settingsSnapshot?.preferences ?? {}
-    await request('/api/settings/preferences', {
-      method: 'PATCH',
-      body: {
-        locale: patch.locale ?? preferences.locale ?? session?.user?.locale ?? 'pt-BR',
-        timeZone: patch.timeZone ?? preferences.timeZone ?? session?.user?.timeZone ?? 'America/Sao_Paulo',
-        theme: patch.theme ?? preferences.theme ?? 'system',
-        dateFormat: patch.dateFormat ?? preferences.dateFormat ?? 'dd/MM/yyyy',
-        timeFormat: patch.timeFormat ?? preferences.timeFormat ?? '24h',
-      },
-    })
-    await loadSettings()
-    closeSheet()
+    const previousTheme = themePreference
+    const nextTheme = patch.theme ?? preferences.theme ?? 'system'
+    if (patch.theme) setThemePreference(nextTheme)
+
+    try {
+      const nextPreferences = await request('/api/settings/preferences', {
+        method: 'PATCH',
+        body: {
+          locale: patch.locale ?? preferences.locale ?? session?.user?.locale ?? 'pt-BR',
+          timeZone: patch.timeZone ?? preferences.timeZone ?? session?.user?.timeZone ?? 'America/Sao_Paulo',
+          theme: nextTheme,
+          dateFormat: patch.dateFormat ?? preferences.dateFormat ?? 'dd/MM/yyyy',
+          timeFormat: patch.timeFormat ?? preferences.timeFormat ?? '24h',
+        },
+      })
+      if (nextPreferences?.theme) setThemePreference(nextPreferences.theme)
+      setSettingsSnapshot((current) => ({
+        ...current,
+        preferences: nextPreferences,
+      }))
+      await loadSettings()
+      closeSheet()
+    } catch (error) {
+      if (patch.theme) setThemePreference(previousTheme)
+      setSettingsError(error?.message ?? 'Nao foi possivel salvar as preferencias.')
+      await loadSettings()
+    }
   }
 
   const saveWorkspace = async () => {
@@ -257,6 +290,8 @@ export default function SettingsScreen() {
 
   const firstName = useMemo(() => session.user.fullName.split(' ')[0] ?? session.user.fullName, [session.user.fullName])
   const workspaceInitial = useMemo(() => session.workspace.initial ?? (session.workspace.name?.[0] ?? 'W'), [session.workspace.initial, session.workspace.name])
+  const selectedThemeLabel = themeLabels[themePreference] ?? themeLabels.system
+  const effectiveThemeLabel = effectiveTheme === 'dark' ? 'escuro' : 'claro'
   const closeSheet = () => setActiveSheet(null)
 
   if (!session) {
@@ -337,8 +372,8 @@ export default function SettingsScreen() {
           icon={Palette}
           label="Tema"
           hint="Aparência do app."
-          right={<Pill label="Em breve" tone="accent" />}
-          disabled
+          value={themePreference === 'system' ? `${selectedThemeLabel} (${effectiveThemeLabel})` : selectedThemeLabel}
+          onPress={() => setActiveSheet('theme')}
         />
       </SectionCard>
 
@@ -396,7 +431,7 @@ export default function SettingsScreen() {
               onValueChange={(value) => updateNotification('emailNotifs', value)}
               disabled={notificationsSaving}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
-              thumbColor={theme.colors.white}
+              thumbColor={theme.colors.textInverse}
               ios_backgroundColor={theme.colors.border2}
             />
           )}
@@ -411,7 +446,7 @@ export default function SettingsScreen() {
               onValueChange={(value) => updateNotification('eventReminders', value)}
               disabled={notificationsSaving}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
-              thumbColor={theme.colors.white}
+              thumbColor={theme.colors.textInverse}
               ios_backgroundColor={theme.colors.border2}
             />
           )}
@@ -426,7 +461,7 @@ export default function SettingsScreen() {
               onValueChange={(value) => updateNotification('deadlineAlerts', value)}
               disabled={notificationsSaving}
               trackColor={{ false: theme.colors.border2, true: theme.colors.text1 }}
-              thumbColor={theme.colors.white}
+              thumbColor={theme.colors.textInverse}
               ios_backgroundColor={theme.colors.border2}
             />
           )}
@@ -501,6 +536,7 @@ export default function SettingsScreen() {
           activeSheet === 'password' ? 'Senha' :
           activeSheet === 'language' ? 'Idioma' :
           activeSheet === 'timezone' ? 'Fuso horário' :
+          activeSheet === 'theme' ? 'Tema' :
           activeSheet === 'workspace' ? 'Workspace' :
           activeSheet === 'gmail' ? 'Gmail' :
           activeSheet === 'export' ? 'Exportar dados' :
@@ -556,6 +592,34 @@ export default function SettingsScreen() {
               <InlineButton label="Salvar" tone="primary" onPress={() => savePreferences({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })} />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
             </View>
+          </View>
+        ) : null}
+
+        {activeSheet === 'theme' ? (
+          <View style={styles.sheetBlock}>
+            <Text style={styles.sheetBodyText}>
+              Aparência atual: {selectedThemeLabel.toLowerCase()} ({effectiveThemeLabel}).
+            </Text>
+            <View style={styles.sheetDivider} />
+            {themeOptions.map((option) => {
+              const selected = themePreference === option.id
+
+              return (
+                <Pressable
+                  key={option.id}
+                  style={[styles.sheetOption, selected && styles.sheetOptionActive]}
+                  onPress={() => savePreferences({ theme: option.id })}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <View style={styles.sheetOptionTextWrap}>
+                    <Text style={styles.sheetOptionText}>{option.label}</Text>
+                    <Text style={styles.sheetOptionHint}>{option.hint}</Text>
+                  </View>
+                  {selected ? <Pill label="Selecionado" tone="accent" /> : null}
+                </Pressable>
+              )
+            })}
           </View>
         ) : null}
 
@@ -634,7 +698,7 @@ export default function SettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
@@ -686,7 +750,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.text1,
   },
   identityAvatarText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 0.2,
@@ -777,7 +841,7 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
   rowDanger: {
-    borderBottomColor: '#ffd3d3',
+    borderBottomColor: theme.colors.dangerBorder,
   },
   rowIcon: {
     width: 34,
@@ -789,8 +853,8 @@ const styles = StyleSheet.create({
   },
   rowIconDanger: {
     borderWidth: 1,
-    borderColor: '#ffd3d3',
-    backgroundColor: '#fff5f5',
+    borderColor: theme.colors.dangerBorder,
+    backgroundColor: theme.colors.dangerBgSoft,
   },
   rowBody: {
     flex: 1,
@@ -868,8 +932,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text1,
   },
   pillDanger: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#ffd3d3',
+    backgroundColor: theme.colors.dangerBgSoft,
+    borderColor: theme.colors.dangerBorder,
   },
   pillTextDanger: {
     color: theme.colors.red,
@@ -891,7 +955,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.text1,
   },
   btnPrimaryText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -906,9 +970,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   btnDanger: {
-    backgroundColor: '#fff5f5',
+    backgroundColor: theme.colors.dangerBgSoft,
     borderWidth: 1,
-    borderColor: '#ffd3d3',
+    borderColor: theme.colors.dangerBorder,
   },
   btnDangerText: {
     color: theme.colors.red,
@@ -923,8 +987,8 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ffd3d3',
-    backgroundColor: '#fffafa',
+    borderColor: theme.colors.dangerBorder,
+    backgroundColor: theme.colors.dangerBgSubtle,
   },
   dangerTitle: {
     color: theme.colors.red,
@@ -946,8 +1010,8 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ffd3d3',
-    backgroundColor: '#fffafa',
+    borderColor: theme.colors.dangerBorder,
+    backgroundColor: theme.colors.dangerBgSubtle,
   },
   dangerRowMeta: {
     flex: 1,
@@ -1022,9 +1086,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: theme.colors.surface2,
   },
+  sheetOptionActive: {
+    borderColor: theme.colors.text1,
+    backgroundColor: theme.colors.surface1,
+  },
+  sheetOptionTextWrap: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
   sheetOptionText: {
     color: theme.colors.text1,
     fontSize: 14,
     fontWeight: '600',
   },
+  sheetOptionHint: {
+    color: theme.colors.text2,
+    fontSize: 12,
+    lineHeight: 16,
+  },
 })
+
+let styles = createStyles(theme)

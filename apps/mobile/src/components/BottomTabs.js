@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Files, Home, Settings } from 'lucide-react-native'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 const icons = {
   home: Home,
@@ -15,6 +16,7 @@ export const tabs = [
 ]
 
 export default function BottomTabs({ activeTab, onChange, state, navigation }) {
+  styles = useThemedStyles(createStyles)
   const currentTab = state?.routes[state.index]?.name ?? activeTab
   const handleChange = (tabId) => {
     if (navigation) {
@@ -48,7 +50,7 @@ export default function BottomTabs({ activeTab, onChange, state, navigation }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     gap: 4,
@@ -77,3 +79,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 })
+
+let styles = createStyles(theme)

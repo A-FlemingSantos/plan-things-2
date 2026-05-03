@@ -31,6 +31,7 @@ import BottomSheet from '../components/BottomSheet'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 const fileIcons = {
   folder: Folder,
@@ -84,6 +85,7 @@ function SolidFileIcon({ type = 'doc', size, variant = 'tile' }) {
 }
 
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
+  styles = useThemedStyles(createStyles)
   const {
     files: localFiles,
     createFolder,
@@ -428,7 +430,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                   accessibilityRole="button"
                   accessibilityLabel="Adicionar arquivo"
                 >
-                  <Plus size={18} color={theme.colors.white} strokeWidth={2} />
+                  <Plus size={18} color={theme.colors.textInverse} strokeWidth={2} />
                 </Pressable>
               </View>
             </View>
@@ -580,7 +582,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                   accessibilityLabel={option.label}
                 >
                   <View style={styles.documentCreateIcon}>
-                    <OptionIcon size={18} color={theme.colors.white} fill={theme.colors.text1} strokeWidth={1.55} />
+                    <OptionIcon size={18} color={theme.colors.textInverse} fill={theme.colors.text1} strokeWidth={1.55} />
                   </View>
                   <Text style={styles.documentCreateLabel}>{option.label}</Text>
                   {option.disabled ? (
@@ -769,7 +771,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
@@ -904,7 +906,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionChipCountTextActive: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
   },
   toolbar: {
     flexDirection: 'row',
@@ -1552,7 +1554,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface2,
   },
   fileActionDanger: {
-    backgroundColor: '#fff0f0',
+    backgroundColor: theme.colors.dangerBg,
   },
   fileActionDangerText: {
     color: theme.colors.red,
@@ -1595,7 +1597,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface3,
   },
   filePrimaryButtonText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1692,8 +1694,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.text1,
   },
   sortApplyText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 14,
     fontWeight: '800',
   },
 })
+
+let styles = createStyles(theme)

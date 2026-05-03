@@ -1,8 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { Clock3 } from 'lucide-react-native'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 export default function TaskRow({ task }) {
+  styles = useThemedStyles(createStyles)
   return (
     <View style={styles.row}>
       <View style={[styles.status, { backgroundColor: task.accent }]} />
@@ -23,7 +25,7 @@ export default function TaskRow({ task }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 12,
@@ -73,3 +75,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 })
+
+let styles = createStyles(theme)

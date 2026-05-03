@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native'
 import LogoMark from './LogoMark'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 export default function ScreenHeader({ eyebrow, title, meta }) {
+  styles = useThemedStyles(createStyles)
   return (
     <View style={styles.header}>
       <View style={styles.brandRow}>
@@ -18,7 +20,7 @@ export default function ScreenHeader({ eyebrow, title, meta }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   header: {
     gap: 8,
     paddingTop: 8,
@@ -60,3 +62,5 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
 })
+
+let styles = createStyles(theme)

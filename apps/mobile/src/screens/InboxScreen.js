@@ -4,8 +4,11 @@ import { Bell, Paperclip, Search, SquarePen } from 'lucide-react-native'
 import { StatusBar } from 'expo-status-bar'
 import { inboxThreads } from '../data/demoData'
 import { theme } from '../theme/tokens'
+import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
 
 export default function InboxScreen() {
+  styles = useThemedStyles(createStyles)
+  const { statusBarStyle } = useMobileTheme()
   const [activeMailbox, setActiveMailbox] = useState('highlights')
 
   const sections = useMemo(() => {
@@ -25,7 +28,7 @@ export default function InboxScreen() {
 
   return (
     <View style={styles.page}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle} />
 
       <SectionList
         sections={sections}
@@ -44,10 +47,10 @@ export default function InboxScreen() {
               </View>
               <View style={styles.topbarActions}>
                 <Pressable accessibilityRole="button" accessibilityLabel="Notificações" style={styles.actionBtn}>
-                  <Bell size={18} color={theme.colors.white} strokeWidth={1.9} />
+                  <Bell size={18} color={theme.colors.textInverse} strokeWidth={1.9} />
                 </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel="Buscar" style={styles.actionBtn}>
-                  <Search size={18} color={theme.colors.white} strokeWidth={1.9} />
+                  <Search size={18} color={theme.colors.textInverse} strokeWidth={1.9} />
                 </Pressable>
               </View>
             </View>
@@ -140,7 +143,7 @@ const stylesVars = {
   accent: '#12263f',
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.text1,
   },
   filterText: {
-    color: theme.colors.white,
+    color: theme.colors.textInverse,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -356,3 +359,5 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 })
+
+let styles = createStyles(theme)

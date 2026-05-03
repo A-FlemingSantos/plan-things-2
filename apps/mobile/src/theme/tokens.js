@@ -16,7 +16,22 @@ export const colors = {
   gray800: '#222222',
 }
 
-export const theme = {
+const baseTheme = {
+  radius: {
+    sm: 6,
+    md: 12,
+    lg: 20,
+    xl: 28,
+  },
+  spacing: {
+    screenX: 18,
+    section: 22,
+  },
+}
+
+export const lightTheme = {
+  name: 'light',
+  isDark: false,
   colors: {
     ...colors,
     appBg: colors.white,
@@ -29,15 +44,58 @@ export const theme = {
     border1: colors.gray200,
     border2: colors.gray300,
     focus: colors.blue,
+    textInverse: colors.white,
+    dangerBg: '#fff0f0',
+    dangerBgSoft: '#fff5f5',
+    dangerBgSubtle: '#fffafa',
+    dangerBorder: '#ffd3d3',
+    warningText: '#7c4a03',
+    warningBg: '#fff6e5',
+    warningBorder: '#f0d7a1',
   },
-  radius: {
-    sm: 6,
-    md: 12,
-    lg: 20,
-    xl: 28,
+  ...baseTheme,
+}
+
+export const darkTheme = {
+  name: 'dark',
+  isDark: true,
+  colors: {
+    ...colors,
+    appBg: colors.black,
+    surface1: '#0d0d0d',
+    surface2: '#121212',
+    surface3: '#1a1a1a',
+    text1: colors.white,
+    text2: colors.gray300,
+    text3: colors.gray400,
+    border1: colors.gray800,
+    border2: '#2a2a2a',
+    focus: colors.blue,
+    textInverse: colors.black,
+    dangerBg: 'rgba(255,103,102,.14)',
+    dangerBgSoft: 'rgba(255,103,102,.14)',
+    dangerBgSubtle: 'rgba(255,103,102,.10)',
+    dangerBorder: 'rgba(255,103,102,.26)',
+    warningText: colors.amber,
+    warningBg: 'rgba(245,166,35,.14)',
+    warningBorder: 'rgba(245,166,35,.30)',
   },
-  spacing: {
-    screenX: 18,
-    section: 22,
-  },
+  ...baseTheme,
+}
+
+export const theme = {
+  ...lightTheme,
+  colors: { ...lightTheme.colors },
+}
+
+export function applyTheme(nextTheme) {
+  theme.name = nextTheme.name
+  theme.isDark = nextTheme.isDark
+  theme.colors = nextTheme.colors
+  theme.radius = nextTheme.radius
+  theme.spacing = nextTheme.spacing
+}
+
+export function normalizeThemePreference(value) {
+  return value === 'dark' || value === 'light' || value === 'system' ? value : 'system'
 }

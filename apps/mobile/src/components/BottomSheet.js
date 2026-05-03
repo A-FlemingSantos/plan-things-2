@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, Easing, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { theme } from '../theme/tokens'
+import { useThemedStyles } from '../theme/ThemeProvider'
 
 export default function BottomSheet({ children, onClose, title, visible }) {
+  styles = useThemedStyles(createStyles)
   const progress = useRef(new Animated.Value(0)).current
   const dragY = useRef(new Animated.Value(0)).current
   const { height } = useWindowDimensions()
@@ -108,7 +110,7 @@ export default function BottomSheet({ children, onClose, title, visible }) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   layer: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -163,3 +165,5 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
 })
+
+let styles = createStyles(theme)
