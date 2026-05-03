@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import highlightedBackground from '../../../../../minimal-drift.jpg'
+import highlightedBackground from '../../../../shared/assets/background-collections/windows-color-waves/02-Green_Blue_LM-4K.webp'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './HighlightedInnovation.module.css'
 
