@@ -1340,14 +1340,6 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     })
   }, [activeColumnIndex, boardColumnsState.length, boardView])
 
-  if (!plan) {
-    return (
-      <View style={styles.page}>
-        <Text style={styles.title}>Carregando plano...</Text>
-      </View>
-    )
-  }
-
   const scrollBoardToTop = () => {
     requestAnimationFrame(() => {
       verticalScrollRef.current?.scrollTo({ y: 0, animated: true })
@@ -1473,6 +1465,14 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     },
     onPanResponderTerminate: cancelColumnDrag,
   }), [activeColumnIndex, boardColumnsState.length, boardTranslateX, boardView, pageWidth])
+
+  if (!plan) {
+    return (
+      <View style={styles.page}>
+        <Text style={styles.title}>Carregando plano...</Text>
+      </View>
+    )
+  }
 
   const changeBoardView = (nextView) => {
     if (nextView === boardView) {
