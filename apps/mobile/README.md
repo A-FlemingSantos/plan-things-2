@@ -38,6 +38,41 @@ Para visualizar no navegador:
 npm run mobile:web
 ```
 
+## Google OAuth no `mobile:web` (preview no navegador)
+
+Se voce rodar o app mobile no navegador (`npm run mobile:web`) e tentar entrar/cadastrar com Google, o fluxo precisa voltar para um callback HTTP (ex.: `http://localhost:8081/oauth/callback`).
+
+Quando o backend esta com a configuracao padrao, ele redireciona o retorno do Google para o deep link nativo `planthings://oauth/callback`.
+No navegador isso falha com erro do tipo:
+
+```text
+Failed to launch 'planthings://oauth/callback?...' because the scheme does not have a registered handler.
+```
+
+### O que configurar
+
+- No backend (`services/api`): defina `APP_OAUTH_MOBILE_CALLBACK_URL` apontando para a URL do Expo web.
+- No app mobile (Expo): garanta que o app aponte para o backend correto via `EXPO_PUBLIC_API_BASE_URL` (se necessario).
+
+Exemplo (Linux/macOS), assumindo Expo web em `8081` e backend em `8080`:
+
+```sh
+export APP_OAUTH_MOBILE_CALLBACK_URL="http://localhost:8081/oauth/callback"
+
+# (se estiver rodando o backend local)
+cd services/api
+mvn spring-boot:run
+
+# em outro terminal, rodar o mobile web apontando para o backend
+cd ../../
+EXPO_PUBLIC_API_BASE_URL="http://localhost:8080" npm run mobile:web
+```
+
+Observacoes:
+
+- A porta do Expo web pode variar; use a URL exibida pelo `expo start --web`/`npx expo start --web`.
+- Em Android nativo (Expo Go/app instalado), o retorno esperado continua sendo `planthings://oauth/callback`.
+
 Tambem funciona iniciar com `npm run mobile:start` e pressionar `w` no terminal do Expo.
 
 Se quiser abrir automaticamente em um emulador ou dispositivo via cabo, configure o Android SDK e `ANDROID_HOME`, garanta que `adb` esteja no `PATH`, e rode:
