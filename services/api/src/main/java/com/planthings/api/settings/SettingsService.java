@@ -3,6 +3,8 @@ package com.planthings.api.settings;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserExternalIdentityRepository;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import java.time.DateTimeException;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class SettingsService {
@@ -36,6 +39,7 @@ public class SettingsService {
   private final GmailIntegrationService gmailIntegrationService;
   private final UserExternalIdentityRepository externalIdentityRepository;
   private final PasswordEncoder passwordEncoder;
+  private final AvatarImageService avatarImageService;
 
   public SettingsService(
       AuthenticatedUserService authenticatedUserService,
@@ -43,7 +47,8 @@ public class SettingsService {
       UserSettingsRepository userSettingsRepository,
       GmailIntegrationService gmailIntegrationService,
       UserExternalIdentityRepository externalIdentityRepository,
-      PasswordEncoder passwordEncoder
+      PasswordEncoder passwordEncoder,
+      AvatarImageService avatarImageService
   ) {
     this.authenticatedUserService = authenticatedUserService;
     this.userRepository = userRepository;
@@ -51,6 +56,7 @@ public class SettingsService {
     this.gmailIntegrationService = gmailIntegrationService;
     this.externalIdentityRepository = externalIdentityRepository;
     this.passwordEncoder = passwordEncoder;
+    this.avatarImageService = avatarImageService;
   }
 
   @Transactional(readOnly = true)
@@ -82,6 +88,26 @@ public class SettingsService {
     user.setFullName(requireFullName(fullName));
     userRepository.save(user);
     return accountSettingsFor(user);
+  }
+
+  @Transactional
+  public AccountSettings uploadAccountAvatar(MultipartFile avatar) {
+    UserEntity user = authenticatedUserService.requireUser();
+    avatarImageService.upload(AvatarOwnerType.USER, user.getId(), avatar);
+    return accountSettingsFor(user);
+  }
+
+  @Transactional
+  public AccountSettings removeAccountAvatar() {
+    UserEntity user = authenticatedUserService.requireUser();
+    avatarImageService.remove(AvatarOwnerType.USER, user.getId());
+    return accountSettingsFor(user);
+  }
+
+  @Transactional(readOnly = true)
+  public AvatarImageService.AvatarDownload getAccountAvatar() {
+    UserEntity user = authenticatedUserService.requireUser();
+    return avatarImageService.download(AvatarOwnerType.USER, user.getId());
   }
 
   @Transactional
@@ -183,6 +209,7 @@ public class SettingsService {
     return new AccountSettings(
         user.getFullName(),
         user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
         user.isLocalPasswordEnabled(),
         externalIdentityRepository.existsByUserId(user.getId())
     );
@@ -308,6 +335,7 @@ public class SettingsService {
   public record AccountSettings(
       String fullName,
       String email,
+      String avatarUrl,
       boolean localPasswordEnabled,
       boolean externalIdentityLinked
   ) {

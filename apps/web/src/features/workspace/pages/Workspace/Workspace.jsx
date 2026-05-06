@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { buildCanvasPath, buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
@@ -6,6 +7,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
@@ -26,6 +28,7 @@ function GridIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 4h8M3 7h8M3 10h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
+function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function CollapseIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
 function LogoMark() {
@@ -91,6 +94,14 @@ function TrashIcon() {
       <path d="M3 4.5h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M5.2 4.5v-.8c0-.6.5-1.1 1.1-1.1h1.4c.6 0 1.1.5 1.1 1.1v.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M4.2 4.7l.4 6.3c.04.6.53 1.1 1.13 1.1h2.54c.6 0 1.1-.5 1.13-1.1l.4-6.3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M8.8 2.7 11.3 5.2M2.5 11.5l2.8-.6L11 5.2a1.8 1.8 0 0 0-2.5-2.5L2.9 8.4l-.4 3.1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -533,8 +544,142 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
 /* ═══════════════════════════════════════════
    PLAN CARD
 ═══════════════════════════════════════════ */
-function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
+const PLAN_OPTIONS_MENU_WIDTH = 176
+const PLAN_OPTIONS_MENU_HEIGHT = 156
+const PLAN_OPTIONS_MENU_GAP = 8
+
+function resolvePlanOptionsMenuPosition(anchorRect) {
+  if (!anchorRect) return { left: 0, top: 0 }
+
+  const preferredLeft = anchorRect.right + PLAN_OPTIONS_MENU_GAP
+  const maxLeft = window.innerWidth - PLAN_OPTIONS_MENU_WIDTH - PLAN_OPTIONS_MENU_GAP
+  const left = Math.max(PLAN_OPTIONS_MENU_GAP, Math.min(preferredLeft, maxLeft))
+  const maxTop = window.innerHeight - PLAN_OPTIONS_MENU_HEIGHT - PLAN_OPTIONS_MENU_GAP
+  const top = Math.max(PLAN_OPTIONS_MENU_GAP, Math.min(anchorRect.top, maxTop))
+
+  return { left, top }
+}
+
+function PlanOptionsMenu({ anchorRect, onAction }) {
+  const actions = [
+    { id: 'board', label: 'Abrir quadro', Icon: GridIcon },
+    { id: 'canvas', label: 'Abrir Canvas', Icon: CanvasIcon },
+    { id: 'rename', label: 'Renomear', Icon: PencilIcon },
+    { id: 'delete', label: 'Excluir', Icon: TrashIcon, danger: true },
+  ]
+  const position = resolvePlanOptionsMenuPosition(anchorRect)
+  const portalRoot = document.querySelector('[data-app-theme-scope]') ?? document.body
+
+  return createPortal(
+    <div
+      className={styles.planOptionsMenu}
+      role="menu"
+      style={position}
+      onMouseDown={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+    >
+      {actions.map(({ id, label, Icon, danger }) => (
+        <button
+          key={id}
+          type="button"
+          className={`${styles.planOptionsMenuItem} ${danger ? styles.planOptionsMenuItemDanger : ''}`}
+          role="menuitem"
+          onClick={() => onAction?.(id)}
+        >
+          <Icon />
+          <span>{label}</span>
+        </button>
+      ))}
+    </div>,
+    portalRoot
+  )
+}
+
+function PlanRenameInput({ value, busy, onChange, onCommit, onCancel }) {
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [])
+
+  return (
+    <div
+      className={styles.planRenameGroup}
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          onCommit?.()
+        }
+      }}
+    >
+      <input
+        ref={inputRef}
+        className={styles.planRenameInput}
+        value={value}
+        disabled={busy}
+        maxLength={120}
+        onChange={(event) => onChange?.(event.target.value)}
+        onKeyDown={(event) => {
+          event.stopPropagation()
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            onCommit?.()
+          } else if (event.key === 'Escape') {
+            event.preventDefault()
+            onCancel?.()
+          }
+        }}
+      />
+      <button
+        type="button"
+        className={`${styles.planRenameButton} ${styles.planRenameConfirm}`}
+        aria-label="Confirmar novo nome"
+        title="Confirmar"
+        disabled={busy || !value.trim()}
+        onClick={() => onCommit?.()}
+      >
+        <CheckIcon />
+      </button>
+      <button
+        type="button"
+        className={`${styles.planRenameButton} ${styles.planRenameCancel}`}
+        aria-label="Cancelar renomeacao"
+        title="Cancelar"
+        disabled={busy}
+        onClick={() => onCancel?.()}
+      >
+        <XIcon />
+      </button>
+    </div>
+  )
+}
+
+function PlanCard({
+  plan,
+  view,
+  onOpen,
+  isActive,
+  onMore,
+  menuOpen,
+  menuAnchorRect,
+  onMenuAction,
+  isRenaming,
+  renameDraft,
+  renameBusy,
+  onRenameDraftChange,
+  onRenameCommit,
+  onRenameCancel,
+}) {
   const handleKeyDown = (event) => {
+    if (isRenaming) return
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       onOpen?.()
@@ -559,33 +704,27 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
       }
 
   const actions = (
-    <div className={styles.planCardActions}>
+    <div className={`${styles.planCardActions} ${menuOpen ? styles.planCardActionsOpen : ''}`}>
       <button
         type="button"
-        className={`${styles.planCardActionBtn} ${styles.planCardActionDanger}`}
-        aria-label="Excluir plano"
-        title="Excluir"
-        onClick={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          onDelete?.()
-        }}
-      >
-        <TrashIcon />
-      </button>
-      <button
-        type="button"
-        className={styles.planCardActionBtn}
+        className={`${styles.planCardActionBtn} ${menuOpen ? styles.planCardActionBtnActive : ''}`}
         aria-label="Mais opções"
         title="Mais opções"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onMouseDown={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
         onClick={(event) => {
           event.preventDefault()
           event.stopPropagation()
-          onMore?.()
+          onMore?.(event.currentTarget.getBoundingClientRect())
         }}
       >
         <MoreIcon />
       </button>
+      {menuOpen && <PlanOptionsMenu anchorRect={menuAnchorRect} onAction={onMenuAction} />}
     </div>
   )
 
@@ -593,7 +732,7 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
     return (
       <div
         className={`${styles.listCard} ${isActive ? styles.listCardActive : ''}`}
-        onClick={onOpen}
+        onClick={isRenaming ? undefined : onOpen}
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
@@ -607,7 +746,17 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
           />
           <div className={styles.listInfo}>
             <div className={styles.listNameRow}>
-              <p className={styles.listName}>{plan.name}</p>
+              {isRenaming ? (
+                <PlanRenameInput
+                  value={renameDraft}
+                  busy={renameBusy}
+                  onChange={onRenameDraftChange}
+                  onCommit={onRenameCommit}
+                  onCancel={onRenameCancel}
+                />
+              ) : (
+                <p className={styles.listName}>{plan.name}</p>
+              )}
               {plan.tasks > 0 && (
                 <span className={styles.listTaskCount} aria-label={`${plan.tasks} tarefas`}>
                   {plan.tasks}
@@ -623,7 +772,7 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
   return (
     <div
       className={`${styles.planCard} ${isActive ? styles.planCardActive : ''}`}
-      onClick={onOpen}
+      onClick={isRenaming ? undefined : onOpen}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
@@ -636,7 +785,17 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
       />
       <div className={styles.cardBody}>
         <div className={styles.cardNameRow}>
-          <h3 className={styles.cardName}>{plan.name}</h3>
+          {isRenaming ? (
+            <PlanRenameInput
+              value={renameDraft}
+              busy={renameBusy}
+              onChange={onRenameDraftChange}
+              onCommit={onRenameCommit}
+              onCancel={onRenameCancel}
+            />
+          ) : (
+            <h3 className={styles.cardName}>{plan.name}</h3>
+          )}
           {plan.tasks > 0 && (
             <span className={styles.cardTaskCount} aria-label={`${plan.tasks} tarefas`}>
               {plan.tasks}
@@ -732,9 +891,17 @@ export default function Workspace() {
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [notification, setNotification] = useState(null)
+  const [openPlanMenuId, setOpenPlanMenuId] = useState(null)
+  const [planMenuAnchorRect, setPlanMenuAnchorRect] = useState(null)
+  const [renamingPlan, setRenamingPlan] = useState(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const [renameBusy, setRenameBusy] = useState(false)
   const notificationTimerRef = useRef(null)
-  const { plans, activePlan, createPlan, deletePlan, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { plans, activePlan, createPlan, deletePlan, renamePlan, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { localPreferences } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
+  const showCurrentPlanSection = localPreferences.showCurrentPlanSection ?? true
 
   const filtered = plans.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -763,11 +930,67 @@ export default function Workspace() {
 
   const handleDeletePlan = async (plan) => {
     if (!plan?.id) return
+    if (confirmDestructiveActions && !window.confirm(`Excluir o plano "${plan.name}"?`)) {
+      return
+    }
     try {
       await deletePlan(plan.id)
+      setOpenPlanMenuId(null)
+      setPlanMenuAnchorRect(null)
       pushNotification(`Plano "${plan.name}" excluido`)
     } catch (error) {
       pushNotification(error.message ?? 'Nao foi possivel excluir o plano.')
+    }
+  }
+
+  const cancelRename = () => {
+    if (renameBusy) return
+    setRenamingPlan(null)
+    setRenameDraft('')
+  }
+
+  const startInlineRename = (plan) => {
+    setOpenPlanMenuId(null)
+    setPlanMenuAnchorRect(null)
+    setRenamingPlan(plan)
+    setRenameDraft(plan?.name ?? '')
+  }
+
+  const commitInlineRename = async () => {
+    if (renameBusy || !renamingPlan?.id) return
+    const nextName = renameDraft.trim()
+    if (!nextName) {
+      cancelRename()
+      return
+    }
+    if (nextName === (renamingPlan.name ?? '')) {
+      cancelRename()
+      return
+    }
+    setRenameBusy(true)
+    try {
+      const renamed = await renamePlan(renamingPlan.id, nextName)
+      setRenamingPlan(null)
+      setRenameDraft('')
+      pushNotification(`Plano "${renamed.name}" renomeado`)
+    } catch (error) {
+      pushNotification(error.message ?? 'Nao foi possivel renomear o plano.')
+    } finally {
+      setRenameBusy(false)
+    }
+  }
+
+  const handlePlanMenuAction = (plan, action) => {
+    setOpenPlanMenuId(null)
+    setPlanMenuAnchorRect(null)
+    if (action === 'board') {
+      openBoard(plan.id)
+    } else if (action === 'canvas') {
+      openCanvas(plan.id)
+    } else if (action === 'rename') {
+      startInlineRename(plan)
+    } else if (action === 'delete') {
+      void handleDeletePlan(plan)
     }
   }
 
@@ -776,6 +999,26 @@ export default function Workspace() {
       clearTimeout(notificationTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!openPlanMenuId) return undefined
+    const handlePointerDown = () => {
+      setOpenPlanMenuId(null)
+      setPlanMenuAnchorRect(null)
+    }
+    const handleResize = () => {
+      setOpenPlanMenuId(null)
+      setPlanMenuAnchorRect(null)
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('scroll', handleResize, true)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('scroll', handleResize, true)
+    }
+  }, [openPlanMenuId])
 
   const openBoard = (planId) => {
     selectPlan(planId)
@@ -884,7 +1127,7 @@ export default function Workspace() {
               <WorkspaceLoadingState view={view} />
             ) : (
               <>
-            {activePlan && (
+            {showCurrentPlanSection && activePlan && (
               <section className={styles.currentPlanPanel}>
                 <div className={styles.currentPlanPanelCopy}>
                   <p className={styles.currentPlanEyebrow}>Plano atual</p>
@@ -959,8 +1202,19 @@ export default function Workspace() {
                     plan={plan}
                     view="grid"
                     onOpen={() => openBoard(plan.id)}
-                    onDelete={() => handleDeletePlan(plan)}
-                    onMore={() => {}}
+                    onMore={(anchorRect) => {
+                      setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
+                      setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
+                    }}
+                    menuOpen={openPlanMenuId === plan.id}
+                    menuAnchorRect={planMenuAnchorRect}
+                    onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+                    isRenaming={renamingPlan?.id === plan.id}
+                    renameDraft={renameDraft}
+                    renameBusy={renameBusy}
+                    onRenameDraftChange={setRenameDraft}
+                    onRenameCommit={commitInlineRename}
+                    onRenameCancel={cancelRename}
                     isActive={plan.id === activePlan?.id}
                   />
                 ))}
@@ -977,8 +1231,19 @@ export default function Workspace() {
                     plan={plan}
                     view="list"
                     onOpen={() => openBoard(plan.id)}
-                    onDelete={() => handleDeletePlan(plan)}
-                    onMore={() => {}}
+                    onMore={(anchorRect) => {
+                      setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
+                      setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
+                    }}
+                    menuOpen={openPlanMenuId === plan.id}
+                    menuAnchorRect={planMenuAnchorRect}
+                    onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+                    isRenaming={renamingPlan?.id === plan.id}
+                    renameDraft={renameDraft}
+                    renameBusy={renameBusy}
+                    onRenameDraftChange={setRenameDraft}
+                    onRenameCommit={commitInlineRename}
+                    onRenameCancel={cancelRename}
                     isActive={plan.id === activePlan?.id}
                   />
                 ))}

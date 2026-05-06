@@ -1071,7 +1071,7 @@
   background: var(--surface-1);
   border: 1px solid var(--border-1);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition:
     box-shadow var(--transition-normal),
@@ -1099,11 +1099,13 @@
 .planCardCover {
   height: clamp(56px, 9vw, 74px);
   border-bottom: 1px solid var(--border-1);
+  border-radius: 9px 9px 0 0;
 }
 
 .planCard:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--border-2);
+  z-index: 3;
 }
 
 .planCardActive {
@@ -1127,10 +1129,12 @@
 .planCard:hover .planCardActions,
 .planCard:focus-within .planCardActions,
 .listCard:hover .planCardActions,
-.listCard:focus-within .planCardActions {
+.listCard:focus-within .planCardActions,
+.planCardActionsOpen {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+  z-index: 20;
 }
 
 .planCardActionBtn {
@@ -1153,7 +1157,59 @@
   color: var(--text-1);
 }
 
+.planCardActionBtnActive {
+  background: var(--text-1);
+  border-color: var(--text-1);
+  color: var(--text-inverse);
+}
+
 .planCardActionDanger {
+  color: var(--danger-text);
+}
+
+.planOptionsMenu {
+  position: fixed;
+  width: 176px;
+  padding: 5px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: auto;
+  z-index: 1000;
+  animation: planOptionsMenuIn 0.14s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes planOptionsMenuIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.planOptionsMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.planOptionsMenuItem:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.planOptionsMenuItemDanger {
   color: var(--danger-text);
 }
 
@@ -1210,6 +1266,75 @@
   text-overflow: ellipsis;
   min-width: 0;
   flex: 1;
+}
+
+.planRenameGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: min(100%, 220px);
+  min-width: 0;
+  flex: 0 1 220px;
+}
+
+.planRenameInput {
+  width: 0;
+  min-width: 96px;
+  flex: 1 1 auto;
+  height: 28px;
+  border: 1px solid var(--focus-ring);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.3;
+  padding: 0 8px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring-bg);
+}
+
+.planRenameInput:disabled {
+  opacity: .64;
+  cursor: progress;
+}
+
+.planRenameButton {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 0;
+  transition: color .15s ease, opacity .15s ease;
+}
+
+.planRenameButton:hover:not(:disabled) {
+  color: var(--text-1);
+}
+
+.planRenameButton:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.planRenameConfirm {
+  color: var(--text-2);
+}
+
+.planRenameConfirm:hover:not(:disabled) {
+  color: #16a34a;
+}
+
+.planRenameCancel:hover:not(:disabled) {
+  color: #dc2626;
 }
 
 .cardTaskCount {
@@ -1329,7 +1454,7 @@
   flex-direction: column;
   border: 1px solid var(--border-1);
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  overflow: visible;
   animation: fadeUp 0.28s ease both;
 }
 

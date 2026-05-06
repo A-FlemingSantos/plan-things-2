@@ -34,6 +34,8 @@ const Ic = {
   Eye:      () => <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 7.5S3 3 7.5 3 14 7.5 14 7.5 12 12 7.5 12 1 7.5 1 7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.3"/></svg>,
   EyeOff:   () => <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 2l11 11M6.1 6.2A2 2 0 0 0 8.9 8.9M4 4C2.4 5.1 1 7.5 1 7.5s2 4.5 6.5 4.5c1.1 0 2.1-.3 3-.7M6.5 3C7 3 7.3 3 7.5 3c4.5 0 6.5 4.5 6.5 4.5s-.6 1.3-1.8 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Google:   () => <svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.21c0-.64-.06-1.25-.16-1.85H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z" fill="#4285F4"/><path d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/><path d="M3.96 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.28-1.71V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.04l3-2.33z" fill="#FBBC05"/><path d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z" fill="#EA4335"/></svg>,
+  GoogleCalendar: () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="2" width="14" height="14" rx="2" fill="#fff"/><path d="M4 2h10a2 2 0 0 1 2 2v2H2V4a2 2 0 0 1 2-2z" fill="#1A73E8"/><path d="M2 6h14v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z" fill="#fff"/><path d="M2 12h4v4H4a2 2 0 0 1-2-2v-2z" fill="#34A853"/><path d="M12 12h4v2a2 2 0 0 1-2 2h-2v-4z" fill="#FBBC04"/><path d="M2 6h4v6H2V6z" fill="#EA4335"/><path d="M12 6h4v6h-4V6z" fill="#4285F4"/><path d="M7.4 12.6h3.2v-1H8.7l1.2-1.2c.42-.42.62-.82.62-1.24 0-.82-.66-1.36-1.58-1.36-.78 0-1.39.38-1.72.99l.88.52c.16-.32.42-.5.8-.5.34 0 .56.17.56.45 0 .2-.11.39-.38.66L7.4 11.64v.96z" fill="#3C4043"/></svg>,
+  Gmail: () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="4" width="14" height="10" rx="1.8" fill="#fff"/><path d="M4 4h10c1.1 0 2 .9 2 2v8H2V6c0-1.1.9-2 2-2z" fill="#fff"/><path d="M3.2 5.05 9 9.28l5.8-4.23A2 2 0 0 1 16 6.88V14h-2.4V8.9L9 12.24 4.4 8.9V14H2V6.88c0-.78.46-1.46 1.2-1.83z" fill="#EA4335"/><path d="M2 6.88V14h2.4V8.9L3.2 5.05A2 2 0 0 0 2 6.88z" fill="#C5221F"/><path d="M13.6 8.9V14H16V6.88c0-.78-.46-1.46-1.2-1.83L13.6 8.9z" fill="#F4B400"/><path d="M4.4 8.9 9 12.24l4.6-3.34 1.2-3.85L9 9.28 3.2 5.05 4.4 8.9z" fill="#FBBC04"/></svg>,
   Outlook:  () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="9" height="9" rx="1" stroke="#0078D4" strokeWidth="1.2"/><path d="M10.5 5.5l4-2v9l-4-2v-5z" stroke="#0078D4" strokeWidth="1.2" strokeLinejoin="round"/><circle cx="5.5" cy="8.5" r="1.5" fill="#0078D4"/></svg>,
   Upload:   () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 11V5M5.5 7.5L8 5l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
 }
@@ -70,6 +72,19 @@ const EMPTY_GMAIL_INTEGRATION = {
   scopes: [],
   connectedAt: null,
   lastError: null,
+}
+const AVATAR_ACCEPT = 'image/png,image/jpeg,image/webp'
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024
+
+function validateAvatarFile(file) {
+  if (!file) return 'Selecione uma imagem.'
+  if (!AVATAR_ACCEPT.split(',').includes(file.type)) {
+    return 'Use uma imagem PNG, JPG ou WebP.'
+  }
+  if (file.size > MAX_AVATAR_BYTES) {
+    return 'A imagem deve ter no máximo 2 MB.'
+  }
+  return ''
 }
 
 function normalizeSaveState(state) {
@@ -191,6 +206,12 @@ export default function SettingsPage() {
   const [accountFeedback, setAccountFeedback] = useState('')
   const [passwordSaveState, setPasswordSaveState] = useState('idle')
   const [passwordFeedback, setPasswordFeedback] = useState('')
+  const [accountAvatarUrl, setAccountAvatarUrl] = useState(currentUser?.avatarUrl ?? null)
+  const [accountAvatarPreview, setAccountAvatarPreview] = useState(null)
+  const [accountAvatarState, setAccountAvatarState] = useState('idle')
+  const [accountAvatarFeedback, setAccountAvatarFeedback] = useState('')
+  const accountAvatarInputRef = useRef(null)
+  const accountAvatarObjectUrlRef = useRef(null)
 
   // ── General preferences state
   const [density, setDensity] = useState('normal')
@@ -199,8 +220,14 @@ export default function SettingsPage() {
 
   // ── Workspace state
   const [wsName, setWsName] = useState(workspace?.name ?? '')
+  const [workspaceAvatarUrl, setWorkspaceAvatarUrl] = useState(workspace?.avatarUrl ?? null)
+  const [workspaceAvatarPreview, setWorkspaceAvatarPreview] = useState(null)
   const [workspaceSaveState, setWorkspaceSaveState] = useState('idle')
   const [workspaceError, setWorkspaceError] = useState('')
+  const [workspaceAvatarState, setWorkspaceAvatarState] = useState('idle')
+  const [workspaceAvatarFeedback, setWorkspaceAvatarFeedback] = useState('')
+  const workspaceAvatarInputRef = useRef(null)
+  const workspaceAvatarObjectUrlRef = useRef(null)
 
   // ── Notifications state
   const [dailySummary, setDailySummary] = useState(false)
@@ -221,18 +248,103 @@ export default function SettingsPage() {
   const dateFormat = generalPreferences.dateFormat
   const timeFormat = generalPreferences.timeFormat
   const theme = generalPreferences.theme
-  const homePage = localPreferences.homePage
   const openLastCtx = localPreferences.openLastCtx
+  const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions
+  const liquidGlass = localPreferences.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass
+  const showCurrentPlanSection = localPreferences.showCurrentPlanSection ?? DEFAULT_LOCAL_PREFERENCES.showCurrentPlanSection
   const emailNotifs = notificationPreferences.emailNotifs
   const eventReminders = notificationPreferences.eventReminders
   const deadlineAlerts = notificationPreferences.deadlineAlerts
 
+  const replaceAccountAvatarPreview = (nextUrl) => {
+    if (accountAvatarObjectUrlRef.current && accountAvatarObjectUrlRef.current !== nextUrl) {
+      window.URL.revokeObjectURL(accountAvatarObjectUrlRef.current)
+    }
+    accountAvatarObjectUrlRef.current = nextUrl?.startsWith('blob:') ? nextUrl : null
+    setAccountAvatarPreview(nextUrl)
+  }
+
+  const replaceWorkspaceAvatarPreview = (nextUrl) => {
+    if (workspaceAvatarObjectUrlRef.current && workspaceAvatarObjectUrlRef.current !== nextUrl) {
+      window.URL.revokeObjectURL(workspaceAvatarObjectUrlRef.current)
+    }
+    workspaceAvatarObjectUrlRef.current = nextUrl?.startsWith('blob:') ? nextUrl : null
+    setWorkspaceAvatarPreview(nextUrl)
+  }
+
   useEffect(() => {
     setFullName(currentUser?.fullName ?? '')
     setWsName(workspace?.name ?? '')
+    setAccountAvatarUrl(currentUser?.avatarUrl ?? null)
+    setWorkspaceAvatarUrl(workspace?.avatarUrl ?? null)
     setLocalPasswordEnabled(currentUser?.localPasswordEnabled ?? true)
     setExternalIdentityLinked(currentUser?.externalIdentityLinked ?? false)
-  }, [currentUser?.externalIdentityLinked, currentUser?.fullName, currentUser?.localPasswordEnabled, workspace?.name])
+  }, [currentUser?.avatarUrl, currentUser?.externalIdentityLinked, currentUser?.fullName, currentUser?.localPasswordEnabled, workspace?.avatarUrl, workspace?.name])
+
+  useEffect(() => () => {
+    if (accountAvatarObjectUrlRef.current) {
+      window.URL.revokeObjectURL(accountAvatarObjectUrlRef.current)
+    }
+    if (workspaceAvatarObjectUrlRef.current) {
+      window.URL.revokeObjectURL(workspaceAvatarObjectUrlRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    if (!backendEnabled || !accessToken || !accountAvatarUrl) {
+      if (!accountAvatarUrl) replaceAccountAvatarPreview(null)
+      return () => {
+        active = false
+      }
+    }
+
+    apiRequest(accountAvatarUrl, { token: accessToken, responseType: 'blob' })
+      .then((blob) => {
+        const objectUrl = window.URL.createObjectURL(blob)
+        if (active) {
+          replaceAccountAvatarPreview(objectUrl)
+        } else {
+          window.URL.revokeObjectURL(objectUrl)
+        }
+      })
+      .catch(() => {
+        if (active) replaceAccountAvatarPreview(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, accountAvatarUrl, backendEnabled])
+
+  useEffect(() => {
+    let active = true
+
+    if (!backendEnabled || !accessToken || !workspaceAvatarUrl) {
+      if (!workspaceAvatarUrl) replaceWorkspaceAvatarPreview(null)
+      return () => {
+        active = false
+      }
+    }
+
+    apiRequest(workspaceAvatarUrl, { token: accessToken, responseType: 'blob' })
+      .then((blob) => {
+        const objectUrl = window.URL.createObjectURL(blob)
+        if (active) {
+          replaceWorkspaceAvatarPreview(objectUrl)
+        } else {
+          window.URL.revokeObjectURL(objectUrl)
+        }
+      })
+      .catch(() => {
+        if (active) replaceWorkspaceAvatarPreview(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, backendEnabled, workspaceAvatarUrl])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -270,6 +382,7 @@ export default function SettingsPage() {
         })
 
         if (!active) return
+        setAccountAvatarUrl(snapshot?.account?.avatarUrl ?? currentUser?.avatarUrl ?? null)
         setLocalPasswordEnabled(snapshot?.account?.localPasswordEnabled ?? currentUser?.localPasswordEnabled ?? true)
         setExternalIdentityLinked(snapshot?.account?.externalIdentityLinked ?? currentUser?.externalIdentityLinked ?? false)
         setGmailIntegration(normalizeGmailIntegration(snapshot?.integrations?.gmail))
@@ -335,6 +448,7 @@ export default function SettingsPage() {
       patchSession?.({
         workspace: {
           name: response.name,
+          avatarUrl: response.avatarUrl,
         },
       })
       setWorkspaceSaveState('saved')
@@ -397,6 +511,72 @@ export default function SettingsPage() {
     } catch (error) {
       setAccountSaveState('error')
       setAccountFeedback(error?.message ?? 'Nao foi possivel salvar os dados da conta.')
+    }
+  }
+
+  const handleAccountAvatarSelected = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    const validation = validateAvatarFile(file)
+    if (validation) {
+      setAccountAvatarState('error')
+      setAccountAvatarFeedback(validation)
+      return
+    }
+
+    replaceAccountAvatarPreview(window.URL.createObjectURL(file))
+    setAccountAvatarState('saving')
+    setAccountAvatarFeedback('')
+
+    if (!backendEnabled || !accessToken) {
+      setAccountAvatarState('saved')
+      setAccountAvatarFeedback('Foto atualizada no modo local.')
+      return
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await apiRequest('/api/settings/account/avatar', {
+        method: 'POST',
+        token: accessToken,
+        body: formData,
+      })
+      setAccountAvatarUrl(response.avatarUrl ?? null)
+      patchSession?.({ user: { avatarUrl: response.avatarUrl ?? null } })
+      setAccountAvatarState('saved')
+      setAccountAvatarFeedback('Foto atualizada.')
+    } catch (error) {
+      setAccountAvatarState('error')
+      setAccountAvatarFeedback(error?.message ?? 'Nao foi possivel atualizar a foto.')
+    }
+  }
+
+  const handleRemoveAccountAvatar = async () => {
+    setAccountAvatarState('saving')
+    setAccountAvatarFeedback('')
+
+    if (!backendEnabled || !accessToken) {
+      setAccountAvatarUrl(null)
+      replaceAccountAvatarPreview(null)
+      setAccountAvatarState('saved')
+      setAccountAvatarFeedback('Foto removida no modo local.')
+      return
+    }
+
+    try {
+      const response = await apiRequest('/api/settings/account/avatar', {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      setAccountAvatarUrl(response.avatarUrl ?? null)
+      replaceAccountAvatarPreview(null)
+      patchSession?.({ user: { avatarUrl: response.avatarUrl ?? null } })
+      setAccountAvatarState('saved')
+      setAccountAvatarFeedback('Foto removida.')
+    } catch (error) {
+      setAccountAvatarState('error')
+      setAccountAvatarFeedback(error?.message ?? 'Nao foi possivel remover a foto.')
     }
   }
 
@@ -482,8 +662,7 @@ export default function SettingsPage() {
 
   const handleLocalGeneralFieldChange = (field, value) => {
     const nextLocal = {
-      homePage,
-      openLastCtx,
+      ...localPreferences,
       [field]: value,
     }
 
@@ -501,6 +680,72 @@ export default function SettingsPage() {
   const handleWorkspaceNameChange = (value) => {
     setWsName(value)
     persistWorkspaceName(value)
+  }
+
+  const handleWorkspaceAvatarSelected = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    const validation = validateAvatarFile(file)
+    if (validation) {
+      setWorkspaceAvatarState('error')
+      setWorkspaceAvatarFeedback(validation)
+      return
+    }
+
+    replaceWorkspaceAvatarPreview(window.URL.createObjectURL(file))
+    setWorkspaceAvatarState('saving')
+    setWorkspaceAvatarFeedback('')
+
+    if (!backendEnabled || !accessToken) {
+      setWorkspaceAvatarState('saved')
+      setWorkspaceAvatarFeedback('Avatar atualizado no modo local.')
+      return
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await apiRequest('/api/workspace/avatar', {
+        method: 'POST',
+        token: accessToken,
+        body: formData,
+      })
+      setWorkspaceAvatarUrl(response.avatarUrl ?? null)
+      patchSession?.({ workspace: { avatarUrl: response.avatarUrl ?? null } })
+      setWorkspaceAvatarState('saved')
+      setWorkspaceAvatarFeedback('Avatar atualizado.')
+    } catch (error) {
+      setWorkspaceAvatarState('error')
+      setWorkspaceAvatarFeedback(error?.message ?? 'Nao foi possivel atualizar o avatar.')
+    }
+  }
+
+  const handleRemoveWorkspaceAvatar = async () => {
+    setWorkspaceAvatarState('saving')
+    setWorkspaceAvatarFeedback('')
+
+    if (!backendEnabled || !accessToken) {
+      setWorkspaceAvatarUrl(null)
+      replaceWorkspaceAvatarPreview(null)
+      setWorkspaceAvatarState('saved')
+      setWorkspaceAvatarFeedback('Avatar removido no modo local.')
+      return
+    }
+
+    try {
+      const response = await apiRequest('/api/workspace/avatar', {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      setWorkspaceAvatarUrl(response.avatarUrl ?? null)
+      replaceWorkspaceAvatarPreview(null)
+      patchSession?.({ workspace: { avatarUrl: response.avatarUrl ?? null } })
+      setWorkspaceAvatarState('saved')
+      setWorkspaceAvatarFeedback('Avatar removido.')
+    } catch (error) {
+      setWorkspaceAvatarState('error')
+      setWorkspaceAvatarFeedback(error?.message ?? 'Nao foi possivel remover o avatar.')
+    }
   }
 
   const handleNotificationToggle = (field, value) => {
@@ -588,13 +833,42 @@ export default function SettingsPage() {
     <>
       <SectionGroup title="Perfil">
         <div className={styles.avatarRow}>
-          <div className={styles.avatarCircle}>{userInitials}</div>
+          <div className={styles.avatarCircle}>
+            {accountAvatarPreview ? (
+              <img className={styles.avatarImage} src={accountAvatarPreview} alt="" />
+            ) : userInitials}
+          </div>
           <div className={styles.avatarMeta}>
             <p className={styles.avatarName}>{fullName || 'Usuário'}</p>
-            <p className={styles.avatarHint}>JPG, PNG ou GIF. Máximo 2 MB.</p>
-            <button type="button" className={styles.btnSecondary}>
-              <Ic.Upload /> Alterar foto
-            </button>
+            <p className={styles.avatarHint}>PNG, JPG ou WebP. Máximo 2 MB.</p>
+            <input
+              ref={accountAvatarInputRef}
+              type="file"
+              className={styles.fileInput}
+              accept={AVATAR_ACCEPT}
+              onChange={handleAccountAvatarSelected}
+            />
+            <div className={styles.avatarActions}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => accountAvatarInputRef.current?.click()}
+                disabled={accountAvatarState === 'saving'}
+              >
+                <Ic.Upload /> Alterar foto
+              </button>
+              {(accountAvatarPreview || accountAvatarUrl) && (
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={handleRemoveAccountAvatar}
+                  disabled={accountAvatarState === 'saving'}
+                >
+                  Remover
+                </button>
+              )}
+            </div>
+            <AutoSaveStatus state={accountAvatarState} errorMessage={accountAvatarFeedback} successMessage={accountAvatarFeedback} />
           </div>
         </div>
 
@@ -769,13 +1043,11 @@ export default function SettingsPage() {
       </SectionGroup>
 
       <SectionGroup title="Experiência da aplicação">
-        <Field label="Página inicial padrão" htmlFor="homepage">
-          <select id="homepage" className={styles.select} value={homePage} onChange={e => handleLocalGeneralFieldChange('homePage', e.target.value)}>
-            <option value="workspace">Workspace</option>
-            <option value="canvas">Canvas</option>
-            <option value="calendar">Calendário</option>
-            <option value="files">Arquivos</option>
-          </select>
+        <Field
+          label="Confirmar ações destrutivas"
+          hint="Solicita confirmação antes de excluir itens importantes."
+        >
+          <Toggle checked={confirmDestructiveActions} onChange={(value) => handleLocalGeneralFieldChange('confirmDestructiveActions', value)} />
         </Field>
         <Field
           label="Abrir no último contexto usado"
@@ -784,10 +1056,10 @@ export default function SettingsPage() {
           <Toggle checked={openLastCtx} onChange={(value) => handleLocalGeneralFieldChange('openLastCtx', value)} />
         </Field>
         <Field
-          label="Barra lateral recolhida por padrão"
-          hint="Esta preferência será removida ou substituída. Use o botão da barra lateral; o app lembrará sua última escolha."
+          label="Liquid-glass"
+          hint="Preferência salva para o futuro efeito de vidro líquido no KanbanBoard."
         >
-          <Toggle checked={false} onChange={() => {}} disabled />
+          <Toggle checked={liquidGlass} onChange={(value) => handleLocalGeneralFieldChange('liquidGlass', value)} />
         </Field>
         <Field label="Densidade visual" hint="Define o espaçamento geral dos elementos na interface.">
           <div className={styles.densityGroup}>
@@ -864,11 +1136,42 @@ export default function SettingsPage() {
     <>
       <SectionGroup title="Identidade do workspace">
         <div className={styles.wsIdentityRow}>
-          <div className={styles.wsAvatarBox}>{wsInitials}</div>
+          <div className={styles.wsAvatarBox}>
+            {workspaceAvatarPreview ? (
+              <img className={styles.wsAvatarImage} src={workspaceAvatarPreview} alt="" />
+            ) : wsInitials}
+          </div>
           <div className={styles.wsIdentityMeta}>
             <p className={styles.wsIdentityLabel}>Logo ou iniciais do workspace</p>
-            <p className={styles.wsIdentityHint}>PNG ou SVG. Recomendado: 128×128 px.</p>
-            <button type="button" className={styles.btnSecondary}>Alterar avatar</button>
+            <p className={styles.wsIdentityHint}>PNG, JPG ou WebP. Recomendado: 128×128 px.</p>
+            <input
+              ref={workspaceAvatarInputRef}
+              type="file"
+              className={styles.fileInput}
+              accept={AVATAR_ACCEPT}
+              onChange={handleWorkspaceAvatarSelected}
+            />
+            <div className={styles.avatarActions}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => workspaceAvatarInputRef.current?.click()}
+                disabled={workspaceAvatarState === 'saving'}
+              >
+                <Ic.Upload /> Alterar avatar
+              </button>
+              {(workspaceAvatarPreview || workspaceAvatarUrl) && (
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={handleRemoveWorkspaceAvatar}
+                  disabled={workspaceAvatarState === 'saving'}
+                >
+                  Remover
+                </button>
+              )}
+            </div>
+            <AutoSaveStatus state={workspaceAvatarState} errorMessage={workspaceAvatarFeedback} successMessage={workspaceAvatarFeedback} />
           </div>
         </div>
 
@@ -882,11 +1185,11 @@ export default function SettingsPage() {
           />
         </Field>
 
-        <Field label="Tela inicial do workspace" htmlFor="ws-home">
-          <select id="ws-home" className={styles.select}>
-            <option value="plans">Lista de planos</option>
-            <option value="workspace">Dashboard</option>
-          </select>
+        <Field
+          label="Exibir seção de plano atual"
+          hint="Mostra o painel de retomada do plano ativo no Workspace."
+        >
+          <Toggle checked={showCurrentPlanSection} onChange={(value) => handleLocalGeneralFieldChange('showCurrentPlanSection', value)} />
         </Field>
 
         <div className={styles.rowActions}>
@@ -926,7 +1229,7 @@ export default function SettingsPage() {
   /* ── Section: Integrações ── */
   const renderIntegrations = () => {
     const calendarIntegrations = [
-      { id: 'google-calendar', name: 'Google Calendar', Icon: Ic.Google, color: '#1a73e8', status: 'Em breve' },
+      { id: 'google-calendar', name: 'Google Calendar', Icon: Ic.GoogleCalendar, color: '#1a73e8', status: 'Em breve' },
     ]
     const gmailBusy = gmailActionState === 'saving'
     const gmailStatusText = !backendEnabled
@@ -961,7 +1264,7 @@ export default function SettingsPage() {
         <SectionGroup title="E-mail e captura">
           <div className={styles.integrationCard}>
             <div className={styles.integrationIconBox} style={{ color: '#ea4335' }}>
-              <Ic.Google />
+              <Ic.Gmail />
             </div>
             <div className={styles.integrationMeta}>
               <p className={styles.integrationName}>Gmail</p>

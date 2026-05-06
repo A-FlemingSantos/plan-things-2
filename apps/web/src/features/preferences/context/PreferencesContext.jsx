@@ -11,6 +11,9 @@ const LAST_CONTEXT_STORAGE_PREFIX = 'plan-things:last-context:v1:'
 export const DEFAULT_LOCAL_PREFERENCES = {
   homePage: 'workspace',
   openLastCtx: true,
+  confirmDestructiveActions: true,
+  liquidGlass: false,
+  showCurrentPlanSection: true,
 }
 
 export const DEFAULT_GENERAL_PREFERENCES = {
@@ -159,6 +162,9 @@ export function readStoredLocalPreferences(userId) {
   return {
     homePage: parsed.homePage ?? DEFAULT_LOCAL_PREFERENCES.homePage,
     openLastCtx: parsed.openLastCtx ?? DEFAULT_LOCAL_PREFERENCES.openLastCtx,
+    confirmDestructiveActions: parsed.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions,
+    liquidGlass: parsed.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass,
+    showCurrentPlanSection: parsed.showCurrentPlanSection ?? DEFAULT_LOCAL_PREFERENCES.showCurrentPlanSection,
   }
 }
 
@@ -169,6 +175,9 @@ function writeStoredLocalPreferences(userId, preferences) {
   writeStoredJson(key, {
     homePage: preferences.homePage,
     openLastCtx: preferences.openLastCtx,
+    confirmDestructiveActions: preferences.confirmDestructiveActions,
+    liquidGlass: preferences.liquidGlass,
+    showCurrentPlanSection: preferences.showCurrentPlanSection,
   })
 }
 

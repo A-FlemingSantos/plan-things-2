@@ -165,6 +165,46 @@ export function PlansProvider({ children }) {
     return nextPlansSnapshot
   }, [accessToken, backendEnabled])
 
+  const renamePlan = useCallback(async (planId, name) => {
+    const trimmedName = name?.trim()
+    if (!planId || !trimmedName) {
+      throw new Error('Informe um nome para o plano.')
+    }
+
+    const currentPlan = plansById.get(planId)
+    if (!currentPlan) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    if (!backendEnabled) {
+      const renamedPlan = normalizePlanRecord({ ...currentPlan, name: trimmedName })
+      setPlans((prev) => setPlanById(prev, planId, renamedPlan))
+      return renamedPlan
+    }
+
+    const response = await apiRequest(`/api/plans/${planId}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: {
+        name: trimmedName,
+        description: currentPlan.description ?? '',
+        coverThemeId: currentPlan.coverThemeId ?? null,
+        cover: currentPlan.cover ?? null,
+        coverImageId: currentPlan.coverImageId ?? null,
+      },
+    })
+
+    const responseName = typeof response?.plan?.name === 'string'
+      ? response.plan.name.trim()
+      : ''
+    const renamedPlan = normalizePlanRecord({
+      ...mergePlanDetails(currentPlan, response),
+      name: responseName || trimmedName,
+    })
+    setPlans((prev) => setPlanById(prev, planId, renamedPlan))
+    return renamedPlan
+  }, [accessToken, backendEnabled, plansById])
+
   const selectPlan = useCallback((planId) => {
     setActivePlanId(planId)
   }, [])
@@ -351,6 +391,7 @@ export function PlansProvider({ children }) {
     isBackendDriven: backendEnabled,
     createPlan,
     deletePlan,
+    renamePlan,
     getPlanById,
     selectPlan,
     updatePlan,
@@ -374,6 +415,7 @@ export function PlansProvider({ children }) {
     ensurePlanDetails,
     refreshPlanDetails,
     refreshPlans,
+    renamePlan,
     getPlanById,
     isLoading,
     loadPlanBoard,

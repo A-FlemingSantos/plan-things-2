@@ -1,10 +1,13 @@
 package com.planthings.api.settings;
 
 import com.planthings.api.common.api.ApiEnvelope;
+import com.planthings.api.avatar.AvatarImageService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.net.URI;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,7 +17,9 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -37,6 +42,25 @@ public class SettingsController {
   @PatchMapping("/account")
   public ApiEnvelope<SettingsService.AccountSettings> updateAccount(@Valid @RequestBody UpdateAccountRequest request) {
     return ApiEnvelope.ok(settingsService.updateAccount(request.fullName()));
+  }
+
+  @PostMapping(value = "/account/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ApiEnvelope<SettingsService.AccountSettings> uploadAccountAvatar(@RequestPart("file") MultipartFile file) {
+    return ApiEnvelope.ok(settingsService.uploadAccountAvatar(file));
+  }
+
+  @DeleteMapping("/account/avatar")
+  public ApiEnvelope<SettingsService.AccountSettings> removeAccountAvatar() {
+    return ApiEnvelope.ok(settingsService.removeAccountAvatar());
+  }
+
+  @GetMapping("/account/avatar")
+  public ResponseEntity<byte[]> getAccountAvatar() {
+    AvatarImageService.AvatarDownload avatar = settingsService.getAccountAvatar();
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CACHE_CONTROL, "private, max-age=300")
+        .contentType(MediaType.parseMediaType(avatar.mimeType()))
+        .body(avatar.content());
   }
 
   @PatchMapping("/preferences")

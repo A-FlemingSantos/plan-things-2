@@ -1318,19 +1318,21 @@ export default function CardModal({
                 Datas
                 <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
               </button>
-              {!isBackendDriven && (
-                <button
-                  ref={checklistMenuButtonRef}
-                  type="button"
-                  className={`${styles.cmToolbarBtn} ${showChecklistMenu ? styles.cmToolbarBtnActive : ''}`}
-                  onClick={() => setShowChecklistMenu(v => !v)}
-                  aria-expanded={showChecklistMenu}
-                  aria-haspopup="dialog"
-                >
-                  <icons.Check />
-                  Checklist
-                </button>
-              )}
+              <button
+                ref={checklistMenuButtonRef}
+                type="button"
+                className={`${styles.cmToolbarBtn} ${showChecklistMenu ? styles.cmToolbarBtnActive : ''}`}
+                onClick={() => {
+                  if (!isBackendDriven) setShowChecklistMenu(v => !v)
+                }}
+                aria-expanded={showChecklistMenu}
+                aria-haspopup="dialog"
+                disabled={isBackendDriven}
+                title={isBackendDriven ? 'Checklist indisponível para edição neste modo.' : undefined}
+              >
+                <icons.Check />
+                Checklist
+              </button>
             </div>
 
               <div className={styles.cmSection}>

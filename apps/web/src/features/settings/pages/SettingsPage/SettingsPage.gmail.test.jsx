@@ -33,6 +33,9 @@ const preferencesMock = vi.hoisted(() => ({
   localPreferences: {
     homePage: 'workspace',
     openLastCtx: true,
+    confirmDestructiveActions: true,
+    liquidGlass: false,
+    showCurrentPlanSection: true,
   },
   notificationPreferences: {
     emailNotifs: true,
@@ -57,6 +60,9 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   DEFAULT_LOCAL_PREFERENCES: {
     homePage: 'workspace',
     openLastCtx: true,
+    confirmDestructiveActions: true,
+    liquidGlass: false,
+    showCurrentPlanSection: true,
   },
   usePreferences: () => preferencesMock,
 }))

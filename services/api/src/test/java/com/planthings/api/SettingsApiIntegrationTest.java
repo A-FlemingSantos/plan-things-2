@@ -3,14 +3,21 @@ package com.planthings.api;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
+  private static final byte[] PNG_AVATAR = new byte[] {
+      (byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+  };
 
   @Test
   void shouldLoadAndUpdateSettingsSnapshot() throws Exception {
@@ -147,6 +154,81 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andReturn());
 
     org.junit.jupiter.api.Assertions.assertFalse(login.path("data").path("accessToken").asText().isBlank());
+  }
+
+  @Test
+  void shouldUploadServeAndRemoveAccountAvatar() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-avatar@example.com", "12345678");
+    MockMultipartFile file = new MockMultipartFile("file", "avatar.png", "image/png", PNG_AVATAR);
+
+    mockMvc.perform(multipart("/api/settings/account/avatar")
+            .file(file)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/settings/account/avatar?v=")));
+
+    mockMvc.perform(get("/api/settings/account/avatar")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_PNG))
+        .andExpect(content().bytes(PNG_AVATAR));
+
+    mockMvc.perform(get("/api/me")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.user.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/settings/account/avatar?v=")));
+
+    mockMvc.perform(delete("/api/settings/account/avatar")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.avatarUrl").doesNotExist());
+  }
+
+  @Test
+  void shouldUploadServeAndRemoveWorkspaceAvatar() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-workspace-avatar@example.com", "12345678");
+    MockMultipartFile file = new MockMultipartFile("file", "workspace.png", "image/png", PNG_AVATAR);
+
+    mockMvc.perform(multipart("/api/workspace/avatar")
+            .file(file)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/workspace/avatar?v=")));
+
+    mockMvc.perform(get("/api/workspace/avatar")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_PNG))
+        .andExpect(content().bytes(PNG_AVATAR));
+
+    mockMvc.perform(get("/api/me")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.workspace.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/workspace/avatar?v=")));
+
+    mockMvc.perform(delete("/api/workspace/avatar")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.avatarUrl").doesNotExist());
+  }
+
+  @Test
+  void shouldRejectInvalidAvatarPayloads() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-invalid-avatar@example.com", "12345678");
+    MockMultipartFile textFile = new MockMultipartFile("file", "avatar.txt", "text/plain", "hello".getBytes());
+    MockMultipartFile mismatchedFile = new MockMultipartFile("file", "avatar.png", "image/png", "not-png".getBytes());
+
+    mockMvc.perform(multipart("/api/settings/account/avatar")
+            .file(textFile)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("AVATAR_TIPO_INVALIDO"));
+
+    mockMvc.perform(multipart("/api/settings/account/avatar")
+            .file(mismatchedFile)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("AVATAR_TIPO_INVALIDO"));
   }
 
   @Test

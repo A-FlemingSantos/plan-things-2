@@ -7,6 +7,8 @@ import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.security.JwtService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
 import java.time.Clock;
@@ -32,6 +34,7 @@ public class AuthService {
   private final AuthenticatedUserService authenticatedUserService;
   private final PersonalWorkspaceService personalWorkspaceService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
+  private final AvatarImageService avatarImageService;
   private final Clock clock;
   private final long passwordResetMinutes;
 
@@ -45,6 +48,7 @@ public class AuthService {
       AuthenticatedUserService authenticatedUserService,
       PersonalWorkspaceService personalWorkspaceService,
       BrazilDateTimeMapper brazilDateTimeMapper,
+      AvatarImageService avatarImageService,
       Clock clock,
       @Value("${app.jwt.password-reset-minutes}") long passwordResetMinutes
   ) {
@@ -57,6 +61,7 @@ public class AuthService {
     this.authenticatedUserService = authenticatedUserService;
     this.personalWorkspaceService = personalWorkspaceService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
+    this.avatarImageService = avatarImageService;
     this.clock = clock;
     this.passwordResetMinutes = passwordResetMinutes;
   }
@@ -192,6 +197,7 @@ public class AuthService {
         user.getId(),
         user.getFullName(),
         user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
         user.getLocaleTag(),
         user.getTimeZone(),
         brazilDateTimeMapper.toDateTime(user.getCreatedAt()),
@@ -204,6 +210,7 @@ public class AuthService {
     return new WorkspaceSummary(
         workspace.getId(),
         workspace.getName(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
         brazilDateTimeMapper.toDateTime(workspace.getCreatedAt())
     );
   }
@@ -368,6 +375,7 @@ public class AuthService {
       UUID id,
       String fullName,
       String email,
+      String avatarUrl,
       String locale,
       String timeZone,
       ApiDateTimeDto createdAt,
@@ -379,6 +387,7 @@ public class AuthService {
   public record WorkspaceSummary(
       UUID id,
       String name,
+      String avatarUrl,
       ApiDateTimeDto createdAt
   ) {
   }

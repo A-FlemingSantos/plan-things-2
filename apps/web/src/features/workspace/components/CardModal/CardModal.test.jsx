@@ -123,4 +123,27 @@ describe('CardModal file picker positioning', () => {
       expect(picker).toHaveStyle({ top: '236px', left: '104px' })
     })
   })
+
+  it('keeps the checklist action visible in backend mode', () => {
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /checklist/i })).toBeDisabled()
+  })
 })
