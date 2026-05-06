@@ -9,4 +9,6 @@ public interface UserExternalIdentityRepository extends JpaRepository<UserExtern
   Optional<UserExternalIdentityEntity> findByProviderAndProviderSubject(String provider, String providerSubject);
 
   Optional<UserExternalIdentityEntity> findByUserIdAndProvider(UUID userId, String provider);
+
+  boolean existsByUserId(UUID userId);
 }

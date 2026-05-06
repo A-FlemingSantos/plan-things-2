@@ -19,6 +19,8 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
     mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.account.localPasswordEnabled").value(true))
+        .andExpect(jsonPath("$.data.account.externalIdentityLinked").value(false))
         .andExpect(jsonPath("$.data.preferences.theme").value("system"))
         .andExpect(jsonPath("$.data.preferences.dateFormat").value("dd/MM/yyyy"))
         .andExpect(jsonPath("$.data.preferences.timeFormat").value("24h"))
@@ -71,6 +73,22 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.notifications.emailNotifs").value(false))
         .andExpect(jsonPath("$.data.notifications.eventReminders").value(false))
         .andExpect(jsonPath("$.data.notifications.deadlineAlerts").value(true));
+  }
+
+  @Test
+  void shouldRejectPasswordSetupForPasswordOnlyAccount() throws Exception {
+    String token = registerAndGetToken("Arthur Santos", "arthur-no-oauth@example.com", "12345678");
+
+    mockMvc.perform(post("/api/settings/password/setup")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "newPassword": "87654321"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("CONTA_OAUTH_NAO_VINCULADA"));
   }
 
   @Test

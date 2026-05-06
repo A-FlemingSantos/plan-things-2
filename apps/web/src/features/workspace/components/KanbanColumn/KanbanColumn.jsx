@@ -32,6 +32,7 @@ export default function KanbanColumn({
   const [renameVal, setRenameVal] = useState(col.title)
   const [renameError, setRenameError] = useState(null)
   const [cardError, setCardError] = useState(null)
+  const [isAddingCard, setIsAddingCard] = useState(false)
   const addInputRef = useRef(null)
   const renameRef = useRef(null)
 
@@ -44,9 +45,10 @@ export default function KanbanColumn({
   }
 
   const submitCard = async () => {
-    if (!newCardText.trim()) return
+    if (!newCardText.trim() || isAddingCard) return
 
     try {
+      setIsAddingCard(true)
       await onAddCard(col.id, newCardText.trim())
       setNewCardText('')
       setAddingCard(false)
@@ -54,6 +56,8 @@ export default function KanbanColumn({
     } catch (error) {
       setCardError(error?.message ?? 'Nao foi possivel criar o cartao nesta coluna.')
       setTimeout(() => addInputRef.current?.focus(), 0)
+    } finally {
+      setIsAddingCard(false)
     }
   }
 
@@ -224,8 +228,8 @@ export default function KanbanColumn({
             {cardError ? <p className={styles.inlineComposerError}>{cardError}</p> : null}
 
             <div className={styles.addCardActions}>
-              <button type="button" className={styles.addCardSubmit} onClick={submitCard} disabled={!newCardText.trim()}>
-                Adicionar cartão
+              <button type="button" className={styles.addCardSubmit} onClick={submitCard} disabled={!newCardText.trim() || isAddingCard}>
+                {isAddingCard ? 'Adicionando...' : 'Adicionar cartão'}
               </button>
               <button
                 type="button"

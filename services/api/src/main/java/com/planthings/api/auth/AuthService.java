@@ -75,6 +75,7 @@ public class AuthService {
     user.setFullName(normalizedName);
     user.setEmail(normalizedEmail);
     user.setPasswordHash(passwordEncoder.encode(password));
+    user.setLocalPasswordEnabled(true);
     userRepository.save(user);
 
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
@@ -84,12 +85,19 @@ public class AuthService {
 
   public SessionResponse login(String email, String password) {
     String normalizedEmail = normalizeEmail(email);
+    UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
+        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos uma conta com este e-mail."));
+
+    if (!user.isLocalPasswordEnabled() || user.getPasswordHash() == null) {
+      throw new BadRequestException(
+          "SENHA_LOCAL_NAO_CONFIGURADA",
+          "Esta conta ainda nao tem senha local. Entre com OAuth e crie uma senha nas configuracoes."
+      );
+    }
+
     authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(normalizedEmail, password)
     );
-
-    UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
-        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos uma conta com este e-mail."));
 
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
@@ -158,6 +166,7 @@ public class AuthService {
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos o usuario vinculado a este token."));
 
     user.setPasswordHash(passwordEncoder.encode(newPassword));
+    user.setLocalPasswordEnabled(true);
     tokenEntity.setUsedAt(now);
 
     userRepository.save(user);
@@ -185,7 +194,9 @@ public class AuthService {
         user.getEmail(),
         user.getLocaleTag(),
         user.getTimeZone(),
-        brazilDateTimeMapper.toDateTime(user.getCreatedAt())
+        brazilDateTimeMapper.toDateTime(user.getCreatedAt()),
+        user.isLocalPasswordEnabled(),
+        externalIdentityRepository.existsByUserId(user.getId())
     );
   }
 
@@ -253,7 +264,8 @@ public class AuthService {
     UserEntity user = new UserEntity();
     user.setFullName(normalizeName(defaultExternalName(identity.displayName(), normalizedEmail)));
     user.setEmail(normalizedEmail);
-    user.setPasswordHash(passwordEncoder.encode("oauth-" + UUID.randomUUID()));
+    user.setPasswordHash(null);
+    user.setLocalPasswordEnabled(false);
     return userRepository.save(user);
   }
 
@@ -358,7 +370,9 @@ public class AuthService {
       String email,
       String locale,
       String timeZone,
-      ApiDateTimeDto createdAt
+      ApiDateTimeDto createdAt,
+      boolean localPasswordEnabled,
+      boolean externalIdentityLinked
   ) {
   }
 

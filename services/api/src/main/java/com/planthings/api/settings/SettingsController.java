@@ -64,6 +64,11 @@ public class SettingsController {
     return ApiEnvelope.ok(settingsService.changePassword(request.currentPassword(), request.newPassword()));
   }
 
+  @PostMapping("/password/setup")
+  public ApiEnvelope<SettingsService.MessageResponse> setupOAuthPassword(@Valid @RequestBody SetupPasswordRequest request) {
+    return ApiEnvelope.ok(settingsService.setupOAuthPassword(request.newPassword()));
+  }
+
   @PostMapping("/integrations/gmail/start")
   public ApiEnvelope<GmailIntegrationService.AuthorizationStartResponse> startGmailIntegration(
       @RequestBody(required = false) GmailStartRequest request
@@ -109,6 +114,12 @@ public class SettingsController {
 
   public record ChangePasswordRequest(
       @NotBlank(message = "A senha atual e obrigatoria.") String currentPassword,
+      @NotBlank(message = "A nova senha e obrigatoria.")
+      @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres.") String newPassword
+  ) {
+  }
+
+  public record SetupPasswordRequest(
       @NotBlank(message = "A nova senha e obrigatoria.")
       @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres.") String newPassword
   ) {

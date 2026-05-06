@@ -19,6 +19,8 @@ import {
   insertLibraryItem,
   markLibraryItemDeleted,
   pathsMatch,
+  removeLibraryItem,
+  restoreLibraryItem,
   updateLibraryItem,
 } from '../../data/libraryRepository.js'
 import styles from './FilesPage.module.css'
@@ -126,7 +128,12 @@ function ContextMenu({ x, y, item, onAction, onClose, backendEnabled }) {
     return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('keydown', keyHandler) }
   }, [onClose])
 
-  const actions = item.type === 'folder'
+  const actions = item.deleted
+    ? [
+        { id: 'restore', label: 'Restaurar', Icon: Icon.Move },
+        { id: 'permanent-delete', label: 'Excluir permanentemente', Icon: Icon.Trash, danger: true, shortcut: 'Del' },
+      ]
+    : item.type === 'folder'
     ? [
         { id: 'open',     label: 'Abrir',           Icon: Icon.Folder, shortcut: 'Enter' },
         { id: 'download', label: 'Baixar',          Icon: Icon.Download },
@@ -368,19 +375,32 @@ function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled, mo
         </div>
 
         <div className={styles.detailPanelActions}>
-          <button className={styles.detailAction} onClick={() => onAction('download', item)}>
-            <Icon.Download /> Baixar
-          </button>
-          <button className={styles.detailAction} onClick={() => onAction('share', item)}>
-            <Icon.Share /> Compartilhar
-          </button>
-          <button
-            className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
-            onClick={() => onToggleStar(item.id)}
-          >
-            {item.starred ? <Icon.StarFill /> : <Icon.Star />}
-            {item.starred ? 'Favorito' : 'Favoritar'}
-          </button>
+          {item.deleted ? (
+            <>
+              <button className={styles.detailAction} onClick={() => onAction('restore', item)}>
+                <Icon.Move /> Restaurar
+              </button>
+              <button className={styles.detailAction} onClick={() => onAction('permanent-delete', item)}>
+                <Icon.Trash /> Excluir permanentemente
+              </button>
+            </>
+          ) : (
+            <>
+              <button className={styles.detailAction} onClick={() => onAction('download', item)}>
+                <Icon.Download /> Baixar
+              </button>
+              <button className={styles.detailAction} onClick={() => onAction('share', item)}>
+                <Icon.Share /> Compartilhar
+              </button>
+              <button
+                className={`${styles.detailAction} ${item.starred ? styles.detailActionActive : ''}`}
+                onClick={() => onToggleStar(item.id)}
+              >
+                {item.starred ? <Icon.StarFill /> : <Icon.Star />}
+                {item.starred ? 'Favorito' : 'Favoritar'}
+              </button>
+            </>
+          )}
         </div>
 
         <div className={styles.detailTabs} aria-label="Seções do inspetor">
@@ -565,6 +585,10 @@ export default function FilesPage() {
     }
 
     setHasLoadedLibrary(false)
+    setLibrary([])
+    setSelected(null)
+    setDetailItemId(null)
+    setCurrentPath([])
     reloadLibrary(sidebarSection === 'trash')
   }, [backendEnabled, reloadLibrary, sidebarSection])
 
@@ -701,6 +725,45 @@ export default function FilesPage() {
         showNotification(`"${item.name}" movido para a lixeira`)
       } catch (error) {
         showNotification(error?.message ?? `Não foi possível mover "${item.name}" para a lixeira`)
+      }
+    } else if (action === 'restore') {
+      try {
+        if (backendEnabled) {
+          await apiRequest(`/api/files/${item.id}/restore`, {
+            method: 'POST',
+            token: accessToken,
+          })
+          await reloadLibrary(sidebarSection === 'trash')
+        } else {
+          setLibrary((prev) => restoreLibraryItem(prev, item.id))
+        }
+
+        if (detailItemId === item.id) setDetailItemId(null)
+        if (selected === item.id) setSelected(null)
+        showNotification(`"${item.name}" restaurado`)
+      } catch (error) {
+        showNotification(error?.message ?? `Não foi possível restaurar "${item.name}"`)
+      }
+    } else if (action === 'permanent-delete') {
+      const confirmed = window.confirm(`Excluir "${item.name}" permanentemente? Esta ação não pode ser desfeita.`)
+      if (!confirmed) return
+
+      try {
+        if (backendEnabled) {
+          await apiRequest(`/api/files/${item.id}/permanent`, {
+            method: 'DELETE',
+            token: accessToken,
+          })
+          await reloadLibrary(sidebarSection === 'trash')
+        } else {
+          setLibrary((prev) => removeLibraryItem(prev, item.id))
+        }
+
+        if (detailItemId === item.id) setDetailItemId(null)
+        if (selected === item.id) setSelected(null)
+        showNotification(`"${item.name}" excluído permanentemente`)
+      } catch (error) {
+        showNotification(error?.message ?? `Não foi possível excluir "${item.name}" permanentemente`)
       }
     } else if (action === 'download') {
       if (item.type === 'folder') {
@@ -1059,10 +1122,19 @@ export default function FilesPage() {
             {selectedItem ? (
               <div className={styles.selectionToolbar}>
                 <span className={styles.selectionCount}>1 selecionado</span>
-                <button className={styles.selectionAction} onClick={() => handleContextAction('download', selectedItem)}><Icon.Download /> Baixar</button>
-                <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>
-                <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Mover</button>
-                <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Excluir</button>
+                {selectedItem.deleted ? (
+                  <>
+                    <button className={styles.selectionAction} onClick={() => handleContextAction('restore', selectedItem)}><Icon.Move /> Restaurar</button>
+                    <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('permanent-delete', selectedItem)}><Icon.Trash /> Excluir permanentemente</button>
+                  </>
+                ) : (
+                  <>
+                    <button className={styles.selectionAction} onClick={() => handleContextAction('download', selectedItem)}><Icon.Download /> Baixar</button>
+                    <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>
+                    <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Mover</button>
+                    <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Excluir</button>
+                  </>
+                )}
                 <button className={styles.selectionClear} onClick={() => { setSelected(null); setDetailItemId(null) }}><Icon.X /></button>
               </div>
             ) : (

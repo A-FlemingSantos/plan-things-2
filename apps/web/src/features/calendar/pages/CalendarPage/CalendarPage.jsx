@@ -333,6 +333,11 @@ function EventDialog({
     event.preventDefault()
     if (!title.trim() || isSubmitting) return
 
+    if (!start || !end || end <= start) {
+      setSubmitError('O horário de fim precisa ser depois do início.')
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitError(null)
 

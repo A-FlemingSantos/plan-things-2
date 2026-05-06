@@ -6,6 +6,7 @@ import com.planthings.api.auth.OAuthLoginStateEntity;
 import com.planthings.api.auth.OAuthLoginStateRepository;
 import com.planthings.api.auth.OAuthProperties;
 import com.planthings.api.auth.OidcProviderClient;
+import com.planthings.api.auth.UserRepository;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,6 +52,9 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
   @Autowired
   private OAuthLoginStateRepository stateRepository;
 
+  @Autowired
+  private UserRepository userRepository;
+
   @Test
   void shouldCreateUserAndReuseExistingExternalIdentity() throws Exception {
     String firstCompletionCode = completeProviderCallback("google", "google-new", "/settings");
@@ -59,6 +64,9 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
 
     assertFalse(firstSession.path("data").path("accessToken").asText().isBlank());
     assertEquals("oauth-new@example.com", firstSession.path("data").path("user").path("email").asText());
+    assertFalse(firstSession.path("data").path("user").path("localPasswordEnabled").asBoolean());
+    assertTrue(firstSession.path("data").path("user").path("externalIdentityLinked").asBoolean());
+    org.junit.jupiter.api.Assertions.assertNull(userRepository.findByEmailIgnoreCase("oauth-new@example.com").orElseThrow().getPasswordHash());
 
     String secondCompletionCode = completeProviderCallback("google", "google-again", "/settings");
     JsonNode secondSession = exchangeCompletionCode(secondCompletionCode);
@@ -191,6 +199,69 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
             "ESTADO_OAUTH_EXPIRADO",
             queryParam(result.getResponse().getHeader("Location"), "error")
         ));
+  }
+
+  @Test
+  void shouldAllowOAuthAccountToSetupLocalPasswordWithoutCurrentPassword() throws Exception {
+    String completionCode = completeProviderCallback("google", "google-new", "/settings");
+    JsonNode session = exchangeCompletionCode(completionCode);
+    String token = session.path("data").path("accessToken").asText();
+
+    mockMvc.perform(post("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "oauth-new@example.com",
+                  "password": "local-password"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("SENHA_LOCAL_NAO_CONFIGURADA"));
+
+    mockMvc.perform(post("/api/settings/password/setup")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "newPassword": "local-password"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Senha configurada com sucesso."));
+
+    mockMvc.perform(post("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "oauth-new@example.com",
+                  "password": "local-password"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.user.localPasswordEnabled").value(true))
+        .andExpect(jsonPath("$.data.user.externalIdentityLinked").value(true));
+
+    mockMvc.perform(post("/api/settings/password/setup")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "newPassword": "another-password"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("SENHA_LOCAL_JA_CONFIGURADA"));
+
+    mockMvc.perform(patch("/api/settings/password")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "currentPassword": "local-password",
+                  "newPassword": "another-password"
+                }
+                """))
+        .andExpect(status().isOk());
   }
 
   @Test

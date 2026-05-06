@@ -132,6 +132,38 @@ export function updateLibraryItem(items, targetId, updater) {
   })
 }
 
+export function restoreLibraryItem(items, targetId) {
+  const restoreItem = (item) => normalizeLibraryItem({
+    ...item,
+    deleted: false,
+    modified: 'Agora',
+    children: (item.children || []).map(restoreItem),
+  })
+
+  return items.map((item) => {
+    if (item.id === targetId) return restoreItem(item)
+    if (item.type !== 'folder') return item
+
+    return {
+      ...item,
+      children: restoreLibraryItem(item.children || [], targetId),
+    }
+  })
+}
+
+export function removeLibraryItem(items, targetId) {
+  return items
+    .filter((item) => item.id !== targetId)
+    .map((item) => {
+      if (item.type !== 'folder') return item
+
+      return {
+        ...item,
+        children: removeLibraryItem(item.children || [], targetId),
+      }
+    })
+}
+
 export function insertLibraryItem(items, pathIds, newItem) {
   if (pathIds.length === 0) return [normalizeLibraryItem(newItem), ...items]
 

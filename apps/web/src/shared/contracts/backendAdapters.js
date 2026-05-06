@@ -503,7 +503,9 @@ export function mapBoardViewToColumns(boardView, options = {}) {
     id: column.id,
     title: column.title,
     color: column.color,
-    cards: column.cards.map((card) => mapBoardCard(card, options)),
+    cards: Array.from(
+      new Map((column.cards ?? []).map((card) => [card.id, card])).values(),
+    ).map((card) => mapBoardCard(card, options)),
   }))
 }
 

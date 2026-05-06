@@ -43,6 +43,7 @@ export function PlansProvider({ children }) {
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
   const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
+  const sessionKey = mode === 'backend' ? `${currentUser?.id ?? 'anonymous'}:${accessToken ?? ''}` : mode
 
   useLayoutEffect(() => {
     if (mode === 'boot') {
@@ -66,7 +67,7 @@ export function PlansProvider({ children }) {
     setPlans([])
     setActivePlanId(null)
     setIsLoading(true)
-  }, [mode])
+  }, [mode, sessionKey])
 
   useEffect(() => {
     let active = true
@@ -76,12 +77,14 @@ export function PlansProvider({ children }) {
         return
       }
 
+      const requestSessionKey = sessionKey
+
       try {
         const summaries = await apiRequest('/api/plans', {
           token: accessToken,
         })
 
-        if (!active) return
+        if (!active || requestSessionKey !== sessionKey) return
 
         const mappedPlans = summaries.map((summary, index) => mapPlanSummaryToRecord(summary, index))
         setPlans(mappedPlans)
@@ -92,11 +95,11 @@ export function PlansProvider({ children }) {
           return mappedPlans[0]?.id ?? null
         })
       } catch {
-        if (!active) return
+        if (!active || requestSessionKey !== sessionKey) return
         setPlans([])
         setActivePlanId(null)
       } finally {
-        if (active) {
+        if (active && requestSessionKey === sessionKey) {
           setIsLoading(false)
         }
       }
@@ -107,7 +110,7 @@ export function PlansProvider({ children }) {
     return () => {
       active = false
     }
-  }, [accessToken, mode])
+  }, [accessToken, mode, sessionKey])
 
   const createPlan = useCallback(async (data) => {
     if (!backendEnabled) {

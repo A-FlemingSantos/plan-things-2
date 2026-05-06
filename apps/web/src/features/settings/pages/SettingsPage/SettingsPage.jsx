@@ -185,6 +185,8 @@ export default function SettingsPage() {
   const [confirmPass, setConfirmPass] = useState('')
   const [showCurPass, setShowCurPass] = useState(false)
   const [showNewPass, setShowNewPass] = useState(false)
+  const [localPasswordEnabled, setLocalPasswordEnabled] = useState(() => currentUser?.localPasswordEnabled ?? true)
+  const [externalIdentityLinked, setExternalIdentityLinked] = useState(() => currentUser?.externalIdentityLinked ?? false)
   const [accountSaveState, setAccountSaveState] = useState('idle')
   const [accountFeedback, setAccountFeedback] = useState('')
   const [passwordSaveState, setPasswordSaveState] = useState('idle')
@@ -228,7 +230,9 @@ export default function SettingsPage() {
   useEffect(() => {
     setFullName(currentUser?.fullName ?? '')
     setWsName(workspace?.name ?? '')
-  }, [currentUser?.fullName, workspace?.name])
+    setLocalPasswordEnabled(currentUser?.localPasswordEnabled ?? true)
+    setExternalIdentityLinked(currentUser?.externalIdentityLinked ?? false)
+  }, [currentUser?.externalIdentityLinked, currentUser?.fullName, currentUser?.localPasswordEnabled, workspace?.name])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -266,6 +270,8 @@ export default function SettingsPage() {
         })
 
         if (!active) return
+        setLocalPasswordEnabled(snapshot?.account?.localPasswordEnabled ?? currentUser?.localPasswordEnabled ?? true)
+        setExternalIdentityLinked(snapshot?.account?.externalIdentityLinked ?? currentUser?.externalIdentityLinked ?? false)
         setGmailIntegration(normalizeGmailIntegration(snapshot?.integrations?.gmail))
         setIntegrationsLoadState('saved')
       } catch (error) {
@@ -281,7 +287,7 @@ export default function SettingsPage() {
     return () => {
       active = false
     }
-  }, [accessToken, backendEnabled, location.search])
+  }, [accessToken, backendEnabled, currentUser?.externalIdentityLinked, currentUser?.localPasswordEnabled, location.search])
 
   const persistGeneralPreferences = async (nextPreferences) => {
     setGeneralError('')
@@ -395,7 +401,9 @@ export default function SettingsPage() {
   }
 
   const handleSavePassword = async () => {
-    if (!curPass.trim() || !newPass.trim() || !confirmPass.trim()) {
+    const canSetupPasswordWithoutCurrent = backendEnabled && externalIdentityLinked && !localPasswordEnabled
+
+    if ((!canSetupPasswordWithoutCurrent && !curPass.trim()) || !newPass.trim() || !confirmPass.trim()) {
       setPasswordSaveState('error')
       setPasswordFeedback('Preencha todos os campos da senha.')
       return
@@ -427,16 +435,28 @@ export default function SettingsPage() {
     setPasswordFeedback('')
 
     try {
-      const response = await apiRequest('/api/settings/password', {
-        method: 'PATCH',
-        token: accessToken,
-        body: {
-          currentPassword: curPass,
-          newPassword: newPass,
+      const response = await apiRequest(
+        canSetupPasswordWithoutCurrent ? '/api/settings/password/setup' : '/api/settings/password',
+        {
+          method: canSetupPasswordWithoutCurrent ? 'POST' : 'PATCH',
+          token: accessToken,
+          body: canSetupPasswordWithoutCurrent
+            ? { newPassword: newPass }
+            : {
+                currentPassword: curPass,
+                newPassword: newPass,
+              },
         },
-      })
+      )
       setPasswordSaveState('saved')
       setPasswordFeedback(response.message)
+      setLocalPasswordEnabled(true)
+      patchSession?.({
+        user: {
+          localPasswordEnabled: true,
+          externalIdentityLinked,
+        },
+      })
       setShowPassForm(false)
       setCurPass('')
       setNewPass('')
@@ -547,6 +567,13 @@ export default function SettingsPage() {
   }
 
   const accountSaved = normalizeSaveState(accountSaveState) === 'saved'
+  const canSetupPasswordWithoutCurrent = backendEnabled && externalIdentityLinked && !localPasswordEnabled
+  const passwordActionLabel = canSetupPasswordWithoutCurrent
+    ? 'Criar senha'
+    : 'Alterar senha'
+  const passwordHint = canSetupPasswordWithoutCurrent
+    ? 'Conta vinculada ao OAuth. Você pode criar ou substituir sua senha local sem informar a senha atual.'
+    : 'Altere sua senha regularmente para manter a conta protegida.'
 
   const userInitials = fullName
     ? fullName.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
@@ -611,7 +638,7 @@ export default function SettingsPage() {
       <SectionGroup title="Acesso">
         <Field
           label="Senha"
-          hint="Altere sua senha regularmente para manter a conta protegida."
+          hint={passwordHint}
         >
           {!showPassForm ? (
             <button
@@ -623,22 +650,24 @@ export default function SettingsPage() {
                 setPasswordSaveState('idle')
               }}
             >
-              Alterar senha
+              {passwordActionLabel}
             </button>
           ) : (
             <div className={styles.passForm}>
-              <div className={styles.passField}>
-                <input
-                  type={showCurPass ? 'text' : 'password'}
-                  className={styles.input}
-                  placeholder="Senha atual"
-                  value={curPass}
-                  onChange={e => setCurPass(e.target.value)}
-                />
-                <button type="button" className={styles.eyeBtn} onClick={() => setShowCurPass(v => !v)}>
-                  {showCurPass ? <Ic.EyeOff /> : <Ic.Eye />}
-                </button>
-              </div>
+              {!canSetupPasswordWithoutCurrent && (
+                <div className={styles.passField}>
+                  <input
+                    type={showCurPass ? 'text' : 'password'}
+                    className={styles.input}
+                    placeholder="Senha atual"
+                    value={curPass}
+                    onChange={e => setCurPass(e.target.value)}
+                  />
+                  <button type="button" className={styles.eyeBtn} onClick={() => setShowCurPass(v => !v)}>
+                    {showCurPass ? <Ic.EyeOff /> : <Ic.Eye />}
+                  </button>
+                </div>
+              )}
               <div className={styles.passField}>
                 <input
                   type={showNewPass ? 'text' : 'password'}
@@ -660,7 +689,7 @@ export default function SettingsPage() {
               />
               <div className={styles.rowActions}>
                 <button type="button" className={styles.btnPrimary} onClick={handleSavePassword}>
-                  Salvar nova senha
+                  {canSetupPasswordWithoutCurrent ? 'Salvar senha local' : 'Salvar nova senha'}
                 </button>
                 <button
                   type="button"

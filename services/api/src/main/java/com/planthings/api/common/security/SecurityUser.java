@@ -17,7 +17,7 @@ public class SecurityUser implements UserDetails {
   public SecurityUser(UUID userId, String email, String passwordHash) {
     this.userId = userId;
     this.email = email;
-    this.passwordHash = passwordHash;
+    this.passwordHash = passwordHash == null ? "" : passwordHash;
     this.authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
   }
 

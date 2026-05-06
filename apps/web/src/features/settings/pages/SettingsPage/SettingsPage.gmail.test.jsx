@@ -88,6 +88,13 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 
 describe('SettingsPage Gmail integration', () => {
   beforeEach(() => {
+    authMock.currentUser = {
+      id: 'user-1',
+      fullName: 'Arthur Santos',
+      email: 'arthur@example.com',
+      locale: 'pt-BR',
+      timeZone: 'America/Sao_Paulo',
+    }
     apiMock.apiRequest.mockReset()
     preferencesMock.updateGeneral.mockReset()
     preferencesMock.updateLocal.mockReset()
@@ -172,6 +179,92 @@ describe('SettingsPage Gmail integration', () => {
     const gmailCard = await findIntegrationCard('Gmail')
     expect(within(gmailCard).getByRole('button', { name: 'Conectar' })).toBeEnabled()
   })
+
+  it('sets up a local password for OAuth accounts without current password', async () => {
+    authMock.currentUser = {
+      ...authMock.currentUser,
+      localPasswordEnabled: false,
+      externalIdentityLinked: true,
+    }
+    apiMock.apiRequest.mockImplementation((path, options = {}) => {
+      if (path === '/api/settings/password/setup' && options.method === 'POST') {
+        return Promise.resolve({ message: 'Senha configurada com sucesso.' })
+      }
+      return Promise.resolve(settingsSnapshot({
+        connected: false,
+        account: {
+          localPasswordEnabled: false,
+          externalIdentityLinked: true,
+        },
+      }))
+    })
+
+    renderSettings('/settings?section=account')
+
+    expect(await screen.findByRole('button', { name: 'Criar senha' })).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Senha atual')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Criar senha' }))
+    await userEvent.type(screen.getByPlaceholderText('Nova senha (mínimo 8 caracteres)'), 'oauth-local')
+    await userEvent.type(screen.getByPlaceholderText('Confirmar nova senha'), 'oauth-local')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar senha local' }))
+
+    await waitFor(() => {
+      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/settings/password/setup', {
+        method: 'POST',
+        token: 'test-token',
+        body: { newPassword: 'oauth-local' },
+      })
+    })
+    expect(authMock.patchSession).toHaveBeenCalledWith({
+      user: {
+        localPasswordEnabled: true,
+        externalIdentityLinked: true,
+      },
+    })
+  })
+
+  it('uses current password flow after an OAuth account has a local password', async () => {
+    authMock.currentUser = {
+      ...authMock.currentUser,
+      localPasswordEnabled: true,
+      externalIdentityLinked: true,
+    }
+    apiMock.apiRequest.mockImplementation((path, options = {}) => {
+      if (path === '/api/settings/password' && options.method === 'PATCH') {
+        return Promise.resolve({ message: 'Senha atualizada com sucesso.' })
+      }
+      return Promise.resolve(settingsSnapshot({
+        connected: false,
+        account: {
+          localPasswordEnabled: true,
+          externalIdentityLinked: true,
+        },
+      }))
+    })
+
+    renderSettings('/settings?section=account')
+
+    expect(await screen.findByRole('button', { name: 'Alterar senha' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Alterar senha' }))
+
+    expect(screen.getByPlaceholderText('Senha atual')).toBeInTheDocument()
+    await userEvent.type(screen.getByPlaceholderText('Senha atual'), 'oauth-local')
+    await userEvent.type(screen.getByPlaceholderText('Nova senha (mínimo 8 caracteres)'), 'oauth-local-2')
+    await userEvent.type(screen.getByPlaceholderText('Confirmar nova senha'), 'oauth-local-2')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar nova senha' }))
+
+    await waitFor(() => {
+      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/settings/password', {
+        method: 'PATCH',
+        token: 'test-token',
+        body: {
+          currentPassword: 'oauth-local',
+          newPassword: 'oauth-local-2',
+        },
+      })
+    })
+  })
 })
 
 function mockSettingsSnapshot(gmail) {
@@ -180,6 +273,10 @@ function mockSettingsSnapshot(gmail) {
 
 function settingsSnapshot(gmail) {
   return {
+    account: {
+      localPasswordEnabled: gmail?.account?.localPasswordEnabled ?? true,
+      externalIdentityLinked: gmail?.account?.externalIdentityLinked ?? false,
+    },
     integrations: {
       gmail: {
         connected: false,
@@ -188,6 +285,7 @@ function settingsSnapshot(gmail) {
         connectedAt: null,
         lastError: null,
         ...gmail,
+        account: undefined,
       },
     },
   }

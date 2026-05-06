@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 import { buildBoardCardPayload } from '../../../shared/contracts/backendAdapters.js'
 
@@ -16,6 +16,7 @@ export function useBoardColumns({
   dateFormat = 'dd/MM/yyyy',
 }) {
   const columns = boardColumns ?? []
+  const cardMutationRef = useRef(0)
 
   const updateColumns = useCallback((updater) => {
     if (!activePlanId) return
@@ -149,6 +150,7 @@ export function useBoardColumns({
     }
 
     try {
+      const requestId = ++cardMutationRef.current
       await apiRequest(`/api/plans/${activePlanId}/board/cards`, {
         method: 'POST',
         token: accessToken,
@@ -162,6 +164,10 @@ export function useBoardColumns({
           dueAt: null,
         },
       })
+
+      if (requestId !== cardMutationRef.current) {
+        return true
+      }
 
       await loadPlanBoard(activePlanId)
       return true

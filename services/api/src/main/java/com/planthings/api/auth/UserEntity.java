@@ -15,8 +15,11 @@ public class UserEntity extends BaseEntity {
   @Column(nullable = false, unique = true, length = 160)
   private String email;
 
-  @Column(nullable = false, length = 255)
+  @Column(length = 255)
   private String passwordHash;
+
+  @Column(nullable = false)
+  private boolean localPasswordEnabled = true;
 
   @Column(nullable = false, length = 20)
   private String localeTag = "pt-BR";
@@ -46,6 +49,14 @@ public class UserEntity extends BaseEntity {
 
   public void setPasswordHash(String passwordHash) {
     this.passwordHash = passwordHash;
+  }
+
+  public boolean isLocalPasswordEnabled() {
+    return localPasswordEnabled;
+  }
+
+  public void setLocalPasswordEnabled(boolean localPasswordEnabled) {
+    this.localPasswordEnabled = localPasswordEnabled;
   }
 
   public String getLocaleTag() {

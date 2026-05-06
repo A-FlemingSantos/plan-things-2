@@ -175,6 +175,23 @@ public class FileService {
   }
 
   @Transactional
+  public MessageResponse permanentlyDelete(UUID fileId) {
+    UserEntity user = authenticatedUserService.requireUser();
+    FileEntryEntity file = requireOwnedFile(fileId, user.getId());
+
+    if (file.getDeletedAt() == null) {
+      throw new BadRequestException("ARQUIVO_FORA_DA_LIXEIRA", "Envie o arquivo para a lixeira antes de exclui-lo permanentemente.");
+    }
+
+    List<FileEntryEntity> subtree = collectSubtree(file, user.getId());
+    List<FileEntryEntity> childFirstSubtree = new ArrayList<>(subtree);
+    java.util.Collections.reverse(childFirstSubtree);
+    fileEntryRepository.deleteAll(childFirstSubtree);
+
+    return new MessageResponse("Arquivo excluido permanentemente com sucesso.");
+  }
+
+  @Transactional
   public FileItemView favorite(UUID fileId) {
     UserEntity user = authenticatedUserService.requireUser();
     FileEntryEntity file = requireOwnedFile(fileId, user.getId());
