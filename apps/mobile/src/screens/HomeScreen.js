@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native'
 import { Check, Grid2X2, List, Plus, Search, X } from 'lucide-react-native'
+import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
 import { usePlans } from '../providers/PlansProvider'
@@ -233,9 +234,18 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.pageTitle}>Início</Text>
           <Text style={styles.pageSubtitle}>Bom dia, {session.user.fullName.split(' ')[0]}.</Text>
         </View>
-        <Pressable style={styles.newPlanBtn} onPress={openNewPlanSheet} accessibilityRole="button" accessibilityLabel="Criar novo plano">
-          <Plus size={16} color={theme.colors.textInverse} strokeWidth={2} />
-        </Pressable>
+        <View style={styles.topbarActions}>
+          <AuthenticatedAvatar
+            style={styles.topbarAvatar}
+            textStyle={styles.topbarAvatarText}
+            avatarUrl={session.user.avatarUrl}
+            fallback={session.user.initials}
+            accessibilityLabel={`Avatar de ${session.user.fullName}`}
+          />
+          <Pressable style={styles.newPlanBtn} onPress={openNewPlanSheet} accessibilityRole="button" accessibilityLabel="Criar novo plano">
+            <Plus size={16} color={theme.colors.textInverse} strokeWidth={2} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.searchWrap}>
@@ -454,6 +464,24 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
     marginBottom: 14,
+  },
+  topbarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  topbarAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: theme.colors.surface3,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+  },
+  topbarAvatarText: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '700',
   },
   pageTitle: {
     color: theme.colors.text1,

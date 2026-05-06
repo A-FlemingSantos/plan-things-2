@@ -9,11 +9,14 @@ import {
 import { getFileTypeFromName } from './files.js'
 
 function mapBoardComment(comment) {
+  const author = comment.author ?? null
+
   return {
     id: comment.id,
     author: comment.authorName,
-    authorId: null,
+    authorId: author?.id ?? null,
     authorName: comment.authorName,
+    authorAvatarUrl: author?.avatarUrl ?? null,
     text: comment.message,
     time: comment.createdAt?.text ?? 'Agora',
   }

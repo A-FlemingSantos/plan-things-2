@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { ROUTES } from '../../config/routes.js'
+import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import SidebarUserCard from '../SidebarUserCard/SidebarUserCard.jsx'
 import menuStyles from './SidebarAccountMenu.module.css'
 
@@ -48,6 +49,7 @@ export default function SidebarAccountMenu({
   const menuIdRef = useRef(`sidebar-account-menu-${Math.random().toString(36).slice(2, 10)}`)
   const resolvedName = currentUser?.fullName ?? name
   const resolvedEmail = currentUser?.email ?? email
+  const resolvedAvatarUrl = currentUser?.avatarUrl ?? null
   const resolvedInitials = currentUser?.fullName
     ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
     : initials
@@ -92,6 +94,7 @@ export default function SidebarAccountMenu({
         name={resolvedName}
         plan={plan}
         initials={resolvedInitials}
+        avatarUrl={resolvedAvatarUrl}
         active={open}
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
@@ -108,7 +111,13 @@ export default function SidebarAccountMenu({
             role="menu"
           >
             <div className={menuStyles.header}>
-              <span className={menuStyles.avatar}>{resolvedInitials}</span>
+              <AuthenticatedAvatar
+                className={menuStyles.avatar}
+                imageClassName="authenticatedAvatarImage"
+                avatarUrl={resolvedAvatarUrl}
+                fallback={resolvedInitials}
+                title={resolvedName}
+              />
               <div className={menuStyles.identity}>
                 <p className={menuStyles.name}>{resolvedName}</p>
                 <p className={menuStyles.email}>{resolvedEmail}</p>

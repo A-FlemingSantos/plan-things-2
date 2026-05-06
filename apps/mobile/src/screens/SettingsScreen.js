@@ -21,6 +21,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react-native'
+import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
 import { mobileApiRequest } from '../services/api'
@@ -308,16 +309,24 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.identityCard}>
-        <View style={styles.identityAvatar}>
-          <Text style={styles.identityAvatarText}>{session.user.initials}</Text>
-        </View>
+        <AuthenticatedAvatar
+          style={styles.identityAvatar}
+          textStyle={styles.identityAvatarText}
+          avatarUrl={session.user.avatarUrl}
+          fallback={session.user.initials}
+          accessibilityLabel={`Avatar de ${session.user.fullName}`}
+        />
         <View style={styles.identityBody}>
           <Text style={styles.identityName} numberOfLines={1}>{session.user.fullName}</Text>
           <Text style={styles.identityEmail} numberOfLines={1}>{session.user.email}</Text>
           <View style={styles.identityMetaRow}>
-            <View style={styles.workspaceBadge}>
-              <Text style={styles.workspaceBadgeText}>{workspaceInitial}</Text>
-            </View>
+            <AuthenticatedAvatar
+              style={styles.workspaceBadge}
+              textStyle={styles.workspaceBadgeText}
+              avatarUrl={session.workspace.avatarUrl}
+              fallback={workspaceInitial}
+              accessibilityLabel={`Avatar de ${session.workspace.name}`}
+            />
             <Text style={styles.identityWorkspace} numberOfLines={1}>{session.workspace.name}</Text>
           </View>
         </View>

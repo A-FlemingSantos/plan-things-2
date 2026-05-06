@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import { formatFileSize } from '../../../files/data/libraryRepository.js'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
@@ -652,6 +653,7 @@ export default function CardModal({
         name: getMemberName(member),
         initials: member.initials ?? buildInitials(getMemberName(member)),
         color: member.color ?? 'var(--text-3)',
+        avatarUrl: member.avatarUrl ?? null,
       }
     }
 
@@ -661,6 +663,7 @@ export default function CardModal({
       name: fallbackName,
       initials: buildInitials(fallbackName),
       color: 'var(--text-3)',
+      avatarUrl: commentItem.authorAvatarUrl ?? null,
     }
   }
 
@@ -1755,7 +1758,14 @@ export default function CardModal({
                 const isOverflowing = overflowingComments[c.id]
                 return (
                   <div key={c.id} className={styles.cmActivityItem}>
-                    <span className={styles.cmCommentAvatar} style={{ background: presenter.color }}>{presenter.initials}</span>
+                    <AuthenticatedAvatar
+                      className={styles.cmCommentAvatar}
+                      imageClassName={styles.avatarImage}
+                      style={{ background: presenter.color }}
+                      avatarUrl={presenter.avatarUrl}
+                      fallback={presenter.initials}
+                      title={presenter.name}
+                    />
                     <div className={styles.cmActivityContent}>
                       <p
                         ref={element => {
@@ -1813,7 +1823,14 @@ export default function CardModal({
                     <div className={styles.cmSelectedMembers}>
                       {selectedMembers.map(member => (
                         <span key={member.id} className={styles.cmSelectedMember}>
-                          <span className={styles.cmMemberAvatar} style={{ background: member.color }}>{member.initials}</span>
+                          <AuthenticatedAvatar
+                            className={styles.cmMemberAvatar}
+                            imageClassName={styles.avatarImage}
+                            style={{ background: member.color }}
+                            avatarUrl={member.avatarUrl}
+                            fallback={member.initials}
+                            title={getMemberName(member)}
+                          />
                           {getMemberName(member)}
                         </span>
                       ))}
@@ -2030,7 +2047,14 @@ export default function CardModal({
                 onClick={() => toggleMember(m.id)}
                 aria-pressed={memberIds.includes(m.id)}
               >
-                <span className={styles.cmMemberAvatar} style={{ background: m.color }}>{m.initials}</span>
+                <AuthenticatedAvatar
+                  className={styles.cmMemberAvatar}
+                  imageClassName={styles.avatarImage}
+                  style={{ background: m.color }}
+                  avatarUrl={m.avatarUrl}
+                  fallback={m.initials}
+                  title={getMemberName(m)}
+                />
                 <span className={styles.cmMemberName}>{getMemberName(m)}</span>
                 {memberIds.includes(m.id) && <span className={styles.cmMemberCheck}><icons.Check /></span>}
               </button>
@@ -2098,7 +2122,14 @@ export default function CardModal({
               className={`${styles.cmChecklistCompactItem} ${memberIds.includes(member.id) ? styles.cmChecklistCompactItemActive : ''}`}
               onClick={() => toggleMember(member.id)}
             >
-              <span className={styles.cmMemberAvatar} style={{ background: member.color }}>{member.initials}</span>
+              <AuthenticatedAvatar
+                className={styles.cmMemberAvatar}
+                imageClassName={styles.avatarImage}
+                style={{ background: member.color }}
+                avatarUrl={member.avatarUrl}
+                fallback={member.initials}
+                title={getMemberName(member)}
+              />
               <span>{getMemberName(member)}</span>
               {memberIds.includes(member.id) && (
                 <span className={styles.cmLabelCheck}>

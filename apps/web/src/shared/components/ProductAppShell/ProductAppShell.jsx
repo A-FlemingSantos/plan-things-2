@@ -28,6 +28,7 @@ export default function ProductAppShell({
   bottomContent = null,
   workspaceName,
   workspaceInitial,
+  workspaceAvatarUrl,
   contentClassName,
   contentTag = 'div',
   children,
@@ -42,6 +43,7 @@ export default function ProductAppShell({
   ))
   const ContentTag = contentTag
   const resolvedWorkspaceName = workspaceName ?? workspace?.name ?? 'Workspace'
+  const resolvedWorkspaceAvatarUrl = workspaceAvatarUrl ?? workspace?.avatarUrl ?? null
   const resolvedWorkspaceInitial = workspaceInitial
     ?? workspace?.name?.trim()?.charAt(0)?.toUpperCase()
     ?? currentUser?.fullName?.trim()?.charAt(0)?.toUpperCase()
@@ -82,6 +84,7 @@ export default function ProductAppShell({
         bottomContent={resolvedBottomContent}
         workspaceName={resolvedWorkspaceName}
         workspaceInitial={resolvedWorkspaceInitial}
+        workspaceAvatarUrl={resolvedWorkspaceAvatarUrl}
       />
 
       <ContentTag className={contentClassName}>

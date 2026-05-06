@@ -8,6 +8,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
+import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeaderActions from '../../components/BoardHeaderActions/BoardHeaderActions.jsx'
@@ -1609,9 +1610,14 @@ export default function KanbanBoard() {
                     checked={checked}
                     onChange={() => toggleInboxRecipient(member.id)}
                   />
-                  <span className={styles.planMemberAvatar} style={{ background: member.color }}>
-                    {member.initials}
-                  </span>
+                  <AuthenticatedAvatar
+                    className={styles.planMemberAvatar}
+                    imageClassName={styles.avatarImage}
+                    style={{ background: member.color }}
+                    avatarUrl={member.avatarUrl}
+                    fallback={member.initials}
+                    title={memberName}
+                  />
                   <span className={styles.inboxRecipientInfo}>
                     <strong>{memberName}</strong>
                     <small>{member.email}</small>
@@ -2138,9 +2144,14 @@ export default function KanbanBoard() {
 
                       return (
                         <div key={member.id} className={styles.planMemberRow} role="menuitem">
-                          <span className={styles.planMemberAvatar} style={{ background: member.color }}>
-                            {member.initials}
-                          </span>
+                          <AuthenticatedAvatar
+                            className={styles.planMemberAvatar}
+                            imageClassName={styles.avatarImage}
+                            style={{ background: member.color }}
+                            avatarUrl={member.avatarUrl}
+                            fallback={member.initials}
+                            title={member.name}
+                          />
                           <div className={styles.planMemberInfo}>
                             <span className={styles.planMemberName}>{member.name}</span>
                             <span className={styles.planMemberEmail}>{member.email}</span>

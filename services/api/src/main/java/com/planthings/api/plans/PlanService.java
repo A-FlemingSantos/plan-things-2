@@ -2,6 +2,8 @@ package com.planthings.api.plans;
 
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.board.BoardColumnEntity;
 import com.planthings.api.board.BoardColumnRepository;
 import com.planthings.api.board.BoardCardRepository;
@@ -44,6 +46,7 @@ public class PlanService {
   private final PlanAccessService planAccessService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final PlanInviteEmailSender planInviteEmailSender;
+  private final AvatarImageService avatarImageService;
   private final Clock clock;
   private final String frontendBaseUrl;
 
@@ -62,6 +65,7 @@ public class PlanService {
       PlanAccessService planAccessService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       PlanInviteEmailSender planInviteEmailSender,
+      AvatarImageService avatarImageService,
       Clock clock,
       @Value("${app.frontend-base-url}") String frontendBaseUrl
   ) {
@@ -79,6 +83,7 @@ public class PlanService {
     this.planAccessService = planAccessService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.planInviteEmailSender = planInviteEmailSender;
+    this.avatarImageService = avatarImageService;
     this.clock = clock;
     this.frontendBaseUrl = normalizeFrontendBaseUrl(frontendBaseUrl);
   }
@@ -435,6 +440,7 @@ public class PlanService {
         user.getId(),
         user.getFullName(),
         user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
         member.getRole(),
         brazilDateTimeMapper.toDateTime(member.getCreatedAt())
     );
@@ -594,6 +600,7 @@ public class PlanService {
       UUID userId,
       String fullName,
       String email,
+      String avatarUrl,
       PlanMemberRole role,
       ApiDateTimeDto joinedAt
   ) {

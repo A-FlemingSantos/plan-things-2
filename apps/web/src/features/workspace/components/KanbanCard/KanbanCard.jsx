@@ -1,3 +1,5 @@
+import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+
 export default function KanbanCard({
   card,
   colId,
@@ -85,14 +87,15 @@ export default function KanbanCard({
       <div className={styles.cardFooter}>
         <div className={styles.cardMembers}>
           {assignedMembers.map((member) => (
-            <span
+            <AuthenticatedAvatar
               key={member.id}
               className={styles.cardAvatar}
               style={{ background: member.color }}
-              title={member.initials}
-            >
-              {member.initials}
-            </span>
+              avatarUrl={member.avatarUrl}
+              fallback={member.initials}
+              title={member.name ?? member.email ?? member.initials}
+              imageClassName={styles.avatarImage}
+            />
           ))}
         </div>
 

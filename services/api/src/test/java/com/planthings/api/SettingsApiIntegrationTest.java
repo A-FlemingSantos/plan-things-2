@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -161,13 +162,21 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
     String token = registerAndGetToken("Arthur Santos", "arthur-avatar@example.com", "12345678");
     MockMultipartFile file = new MockMultipartFile("file", "avatar.png", "image/png", PNG_AVATAR);
 
-    mockMvc.perform(multipart("/api/settings/account/avatar")
+    MvcResult upload = mockMvc.perform(multipart("/api/settings/account/avatar")
             .file(file)
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/settings/account/avatar?v=")));
+        .andExpect(jsonPath("$.data.avatarUrl").value(org.hamcrest.Matchers.matchesPattern("/api/avatars/users/.+\\?v=.+")))
+        .andReturn();
+    String avatarUrl = objectMapper.readTree(upload.getResponse().getContentAsString()).path("data").path("avatarUrl").asText();
 
     mockMvc.perform(get("/api/settings/account/avatar")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_PNG))
+        .andExpect(content().bytes(PNG_AVATAR));
+
+    mockMvc.perform(get(avatarUrl)
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_PNG))
@@ -176,7 +185,7 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
     mockMvc.perform(get("/api/me")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.user.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/settings/account/avatar?v=")));
+        .andExpect(jsonPath("$.data.user.avatarUrl").value(org.hamcrest.Matchers.matchesPattern("/api/avatars/users/.+\\?v=.+")));
 
     mockMvc.perform(delete("/api/settings/account/avatar")
             .header("Authorization", "Bearer " + token))

@@ -388,6 +388,7 @@ export function mergePlanDetails(plan, details) {
     color: buildMemberColor(index),
     name: member.fullName,
     email: member.email,
+    avatarUrl: member.avatarUrl ?? null,
     role: member.role,
   }))
 
@@ -417,11 +418,14 @@ export function mergePlanDetails(plan, details) {
 }
 
 function mapBoardComment(comment) {
+  const author = comment.author ?? null
+
   return {
     id: comment.id,
     author: comment.authorName,
-    authorId: null,
+    authorId: author?.id ?? null,
     authorName: comment.authorName,
+    authorAvatarUrl: author?.avatarUrl ?? null,
     text: comment.message,
     time: comment.createdAt?.text ?? 'Agora',
   }

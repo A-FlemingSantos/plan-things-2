@@ -27,7 +27,9 @@ import {
   UsersRound,
   X,
 } from 'lucide-react-native'
+import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
+import { useAuth } from '../providers/AuthProvider'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
@@ -86,6 +88,7 @@ function SolidFileIcon({ type = 'doc', size, variant = 'tile' }) {
 
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   styles = useThemedStyles(createStyles)
+  const { session } = useAuth()
   const {
     files: localFiles,
     createFolder,
@@ -416,6 +419,13 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 </Text>
               </View>
               <View style={styles.topbarActions}>
+                <AuthenticatedAvatar
+                  style={styles.topbarAvatar}
+                  textStyle={styles.topbarAvatarText}
+                  avatarUrl={session?.user?.avatarUrl}
+                  fallback={session?.user?.initials ?? 'PT'}
+                  accessibilityLabel={session?.user?.fullName ? `Avatar de ${session.user.fullName}` : 'Avatar do usuario'}
+                />
                 <Pressable
                   style={styles.iconButton}
                   onPress={() => setSortSheetOpen(true)}
@@ -811,6 +821,19 @@ const createStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  topbarAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: theme.colors.surface3,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+  },
+  topbarAvatarText: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '700',
   },
   iconButton: {
     width: 42,

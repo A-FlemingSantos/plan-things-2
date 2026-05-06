@@ -2,6 +2,8 @@ package com.planthings.api.board;
 
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.calendar.CalendarService;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
@@ -57,6 +59,7 @@ public class BoardService {
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final CalendarService calendarService;
   private final BoardCardInboxEmailSender boardCardInboxEmailSender;
+  private final AvatarImageService avatarImageService;
 
   public BoardService(
       PlanAccessService planAccessService,
@@ -76,7 +79,8 @@ public class BoardService {
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       CalendarService calendarService,
-      BoardCardInboxEmailSender boardCardInboxEmailSender
+      BoardCardInboxEmailSender boardCardInboxEmailSender,
+      AvatarImageService avatarImageService
   ) {
     this.planAccessService = planAccessService;
     this.planLabelRepository = planLabelRepository;
@@ -96,6 +100,7 @@ public class BoardService {
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.calendarService = calendarService;
     this.boardCardInboxEmailSender = boardCardInboxEmailSender;
+    this.avatarImageService = avatarImageService;
   }
 
   public BoardView getBoard(UUID planId) {
@@ -488,7 +493,7 @@ public class BoardService {
     List<UserSummary> recipientUsers = recipients.stream()
         .map(recipient -> usersById.get(recipient.getUserId()))
         .filter(Objects::nonNull)
-        .map(user -> new UserSummary(user.getId(), user.getFullName(), user.getEmail()))
+        .map(this::toUserSummary)
         .toList();
 
     return new InboxItemView(
@@ -496,7 +501,7 @@ public class BoardService {
         delivery.getCardId(),
         card.getTitle(),
         deriveCardKind(card),
-        sender == null ? null : new UserSummary(sender.getId(), sender.getFullName(), sender.getEmail()),
+        toUserSummary(sender),
         delivery.getSentFrom(),
         recipients.stream().map(BoardCardInboxDeliveryRecipientEntity::getEmail).toList(),
         recipientUsers,
@@ -512,7 +517,7 @@ public class BoardService {
     List<UserSummary> assignees = boardCardAssigneeRepository.findByCardId(card.getId()).stream()
         .map(assignee -> userRepository.findById(assignee.getUserId()).orElse(null))
         .filter(Objects::nonNull)
-        .map(user -> new UserSummary(user.getId(), user.getFullName(), user.getEmail()))
+        .map(this::toUserSummary)
         .toList();
     List<CommentView> comments = boardCardCommentRepository.findByCardIdOrderByCreatedAtAsc(card.getId()).stream()
         .map(this::toCommentView)
@@ -532,7 +537,7 @@ public class BoardService {
         card.getDescription(),
         deriveCardKind(card),
         card.getPositionIndex(),
-        author == null ? null : new UserSummary(author.getId(), author.getFullName(), author.getEmail()),
+        toUserSummary(author),
         label == null ? null : new LabelView(label.getId(), label.getName(), label.getColor()),
         assignees,
         comments,
@@ -562,7 +567,7 @@ public class BoardService {
         file.getType(),
         file.getMimeType(),
         file.getSizeBytes(),
-        attachedBy == null ? null : new UserSummary(attachedBy.getId(), attachedBy.getFullName(), attachedBy.getEmail()),
+        toUserSummary(attachedBy),
         attachedByCurrentUser,
         canRemove,
         brazilDateTimeMapper.toDateTime(attachment.getCreatedAt())
@@ -575,7 +580,8 @@ public class BoardService {
         comment.getId(),
         author == null ? "Usuario" : author.getFullName(),
         comment.getMessage(),
-        brazilDateTimeMapper.toDateTime(comment.getCreatedAt())
+        brazilDateTimeMapper.toDateTime(comment.getCreatedAt()),
+        toUserSummary(author)
     );
   }
 
@@ -593,9 +599,22 @@ public class BoardService {
         item.getTitle(),
         item.getCompleted(),
         item.getPositionIndex(),
-        assignee == null ? null : new UserSummary(assignee.getId(), assignee.getFullName(), assignee.getEmail()),
+        toUserSummary(assignee),
         brazilDateTimeMapper.toDateTime(item.getStartAt()),
         brazilDateTimeMapper.toDateTime(item.getDueAt())
+    );
+  }
+
+  private UserSummary toUserSummary(UserEntity user) {
+    if (user == null) {
+      return null;
+    }
+
+    return new UserSummary(
+        user.getId(),
+        user.getFullName(),
+        user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId())
     );
   }
 
@@ -808,13 +827,13 @@ public class BoardService {
   ) {
   }
 
-  public record UserSummary(UUID id, String fullName, String email) {
+  public record UserSummary(UUID id, String fullName, String email, String avatarUrl) {
   }
 
   public record LabelView(UUID id, String name, String color) {
   }
 
-  public record CommentView(UUID id, String authorName, String message, ApiDateTimeDto createdAt) {
+  public record CommentView(UUID id, String authorName, String message, ApiDateTimeDto createdAt, UserSummary author) {
   }
 
   public record ChecklistView(UUID id, String title, int position, List<ChecklistItemView> items) {

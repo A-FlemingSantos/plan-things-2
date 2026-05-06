@@ -380,6 +380,7 @@
   letter-spacing: .02em;
   cursor: pointer;
   transition: transform var(--transition-fast);
+  overflow: hidden;
 }
 .boardMemberAvatar:not(:first-child) { margin-left: -7px; }
 .boardMemberAvatar:hover { transform: translateY(-2px); z-index: 1; }
@@ -559,6 +560,7 @@
   font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .planMemberInfo {
@@ -2130,6 +2132,7 @@
   font-weight: var(--font-weight-regular);
   letter-spacing: .02em;
   flex-shrink: 0;
+  overflow: hidden;
 }
 .cardAvatar + .cardAvatar { margin-left: -5px; }
 
@@ -2883,6 +2886,7 @@
   flex-shrink: 0;
   letter-spacing: .03em;
   font-weight: var(--font-weight-regular);
+  overflow: hidden;
 }
 
 .cmCommentTime {
@@ -3959,6 +3963,15 @@
   justify-content: center;
   flex-shrink: 0;
   letter-spacing: .03em;
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
 }
 
 .cmMemberName { flex: 1; }

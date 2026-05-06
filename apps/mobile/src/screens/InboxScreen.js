@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native'
 import { Bell, Paperclip, Search, SquarePen } from 'lucide-react-native'
 import { StatusBar } from 'expo-status-bar'
+import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import { inboxThreads } from '../data/demoData'
 import { theme } from '../theme/tokens'
 import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
@@ -102,9 +103,13 @@ export default function InboxScreen() {
         )}
         renderItem={({ item }) => (
           <Pressable accessibilityRole="button" style={({ pressed }) => [styles.thread, pressed && styles.threadPressed]}>
-            <View style={[styles.avatar, { backgroundColor: item.avatarColor }]}>
-              <Text style={styles.avatarText}>{item.avatarText}</Text>
-            </View>
+            <AuthenticatedAvatar
+              style={[styles.avatar, { backgroundColor: item.avatarColor }]}
+              textStyle={styles.avatarText}
+              avatarUrl={item.avatarUrl}
+              fallback={item.avatarText}
+              accessibilityLabel={`Avatar de ${item.from}`}
+            />
 
             <View style={styles.threadBody}>
               <View style={styles.threadTopRow}>

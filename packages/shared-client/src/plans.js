@@ -97,6 +97,7 @@ export function mergePlanDetails(plan, details) {
     color: buildMemberColor(index),
     name: member.fullName,
     email: member.email,
+    avatarUrl: member.avatarUrl ?? null,
     role: member.role,
   }))
 

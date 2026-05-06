@@ -37,6 +37,7 @@ import {
   Users,
   X,
 } from 'lucide-react-native'
+import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
@@ -55,6 +56,18 @@ function findMembers(memberIds = []) {
   return memberIds
     .map((memberId) => boardMembers.find((member) => member.id === memberId))
     .filter(Boolean)
+}
+
+function MemberAvatar({ member, style, textStyle, fallback = 'PT' }) {
+  return (
+    <AuthenticatedAvatar
+      style={[style, { backgroundColor: member?.color ?? theme.colors.black }]}
+      textStyle={textStyle}
+      avatarUrl={member?.avatarUrl}
+      fallback={member?.initials ?? fallback}
+      accessibilityLabel={member?.name ? `Avatar de ${member.name}` : 'Avatar de membro'}
+    />
+  )
 }
 
 function cloneBoardColumns(columns = []) {
@@ -221,9 +234,12 @@ function BoardCard({ card, onPress }) {
           {members.length ? (
             <View style={styles.memberStack}>
               {members.slice(0, 3).map((member) => (
-                <View key={member.id} style={[styles.memberAvatar, { backgroundColor: member.color }]}>
-                  <Text style={styles.memberInitials}>{member.initials}</Text>
-                </View>
+                <MemberAvatar
+                  key={member.id}
+                  member={member}
+                  style={styles.memberAvatar}
+                  textStyle={styles.memberInitials}
+                />
               ))}
             </View>
           ) : null}
@@ -626,9 +642,12 @@ function CardDetailScreen({
               {members.length ? (
                 <View style={styles.detailMemberRow}>
                   {members.map((member) => (
-                    <View key={member.id} style={[styles.detailMemberAvatar, { backgroundColor: member.color }]}>
-                      <Text style={styles.detailMemberInitials}>{member.initials}</Text>
-                    </View>
+                    <MemberAvatar
+                      key={member.id}
+                      member={member}
+                      style={styles.detailMemberAvatar}
+                      textStyle={styles.detailMemberInitials}
+                    />
                   ))}
                 </View>
               ) : (
@@ -793,16 +812,26 @@ function CardDetailScreen({
             <View style={styles.detailActivityList}>
               {comments.length ? (
                 comments.map((comment) => {
-                  const author = boardMembers.find((member) => member.id === comment.author)
+                  const authorId = comment.authorId ?? comment.author
+                  const author = boardMembers.find((member) => member.id === authorId)
+                  const presenter = author ?? {
+                    id: authorId ?? comment.id,
+                    name: comment.authorName ?? comment.author ?? 'Membro',
+                    initials: comment.authorName?.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'PT',
+                    avatarUrl: comment.authorAvatarUrl ?? null,
+                    color: theme.colors.black,
+                  }
 
                   return (
                     <View key={comment.id} style={styles.detailActivityItem}>
-                      <View style={[styles.detailActivityAvatar, { backgroundColor: author?.color ?? theme.colors.black }]}>
-                        <Text style={styles.detailActivityInitials}>{author?.initials ?? 'PT'}</Text>
-                      </View>
+                      <MemberAvatar
+                        member={presenter}
+                        style={styles.detailActivityAvatar}
+                        textStyle={styles.detailActivityInitials}
+                      />
                       <View style={styles.detailActivityBody}>
                         <Text style={styles.detailActivityText}>
-                          <Text style={styles.detailActivityAuthor}>{author?.initials ?? 'Membro'} </Text>
+                          <Text style={styles.detailActivityAuthor}>{presenter.initials ?? 'Membro'} </Text>
                           {comment.text}
                         </Text>
                         <Text style={styles.detailActivityTime}>{comment.time}</Text>
@@ -891,9 +920,11 @@ function CardDetailScreen({
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
                   >
-                    <View style={[styles.detailMemberAvatar, { backgroundColor: member.color }]}>
-                      <Text style={styles.detailMemberInitials}>{member.initials}</Text>
-                    </View>
+                    <MemberAvatar
+                      member={member}
+                      style={styles.detailMemberAvatar}
+                      textStyle={styles.detailMemberInitials}
+                    />
                     <Text style={styles.sheetActionText}>{member.initials}</Text>
                     {isSelected ? <Check size={16} color={theme.colors.text1} strokeWidth={2} /> : null}
                   </Pressable>
@@ -1152,7 +1183,12 @@ function TaskListRow({ card, column, isDone, onPress }) {
           {members.length ? (
             <View style={styles.taskMiniMembers}>
               {members.slice(0, 2).map((member) => (
-                <View key={member.id} style={[styles.taskMiniAvatar, { backgroundColor: member.color }]} />
+                <MemberAvatar
+                  key={member.id}
+                  member={member}
+                  style={styles.taskMiniAvatar}
+                  textStyle={styles.taskMiniInitials}
+                />
               ))}
             </View>
           ) : null}
@@ -1701,9 +1737,19 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
           <Pressable style={styles.backButton} onPress={onBack ?? (() => navigation?.goBack())} accessibilityLabel="Voltar para Home">
             <ArrowLeft size={19} color={theme.colors.text1} strokeWidth={1.9} />
           </Pressable>
-          <View style={styles.headerMetaPill}>
-            <Users size={13} color={theme.colors.text2} strokeWidth={1.8} />
-            <Text style={styles.headerMetaText}>{boardMembers.length}</Text>
+          <View style={styles.headerMembers}>
+            {boardMembers.slice(0, 3).map((member, index) => (
+              <MemberAvatar
+                key={member.id}
+                member={member}
+                style={[styles.headerMemberAvatar, index > 0 && styles.headerMemberAvatarOverlap]}
+                textStyle={styles.headerMemberInitials}
+              />
+            ))}
+            <View style={styles.headerMetaPill}>
+              <Users size={13} color={theme.colors.text2} strokeWidth={1.8} />
+              <Text style={styles.headerMetaText}>{boardMembers.length}</Text>
+            </View>
           </View>
         </View>
 
@@ -2012,6 +2058,25 @@ const createStyles = (theme) => StyleSheet.create({
     borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface1,
   },
+  headerMembers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerMemberAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: theme.colors.surface1,
+  },
+  headerMemberAvatarOverlap: {
+    marginLeft: -7,
+  },
+  headerMemberInitials: {
+    color: theme.colors.textInverse,
+    fontSize: 10,
+    fontWeight: '800',
+  },
   headerMetaPill: {
     minHeight: 30,
     flexDirection: 'row',
@@ -2022,6 +2087,7 @@ const createStyles = (theme) => StyleSheet.create({
     borderColor: theme.colors.border1,
     borderRadius: 999,
     backgroundColor: theme.colors.surface2,
+    marginLeft: -6,
   },
   headerMetaText: {
     color: theme.colors.text2,
@@ -2459,12 +2525,17 @@ const createStyles = (theme) => StyleSheet.create({
     marginLeft: 2,
   },
   taskMiniAvatar: {
-    width: 10,
-    height: 10,
+    width: 14,
+    height: 14,
     marginLeft: -3,
     borderWidth: 1,
     borderColor: theme.colors.surface1,
     borderRadius: 999,
+  },
+  taskMiniInitials: {
+    color: theme.colors.textInverse,
+    fontSize: 5,
+    fontWeight: '800',
   },
   taskStarButton: {
     width: 32,

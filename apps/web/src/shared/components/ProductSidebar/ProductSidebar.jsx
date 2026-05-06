@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../../config/routes.js'
+import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import './ProductSidebar.css'
 
 export default function ProductSidebar({
@@ -17,6 +18,7 @@ export default function ProductSidebar({
   bottomContent = null,
   workspaceName = 'Workspace do Arthur',
   workspaceInitial = 'A',
+  workspaceAvatarUrl = null,
 }) {
   const secondaryWrapperStyle = {
     flex: 1,
@@ -71,7 +73,14 @@ export default function ProductSidebar({
           aria-hidden={collapsed ? true : undefined}
           data-sidebar-workspace-picker
         >
-          <span className={styles.wsAvatar} data-sidebar-workspace-avatar>{workspaceInitial}</span>
+          <AuthenticatedAvatar
+            className={styles.wsAvatar}
+            imageClassName="authenticatedAvatarImage"
+            avatarUrl={workspaceAvatarUrl}
+            fallback={workspaceInitial}
+            title={workspaceName}
+            data-sidebar-workspace-avatar
+          />
           <span className={styles.wsName} data-sidebar-workspace-name>{workspaceName}</span>
           <span className={styles.wsChevron} data-sidebar-workspace-chevron><ChevronIcon /></span>
         </button>
