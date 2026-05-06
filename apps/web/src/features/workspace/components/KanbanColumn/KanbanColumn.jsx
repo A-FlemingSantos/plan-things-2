@@ -46,19 +46,36 @@ export default function KanbanColumn({
 
   const submitCard = async () => {
     if (!newCardText.trim() || isAddingCard) return
+    const nextCardTitle = newCardText.trim()
 
     try {
       setIsAddingCard(true)
-      await onAddCard(col.id, newCardText.trim())
       setNewCardText('')
-      setAddingCard(false)
       setCardError(null)
+      await onAddCard(col.id, nextCardTitle)
+      setAddingCard(false)
     } catch (error) {
+      setAddingCard(true)
+      setNewCardText(nextCardTitle)
       setCardError(error?.message ?? 'Nao foi possivel criar o cartao nesta coluna.')
       setTimeout(() => addInputRef.current?.focus(), 0)
     } finally {
       setIsAddingCard(false)
     }
+  }
+
+  const startAddingCard = () => {
+    if (isAddingCard) return
+    setAddingCard(true)
+    setCardError(null)
+    setTimeout(() => addInputRef.current?.focus(), 50)
+  }
+
+  const cancelAddingCard = () => {
+    if (isAddingCard) return
+    setAddingCard(false)
+    setNewCardText('')
+    setCardError(null)
   }
 
   const submitRename = async () => {
@@ -135,10 +152,8 @@ export default function KanbanColumn({
           <button
             type="button"
             className={styles.colActionBtn}
-            onClick={() => {
-              setAddingCard(true)
-              setTimeout(() => addInputRef.current?.focus(), 50)
-            }}
+            onClick={startAddingCard}
+            disabled={isAddingCard}
             title="Adicionar cartão"
           >
             <icons.Plus />
@@ -203,7 +218,7 @@ export default function KanbanColumn({
           />
         ))}
 
-        {addingCard ? (
+        {addingCard && !isAddingCard ? (
           <div className={styles.addCardForm}>
             <textarea
               ref={addInputRef}
@@ -219,9 +234,7 @@ export default function KanbanColumn({
                   submitCard()
                 }
                 if (event.key === 'Escape') {
-                  setAddingCard(false)
-                  setNewCardText('')
-                  setCardError(null)
+                  cancelAddingCard()
                 }
               }}
             />
@@ -234,11 +247,8 @@ export default function KanbanColumn({
               <button
                 type="button"
                 className={styles.addCardCancel}
-                onClick={() => {
-                  setAddingCard(false)
-                  setNewCardText('')
-                  setCardError(null)
-                }}
+                onClick={cancelAddingCard}
+                disabled={isAddingCard}
                 aria-label="Cancelar novo cartão"
               >
                 <icons.X />
@@ -248,15 +258,12 @@ export default function KanbanColumn({
         ) : null}
       </div>
 
-      {!addingCard ? (
+      {!addingCard && !isAddingCard ? (
         <button
           type="button"
           className={styles.colAddBtn}
-          onClick={() => {
-            setAddingCard(true)
-            setCardError(null)
-            setTimeout(() => addInputRef.current?.focus(), 50)
-          }}
+          onClick={startAddingCard}
+          disabled={isAddingCard}
         >
           <icons.Plus />
           Adicionar cartão
