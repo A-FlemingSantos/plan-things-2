@@ -1797,6 +1797,10 @@
   animation: popoverIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.planBackgroundPicker {
+  z-index: 1002;
+}
+
 .collectionsHeader {
   display: flex;
   align-items: center;
@@ -1868,6 +1872,12 @@
 .collectionItem:hover {
   transform: translateY(-1px);
   border-color: var(--border-2);
+}
+
+.collectionItem:disabled,
+.coverOption:disabled {
+  opacity: .64;
+  cursor: progress;
 }
 
 .collectionItemActive {

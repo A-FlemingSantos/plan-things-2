@@ -205,6 +205,56 @@ export function PlansProvider({ children }) {
     return renamedPlan
   }, [accessToken, backendEnabled, plansById])
 
+  const updatePlanCover = useCallback(async (planId, coverData = {}) => {
+    if (!planId) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    const currentPlan = plansById.get(planId)
+    if (!currentPlan) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    const nextCover = coverData.cover ?? currentPlan.cover ?? null
+    const nextCoverThemeId = coverData.coverThemeId ?? null
+    const nextCoverImageId = coverData.coverImageId ?? null
+    const nextPlanPatch = {
+      cover: nextCover,
+      coverThemeId: nextCoverThemeId,
+      coverImageId: nextCoverImageId,
+      coverImage: coverData.coverImage ?? null,
+      coverImageThumb: coverData.coverImageThumb ?? coverData.coverImage ?? null,
+    }
+
+    if (!backendEnabled) {
+      const updatedPlan = normalizePlanRecord({
+        ...currentPlan,
+        ...nextPlanPatch,
+      })
+      setPlans((prev) => setPlanById(prev, planId, updatedPlan))
+      return updatedPlan
+    }
+
+    const response = await apiRequest(`/api/plans/${planId}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: {
+        name: currentPlan.name,
+        description: currentPlan.description ?? '',
+        coverThemeId: nextCoverThemeId,
+        cover: nextCover,
+        coverImageId: nextCoverImageId,
+      },
+    })
+
+    const updatedPlan = normalizePlanRecord({
+      ...mergePlanDetails(currentPlan, response),
+      ...nextPlanPatch,
+    })
+    setPlans((prev) => setPlanById(prev, planId, updatedPlan))
+    return updatedPlan
+  }, [accessToken, backendEnabled, plansById])
+
   const selectPlan = useCallback((planId) => {
     setActivePlanId(planId)
   }, [])
@@ -392,6 +442,7 @@ export function PlansProvider({ children }) {
     createPlan,
     deletePlan,
     renamePlan,
+    updatePlanCover,
     getPlanById,
     selectPlan,
     updatePlan,
@@ -416,6 +467,7 @@ export function PlansProvider({ children }) {
     refreshPlanDetails,
     refreshPlans,
     renamePlan,
+    updatePlanCover,
     getPlanById,
     isLoading,
     loadPlanBoard,
@@ -425,6 +477,7 @@ export function PlansProvider({ children }) {
     selectPlan,
     updatePlan,
     updatePlanBoard,
+    updatePlanCover,
     updatePlanCanvas,
     workspace,
   ])

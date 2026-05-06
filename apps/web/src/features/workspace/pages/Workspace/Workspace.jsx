@@ -545,8 +545,10 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
    PLAN CARD
 ═══════════════════════════════════════════ */
 const PLAN_OPTIONS_MENU_WIDTH = 176
-const PLAN_OPTIONS_MENU_HEIGHT = 156
+const PLAN_OPTIONS_MENU_HEIGHT = 190
 const PLAN_OPTIONS_MENU_GAP = 8
+const PLAN_BACKGROUND_PICKER_WIDTH = 420
+const PLAN_BACKGROUND_PICKER_HEIGHT = 520
 
 function resolvePlanOptionsMenuPosition(anchorRect) {
   if (!anchorRect) return { left: 0, top: 0 }
@@ -560,11 +562,31 @@ function resolvePlanOptionsMenuPosition(anchorRect) {
   return { left, top }
 }
 
+function resolvePlanBackgroundPickerPosition(anchorRect) {
+  if (!anchorRect) return { left: 16, top: 16 }
+
+  const margin = 16
+  const gap = 12
+  const width = Math.min(PLAN_BACKGROUND_PICKER_WIDTH, window.innerWidth - margin * 2)
+  const height = Math.min(PLAN_BACKGROUND_PICKER_HEIGHT, window.innerHeight - margin * 2)
+  const canOpenRight = anchorRect.right + gap + width <= window.innerWidth - margin
+  const canOpenLeft = anchorRect.left - gap - width >= margin
+  const left = canOpenRight
+    ? anchorRect.right + gap
+    : canOpenLeft
+      ? anchorRect.left - gap - width
+      : Math.max(margin, Math.min(anchorRect.left, window.innerWidth - width - margin))
+  const top = Math.max(margin, Math.min(anchorRect.top, window.innerHeight - height - margin))
+
+  return { left, top }
+}
+
 function PlanOptionsMenu({ anchorRect, onAction }) {
   const actions = [
     { id: 'board', label: 'Abrir quadro', Icon: GridIcon },
     { id: 'canvas', label: 'Abrir Canvas', Icon: CanvasIcon },
     { id: 'rename', label: 'Renomear', Icon: PencilIcon },
+    { id: 'background', label: 'Alterar background', Icon: ImagePlusIcon },
     { id: 'delete', label: 'Excluir', Icon: TrashIcon, danger: true },
   ]
   const position = resolvePlanOptionsMenuPosition(anchorRect)
@@ -596,6 +618,109 @@ function PlanOptionsMenu({ anchorRect, onAction }) {
           <span>{label}</span>
         </button>
       ))}
+    </div>,
+    portalRoot
+  )
+}
+
+function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, onSelectTheme, onSelectImage }) {
+  const pickerRef = useRef(null)
+  const position = resolvePlanBackgroundPickerPosition(anchorRect)
+  const portalRoot = document.querySelector('[data-app-theme-scope]') ?? document.body
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (pickerRef.current?.contains(event.target)) return
+      onClose?.()
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose?.()
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose])
+
+  return createPortal(
+    <div
+      ref={pickerRef}
+      className={`${styles.collectionsPopover} ${styles.planBackgroundPicker}`}
+      style={position}
+      role="dialog"
+      aria-modal="false"
+      aria-label="Alterar background do plano"
+      onMouseDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className={styles.collectionsHeader}>
+        <h3 className={styles.collectionsTitle}>Background</h3>
+        <button
+          type="button"
+          className={styles.collectionsClose}
+          onClick={onClose}
+          aria-label="Fechar seletor de background"
+          disabled={busy}
+        >
+          <XIcon />
+        </button>
+      </div>
+
+      <div className={styles.collectionsBody}>
+        <section className={styles.collectionSection} aria-label="Temas">
+          <p className={styles.collectionTitle}>Temas</p>
+          <div className={styles.coverGrid}>
+            {COVER_THEMES.map((theme) => {
+              const active = plan.coverThemeId === theme.id && !plan.coverImageId
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  className={`${styles.coverOption} ${active ? styles.coverOptionActive : ''} ${resolveCoverThemeClass(styles, theme.id)}`}
+                  onClick={() => onSelectTheme?.(theme)}
+                  aria-label={theme.label}
+                  aria-pressed={active}
+                  title={theme.label}
+                  disabled={busy}
+                >
+                  <span className={styles.coverOptionShade} />
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        {BACKGROUND_COLLECTIONS.map((collection) => (
+          <section key={collection.id} className={styles.collectionSection} aria-label={collection.title}>
+            <p className={styles.collectionTitle}>{collection.title}</p>
+            <div className={styles.collectionGrid}>
+              {collection.items.map((item) => {
+                const active = plan.coverImageId === item.id
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`${styles.collectionItem} ${active ? styles.collectionItemActive : ''}`}
+                    onClick={() => onSelectImage?.(item)}
+                    title={item.label}
+                    aria-pressed={active}
+                    disabled={busy}
+                  >
+                    <span
+                      className={styles.collectionThumb}
+                      style={{ backgroundImage: `url(${item.url})` }}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>,
     portalRoot
   )
@@ -896,8 +1021,10 @@ export default function Workspace() {
   const [renamingPlan, setRenamingPlan] = useState(null)
   const [renameDraft, setRenameDraft] = useState('')
   const [renameBusy, setRenameBusy] = useState(false)
+  const [backgroundPicker, setBackgroundPicker] = useState(null)
+  const [backgroundBusy, setBackgroundBusy] = useState(false)
   const notificationTimerRef = useRef(null)
-  const { plans, activePlan, createPlan, deletePlan, renamePlan, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
@@ -907,6 +1034,9 @@ export default function Workspace() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.tag.toLowerCase().includes(search.toLowerCase())
   )
+  const backgroundPickerPlan = backgroundPicker?.planId
+    ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
+    : null
 
   const pushNotification = (message) => {
     if (notificationTimerRef.current) {
@@ -952,6 +1082,7 @@ export default function Workspace() {
   const startInlineRename = (plan) => {
     setOpenPlanMenuId(null)
     setPlanMenuAnchorRect(null)
+    setBackgroundPicker(null)
     setRenamingPlan(plan)
     setRenameDraft(plan?.name ?? '')
   }
@@ -980,16 +1111,66 @@ export default function Workspace() {
     }
   }
 
+  const handlePlanBackgroundTheme = async (theme) => {
+    const plan = plans.find((item) => item.id === backgroundPicker?.planId)
+    if (!plan || backgroundBusy) return
+    setBackgroundBusy(true)
+    try {
+      await updatePlanCover(plan.id, {
+        cover: theme.cardCover,
+        coverThemeId: theme.id,
+        coverImageId: null,
+        coverImage: null,
+        coverImageThumb: null,
+      })
+      setBackgroundPicker(null)
+      pushNotification(`Background de "${plan.name}" atualizado`)
+    } catch (error) {
+      pushNotification(error.message ?? 'Nao foi possivel alterar o background do plano.')
+    } finally {
+      setBackgroundBusy(false)
+    }
+  }
+
+  const handlePlanBackgroundImage = async (image) => {
+    const plan = plans.find((item) => item.id === backgroundPicker?.planId)
+    if (!plan || backgroundBusy) return
+    setBackgroundBusy(true)
+    try {
+      await updatePlanCover(plan.id, {
+        cover: plan.cover ?? null,
+        coverThemeId: null,
+        coverImageId: image.id,
+        coverImage: image.fullUrl ?? image.url,
+        coverImageThumb: image.url,
+      })
+      setBackgroundPicker(null)
+      pushNotification(`Background de "${plan.name}" atualizado`)
+    } catch (error) {
+      pushNotification(error.message ?? 'Nao foi possivel alterar o background do plano.')
+    } finally {
+      setBackgroundBusy(false)
+    }
+  }
+
   const handlePlanMenuAction = (plan, action) => {
+    const anchorRect = planMenuAnchorRect
     setOpenPlanMenuId(null)
     setPlanMenuAnchorRect(null)
     if (action === 'board') {
+      setBackgroundPicker(null)
       openBoard(plan.id)
     } else if (action === 'canvas') {
+      setBackgroundPicker(null)
       openCanvas(plan.id)
     } else if (action === 'rename') {
       startInlineRename(plan)
+    } else if (action === 'background') {
+      setRenamingPlan(null)
+      setRenameDraft('')
+      setBackgroundPicker({ planId: plan.id, anchorRect })
     } else if (action === 'delete') {
+      setBackgroundPicker(null)
       void handleDeletePlan(plan)
     }
   }
@@ -1021,11 +1202,13 @@ export default function Workspace() {
   }, [openPlanMenuId])
 
   const openBoard = (planId) => {
+    setBackgroundPicker(null)
     selectPlan(planId)
     navigate(buildWorkspaceBoardPath(planId))
   }
 
   const openCanvas = (planId) => {
+    setBackgroundPicker(null)
     selectPlan(planId)
     navigate(buildCanvasPath(planId))
   }
@@ -1261,6 +1444,19 @@ export default function Workspace() {
           onClose={() => setNewPlanAnchor(null)}
           onSubmit={handleNewPlan}
           isBackendDriven={isBackendDriven}
+        />
+      )}
+
+      {backgroundPickerPlan && (
+        <PlanBackgroundPicker
+          plan={backgroundPickerPlan}
+          anchorRect={backgroundPicker.anchorRect}
+          busy={backgroundBusy}
+          onClose={() => {
+            if (!backgroundBusy) setBackgroundPicker(null)
+          }}
+          onSelectTheme={handlePlanBackgroundTheme}
+          onSelectImage={handlePlanBackgroundImage}
         />
       )}
 
