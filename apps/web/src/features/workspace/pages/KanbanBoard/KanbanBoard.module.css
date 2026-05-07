@@ -1784,7 +1784,7 @@
   flex-shrink: 0;
   background: var(--surface-1);
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   overflow: visible;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   animation: colEnter 0.3s ease both;
@@ -1950,7 +1950,7 @@
   padding: 10px 10px 4px;
   min-height: 16px;
   flex: 1;
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
 /* Add card form inside column */
