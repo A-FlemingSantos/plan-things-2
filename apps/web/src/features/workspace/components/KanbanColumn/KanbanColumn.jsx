@@ -35,6 +35,7 @@ export default function KanbanColumn({
   const [isAddingCard, setIsAddingCard] = useState(false)
   const addInputRef = useRef(null)
   const renameRef = useRef(null)
+  const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
 
   const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
   const getCardHasDraggedFile = (card) => {
@@ -192,7 +193,7 @@ export default function KanbanColumn({
       </div>
       {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
 
-      <div className={styles.colCards}>
+      <div className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}>
         {col.cards.map((card) => (
           <KanbanCard
             key={card.id}
