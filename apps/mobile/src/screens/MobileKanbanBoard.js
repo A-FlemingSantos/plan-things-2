@@ -58,6 +58,10 @@ function findMembers(memberIds = []) {
     .filter(Boolean)
 }
 
+function isDoneColumn(column) {
+  return Boolean(column?.title?.toLowerCase().includes('conclu'))
+}
+
 function MemberAvatar({ member, style, textStyle, fallback = 'PT' }) {
   return (
     <AuthenticatedAvatar
@@ -1145,55 +1149,63 @@ function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard, ...access
   )
 }
 
-function TaskListRow({ card, column, isDone, onPress }) {
+function TaskListRow({ card, column, isDone, onPress, onToggleDone }) {
   const label = findLabel(card.labelId)
   const members = findMembers(card.memberIds)
   const metaText = card.dueDate || card.schedule?.displayLabel || label?.text || column.title
 
   return (
-    <Pressable
-      style={({ pressed }) => [styles.taskListRow, pressed && styles.cardPressed]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Abrir tarefa ${card.title}`}
-    >
-      <View style={[styles.taskCheck, isDone && styles.taskCheckDone]}>
+    <View style={styles.taskListRow}>
+      <Pressable
+        style={[styles.taskCheck, isDone && styles.taskCheckDone]}
+        onPress={() => onToggleDone?.(card, column, isDone)}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isDone }}
+        accessibilityLabel={`Marcar ${card.title} como ${isDone ? 'pendente' : 'concluida'}`}
+      >
         {isDone ? <Check size={13} color={theme.colors.textInverse} strokeWidth={2.2} /> : null}
-      </View>
+      </Pressable>
 
-      <View style={styles.taskListBody}>
-        <Text
-          style={[styles.taskListTitle, isDone && styles.taskListTitleDone]}
-          numberOfLines={2}
-        >
-          {card.title}
-        </Text>
-        <View style={styles.taskListMetaRow}>
-          <Clock3
-            size={11}
-            color={isDone ? theme.colors.red : theme.colors.text3}
-            strokeWidth={1.9}
-          />
+      <Pressable
+        style={({ pressed }) => [styles.taskListRowContent, pressed && styles.cardPressed]}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Abrir tarefa ${card.title}`}
+      >
+        <View style={styles.taskListBody}>
           <Text
-            style={[styles.taskListMeta, isDone && styles.taskListMetaDone]}
-            numberOfLines={1}
+            style={[styles.taskListTitle, isDone && styles.taskListTitleDone]}
+            numberOfLines={2}
           >
-            {metaText}
+            {card.title}
           </Text>
-          {members.length ? (
-            <View style={styles.taskMiniMembers}>
-              {members.slice(0, 2).map((member) => (
-                <MemberAvatar
-                  key={member.id}
-                  member={member}
-                  style={styles.taskMiniAvatar}
-                  textStyle={styles.taskMiniInitials}
-                />
-              ))}
-            </View>
-          ) : null}
+          <View style={styles.taskListMetaRow}>
+            <Clock3
+              size={11}
+              color={isDone ? theme.colors.red : theme.colors.text3}
+              strokeWidth={1.9}
+            />
+            <Text
+              style={[styles.taskListMeta, isDone && styles.taskListMetaDone]}
+              numberOfLines={1}
+            >
+              {metaText}
+            </Text>
+            {members.length ? (
+              <View style={styles.taskMiniMembers}>
+                {members.slice(0, 2).map((member) => (
+                  <MemberAvatar
+                    key={member.id}
+                    member={member}
+                    style={styles.taskMiniAvatar}
+                    textStyle={styles.taskMiniInitials}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
         </View>
-      </View>
+      </Pressable>
 
       <Pressable
         style={styles.taskStarButton}
@@ -1202,7 +1214,7 @@ function TaskListRow({ card, column, isDone, onPress }) {
       >
         <Star size={18} color={theme.colors.text2} strokeWidth={1.7} />
       </Pressable>
-    </Pressable>
+    </View>
   )
 }
 
@@ -1288,7 +1300,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       column.cards.map((card) => ({
         card,
         column,
-        isDone: column.title.toLowerCase().includes('conclu'),
+        isDone: isDoneColumn(column),
       }))
     ))
 
@@ -1652,6 +1664,21 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     }
   }
 
+  const toggleTaskDone = (card, column, isDone) => {
+    if (!card || !column) return
+
+    if (isDone) {
+      const targetColumn = boardColumnsState.find((item) => !isDoneColumn(item))
+      if (!targetColumn || targetColumn.id === column.id) return
+      moveCard(card.id, targetColumn.id)
+      return
+    }
+
+    const doneColumn = boardColumnsState.find(isDoneColumn)
+    if (!doneColumn || doneColumn.id === column.id) return
+    moveCard(card.id, doneColumn.id)
+  }
+
   const attachCardFile = async (cardId, file) => {
     if (!planId || !file?.id) return
     await attachFileToCard(planId, file.id, cardId)
@@ -1854,6 +1881,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
                   column={column}
                   isDone={isDone}
                   onPress={() => setSelectedCardEntry({ card, column })}
+                  onToggleDone={toggleTaskDone}
                 />
               ))}
             </View>
@@ -1874,6 +1902,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
                       column={column}
                       isDone={isDone}
                       onPress={() => setSelectedCardEntry({ card, column })}
+                      onToggleDone={toggleTaskDone}
                     />
                   ))}
                 </View>
@@ -2474,6 +2503,15 @@ const createStyles = (theme) => StyleSheet.create({
         shadowOpacity: 0.08,
         shadowRadius: 2,
         elevation: 1,
+      },
+    }),
+  },
+  taskListRowContent: {
+    flex: 1,
+    minWidth: 0,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
       },
     }),
   },
