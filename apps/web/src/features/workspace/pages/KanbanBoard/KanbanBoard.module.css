@@ -2068,6 +2068,73 @@
   background: #2a2a2e;
 }
 
+.cardConfirmed {
+  gap: 5px;
+}
+
+.cardTitleRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+.cardConfirmButton {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--text-1) 34%, transparent);
+  background: transparent;
+  color: var(--text-inverse);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(.82);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.card:hover .cardConfirmButton,
+.cardConfirmed .cardConfirmButton {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) scale(1);
+  border-color: color-mix(in srgb, var(--text-1) 44%, transparent);
+  background: color-mix(in srgb, var(--text-1) 10%, transparent);
+}
+
+.cardConfirmButton:hover {
+  border-color: color-mix(in srgb, var(--text-1) 62%, transparent);
+  background: color-mix(in srgb, var(--text-1) 16%, transparent);
+}
+
+.cardConfirmButtonChecked,
+.card:hover .cardConfirmButtonChecked,
+.cardConfirmed .cardConfirmButtonChecked,
+.cardConfirmButtonChecked:hover {
+  border-color: var(--color-black);
+  background: var(--color-black);
+  color: var(--color-white);
+}
+
+[data-theme='dark'] .cardConfirmButtonChecked,
+[data-theme='dark'] .card:hover .cardConfirmButtonChecked,
+[data-theme='dark'] .cardConfirmed .cardConfirmButtonChecked,
+[data-theme='dark'] .cardConfirmButtonChecked:hover {
+  border-color: var(--color-white);
+  background: var(--color-white);
+  color: var(--color-black);
+}
+
 @keyframes cardEnter {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0);   }
@@ -2127,6 +2194,12 @@
   color: var(--text-1);
   line-height: 1.25;
   letter-spacing: -.01em;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.card:hover .cardTitle,
+.cardConfirmed .cardTitle {
+  transform: translateX(26px);
 }
 
 .cardFooter {

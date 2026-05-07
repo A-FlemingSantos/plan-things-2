@@ -8,6 +8,7 @@ export default function KanbanCard({
   draggedFile,
   isFileDropTarget,
   isFileDropDisabled,
+  isConfirmed,
   onDragStart,
   onDragOver,
   onDrop,
@@ -15,8 +16,10 @@ export default function KanbanCard({
   onFileDragOver,
   onFileDrop,
   onClick,
+  onToggleConfirmed,
   labels,
   members,
+  CheckIcon,
   CommentIcon,
   ClockIcon,
   styles,
@@ -27,12 +30,18 @@ export default function KanbanCard({
     .filter(Boolean)
   const hasFooter = assignedMembers.length > 0 || card.comments.length > 0 || Boolean(card.dueDate)
   const isCompactCard = !label && !hasFooter
+  const toggleConfirmed = (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    onToggleConfirmed?.(card.id)
+  }
 
   return (
     <div
       className={`
         ${styles.card}
         ${isCompactCard ? styles.cardCompact : ''}
+        ${isConfirmed ? styles.cardConfirmed : ''}
         ${isDragging ? styles.cardDragging : ''}
         ${isDropTarget ? styles.cardDropTarget : ''}
         ${isFileDropTarget ? styles.cardFileDropTarget : ''}
@@ -85,7 +94,22 @@ export default function KanbanCard({
         </span>
       ) : null}
 
-      <p className={styles.cardTitle}>{card.title}</p>
+      <div className={styles.cardTitleRow}>
+        <button
+          type="button"
+          className={`${styles.cardConfirmButton} ${isConfirmed ? styles.cardConfirmButtonChecked : ''}`}
+          onClick={toggleConfirmed}
+          onMouseDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          aria-label={isConfirmed ? `Desmarcar cartão ${card.title}` : `Marcar cartão ${card.title}`}
+          aria-pressed={isConfirmed}
+          draggable={false}
+          tabIndex={0}
+        >
+          {isConfirmed ? <CheckIcon /> : null}
+        </button>
+        <p className={styles.cardTitle}>{card.title}</p>
+      </div>
 
       {hasFooter ? (
         <div className={styles.cardFooter}>

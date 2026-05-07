@@ -372,6 +372,7 @@ export default function KanbanBoard() {
   const plannerFilterWrapRef = useRef(null)
   const previousColumnByCardIdRef = useRef(new Map())
   const [plannerPinnedById, setPlannerPinnedById] = useState({})
+  const [confirmedCardById, setConfirmedCardById] = useState({})
   const { generalPreferences, formatClockTime } = usePreferences()
   const timeZone = generalPreferences.timezone
   const dateFormat = generalPreferences.dateFormat
@@ -1106,6 +1107,10 @@ export default function KanbanBoard() {
 	    () => `plan-things:plannerPinned:${activePlan?.id ?? 'none'}`,
 	    [activePlan?.id],
 	  )
+	  const boardConfirmedCardsStorageKey = useMemo(
+	    () => `plan-things:boardConfirmedCards:${activePlan?.id ?? 'none'}`,
+	    [activePlan?.id],
+	  )
 	  const plannerCollapseStorageKey = useMemo(
 	    () => `plan-things:plannerCollapse:${activePlan?.id ?? 'none'}`,
 	    [activePlan?.id],
@@ -1123,6 +1128,18 @@ export default function KanbanBoard() {
     } catch {}
 	    setPlannerPinnedById({})
 	  }, [plannerPinnedStorageKey])
+
+	  useEffect(() => {
+	    try {
+	      const stored = window.localStorage.getItem(boardConfirmedCardsStorageKey)
+	      const parsed = stored ? JSON.parse(stored) : null
+	      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+	        setConfirmedCardById(parsed)
+	        return
+	      }
+	    } catch {}
+	    setConfirmedCardById({})
+	  }, [boardConfirmedCardsStorageKey])
 
 	  useEffect(() => {
 	    try {
@@ -1175,6 +1192,21 @@ export default function KanbanBoard() {
         window.localStorage.setItem(plannerPinnedStorageKey, JSON.stringify(Object.keys(next)))
       } catch {}
       return next
+	    })
+	  }
+
+	  const toggleBoardCardConfirmed = (cardId) => {
+	    setConfirmedCardById((current) => {
+	      const next = { ...(current ?? {}) }
+	      if (next[cardId]) {
+	        delete next[cardId]
+	      } else {
+	        next[cardId] = true
+	      }
+	      try {
+	        window.localStorage.setItem(boardConfirmedCardsStorageKey, JSON.stringify(next))
+	      } catch {}
+	      return next
 	    })
 	  }
 
@@ -2251,6 +2283,8 @@ export default function KanbanBoard() {
                 onRenameCol={renameColumn}
                 onChangeColColor={changeColColor}
                 onCardClick={(card, colTitle) => setActiveCard({ card, colTitle })}
+                confirmedCardById={confirmedCardById}
+                onToggleCardConfirmed={toggleBoardCardConfirmed}
                 labels={planLabels}
                 members={planMembers}
                 colorOptions={COL_COLORS}
@@ -2260,6 +2294,7 @@ export default function KanbanBoard() {
                   Edit: Icon.Edit,
                   Trash: Icon.Trash,
                   X: Icon.X,
+                  Check: Icon.Check,
                   Comment: Icon.Comment,
                   Clock: Icon.Clock,
                 }}

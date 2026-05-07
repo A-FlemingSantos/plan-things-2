@@ -19,6 +19,8 @@ export default function KanbanColumn({
   onRenameCol,
   onChangeColColor,
   onCardClick,
+  confirmedCardById,
+  onToggleCardConfirmed,
   labels,
   members,
   colorOptions,
@@ -211,8 +213,11 @@ export default function KanbanColumn({
             onFileDragOver={onFileDragOver}
             onFileDrop={onFileDrop}
             onClick={() => onCardClick(card, col.title)}
+            isConfirmed={Boolean(confirmedCardById?.[card.id])}
+            onToggleConfirmed={onToggleCardConfirmed}
             labels={labels}
             members={members}
+            CheckIcon={icons.Check}
             CommentIcon={icons.Comment}
             ClockIcon={icons.Clock}
             styles={styles}
