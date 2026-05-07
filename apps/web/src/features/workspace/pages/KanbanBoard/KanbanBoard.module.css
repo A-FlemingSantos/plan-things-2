@@ -1783,7 +1783,7 @@
   width: 272px;
   flex-shrink: 0;
   background: var(--surface-1);
-  border: 1px solid var(--border-1);
+  border: none;
   border-radius: var(--radius-md);
   overflow: visible;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -2041,20 +2041,31 @@
    CARD
 ════════════════════════════════════════ */
 .card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  padding: 12px 13px;
+  background: var(--surface-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
   cursor: grab;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 5px;
   transition:
     box-shadow var(--transition-fast),
     border-color var(--transition-fast),
     transform var(--transition-fast),
     opacity var(--transition-fast);
   animation: cardEnter 0.22s ease both;
+}
+
+.cardCompact {
+  justify-content: center;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  gap: 0;
+}
+
+[data-theme='dark'] .card {
+  background: #2a2a2e;
 }
 
 @keyframes cardEnter {
@@ -2110,10 +2121,11 @@
 }
 
 .cardTitle {
+  margin: 0;
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  line-height: 1.45;
+  line-height: 1.25;
   letter-spacing: -.01em;
 }
 

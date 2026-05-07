@@ -25,11 +25,14 @@ export default function KanbanCard({
   const assignedMembers = card.memberIds
     .map((id) => members.find((member) => member.id === id))
     .filter(Boolean)
+  const hasFooter = assignedMembers.length > 0 || card.comments.length > 0 || Boolean(card.dueDate)
+  const isCompactCard = !label && !hasFooter
 
   return (
     <div
       className={`
         ${styles.card}
+        ${isCompactCard ? styles.cardCompact : ''}
         ${isDragging ? styles.cardDragging : ''}
         ${isDropTarget ? styles.cardDropTarget : ''}
         ${isFileDropTarget ? styles.cardFileDropTarget : ''}
@@ -84,37 +87,39 @@ export default function KanbanCard({
 
       <p className={styles.cardTitle}>{card.title}</p>
 
-      <div className={styles.cardFooter}>
-        <div className={styles.cardMembers}>
-          {assignedMembers.map((member) => (
-            <AuthenticatedAvatar
-              key={member.id}
-              className={styles.cardAvatar}
-              style={{ background: member.color }}
-              avatarUrl={member.avatarUrl}
-              fallback={member.initials}
-              title={member.name ?? member.email ?? member.initials}
-              imageClassName={styles.avatarImage}
-            />
-          ))}
-        </div>
+      {hasFooter ? (
+        <div className={styles.cardFooter}>
+          <div className={styles.cardMembers}>
+            {assignedMembers.map((member) => (
+              <AuthenticatedAvatar
+                key={member.id}
+                className={styles.cardAvatar}
+                style={{ background: member.color }}
+                avatarUrl={member.avatarUrl}
+                fallback={member.initials}
+                title={member.name ?? member.email ?? member.initials}
+                imageClassName={styles.avatarImage}
+              />
+            ))}
+          </div>
 
-        <div className={styles.cardMeta}>
-          {card.comments.length > 0 ? (
-            <span className={styles.cardMetaItem}>
-              <CommentIcon />
-              <span>{card.comments.length}</span>
-            </span>
-          ) : null}
+          <div className={styles.cardMeta}>
+            {card.comments.length > 0 ? (
+              <span className={styles.cardMetaItem}>
+                <CommentIcon />
+                <span>{card.comments.length}</span>
+              </span>
+            ) : null}
 
-          {card.dueDate ? (
-            <span className={`${styles.cardDue} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}>
-              <ClockIcon />
-              {card.dueDate}
-            </span>
-          ) : null}
+            {card.dueDate ? (
+              <span className={`${styles.cardDue} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}>
+                <ClockIcon />
+                {card.dueDate}
+              </span>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   )
 }
