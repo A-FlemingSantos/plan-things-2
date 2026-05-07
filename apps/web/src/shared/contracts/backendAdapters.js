@@ -444,6 +444,7 @@ function mapBoardCard(card, options = {}) {
     columnId: card.columnId,
     title: card.title,
     description: card.description ?? '',
+    isCompleted: Boolean(card.completed),
     labelId: card.label?.id ?? '',
     memberIds: card.assignees.map((member) => member.id),
     dueDate: formatCardDueLabel(card.dueAt, { locale, timeZone }),
@@ -572,6 +573,7 @@ export function buildBoardCardPayload(card, options = {}) {
     description: card.description,
     labelId: card.labelId || null,
     assigneeIds: Array.isArray(card.memberIds) ? card.memberIds : [],
+    completed: Boolean(card.isCompleted),
     startAt,
     dueAt,
   }

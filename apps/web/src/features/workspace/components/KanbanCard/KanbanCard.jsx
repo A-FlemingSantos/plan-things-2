@@ -33,7 +33,7 @@ export default function KanbanCard({
   const toggleConfirmed = (event) => {
     event.preventDefault()
     event.stopPropagation()
-    onToggleConfirmed?.(card.id)
+    onToggleConfirmed?.(card)
   }
 
   return (

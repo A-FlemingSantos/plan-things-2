@@ -175,7 +175,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     requireColumn(planId, columnId);
@@ -191,6 +191,7 @@ public class BoardService {
     card.setDescription(normalizeOptional(description));
     card.setLabelId(labelId);
     card.setPositionIndex(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId).size());
+    card.setCompleted(Boolean.TRUE.equals(completed));
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
@@ -201,7 +202,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
@@ -220,6 +221,9 @@ public class BoardService {
     card.setTitle(requireText(title, "O titulo do cartao e obrigatorio."));
     card.setDescription(normalizeOptional(description));
     card.setLabelId(labelId);
+    if (completed != null) {
+      card.setCompleted(Boolean.TRUE.equals(completed));
+    }
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
@@ -535,6 +539,7 @@ public class BoardService {
         card.getColumnId(),
         card.getTitle(),
         card.getDescription(),
+        Boolean.TRUE.equals(card.getCompleted()),
         deriveCardKind(card),
         card.getPositionIndex(),
         toUserSummary(author),
@@ -812,6 +817,7 @@ public class BoardService {
       UUID columnId,
       String title,
       String description,
+      boolean completed,
       CardKind kind,
       int position,
       UserSummary author,

@@ -137,6 +137,7 @@ export function useBoardColumns({
         id: uid(),
         title,
         description: '',
+        isCompleted: false,
         labelId: null,
         memberIds: [],
         dueDate: '',

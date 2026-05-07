@@ -220,43 +220,6 @@ function addDaysToDateKey(dateKeyValue, days) {
   return dateKey(date)
 }
 
-function moveCardInColumns(columns, cardId, targetColumnId, targetPosition = 0) {
-  const nextColumns = columns.map((column) => ({
-    ...column,
-    cards: Array.isArray(column.cards) ? [...column.cards] : [],
-  }))
-
-  let movedCard = null
-  let sourceColumnId = null
-
-  nextColumns.forEach((column) => {
-    const index = column.cards.findIndex((card) => card.id === cardId)
-    if (index < 0) return
-    movedCard = column.cards[index]
-    sourceColumnId = column.id
-    column.cards.splice(index, 1)
-  })
-
-  if (!movedCard || sourceColumnId === targetColumnId) {
-    return columns
-  }
-
-  const targetColumn = nextColumns.find((column) => column.id === targetColumnId)
-  if (!targetColumn) {
-    return columns
-  }
-
-  const nextCard = {
-    ...movedCard,
-    columnId: targetColumnId,
-  }
-
-  const clampedPosition = Math.max(0, Math.min(targetColumn.cards.length, targetPosition))
-  targetColumn.cards.splice(clampedPosition, 0, nextCard)
-
-  return nextColumns
-}
-
 const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
   ...item,
   Icon:
@@ -370,9 +333,7 @@ export default function KanbanBoard() {
   const [isPlannerFilterOpen, setIsPlannerFilterOpen] = useState(false)
   const [plannerFilter, setPlannerFilter] = useState('my-day')
   const plannerFilterWrapRef = useRef(null)
-  const previousColumnByCardIdRef = useRef(new Map())
   const [plannerPinnedById, setPlannerPinnedById] = useState({})
-  const [confirmedCardById, setConfirmedCardById] = useState({})
   const { generalPreferences, formatClockTime } = usePreferences()
   const timeZone = generalPreferences.timezone
   const dateFormat = generalPreferences.dateFormat
@@ -1099,16 +1060,8 @@ export default function KanbanBoard() {
 	    [timeZone, today],
 	  )
 	  const tomorrowKey = useMemo(() => addDaysToDateKey(todayKey, 1), [todayKey])
-	  const doneColumn = useMemo(() => {
-	    const doneMatcher = /(^|\b)(conclu[ií]do|feito|done|completed)(\b|$)/i
-	    return columns.find((column) => doneMatcher.test(column.title ?? ''))
-	  }, [columns])
 	  const plannerPinnedStorageKey = useMemo(
 	    () => `plan-things:plannerPinned:${activePlan?.id ?? 'none'}`,
-	    [activePlan?.id],
-	  )
-	  const boardConfirmedCardsStorageKey = useMemo(
-	    () => `plan-things:boardConfirmedCards:${activePlan?.id ?? 'none'}`,
 	    [activePlan?.id],
 	  )
 	  const plannerCollapseStorageKey = useMemo(
@@ -1128,18 +1081,6 @@ export default function KanbanBoard() {
     } catch {}
 	    setPlannerPinnedById({})
 	  }, [plannerPinnedStorageKey])
-
-	  useEffect(() => {
-	    try {
-	      const stored = window.localStorage.getItem(boardConfirmedCardsStorageKey)
-	      const parsed = stored ? JSON.parse(stored) : null
-	      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-	        setConfirmedCardById(parsed)
-	        return
-	      }
-	    } catch {}
-	    setConfirmedCardById({})
-	  }, [boardConfirmedCardsStorageKey])
 
 	  useEffect(() => {
 	    try {
@@ -1195,21 +1136,6 @@ export default function KanbanBoard() {
 	    })
 	  }
 
-	  const toggleBoardCardConfirmed = (cardId) => {
-	    setConfirmedCardById((current) => {
-	      const next = { ...(current ?? {}) }
-	      if (next[cardId]) {
-	        delete next[cardId]
-	      } else {
-	        next[cardId] = true
-	      }
-	      try {
-	        window.localStorage.setItem(boardConfirmedCardsStorageKey, JSON.stringify(next))
-	      } catch {}
-	      return next
-	    })
-	  }
-
 	  const plannerDateFormatter = useMemo(() => new Intl.DateTimeFormat('pt-BR', {
 	    timeZone,
 	    weekday: 'short',
@@ -1219,7 +1145,6 @@ export default function KanbanBoard() {
 
 	  const plannerBaseItems = useMemo(() => {
 	    const planName = activePlan?.name ?? 'Plano'
-	    const doneColumnId = doneColumn?.id ?? null
 
 	    const formatDateLabel = (key) => {
 	      if (!key) return 'Sem data'
@@ -1253,7 +1178,7 @@ export default function KanbanBoard() {
 	          dueKey,
 	          scheduleKey,
 	          timeMinutes: timeValueMinutes(timeValue),
-	          isCompleted: Boolean(doneColumnId && card.columnId === doneColumnId),
+	          isCompleted: Boolean(card.isCompleted),
 	          isAssignedToMe: Boolean(
 	            currentUser?.id &&
 	            Array.isArray(card.memberIds) &&
@@ -1290,7 +1215,6 @@ export default function KanbanBoard() {
 	    activePlan?.name,
 	    columns,
 	    currentUser?.id,
-	    doneColumn?.id,
 	    formatClockTime,
 	    plannerDateFormatter,
 	    plannerCalendarEvents,
@@ -1322,34 +1246,11 @@ export default function KanbanBoard() {
 	  }), [plannerBaseItems, plannerFilter, todayKey])
 
   const togglePlannerCardCompleted = async (card) => {
-    const doneColumnId = doneColumn?.id
-    if (!doneColumnId) {
-      showNotification('Crie uma coluna "Concluído" para marcar tarefas como feitas.')
-      return
-    }
-
-    const isCompleted = card.columnId === doneColumnId
-    if (!isCompleted) {
-      previousColumnByCardIdRef.current.set(card.id, card.columnId)
-    }
-
-    const fallbackColumnId = columns.find((column) => column.id !== doneColumnId)?.id ?? null
-    const previousColumnId = previousColumnByCardIdRef.current.get(card.id) ?? null
-    const undoTargetId =
-      previousColumnId && previousColumnId !== doneColumnId
-        ? previousColumnId
-        : fallbackColumnId
-    const targetColumnId = isCompleted ? undoTargetId : doneColumnId
-
-    if (!targetColumnId) return
-
-    if (!isBackendDriven) {
-      updateColumns((prev) => moveCardInColumns(prev, card.id, targetColumnId, 0))
-      return
-    }
-
     try {
-      await moveCard(card.id, targetColumnId, 0)
+      await updateCard({
+        ...card,
+        isCompleted: !card.isCompleted,
+      })
     } catch (error) {
       showNotification(error?.message ?? 'Não foi possível atualizar a tarefa.')
     }
@@ -2283,8 +2184,7 @@ export default function KanbanBoard() {
                 onRenameCol={renameColumn}
                 onChangeColColor={changeColColor}
                 onCardClick={(card, colTitle) => setActiveCard({ card, colTitle })}
-                confirmedCardById={confirmedCardById}
-                onToggleCardConfirmed={toggleBoardCardConfirmed}
+                onToggleCardCompleted={togglePlannerCardCompleted}
                 labels={planLabels}
                 members={planMembers}
                 colorOptions={COL_COLORS}
