@@ -26,6 +26,9 @@ class AuthApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.user.fullName").value("Arthur Santos"))
         .andExpect(jsonPath("$.data.workspace.name").value("Workspace de Arthur Santos"))
+        .andExpect(jsonPath("$.data.workspace.subscriptionPlan").value("BASIC"))
+        .andExpect(jsonPath("$.data.workspace.storageUsedBytes").value(0))
+        .andExpect(jsonPath("$.data.workspace.storageQuotaBytes").isNumber())
         .andExpect(jsonPath("$.data.user.createdAt.text", matchesPattern("\\d{2}/\\d{2}/\\d{4} \\d{2}:\\d{2}")));
   }
 

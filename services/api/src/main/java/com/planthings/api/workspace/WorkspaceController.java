@@ -2,6 +2,7 @@ package com.planthings.api.workspace;
 
 import com.planthings.api.common.api.ApiEnvelope;
 import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.common.error.BadRequestException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpHeaders;
@@ -39,6 +40,13 @@ public class WorkspaceController {
     return ApiEnvelope.ok(workspaceService.updateCurrentWorkspaceName(request.name()));
   }
 
+  @PatchMapping("/subscription")
+  public ApiEnvelope<WorkspaceService.WorkspaceSummary> updateCurrentWorkspaceSubscription(
+      @Valid @RequestBody UpdateWorkspaceSubscriptionRequest request
+  ) {
+    return ApiEnvelope.ok(workspaceService.updateCurrentWorkspaceSubscriptionPlan(parseSubscriptionPlan(request.subscriptionPlan())));
+  }
+
   @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ApiEnvelope<WorkspaceService.WorkspaceSummary> uploadCurrentWorkspaceAvatar(@RequestPart("file") MultipartFile file) {
     return ApiEnvelope.ok(workspaceService.uploadCurrentWorkspaceAvatar(file));
@@ -61,5 +69,23 @@ public class WorkspaceController {
   public record UpdateWorkspaceRequest(
       @NotBlank(message = "O nome do workspace e obrigatorio.") String name
   ) {
+  }
+
+  public record UpdateWorkspaceSubscriptionRequest(
+      @NotBlank(message = "Selecione um plano valido.") String subscriptionPlan
+  ) {
+  }
+
+  private WorkspaceSubscriptionPlan parseSubscriptionPlan(String value) {
+    String normalized = value == null ? "" : value.trim().toUpperCase();
+    if (normalized.isBlank()) {
+      throw new BadRequestException("PLANO_INVALIDO", "Selecione um plano valido.");
+    }
+
+    try {
+      return WorkspaceSubscriptionPlan.valueOf(normalized);
+    } catch (IllegalArgumentException ex) {
+      throw new BadRequestException("PLANO_INVALIDO", "Selecione um plano valido.");
+    }
   }
 }

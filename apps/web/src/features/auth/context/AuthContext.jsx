@@ -11,6 +11,7 @@ function isTestEnvironment() {
 function createDemoSession(mode, values = {}) {
   const fallbackName = values.fullName?.trim() || 'Arthur Santos'
   const fallbackEmail = values.email?.trim() || 'arthur@example.com'
+  const storageQuotaBytes = 2 * 1024 * 1024 * 1024
 
   return {
     accessToken: `demo-${mode}-token`,
@@ -34,6 +35,9 @@ function createDemoSession(mode, values = {}) {
     workspace: {
       id: 'demo-workspace',
       name: `Workspace de ${fallbackName}`,
+      subscriptionPlan: 'BASIC',
+      storageUsedBytes: 0,
+      storageQuotaBytes,
       createdAt: {
         iso: new Date().toISOString(),
         text: new Intl.DateTimeFormat('pt-BR', {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { ROUTES } from '../../config/routes.js'
+import { getWorkspacePlanLabel } from '../../utils/workspaceSubscriptionPlans.js'
 import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import SidebarUserCard from '../SidebarUserCard/SidebarUserCard.jsx'
 import menuStyles from './SidebarAccountMenu.module.css'
@@ -43,7 +44,7 @@ export default function SidebarAccountMenu({
   initials = 'AS',
 }) {
   const navigate = useNavigate()
-  const { currentUser, isAuthenticated, logout } = useAuth()
+  const { currentUser, workspace, isAuthenticated, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const containerRef = useRef(null)
   const menuIdRef = useRef(`sidebar-account-menu-${Math.random().toString(36).slice(2, 10)}`)
@@ -53,6 +54,7 @@ export default function SidebarAccountMenu({
   const resolvedInitials = currentUser?.fullName
     ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
     : initials
+  const resolvedPlanLabel = workspace?.subscriptionPlan ? getWorkspacePlanLabel(workspace.subscriptionPlan) : plan
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -92,7 +94,7 @@ export default function SidebarAccountMenu({
         styles={styles}
         collapsed={collapsed}
         name={resolvedName}
-        plan={plan}
+        plan={resolvedPlanLabel}
         initials={resolvedInitials}
         avatarUrl={resolvedAvatarUrl}
         active={open}

@@ -7,6 +7,8 @@ import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu
 import { ROUTES } from '../../../../shared/config/routes.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { createClientId } from '../../../../shared/utils/createClientId.js'
+import { formatBytes } from '../../../../shared/utils/formatBytes.js'
+import { getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import InviteNotifications from '../../../workspace/components/InviteNotifications/InviteNotifications.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -96,9 +98,6 @@ const SIDEBAR_NAV = [
   { id: 'calendar', label: 'Calendário', Icon: Icon.Calendar, path: ROUTES.calendar },
   { id: 'files',    label: 'Arquivos', Icon: Icon.Files,    path: ROUTES.files },
 ]
-
-const STORAGE_USED = 28.4  // GB
-const STORAGE_TOTAL = 100  // GB
 
 /* ═══════════════════════════════════════════
    IMAGE PREVIEWS (gradient placeholders)
@@ -533,7 +532,7 @@ function FilesLoadingState({ view }) {
    MAIN FILES PAGE
 ═══════════════════════════════════════════ */
 export default function FilesPage() {
-  const { accessToken, isAuthenticated, isDemoSession } = useAuth()
+  const { accessToken, isAuthenticated, isDemoSession, workspace } = useAuth()
   const { formatDateTime } = usePreferences()
   const backendEnabled = isAuthenticated && !isDemoSession
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
@@ -1015,7 +1014,19 @@ export default function FilesPage() {
       }[sidebarSection]
   const EmptyIcon = emptyState.icon
 
-  const storagePercent = (STORAGE_USED / STORAGE_TOTAL) * 100
+  const storageUsedBytes = useMemo(() => (
+    flattenedItems.reduce((total, item) => {
+      if (item.type === 'folder' || item.deleted || item.isDeletedTree) {
+        return total
+      }
+      return total + (Number(item.size) || 0)
+    }, 0)
+  ), [flattenedItems])
+  const storageQuotaBytes = workspace?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(workspace?.subscriptionPlan ?? 'BASIC')
+  const storageAvailableBytes = Math.max(0, storageQuotaBytes - storageUsedBytes)
+  const storagePercent = storageQuotaBytes > 0
+    ? Math.min(100, (storageUsedBytes / storageQuotaBytes) * 100)
+    : 0
   const filesAreaStatus = hasLoadedLibrary
     ? libraryError
       ? 'Falha na sincronização'
@@ -1054,7 +1065,9 @@ export default function FilesPage() {
         <div className={styles.storageSection}>
           <div className={styles.storageHeader}>
             <span className={styles.storageLabel}>Armazenamento</span>
-            <span className={styles.storageNums}>{STORAGE_USED} / {STORAGE_TOTAL} GB</span>
+            <span className={styles.storageNums}>
+              {formatBytes(storageUsedBytes)} / {formatBytes(storageQuotaBytes)}
+            </span>
           </div>
           <div className={styles.storageBar}>
             <div
@@ -1062,7 +1075,7 @@ export default function FilesPage() {
               style={{ width: `${storagePercent}%`, background: storagePercent > 80 ? 'var(--danger-text)' : 'var(--text-1)' }}
             />
           </div>
-          <p className={styles.storageInfo}>{(STORAGE_TOTAL - STORAGE_USED).toFixed(1)} GB disponíveis</p>
+          <p className={styles.storageInfo}>{formatBytes(storageAvailableBytes)} disponíveis</p>
         </div>
       )}
     </>

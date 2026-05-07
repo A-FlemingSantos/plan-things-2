@@ -11,6 +11,8 @@ import com.planthings.api.avatar.AvatarImageService;
 import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
+import com.planthings.api.workspace.WorkspaceStorageService;
+import com.planthings.api.workspace.WorkspaceSubscriptionPlan;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -33,6 +35,7 @@ public class AuthService {
   private final JwtService jwtService;
   private final AuthenticatedUserService authenticatedUserService;
   private final PersonalWorkspaceService personalWorkspaceService;
+  private final WorkspaceStorageService workspaceStorageService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final AvatarImageService avatarImageService;
   private final Clock clock;
@@ -47,6 +50,7 @@ public class AuthService {
       JwtService jwtService,
       AuthenticatedUserService authenticatedUserService,
       PersonalWorkspaceService personalWorkspaceService,
+      WorkspaceStorageService workspaceStorageService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       AvatarImageService avatarImageService,
       Clock clock,
@@ -60,6 +64,7 @@ public class AuthService {
     this.jwtService = jwtService;
     this.authenticatedUserService = authenticatedUserService;
     this.personalWorkspaceService = personalWorkspaceService;
+    this.workspaceStorageService = workspaceStorageService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.avatarImageService = avatarImageService;
     this.clock = clock;
@@ -207,10 +212,14 @@ public class AuthService {
   }
 
   private WorkspaceSummary toWorkspaceSummary(WorkspaceEntity workspace) {
+    WorkspaceStorageService.StorageSnapshot storage = workspaceStorageService.snapshot(workspace);
     return new WorkspaceSummary(
         workspace.getId(),
         workspace.getName(),
         avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
+        workspace.getSubscriptionPlan(),
+        storage.storageUsedBytes(),
+        storage.storageQuotaBytes(),
         brazilDateTimeMapper.toDateTime(workspace.getCreatedAt())
     );
   }
@@ -388,6 +397,9 @@ public class AuthService {
       UUID id,
       String name,
       String avatarUrl,
+      WorkspaceSubscriptionPlan subscriptionPlan,
+      long storageUsedBytes,
+      long storageQuotaBytes,
       ApiDateTimeDto createdAt
   ) {
   }

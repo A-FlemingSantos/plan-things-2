@@ -10,6 +10,8 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import { formatBytes } from '../../../../shared/utils/formatBytes.js'
+import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import styles from './SettingsPage.module.css'
 
@@ -228,6 +230,13 @@ export default function SettingsPage() {
   const [workspaceAvatarFeedback, setWorkspaceAvatarFeedback] = useState('')
   const workspaceAvatarInputRef = useRef(null)
   const workspaceAvatarObjectUrlRef = useRef(null)
+  const [workspacePlan, setWorkspacePlan] = useState(() => workspace?.subscriptionPlan ?? 'BASIC')
+  const [workspaceStorageUsedBytes, setWorkspaceStorageUsedBytes] = useState(() => workspace?.storageUsedBytes ?? 0)
+  const [workspaceStorageQuotaBytes, setWorkspaceStorageQuotaBytes] = useState(() => (
+    workspace?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(workspace?.subscriptionPlan ?? 'BASIC')
+  ))
+  const [workspacePlanSaveState, setWorkspacePlanSaveState] = useState('idle')
+  const [workspacePlanError, setWorkspacePlanError] = useState('')
 
   // ── Notifications state
   const [dailySummary, setDailySummary] = useState(false)
@@ -277,9 +286,12 @@ export default function SettingsPage() {
     setWsName(workspace?.name ?? '')
     setAccountAvatarUrl(currentUser?.avatarUrl ?? null)
     setWorkspaceAvatarUrl(workspace?.avatarUrl ?? null)
+    setWorkspacePlan(workspace?.subscriptionPlan ?? 'BASIC')
+    setWorkspaceStorageUsedBytes(workspace?.storageUsedBytes ?? 0)
+    setWorkspaceStorageQuotaBytes(workspace?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(workspace?.subscriptionPlan ?? 'BASIC'))
     setLocalPasswordEnabled(currentUser?.localPasswordEnabled ?? true)
     setExternalIdentityLinked(currentUser?.externalIdentityLinked ?? false)
-  }, [currentUser?.avatarUrl, currentUser?.externalIdentityLinked, currentUser?.fullName, currentUser?.localPasswordEnabled, workspace?.avatarUrl, workspace?.name])
+  }, [currentUser?.avatarUrl, currentUser?.externalIdentityLinked, currentUser?.fullName, currentUser?.localPasswordEnabled, workspace?.avatarUrl, workspace?.name, workspace?.storageQuotaBytes, workspace?.storageUsedBytes, workspace?.subscriptionPlan])
 
   useEffect(() => () => {
     if (accountAvatarObjectUrlRef.current) {
@@ -402,6 +414,49 @@ export default function SettingsPage() {
     }
   }, [accessToken, backendEnabled, currentUser?.externalIdentityLinked, currentUser?.localPasswordEnabled, location.search])
 
+  useEffect(() => {
+    if (activeSection !== 'workspace') {
+      return
+    }
+
+    if (!backendEnabled || !accessToken) {
+      return
+    }
+
+    let active = true
+    setWorkspacePlanError('')
+
+    async function loadWorkspaceDashboard() {
+      try {
+        const snapshot = await apiRequest('/api/workspace', {
+          token: accessToken,
+        })
+
+        if (!active) return
+
+        setWorkspacePlan(snapshot?.subscriptionPlan ?? 'BASIC')
+        setWorkspaceStorageUsedBytes(snapshot?.storageUsedBytes ?? 0)
+        setWorkspaceStorageQuotaBytes(snapshot?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(snapshot?.subscriptionPlan ?? 'BASIC'))
+        patchSession?.({
+          workspace: {
+            subscriptionPlan: snapshot?.subscriptionPlan ?? 'BASIC',
+            storageUsedBytes: snapshot?.storageUsedBytes ?? 0,
+            storageQuotaBytes: snapshot?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(snapshot?.subscriptionPlan ?? 'BASIC'),
+          },
+        })
+      } catch (error) {
+        if (!active) return
+        setWorkspacePlanError(error?.message ?? 'Nao foi possivel carregar o uso do workspace.')
+      }
+    }
+
+    loadWorkspaceDashboard()
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, activeSection, backendEnabled, patchSession])
+
   const persistGeneralPreferences = async (nextPreferences) => {
     setGeneralError('')
     setGeneralSaveState('saving')
@@ -445,10 +500,16 @@ export default function SettingsPage() {
       if (requestId !== workspaceRequestRef.current) return
 
       setWsName(response.name)
+      setWorkspacePlan(response.subscriptionPlan ?? 'BASIC')
+      setWorkspaceStorageUsedBytes(response.storageUsedBytes ?? 0)
+      setWorkspaceStorageQuotaBytes(response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? 'BASIC'))
       patchSession?.({
         workspace: {
           name: response.name,
           avatarUrl: response.avatarUrl,
+          subscriptionPlan: response.subscriptionPlan ?? 'BASIC',
+          storageUsedBytes: response.storageUsedBytes ?? 0,
+          storageQuotaBytes: response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? 'BASIC'),
         },
       })
       setWorkspaceSaveState('saved')
@@ -456,6 +517,54 @@ export default function SettingsPage() {
       if (requestId !== workspaceRequestRef.current) return
       setWorkspaceError(error?.message ?? 'Nao foi possivel salvar o nome do workspace.')
       setWorkspaceSaveState('error')
+    }
+  }
+
+  const persistWorkspaceSubscriptionPlan = async (nextPlan) => {
+    if (!nextPlan || nextPlan === workspacePlan) {
+      return
+    }
+
+    setWorkspacePlanError('')
+    setWorkspacePlanSaveState('saving')
+
+    if (!backendEnabled || !accessToken) {
+      const quotaBytes = getWorkspacePlanQuotaBytes(nextPlan)
+      setWorkspacePlan(nextPlan)
+      setWorkspaceStorageQuotaBytes(quotaBytes)
+      patchSession?.({
+        workspace: {
+          subscriptionPlan: nextPlan,
+          storageQuotaBytes: quotaBytes,
+        },
+      })
+      setWorkspacePlanSaveState('saved')
+      return
+    }
+
+    try {
+      const response = await apiRequest('/api/workspace/subscription', {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          subscriptionPlan: nextPlan,
+        },
+      })
+
+      setWorkspacePlan(response?.subscriptionPlan ?? nextPlan)
+      setWorkspaceStorageUsedBytes(response?.storageUsedBytes ?? workspaceStorageUsedBytes)
+      setWorkspaceStorageQuotaBytes(response?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response?.subscriptionPlan ?? nextPlan))
+      patchSession?.({
+        workspace: {
+          subscriptionPlan: response?.subscriptionPlan ?? nextPlan,
+          storageUsedBytes: response?.storageUsedBytes ?? workspaceStorageUsedBytes,
+          storageQuotaBytes: response?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response?.subscriptionPlan ?? nextPlan),
+        },
+      })
+      setWorkspacePlanSaveState('saved')
+    } catch (error) {
+      setWorkspacePlanError(error?.message ?? 'Nao foi possivel atualizar o plano do workspace.')
+      setWorkspacePlanSaveState('error')
     }
   }
 
@@ -711,7 +820,17 @@ export default function SettingsPage() {
         body: formData,
       })
       setWorkspaceAvatarUrl(response.avatarUrl ?? null)
-      patchSession?.({ workspace: { avatarUrl: response.avatarUrl ?? null } })
+      setWorkspacePlan(response.subscriptionPlan ?? workspacePlan ?? 'BASIC')
+      setWorkspaceStorageUsedBytes(response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0)
+      setWorkspaceStorageQuotaBytes(response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'))
+      patchSession?.({
+        workspace: {
+          avatarUrl: response.avatarUrl ?? null,
+          subscriptionPlan: response.subscriptionPlan ?? workspacePlan ?? 'BASIC',
+          storageUsedBytes: response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0,
+          storageQuotaBytes: response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'),
+        },
+      })
       setWorkspaceAvatarState('saved')
       setWorkspaceAvatarFeedback('Avatar atualizado.')
     } catch (error) {
@@ -739,7 +858,17 @@ export default function SettingsPage() {
       })
       setWorkspaceAvatarUrl(response.avatarUrl ?? null)
       replaceWorkspaceAvatarPreview(null)
-      patchSession?.({ workspace: { avatarUrl: response.avatarUrl ?? null } })
+      setWorkspacePlan(response.subscriptionPlan ?? workspacePlan ?? 'BASIC')
+      setWorkspaceStorageUsedBytes(response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0)
+      setWorkspaceStorageQuotaBytes(response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'))
+      patchSession?.({
+        workspace: {
+          avatarUrl: response.avatarUrl ?? null,
+          subscriptionPlan: response.subscriptionPlan ?? workspacePlan ?? 'BASIC',
+          storageUsedBytes: response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0,
+          storageQuotaBytes: response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'),
+        },
+      })
       setWorkspaceAvatarState('saved')
       setWorkspaceAvatarFeedback('Avatar removido.')
     } catch (error) {
@@ -1132,8 +1261,16 @@ export default function SettingsPage() {
   )
 
   /* ── Section: Workspace ── */
-  const renderWorkspace = () => (
-    <>
+  const renderWorkspace = () => {
+    const storageQuotaBytes = workspaceStorageQuotaBytes || getWorkspacePlanQuotaBytes(workspacePlan)
+    const storageUsedBytes = Math.max(0, workspaceStorageUsedBytes || 0)
+    const storageAvailableBytes = Math.max(0, storageQuotaBytes - storageUsedBytes)
+    const storagePercent = storageQuotaBytes > 0
+      ? Math.min(100, (storageUsedBytes / storageQuotaBytes) * 100)
+      : 0
+
+    return (
+      <>
       <SectionGroup title="Identidade do workspace">
         <div className={styles.wsIdentityRow}>
           <div className={styles.wsAvatarBox}>
@@ -1201,30 +1338,61 @@ export default function SettingsPage() {
         <div className={styles.storageBlock}>
           <div className={styles.storageHeader}>
             <span className={styles.storageName}>Armazenamento</span>
-            <span className={styles.storageNumbers}>2,4 GB de 10 GB</span>
+            <span className={styles.storageNumbers}>
+              {formatBytes(storageUsedBytes)} de {formatBytes(storageQuotaBytes)}
+            </span>
           </div>
           <div className={styles.storageTrack}>
-            <div className={styles.storageFill} style={{ width: '24%' }} />
+            <div className={styles.storageFill} style={{ width: `${storagePercent}%` }} />
           </div>
-          <p className={styles.storageHint}>7,6 GB disponíveis no plano atual.</p>
+          <p className={styles.storageHint}>
+            {formatBytes(storageAvailableBytes)} disponiveis no plano atual.
+          </p>
         </div>
 
         <div className={styles.planBlock}>
           <div className={styles.planBlockTop}>
             <div>
-              <p className={styles.planBlockName}>Professional</p>
-              <p className={styles.planBlockRenewal}>Renova em 15 de março de 2025</p>
+              <p className={styles.planBlockName}>Plano do workspace</p>
+              <p className={styles.planBlockRenewal}>A cota e compartilhada por todos os arquivos ativos.</p>
             </div>
-            <span className={styles.planActiveBadge}>Ativo</span>
+            <span className={styles.planActiveBadge}>{workspacePlan}</span>
           </div>
-          <div className={styles.planBlockActions}>
-            <button type="button" className={styles.btnSecondary}>Gerenciar armazenamento</button>
-            <button type="button" className={styles.btnSecondary}>Ver plano e faturamento</button>
+          <div className={styles.planOptions} role="radiogroup" aria-label="Plano de assinatura do workspace">
+            {WORKSPACE_SUBSCRIPTION_PLANS.map((planOption) => {
+              const selected = workspacePlan === planOption.id
+              return (
+                <button
+                  key={planOption.id}
+                  type="button"
+                  className={[
+                    styles.planOption,
+                    selected ? styles.planOptionSelected : '',
+                  ].filter(Boolean).join(' ')}
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => persistWorkspaceSubscriptionPlan(planOption.id)}
+                  disabled={workspacePlanSaveState === 'saving'}
+                >
+                  <span className={styles.planOptionRadio} aria-hidden="true" />
+                  <span className={styles.planOptionBody}>
+                    <span className={styles.planOptionName}>{planOption.label}</span>
+                    <span className={styles.planOptionQuota}>{formatBytes(planOption.quotaBytes)} de armazenamento</span>
+                  </span>
+                </button>
+              )
+            })}
           </div>
+          <AutoSaveStatus
+            state={workspacePlanSaveState}
+            errorMessage={workspacePlanError}
+            successMessage="Plano atualizado."
+          />
         </div>
       </SectionGroup>
-    </>
-  )
+      </>
+    )
+  }
 
   /* ── Section: Integrações ── */
   const renderIntegrations = () => {

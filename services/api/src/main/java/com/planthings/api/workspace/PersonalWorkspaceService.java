@@ -23,6 +23,7 @@ public class PersonalWorkspaceService {
     WorkspaceEntity workspace = new WorkspaceEntity();
     workspace.setOwnerUserId(user.getId());
     workspace.setName("Workspace de " + user.getFullName().trim());
+    workspace.setSubscriptionPlan(WorkspaceSubscriptionPlan.BASIC);
     return workspaceRepository.save(workspace);
   }
 }
