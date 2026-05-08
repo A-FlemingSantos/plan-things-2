@@ -462,6 +462,10 @@ export default function KanbanBoard() {
     updateCard,
     deleteCard,
     moveCard,
+    createChecklist,
+    deleteChecklist,
+    createChecklistItem,
+    updateChecklistItem,
   } = useBoardColumns({
     activePlanId: activePlan?.id,
     boardColumns: activePlan?.boardColumns,
@@ -2312,6 +2316,12 @@ export default function KanbanBoard() {
           onUploadLocalFile={uploadLocalFileToCard}
           onRemoveAttachment={removeAttachmentFromCard}
           onDownloadFile={downloadFile}
+          onCreateChecklist={createChecklist}
+          onDeleteChecklist={deleteChecklist}
+          onCreateChecklistItem={createChecklistItem}
+          onUpdateChecklistItem={updateChecklistItem}
+          timeZone={timeZone}
+          dateFormat={dateFormat}
         />
       )}
 

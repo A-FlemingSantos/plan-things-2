@@ -98,6 +98,11 @@ public class BoardController {
     return ApiEnvelope.ok(boardService.createChecklist(planId, cardId, request.title()));
   }
 
+  @DeleteMapping("/checklists/{checklistId}")
+  public ApiEnvelope<BoardService.MessageResponse> deleteChecklist(@PathVariable UUID planId, @PathVariable UUID checklistId) {
+    return ApiEnvelope.ok(boardService.deleteChecklist(planId, checklistId));
+  }
+
   @PostMapping("/checklists/{checklistId}/items")
   public ApiEnvelope<BoardService.ChecklistItemView> createChecklistItem(@PathVariable UUID planId, @PathVariable UUID checklistId, @Valid @RequestBody ChecklistItemRequest request) {
     return ApiEnvelope.ok(boardService.createChecklistItem(planId, checklistId, request.title(), request.assigneeUserId(), request.startAt(), request.dueAt()));

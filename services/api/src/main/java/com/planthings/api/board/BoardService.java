@@ -300,6 +300,19 @@ public class BoardService {
   }
 
   @Transactional
+  public MessageResponse deleteChecklist(UUID planId, UUID checklistId) {
+    UUID userId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, userId);
+    BoardChecklistEntity checklist = requireChecklist(planId, checklistId);
+    UUID cardId = checklist.getCardId();
+
+    boardChecklistItemRepository.deleteAll(boardChecklistItemRepository.findByChecklistIdOrderByPositionIndexAsc(checklistId));
+    boardChecklistRepository.delete(checklist);
+    reorder(boardChecklistRepository.findByCardIdOrderByPositionIndexAsc(cardId), BoardChecklistEntity::setPositionIndex);
+    return new MessageResponse("Checklist excluida com sucesso.");
+  }
+
+  @Transactional
   public ChecklistItemView createChecklistItem(UUID planId, UUID checklistId, String title, UUID assigneeUserId, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanMember(planId, userId);

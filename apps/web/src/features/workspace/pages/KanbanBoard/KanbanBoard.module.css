@@ -2940,8 +2940,15 @@
 
 .cmChecklistItemRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+}
+
+.cmChecklistItemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .cmChecklistItemCheckbox {
@@ -2976,6 +2983,12 @@
   font-size: 14px;
   color: var(--text-1);
   line-height: 1.45;
+}
+
+.cmChecklistItemMeta {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.35;
 }
 
 .cmChecklistItemTextChecked {
