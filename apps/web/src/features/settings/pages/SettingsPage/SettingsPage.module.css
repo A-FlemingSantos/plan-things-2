@@ -1440,22 +1440,35 @@
 
   .settingsNav {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     height: auto;
     position: sticky;
-    top: 0;
+    top: var(--mobile-app-header-offset);
     z-index: 4;
-    padding: 10px 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 16px;
     border-right: none;
     border-bottom: 1px solid var(--border-1);
-    gap: 3px;
-    background: var(--frosted-bg);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    gap: 6px;
+    background: var(--surface-1);
+    scrollbar-width: none;
+  }
+
+  .settingsNav::-webkit-scrollbar {
+    display: none;
   }
 
   .settingsNavItem {
     width: auto;
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+  }
+
+  .settingsNavItemActive {
+    border-color: var(--border-1);
+    background: var(--surface-2);
   }
 
   .settingsNavLabel {
@@ -1463,7 +1476,7 @@
   }
 
   .settingsContent {
-    padding: 20px 20px 40px;
+    padding: 18px 20px 40px;
   }
 
   .sessionCard,

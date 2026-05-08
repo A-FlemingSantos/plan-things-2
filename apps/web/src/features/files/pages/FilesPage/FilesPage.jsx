@@ -1103,12 +1103,6 @@ export default function FilesPage() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         mobileTitle={sectionLabel}
-        mobileTitleMeta={`${filteredFiles.length}`}
-        mobileActions={(
-          <button type="button" className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()} aria-label="Enviar arquivo">
-            <Icon.Upload />
-          </button>
-        )}
       >
 
         {/* Top bar */}

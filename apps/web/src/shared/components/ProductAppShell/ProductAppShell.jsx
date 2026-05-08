@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
-import { ROUTES } from '../../config/routes.js'
 import { useResponsiveViewport } from '../../hooks/useResponsiveViewport.js'
 import ProductSidebar from '../ProductSidebar/ProductSidebar.jsx'
 
@@ -161,7 +160,6 @@ export default function ProductAppShell({
               </button>
 
               <div className="productAppShellHeaderText">
-                <p className="productAppShellHeaderEyebrow">Plan Things</p>
                 <div className="productAppShellHeaderTitleRow">
                   <h1 className="productAppShellHeaderTitle">{mobileTitle}</h1>
                   {mobileTitleMeta ? <span className="productAppShellHeaderMeta">{mobileTitleMeta}</span> : null}

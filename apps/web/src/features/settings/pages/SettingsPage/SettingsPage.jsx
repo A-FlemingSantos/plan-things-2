@@ -2005,7 +2005,6 @@ export default function SettingsPage() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.settingsWrapper}
         mobileTitle={activeLabel}
-        mobileTitleMeta="Ajustes"
       >
         <PlanPageHeader
           title="Configurações"

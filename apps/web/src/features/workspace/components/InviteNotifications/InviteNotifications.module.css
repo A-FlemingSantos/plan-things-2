@@ -208,9 +208,16 @@
 }
 
 @media (max-width: 520px) {
+  .trigger {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
   .panel {
     right: auto;
     left: 50%;
     transform: translateX(-50%);
+    width: min(340px, calc(100vw - 16px));
   }
 }

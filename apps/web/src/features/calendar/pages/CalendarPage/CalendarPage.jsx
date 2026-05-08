@@ -790,12 +790,6 @@ export default function CalendarPage() {
         contentClassName={styles.main}
         contentTag="main"
         mobileTitle="Calendário"
-        mobileTitleMeta={viewStatus}
-        mobileActions={(
-          <button type="button" className={styles.primaryButton} onClick={openCreateDialog} aria-label="Novo evento">
-            <Icon.Plus />
-          </button>
-        )}
       >
         <header className={styles.commandBar}>
           <div className={styles.commandLeft}>

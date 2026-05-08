@@ -5107,7 +5107,10 @@
     gap: 10px;
     padding: 10px;
   }
-  .boardHeader { padding: 16px; }
+  .boardHeader {
+    padding: 14px;
+    gap: 12px;
+  }
   .cmFilePicker {
     width: min(312px, calc(100vw - 20px));
     max-width: min(312px, calc(100vw - 20px));
@@ -5148,22 +5151,55 @@
     gap: 8px;
     justify-content: flex-start;
   }
-  .boardTitleRow { flex-wrap: wrap; }
-  .board  { padding: 16px 16px 100px; gap: 10px; }
+  .boardTitleRow {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .boardTitle {
+    font-size: 17px;
+    line-height: 1.15;
+  }
+  .boardCardBadge {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+  .boardHeaderBtn,
+  .boardHeaderBtnPrimary {
+    height: 32px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+  .board  { padding: 14px 14px 92px; gap: 8px; }
   .boardViewToolbar {
-    bottom: 14px;
-    max-width: calc(100% - 24px);
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+    animation: none;
+  }
+  .boardViewToolbar::-webkit-scrollbar {
+    display: none;
   }
   .boardViewToolbarItem {
-    height: 32px;
+    height: 30px;
     padding: 0 10px;
-    font-size: 12px;
+    font-size: 11px;
+    gap: 6px;
   }
   .boardViewMenu {
     right: 0;
     width: min(248px, calc(100vw - 28px));
   }
-  .column { width: min(280px, calc(100vw - 48px)); }
+  .column { width: min(264px, calc(100vw - 32px)); }
+  .planMembersMenu {
+    width: min(320px, calc(100vw - 16px));
+  }
   .modalOverlay { padding: 16px 10px 10px; }
   .cardModal { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--radius-lg); }
   .cmHeader,
@@ -5242,7 +5278,7 @@
 
 @media (max-width: 560px) {
   .boardHeader {
-    padding: 14px;
+    padding: 12px;
     gap: 14px;
   }
   .boardHeaderDivider { display: none; }
@@ -5250,15 +5286,29 @@
   .boardHeaderBtnPrimary {
     flex: 1 1 calc(50% - 4px);
     justify-content: center;
+    height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .boardTitle {
+    font-size: 16px;
   }
   .board {
-    padding: 14px 14px 96px;
+    padding: 12px 12px 88px;
   }
   .boardViewToolbar {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    overflow: visible;
+  }
+  .boardViewToolbarItem {
+    width: 100%;
+    padding: 0 8px;
+    font-size: 10px;
   }
   .column {
-    width: calc(100vw - 32px);
+    width: calc(100vw - 24px);
   }
   .modalOverlay {
     padding: 10px 0 0;

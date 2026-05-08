@@ -120,9 +120,17 @@
 }
 
 @media (max-width: 768px) {
+  .sticky {
+    top: var(--mobile-app-header-offset);
+  }
+
   .header {
     padding: 16px;
     align-items: flex-start;
+  }
+
+  .breadcrumb {
+    display: none;
   }
 
   .actions {

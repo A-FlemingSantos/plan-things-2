@@ -1579,12 +1579,24 @@
 @media (max-width: 768px) {
   .shell, .shellCollapsed { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .topBar { padding: 0 16px; gap: 8px; flex-wrap: wrap; height: auto; min-height: 60px; padding-top: 10px; padding-bottom: 10px; }
+  .topBar {
+    top: var(--mobile-app-header-offset);
+    padding: 8px 12px;
+    gap: 6px;
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 0;
+  }
   .topBarLeft, .topBarRight { width: 100%; }
-  .topBarRight { flex-wrap: wrap; }
+  .topBarRight {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 6px;
+  }
   .searchWrap {
     flex: 1 1 220px;
     min-width: 0;
+    height: 32px;
   }
   .searchInput {
     width: 100%;
@@ -1592,15 +1604,22 @@
   .sortWrap {
     flex: 1 1 140px;
     min-width: 0;
+    height: 32px;
+  }
+  .topBarDivider {
+    display: none;
   }
   .newFolderBtn,
   .uploadBtn {
     flex: 1 1 160px;
     justify-content: center;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
   }
   .selectionToolbar { width: 100%; overflow-x: auto; }
   .selectionCount { padding-left: 8px; }
-  .filesArea { padding: 16px; }
+  .filesArea { padding: 14px 14px 24px; }
   .filesAreaHeader { align-items: start; flex-direction: column; gap: 8px; margin-bottom: 16px; }
   .fileGrid { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; }
   .detailPanel {
@@ -1653,24 +1672,34 @@
 
 @media (max-width: 560px) {
   .topBar {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
   .topBarRight {
     gap: 6px;
   }
+  .breadcrumb {
+    font-size: 13px;
+  }
+  .breadcrumbItem {
+    max-width: 120px;
+    font-size: 13px;
+  }
   .searchWrap,
   .sortWrap,
   .newFolderBtn,
-  .uploadBtn,
+  .uploadBtn {
+    width: auto;
+  }
+  .searchWrap,
+  .sortWrap {
+    flex: 1 1 calc(50% - 3px);
+  }
   .viewToggle {
     width: 100%;
   }
   .viewBtn {
     flex: 1;
-  }
-  .filesArea {
-    padding: 14px 12px 24px;
   }
   .fileGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1681,6 +1710,9 @@
     bottom: 0;
     max-height: 82vh;
     border-radius: 18px 18px 0 0;
+  }
+  .detailPanelPreview {
+    height: 104px;
   }
   .uploadToastItem {
     padding: 10px 12px;
