@@ -85,7 +85,7 @@ describe('App smoke flows', () => {
     window.localStorage.setItem(
       `plan-things:settings:v1:${userId}`,
       JSON.stringify({
-        homePage: 'canvas',
+        homePage: 'workspace',
         openLastCtx: true,
       }),
     )
@@ -189,26 +189,6 @@ describe('App smoke flows', () => {
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
     expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
-    expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
-  })
-
-  it('opens the current plan canvas from the workspace', async () => {
-    const user = userEvent.setup()
-
-    renderApp('/workspace')
-
-    await user.click(await screen.findByRole('button', { name: /abrir canvas/i }))
-
-    expect(await screen.findByText('4 cartões')).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/canvas/product-launch-q3')
-    expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
-  })
-
-  it('preserves the plan id when redirecting legacy canvas deep links', async () => {
-    renderApp('/app/canvas/product-launch-q3')
-
-    expect(await screen.findByText('4 cartões')).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/canvas/product-launch-q3')
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
 
@@ -372,7 +352,7 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('button', { name: /expandir barra lateral/i })).toBeInTheDocument()
   })
 
-  it('marks the collapsed-by-default sidebar preference as deprecated', async () => {
+  it('shows the liquid-glass preference in general settings', async () => {
     const user = userEvent.setup()
 
     renderApp('/settings')
@@ -381,11 +361,11 @@ describe('App smoke flows', () => {
 
     await user.click(screen.getByRole('button', { name: 'Preferências gerais' }))
 
-    const collapsedByDefaultLabel = await screen.findByText('Barra lateral recolhida por padrão')
-    const collapsedByDefaultField = collapsedByDefaultLabel.closest('div')?.parentElement
-    const collapsedByDefaultSwitch = within(collapsedByDefaultField).getByRole('switch')
+    const liquidGlassLabel = await screen.findByText('Liquid-glass')
+    const liquidGlassField = liquidGlassLabel.closest('div')?.parentElement
+    const liquidGlassSwitch = within(liquidGlassField).getByRole('switch')
 
-    expect(screen.getByText(/será removida ou substituída/i)).toBeInTheDocument()
-    expect(collapsedByDefaultSwitch).toBeDisabled()
+    expect(screen.getByText(/futuro efeito de vidro líquido/i)).toBeInTheDocument()
+    expect(liquidGlassSwitch).toBeEnabled()
   })
 })

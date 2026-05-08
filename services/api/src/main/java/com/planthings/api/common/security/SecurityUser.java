@@ -10,19 +10,25 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class SecurityUser implements UserDetails {
 
   private final UUID userId;
+  private final UUID sessionId;
   private final String email;
   private final String passwordHash;
   private final Collection<? extends GrantedAuthority> authorities;
 
-  public SecurityUser(UUID userId, String email, String passwordHash) {
+  public SecurityUser(UUID userId, UUID sessionId, String email, String passwordHash) {
     this.userId = userId;
+    this.sessionId = sessionId;
     this.email = email;
-    this.passwordHash = passwordHash;
+    this.passwordHash = passwordHash == null ? "" : passwordHash;
     this.authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
   }
 
   public UUID getUserId() {
     return userId;
+  }
+
+  public UUID getSessionId() {
+    return sessionId;
   }
 
   @Override

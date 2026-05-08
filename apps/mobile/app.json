@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Plan Things",
+    "slug": "plan-things-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "planthings",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.planthings.mobile",
+      "softwareKeyboardLayoutMode": "pan"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.planthings.mobile"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}

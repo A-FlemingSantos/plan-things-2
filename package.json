@@ -4,16 +4,24 @@
   "version": "1.0.0",
   "workspaces": [
     "apps/*",
-    "services/*"
+    "services/*",
+    "packages/*"
   ],
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
     "sharp": "^0.34.3"
   },
+  "overrides": {
+    "react-native-svg": "15.8.0"
+  },
   "scripts": {
     "prepare": "husky install",
     "dev": "npm --workspace apps/web run dev",
+    "mobile:start": "npm --workspace apps/mobile run start",
+    "mobile:android": "npm --workspace apps/mobile run android",
+    "mobile:android:device": "npm --workspace apps/mobile run android:device",
+    "mobile:web": "npm --workspace apps/mobile run web",
     "build": "npm --workspace apps/web run build",
     "preview": "npm --workspace apps/web run preview",
     "test": "npm --workspace apps/web run test",
@@ -24,5 +32,8 @@
     "apps/web/src/shared/assets/background-collections/**/*.{webp,png,jpg,jpeg,avif}": [
       "node scripts/generate-background-thumbs.mjs"
     ]
+  },
+  "dependencies": {
+    "react-native-svg": "15.8.0"
   }
 }

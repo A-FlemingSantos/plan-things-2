@@ -13,12 +13,33 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [menuOpen])
 
   return (
     <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
@@ -52,8 +73,47 @@ export default function Navbar() {
         <div className={styles.actions}>
           <Link to={ROUTES.login} className={styles.actionLink}>Entrar</Link>
           <Link to={ROUTES.register} className={styles.ctaBtn}>Começar grátis</Link>
+          <button
+            type="button"
+            className={styles.menuBtn}
+            aria-expanded={menuOpen}
+            aria-controls="landing-mobile-menu"
+            aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </nav>
+
+      {menuOpen ? (
+        <>
+          <div
+            className={`${styles.mobileOverlay} ${menuOpen ? styles.mobileOverlayOpen : ''}`}
+            aria-hidden="false"
+            onClick={() => setMenuOpen(false)}
+          />
+
+          <div id="landing-mobile-menu" className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ''}`}>
+            <div className={`${styles.mobileMenuInner} container`}>
+              <div className={styles.mobileMenuLinks}>
+                {NAV_LINKS.map((link) => (
+                  <a key={link.label} href={link.href} className={styles.mobileMenuLink} onClick={() => setMenuOpen(false)}>
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+
+              <div className={styles.mobileMenuActions}>
+                <Link to={ROUTES.login} className={styles.mobileActionLink} onClick={() => setMenuOpen(false)}>Entrar</Link>
+                <Link to={ROUTES.register} className={styles.mobileCtaBtn} onClick={() => setMenuOpen(false)}>Começar grátis</Link>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
     </header>
   )
 }

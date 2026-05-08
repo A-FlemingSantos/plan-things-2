@@ -69,6 +69,11 @@ public class FileController {
     return ApiEnvelope.ok(fileService.delete(fileId));
   }
 
+  @DeleteMapping("/{fileId}/permanent")
+  public ApiEnvelope<FileService.MessageResponse> permanentlyDelete(@PathVariable UUID fileId) {
+    return ApiEnvelope.ok(fileService.permanentlyDelete(fileId));
+  }
+
   @PostMapping("/{fileId}/restore")
   public ApiEnvelope<FileService.MessageResponse> restore(@PathVariable UUID fileId) {
     return ApiEnvelope.ok(fileService.restore(fileId));

@@ -1,7 +1,11 @@
 package com.planthings.api.settings;
 
 import com.planthings.api.auth.UserEntity;
+import com.planthings.api.auth.UserExternalIdentityRepository;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.auth.UserSessionService;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import java.time.DateTimeException;
@@ -13,6 +17,7 @@ import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class SettingsService {
@@ -33,20 +38,29 @@ public class SettingsService {
   private final UserRepository userRepository;
   private final UserSettingsRepository userSettingsRepository;
   private final GmailIntegrationService gmailIntegrationService;
+  private final UserExternalIdentityRepository externalIdentityRepository;
   private final PasswordEncoder passwordEncoder;
+  private final AvatarImageService avatarImageService;
+  private final UserSessionService userSessionService;
 
   public SettingsService(
       AuthenticatedUserService authenticatedUserService,
       UserRepository userRepository,
       UserSettingsRepository userSettingsRepository,
       GmailIntegrationService gmailIntegrationService,
-      PasswordEncoder passwordEncoder
+      UserExternalIdentityRepository externalIdentityRepository,
+      PasswordEncoder passwordEncoder,
+      AvatarImageService avatarImageService,
+      UserSessionService userSessionService
   ) {
     this.authenticatedUserService = authenticatedUserService;
     this.userRepository = userRepository;
     this.userSettingsRepository = userSettingsRepository;
     this.gmailIntegrationService = gmailIntegrationService;
+    this.externalIdentityRepository = externalIdentityRepository;
     this.passwordEncoder = passwordEncoder;
+    this.avatarImageService = avatarImageService;
+    this.userSessionService = userSessionService;
   }
 
   @Transactional(readOnly = true)
@@ -55,7 +69,7 @@ public class SettingsService {
     UserSettingsEntity userSettings = getOrCreateUserSettings(user.getId());
 
     return new SettingsSnapshot(
-        new AccountSettings(user.getFullName(), user.getEmail()),
+        accountSettingsFor(user),
         new PreferencesSettings(
             user.getLocaleTag(),
             user.getTimeZone(),
@@ -77,7 +91,27 @@ public class SettingsService {
     UserEntity user = authenticatedUserService.requireUser();
     user.setFullName(requireFullName(fullName));
     userRepository.save(user);
-    return new AccountSettings(user.getFullName(), user.getEmail());
+    return accountSettingsFor(user);
+  }
+
+  @Transactional
+  public AccountSettings uploadAccountAvatar(MultipartFile avatar) {
+    UserEntity user = authenticatedUserService.requireUser();
+    avatarImageService.upload(AvatarOwnerType.USER, user.getId(), avatar);
+    return accountSettingsFor(user);
+  }
+
+  @Transactional
+  public AccountSettings removeAccountAvatar() {
+    UserEntity user = authenticatedUserService.requireUser();
+    avatarImageService.remove(AvatarOwnerType.USER, user.getId());
+    return accountSettingsFor(user);
+  }
+
+  @Transactional(readOnly = true)
+  public AvatarImageService.AvatarDownload getAccountAvatar() {
+    UserEntity user = authenticatedUserService.requireUser();
+    return avatarImageService.download(AvatarOwnerType.USER, user.getId());
   }
 
   @Transactional
@@ -134,6 +168,10 @@ public class SettingsService {
   public MessageResponse changePassword(String currentPassword, String newPassword) {
     UserEntity user = authenticatedUserService.requireUser();
 
+    if (!user.isLocalPasswordEnabled() || user.getPasswordHash() == null) {
+      throw new BadRequestException("SENHA_LOCAL_NAO_CONFIGURADA", "Crie uma senha local antes de usar a alteracao com senha atual.");
+    }
+
     if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
       throw new BadRequestException("SENHA_ATUAL_INVALIDA", "A senha atual informada esta incorreta.");
     }
@@ -141,8 +179,46 @@ public class SettingsService {
     validatePassword(newPassword);
     user.setPasswordHash(passwordEncoder.encode(newPassword));
     userRepository.save(user);
+    userSessionService.revokeOtherSessions(user.getId(), authenticatedUserService.requireSessionId());
 
     return new MessageResponse("Senha atualizada com sucesso.");
+  }
+
+  @Transactional
+  public MessageResponse setupOAuthPassword(String newPassword) {
+    UserEntity user = authenticatedUserService.requireUser();
+
+    if (!externalIdentityRepository.existsByUserId(user.getId())) {
+      throw new BadRequestException(
+          "CONTA_OAUTH_NAO_VINCULADA",
+          "Esta acao esta disponivel apenas para contas vinculadas a OAuth."
+      );
+    }
+
+    if (user.isLocalPasswordEnabled() && user.getPasswordHash() != null) {
+      throw new BadRequestException(
+          "SENHA_LOCAL_JA_CONFIGURADA",
+          "Use a alteracao de senha com senha atual para substituir sua senha local."
+      );
+    }
+
+    validatePassword(newPassword);
+    user.setPasswordHash(passwordEncoder.encode(newPassword));
+    user.setLocalPasswordEnabled(true);
+    userRepository.save(user);
+    userSessionService.revokeOtherSessions(user.getId(), authenticatedUserService.requireSessionId());
+
+    return new MessageResponse("Senha configurada com sucesso.");
+  }
+
+  private AccountSettings accountSettingsFor(UserEntity user) {
+    return new AccountSettings(
+        user.getFullName(),
+        user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
+        user.isLocalPasswordEnabled(),
+        externalIdentityRepository.existsByUserId(user.getId())
+    );
   }
 
   private UserSettingsEntity getOrCreateUserSettings(java.util.UUID userId) {
@@ -264,7 +340,10 @@ public class SettingsService {
 
   public record AccountSettings(
       String fullName,
-      String email
+      String email,
+      String avatarUrl,
+      boolean localPasswordEnabled,
+      boolean externalIdentityLinked
   ) {
   }
 

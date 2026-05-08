@@ -1,6 +1,8 @@
 package com.planthings.api.workspace;
 
 import com.planthings.api.auth.UserEntity;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.calendar.CalendarEventRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
@@ -11,6 +13,7 @@ import com.planthings.api.plans.PlanMemberRepository;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class WorkspaceService {
@@ -22,6 +25,8 @@ public class WorkspaceService {
   private final CalendarEventRepository calendarEventRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
+  private final AvatarImageService avatarImageService;
+  private final WorkspaceStorageService workspaceStorageService;
 
   public WorkspaceService(
       PersonalWorkspaceService personalWorkspaceService,
@@ -30,7 +35,9 @@ public class WorkspaceService {
       FileEntryRepository fileEntryRepository,
       CalendarEventRepository calendarEventRepository,
       AuthenticatedUserService authenticatedUserService,
-      BrazilDateTimeMapper brazilDateTimeMapper
+      BrazilDateTimeMapper brazilDateTimeMapper,
+      AvatarImageService avatarImageService,
+      WorkspaceStorageService workspaceStorageService
   ) {
     this.personalWorkspaceService = personalWorkspaceService;
     this.planMemberRepository = planMemberRepository;
@@ -39,6 +46,8 @@ public class WorkspaceService {
     this.calendarEventRepository = calendarEventRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
+    this.avatarImageService = avatarImageService;
+    this.workspaceStorageService = workspaceStorageService;
   }
 
   public WorkspaceDashboard getCurrentWorkspace() {
@@ -49,9 +58,15 @@ public class WorkspaceService {
     long fileCount = fileEntryRepository.findByWorkspaceIdAndOwnerUserIdAndDeletedAtIsNullOrderByTypeAscNameAsc(workspace.getId(), currentUser.getId()).size();
     long eventCount = calendarEventRepository.findByWorkspaceIdOrderByStartsAtAsc(workspace.getId()).size();
 
+    WorkspaceStorageService.StorageSnapshot storage = workspaceStorageService.snapshot(workspace);
+
     return new WorkspaceDashboard(
         workspace.getId(),
         workspace.getName(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
+        workspace.getSubscriptionPlan(),
+        storage.storageUsedBytes(),
+        storage.storageQuotaBytes(),
         new WorkspaceOwner(currentUser.getId(), currentUser.getFullName(), currentUser.getEmail()),
         plansCount,
         fileCount,
@@ -68,11 +83,49 @@ public class WorkspaceService {
     workspace.setName(requireName(name));
     workspaceRepository.save(workspace);
 
-    return new WorkspaceSummary(
-        workspace.getId(),
-        workspace.getName(),
-        brazilDateTimeMapper.toDateTime(workspace.getCreatedAt())
-    );
+    return toWorkspaceSummary(workspace);
+  }
+
+  @Transactional
+  public WorkspaceSummary updateCurrentWorkspaceSubscriptionPlan(WorkspaceSubscriptionPlan subscriptionPlan) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
+
+    WorkspaceSubscriptionPlan currentPlan = workspace.getSubscriptionPlan();
+    long currentQuotaBytes = workspaceStorageService.storageQuotaBytes(currentPlan);
+    long nextQuotaBytes = workspaceStorageService.storageQuotaBytes(subscriptionPlan);
+
+    if (nextQuotaBytes < currentQuotaBytes) {
+      workspaceStorageService.assertCanDowngrade(workspace, subscriptionPlan);
+    }
+
+    workspace.setSubscriptionPlan(subscriptionPlan);
+    workspaceRepository.save(workspace);
+
+    return toWorkspaceSummary(workspace);
+  }
+
+  @Transactional
+  public WorkspaceSummary uploadCurrentWorkspaceAvatar(MultipartFile avatar) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
+    avatarImageService.upload(AvatarOwnerType.WORKSPACE, workspace.getId(), avatar);
+    return toWorkspaceSummary(workspace);
+  }
+
+  @Transactional
+  public WorkspaceSummary removeCurrentWorkspaceAvatar() {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
+    avatarImageService.remove(AvatarOwnerType.WORKSPACE, workspace.getId());
+    return toWorkspaceSummary(workspace);
+  }
+
+  @Transactional(readOnly = true)
+  public AvatarImageService.AvatarDownload getCurrentWorkspaceAvatar() {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
+    return avatarImageService.download(AvatarOwnerType.WORKSPACE, workspace.getId());
   }
 
   private String requireName(String value) {
@@ -86,9 +139,26 @@ public class WorkspaceService {
     return normalized;
   }
 
+  private WorkspaceSummary toWorkspaceSummary(WorkspaceEntity workspace) {
+    WorkspaceStorageService.StorageSnapshot storage = workspaceStorageService.snapshot(workspace);
+    return new WorkspaceSummary(
+        workspace.getId(),
+        workspace.getName(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
+        workspace.getSubscriptionPlan(),
+        storage.storageUsedBytes(),
+        storage.storageQuotaBytes(),
+        brazilDateTimeMapper.toDateTime(workspace.getCreatedAt())
+    );
+  }
+
   public record WorkspaceDashboard(
       UUID id,
       String name,
+      String avatarUrl,
+      WorkspaceSubscriptionPlan subscriptionPlan,
+      long storageUsedBytes,
+      long storageQuotaBytes,
       WorkspaceOwner owner,
       long plansCount,
       long personalFilesCount,
@@ -103,6 +173,10 @@ public class WorkspaceService {
   public record WorkspaceSummary(
       UUID id,
       String name,
+      String avatarUrl,
+      WorkspaceSubscriptionPlan subscriptionPlan,
+      long storageUsedBytes,
+      long storageQuotaBytes,
       ApiDateTimeDto createdAt
   ) {
   }

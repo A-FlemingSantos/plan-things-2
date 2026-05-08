@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CardModal from './CardModal.jsx'
@@ -18,6 +18,7 @@ function buildCard(overrides = {}) {
     dueDate: '',
     comments: [],
     attachments: [],
+    checklists: [],
     kind: 'CARTAO',
     schedule: {
       selectedCalendarDay: 7,
@@ -122,5 +123,89 @@ describe('CardModal file picker positioning', () => {
     await waitFor(() => {
       expect(picker).toHaveStyle({ top: '236px', left: '104px' })
     })
+  })
+
+  it('creates a checklist through backend handlers', async () => {
+    const user = userEvent.setup()
+    const createChecklist = vi.fn().mockResolvedValue({
+      id: 'checklist-1',
+      title: 'Entrega',
+      items: [],
+    })
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        onCreateChecklist={createChecklist}
+        onCreateChecklistItem={async () => {}}
+        onUpdateChecklistItem={async () => {}}
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /checklist/i }))
+
+    const titleInput = screen.getByLabelText('Título do checklist')
+    await user.clear(titleInput)
+    await user.type(titleInput, 'Entrega')
+
+    const dialogs = screen.getAllByRole('dialog')
+    const checklistDialog = dialogs[dialogs.length - 1]
+    await user.click(within(checklistDialog).getByRole('button', { name: /^Adicionar$/i }))
+
+    await waitFor(() => {
+      expect(createChecklist).toHaveBeenCalledWith('card-1', 'Entrega')
+    })
+  })
+
+  it('disables checklist creation when the card already has one', () => {
+    const deleteChecklist = vi.fn()
+
+    render(
+      <CardModal
+        card={buildCard({
+          checklists: [
+            {
+              id: 'checklist-1',
+              title: 'Entrega',
+              items: [],
+            },
+          ],
+        })}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        onCreateChecklist={async () => {}}
+        onDeleteChecklist={deleteChecklist}
+        onCreateChecklistItem={async () => {}}
+        onUpdateChecklistItem={async () => {}}
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /checklist/i })).toBeDisabled()
+    const deleteButtons = screen.getAllByRole('button', { name: /excluir/i })
+    expect(deleteButtons[deleteButtons.length - 1]).toBeEnabled()
   })
 })

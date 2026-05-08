@@ -7,8 +7,12 @@ import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.security.JwtService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
+import com.planthings.api.workspace.WorkspaceStorageService;
+import com.planthings.api.workspace.WorkspaceSubscriptionPlan;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -31,7 +35,10 @@ public class AuthService {
   private final JwtService jwtService;
   private final AuthenticatedUserService authenticatedUserService;
   private final PersonalWorkspaceService personalWorkspaceService;
+  private final WorkspaceStorageService workspaceStorageService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
+  private final AvatarImageService avatarImageService;
+  private final UserSessionService userSessionService;
   private final Clock clock;
   private final long passwordResetMinutes;
 
@@ -44,7 +51,10 @@ public class AuthService {
       JwtService jwtService,
       AuthenticatedUserService authenticatedUserService,
       PersonalWorkspaceService personalWorkspaceService,
+      WorkspaceStorageService workspaceStorageService,
       BrazilDateTimeMapper brazilDateTimeMapper,
+      AvatarImageService avatarImageService,
+      UserSessionService userSessionService,
       Clock clock,
       @Value("${app.jwt.password-reset-minutes}") long passwordResetMinutes
   ) {
@@ -56,13 +66,16 @@ public class AuthService {
     this.jwtService = jwtService;
     this.authenticatedUserService = authenticatedUserService;
     this.personalWorkspaceService = personalWorkspaceService;
+    this.workspaceStorageService = workspaceStorageService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
+    this.avatarImageService = avatarImageService;
+    this.userSessionService = userSessionService;
     this.clock = clock;
     this.passwordResetMinutes = passwordResetMinutes;
   }
 
   @Transactional
-  public SessionResponse register(String fullName, String email, String password) {
+  public SessionResponse register(String fullName, String email, String password, String client, String userAgent) {
     String normalizedName = normalizeName(fullName);
     String normalizedEmail = normalizeEmail(email);
     validatePassword(password);
@@ -75,29 +88,38 @@ public class AuthService {
     user.setFullName(normalizedName);
     user.setEmail(normalizedEmail);
     user.setPasswordHash(passwordEncoder.encode(password));
+    user.setLocalPasswordEnabled(true);
     userRepository.save(user);
 
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
-    return buildSessionResponse(user, workspace);
+    return buildSessionResponse(user, workspace, client, userAgent);
   }
 
-  public SessionResponse login(String email, String password) {
+  @Transactional
+  public SessionResponse login(String email, String password, String client, String userAgent) {
     String normalizedEmail = normalizeEmail(email);
+    UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
+        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos uma conta com este e-mail."));
+
+    if (!user.isLocalPasswordEnabled() || user.getPasswordHash() == null) {
+      throw new BadRequestException(
+          "SENHA_LOCAL_NAO_CONFIGURADA",
+          "Esta conta ainda nao tem senha local. Entre com OAuth e crie uma senha nas configuracoes."
+      );
+    }
+
     authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(normalizedEmail, password)
     );
 
-    UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
-        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos uma conta com este e-mail."));
-
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
-    return buildSessionResponse(user, workspace);
+    return buildSessionResponse(user, workspace, client, userAgent);
   }
 
   @Transactional
-  public SessionResponse loginWithExternalIdentity(OAuthIdentity identity) {
+  public UserEntity loginWithExternalIdentity(OAuthIdentity identity) {
     String provider = normalizeProvider(identity.provider());
     String providerSubject = normalizeExternalSubject(identity.providerSubject());
     String normalizedEmail = normalizeEmail(identity.email());
@@ -111,12 +133,13 @@ public class AuthService {
         .orElseGet(() -> loginAndLinkExternalIdentity(provider, providerSubject, identity, normalizedEmail));
   }
 
-  public SessionResponse sessionForUserId(UUID userId) {
+  @Transactional
+  public SessionResponse sessionForUserId(UUID userId, String client, String userAgent) {
     UserEntity user = userRepository.findById(userId)
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos o usuario vinculado a este login."));
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
-    return buildSessionResponse(user, workspace);
+    return buildSessionResponse(user, workspace, client, userAgent);
   }
 
   @Transactional
@@ -158,10 +181,12 @@ public class AuthService {
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos o usuario vinculado a este token."));
 
     user.setPasswordHash(passwordEncoder.encode(newPassword));
+    user.setLocalPasswordEnabled(true);
     tokenEntity.setUsedAt(now);
 
     userRepository.save(user);
     passwordResetTokenRepository.save(tokenEntity);
+    userSessionService.revokeAllSessions(user.getId());
 
     return new MessageResponse("Senha redefinida com sucesso.");
   }
@@ -173,8 +198,9 @@ public class AuthService {
     return new CurrentUserResponse(toUserSummary(user), toWorkspaceSummary(workspace));
   }
 
-  private SessionResponse buildSessionResponse(UserEntity user, WorkspaceEntity workspace) {
-    String token = jwtService.generateAccessToken(user.getId(), user.getEmail());
+  private SessionResponse buildSessionResponse(UserEntity user, WorkspaceEntity workspace, String client, String userAgent) {
+    UserSessionEntity session = userSessionService.createSession(user.getId(), client, userAgent);
+    String token = jwtService.generateAccessToken(user.getId(), user.getEmail(), session.getId());
     return new SessionResponse(token, toUserSummary(user), toWorkspaceSummary(workspace));
   }
 
@@ -183,16 +209,24 @@ public class AuthService {
         user.getId(),
         user.getFullName(),
         user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
         user.getLocaleTag(),
         user.getTimeZone(),
-        brazilDateTimeMapper.toDateTime(user.getCreatedAt())
+        brazilDateTimeMapper.toDateTime(user.getCreatedAt()),
+        user.isLocalPasswordEnabled(),
+        externalIdentityRepository.existsByUserId(user.getId())
     );
   }
 
   private WorkspaceSummary toWorkspaceSummary(WorkspaceEntity workspace) {
+    WorkspaceStorageService.StorageSnapshot storage = workspaceStorageService.snapshot(workspace);
     return new WorkspaceSummary(
         workspace.getId(),
         workspace.getName(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
+        workspace.getSubscriptionPlan(),
+        storage.storageUsedBytes(),
+        storage.storageQuotaBytes(),
         brazilDateTimeMapper.toDateTime(workspace.getCreatedAt())
     );
   }
@@ -205,7 +239,7 @@ public class AuthService {
     return normalized;
   }
 
-  private SessionResponse loginExistingExternalIdentity(
+  private UserEntity loginExistingExternalIdentity(
       UserExternalIdentityEntity externalIdentity,
       OAuthIdentity identity,
       String normalizedEmail
@@ -215,12 +249,10 @@ public class AuthService {
 
     updateExternalIdentitySnapshot(externalIdentity, identity, normalizedEmail);
     externalIdentityRepository.save(externalIdentity);
-
-    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
-    return buildSessionResponse(user, workspace);
+    return user;
   }
 
-  private SessionResponse loginAndLinkExternalIdentity(
+  private UserEntity loginAndLinkExternalIdentity(
       String provider,
       String providerSubject,
       OAuthIdentity identity,
@@ -244,16 +276,15 @@ public class AuthService {
     externalIdentity.setProviderSubject(providerSubject);
     updateExternalIdentitySnapshot(externalIdentity, identity, normalizedEmail);
     externalIdentityRepository.save(externalIdentity);
-
-    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
-    return buildSessionResponse(user, workspace);
+    return user;
   }
 
   private UserEntity createExternalUser(OAuthIdentity identity, String normalizedEmail) {
     UserEntity user = new UserEntity();
     user.setFullName(normalizeName(defaultExternalName(identity.displayName(), normalizedEmail)));
     user.setEmail(normalizedEmail);
-    user.setPasswordHash(passwordEncoder.encode("oauth-" + UUID.randomUUID()));
+    user.setPasswordHash(null);
+    user.setLocalPasswordEnabled(false);
     return userRepository.save(user);
   }
 
@@ -356,15 +387,22 @@ public class AuthService {
       UUID id,
       String fullName,
       String email,
+      String avatarUrl,
       String locale,
       String timeZone,
-      ApiDateTimeDto createdAt
+      ApiDateTimeDto createdAt,
+      boolean localPasswordEnabled,
+      boolean externalIdentityLinked
   ) {
   }
 
   public record WorkspaceSummary(
       UUID id,
       String name,
+      String avatarUrl,
+      WorkspaceSubscriptionPlan subscriptionPlan,
+      long storageUsedBytes,
+      long storageQuotaBytes,
       ApiDateTimeDto createdAt
   ) {
   }

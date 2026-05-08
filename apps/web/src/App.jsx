@@ -4,7 +4,6 @@ import { usePreferences } from './features/preferences/context/PreferencesContex
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import OAuthCallback from './features/auth/pages/OAuthCallback/OAuthCallback.jsx'
 import PasswordRecovery from './features/auth/pages/PasswordRecovery/PasswordRecovery.jsx'
-import CanvasPage from './features/canvas/pages/CanvasPage/CanvasPage.jsx'
 import CalendarPage from './features/calendar/pages/CalendarPage/CalendarPage.jsx'
 import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
 import { INFO_PAGES } from './features/info/data/infoPages.js'
@@ -16,7 +15,6 @@ import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import {
-  buildCanvasPath,
   buildWorkspaceBoardPath,
   LEGACY_PLAN_ROUTE_ALIASES,
   normalizePathname,
@@ -34,7 +32,6 @@ function isInternalAppPath(pathname) {
   const internalBases = [
     ROUTES.workspace,
     ROUTES.workspaceBoard,
-    ROUTES.canvas,
     ROUTES.calendar,
     ROUTES.files,
     ROUTES.settings,
@@ -51,7 +48,6 @@ function isInternalAppPath(pathname) {
 
   const legacyPrefixes = [
     ...LEGACY_PLAN_ROUTE_ALIASES.board,
-    ...LEGACY_PLAN_ROUTE_ALIASES.canvas,
   ]
     .map((pattern) => pattern.replace('/:planId', ''))
     .map((path) => normalizePathname(path))
@@ -174,8 +170,6 @@ export default function App() {
       <Route path={ROUTES.workspace} element={<Workspace />} />
       <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
       <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />
-      <Route path={ROUTES.canvas} element={<CanvasPage />} />
-      <Route path={`${ROUTES.canvas}/:planId`} element={<CanvasPage />} />
       <Route path={ROUTES.calendar} element={<CalendarPage />} />
       <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
       <Route path={ROUTES.settings} element={<SettingsPage />} />
@@ -197,14 +191,6 @@ export default function App() {
           key={path}
           path={path}
           element={<LegacyPlanRedirect buildPath={buildWorkspaceBoardPath} />}
-        />
-      ))}
-
-      {LEGACY_PLAN_ROUTE_ALIASES.canvas.map((path) => (
-        <Route
-          key={path}
-          path={path}
-          element={<LegacyPlanRedirect buildPath={buildCanvasPath} />}
         />
       ))}
 

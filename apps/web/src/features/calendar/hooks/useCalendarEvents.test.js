@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 
 vi.mock('../../auth/context/AuthContext.jsx', () => ({
   useAuth: () => ({
@@ -97,5 +97,55 @@ describe('useCalendarEvents', () => {
 
     expect(apiRequest).toHaveBeenCalledTimes(1)
     expect(apiRequest).toHaveBeenCalledWith('/api/calendar/events', expect.any(Object))
+  })
+
+  it('keeps sequential created events in the backend snapshot', async () => {
+    apiRequest.mockImplementation(async (path, options = {}) => {
+      if (path === '/api/calendar/events' && !options.method) {
+        return []
+      }
+      if (path === '/api/calendar/events' && options.method === 'POST') {
+        return {
+          id: options.body.title === 'Primeiro' ? 'event-1' : 'event-2',
+          title: options.body.title,
+          generatedFromCard: false,
+          startsAt: { iso: options.body.startsAt },
+          endsAt: { iso: options.body.endsAt },
+        }
+      }
+      throw new Error(`Unexpected apiRequest path: ${path}`)
+    })
+
+    const { result } = renderHook(() => useCalendarEvents({ enrichGeneratedCardKinds: false }))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await act(async () => {
+      await result.current.createEvent({ title: 'Primeiro', date: '2026-04-20', start: '09:00', end: '10:00' })
+      await result.current.createEvent({ title: 'Segundo', date: '2026-04-20', start: '11:00', end: '12:00' })
+    })
+
+    expect(result.current.events.map((event) => event.id)).toEqual(['event-1', 'event-2'])
+  })
+
+  it('rejects invalid event times before posting to the backend', async () => {
+    apiRequest.mockResolvedValueOnce([])
+
+    const { result } = renderHook(() => useCalendarEvents({ enrichGeneratedCardKinds: false }))
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await expect(result.current.createEvent({
+      title: 'Invertido',
+      date: '2026-04-20',
+      start: '10:00',
+      end: '09:00',
+    })).rejects.toThrow('O horário de fim precisa ser depois do início.')
+
+    expect(apiRequest).toHaveBeenCalledTimes(1)
   })
 })

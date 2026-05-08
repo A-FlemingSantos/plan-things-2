@@ -2,12 +2,12 @@ package com.planthings.api.plans;
 
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.board.BoardColumnEntity;
 import com.planthings.api.board.BoardColumnRepository;
 import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.calendar.CalendarEventRepository;
-import com.planthings.api.canvas.CanvasDocumentEntity;
-import com.planthings.api.canvas.CanvasDocumentRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.error.ConflictException;
@@ -38,12 +38,12 @@ public class PlanService {
   private final PersonalWorkspaceService personalWorkspaceService;
   private final BoardColumnRepository boardColumnRepository;
   private final BoardCardRepository boardCardRepository;
-  private final CanvasDocumentRepository canvasDocumentRepository;
   private final CalendarEventRepository calendarEventRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final PlanInviteEmailSender planInviteEmailSender;
+  private final AvatarImageService avatarImageService;
   private final Clock clock;
   private final String frontendBaseUrl;
 
@@ -56,12 +56,12 @@ public class PlanService {
       PersonalWorkspaceService personalWorkspaceService,
       BoardColumnRepository boardColumnRepository,
       BoardCardRepository boardCardRepository,
-      CanvasDocumentRepository canvasDocumentRepository,
       CalendarEventRepository calendarEventRepository,
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       PlanInviteEmailSender planInviteEmailSender,
+      AvatarImageService avatarImageService,
       Clock clock,
       @Value("${app.frontend-base-url}") String frontendBaseUrl
   ) {
@@ -73,12 +73,12 @@ public class PlanService {
     this.personalWorkspaceService = personalWorkspaceService;
     this.boardColumnRepository = boardColumnRepository;
     this.boardCardRepository = boardCardRepository;
-    this.canvasDocumentRepository = canvasDocumentRepository;
     this.calendarEventRepository = calendarEventRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.planInviteEmailSender = planInviteEmailSender;
+    this.avatarImageService = avatarImageService;
     this.clock = clock;
     this.frontendBaseUrl = normalizeFrontendBaseUrl(frontendBaseUrl);
   }
@@ -124,9 +124,6 @@ public class PlanService {
     ownerMembership.setUserId(currentUser.getId());
     ownerMembership.setRole(PlanMemberRole.OWNER);
     planMemberRepository.save(ownerMembership);
-
-    createDefaultBoardColumns(plan.getId());
-    createEmptyCanvasDocument(plan.getId(), currentUser.getId());
 
     return toPlanDetails(plan, currentUser.getId());
   }
@@ -435,6 +432,7 @@ public class PlanService {
         user.getId(),
         user.getFullName(),
         user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
         member.getRole(),
         brazilDateTimeMapper.toDateTime(member.getCreatedAt())
     );
@@ -463,31 +461,6 @@ public class PlanService {
         invite.getToken(),
         brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
     );
-  }
-
-  private void createDefaultBoardColumns(UUID planId) {
-    createColumn(planId, "Backlog", "#a0a0a0", 0);
-    createColumn(planId, "Em andamento", "#4290da", 1);
-    createColumn(planId, "Review", "#d4aef1", 2);
-    createColumn(planId, "Concluido", "#0f703a", 3);
-  }
-
-  private void createColumn(UUID planId, String title, String color, int positionIndex) {
-    BoardColumnEntity column = new BoardColumnEntity();
-    column.setPlanId(planId);
-    column.setTitle(title);
-    column.setColor(color);
-    column.setPositionIndex(positionIndex);
-    boardColumnRepository.save(column);
-  }
-
-  private void createEmptyCanvasDocument(UUID planId, UUID userId) {
-    CanvasDocumentEntity document = new CanvasDocumentEntity();
-    document.setPlanId(planId);
-    document.setUpdatedByUserId(userId);
-    document.setVersionNumber(0L);
-    document.setDocumentJson("{\"cards\":[],\"connections\":[],\"pan\":{\"x\":60,\"y\":40},\"zoom\":1}");
-    canvasDocumentRepository.save(document);
   }
 
   private String requireName(String value) {
@@ -594,6 +567,7 @@ public class PlanService {
       UUID userId,
       String fullName,
       String email,
+      String avatarUrl,
       PlanMemberRole role,
       ApiDateTimeDto joinedAt
   ) {

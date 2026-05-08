@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import { formatFileSize } from '../../../files/data/libraryRepository.js'
+import { createOffsetDateTime } from '@plan-things/shared-client/dates'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 const DEFAULT_CARD_SCHEDULE = {
@@ -141,24 +143,42 @@ function buildInitials(fullName = '') {
     .join('') || 'PT'
 }
 
-function buildInitialChecklist(card) {
-  const [firstChecklist] = Array.isArray(card.checklists) ? card.checklists : []
+function normalizeChecklistItem(item = {}) {
+  const title = item.title ?? item.text ?? 'Item'
+  const completed = Boolean(item.completed ?? item.checked)
 
-  if (!firstChecklist) {
+  return {
+    ...item,
+    title,
+    text: title,
+    completed,
+    checked: completed,
+    assignee: item.assignee ?? null,
+    assigneeUserId: item.assigneeUserId ?? item.assignee?.id ?? null,
+    startAt: item.startAt ?? null,
+    dueAt: item.dueAt ?? null,
+  }
+}
+
+function normalizeChecklist(checklist) {
+  if (!checklist) {
     return null
   }
 
   return {
-    id: firstChecklist.id,
-    title: firstChecklist.title ?? 'Checklist',
-    items: Array.isArray(firstChecklist.items)
-      ? firstChecklist.items.map((item) => ({
-          id: item.id,
-          text: item.title ?? item.text ?? 'Item',
-          checked: Boolean(item.completed ?? item.checked),
-        }))
-      : [],
+    ...checklist,
+    title: checklist.title ?? 'Checklist',
+    items: Array.isArray(checklist.items) ? checklist.items.map(normalizeChecklistItem) : [],
   }
+}
+
+function buildInitialChecklist(card) {
+  const [firstChecklist] = Array.isArray(card.checklists) ? card.checklists : []
+  return normalizeChecklist(firstChecklist ?? null)
+}
+
+function getChecklistAssigneeName(item) {
+  return item.assignee?.fullName ?? item.assignee?.name ?? item.assignee?.email ?? ''
 }
 
 function ComputerIcon() {
@@ -272,6 +292,12 @@ export default function CardModal({
   onUploadLocalFile,
   onRemoveAttachment,
   onDownloadFile,
+  onCreateChecklist,
+  onDeleteChecklist,
+  onCreateChecklistItem,
+  onUpdateChecklistItem,
+  timeZone = 'America/Sao_Paulo',
+  dateFormat = 'dd/MM/yyyy',
 }) {
   const initialSchedule = buildInitialCardSchedule(card)
   const [title,    setTitle]    = useState(card.title)
@@ -330,12 +356,15 @@ export default function CardModal({
   const [showChecklistDueMenu, setShowChecklistDueMenu] = useState(false)
   const [checklistAssignMenuPosition, setChecklistAssignMenuPosition] = useState({ top: 0, left: 0 })
   const [checklistDueMenuPosition, setChecklistDueMenuPosition] = useState({ top: 0, left: 0 })
-  const [checklistSelectedDay, setChecklistSelectedDay] = useState(7)
-  const [checklistDateMenuMonth, setChecklistDateMenuMonth] = useState(() => buildCalendarBaseDate('07/04/2026'))
+  const [checklistSelectedDay, setChecklistSelectedDay] = useState(() => new Date().getDate())
+  const [checklistDateMenuMonth, setChecklistDateMenuMonth] = useState(() => buildCalendarBaseDate(''))
   const [checklistStartEnabled, setChecklistStartEnabled] = useState(false)
   const [checklistStartDateValue, setChecklistStartDateValue] = useState('')
-  const [checklistDueEnabled, setChecklistDueEnabled] = useState(true)
-  const [checklistDueValue, setChecklistDueValue] = useState('07/04/26')
+  const [checklistDueEnabled, setChecklistDueEnabled] = useState(false)
+  const [checklistDueValue, setChecklistDueValue] = useState('')
+  const [checklistAssigneeUserId, setChecklistAssigneeUserId] = useState(null)
+  const [isChecklistMutating, setIsChecklistMutating] = useState(false)
+  const [togglingChecklistItemId, setTogglingChecklistItemId] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -375,6 +404,34 @@ export default function CardModal({
   const currentUserName = currentUser?.fullName ?? currentUser?.email ?? 'Você'
   const dateMenuDays = buildCalendarDays(dateMenuMonth)
   const checklistDateMenuDays = buildCalendarDays(checklistDateMenuMonth)
+  const canPersistChecklist = isBackendDriven
+    && typeof onCreateChecklist === 'function'
+    && typeof onCreateChecklistItem === 'function'
+    && typeof onUpdateChecklistItem === 'function'
+  const canDeletePersistedChecklist = isBackendDriven
+    && typeof onDeleteChecklist === 'function'
+  const checklistReadOnly = isBackendDriven && !canPersistChecklist
+  const checklistDueLabel = checklistDueEnabled && checklistDueValue ? checklistDueValue : 'Sem data'
+  const isChecklistAssignAccentActive = showChecklistAssignMenu || Boolean(checklistAssigneeUserId)
+  const isChecklistDueAccentActive = showChecklistDueMenu || checklistDueEnabled || Boolean(checklistDueValue)
+
+  const resetChecklistItemDraft = () => {
+    setNewChecklistItem('')
+    setChecklistAssigneeUserId(null)
+    setChecklistStartEnabled(false)
+    setChecklistStartDateValue('')
+    setChecklistDueEnabled(false)
+    setChecklistDueValue('')
+    setShowChecklistAssignMenu(false)
+    setShowChecklistDueMenu(false)
+    setChecklistSelectedDay(new Date().getDate())
+    setChecklistDateMenuMonth(buildCalendarBaseDate(''))
+  }
+
+  const closeChecklistComposer = () => {
+    resetChecklistItemDraft()
+    setChecklistComposerOpen(false)
+  }
   const startClose = () => {
     setExiting(true)
     setTimeout(onClose, 220)
@@ -411,6 +468,7 @@ export default function CardModal({
         },
         comments,
         attachments,
+        checklists: activeChecklist ? [activeChecklist] : [],
       })
       startClose()
     } catch (error) {
@@ -576,27 +634,151 @@ export default function CardModal({
       setIsDeleting(false)
     }
   }
-  const handleChecklistCreate = () => {
-    if (isBackendDriven) return
+  const handleChecklistCreate = async () => {
     const nextTitle = checklistTitle.trim() || 'Checklist'
+
+    if (canPersistChecklist) {
+      if (isChecklistMutating || activeChecklist) return
+
+      setIsChecklistMutating(true)
+      setSubmitError(null)
+
+      try {
+        const createdChecklist = await onCreateChecklist(card.id, nextTitle)
+        setActiveChecklist(normalizeChecklist(createdChecklist))
+        setChecklistComposerOpen(true)
+        setShowChecklistMenu(false)
+        setChecklistTitle('Checklist')
+        resetChecklistItemDraft()
+      } catch (error) {
+        setSubmitError(error?.message ?? 'Não foi possível criar a checklist.')
+      } finally {
+        setIsChecklistMutating(false)
+      }
+      return
+    }
+
     setActiveChecklist({ title: nextTitle, items: [] })
     setChecklistComposerOpen(true)
     setShowChecklistMenu(false)
     setChecklistTitle('Checklist')
+    resetChecklistItemDraft()
   }
-  const handleChecklistItemAdd = () => {
-    if (isBackendDriven) return
+  const handleChecklistDelete = async () => {
+    if (!activeChecklist || isChecklistMutating) return
+
+    if (canDeletePersistedChecklist) {
+      setIsChecklistMutating(true)
+      setSubmitError(null)
+
+      try {
+        await onDeleteChecklist(activeChecklist.id)
+        setActiveChecklist(null)
+        closeChecklistComposer()
+      } catch (error) {
+        setSubmitError(error?.message ?? 'Não foi possível excluir a checklist.')
+      } finally {
+        setIsChecklistMutating(false)
+      }
+      return
+    }
+
+    setActiveChecklist(null)
+    closeChecklistComposer()
+  }
+  const handleChecklistItemAdd = async () => {
     if (!newChecklistItem.trim() || !activeChecklist) return
+
+    const startAt = checklistStartEnabled
+      ? createOffsetDateTime(checklistStartDateValue, '09:00', { timeZone, dateFormat })
+      : null
+    const dueAt = checklistDueEnabled
+      ? createOffsetDateTime(checklistDueValue, '09:00', { timeZone, dateFormat })
+      : null
+
+    if (checklistStartEnabled && !startAt) {
+      setSubmitError('Informe uma data inicial válida para o item da checklist.')
+      return
+    }
+
+    if (checklistDueEnabled && !dueAt) {
+      setSubmitError('Informe uma data de entrega válida para o item da checklist.')
+      return
+    }
+
+    if (canPersistChecklist) {
+      setIsChecklistMutating(true)
+      setSubmitError(null)
+
+      try {
+        const createdItem = await onCreateChecklistItem(activeChecklist.id, {
+          title: newChecklistItem.trim(),
+          assigneeUserId: checklistAssigneeUserId,
+          startAt,
+          dueAt,
+        })
+
+        setActiveChecklist((prev) => (
+          prev
+            ? {
+                ...prev,
+                items: [...prev.items, normalizeChecklistItem(createdItem)],
+              }
+            : prev
+        ))
+        resetChecklistItemDraft()
+        setChecklistComposerOpen(true)
+      } catch (error) {
+        setSubmitError(error?.message ?? 'Não foi possível adicionar o item da checklist.')
+      } finally {
+        setIsChecklistMutating(false)
+      }
+      return
+    }
 
     setActiveChecklist(prev => ({
       ...prev,
       items: [...prev.items, { id: uid(), text: newChecklistItem.trim(), checked: false }],
     }))
-    setNewChecklistItem('')
+    resetChecklistItemDraft()
     setChecklistComposerOpen(true)
   }
-  const toggleChecklistItem = (itemId) => {
-    if (isBackendDriven) return
+  const toggleChecklistItem = async (itemId) => {
+    const currentItem = activeChecklist?.items?.find((item) => item.id === itemId)
+    if (!currentItem) return
+
+    if (canPersistChecklist) {
+      setTogglingChecklistItemId(itemId)
+      setSubmitError(null)
+
+      try {
+        const updatedItem = await onUpdateChecklistItem({
+          id: currentItem.id,
+          title: currentItem.title ?? currentItem.text,
+          completed: !Boolean(currentItem.completed ?? currentItem.checked),
+          assigneeUserId: currentItem.assigneeUserId ?? currentItem.assignee?.id ?? null,
+          startAt: currentItem.startAt?.iso ?? currentItem.startAt ?? null,
+          dueAt: currentItem.dueAt?.iso ?? currentItem.dueAt ?? null,
+        })
+
+        setActiveChecklist((prev) => (
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((item) => (
+                  item.id === itemId ? normalizeChecklistItem(updatedItem) : item
+                )),
+              }
+            : prev
+        ))
+      } catch (error) {
+        setSubmitError(error?.message ?? 'Não foi possível atualizar o item da checklist.')
+      } finally {
+        setTogglingChecklistItemId(null)
+      }
+      return
+    }
+
     setActiveChecklist(prev => ({
       ...prev,
       items: prev.items.map(item => item.id === itemId ? { ...item, checked: !item.checked } : item),
@@ -652,6 +834,7 @@ export default function CardModal({
         name: getMemberName(member),
         initials: member.initials ?? buildInitials(getMemberName(member)),
         color: member.color ?? 'var(--text-3)',
+        avatarUrl: member.avatarUrl ?? null,
       }
     }
 
@@ -661,6 +844,7 @@ export default function CardModal({
       name: fallbackName,
       initials: buildInitials(fallbackName),
       color: 'var(--text-3)',
+      avatarUrl: commentItem.authorAvatarUrl ?? null,
     }
   }
 
@@ -1309,7 +1493,7 @@ export default function CardModal({
               <button
                 ref={dateMenuButtonRef}
                 type="button"
-                className={`${styles.cmToolbarBtn} ${showDateMenu ? styles.cmToolbarBtnActive : ''}`}
+                className={styles.cmToolbarBtn}
                 onClick={() => setShowDateMenu(v => !v)}
                 aria-expanded={showDateMenu}
                 aria-haspopup="dialog"
@@ -1318,19 +1502,27 @@ export default function CardModal({
                 Datas
                 <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
               </button>
-              {!isBackendDriven && (
-                <button
-                  ref={checklistMenuButtonRef}
-                  type="button"
-                  className={`${styles.cmToolbarBtn} ${showChecklistMenu ? styles.cmToolbarBtnActive : ''}`}
-                  onClick={() => setShowChecklistMenu(v => !v)}
-                  aria-expanded={showChecklistMenu}
-                  aria-haspopup="dialog"
-                >
-                  <icons.Check />
-                  Checklist
-                </button>
-              )}
+              <button
+                ref={checklistMenuButtonRef}
+                type="button"
+                className={styles.cmToolbarBtn}
+                onClick={() => {
+                  if (!checklistReadOnly && !activeChecklist) setShowChecklistMenu(v => !v)
+                }}
+                aria-expanded={showChecklistMenu}
+                aria-haspopup="dialog"
+                disabled={checklistReadOnly || Boolean(activeChecklist) || isChecklistMutating}
+                title={
+                  checklistReadOnly
+                    ? 'Checklist indisponível para edição neste modo.'
+                    : activeChecklist
+                      ? 'Este cartão já possui uma checklist.'
+                      : undefined
+                }
+              >
+                <icons.Check />
+                Checklist
+              </button>
             </div>
 
               <div className={styles.cmSection}>
@@ -1486,17 +1678,14 @@ export default function CardModal({
                       <span className={styles.cmChecklistBlockIcon}><icons.Check /></span>
                       <p className={styles.cmChecklistBlockTitle}>{activeChecklist.title}</p>
                     </div>
-                      {!isBackendDriven && (
+                      {(!isBackendDriven || canDeletePersistedChecklist) && (
                         <button
                           type="button"
                           className={styles.cmChecklistDeleteBtn}
-                          onClick={() => {
-                            setActiveChecklist(null)
-                            setNewChecklistItem('')
-                            setChecklistComposerOpen(false)
-                          }}
+                          onClick={handleChecklistDelete}
+                          disabled={isChecklistMutating}
                         >
-                          Excluir
+                          {isChecklistMutating ? 'Excluindo...' : 'Excluir'}
                         </button>
                       )}
                   </div>
@@ -1527,19 +1716,27 @@ export default function CardModal({
                             type="button"
                             className={`${styles.cmChecklistItemCheckbox} ${item.checked ? styles.cmChecklistItemCheckboxActive : ''}`}
                             onClick={() => toggleChecklistItem(item.id)}
-                            disabled={isBackendDriven}
+                            disabled={checklistReadOnly || togglingChecklistItemId === item.id}
                           >
                             {item.checked && <icons.Check />}
                           </button>
-                          <span className={`${styles.cmChecklistItemText} ${item.checked ? styles.cmChecklistItemTextChecked : ''}`}>
-                            {item.text}
-                          </span>
+                          <div className={styles.cmChecklistItemBody}>
+                            <span className={`${styles.cmChecklistItemText} ${item.checked ? styles.cmChecklistItemTextChecked : ''}`}>
+                              {item.text}
+                            </span>
+                            {(getChecklistAssigneeName(item) || item.dueAt?.text) && (
+                              <span className={styles.cmChecklistItemMeta}>
+                                {getChecklistAssigneeName(item) || 'Sem responsável'}
+                                {item.dueAt?.text ? ` · ${item.dueAt.text}` : ''}
+                              </span>
+                            )}
+                          </div>
                         </label>
                       ))}
                     </div>
                   )}
 
-                    {!isBackendDriven && checklistComposerOpen ? (
+                    {!checklistReadOnly && checklistComposerOpen ? (
                       <>
                         <textarea
                           ref={checklistItemTextareaRef}
@@ -1557,52 +1754,58 @@ export default function CardModal({
                         />
 
                         <div className={styles.cmChecklistActions}>
-                          <button type="button" className={styles.cmChecklistPrimaryBtn} onClick={handleChecklistItemAdd}>Adicionar</button>
+                          <button
+                            type="button"
+                            className={styles.cmChecklistPrimaryBtn}
+                            onClick={handleChecklistItemAdd}
+                            disabled={isChecklistMutating || !newChecklistItem.trim()}
+                          >
+                            {isChecklistMutating ? 'Adicionando...' : 'Adicionar'}
+                          </button>
                           <button
                             type="button"
                             className={styles.cmChecklistSecondaryBtn}
-                            onClick={() => {
-                              setNewChecklistItem('')
-                              setChecklistComposerOpen(false)
-                              setShowChecklistAssignMenu(false)
-                              setShowChecklistDueMenu(false)
-                            }}
+                            onClick={closeChecklistComposer}
+                            disabled={isChecklistMutating}
                           >
                             Cancelar
                           </button>
                           <button
                             ref={checklistAssignButtonRef}
                             type="button"
-                            className={styles.cmChecklistMetaBtn}
+                            className={`${styles.cmChecklistMetaBtn} ${isChecklistAssignAccentActive ? styles.cmChecklistMetaBtnActive : ''}`}
                             onClick={() => setShowChecklistAssignMenu(v => !v)}
                             aria-expanded={showChecklistAssignMenu}
                             aria-haspopup="menu"
+                            disabled={isChecklistMutating}
                           >
-                            <icons.User /> Atribuir
+                            <icons.User /> {checklistAssigneeUserId ? 'Responsável definido' : 'Atribuir'}
                           </button>
                           <button
                             ref={checklistDueButtonRef}
                             type="button"
-                            className={styles.cmChecklistMetaBtn}
+                            className={`${styles.cmChecklistMetaBtn} ${isChecklistDueAccentActive ? styles.cmChecklistMetaBtnActive : ''}`}
                             onClick={() => setShowChecklistDueMenu(v => !v)}
                             aria-expanded={showChecklistDueMenu}
                             aria-haspopup="dialog"
+                            disabled={isChecklistMutating}
                           >
-                            <icons.Clock /> {checklistDueValue}
+                            <icons.Clock /> {checklistDueLabel}
                           </button>
                         </div>
                       </>
-                    ) : !isBackendDriven ? (
+                    ) : !checklistReadOnly ? (
                       <button
                         type="button"
                         className={styles.cmChecklistAddItemBtn}
                         onClick={() => setChecklistComposerOpen(true)}
+                        disabled={isChecklistMutating}
                       >
                         Adicionar um item
                       </button>
                     ) : null}
 
-                  {isBackendDriven && (
+                  {checklistReadOnly && (
                     <p className={styles.cmChecklistNotice}>
                       Checklist exibido em modo somente leitura enquanto finalizamos a integração completa dessa área.
                     </p>
@@ -1753,7 +1956,14 @@ export default function CardModal({
                 const isOverflowing = overflowingComments[c.id]
                 return (
                   <div key={c.id} className={styles.cmActivityItem}>
-                    <span className={styles.cmCommentAvatar} style={{ background: presenter.color }}>{presenter.initials}</span>
+                    <AuthenticatedAvatar
+                      className={styles.cmCommentAvatar}
+                      imageClassName={styles.avatarImage}
+                      style={{ background: presenter.color }}
+                      avatarUrl={presenter.avatarUrl}
+                      fallback={presenter.initials}
+                      title={presenter.name}
+                    />
                     <div className={styles.cmActivityContent}>
                       <p
                         ref={element => {
@@ -1811,7 +2021,14 @@ export default function CardModal({
                     <div className={styles.cmSelectedMembers}>
                       {selectedMembers.map(member => (
                         <span key={member.id} className={styles.cmSelectedMember}>
-                          <span className={styles.cmMemberAvatar} style={{ background: member.color }}>{member.initials}</span>
+                          <AuthenticatedAvatar
+                            className={styles.cmMemberAvatar}
+                            imageClassName={styles.avatarImage}
+                            style={{ background: member.color }}
+                            avatarUrl={member.avatarUrl}
+                            fallback={member.initials}
+                            title={getMemberName(member)}
+                          />
                           {getMemberName(member)}
                         </span>
                       ))}
@@ -2028,7 +2245,14 @@ export default function CardModal({
                 onClick={() => toggleMember(m.id)}
                 aria-pressed={memberIds.includes(m.id)}
               >
-                <span className={styles.cmMemberAvatar} style={{ background: m.color }}>{m.initials}</span>
+                <AuthenticatedAvatar
+                  className={styles.cmMemberAvatar}
+                  imageClassName={styles.avatarImage}
+                  style={{ background: m.color }}
+                  avatarUrl={m.avatarUrl}
+                  fallback={m.initials}
+                  title={getMemberName(m)}
+                />
                 <span className={styles.cmMemberName}>{getMemberName(m)}</span>
                 {memberIds.includes(m.id) && <span className={styles.cmMemberCheck}><icons.Check /></span>}
               </button>
@@ -2074,8 +2298,9 @@ export default function CardModal({
               type="button"
               className={styles.cmChecklistMenuAdd}
               onClick={handleChecklistCreate}
+              disabled={isChecklistMutating}
             >
-              Adicionar
+              {isChecklistMutating ? 'Adicionando...' : 'Adicionar'}
             </button>
           </div>
         </div>
@@ -2093,12 +2318,22 @@ export default function CardModal({
             <button
               key={member.id}
               type="button"
-              className={`${styles.cmChecklistCompactItem} ${memberIds.includes(member.id) ? styles.cmChecklistCompactItemActive : ''}`}
-              onClick={() => toggleMember(member.id)}
+              className={`${styles.cmChecklistCompactItem} ${checklistAssigneeUserId === member.id ? styles.cmChecklistCompactItemActive : ''}`}
+              onClick={() => {
+                setChecklistAssigneeUserId((current) => (current === member.id ? null : member.id))
+                setShowChecklistAssignMenu(false)
+              }}
             >
-              <span className={styles.cmMemberAvatar} style={{ background: member.color }}>{member.initials}</span>
+              <AuthenticatedAvatar
+                className={styles.cmMemberAvatar}
+                imageClassName={styles.avatarImage}
+                style={{ background: member.color }}
+                avatarUrl={member.avatarUrl}
+                fallback={member.initials}
+                title={getMemberName(member)}
+              />
               <span>{getMemberName(member)}</span>
-              {memberIds.includes(member.id) && (
+              {checklistAssigneeUserId === member.id && (
                 <span className={styles.cmLabelCheck}>
                   <icons.Check />
                 </span>
@@ -2190,9 +2425,9 @@ export default function CardModal({
                   onClick={() => {
                     setChecklistDueEnabled(v => !v)
                     if (checklistDueEnabled) {
-                      setChecklistDueValue('Sem data')
-                    } else if (checklistDueValue === 'Sem data') {
-                      setChecklistDueValue('07/04/26')
+                      setChecklistDueValue('')
+                    } else if (!checklistDueValue) {
+                      setChecklistDueValue(formatCalendarInputValue(checklistSelectedDay, checklistDateMenuMonth))
                     }
                   }}
                 >

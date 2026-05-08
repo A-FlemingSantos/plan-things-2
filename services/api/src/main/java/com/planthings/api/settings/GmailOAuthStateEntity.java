@@ -20,6 +20,9 @@ public class GmailOAuthStateEntity extends BaseEntity {
   @Column(nullable = false, length = 120)
   private String nonce;
 
+  @Column(nullable = false, length = 20)
+  private String client = "web";
+
   @Column(nullable = false)
   private OffsetDateTime expiresAt;
 
@@ -47,6 +50,14 @@ public class GmailOAuthStateEntity extends BaseEntity {
 
   public void setNonce(String nonce) {
     this.nonce = nonce;
+  }
+
+  public String getClient() {
+    return client;
+  }
+
+  public void setClient(String client) {
+    this.client = client;
   }
 
   public OffsetDateTime getExpiresAt() {

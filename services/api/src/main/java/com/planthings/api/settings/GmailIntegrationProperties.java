@@ -14,6 +14,8 @@ public class GmailIntegrationProperties {
 
   private URI redirectUri;
   private URI frontendReturnUrl;
+  private URI webReturnUrl;
+  private URI mobileReturnUrl;
   private long stateMinutes = 10;
   private List<String> scopes = new ArrayList<>(List.of(
       "openid",
@@ -36,6 +38,22 @@ public class GmailIntegrationProperties {
 
   public void setFrontendReturnUrl(URI frontendReturnUrl) {
     this.frontendReturnUrl = frontendReturnUrl;
+  }
+
+  public URI getWebReturnUrl() {
+    return webReturnUrl == null ? frontendReturnUrl : webReturnUrl;
+  }
+
+  public void setWebReturnUrl(URI webReturnUrl) {
+    this.webReturnUrl = webReturnUrl;
+  }
+
+  public URI getMobileReturnUrl() {
+    return mobileReturnUrl == null ? URI.create("planthings://settings") : mobileReturnUrl;
+  }
+
+  public void setMobileReturnUrl(URI mobileReturnUrl) {
+    this.mobileReturnUrl = mobileReturnUrl;
   }
 
   public long getStateMinutes() {

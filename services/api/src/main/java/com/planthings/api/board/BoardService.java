@@ -2,6 +2,8 @@ package com.planthings.api.board;
 
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.calendar.CalendarService;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
@@ -57,6 +59,7 @@ public class BoardService {
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final CalendarService calendarService;
   private final BoardCardInboxEmailSender boardCardInboxEmailSender;
+  private final AvatarImageService avatarImageService;
 
   public BoardService(
       PlanAccessService planAccessService,
@@ -76,7 +79,8 @@ public class BoardService {
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       CalendarService calendarService,
-      BoardCardInboxEmailSender boardCardInboxEmailSender
+      BoardCardInboxEmailSender boardCardInboxEmailSender,
+      AvatarImageService avatarImageService
   ) {
     this.planAccessService = planAccessService;
     this.planLabelRepository = planLabelRepository;
@@ -96,6 +100,7 @@ public class BoardService {
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.calendarService = calendarService;
     this.boardCardInboxEmailSender = boardCardInboxEmailSender;
+    this.avatarImageService = avatarImageService;
   }
 
   public BoardView getBoard(UUID planId) {
@@ -113,7 +118,7 @@ public class BoardService {
     BoardColumnEntity column = new BoardColumnEntity();
     column.setPlanId(planId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
-    column.setColor(color == null || color.isBlank() ? "#a0a0a0" : color.trim());
+    column.setColor(normalizeColumnColor(color));
     column.setPositionIndex(boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).size());
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
@@ -125,9 +130,7 @@ public class BoardService {
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardColumnEntity column = requireColumn(planId, columnId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
-    if (color != null && !color.isBlank()) {
-      column.setColor(color.trim());
-    }
+    column.setColor(normalizeColumnColor(color));
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
   }
@@ -170,7 +173,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     requireColumn(planId, columnId);
@@ -186,6 +189,7 @@ public class BoardService {
     card.setDescription(normalizeOptional(description));
     card.setLabelId(labelId);
     card.setPositionIndex(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId).size());
+    card.setCompleted(Boolean.TRUE.equals(completed));
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
@@ -196,7 +200,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
@@ -215,6 +219,9 @@ public class BoardService {
     card.setTitle(requireText(title, "O titulo do cartao e obrigatorio."));
     card.setDescription(normalizeOptional(description));
     card.setLabelId(labelId);
+    if (completed != null) {
+      card.setCompleted(Boolean.TRUE.equals(completed));
+    }
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
@@ -290,6 +297,19 @@ public class BoardService {
     checklist.setPositionIndex(boardChecklistRepository.findByCardIdOrderByPositionIndexAsc(cardId).size());
     boardChecklistRepository.save(checklist);
     return toChecklistView(checklist);
+  }
+
+  @Transactional
+  public MessageResponse deleteChecklist(UUID planId, UUID checklistId) {
+    UUID userId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, userId);
+    BoardChecklistEntity checklist = requireChecklist(planId, checklistId);
+    UUID cardId = checklist.getCardId();
+
+    boardChecklistItemRepository.deleteAll(boardChecklistItemRepository.findByChecklistIdOrderByPositionIndexAsc(checklistId));
+    boardChecklistRepository.delete(checklist);
+    reorder(boardChecklistRepository.findByCardIdOrderByPositionIndexAsc(cardId), BoardChecklistEntity::setPositionIndex);
+    return new MessageResponse("Checklist excluida com sucesso.");
   }
 
   @Transactional
@@ -488,7 +508,7 @@ public class BoardService {
     List<UserSummary> recipientUsers = recipients.stream()
         .map(recipient -> usersById.get(recipient.getUserId()))
         .filter(Objects::nonNull)
-        .map(user -> new UserSummary(user.getId(), user.getFullName(), user.getEmail()))
+        .map(this::toUserSummary)
         .toList();
 
     return new InboxItemView(
@@ -496,7 +516,7 @@ public class BoardService {
         delivery.getCardId(),
         card.getTitle(),
         deriveCardKind(card),
-        sender == null ? null : new UserSummary(sender.getId(), sender.getFullName(), sender.getEmail()),
+        toUserSummary(sender),
         delivery.getSentFrom(),
         recipients.stream().map(BoardCardInboxDeliveryRecipientEntity::getEmail).toList(),
         recipientUsers,
@@ -512,7 +532,7 @@ public class BoardService {
     List<UserSummary> assignees = boardCardAssigneeRepository.findByCardId(card.getId()).stream()
         .map(assignee -> userRepository.findById(assignee.getUserId()).orElse(null))
         .filter(Objects::nonNull)
-        .map(user -> new UserSummary(user.getId(), user.getFullName(), user.getEmail()))
+        .map(this::toUserSummary)
         .toList();
     List<CommentView> comments = boardCardCommentRepository.findByCardIdOrderByCreatedAtAsc(card.getId()).stream()
         .map(this::toCommentView)
@@ -530,9 +550,10 @@ public class BoardService {
         card.getColumnId(),
         card.getTitle(),
         card.getDescription(),
+        Boolean.TRUE.equals(card.getCompleted()),
         deriveCardKind(card),
         card.getPositionIndex(),
-        author == null ? null : new UserSummary(author.getId(), author.getFullName(), author.getEmail()),
+        toUserSummary(author),
         label == null ? null : new LabelView(label.getId(), label.getName(), label.getColor()),
         assignees,
         comments,
@@ -562,7 +583,7 @@ public class BoardService {
         file.getType(),
         file.getMimeType(),
         file.getSizeBytes(),
-        attachedBy == null ? null : new UserSummary(attachedBy.getId(), attachedBy.getFullName(), attachedBy.getEmail()),
+        toUserSummary(attachedBy),
         attachedByCurrentUser,
         canRemove,
         brazilDateTimeMapper.toDateTime(attachment.getCreatedAt())
@@ -575,7 +596,8 @@ public class BoardService {
         comment.getId(),
         author == null ? "Usuario" : author.getFullName(),
         comment.getMessage(),
-        brazilDateTimeMapper.toDateTime(comment.getCreatedAt())
+        brazilDateTimeMapper.toDateTime(comment.getCreatedAt()),
+        toUserSummary(author)
     );
   }
 
@@ -593,9 +615,22 @@ public class BoardService {
         item.getTitle(),
         item.getCompleted(),
         item.getPositionIndex(),
-        assignee == null ? null : new UserSummary(assignee.getId(), assignee.getFullName(), assignee.getEmail()),
+        toUserSummary(assignee),
         brazilDateTimeMapper.toDateTime(item.getStartAt()),
         brazilDateTimeMapper.toDateTime(item.getDueAt())
+    );
+  }
+
+  private UserSummary toUserSummary(UserEntity user) {
+    if (user == null) {
+      return null;
+    }
+
+    return new UserSummary(
+        user.getId(),
+        user.getFullName(),
+        user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId())
     );
   }
 
@@ -793,6 +828,7 @@ public class BoardService {
       UUID columnId,
       String title,
       String description,
+      boolean completed,
       CardKind kind,
       int position,
       UserSummary author,
@@ -808,13 +844,17 @@ public class BoardService {
   ) {
   }
 
-  public record UserSummary(UUID id, String fullName, String email) {
+  public record UserSummary(UUID id, String fullName, String email, String avatarUrl) {
+  }
+
+  private String normalizeColumnColor(String color) {
+    return color == null ? "" : color.trim();
   }
 
   public record LabelView(UUID id, String name, String color) {
   }
 
-  public record CommentView(UUID id, String authorName, String message, ApiDateTimeDto createdAt) {
+  public record CommentView(UUID id, String authorName, String message, ApiDateTimeDto createdAt, UserSummary author) {
   }
 
   public record ChecklistView(UUID id, String title, int position, List<ChecklistItemView> items) {

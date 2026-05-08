@@ -291,7 +291,24 @@
 }
 
 .topBarLeft { flex: 1; min-width: 0; }
-.topBarRight { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.topBarRight { display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-width: 0; }
+
+.topBarFilterRow,
+.topBarActionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.topBarFilterRow { flex: 1 1 auto; }
+.topBarActionRow { flex-shrink: 0; }
+
+.topBarNotification {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
 
 .selectionToolbar {
   display: flex;
@@ -1579,28 +1596,104 @@
 @media (max-width: 768px) {
   .shell, .shellCollapsed { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .topBar { padding: 0 16px; gap: 8px; flex-wrap: wrap; height: auto; min-height: 60px; padding-top: 10px; padding-bottom: 10px; }
-  .topBarLeft, .topBarRight { width: 100%; }
-  .topBarRight { flex-wrap: wrap; }
+  .topBar {
+    top: 0;
+    z-index: 720;
+    padding: 12px 14px;
+    gap: 10px;
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 0;
+    background: color-mix(in srgb, var(--surface-1) 94%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .topBarLeft {
+    display: none;
+  }
+  .topBarRight { width: 100%; }
+  .topBarRight {
+    display: grid;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .topBarFilterRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 148px);
+    gap: 8px;
+  }
+  .topBarActionRow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
   .searchWrap {
-    flex: 1 1 220px;
     min-width: 0;
+    height: 38px;
+    border-radius: 14px;
   }
   .searchInput {
     width: 100%;
   }
   .sortWrap {
-    flex: 1 1 140px;
     min-width: 0;
+    height: 38px;
+    border-radius: 14px;
+  }
+  .viewToggle {
+    width: 100%;
+    min-width: 0;
+    height: 38px;
+    padding: 3px;
+    border-radius: 14px;
+  }
+  .viewBtn {
+    width: auto;
+    flex: 1 1 0;
+    height: 30px;
+  }
+  .topBarDivider {
+    display: none;
   }
   .newFolderBtn,
   .uploadBtn {
-    flex: 1 1 160px;
+    width: 100%;
+    justify-content: center;
+    height: 38px;
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: 14px;
+  }
+  .topBarNotification {
+    justify-content: flex-end;
+  }
+  .selectionToolbar {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+    padding: 8px;
+  }
+  .selectionCount {
+    grid-column: 1 / -1;
+    padding: 0 36px 0 4px;
+    align-self: center;
+  }
+  .selectionAction {
+    width: 100%;
     justify-content: center;
   }
-  .selectionToolbar { width: 100%; overflow-x: auto; }
-  .selectionCount { padding-left: 8px; }
-  .filesArea { padding: 16px; }
+  .selectionClear {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    border-left: none;
+    border-radius: var(--radius-sm);
+  }
+  .filesArea { padding: 14px 14px 24px; }
   .filesAreaHeader { align-items: start; flex-direction: column; gap: 8px; margin-bottom: 16px; }
   .fileGrid { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; }
   .detailPanel {
@@ -1608,7 +1701,7 @@
     left: 8px;
     right: 8px;
     bottom: 8px;
-    z-index: 700;
+    z-index: 710;
     width: auto;
     max-height: min(78vh, 680px);
     border: 1px solid var(--border-1);
@@ -1657,20 +1750,16 @@
     padding-right: 12px;
   }
   .topBarRight {
-    gap: 6px;
+    gap: 8px;
   }
-  .searchWrap,
-  .sortWrap,
-  .newFolderBtn,
-  .uploadBtn,
+  .topBarActionRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .viewToggle {
-    width: 100%;
+    grid-column: span 2;
   }
-  .viewBtn {
-    flex: 1;
-  }
-  .filesArea {
-    padding: 14px 12px 24px;
+  .topBarNotification {
+    display: none;
   }
   .fileGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1681,6 +1770,9 @@
     bottom: 0;
     max-height: 82vh;
     border-radius: 18px 18px 0 0;
+  }
+  .detailPanelPreview {
+    height: 104px;
   }
   .uploadToastItem {
     padding: 10px 12px;

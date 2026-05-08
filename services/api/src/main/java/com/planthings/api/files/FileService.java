@@ -12,6 +12,7 @@ import com.planthings.api.plans.PlanEntity;
 import com.planthings.api.plans.PlanMemberRole;
 import com.planthings.api.workspace.WorkspaceEntity;
 import com.planthings.api.workspace.WorkspaceRepository;
+import com.planthings.api.workspace.WorkspaceStorageService;
 import com.planthings.api.board.BoardCardEntity;
 import com.planthings.api.board.BoardCardRepository;
 import java.util.ArrayDeque;
@@ -41,6 +42,7 @@ public class FileService {
   private final PlanAccessService planAccessService;
   private final BoardCardRepository boardCardRepository;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
+  private final WorkspaceStorageService workspaceStorageService;
 
   public FileService(
       FileEntryRepository fileEntryRepository,
@@ -51,7 +53,8 @@ public class FileService {
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
       BoardCardRepository boardCardRepository,
-      BrazilDateTimeMapper brazilDateTimeMapper
+      BrazilDateTimeMapper brazilDateTimeMapper,
+      WorkspaceStorageService workspaceStorageService
   ) {
     this.fileEntryRepository = fileEntryRepository;
     this.fileBlobRepository = fileBlobRepository;
@@ -62,6 +65,7 @@ public class FileService {
     this.planAccessService = planAccessService;
     this.boardCardRepository = boardCardRepository;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
+    this.workspaceStorageService = workspaceStorageService;
   }
 
   public List<FileItemView> listPersonalFiles(boolean trash) {
@@ -172,6 +176,23 @@ public class FileService {
     FileEntryEntity file = requireOwnedFile(fileId, user.getId());
     applyRestoreRecursively(file, user.getId());
     return new MessageResponse("Arquivo restaurado com sucesso.");
+  }
+
+  @Transactional
+  public MessageResponse permanentlyDelete(UUID fileId) {
+    UserEntity user = authenticatedUserService.requireUser();
+    FileEntryEntity file = requireOwnedFile(fileId, user.getId());
+
+    if (file.getDeletedAt() == null) {
+      throw new BadRequestException("ARQUIVO_FORA_DA_LIXEIRA", "Envie o arquivo para a lixeira antes de exclui-lo permanentemente.");
+    }
+
+    List<FileEntryEntity> subtree = collectSubtree(file, user.getId());
+    List<FileEntryEntity> childFirstSubtree = new ArrayList<>(subtree);
+    java.util.Collections.reverse(childFirstSubtree);
+    fileEntryRepository.deleteAll(childFirstSubtree);
+
+    return new MessageResponse("Arquivo excluido permanentemente com sucesso.");
   }
 
   @Transactional
@@ -329,6 +350,8 @@ public class FileService {
     if (multipartFile.isEmpty()) {
       throw new BadRequestException("ARQUIVO_VAZIO", "Selecione um arquivo valido para envio.");
     }
+
+    workspaceStorageService.assertCanStore(workspace, multipartFile.getSize());
 
     FileEntryEntity file = new FileEntryEntity();
     file.setWorkspaceId(workspace.getId());

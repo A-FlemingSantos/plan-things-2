@@ -78,7 +78,7 @@ public class SecurityConfiguration {
   @Bean
   public UserDetailsService userDetailsService(UserRepository userRepository) {
     return username -> userRepository.findByEmailIgnoreCase(username)
-        .map(user -> new SecurityUser(user.getId(), user.getEmail(), user.getPasswordHash()))
+        .map(user -> new SecurityUser(user.getId(), null, user.getEmail(), user.getPasswordHash()))
         .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("Usuario nao encontrado."));
   }
 

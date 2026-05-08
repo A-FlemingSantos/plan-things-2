@@ -150,6 +150,28 @@ public abstract class ApiIntegrationTestSupport {
     return readJson(result).path("data");
   }
 
+  protected String createBoardColumn(String token, String planId, String title) throws Exception {
+    JsonNode board = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/columns")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "title": "%s",
+                  "color": "#a0a0a0"
+                }
+                """.formatted(title)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    for (JsonNode column : board.path("columns")) {
+      if (title.equals(column.path("title").asText())) {
+        return column.path("id").asText();
+      }
+    }
+
+    throw new AssertionError("Coluna nao encontrada apos criacao: " + title);
+  }
+
   protected JsonNode readJson(MvcResult result) throws Exception {
     return objectMapper.readTree(result.getResponse().getContentAsString());
   }

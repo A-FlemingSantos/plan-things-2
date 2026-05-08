@@ -3,9 +3,7 @@ import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import {
-  buildCanvasSavePayload,
   mapBoardViewToColumns,
-  mapCanvasDocumentToState,
   mapPlanSummaryToRecord,
   mergeBoardIntoPlan,
   mergePlanDetails,
@@ -43,6 +41,7 @@ export function PlansProvider({ children }) {
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
   const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
+  const sessionKey = mode === 'backend' ? `${currentUser?.id ?? 'anonymous'}:${accessToken ?? ''}` : mode
 
   useLayoutEffect(() => {
     if (mode === 'boot') {
@@ -66,7 +65,7 @@ export function PlansProvider({ children }) {
     setPlans([])
     setActivePlanId(null)
     setIsLoading(true)
-  }, [mode])
+  }, [mode, sessionKey])
 
   useEffect(() => {
     let active = true
@@ -76,12 +75,14 @@ export function PlansProvider({ children }) {
         return
       }
 
+      const requestSessionKey = sessionKey
+
       try {
         const summaries = await apiRequest('/api/plans', {
           token: accessToken,
         })
 
-        if (!active) return
+        if (!active || requestSessionKey !== sessionKey) return
 
         const mappedPlans = summaries.map((summary, index) => mapPlanSummaryToRecord(summary, index))
         setPlans(mappedPlans)
@@ -92,11 +93,11 @@ export function PlansProvider({ children }) {
           return mappedPlans[0]?.id ?? null
         })
       } catch {
-        if (!active) return
+        if (!active || requestSessionKey !== sessionKey) return
         setPlans([])
         setActivePlanId(null)
       } finally {
-        if (active) {
+        if (active && requestSessionKey === sessionKey) {
           setIsLoading(false)
         }
       }
@@ -107,7 +108,7 @@ export function PlansProvider({ children }) {
     return () => {
       active = false
     }
-  }, [accessToken, mode])
+  }, [accessToken, mode, sessionKey])
 
   const createPlan = useCallback(async (data) => {
     if (!backendEnabled) {
@@ -162,6 +163,96 @@ export function PlansProvider({ children }) {
     return nextPlansSnapshot
   }, [accessToken, backendEnabled])
 
+  const renamePlan = useCallback(async (planId, name) => {
+    const trimmedName = name?.trim()
+    if (!planId || !trimmedName) {
+      throw new Error('Informe um nome para o plano.')
+    }
+
+    const currentPlan = plansById.get(planId)
+    if (!currentPlan) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    if (!backendEnabled) {
+      const renamedPlan = normalizePlanRecord({ ...currentPlan, name: trimmedName })
+      setPlans((prev) => setPlanById(prev, planId, renamedPlan))
+      return renamedPlan
+    }
+
+    const response = await apiRequest(`/api/plans/${planId}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: {
+        name: trimmedName,
+        description: currentPlan.description ?? '',
+        coverThemeId: currentPlan.coverThemeId ?? null,
+        cover: currentPlan.cover ?? null,
+        coverImageId: currentPlan.coverImageId ?? null,
+      },
+    })
+
+    const responseName = typeof response?.plan?.name === 'string'
+      ? response.plan.name.trim()
+      : ''
+    const renamedPlan = normalizePlanRecord({
+      ...mergePlanDetails(currentPlan, response),
+      name: responseName || trimmedName,
+    })
+    setPlans((prev) => setPlanById(prev, planId, renamedPlan))
+    return renamedPlan
+  }, [accessToken, backendEnabled, plansById])
+
+  const updatePlanCover = useCallback(async (planId, coverData = {}) => {
+    if (!planId) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    const currentPlan = plansById.get(planId)
+    if (!currentPlan) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    const nextCover = coverData.cover ?? currentPlan.cover ?? null
+    const nextCoverThemeId = coverData.coverThemeId ?? null
+    const nextCoverImageId = coverData.coverImageId ?? null
+    const nextPlanPatch = {
+      cover: nextCover,
+      coverThemeId: nextCoverThemeId,
+      coverImageId: nextCoverImageId,
+      coverImage: coverData.coverImage ?? null,
+      coverImageThumb: coverData.coverImageThumb ?? coverData.coverImage ?? null,
+    }
+
+    if (!backendEnabled) {
+      const updatedPlan = normalizePlanRecord({
+        ...currentPlan,
+        ...nextPlanPatch,
+      })
+      setPlans((prev) => setPlanById(prev, planId, updatedPlan))
+      return updatedPlan
+    }
+
+    const response = await apiRequest(`/api/plans/${planId}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: {
+        name: currentPlan.name,
+        description: currentPlan.description ?? '',
+        coverThemeId: nextCoverThemeId,
+        cover: nextCover,
+        coverImageId: nextCoverImageId,
+      },
+    })
+
+    const updatedPlan = normalizePlanRecord({
+      ...mergePlanDetails(currentPlan, response),
+      ...nextPlanPatch,
+    })
+    setPlans((prev) => setPlanById(prev, planId, updatedPlan))
+    return updatedPlan
+  }, [accessToken, backendEnabled, plansById])
+
   const selectPlan = useCallback((planId) => {
     setActivePlanId(planId)
   }, [])
@@ -179,13 +270,6 @@ export function PlansProvider({ children }) {
     updatePlan(planId, (plan) => {
       const nextColumns = typeof updater === 'function' ? updater(plan.boardColumns) : updater
       return { ...plan, boardColumns: nextColumns }
-    })
-  }, [updatePlan])
-
-  const updatePlanCanvas = useCallback((planId, updater) => {
-    updatePlan(planId, (plan) => {
-      const nextCanvasState = typeof updater === 'function' ? updater(plan.canvasState) : updater
-      return { ...plan, canvasState: nextCanvasState }
     })
   }, [updatePlan])
 
@@ -286,58 +370,6 @@ export function PlansProvider({ children }) {
     )))
   }, [boardMappingOptions])
 
-  const loadPlanCanvas = useCallback(async (planId) => {
-    if (!backendEnabled || !planId) {
-      return getPlanById(planId)?.canvasState ?? null
-    }
-
-    const canvasDocument = await apiRequest(`/api/plans/${planId}/canvas`, {
-      token: accessToken,
-    })
-
-    const canvasState = mapCanvasDocumentToState(canvasDocument)
-    setPlans((prev) => prev.map((plan) => (
-      plan.id === planId
-        ? {
-            ...plan,
-            canvasState,
-            canvasVersion: canvasDocument.version,
-            canvasLoaded: true,
-          }
-        : plan
-    )))
-
-    return canvasState
-  }, [accessToken, backendEnabled, getPlanById])
-
-  const savePlanCanvas = useCallback(async (planId, canvasState) => {
-    if (!backendEnabled || !planId) {
-      updatePlanCanvas(planId, canvasState)
-      return canvasState
-    }
-
-    const currentPlan = plansById.get(planId)
-    const canvasDocument = await apiRequest(`/api/plans/${planId}/canvas`, {
-      method: 'PUT',
-      token: accessToken,
-      body: buildCanvasSavePayload(canvasState, currentPlan?.canvasVersion ?? 0),
-    })
-
-    const nextCanvasState = mapCanvasDocumentToState(canvasDocument)
-    setPlans((prev) => prev.map((plan) => (
-      plan.id === planId
-        ? {
-            ...plan,
-            canvasState: nextCanvasState,
-            canvasVersion: canvasDocument.version,
-            canvasLoaded: true,
-          }
-        : plan
-    )))
-
-    return nextCanvasState
-  }, [accessToken, backendEnabled, plansById, updatePlanCanvas])
-
   const value = useMemo(() => ({
     plans,
     activePlan,
@@ -348,18 +380,17 @@ export function PlansProvider({ children }) {
     isBackendDriven: backendEnabled,
     createPlan,
     deletePlan,
+    renamePlan,
+    updatePlanCover,
     getPlanById,
     selectPlan,
     updatePlan,
     updatePlanBoard,
-    updatePlanCanvas,
     ensurePlanDetails,
     refreshPlanDetails,
     refreshPlans,
     loadPlanBoard,
     applyBoardView,
-    loadPlanCanvas,
-    savePlanCanvas,
   }), [
     activePlan,
     activePlanId,
@@ -371,16 +402,16 @@ export function PlansProvider({ children }) {
     ensurePlanDetails,
     refreshPlanDetails,
     refreshPlans,
+    renamePlan,
+    updatePlanCover,
     getPlanById,
     isLoading,
     loadPlanBoard,
-    loadPlanCanvas,
     plans,
-    savePlanCanvas,
     selectPlan,
     updatePlan,
     updatePlanBoard,
-    updatePlanCanvas,
+    updatePlanCover,
     workspace,
   ])
 

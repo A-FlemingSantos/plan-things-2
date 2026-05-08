@@ -52,8 +52,9 @@ public class OAuthLoginService {
     this.transactionTemplate = transactionTemplate;
   }
 
-  public AuthorizationStartResponse start(String provider, String redirectTo) {
+  public AuthorizationStartResponse start(String provider, String redirectTo, String client) {
     String normalizedProvider = normalizeProvider(provider);
+    String normalizedClient = normalizeClient(client);
     OAuthProperties.Provider providerConfig = requireProviderConfig(normalizedProvider);
 
     String state = randomToken();
@@ -63,6 +64,7 @@ public class OAuthLoginService {
     stateEntity.setStateToken(state);
     stateEntity.setNonce(nonce);
     stateEntity.setRedirectPath(sanitizeRedirectPath(redirectTo));
+    stateEntity.setClient(normalizedClient);
     stateEntity.setExpiresAt(OffsetDateTime.now(clock).plusMinutes(properties.getStateMinutes()));
     stateRepository.save(stateEntity);
 
@@ -82,48 +84,59 @@ public class OAuthLoginService {
 
   public URI completeProviderCallback(String provider, String state, String code, String error) {
     String normalizedProvider = normalizeProvider(provider);
+    String callbackClient = "web";
 
     try {
       if (StringUtils.hasText(error)) {
-        return buildFrontendCallback(null, null, "OAUTH_PROVIDER_ERROR");
+        OAuthLoginStateEntity stateEntity = consumeStateIfPresent(normalizedProvider, state);
+        if (stateEntity != null) {
+          callbackClient = stateEntity.getClient();
+        }
+        return buildFrontendCallback(null, null, "OAUTH_PROVIDER_ERROR", callbackClient);
       }
 
       if (!StringUtils.hasText(code)) {
-        throw new BadRequestException("OAUTH_CODE_AUSENTE", "O provedor nao retornou codigo de autorizacao.");
+        OAuthLoginStateEntity stateEntity = consumeStateIfPresent(normalizedProvider, state);
+        if (stateEntity != null) {
+          callbackClient = stateEntity.getClient();
+        }
+        return buildFrontendCallback(null, null, "OAUTH_CODE_AUSENTE", callbackClient);
       }
 
       OAuthProperties.Provider providerConfig = requireProviderConfig(normalizedProvider);
       OAuthLoginStateEntity stateEntity = Objects.requireNonNull(transactionTemplate.execute(
           status -> consumeState(normalizedProvider, state)
       ));
+      callbackClient = stateEntity.getClient();
       OAuthIdentity identity = providerClient.exchangeCode(normalizedProvider, providerConfig, code, stateEntity.getNonce());
 
       return Objects.requireNonNull(transactionTemplate.execute(
           status -> createCompletionCode(identity, stateEntity)
       ));
     } catch (ApiException exception) {
-      return buildFrontendCallback(null, null, exception.getCode());
+      return buildFrontendCallback(null, null, exception.getCode(), callbackClient);
     } catch (RuntimeException exception) {
       logger.warn("Unexpected OAuth callback failure for provider={}", normalizedProvider, exception);
-      return buildFrontendCallback(null, null, "OAUTH_CALLBACK_FALHOU");
+      return buildFrontendCallback(null, null, "OAUTH_CALLBACK_FALHOU", callbackClient);
     }
   }
 
   private URI createCompletionCode(OAuthIdentity identity, OAuthLoginStateEntity stateEntity) {
-    AuthService.SessionResponse session = authService.loginWithExternalIdentity(identity);
+    UserEntity user = authService.loginWithExternalIdentity(identity);
 
     OAuthLoginCodeEntity codeEntity = new OAuthLoginCodeEntity();
     codeEntity.setCompletionCode(randomToken());
-    codeEntity.setUserId(session.user().id());
+    codeEntity.setUserId(user.getId());
     codeEntity.setRedirectPath(stateEntity.getRedirectPath());
+    codeEntity.setClient(stateEntity.getClient());
     codeEntity.setExpiresAt(OffsetDateTime.now(clock).plusMinutes(properties.getCompletionCodeMinutes()));
     codeRepository.save(codeEntity);
 
-    return buildFrontendCallback(codeEntity.getCompletionCode(), codeEntity.getRedirectPath(), null);
+    return buildFrontendCallback(codeEntity.getCompletionCode(), codeEntity.getRedirectPath(), null, stateEntity.getClient());
   }
 
   @Transactional
-  public AuthService.SessionResponse exchangeCompletionCode(String completionCode) {
+  public AuthService.SessionResponse exchangeCompletionCode(String completionCode, String userAgent) {
     OAuthLoginCodeEntity codeEntity = codeRepository.findByCompletionCodeForUpdate(completionCode)
         .orElseThrow(() -> new BadRequestException("OAUTH_COMPLETION_CODE_INVALIDO", "O codigo de conclusao do login e invalido."));
 
@@ -135,7 +148,7 @@ public class OAuthLoginService {
     codeEntity.setUsedAt(now);
     codeRepository.save(codeEntity);
 
-    return authService.sessionForUserId(codeEntity.getUserId());
+    return authService.sessionForUserId(codeEntity.getUserId(), codeEntity.getClient(), userAgent);
   }
 
   private OAuthLoginStateEntity consumeState(String provider, String state) {
@@ -154,6 +167,13 @@ public class OAuthLoginService {
     stateEntity.setUsedAt(now);
     stateRepository.save(stateEntity);
     return stateEntity;
+  }
+
+  private OAuthLoginStateEntity consumeStateIfPresent(String provider, String state) {
+    if (!StringUtils.hasText(state)) {
+      return null;
+    }
+    return transactionTemplate.execute(status -> consumeState(provider, state));
   }
 
   private OAuthProperties.Provider requireProviderConfig(String provider) {
@@ -175,8 +195,11 @@ public class OAuthLoginService {
     return providerConfig;
   }
 
-  private URI buildFrontendCallback(String completionCode, String redirectPath, String errorCode) {
-    UriComponentsBuilder builder = UriComponentsBuilder.fromUri(properties.getFrontendCallbackUrl());
+  private URI buildFrontendCallback(String completionCode, String redirectPath, String errorCode, String client) {
+    URI callbackUrl = "mobile".equals(normalizeClient(client))
+        ? properties.getMobileCallbackUrl()
+        : properties.getWebCallbackUrl();
+    UriComponentsBuilder builder = UriComponentsBuilder.fromUri(callbackUrl);
 
     if (StringUtils.hasText(completionCode)) {
       builder.queryParam("code", completionCode);
@@ -223,6 +246,11 @@ public class OAuthLoginService {
 
   private String normalizeProvider(String provider) {
     return provider == null ? "" : provider.trim().toLowerCase(Locale.ROOT);
+  }
+
+  private String normalizeClient(String client) {
+    String normalized = client == null ? "" : client.trim().toLowerCase(Locale.ROOT);
+    return "mobile".equals(normalized) ? "mobile" : "web";
   }
 
   public record AuthorizationStartResponse(String authorizationUrl) {

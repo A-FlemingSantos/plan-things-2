@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import { ROUTES, normalizePathname } from '../../../shared/config/routes.js'
+import { normalizeKanbanAccentColor } from '../../workspace/data/kanbanColorPalette.js'
 
 export const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
 export const THEME_STORAGE_PREFIX = 'plan-things:theme:v1:'
@@ -11,6 +12,10 @@ const LAST_CONTEXT_STORAGE_PREFIX = 'plan-things:last-context:v1:'
 export const DEFAULT_LOCAL_PREFERENCES = {
   homePage: 'workspace',
   openLastCtx: true,
+  confirmDestructiveActions: true,
+  liquidGlass: false,
+  showCurrentPlanSection: true,
+  kanbanAccentColor: '',
 }
 
 export const DEFAULT_GENERAL_PREFERENCES = {
@@ -30,7 +35,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
 const TRACKABLE_CONTEXT_PREFIXES = [
   ROUTES.workspaceBoard,
   ROUTES.workspace,
-  ROUTES.canvas,
   ROUTES.calendar,
   ROUTES.files,
 ]
@@ -157,8 +161,12 @@ export function readStoredLocalPreferences(userId) {
   }
 
   return {
-    homePage: parsed.homePage ?? DEFAULT_LOCAL_PREFERENCES.homePage,
+    homePage: normalizeHomePagePreference(parsed.homePage),
     openLastCtx: parsed.openLastCtx ?? DEFAULT_LOCAL_PREFERENCES.openLastCtx,
+    confirmDestructiveActions: parsed.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions,
+    liquidGlass: parsed.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass,
+    showCurrentPlanSection: parsed.showCurrentPlanSection ?? DEFAULT_LOCAL_PREFERENCES.showCurrentPlanSection,
+    kanbanAccentColor: normalizeKanbanAccentColor(parsed.kanbanAccentColor),
   }
 }
 
@@ -167,8 +175,12 @@ function writeStoredLocalPreferences(userId, preferences) {
   if (!key) return
 
   writeStoredJson(key, {
-    homePage: preferences.homePage,
+    homePage: normalizeHomePagePreference(preferences.homePage),
     openLastCtx: preferences.openLastCtx,
+    confirmDestructiveActions: preferences.confirmDestructiveActions,
+    liquidGlass: preferences.liquidGlass,
+    showCurrentPlanSection: preferences.showCurrentPlanSection,
+    kanbanAccentColor: normalizeKanbanAccentColor(preferences.kanbanAccentColor),
   })
 }
 
@@ -189,8 +201,11 @@ function writeStoredLastContext(userId, pathname) {
   window.localStorage.setItem(key, normalizePathname(pathname))
 }
 
+function normalizeHomePagePreference(value) {
+  return value === 'calendar' || value === 'files' ? value : DEFAULT_LOCAL_PREFERENCES.homePage
+}
+
 function mapHomePageToRoute(homePage) {
-  if (homePage === 'canvas') return ROUTES.canvas
   if (homePage === 'calendar') return ROUTES.calendar
   if (homePage === 'files') return ROUTES.files
   return ROUTES.workspace

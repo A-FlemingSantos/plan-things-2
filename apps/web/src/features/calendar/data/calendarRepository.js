@@ -9,13 +9,32 @@ const CALENDAR_SOURCES = [
   { id: 'gmail', name: 'flemingsantosa@gmail...', color: '#b146c2' },
 ]
 
-const CALENDAR_EVENTS = [
-  { id: 'evt-1', title: 'Sync diário de produto', date: '2026-04-09', start: '09:00', end: '09:30', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Teams' },
-  { id: 'evt-2', title: 'Planejamento do sprint', date: '2026-04-13', start: '10:00', end: '11:30', sourceId: 'student', calendar: 'rm95433', location: 'Workspace' },
-  { id: 'evt-3', title: 'Review de design', date: '2026-04-15', start: '14:00', end: '15:00', sourceId: 'gmail', calendar: 'Gmail', location: 'Studio' },
-  { id: 'evt-4', title: 'Imprimir notas da agenda', date: '2026-04-17', start: '16:00', end: '16:20', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Mesa' },
-  { id: 'evt-5', title: 'Checkpoint do release', date: '2026-04-23', start: '11:00', end: '11:45', sourceId: 'arthur', calendar: 'Arthur Fleming' },
+const CALENDAR_EVENT_TEMPLATES = [
+  { id: 'evt-1', title: 'Sync diário de produto', day: 3, start: '09:00', end: '09:30', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Teams' },
+  { id: 'evt-2', title: 'Planejamento do sprint', day: 7, start: '10:00', end: '11:30', sourceId: 'student', calendar: 'rm95433', location: 'Workspace' },
+  { id: 'evt-3', title: 'Review de design', day: 11, start: '14:00', end: '15:00', sourceId: 'gmail', calendar: 'Gmail', location: 'Studio' },
+  { id: 'evt-4', title: 'Imprimir notas da agenda', day: 15, start: '16:00', end: '16:20', sourceId: 'arthur', calendar: 'Arthur Fleming', location: 'Mesa' },
+  { id: 'evt-5', title: 'Checkpoint do release', day: 19, start: '11:00', end: '11:45', sourceId: 'arthur', calendar: 'Arthur Fleming' },
 ]
+
+function padDateNumber(value) {
+  return String(value).padStart(2, '0')
+}
+
+function createCurrentMonthEvents(baseDate = new Date()) {
+  const year = baseDate.getFullYear()
+  const monthIndex = baseDate.getMonth()
+  const month = padDateNumber(monthIndex + 1)
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate()
+
+  return CALENDAR_EVENT_TEMPLATES.map((event) => {
+    const day = Math.min(Math.max(event.day, 1), daysInMonth)
+    return {
+      ...event,
+      date: `${year}-${month}-${padDateNumber(day)}`,
+    }
+  })
+}
 
 function getSourceById(sources, sourceId) {
   return sources.find((source) => source.id === sourceId) ?? sources[0]
@@ -24,7 +43,7 @@ function getSourceById(sources, sourceId) {
 export function createInitialCalendarSnapshot() {
   return normalizeCalendarSnapshot({
     sources: CALENDAR_SOURCES,
-    events: CALENDAR_EVENTS,
+    events: createCurrentMonthEvents(),
   })
 }
 

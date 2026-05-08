@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { renderApp } from './renderApp.jsx'
+import { installMatchMediaController } from './matchMedia.js'
 
 describe('Page verification flows', () => {
   it('verifies key landing-page interactions', async () => {
@@ -100,22 +101,14 @@ describe('Page verification flows', () => {
     expect(screen.queryByLabelText('Planejador')).not.toBeInTheDocument()
   })
 
-  it('verifies canvas route fallback and toolbar toggle', async () => {
-    const user = userEvent.setup()
+  it('keeps the mobile kanban as web without app-style list/task switching', async () => {
+    installMatchMediaController(390)
 
-    renderApp('/canvas')
+    renderApp('/workspace/board/product-launch-q3')
 
-    expect(await screen.findByText('4 cartões')).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/canvas/product-launch-q3')
-    const [toolbarHandle] = screen.getAllByRole('button', { name: /selecionar/i })
-    expect(toolbarHandle).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Reduzir zoom' })).toBeInTheDocument()
-
-    await user.click(toolbarHandle)
-    expect(screen.queryByRole('button', { name: 'Reduzir zoom' })).not.toBeInTheDocument()
-
-    await user.click(toolbarHandle)
-    expect(screen.getByRole('button', { name: 'Reduzir zoom' })).toBeInTheDocument()
+    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist', { name: 'Visões do quadro' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Tarefas' })).not.toBeInTheDocument()
   })
 
   it('verifies files filters and detail inspector opening', async () => {

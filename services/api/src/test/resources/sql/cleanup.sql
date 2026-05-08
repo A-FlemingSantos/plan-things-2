@@ -2,7 +2,6 @@ DELETE FROM card_attachments;
 DELETE FROM file_plan_shares;
 DELETE FROM file_blobs;
 DELETE FROM file_entries;
-DELETE FROM canvas_documents;
 DELETE FROM calendar_events;
 DELETE FROM board_checklist_items;
 DELETE FROM board_checklists;

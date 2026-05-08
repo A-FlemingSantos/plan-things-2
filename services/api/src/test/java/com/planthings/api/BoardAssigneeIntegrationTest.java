@@ -36,7 +36,7 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
 
     JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
@@ -50,6 +50,7 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
                 """.formatted(columnId, userId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.assignees[0].id").value(userId))
+        .andExpect(jsonPath("$.data.completed").value(false))
         .andReturn()).path("data");
 
     String cardId = createdCard.path("id").asText();
@@ -70,5 +71,68 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.assignees[0].id").value(userId))
         .andExpect(jsonPath("$.data.dueAt.text").value("21/04/2026 14:00"));
   }
+
+  @Test
+  void shouldPersistCompletedStateWithoutMovingCardToDoneColumn() throws Exception {
+    JsonNode session = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Arthur Completed",
+                  "email": "arthur-completed@example.com",
+                  "password": "12345678"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String token = session.path("accessToken").asText();
+
+    JsonNode plan = createPlan(token, "Plano com conclusao persistida");
+    String planId = plan.path("plan").path("id").asText();
+
+    JsonNode board = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    String columnId = createBoardColumn(token, planId, "Tarefas");
+
+    JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card concluivel"
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.completed").value(false))
+        .andReturn()).path("data");
+
+    String cardId = createdCard.path("id").asText();
+
+    mockMvc.perform(patch("/api/plans/" + planId + "/board/cards/" + cardId)
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card concluivel",
+                  "completed": true
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columnId").value(columnId))
+        .andExpect(jsonPath("$.data.completed").value(true));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].cards[0].id").value(cardId))
+        .andExpect(jsonPath("$.data.columns[0].cards[0].columnId").value(columnId))
+        .andExpect(jsonPath("$.data.columns[0].cards[0].completed").value(true));
+  }
 }
+
 

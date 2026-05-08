@@ -36,7 +36,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     JsonNode board = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board").header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
@@ -152,7 +152,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + ownerToken))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(ownerToken, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + ownerToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -240,7 +240,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
@@ -317,7 +317,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = ownerBoard.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
@@ -431,6 +431,63 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     assertEquals(childFolderId, restoredNestedFile.path("parentId").asText());
   }
 
+  @Test
+  void shouldPermanentlyDeleteTrashedFolderTreeRecursively() throws Exception {
+    String token = registerAndGetToken("Permanent Delete", "permanent-delete@example.com", "12345678");
+
+    String rootFolderId = readJson(mockMvc.perform(post("/api/files/folders")
+            .header("Authorization", "Bearer " + token)
+            .param("name", "Raiz permanente"))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    String childFolderId = readJson(mockMvc.perform(post("/api/files/folders")
+            .header("Authorization", "Bearer " + token)
+            .param("name", "Filho permanente")
+            .param("parentId", rootFolderId))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    MockMultipartFile nestedFile = new MockMultipartFile(
+        "file",
+        "permanente.txt",
+        MediaType.TEXT_PLAIN_VALUE,
+        "subarvore permanente".getBytes()
+    );
+
+    readJson(mockMvc.perform(multipart("/api/files/upload")
+            .file(nestedFile)
+            .header("Authorization", "Bearer " + token)
+            .param("parentId", childFolderId))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    mockMvc.perform(delete("/api/files/" + rootFolderId + "/permanent")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("ARQUIVO_FORA_DA_LIXEIRA"));
+
+    mockMvc.perform(delete("/api/files/" + rootFolderId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(delete("/api/files/" + rootFolderId + "/permanent")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Arquivo excluido permanentemente com sucesso."));
+
+    mockMvc.perform(get("/api/files")
+            .header("Authorization", "Bearer " + token)
+            .param("trash", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").isEmpty());
+
+    mockMvc.perform(post("/api/files/" + rootFolderId + "/restore")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error.code").value("ARQUIVO_NAO_ENCONTRADO"));
+  }
+
   private String uploadTextFile(String token, String name) throws Exception {
     MockMultipartFile multipartFile = new MockMultipartFile(
         "file",
@@ -479,3 +536,5 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     }
   }
 }
+
+

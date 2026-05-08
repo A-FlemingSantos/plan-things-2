@@ -3,27 +3,36 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
+function installDefaultMatchMedia() {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: 1280,
+  })
+
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+}
+
 afterEach(() => {
   cleanup()
   window.localStorage.clear()
+  installDefaultMatchMedia()
 })
 
 beforeAll(() => {
-  if (!window.matchMedia) {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    })
-  }
+  installDefaultMatchMedia()
 
   if (!window.ResizeObserver) {
     window.ResizeObserver = class ResizeObserver {

@@ -15,6 +15,14 @@
   font-weight: 700;
   color: var(--text-on-accent);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .avatar:not(:first-child) {
@@ -63,4 +71,22 @@
   border-color: var(--border-2);
   color: var(--text-1);
   background: var(--hover);
+}
+
+@media (max-width: 768px) {
+  .avatar,
+  .addButton,
+  .membersButton {
+    width: 28px;
+    height: 28px;
+  }
+
+  .avatar:not(:first-child) {
+    margin-left: -6px;
+  }
+
+  .addButton,
+  .membersButton {
+    margin-left: 6px;
+  }
 }

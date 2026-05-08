@@ -65,9 +65,10 @@ public class GmailIntegrationService {
   }
 
   @Transactional
-  public AuthorizationStartResponse startAuthorization() {
+  public AuthorizationStartResponse startAuthorization(String client) {
     UserEntity user = authenticatedUserService.requireUser();
     OAuthProperties.Provider providerConfig = requireGoogleProviderConfig();
+    String normalizedClient = normalizeClient(client);
 
     String state = randomToken();
     String nonce = randomToken();
@@ -75,6 +76,7 @@ public class GmailIntegrationService {
     stateEntity.setUserId(user.getId());
     stateEntity.setStateToken(state);
     stateEntity.setNonce(nonce);
+    stateEntity.setClient(normalizedClient);
     stateEntity.setExpiresAt(OffsetDateTime.now(clock).plusMinutes(gmailProperties.getStateMinutes()));
     stateRepository.save(stateEntity);
 
@@ -97,12 +99,15 @@ public class GmailIntegrationService {
 
   @Transactional
   public URI completeProviderCallback(String state, String code, String error) {
+    String callbackClient = "web";
+
     try {
       GmailOAuthStateEntity stateEntity = consumeState(state);
+      callbackClient = stateEntity.getClient();
 
       if (StringUtils.hasText(error)) {
         rememberLastError(stateEntity.getUserId(), "GMAIL_PROVIDER_ERROR");
-        return buildFrontendReturn("error", "GMAIL_PROVIDER_ERROR");
+        return buildFrontendReturn("error", "GMAIL_PROVIDER_ERROR", callbackClient);
       }
 
       if (!StringUtils.hasText(code)) {
@@ -121,11 +126,11 @@ public class GmailIntegrationService {
 
       validateGmailIdentity(user, tokenResponse);
       saveConnection(user, tokenResponse);
-      return buildFrontendReturn("connected", null);
+      return buildFrontendReturn("connected", null, callbackClient);
     } catch (ApiException exception) {
-      return buildFrontendReturn("error", exception.getCode());
+      return buildFrontendReturn("error", exception.getCode(), callbackClient);
     } catch (RuntimeException exception) {
-      return buildFrontendReturn("error", "GMAIL_TOKEN_EXCHANGE_FALHOU");
+      return buildFrontendReturn("error", "GMAIL_TOKEN_EXCHANGE_FALHOU", callbackClient);
     }
   }
 
@@ -244,8 +249,11 @@ public class GmailIntegrationService {
     return providerConfig;
   }
 
-  private URI buildFrontendReturn(String gmailStatus, String errorCode) {
-    UriComponentsBuilder builder = UriComponentsBuilder.fromUri(gmailProperties.getFrontendReturnUrl())
+  private URI buildFrontendReturn(String gmailStatus, String errorCode, String client) {
+    URI returnUrl = "mobile".equals(normalizeClient(client))
+        ? gmailProperties.getMobileReturnUrl()
+        : gmailProperties.getWebReturnUrl();
+    UriComponentsBuilder builder = UriComponentsBuilder.fromUri(returnUrl)
         .queryParam("section", "integrations")
         .queryParam("gmail", gmailStatus);
 
@@ -260,6 +268,11 @@ public class GmailIntegrationService {
     byte[] bytes = new byte[32];
     secureRandom.nextBytes(bytes);
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+  }
+
+  private String normalizeClient(String client) {
+    String normalized = client == null ? "" : client.trim().toLowerCase(Locale.ROOT);
+    return "mobile".equals(normalized) ? "mobile" : "web";
   }
 
   public record AuthorizationStartResponse(String authorizationUrl) {

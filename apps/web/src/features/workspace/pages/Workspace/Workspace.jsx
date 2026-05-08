@@ -1,11 +1,13 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { buildCanvasPath, buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
+import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
@@ -16,7 +18,6 @@ import styles from './Workspace.module.css'
 ═══════════════════════════════════════════ */
 function HomeIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function PopoverIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function CanvasIcon()   { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg> }
 function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.8v2.8M11 1.8v2.8M2.5 6.5h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
 function FilesIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function PlusIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
@@ -26,6 +27,7 @@ function GridIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 4h8M3 7h8M3 10h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
+function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function CollapseIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
 function LogoMark() {
@@ -46,9 +48,7 @@ const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
   ...item,
   Icon:
     item.id === 'home' ? HomeIcon :
-    item.id === 'canvas' ? CanvasIcon :
-    item.id === 'calendar' ? CalendarIcon :
-    FilesIcon,
+    item.id === 'calendar' ? CalendarIcon : FilesIcon,
 }))
 
 const PLAN_TAGS = [
@@ -91,6 +91,14 @@ function TrashIcon() {
       <path d="M3 4.5h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M5.2 4.5v-.8c0-.6.5-1.1 1.1-1.1h1.4c.6 0 1.1.5 1.1 1.1v.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M4.2 4.7l.4 6.3c.04.6.53 1.1 1.13 1.1h2.54c.6 0 1.1-.5 1.13-1.1l.4-6.3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M8.8 2.7 11.3 5.2M2.5 11.5l2.8-.6L11 5.2a1.8 1.8 0 0 0-2.5-2.5L2.9 8.4l-.4 3.1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -533,8 +541,266 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
 /* ═══════════════════════════════════════════
    PLAN CARD
 ═══════════════════════════════════════════ */
-function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
+const PLAN_OPTIONS_MENU_WIDTH = 176
+const PLAN_OPTIONS_MENU_HEIGHT = 190
+const PLAN_OPTIONS_MENU_GAP = 8
+const PLAN_BACKGROUND_PICKER_WIDTH = 420
+const PLAN_BACKGROUND_PICKER_HEIGHT = 520
+
+function resolvePlanOptionsMenuPosition(anchorRect) {
+  if (!anchorRect) return { left: 0, top: 0 }
+
+  const preferredLeft = anchorRect.right + PLAN_OPTIONS_MENU_GAP
+  const maxLeft = window.innerWidth - PLAN_OPTIONS_MENU_WIDTH - PLAN_OPTIONS_MENU_GAP
+  const left = Math.max(PLAN_OPTIONS_MENU_GAP, Math.min(preferredLeft, maxLeft))
+  const maxTop = window.innerHeight - PLAN_OPTIONS_MENU_HEIGHT - PLAN_OPTIONS_MENU_GAP
+  const top = Math.max(PLAN_OPTIONS_MENU_GAP, Math.min(anchorRect.top, maxTop))
+
+  return { left, top }
+}
+
+function resolvePlanBackgroundPickerPosition(anchorRect) {
+  if (!anchorRect) return { left: 16, top: 16 }
+
+  const margin = 16
+  const gap = 12
+  const width = Math.min(PLAN_BACKGROUND_PICKER_WIDTH, window.innerWidth - margin * 2)
+  const height = Math.min(PLAN_BACKGROUND_PICKER_HEIGHT, window.innerHeight - margin * 2)
+  const canOpenRight = anchorRect.right + gap + width <= window.innerWidth - margin
+  const canOpenLeft = anchorRect.left - gap - width >= margin
+  const left = canOpenRight
+    ? anchorRect.right + gap
+    : canOpenLeft
+      ? anchorRect.left - gap - width
+      : Math.max(margin, Math.min(anchorRect.left, window.innerWidth - width - margin))
+  const top = Math.max(margin, Math.min(anchorRect.top, window.innerHeight - height - margin))
+
+  return { left, top }
+}
+
+function PlanOptionsMenu({ anchorRect, onAction }) {
+  const actions = [
+    { id: 'board', label: 'Abrir quadro', Icon: GridIcon },
+    { id: 'rename', label: 'Renomear', Icon: PencilIcon },
+    { id: 'background', label: 'Alterar background', Icon: ImagePlusIcon },
+    { id: 'delete', label: 'Excluir', Icon: TrashIcon, danger: true },
+  ]
+  const position = resolvePlanOptionsMenuPosition(anchorRect)
+  const portalRoot = document.querySelector('[data-app-theme-scope]') ?? document.body
+
+  return createPortal(
+    <div
+      className={styles.planOptionsMenu}
+      role="menu"
+      style={position}
+      onMouseDown={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+    >
+      {actions.map(({ id, label, Icon, danger }) => (
+        <button
+          key={id}
+          type="button"
+          className={`${styles.planOptionsMenuItem} ${danger ? styles.planOptionsMenuItemDanger : ''}`}
+          role="menuitem"
+          onClick={() => onAction?.(id)}
+        >
+          <Icon />
+          <span>{label}</span>
+        </button>
+      ))}
+    </div>,
+    portalRoot
+  )
+}
+
+function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, onSelectTheme, onSelectImage }) {
+  const pickerRef = useRef(null)
+  const position = resolvePlanBackgroundPickerPosition(anchorRect)
+  const portalRoot = document.querySelector('[data-app-theme-scope]') ?? document.body
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (pickerRef.current?.contains(event.target)) return
+      onClose?.()
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose?.()
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose])
+
+  return createPortal(
+    <div
+      ref={pickerRef}
+      className={`${styles.collectionsPopover} ${styles.planBackgroundPicker}`}
+      style={position}
+      role="dialog"
+      aria-modal="false"
+      aria-label="Alterar background do plano"
+      onMouseDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className={styles.collectionsHeader}>
+        <h3 className={styles.collectionsTitle}>Background</h3>
+        <button
+          type="button"
+          className={styles.collectionsClose}
+          onClick={onClose}
+          aria-label="Fechar seletor de background"
+          disabled={busy}
+        >
+          <XIcon />
+        </button>
+      </div>
+
+      <div className={styles.collectionsBody}>
+        <section className={styles.collectionSection} aria-label="Temas">
+          <p className={styles.collectionTitle}>Temas</p>
+          <div className={styles.coverGrid}>
+            {COVER_THEMES.map((theme) => {
+              const active = plan.coverThemeId === theme.id && !plan.coverImageId
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  className={`${styles.coverOption} ${active ? styles.coverOptionActive : ''} ${resolveCoverThemeClass(styles, theme.id)}`}
+                  onClick={() => onSelectTheme?.(theme)}
+                  aria-label={theme.label}
+                  aria-pressed={active}
+                  title={theme.label}
+                  disabled={busy}
+                >
+                  <span className={styles.coverOptionShade} />
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        {BACKGROUND_COLLECTIONS.map((collection) => (
+          <section key={collection.id} className={styles.collectionSection} aria-label={collection.title}>
+            <p className={styles.collectionTitle}>{collection.title}</p>
+            <div className={styles.collectionGrid}>
+              {collection.items.map((item) => {
+                const active = plan.coverImageId === item.id
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`${styles.collectionItem} ${active ? styles.collectionItemActive : ''}`}
+                    onClick={() => onSelectImage?.(item)}
+                    title={item.label}
+                    aria-pressed={active}
+                    disabled={busy}
+                  >
+                    <span
+                      className={styles.collectionThumb}
+                      style={{ backgroundImage: `url(${item.url})` }}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>,
+    portalRoot
+  )
+}
+
+function PlanRenameInput({ value, busy, onChange, onCommit, onCancel }) {
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [])
+
+  return (
+    <div
+      className={styles.planRenameGroup}
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          onCommit?.()
+        }
+      }}
+    >
+      <input
+        ref={inputRef}
+        className={styles.planRenameInput}
+        value={value}
+        disabled={busy}
+        maxLength={120}
+        onChange={(event) => onChange?.(event.target.value)}
+        onKeyDown={(event) => {
+          event.stopPropagation()
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            onCommit?.()
+          } else if (event.key === 'Escape') {
+            event.preventDefault()
+            onCancel?.()
+          }
+        }}
+      />
+      <button
+        type="button"
+        className={`${styles.planRenameButton} ${styles.planRenameConfirm}`}
+        aria-label="Confirmar novo nome"
+        title="Confirmar"
+        disabled={busy || !value.trim()}
+        onClick={() => onCommit?.()}
+      >
+        <CheckIcon />
+      </button>
+      <button
+        type="button"
+        className={`${styles.planRenameButton} ${styles.planRenameCancel}`}
+        aria-label="Cancelar renomeacao"
+        title="Cancelar"
+        disabled={busy}
+        onClick={() => onCancel?.()}
+      >
+        <XIcon />
+      </button>
+    </div>
+  )
+}
+
+function PlanCard({
+  plan,
+  view,
+  onOpen,
+  isActive,
+  onMore,
+  menuOpen,
+  menuAnchorRect,
+  onMenuAction,
+  isRenaming,
+  renameDraft,
+  renameBusy,
+  onRenameDraftChange,
+  onRenameCommit,
+  onRenameCancel,
+}) {
   const handleKeyDown = (event) => {
+    if (isRenaming) return
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       onOpen?.()
@@ -559,33 +825,27 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
       }
 
   const actions = (
-    <div className={styles.planCardActions}>
+    <div className={`${styles.planCardActions} ${menuOpen ? styles.planCardActionsOpen : ''}`}>
       <button
         type="button"
-        className={`${styles.planCardActionBtn} ${styles.planCardActionDanger}`}
-        aria-label="Excluir plano"
-        title="Excluir"
-        onClick={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          onDelete?.()
-        }}
-      >
-        <TrashIcon />
-      </button>
-      <button
-        type="button"
-        className={styles.planCardActionBtn}
+        className={`${styles.planCardActionBtn} ${menuOpen ? styles.planCardActionBtnActive : ''}`}
         aria-label="Mais opções"
         title="Mais opções"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onMouseDown={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
         onClick={(event) => {
           event.preventDefault()
           event.stopPropagation()
-          onMore?.()
+          onMore?.(event.currentTarget.getBoundingClientRect())
         }}
       >
         <MoreIcon />
       </button>
+      {menuOpen && <PlanOptionsMenu anchorRect={menuAnchorRect} onAction={onMenuAction} />}
     </div>
   )
 
@@ -593,7 +853,7 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
     return (
       <div
         className={`${styles.listCard} ${isActive ? styles.listCardActive : ''}`}
-        onClick={onOpen}
+        onClick={isRenaming ? undefined : onOpen}
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
@@ -607,7 +867,17 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
           />
           <div className={styles.listInfo}>
             <div className={styles.listNameRow}>
-              <p className={styles.listName}>{plan.name}</p>
+              {isRenaming ? (
+                <PlanRenameInput
+                  value={renameDraft}
+                  busy={renameBusy}
+                  onChange={onRenameDraftChange}
+                  onCommit={onRenameCommit}
+                  onCancel={onRenameCancel}
+                />
+              ) : (
+                <p className={styles.listName}>{plan.name}</p>
+              )}
               {plan.tasks > 0 && (
                 <span className={styles.listTaskCount} aria-label={`${plan.tasks} tarefas`}>
                   {plan.tasks}
@@ -623,7 +893,7 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
   return (
     <div
       className={`${styles.planCard} ${isActive ? styles.planCardActive : ''}`}
-      onClick={onOpen}
+      onClick={isRenaming ? undefined : onOpen}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
@@ -636,7 +906,17 @@ function PlanCard({ plan, view, onOpen, isActive, onDelete, onMore }) {
       />
       <div className={styles.cardBody}>
         <div className={styles.cardNameRow}>
-          <h3 className={styles.cardName}>{plan.name}</h3>
+          {isRenaming ? (
+            <PlanRenameInput
+              value={renameDraft}
+              busy={renameBusy}
+              onChange={onRenameDraftChange}
+              onCommit={onRenameCommit}
+              onCancel={onRenameCancel}
+            />
+          ) : (
+            <h3 className={styles.cardName}>{plan.name}</h3>
+          )}
           {plan.tasks > 0 && (
             <span className={styles.cardTaskCount} aria-label={`${plan.tasks} tarefas`}>
               {plan.tasks}
@@ -732,14 +1012,27 @@ export default function Workspace() {
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const [notification, setNotification] = useState(null)
+  const [openPlanMenuId, setOpenPlanMenuId] = useState(null)
+  const [planMenuAnchorRect, setPlanMenuAnchorRect] = useState(null)
+  const [renamingPlan, setRenamingPlan] = useState(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const [renameBusy, setRenameBusy] = useState(false)
+  const [backgroundPicker, setBackgroundPicker] = useState(null)
+  const [backgroundBusy, setBackgroundBusy] = useState(false)
   const notificationTimerRef = useRef(null)
-  const { plans, activePlan, createPlan, deletePlan, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { localPreferences } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
+  const showCurrentPlanSection = localPreferences.showCurrentPlanSection ?? true
 
   const filtered = plans.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.tag.toLowerCase().includes(search.toLowerCase())
   )
+  const backgroundPickerPlan = backgroundPicker?.planId
+    ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
+    : null
 
   const pushNotification = (message) => {
     if (notificationTimerRef.current) {
@@ -763,11 +1056,115 @@ export default function Workspace() {
 
   const handleDeletePlan = async (plan) => {
     if (!plan?.id) return
+    if (confirmDestructiveActions && !window.confirm(`Excluir o plano "${plan.name}"?`)) {
+      return
+    }
     try {
       await deletePlan(plan.id)
+      setOpenPlanMenuId(null)
+      setPlanMenuAnchorRect(null)
       pushNotification(`Plano "${plan.name}" excluido`)
     } catch (error) {
       pushNotification(error.message ?? 'Nao foi possivel excluir o plano.')
+    }
+  }
+
+  const cancelRename = () => {
+    if (renameBusy) return
+    setRenamingPlan(null)
+    setRenameDraft('')
+  }
+
+  const startInlineRename = (plan) => {
+    setOpenPlanMenuId(null)
+    setPlanMenuAnchorRect(null)
+    setBackgroundPicker(null)
+    setRenamingPlan(plan)
+    setRenameDraft(plan?.name ?? '')
+  }
+
+  const commitInlineRename = async () => {
+    if (renameBusy || !renamingPlan?.id) return
+    const nextName = renameDraft.trim()
+    if (!nextName) {
+      cancelRename()
+      return
+    }
+    if (nextName === (renamingPlan.name ?? '')) {
+      cancelRename()
+      return
+    }
+    setRenameBusy(true)
+    try {
+      const renamed = await renamePlan(renamingPlan.id, nextName)
+      setRenamingPlan(null)
+      setRenameDraft('')
+      pushNotification(`Plano "${renamed.name}" renomeado`)
+    } catch (error) {
+      pushNotification(error.message ?? 'Nao foi possivel renomear o plano.')
+    } finally {
+      setRenameBusy(false)
+    }
+  }
+
+  const handlePlanBackgroundTheme = async (theme) => {
+    const plan = plans.find((item) => item.id === backgroundPicker?.planId)
+    if (!plan || backgroundBusy) return
+    setBackgroundBusy(true)
+    try {
+      await updatePlanCover(plan.id, {
+        cover: theme.cardCover,
+        coverThemeId: theme.id,
+        coverImageId: null,
+        coverImage: null,
+        coverImageThumb: null,
+      })
+      setBackgroundPicker(null)
+      pushNotification(`Background de "${plan.name}" atualizado`)
+    } catch (error) {
+      pushNotification(error.message ?? 'Nao foi possivel alterar o background do plano.')
+    } finally {
+      setBackgroundBusy(false)
+    }
+  }
+
+  const handlePlanBackgroundImage = async (image) => {
+    const plan = plans.find((item) => item.id === backgroundPicker?.planId)
+    if (!plan || backgroundBusy) return
+    setBackgroundBusy(true)
+    try {
+      await updatePlanCover(plan.id, {
+        cover: plan.cover ?? null,
+        coverThemeId: null,
+        coverImageId: image.id,
+        coverImage: image.fullUrl ?? image.url,
+        coverImageThumb: image.url,
+      })
+      setBackgroundPicker(null)
+      pushNotification(`Background de "${plan.name}" atualizado`)
+    } catch (error) {
+      pushNotification(error.message ?? 'Nao foi possivel alterar o background do plano.')
+    } finally {
+      setBackgroundBusy(false)
+    }
+  }
+
+  const handlePlanMenuAction = (plan, action) => {
+    const anchorRect = planMenuAnchorRect
+    setOpenPlanMenuId(null)
+    setPlanMenuAnchorRect(null)
+    if (action === 'board') {
+      setBackgroundPicker(null)
+      openBoard(plan.id)
+    } else if (action === 'rename') {
+      startInlineRename(plan)
+    } else if (action === 'background') {
+      setRenamingPlan(null)
+      setRenameDraft('')
+      setBackgroundPicker({ planId: plan.id, anchorRect })
+    } else if (action === 'delete') {
+      setBackgroundPicker(null)
+      void handleDeletePlan(plan)
     }
   }
 
@@ -777,14 +1174,30 @@ export default function Workspace() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!openPlanMenuId) return undefined
+    const handlePointerDown = () => {
+      setOpenPlanMenuId(null)
+      setPlanMenuAnchorRect(null)
+    }
+    const handleResize = () => {
+      setOpenPlanMenuId(null)
+      setPlanMenuAnchorRect(null)
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('scroll', handleResize, true)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('scroll', handleResize, true)
+    }
+  }, [openPlanMenuId])
+
   const openBoard = (planId) => {
+    setBackgroundPicker(null)
     selectPlan(planId)
     navigate(buildWorkspaceBoardPath(planId))
-  }
-
-  const openCanvas = (planId) => {
-    selectPlan(planId)
-    navigate(buildCanvasPath(planId))
   }
 
   const openNewPlan = (event) => {
@@ -843,6 +1256,7 @@ export default function Workspace() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         contentTag="main"
+        mobileTitle="Início"
       >
           {/* Top bar */}
           <div className={styles.topbar}>
@@ -884,7 +1298,7 @@ export default function Workspace() {
               <WorkspaceLoadingState view={view} />
             ) : (
               <>
-            {activePlan && (
+            {showCurrentPlanSection && activePlan && (
               <section className={styles.currentPlanPanel}>
                 <div className={styles.currentPlanPanelCopy}>
                   <p className={styles.currentPlanEyebrow}>Plano atual</p>
@@ -895,17 +1309,13 @@ export default function Workspace() {
                     </span>
                   </div>
                   <p className={styles.currentPlanText}>
-                    {activePlan.description || 'Continue de onde parou no quadro e no Canvas.'}
+                    {activePlan.description || 'Continue de onde parou no quadro deste plano.'}
                   </p>
                 </div>
                 <div className={styles.currentPlanActions}>
                   <button className={styles.currentPlanAction} onClick={() => openBoard(activePlan.id)}>
                     <GridIcon />
                     Abrir quadro
-                  </button>
-                  <button className={styles.currentPlanAction} onClick={() => openCanvas(activePlan.id)}>
-                    <CanvasIcon />
-                    Abrir Canvas
                   </button>
                 </div>
               </section>
@@ -937,7 +1347,7 @@ export default function Workspace() {
                 <p className={styles.emptyStateHint}>
                   {search
                     ? `Tente outro termo ou limpe "${search}" para ver tudo.`
-                    : 'Crie seu primeiro plano para organizar o trabalho no quadro e no Canvas.'}
+                    : 'Crie seu primeiro plano para organizar o trabalho no quadro.'}
                 </p>
                 <div className={styles.emptyStateActions}>
                   {search && (
@@ -959,8 +1369,19 @@ export default function Workspace() {
                     plan={plan}
                     view="grid"
                     onOpen={() => openBoard(plan.id)}
-                    onDelete={() => handleDeletePlan(plan)}
-                    onMore={() => {}}
+                    onMore={(anchorRect) => {
+                      setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
+                      setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
+                    }}
+                    menuOpen={openPlanMenuId === plan.id}
+                    menuAnchorRect={planMenuAnchorRect}
+                    onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+                    isRenaming={renamingPlan?.id === plan.id}
+                    renameDraft={renameDraft}
+                    renameBusy={renameBusy}
+                    onRenameDraftChange={setRenameDraft}
+                    onRenameCommit={commitInlineRename}
+                    onRenameCancel={cancelRename}
                     isActive={plan.id === activePlan?.id}
                   />
                 ))}
@@ -977,8 +1398,19 @@ export default function Workspace() {
                     plan={plan}
                     view="list"
                     onOpen={() => openBoard(plan.id)}
-                    onDelete={() => handleDeletePlan(plan)}
-                    onMore={() => {}}
+                    onMore={(anchorRect) => {
+                      setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
+                      setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
+                    }}
+                    menuOpen={openPlanMenuId === plan.id}
+                    menuAnchorRect={planMenuAnchorRect}
+                    onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+                    isRenaming={renamingPlan?.id === plan.id}
+                    renameDraft={renameDraft}
+                    renameBusy={renameBusy}
+                    onRenameDraftChange={setRenameDraft}
+                    onRenameCommit={commitInlineRename}
+                    onRenameCancel={cancelRename}
                     isActive={plan.id === activePlan?.id}
                   />
                 ))}
@@ -996,6 +1428,19 @@ export default function Workspace() {
           onClose={() => setNewPlanAnchor(null)}
           onSubmit={handleNewPlan}
           isBackendDriven={isBackendDriven}
+        />
+      )}
+
+      {backgroundPickerPlan && (
+        <PlanBackgroundPicker
+          plan={backgroundPickerPlan}
+          anchorRect={backgroundPicker.anchorRect}
+          busy={backgroundBusy}
+          onClose={() => {
+            if (!backgroundBusy) setBackgroundPicker(null)
+          }}
+          onSelectTheme={handlePlanBackgroundTheme}
+          onSelectImage={handlePlanBackgroundImage}
         />
       )}
 

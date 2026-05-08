@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 import { buildBoardCardPayload } from '../../../shared/contracts/backendAdapters.js'
 
@@ -16,6 +16,7 @@ export function useBoardColumns({
   dateFormat = 'dd/MM/yyyy',
 }) {
   const columns = boardColumns ?? []
+  const cardMutationRef = useRef(0)
 
   const updateColumns = useCallback((updater) => {
     if (!activePlanId) return
@@ -32,7 +33,7 @@ export function useBoardColumns({
     if (!isBackendDriven) {
       updateColumns((prev) => [
         ...prev,
-        { id: uid(), title: nextTitle, color: '#a0a0a0', cards: [] },
+        { id: uid(), title: nextTitle, color: '', cards: [] },
       ])
       return true
     }
@@ -43,7 +44,7 @@ export function useBoardColumns({
         token: accessToken,
         body: {
           title: nextTitle,
-          color: '#a0a0a0',
+          color: '',
         },
       })
 
@@ -90,7 +91,7 @@ export function useBoardColumns({
         token: accessToken,
         body: {
           title,
-          color: currentColumn?.color ?? '#a0a0a0',
+          color: currentColumn?.color ?? '',
         },
       })
 
@@ -136,6 +137,7 @@ export function useBoardColumns({
         id: uid(),
         title,
         description: '',
+        isCompleted: false,
         labelId: null,
         memberIds: [],
         dueDate: '',
@@ -149,6 +151,7 @@ export function useBoardColumns({
     }
 
     try {
+      const requestId = ++cardMutationRef.current
       await apiRequest(`/api/plans/${activePlanId}/board/cards`, {
         method: 'POST',
         token: accessToken,
@@ -162,6 +165,10 @@ export function useBoardColumns({
           dueAt: null,
         },
       })
+
+      if (requestId !== cardMutationRef.current) {
+        return true
+      }
 
       await loadPlanBoard(activePlanId)
       return true
@@ -269,6 +276,70 @@ export function useBoardColumns({
     return true
   }, [accessToken, activePlanId, applyBoardView, isBackendDriven])
 
+  const createChecklist = useCallback(async (cardId, title) => {
+    if (!activePlanId || !isBackendDriven) return null
+
+    const checklist = await apiRequest(`/api/plans/${activePlanId}/board/cards/${cardId}/checklists`, {
+      method: 'POST',
+      token: accessToken,
+      body: {
+        title,
+      },
+    })
+
+    await loadPlanBoard(activePlanId)
+    return checklist
+  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+
+  const deleteChecklist = useCallback(async (checklistId) => {
+    if (!activePlanId || !isBackendDriven) return false
+
+    await apiRequest(`/api/plans/${activePlanId}/board/checklists/${checklistId}`, {
+      method: 'DELETE',
+      token: accessToken,
+    })
+
+    await loadPlanBoard(activePlanId)
+    return true
+  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+
+  const createChecklistItem = useCallback(async (checklistId, item) => {
+    if (!activePlanId || !isBackendDriven) return null
+
+    const createdItem = await apiRequest(`/api/plans/${activePlanId}/board/checklists/${checklistId}/items`, {
+      method: 'POST',
+      token: accessToken,
+      body: {
+        title: item.title ?? item.text ?? '',
+        assigneeUserId: item.assigneeUserId ?? null,
+        startAt: item.startAt ?? null,
+        dueAt: item.dueAt ?? null,
+      },
+    })
+
+    await loadPlanBoard(activePlanId)
+    return createdItem
+  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+
+  const updateChecklistItem = useCallback(async (item) => {
+    if (!activePlanId || !isBackendDriven) return null
+
+    const updatedItem = await apiRequest(`/api/plans/${activePlanId}/board/checklists/items/${item.id}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: {
+        title: item.title ?? item.text ?? '',
+        completed: Boolean(item.completed ?? item.checked),
+        assigneeUserId: item.assigneeUserId ?? null,
+        startAt: item.startAt ?? null,
+        dueAt: item.dueAt ?? null,
+      },
+    })
+
+    await loadPlanBoard(activePlanId)
+    return updatedItem
+  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+
   const totalCards = useMemo(
     () => columns.reduce((sum, column) => sum + column.cards.length, 0),
     [columns],
@@ -286,5 +357,9 @@ export function useBoardColumns({
     updateCard,
     deleteCard,
     moveCard,
+    createChecklist,
+    deleteChecklist,
+    createChecklistItem,
+    updateChecklistItem,
   }
 }

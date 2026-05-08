@@ -14,6 +14,29 @@ const EMPTY_CALENDAR_SNAPSHOT = {
   events: [],
 }
 
+function rawEventsFromSnapshot(snapshot) {
+  return snapshot.events.map((event) => event.raw).filter(Boolean)
+}
+
+function mergeRawEvent(rawEvents, nextEvent) {
+  const byId = new Map(rawEvents.map((event) => [event.id, event]))
+  byId.set(nextEvent.id, nextEvent)
+  return Array.from(byId.values())
+}
+
+function assertValidEventPayload(payload) {
+  const startsAt = payload?.startsAt ? Date.parse(payload.startsAt) : Number.NaN
+  const endsAt = payload?.endsAt ? Date.parse(payload.endsAt) : Number.NaN
+
+  if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt)) {
+    throw new Error('Informe uma data e horários válidos para o evento.')
+  }
+
+  if (endsAt <= startsAt) {
+    throw new Error('O horário de fim precisa ser depois do início.')
+  }
+}
+
 async function enrichGeneratedCardKinds(events, accessToken) {
   const pendingPlanIds = [
     ...new Set(
@@ -97,6 +120,7 @@ export function useCalendarEvents({
 
       if (active) {
         setIsLoading(true)
+        setSnapshot(EMPTY_CALENDAR_SNAPSHOT)
       }
 
       try {
@@ -154,19 +178,22 @@ export function useCalendarEvents({
       return event
     }
 
+    const payload = buildCalendarEventPayload(data, { timeZone })
+    assertValidEventPayload(payload)
+
     const createdEvent = await apiRequest('/api/calendar/events', {
       method: 'POST',
       token: accessToken,
-      body: buildCalendarEventPayload(data, { timeZone }),
+      body: payload,
     })
 
-    const nextSnapshot = mapCalendarEventsToSnapshot(
-      [...(snapshot.events.map((event) => event.raw).filter(Boolean)), createdEvent],
+    const createdSnapshot = mapCalendarEventsToSnapshot([createdEvent], { timeZone })
+    setSnapshot((current) => mapCalendarEventsToSnapshot(
+      mergeRawEvent(rawEventsFromSnapshot(current), createdEvent),
       { timeZone },
-    )
-    setSnapshot(nextSnapshot)
+    ))
     setLoadError(null)
-    return nextSnapshot.events.find((event) => event.id === createdEvent.id)
+    return createdSnapshot.events.find((event) => event.id === createdEvent.id)
   }
 
   const updateEvent = async (eventId, data) => {
@@ -192,22 +219,22 @@ export function useCalendarEvents({
       return updatedEvent
     }
 
+    const payload = buildCalendarEventPayload(data, { timeZone })
+    assertValidEventPayload(payload)
+
     const updatedEvent = await apiRequest(`/api/calendar/events/${eventId}`, {
       method: 'PATCH',
       token: accessToken,
-      body: buildCalendarEventPayload(data, { timeZone }),
+      body: payload,
     })
 
-    const nextSnapshot = mapCalendarEventsToSnapshot(
-      snapshot.events
-        .map((event) => event.raw)
-        .filter(Boolean)
-        .map((event) => (event.id === eventId ? updatedEvent : event)),
+    const updatedSnapshot = mapCalendarEventsToSnapshot([updatedEvent], { timeZone })
+    setSnapshot((current) => mapCalendarEventsToSnapshot(
+      mergeRawEvent(rawEventsFromSnapshot(current), updatedEvent),
       { timeZone },
-    )
-    setSnapshot(nextSnapshot)
+    ))
     setLoadError(null)
-    return nextSnapshot.events.find((event) => event.id === updatedEvent.id)
+    return updatedSnapshot.events.find((event) => event.id === updatedEvent.id)
   }
 
   const deleteEvent = async (eventId) => {

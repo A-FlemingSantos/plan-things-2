@@ -13,7 +13,7 @@ describe('PreferencesContext helpers', () => {
   it('resolveInitialRouteForState prioritizes last context when enabled and valid', () => {
     const nextRoute = resolveInitialRouteForState({
       localPreferences: {
-        homePage: 'canvas',
+        homePage: 'workspace',
         openLastCtx: true,
       },
       lastContext: '/calendar',
@@ -33,14 +33,14 @@ describe('PreferencesContext helpers', () => {
 
     const withDisabledLastContext = resolveInitialRouteForState({
       localPreferences: {
-        homePage: 'canvas',
+        homePage: 'workspace',
         openLastCtx: false,
       },
       lastContext: '/calendar',
     })
 
     expect(withInvalidContext).toBe('/files')
-    expect(withDisabledLastContext).toBe('/canvas')
+    expect(withDisabledLastContext).toBe('/workspace')
   })
 
   it('formatDateWithPreferences respects configured date formats', () => {
