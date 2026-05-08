@@ -24,6 +24,11 @@ import { usePreferences } from '../../../preferences/context/PreferencesContext.
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { formatFileSize, getFileTypeFromName } from '../../../files/data/libraryRepository.js'
 import { buildPlannerView, filterPlannerItems } from './plannerFilters.js'
+import {
+  KANBAN_COLUMN_COLOR_OPTIONS,
+  resolveKanbanAccentColor,
+  resolveKanbanAccentForeground,
+} from '../../data/kanbanColorPalette.js'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -92,16 +97,6 @@ const CALENDAR_DAYS = [
   { label: 19 }, { label: 20 }, { label: 21 }, { label: 22 }, { label: 23 }, { label: 24 }, { label: 25 },
   { label: 26 }, { label: 27 }, { label: 28 }, { label: 29 }, { label: 30 }, { label: 1, muted: true }, { label: 2, muted: true },
   { label: 3, muted: true }, { label: 4, muted: true }, { label: 5, muted: true }, { label: 6, muted: true }, { label: 7, muted: true }, { label: 8, muted: true }, { label: 9, muted: true },
-]
-
-const COL_COLORS = [
-  { id: 'none',   label: 'Sem cor', value: '' },
-  { id: 'gray',   label: 'Cinza', value: '#a0a0a0' },
-  { id: 'blue',   label: 'Azul', value: '#4290da' },
-  { id: 'purple', label: 'Roxo', value: '#d4aef1' },
-  { id: 'green',  label: 'Verde', value: '#0f703a' },
-  { id: 'red',    label: 'Vermelho', value: '#ff6766' },
-  { id: 'orange', label: 'Laranja', value: '#f5a623' },
 ]
 
 const uid = () => Math.random().toString(36).slice(2, 9)
@@ -332,9 +327,15 @@ export default function KanbanBoard() {
   const [plannerFilter, setPlannerFilter] = useState('my-day')
   const plannerFilterWrapRef = useRef(null)
   const [plannerPinnedById, setPlannerPinnedById] = useState({})
-  const { generalPreferences, formatClockTime } = usePreferences()
+  const { generalPreferences, localPreferences, formatClockTime } = usePreferences()
   const timeZone = generalPreferences.timezone
   const dateFormat = generalPreferences.dateFormat
+  const boardAccentColor = resolveKanbanAccentColor(localPreferences?.kanbanAccentColor)
+  const boardAccentForeground = resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor)
+  const boardAccentStyle = useMemo(() => ({
+    '--kanban-accent-color': boardAccentColor,
+    '--kanban-accent-foreground': boardAccentForeground,
+  }), [boardAccentColor, boardAccentForeground])
   const today = useMemo(() => new Date(), [timeZone])
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
@@ -1990,6 +1991,7 @@ export default function KanbanBoard() {
 
   return (
     <AppThemeScope>
+      <div className={styles.boardAccentScope} style={boardAccentStyle}>
       <ProductAppShell
         styles={styles}
         activeNav={activeNav}
@@ -2189,7 +2191,7 @@ export default function KanbanBoard() {
                 onToggleCardCompleted={togglePlannerCardCompleted}
                 labels={planLabels}
                 members={planMembers}
-                colorOptions={COL_COLORS}
+                colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
                 icons={{
                   Plus: Icon.Plus,
                   More: Icon.More,
@@ -2400,7 +2402,7 @@ export default function KanbanBoard() {
           {notification}
         </div>
       )}
-
+      </div>
     </AppThemeScope>
   )
 }

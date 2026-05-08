@@ -412,6 +412,8 @@ export default function CardModal({
     && typeof onDeleteChecklist === 'function'
   const checklistReadOnly = isBackendDriven && !canPersistChecklist
   const checklistDueLabel = checklistDueEnabled && checklistDueValue ? checklistDueValue : 'Sem data'
+  const isChecklistAssignAccentActive = showChecklistAssignMenu || Boolean(checklistAssigneeUserId)
+  const isChecklistDueAccentActive = showChecklistDueMenu || checklistDueEnabled || Boolean(checklistDueValue)
 
   const resetChecklistItemDraft = () => {
     setNewChecklistItem('')
@@ -1491,7 +1493,7 @@ export default function CardModal({
               <button
                 ref={dateMenuButtonRef}
                 type="button"
-                className={`${styles.cmToolbarBtn} ${showDateMenu ? styles.cmToolbarBtnActive : ''}`}
+                className={styles.cmToolbarBtn}
                 onClick={() => setShowDateMenu(v => !v)}
                 aria-expanded={showDateMenu}
                 aria-haspopup="dialog"
@@ -1503,7 +1505,7 @@ export default function CardModal({
               <button
                 ref={checklistMenuButtonRef}
                 type="button"
-                className={`${styles.cmToolbarBtn} ${showChecklistMenu ? styles.cmToolbarBtnActive : ''}`}
+                className={styles.cmToolbarBtn}
                 onClick={() => {
                   if (!checklistReadOnly && !activeChecklist) setShowChecklistMenu(v => !v)
                 }}
@@ -1771,7 +1773,7 @@ export default function CardModal({
                           <button
                             ref={checklistAssignButtonRef}
                             type="button"
-                            className={styles.cmChecklistMetaBtn}
+                            className={`${styles.cmChecklistMetaBtn} ${isChecklistAssignAccentActive ? styles.cmChecklistMetaBtnActive : ''}`}
                             onClick={() => setShowChecklistAssignMenu(v => !v)}
                             aria-expanded={showChecklistAssignMenu}
                             aria-haspopup="menu"
@@ -1782,7 +1784,7 @@ export default function CardModal({
                           <button
                             ref={checklistDueButtonRef}
                             type="button"
-                            className={styles.cmChecklistMetaBtn}
+                            className={`${styles.cmChecklistMetaBtn} ${isChecklistDueAccentActive ? styles.cmChecklistMetaBtnActive : ''}`}
                             onClick={() => setShowChecklistDueMenu(v => !v)}
                             aria-expanded={showChecklistDueMenu}
                             aria-haspopup="dialog"

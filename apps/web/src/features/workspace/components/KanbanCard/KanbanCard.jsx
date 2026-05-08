@@ -164,7 +164,7 @@ export default function KanbanCard({
                 className={`${styles.cardDue} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}
                 aria-label={`Entrega ${card.dueDate}`}
               >
-                <ClockIcon />
+                {ClockIcon ? <ClockIcon /> : null}
                 {card.dueDate}
               </span>
             ) : null}

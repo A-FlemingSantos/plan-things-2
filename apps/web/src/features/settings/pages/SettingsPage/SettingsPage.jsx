@@ -13,6 +13,11 @@ import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNav
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
 import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
+import {
+  KANBAN_ACCENT_BASE_COLOR_OPTIONS,
+  KANBAN_ACCENT_EXTRA_COLOR_OPTIONS,
+  isKanbanAccentBaseColor,
+} from '../../../workspace/data/kanbanColorPalette.js'
 import styles from './SettingsPage.module.css'
 
 /* ═══════════════════════════════════════════
@@ -220,9 +225,9 @@ export default function SettingsPage() {
   const accountAvatarObjectUrlRef = useRef(null)
 
   // ── General preferences state
-  const [density, setDensity] = useState('normal')
   const [generalSaveState, setGeneralSaveState] = useState('idle')
   const [generalError, setGeneralError] = useState('')
+  const [isKanbanAccentPaletteOpen, setIsKanbanAccentPaletteOpen] = useState(false)
 
   // ── Workspace state
   const [wsName, setWsName] = useState(workspace?.name ?? '')
@@ -234,6 +239,7 @@ export default function SettingsPage() {
   const [workspaceAvatarFeedback, setWorkspaceAvatarFeedback] = useState('')
   const workspaceAvatarInputRef = useRef(null)
   const workspaceAvatarObjectUrlRef = useRef(null)
+  const kanbanAccentPickerRef = useRef(null)
   const [workspacePlan, setWorkspacePlan] = useState(() => workspace?.subscriptionPlan ?? 'BASIC')
   const [workspaceStorageUsedBytes, setWorkspaceStorageUsedBytes] = useState(() => workspace?.storageUsedBytes ?? 0)
   const [workspaceStorageQuotaBytes, setWorkspaceStorageQuotaBytes] = useState(() => (
@@ -279,6 +285,8 @@ export default function SettingsPage() {
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions
   const liquidGlass = localPreferences.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass
   const showCurrentPlanSection = localPreferences.showCurrentPlanSection ?? DEFAULT_LOCAL_PREFERENCES.showCurrentPlanSection
+  const kanbanAccentColor = localPreferences.kanbanAccentColor ?? DEFAULT_LOCAL_PREFERENCES.kanbanAccentColor
+  const hasCustomKanbanAccentColor = Boolean(kanbanAccentColor) && !isKanbanAccentBaseColor(kanbanAccentColor)
   const emailNotifs = notificationPreferences.emailNotifs
   const eventReminders = notificationPreferences.eventReminders
   const deadlineAlerts = notificationPreferences.deadlineAlerts
@@ -319,6 +327,30 @@ export default function SettingsPage() {
       window.URL.revokeObjectURL(workspaceAvatarObjectUrlRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isKanbanAccentPaletteOpen) return undefined
+
+    const handlePointerDown = (event) => {
+      if (!kanbanAccentPickerRef.current?.contains(event.target)) {
+        setIsKanbanAccentPaletteOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsKanbanAccentPaletteOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isKanbanAccentPaletteOpen])
 
   useEffect(() => {
     let active = true
@@ -839,6 +871,11 @@ export default function SettingsPage() {
     restoreLocalDefaults()
     setGeneralError('')
     setGeneralSaveState('saved')
+  }
+
+  const handleKanbanAccentColorSelect = (value) => {
+    handleLocalGeneralFieldChange('kanbanAccentColor', value)
+    setIsKanbanAccentPaletteOpen(false)
   }
 
   const handleWorkspaceNameChange = (value) => {
@@ -1416,22 +1453,78 @@ export default function SettingsPage() {
         >
           <Toggle checked={liquidGlass} onChange={(value) => handleLocalGeneralFieldChange('liquidGlass', value)} />
         </Field>
-        <Field label="Densidade visual" hint="Define o espaçamento geral dos elementos na interface.">
-          <div className={styles.densityGroup}>
-            {[
-              { value: 'compact', label: 'Compacto' },
-              { value: 'normal', label: 'Normal' },
-              { value: 'comfortable', label: 'Confortável' },
-            ].map(opt => (
+        <Field label="Cor padrão" hint="Define o acento visual usado nos checks, checklist e atalhos do Kanban.">
+          <div ref={kanbanAccentPickerRef} className={styles.colorPreferenceControl}>
+            <div className={styles.colorSwatchList}>
+              {KANBAN_ACCENT_BASE_COLOR_OPTIONS.map((option) => {
+                const isSelected = kanbanAccentColor === option.value
+                const isDefaultOption = option.value === ''
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`${styles.colorSwatchButton} ${isSelected ? styles.colorSwatchButtonActive : ''}`}
+                    onClick={() => handleKanbanAccentColorSelect(option.value)}
+                    aria-pressed={isSelected}
+                    aria-label={`Usar cor ${option.label}`}
+                    title={option.label}
+                  >
+                    <span className={`${styles.colorSwatchDot} ${isDefaultOption ? styles.colorSwatchDotDefault : ''}`}>
+                      {isDefaultOption ? (
+                        <span className={styles.colorSwatchDotDefaultInner} />
+                      ) : (
+                        <span className={styles.colorSwatchDotFill} style={{ background: option.value }} />
+                      )}
+                    </span>
+                  </button>
+                )
+              })}
+
               <button
-                key={opt.value}
                 type="button"
-                className={`${styles.densityBtn} ${density === opt.value ? styles.densityBtnActive : ''}`}
-                onClick={() => setDensity(opt.value)}
+                className={`${styles.colorPaletteTrigger} ${isKanbanAccentPaletteOpen || hasCustomKanbanAccentColor ? styles.colorPaletteTriggerActive : ''}`}
+                onClick={() => setIsKanbanAccentPaletteOpen((open) => !open)}
+                aria-expanded={isKanbanAccentPaletteOpen}
+                aria-haspopup="dialog"
               >
-                {opt.label}
+                <span className={styles.colorPaletteTriggerDot}>
+                  {hasCustomKanbanAccentColor ? (
+                    <span className={styles.colorSwatchDotFill} style={{ background: kanbanAccentColor }} />
+                  ) : (
+                    <span className={styles.colorPaletteTriggerPlus}>+</span>
+                  )}
+                </span>
+                <span>Mais cores</span>
               </button>
-            ))}
+            </div>
+
+            {isKanbanAccentPaletteOpen ? (
+              <div className={styles.colorPalettePopover} role="dialog" aria-label="Paleta de cores do Kanban">
+                <p className={styles.colorPaletteTitle}>Tons extras</p>
+                <div className={styles.colorPaletteGrid}>
+                  {KANBAN_ACCENT_EXTRA_COLOR_OPTIONS.map((option) => {
+                    const isSelected = kanbanAccentColor === option.value
+
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={`${styles.colorSwatchButton} ${styles.colorPaletteSwatch} ${isSelected ? styles.colorSwatchButtonActive : ''}`}
+                        onClick={() => handleKanbanAccentColorSelect(option.value)}
+                        aria-pressed={isSelected}
+                        aria-label={`Usar cor ${option.label}`}
+                        title={option.label}
+                      >
+                        <span className={styles.colorSwatchDot}>
+                          <span className={styles.colorSwatchDotFill} style={{ background: option.value }} />
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         </Field>
       </SectionGroup>
