@@ -88,12 +88,6 @@ export default function KanbanCard({
       }}
       aria-label={`Abrir cartão ${card.title}`}
     >
-      {label ? (
-        <span className={styles.cardLabel} style={{ background: `${label.color}20`, color: label.color }}>
-          {label.text}
-        </span>
-      ) : null}
-
       <div className={styles.cardTitleRow}>
         <button
           type="button"
@@ -108,7 +102,16 @@ export default function KanbanCard({
         >
           {isConfirmed ? <CheckIcon /> : null}
         </button>
-        <p className={styles.cardTitle}>{card.title}</p>
+        <div className={styles.cardTitleContent}>
+          <div className={`${styles.cardTitleViewport} ${label ? styles.cardTitleViewportWithLabel : ''}`}>
+            <p className={`${styles.cardTitle} ${label ? styles.cardTitleWithLabel : ''}`}>{card.title}</p>
+          </div>
+          {label ? (
+            <span className={styles.cardLabel} style={{ background: `${label.color}20`, color: label.color }}>
+              {label.text}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {hasFooter ? (
