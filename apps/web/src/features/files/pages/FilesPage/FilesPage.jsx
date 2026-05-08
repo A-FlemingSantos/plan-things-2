@@ -1088,21 +1088,28 @@ export default function FilesPage() {
       <ProductAppShell
         styles={styles}
         activeNav={activeNav}
-      onNavItemClick={handleNavItemClick}
-      navItems={SIDEBAR_NAV.map(({ id, label, Icon: IconComponent, hint }) => ({
-        id,
-        label,
-        Icon: IconComponent,
-        hint,
-      }))}
-      LogoIcon={Icon.Logo}
-      CollapseIcon={Icon.Collapse}
-      ChevronIcon={Icon.Chevron}
-      HintIcon={Icon.Popover}
-      secondaryContent={renderSidebarSecondaryContent}
-      bottomContent={renderSidebarBottomContent}
-      contentClassName={styles.main}
-    >
+        onNavItemClick={handleNavItemClick}
+        navItems={SIDEBAR_NAV.map(({ id, label, Icon: IconComponent, hint }) => ({
+          id,
+          label,
+          Icon: IconComponent,
+          hint,
+        }))}
+        LogoIcon={Icon.Logo}
+        CollapseIcon={Icon.Collapse}
+        ChevronIcon={Icon.Chevron}
+        HintIcon={Icon.Popover}
+        secondaryContent={renderSidebarSecondaryContent}
+        bottomContent={renderSidebarBottomContent}
+        contentClassName={styles.main}
+        mobileTitle={sectionLabel}
+        mobileTitleMeta={`${filteredFiles.length}`}
+        mobileActions={(
+          <button type="button" className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()} aria-label="Enviar arquivo">
+            <Icon.Upload />
+          </button>
+        )}
+      >
 
         {/* Top bar */}
         <header className={styles.topBar}>

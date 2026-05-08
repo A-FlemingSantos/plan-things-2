@@ -2004,6 +2004,8 @@ export default function SettingsPage() {
         HintIcon={Ic.Popover}
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.settingsWrapper}
+        mobileTitle={activeLabel}
+        mobileTitleMeta="Ajustes"
       >
         <PlanPageHeader
           title="Configurações"

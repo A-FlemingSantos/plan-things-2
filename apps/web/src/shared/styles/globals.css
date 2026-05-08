@@ -66,6 +66,7 @@
   --transition-fast:   150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow:   400ms ease;
+  --mobile-app-header-height: 68px;
 
   /* ============================================================
      SEMANTIC UI TOKENS (themeable via [data-theme])
@@ -307,6 +308,161 @@ ul, ol { list-style: none; }
 }
 @media (max-width: 640px) {
   :root { --container-px: 20px; --section-py: 64px; }
+}
+
+/* ──────────────────────────────────────────
+   SHARED MOBILE APP SHELL
+   ────────────────────────────────────────── */
+
+.productAppShellMobile {
+  min-height: 100dvh;
+  background: var(--app-bg);
+}
+
+.productAppShellHeader {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--mobile-app-header-height);
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 12px;
+  border-bottom: 1px solid var(--border-1);
+  background: var(--frosted-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.productAppShellHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.productAppShellHeaderText {
+  min-width: 0;
+}
+
+.productAppShellHeaderEyebrow {
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.productAppShellHeaderTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.productAppShellHeaderTitle {
+  font-size: 20px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.productAppShellHeaderMeta {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.productAppShellHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.productAppShellIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-1);
+  border-radius: 14px;
+  background: var(--surface-1);
+  color: var(--text-1);
+}
+
+.productAppShellOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  background: rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.productAppShellOverlayOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.productAppShellDrawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 49;
+  width: min(320px, calc(100vw - 28px));
+  transform: translateX(-100%);
+  transition: transform var(--transition-normal);
+  pointer-events: none;
+}
+
+.productAppShellDrawerOpen {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.productAppShellDrawerSidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  height: 100%;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-1);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-app-shell][data-mobile='true'] [data-app-shell-content] {
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  :root {
+    --mobile-app-header-height: 64px;
+  }
+
+  .productAppShellHeader {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .productAppShellHeaderTitle {
+    font-size: 18px;
+  }
+
+  .productAppShellHeaderActions {
+    gap: 6px;
+  }
 }
 
 /* ──────────────────────────────────────────

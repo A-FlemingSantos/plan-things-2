@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
+import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
@@ -481,12 +482,13 @@ function CalendarLoadingState({ styles }) {
 
 export default function CalendarPage() {
   const { generalPreferences, formatIntl, formatClockTime, formatMonthLabel } = usePreferences()
+  const { isMobile } = useResponsiveViewport()
   const locale = generalPreferences.language
   const timeZone = generalPreferences.timezone
   const initialToday = useMemo(() => currentDateInTimeZone(timeZone), [timeZone])
   const [selectedDate, setSelectedDate] = useState(() => initialToday)
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(initialToday))
-  const [view, setView] = useState('month')
+  const [view, setView] = useState(() => (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? 'day' : 'month'))
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
@@ -536,6 +538,12 @@ export default function CalendarPage() {
     if (view === 'week') return buildRangeDays(startOfWeek(selectedDate), 7)
     return []
   }, [selectedDate, view])
+
+  useEffect(() => {
+    if (isMobile && view === 'month') {
+      setView('day')
+    }
+  }, [isMobile, view])
 
   useEffect(() => {
     const nextToday = currentDateInTimeZone(timeZone)
@@ -781,6 +789,13 @@ export default function CalendarPage() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         contentTag="main"
+        mobileTitle="Calendário"
+        mobileTitleMeta={viewStatus}
+        mobileActions={(
+          <button type="button" className={styles.primaryButton} onClick={openCreateDialog} aria-label="Novo evento">
+            <Icon.Plus />
+          </button>
+        )}
       >
         <header className={styles.commandBar}>
           <div className={styles.commandLeft}>

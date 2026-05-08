@@ -1256,6 +1256,13 @@ export default function Workspace() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         contentTag="main"
+        mobileTitle="Início"
+        mobileTitleMeta={`${filtered.length}`}
+        mobileActions={(
+          <button type="button" className={styles.newPlanBtn} onClick={openNewPlan} aria-label="Novo plano">
+            <PlusIcon />
+          </button>
+        )}
       >
           {/* Top bar */}
           <div className={styles.topbar}>

@@ -982,6 +982,136 @@
   animation: fadeUp 0.2s ease both;
 }
 
+.mobileBoardControls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 0;
+}
+
+.mobileBoardViewSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mobileBoardViewButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--border-1);
+  border-radius: 14px;
+  color: var(--text-2);
+  background: var(--surface-1);
+}
+
+.mobileBoardViewButtonActive {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.mobileBoardTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mobileBoardTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileBoardTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.mobileBoardTabActive {
+  color: var(--text-1);
+  background: var(--hover);
+}
+
+.mobileBoardTabDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.mobileBoardTabCount {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.mobileTaskList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.mobileTaskRow {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 0;
+  border: 1px solid var(--border-1);
+  border-radius: 18px;
+  background: var(--surface-1);
+  color: var(--text-1);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+}
+
+.mobileTaskRowStatus {
+  align-self: stretch;
+  border-radius: 18px 0 0 18px;
+}
+
+.mobileTaskRowBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mobileTaskRowBody strong,
+.mobileTaskRowBody span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileTaskRowBody strong {
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+}
+
+.mobileTaskRowBody span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.mobileTaskEmpty {
+  padding: 24px 18px;
+  border: 1px dashed var(--border-2);
+  border-radius: 18px;
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
 .plannerPanel {
   position: sticky;
   top: 12px;
@@ -5076,20 +5206,24 @@
     white-space: normal;
   }
   .plannerPanel {
-    position: relative;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
     top: auto;
+    z-index: 45;
     flex: 0 0 auto;
     height: auto;
-    max-height: 1200px;
-    width: 100%;
+    max-height: calc(100dvh - 108px);
+    width: auto;
     border: 1px solid var(--border-1);
     box-shadow: var(--shadow-lg);
   }
   .plannerPanelClosing {
-    width: 100%;
+    width: auto;
     max-height: 0;
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(24px);
     border-color: transparent;
     box-shadow: none;
   }
@@ -5147,7 +5281,12 @@
     margin-left: auto;
   }
   .plannerPanel {
-    width: 100%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: calc(100dvh - 96px);
+    border-radius: 18px 18px 0 0;
   }
   .plannerPanelHeader h2 {
     font-size: 18px;

@@ -9,6 +9,7 @@ import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPag
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeaderActions from '../../components/BoardHeaderActions/BoardHeaderActions.jsx'
@@ -263,6 +264,7 @@ function BoardLoadingState({ styles }) {
 export default function KanbanBoard() {
   const { planId } = useParams()
   const { accessToken, currentUser } = useAuth()
+  const { isMobile } = useResponsiveViewport()
   const {
     updatePlanBoard,
     isBackendDriven,
@@ -1286,6 +1288,34 @@ export default function KanbanBoard() {
           '--cover-bg': `url(${activePlan.coverImage})`,
         }
       : undefined
+  const [mobileBoardView, setMobileBoardView] = useState('columns')
+  const [mobileActiveColumnId, setMobileActiveColumnId] = useState(null)
+  const mobileVisibleColumns = useMemo(() => (
+    isMobile && mobileBoardView === 'columns'
+      ? columns.filter((column) => column.id === mobileActiveColumnId)
+      : columns
+  ), [columns, isMobile, mobileActiveColumnId, mobileBoardView])
+  const mobileTaskItems = useMemo(() => (
+    columns.flatMap((column) => (
+      column.cards.map((card) => ({
+        card,
+        column,
+      }))
+    ))
+  ), [columns])
+
+  useEffect(() => {
+    if (!columns.length) {
+      setMobileActiveColumnId(null)
+      return
+    }
+
+    setMobileActiveColumnId((current) => (
+      current && columns.some((column) => column.id === current)
+        ? current
+        : columns[0].id
+    ))
+  }, [columns])
 
   useEffect(() => () => {
     if (notificationTimerRef.current) {
@@ -2004,6 +2034,8 @@ export default function KanbanBoard() {
         secondaryContent={renderSidebarSecondaryContent}
         bottomContent={renderSidebarBottomContent}
         contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted || isFilesPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen || isFilesOpen ? styles.boardWrapperWithPlanner : ''}`}
+        mobileTitle={boardHeaderTitle}
+        mobileTitleMeta={boardHeaderMeta}
       >
         <div className={boardMainClassName} style={boardCoverStyle}>
         <PlanPageHeader
@@ -2168,8 +2200,74 @@ export default function KanbanBoard() {
             </button>
           </section>
         ) : (
+          <>
+            {isMobile ? (
+              <div className={styles.mobileBoardControls}>
+                <div className={styles.mobileBoardViewSwitch} role="tablist" aria-label="Visões do quadro">
+                  <button
+                    type="button"
+                    className={`${styles.mobileBoardViewButton} ${mobileBoardView === 'columns' ? styles.mobileBoardViewButtonActive : ''}`}
+                    onClick={() => setMobileBoardView('columns')}
+                    aria-selected={mobileBoardView === 'columns'}
+                  >
+                    <Icon.Board />
+                    Listas
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.mobileBoardViewButton} ${mobileBoardView === 'tasks' ? styles.mobileBoardViewButtonActive : ''}`}
+                    onClick={() => setMobileBoardView('tasks')}
+                    aria-selected={mobileBoardView === 'tasks'}
+                  >
+                    <Icon.List />
+                    Tarefas
+                  </button>
+                </div>
+
+                {mobileBoardView === 'columns' ? (
+                  <div className={styles.mobileBoardTabs}>
+                    {columns.map((column) => (
+                      <button
+                        key={column.id}
+                        type="button"
+                        className={`${styles.mobileBoardTab} ${mobileActiveColumnId === column.id ? styles.mobileBoardTabActive : ''}`}
+                        onClick={() => setMobileActiveColumnId(column.id)}
+                      >
+                        <span className={styles.mobileBoardTabDot} style={{ background: column.color }} />
+                        <span>{column.title}</span>
+                        <span className={styles.mobileBoardTabCount}>{column.cards.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {isMobile && mobileBoardView === 'tasks' ? (
+              <div className={styles.mobileTaskList}>
+                {mobileTaskItems.length ? mobileTaskItems.map(({ card, column }) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    className={styles.mobileTaskRow}
+                    onClick={() => setActiveCard({ card, colTitle: column.title })}
+                  >
+                    <span className={styles.mobileTaskRowStatus} style={{ background: column.color }} />
+                    <div className={styles.mobileTaskRowBody}>
+                      <strong>{card.title}</strong>
+                      <span>{column.title}</span>
+                    </div>
+                    {card.isCompleted ? <Icon.CheckCircle /> : <Icon.Chevron />}
+                  </button>
+                )) : (
+                  <div className={styles.mobileTaskEmpty}>
+                    <p>Nenhum cartão disponível neste plano.</p>
+                  </div>
+                )}
+              </div>
+            ) : (
           <div className={styles.board}>
-            {columns.map(col => (
+            {mobileVisibleColumns.map(col => (
               <KanbanColumn
                 key={col.id}
                 col={col}
@@ -2223,6 +2321,8 @@ export default function KanbanBoard() {
               styles={styles}
             />
           </div>
+            )}
+          </>
         )}
 
         <div ref={boardViewToolbarRef} className={styles.boardViewToolbar} aria-label="Atalhos do quadro">
