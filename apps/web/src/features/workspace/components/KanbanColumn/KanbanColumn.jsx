@@ -221,7 +221,7 @@ export default function KanbanColumn({
             members={members}
             CheckIcon={icons.Check}
             CommentIcon={icons.Comment}
-            ClockIcon={icons.Clock}
+            ClockIcon={icons.Calendar}
             styles={styles}
           />
         ))}

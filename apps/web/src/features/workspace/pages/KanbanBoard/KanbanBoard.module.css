@@ -2304,6 +2304,20 @@
   color: var(--text-3);
 }
 
+.cardChecklistProgressIcon {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.cardChecklistProgressTrack {
+  stroke: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.cardChecklistProgressValue {
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+
 .cardDue {
   display: flex;
   align-items: center;

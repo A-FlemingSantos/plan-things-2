@@ -16,6 +16,7 @@ function buildCard(overrides = {}) {
     memberIds: [],
     comments: [],
     attachments: [],
+    checklists: [],
     dueDate: '',
     ...overrides,
   }
@@ -132,5 +133,31 @@ describe('KanbanCard file drag-and-drop', () => {
     expect(onDragOver).toHaveBeenCalledWith({ type: 'card', cardId: 'card-1', colId: 'col-1' })
     expect(onDrop).toHaveBeenCalledWith({ type: 'card', cardId: 'card-1', colId: 'col-1' })
     expect(onFileDrop).not.toHaveBeenCalled()
+  })
+
+  it('renders attachment count and checklist progress metadata', () => {
+    renderCard({
+      card: buildCard({
+        attachments: [
+          { id: 'attachment-1', fileId: 'file-1', name: 'briefing.pdf' },
+          { id: 'attachment-2', fileId: 'file-2', name: 'roadmap.pdf' },
+        ],
+        dueDate: 'Amanhã',
+        checklists: [
+          {
+            id: 'checklist-1',
+            title: 'Checklist',
+            items: [
+              { id: 'item-1', checked: true, text: 'Primeiro item' },
+              { id: 'item-2', checked: false, text: 'Segundo item' },
+            ],
+          },
+        ],
+      }),
+    })
+
+    expect(screen.getByLabelText('2 anexos')).toBeInTheDocument()
+    expect(screen.getByLabelText('Checklist 50% concluída')).toBeInTheDocument()
+    expect(screen.getByLabelText('Entrega Amanhã')).toBeInTheDocument()
   })
 })

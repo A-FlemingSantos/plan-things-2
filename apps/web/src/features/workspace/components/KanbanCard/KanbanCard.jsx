@@ -25,10 +25,22 @@ export default function KanbanCard({
   styles,
 }) {
   const label = labels.find((item) => item.id === card.labelId)
-  const assignedMembers = card.memberIds
+  const comments = card.comments ?? []
+  const attachments = card.attachments ?? []
+  const [activeChecklist] = Array.isArray(card.checklists) ? card.checklists : []
+  const checklistItems = activeChecklist?.items ?? []
+  const checklistCheckedItems = checklistItems.filter((item) => Boolean(item.checked ?? item.completed)).length
+  const checklistProgress = activeChecklist
+    ? (checklistItems.length === 0 ? 0 : Math.round((checklistCheckedItems / checklistItems.length) * 100))
+    : null
+  const assignedMembers = (card.memberIds ?? [])
     .map((id) => members.find((member) => member.id === id))
     .filter(Boolean)
-  const hasFooter = assignedMembers.length > 0 || card.comments.length > 0 || Boolean(card.dueDate)
+  const hasFooter = assignedMembers.length > 0
+    || comments.length > 0
+    || Boolean(card.dueDate)
+    || attachments.length > 0
+    || checklistProgress !== null
   const isCompactCard = !label && !hasFooter
   const toggleConfirmed = (event) => {
     event.preventDefault()
@@ -131,17 +143,64 @@ export default function KanbanCard({
           </div>
 
           <div className={styles.cardMeta}>
-            {card.comments.length > 0 ? (
+            {comments.length > 0 ? (
               <span className={styles.cardMetaItem}>
                 <CommentIcon />
-                <span>{card.comments.length}</span>
+                <span>{comments.length}</span>
+              </span>
+            ) : null}
+
+            {attachments.length > 0 ? (
+              <span className={styles.cardMetaItem} aria-label={`${attachments.length} ${attachments.length === 1 ? 'anexo' : 'anexos'}`}>
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M5.1 10.9 9 7a2 2 0 1 0-2.8-2.8L2.8 7.6a3.3 3.3 0 0 0 4.7 4.7l4.1-4.1a4.2 4.2 0 0 0-5.9-5.9L2.9 5.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>{attachments.length}</span>
               </span>
             ) : null}
 
             {card.dueDate ? (
-              <span className={`${styles.cardDue} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}>
+              <span
+                className={`${styles.cardDue} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}
+                aria-label={`Entrega ${card.dueDate}`}
+              >
                 <ClockIcon />
                 {card.dueDate}
+              </span>
+            ) : null}
+
+            {checklistProgress !== null ? (
+              <span
+                className={styles.cardMetaItem}
+                aria-label={`Checklist ${checklistProgress}% concluída`}
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden="true"
+                  className={styles.cardChecklistProgressIcon}
+                >
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="5.5"
+                    className={styles.cardChecklistProgressTrack}
+                    strokeWidth="1.6"
+                  />
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="5.5"
+                    className={styles.cardChecklistProgressValue}
+                    strokeWidth="1.6"
+                    pathLength="100"
+                    strokeDasharray="100"
+                    strokeDashoffset={100 - checklistProgress}
+                  />
+                </svg>
+                <span>{checklistProgress}%</span>
               </span>
             ) : null}
           </div>
