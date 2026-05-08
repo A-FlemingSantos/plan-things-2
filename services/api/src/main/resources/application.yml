@@ -58,7 +58,6 @@ app:
       - /
       - /app
       - /workspace
-      - /canvas
       - /calendar
       - /files
       - /settings

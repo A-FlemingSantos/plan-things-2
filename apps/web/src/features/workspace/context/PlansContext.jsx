@@ -1,11 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import {
-  buildCanvasSavePayload,
   mapBoardViewToColumns,
-  mapCanvasDocumentToState,
   mapPlanSummaryToRecord,
   mergeBoardIntoPlan,
   mergePlanDetails,
@@ -41,9 +39,6 @@ export function PlansProvider({ children }) {
     generalPreferences.timezone,
   ])
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
-  const plansByIdRef = useRef(plansById)
-  const canvasSaveRequestRef = useRef(new Map())
-  plansByIdRef.current = plansById
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
   const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
   const sessionKey = mode === 'backend' ? `${currentUser?.id ?? 'anonymous'}:${accessToken ?? ''}` : mode
@@ -278,13 +273,6 @@ export function PlansProvider({ children }) {
     })
   }, [updatePlan])
 
-  const updatePlanCanvas = useCallback((planId, updater) => {
-    updatePlan(planId, (plan) => {
-      const nextCanvasState = typeof updater === 'function' ? updater(plan.canvasState) : updater
-      return { ...plan, canvasState: nextCanvasState }
-    })
-  }, [updatePlan])
-
   const ensurePlanDetails = useCallback(async (planId) => {
     if (!backendEnabled) {
       return getPlanById(planId)
@@ -382,65 +370,6 @@ export function PlansProvider({ children }) {
     )))
   }, [boardMappingOptions])
 
-  const loadPlanCanvas = useCallback(async (planId) => {
-    if (!backendEnabled || !planId) {
-      return plansByIdRef.current.get(planId)?.canvasState ?? null
-    }
-
-    const canvasDocument = await apiRequest(`/api/plans/${planId}/canvas`, {
-      token: accessToken,
-    })
-
-    const canvasState = mapCanvasDocumentToState(canvasDocument)
-    setPlans((prev) => prev.map((plan) => (
-      plan.id === planId
-        ? {
-            ...plan,
-            canvasState,
-            canvasVersion: canvasDocument.version,
-            canvasLoaded: true,
-          }
-        : plan
-    )))
-
-    return canvasState
-  }, [accessToken, backendEnabled])
-
-  const savePlanCanvas = useCallback(async (planId, canvasState) => {
-    if (!backendEnabled || !planId) {
-      updatePlanCanvas(planId, canvasState)
-      return canvasState
-    }
-
-    const currentPlan = plansByIdRef.current.get(planId)
-    const requestId = (canvasSaveRequestRef.current.get(planId) ?? 0) + 1
-    canvasSaveRequestRef.current.set(planId, requestId)
-    const canvasDocument = await apiRequest(`/api/plans/${planId}/canvas`, {
-      method: 'PUT',
-      token: accessToken,
-      body: buildCanvasSavePayload(canvasState, currentPlan?.canvasVersion ?? 0),
-    })
-
-    const nextCanvasState = mapCanvasDocumentToState(canvasDocument)
-
-    if (canvasSaveRequestRef.current.get(planId) !== requestId) {
-      return nextCanvasState
-    }
-
-    setPlans((prev) => prev.map((plan) => (
-      plan.id === planId
-        ? {
-            ...plan,
-            canvasState: nextCanvasState,
-            canvasVersion: canvasDocument.version,
-            canvasLoaded: true,
-          }
-        : plan
-    )))
-
-    return nextCanvasState
-  }, [accessToken, backendEnabled, updatePlanCanvas])
-
   const value = useMemo(() => ({
     plans,
     activePlan,
@@ -457,14 +386,11 @@ export function PlansProvider({ children }) {
     selectPlan,
     updatePlan,
     updatePlanBoard,
-    updatePlanCanvas,
     ensurePlanDetails,
     refreshPlanDetails,
     refreshPlans,
     loadPlanBoard,
     applyBoardView,
-    loadPlanCanvas,
-    savePlanCanvas,
   }), [
     activePlan,
     activePlanId,
@@ -481,14 +407,11 @@ export function PlansProvider({ children }) {
     getPlanById,
     isLoading,
     loadPlanBoard,
-    loadPlanCanvas,
     plans,
-    savePlanCanvas,
     selectPlan,
     updatePlan,
     updatePlanBoard,
     updatePlanCover,
-    updatePlanCanvas,
     workspace,
   ])
 

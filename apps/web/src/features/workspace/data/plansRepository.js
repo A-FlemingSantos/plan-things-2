@@ -1,5 +1,4 @@
 import { createEmptyBoardColumns, createSampleBoardColumns } from './boardTemplates.js'
-import { createEmptyCanvasState, createSampleCanvasState } from '../../canvas/data/canvasTemplates.js'
 import { normalizePlanRecord } from '../../../shared/contracts/planContracts.js'
 import { createClientId } from '../../../shared/utils/createClientId.js'
 
@@ -114,7 +113,6 @@ function createPlanRecord(plan, options = {}) {
     members: plan.members ?? mapMemberStyles(plan.memberIds),
     cover: plan.cover ?? mapCover(plan.coverId),
     boardColumns: options.boardColumns ?? plan.boardColumns ?? createEmptyBoardColumns(),
-    canvasState: options.canvasState ?? plan.canvasState ?? createEmptyCanvasState(),
   })
 }
 
@@ -122,7 +120,6 @@ export function createInitialPlansSnapshot() {
   return PLAN_SEEDS.map((plan) =>
     createPlanRecord(plan, {
       boardColumns: createSampleBoardColumns(),
-      canvasState: createSampleCanvasState(),
     }),
   )
 }

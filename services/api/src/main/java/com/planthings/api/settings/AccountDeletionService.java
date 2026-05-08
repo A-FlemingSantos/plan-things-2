@@ -92,12 +92,6 @@ public class AccountDeletionService {
           and (:workspaceId is null or workspace_id <> :workspaceId)
         """, params);
     jdbcTemplate.update("""
-        update canvas_documents
-        set updated_by_user_id = :tombstoneUserId
-        where updated_by_user_id = :userId
-          and (:workspaceId is null or plan_id in (select id from plans where workspace_id <> :workspaceId))
-        """, params);
-    jdbcTemplate.update("""
         update file_plan_shares
         set shared_by_user_id = :tombstoneUserId
         where shared_by_user_id = :userId

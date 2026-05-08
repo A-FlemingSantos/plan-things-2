@@ -14,7 +14,6 @@ import com.planthings.api.board.BoardChecklistEntity;
 import com.planthings.api.board.BoardChecklistItemEntity;
 import com.planthings.api.board.BoardColumnEntity;
 import com.planthings.api.calendar.CalendarEventEntity;
-import com.planthings.api.canvas.CanvasDocumentEntity;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.files.CardAttachmentEntity;
 import com.planthings.api.files.FileBlobEntity;
@@ -204,12 +203,6 @@ public class SettingsExportService {
         where event.workspaceId = :workspaceId
         order by event.startsAt asc
         """, CalendarEventEntity.class, Map.of("workspaceId", workspaceId));
-    List<CanvasDocumentEntity> canvasDocuments = allPlanIds.isEmpty() ? List.of() : query("""
-        select document
-        from CanvasDocumentEntity document
-        where document.planId in :planIds
-        order by document.createdAt asc
-        """, CanvasDocumentEntity.class, Map.of("planIds", allPlanIds));
     List<FileEntryEntity> files = query("""
         select entry
         from FileEntryEntity entry
@@ -283,8 +276,7 @@ public class SettingsExportService {
         checklistItems,
         inboxDeliveries,
         deliveryRecipients,
-        calendarEvents,
-        canvasDocuments
+        calendarEvents
     )).toList());
     exportPayload.put("sharedHistory", buildSharedHistory(user.getId(), workspaceId));
     exportPayload.put("files", buildFilesSection(files, fileShares, attachments));
@@ -407,8 +399,7 @@ public class SettingsExportService {
       List<BoardChecklistItemEntity> checklistItems,
       List<BoardCardInboxDeliveryEntity> inboxDeliveries,
       List<BoardCardInboxDeliveryRecipientEntity> deliveryRecipients,
-      List<CalendarEventEntity> calendarEvents,
-      List<CanvasDocumentEntity> canvasDocuments
+      List<CalendarEventEntity> calendarEvents
   ) {
     UUID planId = plan.getId();
     Set<UUID> planCardIds = cards.stream()
@@ -436,7 +427,6 @@ public class SettingsExportService {
     payload.put("checklists", checklists.stream().filter(checklist -> planCardIds.contains(checklist.getCardId())).map(this::boardChecklistMap).toList());
     payload.put("checklistItems", checklistItems.stream().filter(item -> planChecklistIds.contains(item.getChecklistId())).map(this::boardChecklistItemMap).toList());
     payload.put("calendarEvents", calendarEvents.stream().filter(event -> planId.equals(event.getPlanId())).map(this::calendarEventMap).toList());
-    payload.put("canvasDocuments", canvasDocuments.stream().filter(document -> planId.equals(document.getPlanId())).map(this::canvasDocumentMap).toList());
     payload.put("inboxDeliveries", inboxDeliveries.stream().filter(delivery -> planId.equals(delivery.getPlanId())).map(this::inboxDeliveryMap).toList());
     payload.put("inboxRecipients", deliveryRecipients.stream().filter(recipient -> planDeliveryIds.contains(recipient.getDeliveryId())).map(this::inboxRecipientMap).toList());
     return payload;
@@ -636,18 +626,6 @@ public class SettingsExportService {
         "generatedFromCard", event.getGeneratedFromCard(),
         "createdAt", toIso(event.getCreatedAt()),
         "updatedAt", toIso(event.getUpdatedAt())
-    );
-  }
-
-  private Map<String, Object> canvasDocumentMap(CanvasDocumentEntity document) {
-    return mapOf(
-        "id", document.getId(),
-        "planId", document.getPlanId(),
-        "updatedByUserId", document.getUpdatedByUserId(),
-        "versionNumber", document.getVersionNumber(),
-        "documentJson", document.getDocumentJson(),
-        "createdAt", toIso(document.getCreatedAt()),
-        "updatedAt", toIso(document.getUpdatedAt())
     );
   }
 

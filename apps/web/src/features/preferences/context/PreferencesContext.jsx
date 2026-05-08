@@ -33,7 +33,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
 const TRACKABLE_CONTEXT_PREFIXES = [
   ROUTES.workspaceBoard,
   ROUTES.workspace,
-  ROUTES.canvas,
   ROUTES.calendar,
   ROUTES.files,
 ]
@@ -160,7 +159,7 @@ export function readStoredLocalPreferences(userId) {
   }
 
   return {
-    homePage: parsed.homePage ?? DEFAULT_LOCAL_PREFERENCES.homePage,
+    homePage: normalizeHomePagePreference(parsed.homePage),
     openLastCtx: parsed.openLastCtx ?? DEFAULT_LOCAL_PREFERENCES.openLastCtx,
     confirmDestructiveActions: parsed.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions,
     liquidGlass: parsed.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass,
@@ -173,7 +172,7 @@ function writeStoredLocalPreferences(userId, preferences) {
   if (!key) return
 
   writeStoredJson(key, {
-    homePage: preferences.homePage,
+    homePage: normalizeHomePagePreference(preferences.homePage),
     openLastCtx: preferences.openLastCtx,
     confirmDestructiveActions: preferences.confirmDestructiveActions,
     liquidGlass: preferences.liquidGlass,
@@ -198,8 +197,11 @@ function writeStoredLastContext(userId, pathname) {
   window.localStorage.setItem(key, normalizePathname(pathname))
 }
 
+function normalizeHomePagePreference(value) {
+  return value === 'calendar' || value === 'files' ? value : DEFAULT_LOCAL_PREFERENCES.homePage
+}
+
 function mapHomePageToRoute(homePage) {
-  if (homePage === 'canvas') return ROUTES.canvas
   if (homePage === 'calendar') return ROUTES.calendar
   if (homePage === 'files') return ROUTES.files
   return ROUTES.workspace

@@ -4,22 +4,6 @@ import { shortMonthLabel, toDate } from './dates.js'
 const MEMBER_COLORS = ['#000000', '#4290da', '#0f703a', '#d4aef1', '#ff6766', '#f5a623']
 const PLAN_COVERS = ['#f4f0ff', '#f0fff5', '#fff9f0', '#fff0f0', '#f0f6ff', '#f5f5f5']
 
-export function createEmptyCanvasState() {
-  return { cards: [], connections: [], pan: { x: 0, y: 0 }, zoom: 1 }
-}
-
-export function normalizeCanvasState(canvasState = {}) {
-  return {
-    cards: Array.isArray(canvasState.cards) ? canvasState.cards : [],
-    connections: Array.isArray(canvasState.connections) ? canvasState.connections : [],
-    pan: {
-      x: Number.isFinite(canvasState.pan?.x) ? canvasState.pan.x : 0,
-      y: Number.isFinite(canvasState.pan?.y) ? canvasState.pan.y : 0,
-    },
-    zoom: Number.isFinite(canvasState.zoom) ? canvasState.zoom : 1,
-  }
-}
-
 export function normalizePlanRecord(plan = {}) {
   return {
     ...plan,
@@ -33,7 +17,6 @@ export function normalizePlanRecord(plan = {}) {
     tasks: Number.isFinite(plan.tasks) ? plan.tasks : 0,
     cover: plan.cover ?? '#f5f5f5',
     boardColumns: Array.isArray(plan.boardColumns) ? plan.boardColumns : [],
-    canvasState: normalizeCanvasState(plan.canvasState),
   }
 }
 
@@ -85,8 +68,6 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     labelsMeta: [],
     membersMeta: [],
     boardLoaded: false,
-    canvasLoaded: false,
-    canvasVersion: 0,
   })
 }
 
