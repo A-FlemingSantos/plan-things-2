@@ -27,6 +27,7 @@ import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
 import { mobileApiRequest, mobileApiUrl } from '../services/api'
+import { buildPasswordRequest, getPasswordFlowCopy, resolvePasswordFlow } from './settingsPasswordFlow'
 import { theme } from '../theme/tokens'
 import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
 
@@ -168,9 +169,11 @@ export default function SettingsScreen() {
   const [deleteConfirmPhrase, setDeleteConfirmPhrase] = useState('')
   const [deletePasswordValue, setDeletePasswordValue] = useState('')
   const gmail = settingsSnapshot?.integrations?.gmail
-  const localPasswordEnabled = settingsSnapshot?.account?.localPasswordEnabled ?? true
-  const externalIdentityLinked = settingsSnapshot?.account?.externalIdentityLinked ?? false
-  const canSetupPasswordWithoutCurrent = externalIdentityLinked && !localPasswordEnabled
+  const { localPasswordEnabled, externalIdentityLinked, canSetupPasswordWithoutCurrent } = resolvePasswordFlow({
+    settingsAccount: settingsSnapshot?.account,
+    sessionUser: session?.user,
+  })
+  const passwordFlowCopy = getPasswordFlowCopy(canSetupPasswordWithoutCurrent)
 
   const request = useCallback((path, options = {}) => mobileApiRequest(path, {
     ...options,
@@ -312,18 +315,32 @@ export default function SettingsScreen() {
     setSheetError(null)
 
     try {
-      await request(canSetupPasswordWithoutCurrent ? '/api/settings/password/setup' : '/api/settings/password', {
-        method: canSetupPasswordWithoutCurrent ? 'POST' : 'PATCH',
-        body: canSetupPasswordWithoutCurrent
-          ? { newPassword: newPasswordValue }
-          : {
-              currentPassword: currentPasswordValue,
-              newPassword: newPasswordValue,
-            },
+      const passwordRequest = buildPasswordRequest({
+        canSetupPasswordWithoutCurrent,
+        currentPassword: currentPasswordValue,
+        newPassword: newPasswordValue,
       })
+
+      await request(passwordRequest.path, passwordRequest.options)
       setCurrentPasswordValue('')
       setNewPasswordValue('')
-      await loadSettings()
+      const updatedPasswordState = {
+        localPasswordEnabled: true,
+        externalIdentityLinked,
+      }
+      setSettingsSnapshot((current) => (current ? {
+        ...current,
+        account: {
+          ...current.account,
+          ...updatedPasswordState,
+        },
+      } : current))
+      await patchSession({ user: updatedPasswordState })
+      try {
+        await loadSettings()
+      } catch {
+        // Keep the UI on the normal password flow even if the background refresh fails.
+      }
       closeSheet()
     } catch (error) {
       setSheetError(error?.message ?? 'Nao foi possivel atualizar a senha.')
@@ -536,7 +553,7 @@ export default function SettingsScreen() {
           icon={KeyRound}
           label="Senha"
           hint="Recomendado: senha forte + gerenciador."
-          right={<InlineButton label="Alterar" onPress={() => setActiveSheet('password')} />}
+          right={<InlineButton label={passwordFlowCopy.actionLabel} onPress={() => setActiveSheet('password')} />}
         />
         <Row
           icon={LogOut}
@@ -679,8 +696,8 @@ export default function SettingsScreen() {
         <Row
           icon={KeyRound}
           label="Senha"
-          hint={canSetupPasswordWithoutCurrent ? 'Crie uma senha local para entrar também sem OAuth.' : 'Atualize sua senha para manter a conta protegida.'}
-          right={<InlineButton label={canSetupPasswordWithoutCurrent ? 'Criar' : 'Alterar'} onPress={() => setActiveSheet('password')} />}
+          hint={passwordFlowCopy.rowHint}
+          right={<InlineButton label={passwordFlowCopy.actionLabel} onPress={() => setActiveSheet('password')} />}
         />
         <Row
           icon={Shield}
@@ -735,7 +752,7 @@ export default function SettingsScreen() {
         onClose={closeSheet}
         title={
           activeSheet === 'profile' ? 'Perfil' :
-          activeSheet === 'password' ? 'Senha' :
+          activeSheet === 'password' ? passwordFlowCopy.sheetTitle :
           activeSheet === 'language' ? 'Idioma' :
           activeSheet === 'timezone' ? 'Fuso horário' :
           activeSheet === 'theme' ? 'Tema' :
@@ -860,11 +877,7 @@ export default function SettingsScreen() {
 
         {activeSheet === 'password' ? (
           <View style={styles.sheetBlock}>
-            {canSetupPasswordWithoutCurrent ? (
-              <Text style={styles.sheetBodyText}>
-                Sua conta usa OAuth. Você pode criar uma senha local sem informar a senha atual.
-              </Text>
-            ) : null}
+            {passwordFlowCopy.sheetDescription ? <Text style={styles.sheetBodyText}>{passwordFlowCopy.sheetDescription}</Text> : null}
             {!canSetupPasswordWithoutCurrent ? (
               <TextInput
                 value={currentPasswordValue}
@@ -888,7 +901,7 @@ export default function SettingsScreen() {
             {sheetError ? <Text style={styles.inlineError}>{sheetError}</Text> : null}
             <View style={styles.sheetActions}>
               <InlineButton
-                label={sheetBusy ? 'Salvando...' : 'Salvar'}
+                label={sheetBusy ? 'Salvando...' : passwordFlowCopy.submitLabel}
                 tone="primary"
                 onPress={savePassword}
                 disabled={sheetBusy || (!canSetupPasswordWithoutCurrent && !currentPasswordValue) || newPasswordValue.length < 8}
