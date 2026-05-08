@@ -1,6 +1,7 @@
 package com.planthings.api.auth;
 
 import com.planthings.api.common.api.ApiEnvelope;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -30,13 +31,30 @@ public class AuthController {
   }
 
   @PostMapping("/auth/register")
-  public ApiEnvelope<AuthService.SessionResponse> register(@Valid @RequestBody RegisterRequest request) {
-    return ApiEnvelope.ok(authService.register(request.fullName(), request.email(), request.password()));
+  public ApiEnvelope<AuthService.SessionResponse> register(
+      @Valid @RequestBody RegisterRequest request,
+      HttpServletRequest httpRequest
+  ) {
+    return ApiEnvelope.ok(authService.register(
+        request.fullName(),
+        request.email(),
+        request.password(),
+        request.client(),
+        httpRequest.getHeader("User-Agent")
+    ));
   }
 
   @PostMapping("/auth/login")
-  public ApiEnvelope<AuthService.SessionResponse> login(@Valid @RequestBody LoginRequest request) {
-    return ApiEnvelope.ok(authService.login(request.email(), request.password()));
+  public ApiEnvelope<AuthService.SessionResponse> login(
+      @Valid @RequestBody LoginRequest request,
+      HttpServletRequest httpRequest
+  ) {
+    return ApiEnvelope.ok(authService.login(
+        request.email(),
+        request.password(),
+        request.client(),
+        httpRequest.getHeader("User-Agent")
+    ));
   }
 
   @PostMapping("/auth/forgot-password")
@@ -73,8 +91,11 @@ public class AuthController {
   }
 
   @PostMapping("/auth/oauth/exchange")
-  public ApiEnvelope<AuthService.SessionResponse> exchangeOAuthCode(@Valid @RequestBody OAuthExchangeRequest request) {
-    return ApiEnvelope.ok(oauthLoginService.exchangeCompletionCode(request.code()));
+  public ApiEnvelope<AuthService.SessionResponse> exchangeOAuthCode(
+      @Valid @RequestBody OAuthExchangeRequest request,
+      HttpServletRequest httpRequest
+  ) {
+    return ApiEnvelope.ok(oauthLoginService.exchangeCompletionCode(request.code(), httpRequest.getHeader("User-Agent")));
   }
 
   @GetMapping("/me")
@@ -87,14 +108,16 @@ public class AuthController {
       @NotBlank(message = "O e-mail e obrigatorio.")
       @Email(message = "Informe um e-mail valido.") String email,
       @NotBlank(message = "A senha e obrigatoria.")
-      @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres.") String password
+      @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres.") String password,
+      String client
   ) {
   }
 
   public record LoginRequest(
       @NotBlank(message = "O e-mail e obrigatorio.")
       @Email(message = "Informe um e-mail valido.") String email,
-      @NotBlank(message = "A senha e obrigatoria.") String password
+      @NotBlank(message = "A senha e obrigatoria.") String password,
+      String client
   ) {
   }
 

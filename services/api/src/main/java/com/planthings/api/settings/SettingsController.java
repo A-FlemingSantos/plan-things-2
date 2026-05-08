@@ -6,6 +6,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.net.URI;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +30,22 @@ public class SettingsController {
 
   private final SettingsService settingsService;
   private final GmailIntegrationService gmailIntegrationService;
+  private final SecuritySettingsService securitySettingsService;
+  private final SettingsExportService settingsExportService;
+  private final AccountDeletionService accountDeletionService;
 
-  public SettingsController(SettingsService settingsService, GmailIntegrationService gmailIntegrationService) {
+  public SettingsController(
+      SettingsService settingsService,
+      GmailIntegrationService gmailIntegrationService,
+      SecuritySettingsService securitySettingsService,
+      SettingsExportService settingsExportService,
+      AccountDeletionService accountDeletionService
+  ) {
     this.settingsService = settingsService;
     this.gmailIntegrationService = gmailIntegrationService;
+    this.securitySettingsService = securitySettingsService;
+    this.settingsExportService = settingsExportService;
+    this.accountDeletionService = accountDeletionService;
   }
 
   @GetMapping
@@ -93,6 +107,39 @@ public class SettingsController {
     return ApiEnvelope.ok(settingsService.setupOAuthPassword(request.newPassword()));
   }
 
+  @GetMapping("/security/sessions")
+  public ApiEnvelope<List<com.planthings.api.auth.UserSessionService.SessionSummary>> listActiveSessions() {
+    return ApiEnvelope.ok(securitySettingsService.listSessions());
+  }
+
+  @DeleteMapping("/security/sessions/{sessionId}")
+  public ApiEnvelope<SettingsService.MessageResponse> revokeSession(@org.springframework.web.bind.annotation.PathVariable UUID sessionId) {
+    return ApiEnvelope.ok(securitySettingsService.revokeSession(sessionId));
+  }
+
+  @PostMapping("/security/sessions/revoke-others")
+  public ApiEnvelope<SettingsService.MessageResponse> revokeOtherSessions() {
+    return ApiEnvelope.ok(securitySettingsService.revokeOtherSessions());
+  }
+
+  @GetMapping("/export")
+  public ResponseEntity<byte[]> exportSettingsData() {
+    SettingsExportService.ExportBundle bundle = settingsExportService.exportCurrentUserData();
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + bundle.filename() + "\"")
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .body(bundle.content());
+  }
+
+  @PostMapping("/account/delete")
+  public ApiEnvelope<SettingsService.MessageResponse> deleteAccount(@Valid @RequestBody DeleteAccountRequest request) {
+    return ApiEnvelope.ok(accountDeletionService.deleteCurrentAccount(
+        request.confirmEmail(),
+        request.confirmPhrase(),
+        request.currentPassword()
+    ));
+  }
+
   @PostMapping("/integrations/gmail/start")
   public ApiEnvelope<GmailIntegrationService.AuthorizationStartResponse> startGmailIntegration(
       @RequestBody(required = false) GmailStartRequest request
@@ -146,6 +193,13 @@ public class SettingsController {
   public record SetupPasswordRequest(
       @NotBlank(message = "A nova senha e obrigatoria.")
       @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres.") String newPassword
+  ) {
+  }
+
+  public record DeleteAccountRequest(
+      @NotBlank(message = "Confirme o e-mail da conta.") String confirmEmail,
+      @NotBlank(message = "Digite a frase de confirmacao.") String confirmPhrase,
+      String currentPassword
   ) {
   }
 

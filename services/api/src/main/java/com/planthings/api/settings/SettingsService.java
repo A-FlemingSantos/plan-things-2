@@ -3,6 +3,7 @@ package com.planthings.api.settings;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserExternalIdentityRepository;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.auth.UserSessionService;
 import com.planthings.api.avatar.AvatarImageService;
 import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.common.error.BadRequestException;
@@ -40,6 +41,7 @@ public class SettingsService {
   private final UserExternalIdentityRepository externalIdentityRepository;
   private final PasswordEncoder passwordEncoder;
   private final AvatarImageService avatarImageService;
+  private final UserSessionService userSessionService;
 
   public SettingsService(
       AuthenticatedUserService authenticatedUserService,
@@ -48,7 +50,8 @@ public class SettingsService {
       GmailIntegrationService gmailIntegrationService,
       UserExternalIdentityRepository externalIdentityRepository,
       PasswordEncoder passwordEncoder,
-      AvatarImageService avatarImageService
+      AvatarImageService avatarImageService,
+      UserSessionService userSessionService
   ) {
     this.authenticatedUserService = authenticatedUserService;
     this.userRepository = userRepository;
@@ -57,6 +60,7 @@ public class SettingsService {
     this.externalIdentityRepository = externalIdentityRepository;
     this.passwordEncoder = passwordEncoder;
     this.avatarImageService = avatarImageService;
+    this.userSessionService = userSessionService;
   }
 
   @Transactional(readOnly = true)
@@ -175,6 +179,7 @@ public class SettingsService {
     validatePassword(newPassword);
     user.setPasswordHash(passwordEncoder.encode(newPassword));
     userRepository.save(user);
+    userSessionService.revokeOtherSessions(user.getId(), authenticatedUserService.requireSessionId());
 
     return new MessageResponse("Senha atualizada com sucesso.");
   }
@@ -201,6 +206,7 @@ public class SettingsService {
     user.setPasswordHash(passwordEncoder.encode(newPassword));
     user.setLocalPasswordEnabled(true);
     userRepository.save(user);
+    userSessionService.revokeOtherSessions(user.getId(), authenticatedUserService.requireSessionId());
 
     return new MessageResponse("Senha configurada com sucesso.");
   }

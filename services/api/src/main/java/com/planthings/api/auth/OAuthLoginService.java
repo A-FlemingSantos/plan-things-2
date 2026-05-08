@@ -122,12 +122,13 @@ public class OAuthLoginService {
   }
 
   private URI createCompletionCode(OAuthIdentity identity, OAuthLoginStateEntity stateEntity) {
-    AuthService.SessionResponse session = authService.loginWithExternalIdentity(identity);
+    UserEntity user = authService.loginWithExternalIdentity(identity);
 
     OAuthLoginCodeEntity codeEntity = new OAuthLoginCodeEntity();
     codeEntity.setCompletionCode(randomToken());
-    codeEntity.setUserId(session.user().id());
+    codeEntity.setUserId(user.getId());
     codeEntity.setRedirectPath(stateEntity.getRedirectPath());
+    codeEntity.setClient(stateEntity.getClient());
     codeEntity.setExpiresAt(OffsetDateTime.now(clock).plusMinutes(properties.getCompletionCodeMinutes()));
     codeRepository.save(codeEntity);
 
@@ -135,7 +136,7 @@ public class OAuthLoginService {
   }
 
   @Transactional
-  public AuthService.SessionResponse exchangeCompletionCode(String completionCode) {
+  public AuthService.SessionResponse exchangeCompletionCode(String completionCode, String userAgent) {
     OAuthLoginCodeEntity codeEntity = codeRepository.findByCompletionCodeForUpdate(completionCode)
         .orElseThrow(() -> new BadRequestException("OAUTH_COMPLETION_CODE_INVALIDO", "O codigo de conclusao do login e invalido."));
 
@@ -147,7 +148,7 @@ public class OAuthLoginService {
     codeEntity.setUsedAt(now);
     codeRepository.save(codeEntity);
 
-    return authService.sessionForUserId(codeEntity.getUserId());
+    return authService.sessionForUserId(codeEntity.getUserId(), codeEntity.getClient(), userAgent);
   }
 
   private OAuthLoginStateEntity consumeState(String provider, String state) {

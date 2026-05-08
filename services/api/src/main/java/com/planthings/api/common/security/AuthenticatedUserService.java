@@ -29,6 +29,14 @@ public class AuthenticatedUserService {
     return requirePrincipal().getUserId();
   }
 
+  public UUID requireSessionId() {
+    UUID sessionId = requirePrincipal().getSessionId();
+    if (sessionId == null) {
+      throw new UnauthorizedException("SESSAO_INVALIDA", "Nao foi possivel identificar a sessao autenticada.");
+    }
+    return sessionId;
+  }
+
   public UserEntity requireUser() {
     UUID userId = requireUserId();
     return userRepository.findById(userId)

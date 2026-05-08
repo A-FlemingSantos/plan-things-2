@@ -35,7 +35,7 @@ public class JwtService {
     this.clock = clock;
   }
 
-  public String generateAccessToken(UUID userId, String email) {
+  public String generateAccessToken(UUID userId, String email, UUID sessionId) {
     Instant now = Instant.now(clock);
     return Jwts.builder()
         .subject(userId.toString())
@@ -43,6 +43,7 @@ public class JwtService {
         .issuedAt(Date.from(now))
         .expiration(Date.from(now.plus(accessTokenMinutes, ChronoUnit.MINUTES)))
         .claim("email", email)
+        .claim("sid", sessionId == null ? null : sessionId.toString())
         .signWith(secretKey, SignatureAlgorithm.HS256)
         .compact();
   }
@@ -53,6 +54,14 @@ public class JwtService {
 
   public String extractEmail(String token) {
     return parseClaims(token).get("email", String.class);
+  }
+
+  public UUID extractSessionId(String token) {
+    String sessionId = parseClaims(token).get("sid", String.class);
+    if (sessionId == null || sessionId.isBlank()) {
+      return null;
+    }
+    return UUID.fromString(sessionId);
   }
 
   public boolean isValid(String token) {

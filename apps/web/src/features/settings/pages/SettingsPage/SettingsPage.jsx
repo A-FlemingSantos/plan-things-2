@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import {
   DEFAULT_LOCAL_PREFERENCES,
   usePreferences,
 } from '../../../preferences/context/PreferencesContext.jsx'
-import { apiRequest } from '../../../../shared/api/apiClient.js'
+import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
@@ -77,6 +77,7 @@ const EMPTY_GMAIL_INTEGRATION = {
 }
 const AVATAR_ACCEPT = 'image/png,image/jpeg,image/webp'
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
+const DELETE_CONFIRMATION_PHRASE = 'EXCLUIR MINHA CONTA'
 
 function validateAvatarFile(file) {
   if (!file) return 'Selecione uma imagem.'
@@ -101,6 +102,10 @@ function normalizeGmailIntegration(source = {}) {
     connectedAt: source.connectedAt ?? null,
     lastError: source.lastError ?? null,
   }
+}
+
+function isDeletePhraseValid(value) {
+  return value.trim() === DELETE_CONFIRMATION_PHRASE
 }
 
 /* ═══════════════════════════════════════════
@@ -178,7 +183,7 @@ function AutoSaveStatus({ state = 'idle', errorMessage = '', successMessage = ''
 ═══════════════════════════════════════════ */
 
 export default function SettingsPage() {
-  const { currentUser, workspace, accessToken, isAuthenticated, isDemoSession, patchSession } = useAuth()
+  const { currentUser, workspace, accessToken, isAuthenticated, isDemoSession, patchSession, logout } = useAuth()
   const {
     generalPreferences,
     localPreferences,
@@ -190,6 +195,7 @@ export default function SettingsPage() {
   } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const location = useLocation()
+  const navigate = useNavigate()
   const backendEnabled = isAuthenticated && !isDemoSession
 
   const [activeSection, setActiveSection] = useState('account')
@@ -250,6 +256,20 @@ export default function SettingsPage() {
   const [gmailActionState, setGmailActionState] = useState('idle')
   const [gmailFeedbackState, setGmailFeedbackState] = useState('idle')
   const [gmailFeedback, setGmailFeedback] = useState('')
+
+  // ── Security state
+  const [activeSessions, setActiveSessions] = useState([])
+  const [sessionsLoadState, setSessionsLoadState] = useState('idle')
+  const [sessionsFeedback, setSessionsFeedback] = useState('')
+  const [sessionActionId, setSessionActionId] = useState(null)
+  const [exportState, setExportState] = useState('idle')
+  const [exportFeedback, setExportFeedback] = useState('')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('')
+  const [deleteConfirmPhrase, setDeleteConfirmPhrase] = useState('')
+  const [deleteCurrentPassword, setDeleteCurrentPassword] = useState('')
+  const [deleteState, setDeleteState] = useState('idle')
+  const [deleteFeedback, setDeleteFeedback] = useState('')
 
   const workspaceRequestRef = useRef(0)
   const language = generalPreferences.language
@@ -456,6 +476,43 @@ export default function SettingsPage() {
       active = false
     }
   }, [accessToken, activeSection, backendEnabled, patchSession])
+
+  useEffect(() => {
+    if (activeSection !== 'security') {
+      return
+    }
+
+    if (!backendEnabled || !accessToken) {
+      setActiveSessions([])
+      setSessionsLoadState('idle')
+      return
+    }
+
+    let active = true
+    setSessionsLoadState('saving')
+
+    async function loadSessions() {
+      try {
+        const sessions = await apiRequest('/api/settings/security/sessions', {
+          token: accessToken,
+        })
+
+        if (!active) return
+        setActiveSessions(Array.isArray(sessions) ? sessions : [])
+        setSessionsLoadState('saved')
+      } catch (error) {
+        if (!active) return
+        setSessionsLoadState('error')
+        setSessionsFeedback(error?.message ?? 'Nao foi possivel carregar as sessoes ativas.')
+      }
+    }
+
+    loadSessions()
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, activeSection, backendEnabled])
 
   const persistGeneralPreferences = async (nextPreferences) => {
     setGeneralError('')
@@ -937,6 +994,177 @@ export default function SettingsPage() {
       setGmailActionState('error')
       setGmailFeedbackState('error')
       setGmailFeedback(error?.message ?? 'Nao foi possivel desconectar o Gmail.')
+    }
+  }
+
+  const handleOpenPasswordFromSecurity = () => {
+    setActiveSection('account')
+    setShowPassForm(true)
+    setPasswordFeedback('')
+    setPasswordSaveState('idle')
+    navigate(`${location.pathname}?section=account`, { replace: true })
+  }
+
+  const loadSecuritySessions = async () => {
+    if (!backendEnabled || !accessToken) {
+      setActiveSessions([])
+      return
+    }
+
+    setSessionsFeedback('')
+    setSessionsLoadState('saving')
+
+    try {
+      const sessions = await apiRequest('/api/settings/security/sessions', {
+        token: accessToken,
+      })
+      setActiveSessions(Array.isArray(sessions) ? sessions : [])
+      setSessionsLoadState('saved')
+    } catch (error) {
+      setSessionsLoadState('error')
+      setSessionsFeedback(error?.message ?? 'Nao foi possivel carregar as sessoes ativas.')
+    }
+  }
+
+  const handleRevokeSession = async (sessionId) => {
+    if (!backendEnabled || !accessToken || !sessionId) {
+      return
+    }
+
+    setSessionActionId(sessionId)
+    setSessionsFeedback('')
+
+    try {
+      const response = await apiRequest(`/api/settings/security/sessions/${sessionId}`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      setSessionsFeedback(response?.message ?? 'Sessao encerrada com sucesso.')
+      await loadSecuritySessions()
+    } catch (error) {
+      setSessionsFeedback(error?.message ?? 'Nao foi possivel encerrar a sessao.')
+      setSessionsLoadState('error')
+    } finally {
+      setSessionActionId(null)
+    }
+  }
+
+  const handleRevokeOtherSessions = async () => {
+    if (!backendEnabled || !accessToken) {
+      setSessionsFeedback('Entre com uma conta real para gerenciar sessoes.')
+      return
+    }
+
+    setSessionActionId('revoke-others')
+    setSessionsFeedback('')
+
+    try {
+      const response = await apiRequest('/api/settings/security/sessions/revoke-others', {
+        method: 'POST',
+        token: accessToken,
+      })
+      setSessionsFeedback(response?.message ?? 'As outras sessoes foram encerradas.')
+      await loadSecuritySessions()
+    } catch (error) {
+      setSessionsFeedback(error?.message ?? 'Nao foi possivel encerrar as outras sessoes.')
+      setSessionsLoadState('error')
+    } finally {
+      setSessionActionId(null)
+    }
+  }
+
+  const handleExportData = async () => {
+    if (!backendEnabled || !accessToken) {
+      setExportState('error')
+      setExportFeedback('Entre com uma conta real para exportar seus dados.')
+      return
+    }
+
+    setExportState('saving')
+    setExportFeedback('')
+
+    try {
+      const blob = await apiRequest('/api/settings/export', {
+        token: accessToken,
+        responseType: 'blob',
+      })
+      triggerBlobDownload(blob, `plan-things-export-${new Date().toISOString().slice(0, 10)}.zip`)
+      setExportState('saved')
+      setExportFeedback('A exportacao foi iniciada.')
+    } catch (error) {
+      setExportState('error')
+      setExportFeedback(error?.message ?? 'Nao foi possivel exportar seus dados.')
+    }
+  }
+
+  const openDeleteDialog = () => {
+    setDeleteDialogOpen(true)
+    setDeleteConfirmEmail('')
+    setDeleteConfirmPhrase('')
+    setDeleteCurrentPassword('')
+    setDeleteFeedback('')
+    setDeleteState('idle')
+  }
+
+  const closeDeleteDialog = () => {
+    if (deleteState === 'saving') {
+      return
+    }
+
+    setDeleteDialogOpen(false)
+    setDeleteConfirmEmail('')
+    setDeleteConfirmPhrase('')
+    setDeleteCurrentPassword('')
+    setDeleteFeedback('')
+    setDeleteState('idle')
+  }
+
+  const handleDeleteAccount = async () => {
+    const normalizedEmail = currentUser?.email?.trim() ?? ''
+    const requiresPassword = localPasswordEnabled
+
+    if (deleteConfirmEmail.trim().toLowerCase() !== normalizedEmail.toLowerCase()) {
+      setDeleteState('error')
+      setDeleteFeedback('Digite o e-mail da conta exatamente como exibido.')
+      return
+    }
+
+    if (!isDeletePhraseValid(deleteConfirmPhrase)) {
+      setDeleteState('error')
+      setDeleteFeedback(`Digite a frase ${DELETE_CONFIRMATION_PHRASE} para confirmar.`)
+      return
+    }
+
+    if (requiresPassword && !deleteCurrentPassword.trim()) {
+      setDeleteState('error')
+      setDeleteFeedback('Informe sua senha atual para excluir a conta.')
+      return
+    }
+
+    if (!backendEnabled || !accessToken) {
+      setDeleteState('error')
+      setDeleteFeedback('Entre com uma conta real para excluir a conta.')
+      return
+    }
+
+    setDeleteState('saving')
+    setDeleteFeedback('')
+
+    try {
+      await apiRequest('/api/settings/account/delete', {
+        method: 'POST',
+        token: accessToken,
+        body: {
+          confirmEmail: deleteConfirmEmail,
+          confirmPhrase: deleteConfirmPhrase,
+          currentPassword: requiresPassword ? deleteCurrentPassword : null,
+        },
+      })
+      logout()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setDeleteState('error')
+      setDeleteFeedback(error?.message ?? 'Nao foi possivel excluir a conta.')
     }
   }
 
@@ -1526,9 +1754,11 @@ export default function SettingsPage() {
       <SectionGroup title="Segurança da conta">
         <Field
           label="Senha"
-          hint="Use uma senha forte com letras, números e símbolos."
+          hint="Use uma senha forte com letras, numeros e simbolos."
         >
-          <button type="button" className={styles.btnSecondary}>Alterar senha</button>
+          <button type="button" className={styles.btnSecondary} onClick={handleOpenPasswordFromSecurity}>
+            {localPasswordEnabled ? 'Alterar senha' : 'Criar senha'}
+          </button>
         </Field>
         <Field
           label="Autenticação em dois fatores"
@@ -1536,17 +1766,63 @@ export default function SettingsPage() {
         >
           <div className={styles.futurePill}>
             <span className={styles.futureBadge}>Em breve</span>
-            <span className={styles.futureHint}>Disponível em uma atualização futura.</span>
+            <span className={styles.futureHint}>Disponivel em uma atualizacao futura.</span>
           </div>
         </Field>
         <Field
           label="Sessões ativas"
           hint="Visualize e encerre sessões abertas em outros dispositivos."
         >
-          <div className={styles.futurePill}>
-            <span className={styles.futureBadge}>Em breve</span>
-            <span className={styles.futureHint}>Disponível em uma atualização futura.</span>
-          </div>
+          {!backendEnabled ? (
+            <p className={styles.securityHint}>Entre com uma conta real para visualizar sessoes ativas.</p>
+          ) : (
+            <div className={styles.sessionsPanel}>
+              {sessionsLoadState === 'saving' ? (
+                <p className={styles.securityHint}>Carregando sessoes...</p>
+              ) : activeSessions.length === 0 ? (
+                <p className={styles.securityHint}>Nenhuma outra sessao ativa encontrada.</p>
+              ) : (
+                <div className={styles.sessionsList}>
+                  {activeSessions.map((session) => {
+                    const actionBusy = sessionActionId === session.id
+                    const currentTag = session.current ? 'Sessao atual' : session.client === 'mobile' ? 'Mobile' : 'Web'
+
+                    return (
+                      <div key={session.id} className={styles.sessionCard}>
+                        <div className={styles.sessionCardMeta}>
+                          <div className={styles.sessionCardTop}>
+                            <p className={styles.sessionTitle}>{session.deviceLabel || 'Sessao ativa'}</p>
+                            <span className={styles.sessionBadge}>{currentTag}</span>
+                          </div>
+                          <p className={styles.sessionHint}>
+                            Ativa em {session.lastSeenAt?.text ?? session.createdAt?.text ?? 'momento recente'}
+                          </p>
+                          <p className={styles.sessionHint}>
+                            Iniciada em {session.createdAt?.text ?? 'data indisponivel'}
+                          </p>
+                        </div>
+                        {session.revocable ? (
+                          <button
+                            type="button"
+                            className={styles.btnGhost}
+                            onClick={() => handleRevokeSession(session.id)}
+                            disabled={actionBusy || sessionActionId === 'revoke-others'}
+                          >
+                            {actionBusy ? 'Encerrando...' : 'Encerrar'}
+                          </button>
+                        ) : (
+                          <span className={styles.sessionCurrentLabel}>Em uso</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              {(sessionsFeedback || sessionsLoadState === 'error') && (
+                <AutoSaveStatus state={sessionsLoadState === 'error' ? 'error' : 'saved'} errorMessage={sessionsFeedback} successMessage={sessionsFeedback} />
+              )}
+            </div>
+          )}
         </Field>
       </SectionGroup>
 
@@ -1555,13 +1831,35 @@ export default function SettingsPage() {
           label="Exportar meus dados"
           hint="Baixe uma cópia completa dos seus dados do Plan Things."
         >
-          <button type="button" className={styles.btnSecondary}>Exportar dados</button>
+          <div className={styles.securityActionBlock}>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={handleExportData}
+              disabled={exportState === 'saving'}
+            >
+              {exportState === 'saving' ? 'Preparando...' : 'Exportar dados'}
+            </button>
+            {(exportFeedback || exportState === 'saving') && (
+              <AutoSaveStatus state={exportState} errorMessage={exportFeedback} successMessage={exportFeedback} />
+            )}
+          </div>
         </Field>
         <Field
           label="Encerrar outras sessões"
           hint="Invalida todos os tokens de acesso em outros dispositivos."
         >
-          <button type="button" className={styles.btnSecondary}>Encerrar sessões</button>
+          <div className={styles.securityActionBlock}>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={handleRevokeOtherSessions}
+              disabled={!backendEnabled || sessionActionId === 'revoke-others' || sessionsLoadState === 'saving'}
+            >
+              {sessionActionId === 'revoke-others' ? 'Encerrando...' : 'Encerrar outras sessoes'}
+            </button>
+            <p className={styles.securityHint}>Sua sessao atual permanece conectada.</p>
+          </div>
         </Field>
       </SectionGroup>
 
@@ -1571,11 +1869,13 @@ export default function SettingsPage() {
             <div>
               <p className={styles.dangerTitle}>Excluir conta</p>
               <p className={styles.dangerHint}>
-                Esta ação é permanente e irreversível. Todos os seus dados,
-                planos e arquivos serão removidos definitivamente.
+                Esta acao e permanente e irreversivel. Todos os seus dados,
+                planos e arquivos serao removidos definitivamente.
               </p>
             </div>
-            <button type="button" className={styles.btnDanger}>Excluir conta</button>
+            <button type="button" className={styles.btnDanger} onClick={openDeleteDialog}>
+              Excluir conta
+            </button>
           </div>
         </div>
       </SectionGroup>
@@ -1649,6 +1949,93 @@ export default function SettingsPage() {
             </div>
           </main>
         </div>
+
+        {deleteDialogOpen && (
+          <div className={styles.dialogOverlay} role="presentation" onClick={closeDeleteDialog}>
+            <div
+              className={styles.dialogCard}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-account-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className={styles.dialogHeader}>
+                <div>
+                  <p className={styles.dialogEyebrow}>Zona de perigo</p>
+                  <h3 id="delete-account-title" className={styles.dialogTitle}>Excluir conta</h3>
+                </div>
+                <button type="button" className={styles.btnGhost} onClick={closeDeleteDialog} disabled={deleteState === 'saving'}>
+                  Fechar
+                </button>
+              </div>
+              <p className={styles.dialogText}>
+                Para confirmar, digite seu e-mail e a frase <strong>{DELETE_CONFIRMATION_PHRASE}</strong>.
+                {localPasswordEnabled ? ' Sua senha atual tambem sera solicitada.' : ''}
+              </p>
+              <div className={styles.dialogFields}>
+                <div className={styles.fieldBlock}>
+                  <label className={styles.fieldLabel} htmlFor="delete-confirm-email">E-mail da conta</label>
+                  <input
+                    id="delete-confirm-email"
+                    type="email"
+                    className={styles.input}
+                    value={deleteConfirmEmail}
+                    onChange={(event) => setDeleteConfirmEmail(event.target.value)}
+                    placeholder={currentUser?.email ?? 'voce@exemplo.com'}
+                    disabled={deleteState === 'saving'}
+                  />
+                </div>
+                <div className={styles.fieldBlock}>
+                  <label className={styles.fieldLabel} htmlFor="delete-confirm-phrase">Frase de confirmação</label>
+                  <input
+                    id="delete-confirm-phrase"
+                    type="text"
+                    className={styles.input}
+                    value={deleteConfirmPhrase}
+                    onChange={(event) => setDeleteConfirmPhrase(event.target.value)}
+                    placeholder={DELETE_CONFIRMATION_PHRASE}
+                    disabled={deleteState === 'saving'}
+                  />
+                </div>
+                {localPasswordEnabled && (
+                  <div className={styles.fieldBlock}>
+                    <label className={styles.fieldLabel} htmlFor="delete-current-password">Senha atual</label>
+                    <input
+                      id="delete-current-password"
+                      type="password"
+                      className={styles.input}
+                      value={deleteCurrentPassword}
+                      onChange={(event) => setDeleteCurrentPassword(event.target.value)}
+                      placeholder="Digite sua senha atual"
+                      disabled={deleteState === 'saving'}
+                    />
+                  </div>
+                )}
+              </div>
+              {(deleteFeedback || deleteState === 'saving') && (
+                <AutoSaveStatus state={deleteState} errorMessage={deleteFeedback} successMessage={deleteFeedback} />
+              )}
+              <div className={styles.dialogActions}>
+                <button type="button" className={styles.btnGhost} onClick={closeDeleteDialog} disabled={deleteState === 'saving'}>
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnDanger}
+                  onClick={handleDeleteAccount}
+                  disabled={
+                    deleteState === 'saving'
+                    || deleteConfirmEmail.trim().length === 0
+                    || !isDeletePhraseValid(deleteConfirmPhrase)
+                    || (localPasswordEnabled && deleteCurrentPassword.trim().length === 0)
+                  }
+                >
+                  {deleteState === 'saving' ? 'Excluindo...' : 'Excluir conta permanentemente'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </ProductAppShell>
     </AppThemeScope>
   )
