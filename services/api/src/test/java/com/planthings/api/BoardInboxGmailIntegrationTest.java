@@ -287,11 +287,7 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   private String createCard(String token, String planId, String title, String description, String assigneeId) throws Exception {
-    JsonNode board = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board")
-            .header("Authorization", "Bearer " + token))
-        .andExpect(status().isOk())
-        .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
     String assigneesJson = assigneeId == null ? "" : "\"%s\"".formatted(assigneeId);
     return readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
@@ -362,3 +358,5 @@ class BoardInboxGmailIntegrationTest extends ApiIntegrationTestSupport {
     }
   }
 }
+
+

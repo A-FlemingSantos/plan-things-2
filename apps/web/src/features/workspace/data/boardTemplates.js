@@ -1,12 +1,7 @@
 import { createClientId } from '../../../shared/utils/createClientId.js'
 
 export function createEmptyBoardColumns() {
-  return [
-    { id: createClientId('col'), title: 'Backlog', color: '#a0a0a0', cards: [] },
-    { id: createClientId('col'), title: 'Em andamento', color: '#4290da', cards: [] },
-    { id: createClientId('col'), title: 'Review', color: '#d4aef1', cards: [] },
-    { id: createClientId('col'), title: 'Concluído', color: '#0f703a', cards: [] },
-  ]
+  return []
 }
 
 export function createSampleBoardColumns() {

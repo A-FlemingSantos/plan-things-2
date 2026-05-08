@@ -18,11 +18,7 @@ class BoardCalendarIntegrationTest extends ApiIntegrationTestSupport {
     String token = registerAndGetToken("Arthur Santos", "arthur@example.com", "12345678");
     JsonNode plan = createPlan(token, "Produto Q3");
     String planId = plan.path("plan").path("id").asText();
-    String backlogColumnId = plan.path("plan").isMissingNode() ? "" : readJson(
-        mockMvc.perform(get("/api/plans/" + planId + "/board").header("Authorization", "Bearer " + token))
-            .andExpect(status().isOk())
-            .andReturn()
-    ).path("data").path("columns").get(0).path("id").asText();
+    String backlogColumnId = createBoardColumn(token, planId, "Tarefas");
 
     JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
@@ -82,3 +78,5 @@ class BoardCalendarIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data").isEmpty());
   }
 }
+
+

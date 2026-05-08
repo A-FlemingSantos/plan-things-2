@@ -130,7 +130,6 @@ public class PlanService {
     ownerMembership.setRole(PlanMemberRole.OWNER);
     planMemberRepository.save(ownerMembership);
 
-    createDefaultBoardColumns(plan.getId());
     createEmptyCanvasDocument(plan.getId(), currentUser.getId());
 
     return toPlanDetails(plan, currentUser.getId());
@@ -469,22 +468,6 @@ public class PlanService {
         invite.getToken(),
         brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
     );
-  }
-
-  private void createDefaultBoardColumns(UUID planId) {
-    createColumn(planId, "Backlog", "#a0a0a0", 0);
-    createColumn(planId, "Em andamento", "#4290da", 1);
-    createColumn(planId, "Review", "#d4aef1", 2);
-    createColumn(planId, "Concluido", "#0f703a", 3);
-  }
-
-  private void createColumn(UUID planId, String title, String color, int positionIndex) {
-    BoardColumnEntity column = new BoardColumnEntity();
-    column.setPlanId(planId);
-    column.setTitle(title);
-    column.setColor(color);
-    column.setPositionIndex(positionIndex);
-    boardColumnRepository.save(column);
   }
 
   private void createEmptyCanvasDocument(UUID planId, UUID userId) {

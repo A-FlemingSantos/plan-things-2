@@ -36,7 +36,7 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
 
     JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
@@ -95,7 +95,7 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
 
     JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
@@ -134,4 +134,5 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.columns[0].cards[0].completed").value(true));
   }
 }
+
 
