@@ -17,6 +17,16 @@
   grid-template-columns: 56px 1fr;
 }
 
+.boardAccentScope {
+  --kanban-neutral-accent: var(--color-black);
+  --kanban-neutral-accent-foreground: var(--color-white);
+}
+
+[data-theme='dark'] .boardAccentScope {
+  --kanban-neutral-accent: var(--color-white);
+  --kanban-neutral-accent-foreground: var(--color-black);
+}
+
 /* ════════════════════════════════════════
    SIDEBAR (mirrors Workspace exactly)
 ════════════════════════════════════════ */
@@ -362,6 +372,26 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.boardHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.boardHeaderIdentityRow,
+.boardHeaderCommandRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.boardHeaderUtilitySlot {
+  display: flex;
+  align-items: center;
 }
 
 .boardMembers { display: flex; align-items: center; }
@@ -875,8 +905,8 @@
 
 .boardViewToolbarItemActive,
 .boardViewToolbarItemActive:hover {
-  background: color-mix(in srgb, var(--focus-ring) 12%, transparent);
-  color: var(--focus-ring);
+  background: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 12%, transparent);
+  color: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .boardViewSwitcher {
@@ -970,6 +1000,136 @@
   font-weight: var(--font-weight-regular);
   box-shadow: var(--shadow-lg);
   animation: fadeUp 0.2s ease both;
+}
+
+.mobileBoardControls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 0;
+}
+
+.mobileBoardViewSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mobileBoardViewButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--border-1);
+  border-radius: 14px;
+  color: var(--text-2);
+  background: var(--surface-1);
+}
+
+.mobileBoardViewButtonActive {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.mobileBoardTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.mobileBoardTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileBoardTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.mobileBoardTabActive {
+  color: var(--text-1);
+  background: var(--hover);
+}
+
+.mobileBoardTabDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.mobileBoardTabCount {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.mobileTaskList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.mobileTaskRow {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 14px 0;
+  border: 1px solid var(--border-1);
+  border-radius: 18px;
+  background: var(--surface-1);
+  color: var(--text-1);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+}
+
+.mobileTaskRowStatus {
+  align-self: stretch;
+  border-radius: 18px 0 0 18px;
+}
+
+.mobileTaskRowBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mobileTaskRowBody strong,
+.mobileTaskRowBody span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileTaskRowBody strong {
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+}
+
+.mobileTaskRowBody span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.mobileTaskEmpty {
+  padding: 24px 18px;
+  border: 1px dashed var(--border-2);
+  border-radius: 18px;
+  background: var(--surface-2);
+  color: var(--text-2);
 }
 
 .plannerPanel {
@@ -1334,7 +1494,7 @@
   border-radius: 999px;
   border: 1.5px solid var(--border-2);
   background: transparent;
-  color: var(--text-3);
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1348,9 +1508,9 @@
 }
 
 .plannerCheckboxChecked {
-  border-color: var(--focus-ring);
-  background: var(--focus-ring);
-  color: var(--text-inverse);
+  border-color: var(--kanban-accent-color, var(--focus-ring));
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
 }
 
 .plannerEventDot {
@@ -1783,8 +1943,8 @@
   width: 272px;
   flex-shrink: 0;
   background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-xl);
+  border: none;
+  border-radius: var(--radius-md);
   overflow: visible;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   animation: colEnter 0.3s ease both;
@@ -1809,6 +1969,14 @@
   border-bottom: 1px solid var(--border-1);
   gap: 8px;
   flex-shrink: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.colHeaderColored {
+  background: var(--column-header-color);
+  border-bottom-color: color-mix(in srgb, black 22%, var(--column-header-color));
+  padding-top: 12px;
+  padding-bottom: 10px;
 }
 
 .colHeaderLeft {
@@ -1817,14 +1985,6 @@
   gap: 8px;
   min-width: 0;
   flex: 1;
-}
-
-.colDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: background var(--transition-fast);
 }
 
 .colTitle {
@@ -1878,6 +2038,26 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 .colActionBtn:hover { background: var(--hover); color: var(--text-1); }
+
+.colHeaderColored .colTitle,
+.colHeaderColored .colRenameInput,
+.colHeaderColored .colCount,
+.colHeaderColored .colActionBtn {
+  color: var(--text-on-accent);
+}
+
+.colHeaderColored .colRenameInput {
+  border-bottom-color: currentColor;
+}
+
+.colHeaderColored .colCount {
+  background: color-mix(in srgb, var(--text-on-accent) 16%, transparent);
+}
+
+.colHeaderColored .colActionBtn:hover {
+  background: color-mix(in srgb, var(--text-on-accent) 16%, transparent);
+  color: var(--text-on-accent);
+}
 
 /* Column menu */
 .colMenuWrap { position: relative; }
@@ -1936,6 +2116,24 @@
   border-radius: 50%;
 }
 
+.colMenuColorDotNone {
+  position: relative;
+  border: 1px solid var(--border-2);
+  background: transparent;
+}
+
+.colMenuColorDotNone::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 2px;
+  width: 10px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: var(--text-3);
+  transform: rotate(-35deg);
+}
+
 .colMenuDivider {
   height: 1px;
   background: var(--border-1);
@@ -1950,7 +2148,13 @@
   padding: 10px 10px 4px;
   min-height: 16px;
   flex: 1;
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.colCardsEmpty {
+  flex: 0;
+  min-height: 0;
+  padding: 0;
 }
 
 /* Add card form inside column */
@@ -2035,20 +2239,117 @@
    CARD
 ════════════════════════════════════════ */
 .card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  padding: 12px 13px;
+  background: var(--surface-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
   cursor: grab;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 5px;
   transition:
     box-shadow var(--transition-fast),
     border-color var(--transition-fast),
     transform var(--transition-fast),
     opacity var(--transition-fast);
   animation: cardEnter 0.22s ease both;
+}
+
+.cardCompact {
+  justify-content: center;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  gap: 0;
+}
+
+[data-theme='dark'] .card {
+  background: #2a2a2e;
+}
+
+.cardConfirmed {
+  gap: 5px;
+}
+
+.cardTitleRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+.cardTitleContent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.cardTitleViewport {
+  min-width: 0;
+  overflow: hidden;
+  transition: padding-left var(--transition-fast);
+}
+
+.cardTitleViewportWithLabel {
+  display: block;
+}
+
+.cardConfirmButton {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--text-1) 34%, transparent);
+  background: transparent;
+  color: var(--text-inverse);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(.82);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.card:hover .cardConfirmButton,
+.cardConfirmed .cardConfirmButton {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) scale(1);
+  border-color: color-mix(in srgb, var(--text-1) 44%, transparent);
+  background: color-mix(in srgb, var(--text-1) 10%, transparent);
+}
+
+.cardConfirmButton:hover {
+  border-color: color-mix(in srgb, var(--text-1) 62%, transparent);
+  background: color-mix(in srgb, var(--text-1) 16%, transparent);
+}
+
+.cardConfirmButtonChecked,
+.card:hover .cardConfirmButtonChecked,
+.cardConfirmed .cardConfirmButtonChecked,
+.cardConfirmButtonChecked:hover {
+  border-color: var(--kanban-accent-color, var(--focus-ring));
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
+}
+
+[data-theme='dark'] .cardConfirmButtonChecked,
+[data-theme='dark'] .card:hover .cardConfirmButtonChecked,
+[data-theme='dark'] .cardConfirmed .cardConfirmButtonChecked,
+[data-theme='dark'] .cardConfirmButtonChecked:hover {
+  border-color: var(--kanban-accent-color, var(--focus-ring));
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
 }
 
 @keyframes cardEnter {
@@ -2098,17 +2399,30 @@
   font-size: 10px;
   font-weight: var(--font-weight-regular);
   padding: 2px 8px;
-  border-radius: 99px;
+  border-radius: 8px;
   letter-spacing: .01em;
-  align-self: flex-start;
+  flex-shrink: 0;
 }
 
 .cardTitle {
+  margin: 0;
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  line-height: 1.45;
+  line-height: 1.25;
   letter-spacing: -.01em;
+  transition: color var(--transition-fast);
+}
+
+.cardTitleWithLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card:hover .cardTitleViewport,
+.cardConfirmed .cardTitleViewport {
+  padding-left: 26px;
 }
 
 .cardFooter {
@@ -2148,6 +2462,20 @@
   gap: 3px;
   font-size: 11px;
   color: var(--text-3);
+}
+
+.cardChecklistProgressIcon {
+  display: block;
+  transform: rotate(-90deg);
+}
+
+.cardChecklistProgressTrack {
+  stroke: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.cardChecklistProgressValue {
+  stroke: currentColor;
+  stroke-linecap: round;
 }
 
 .cardDue {
@@ -2761,14 +3089,14 @@
   display: block;
   width: 0%;
   height: 100%;
-  background: var(--focus-ring);
+  background: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .cmChecklistItemInput {
   width: 100%;
   min-height: 40px;
   padding: 10px 12px;
-  border: 1px solid var(--focus-ring);
+  border: 1px solid var(--kanban-accent-color, var(--focus-ring));
   border-radius: 4px;
   background: var(--surface-1);
   color: var(--text-1);
@@ -2786,17 +3114,24 @@
 
 .cmChecklistItemRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+}
+
+.cmChecklistItemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .cmChecklistItemCheckbox {
   width: 20px;
   height: 20px;
-  border-radius: 2px;
+  border-radius: 999px;
   border: 1px solid var(--border-2);
   background: var(--surface-1);
-  color: var(--text-on-accent);
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2809,8 +3144,8 @@
 }
 
 .cmChecklistItemCheckboxActive {
-  background: var(--focus-ring);
-  border-color: var(--focus-ring);
+  background: var(--kanban-accent-color, var(--focus-ring));
+  border-color: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .cmChecklistItemCheckbox svg {
@@ -2822,6 +3157,12 @@
   font-size: 14px;
   color: var(--text-1);
   line-height: 1.45;
+}
+
+.cmChecklistItemMeta {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.35;
 }
 
 .cmChecklistItemTextChecked {
@@ -2852,8 +3193,8 @@
   height: 32px;
   padding: 0 14px;
   border-radius: 6px;
-  background: var(--focus-ring);
-  color: var(--text-on-accent);
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 700;
@@ -2872,6 +3213,10 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
+}
+
+.cmChecklistMetaBtnActive {
+  color: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .cmCommentAvatar {
@@ -3475,8 +3820,8 @@
   width: 112px;
   height: 34px;
   border-radius: 6px;
-  background: var(--focus-ring);
-  color: var(--text-on-accent);
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 700;
@@ -3516,8 +3861,8 @@
 }
 
 .cmChecklistCompactItemActive {
-  background: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-1));
-  color: var(--focus-ring);
+  background: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 12%, var(--surface-1));
+  color: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .cmChecklistDateMenu {
@@ -3623,8 +3968,8 @@
 }
 
 .cmChecklistDateMenuDaySelected {
-  background: color-mix(in srgb, var(--focus-ring) 16%, var(--surface-1));
-  color: var(--focus-ring);
+  background: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 16%, var(--surface-1));
+  color: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .cmChecklistDateMenuDayUnderline {
@@ -3780,8 +4125,8 @@
 }
 
 .cmDateMenuDaySelected {
-  background: color-mix(in srgb, var(--focus-ring) 16%, var(--surface-1));
-  color: var(--focus-ring);
+  background: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 16%, var(--surface-1));
+  color: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .cmDateMenuDayUnderline {
@@ -3822,7 +4167,7 @@
   border-radius: 4px;
   border: 1px solid var(--border-1);
   background: var(--surface-1);
-  color: var(--text-on-accent);
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3831,8 +4176,8 @@
 }
 
 .cmDateCheckboxActive {
-  background: var(--focus-ring);
-  border-color: var(--focus-ring);
+  background: var(--kanban-accent-color, var(--focus-ring));
+  border-color: var(--kanban-accent-color, var(--focus-ring));
 }
 
 .cmDateCheckbox svg {
@@ -3919,8 +4264,8 @@
 }
 
 .cmDateMenuSave {
-  background: var(--focus-ring);
-  color: var(--text-on-accent);
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
 }
 
 .cmDateMenuRemove {
@@ -3992,7 +4337,12 @@
   width: 100%;
   transition: border-color var(--transition-fast);
 }
-.cmDateInput:focus { border-color: var(--focus-ring); }
+.cmDateInput:focus { border-color: var(--kanban-accent-color, var(--focus-ring)); }
+.cmChecklistMenuInput:focus,
+.cmChecklistDateMenuInput:focus {
+  border-color: var(--kanban-accent-color, var(--focus-ring));
+  outline: none;
+}
 .cmDateInput::placeholder { color: var(--text-3); }
 
 .cmSaveBtn {
@@ -4777,7 +5127,10 @@
     gap: 10px;
     padding: 10px;
   }
-  .boardHeader { padding: 16px; }
+  .boardHeader {
+    padding: 14px;
+    gap: 12px;
+  }
   .cmFilePicker {
     width: min(312px, calc(100vw - 20px));
     max-width: min(312px, calc(100vw - 20px));
@@ -4818,22 +5171,84 @@
     gap: 8px;
     justify-content: flex-start;
   }
-  .boardTitleRow { flex-wrap: wrap; }
-  .board  { padding: 16px 16px 100px; gap: 10px; }
+  .boardHeaderActions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .boardHeaderIdentityRow {
+    justify-content: space-between;
+  }
+  .boardHeaderCommandRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .boardTitleRow {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .boardTitle {
+    font-size: 17px;
+    line-height: 1.15;
+  }
+  .boardCardBadge {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+  .boardHeaderBtn,
+  .boardHeaderBtnPrimary {
+    width: 100%;
+    justify-content: center;
+    height: 36px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+  .board  { padding: 14px 14px 92px; gap: 8px; }
   .boardViewToolbar {
-    bottom: 14px;
-    max-width: calc(100% - 24px);
+    position: fixed;
+    left: 50%;
+    right: auto;
+    bottom: 12px;
+    transform: translateX(-50%);
+    width: min(332px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    overflow: visible;
+    justify-content: stretch;
+    scrollbar-width: none;
+    animation: none;
+  }
+  .boardViewToolbar::-webkit-scrollbar {
+    display: none;
   }
   .boardViewToolbarItem {
-    height: 32px;
-    padding: 0 10px;
-    font-size: 12px;
+    width: 100%;
+    height: 40px;
+    padding: 0;
+    font-size: 0;
+    gap: 0;
+    justify-content: center;
+  }
+  .boardViewToolbarItem span {
+    display: none;
+  }
+  .boardViewToolbarItem svg {
+    width: 18px;
+    height: 18px;
   }
   .boardViewMenu {
     right: 0;
     width: min(248px, calc(100vw - 28px));
   }
-  .column { width: min(280px, calc(100vw - 48px)); }
+  .column { width: min(264px, calc(100vw - 32px)); }
+  .planMembersMenu {
+    width: min(320px, calc(100vw - 16px));
+  }
   .modalOverlay { padding: 16px 10px 10px; }
   .cardModal { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--radius-lg); }
   .cmHeader,
@@ -4876,20 +5291,24 @@
     white-space: normal;
   }
   .plannerPanel {
-    position: relative;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
     top: auto;
+    z-index: 45;
     flex: 0 0 auto;
     height: auto;
-    max-height: 1200px;
-    width: 100%;
+    max-height: calc(100dvh - 108px);
+    width: auto;
     border: 1px solid var(--border-1);
     box-shadow: var(--shadow-lg);
   }
   .plannerPanelClosing {
-    width: 100%;
+    width: auto;
     max-height: 0;
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(24px);
     border-color: transparent;
     box-shadow: none;
   }
@@ -4908,23 +5327,34 @@
 
 @media (max-width: 560px) {
   .boardHeader {
-    padding: 14px;
+    padding: 12px;
     gap: 14px;
   }
   .boardHeaderDivider { display: none; }
+  .boardHeaderIdentityRow {
+    gap: 8px;
+  }
   .boardHeaderBtn,
   .boardHeaderBtnPrimary {
-    flex: 1 1 calc(50% - 4px);
-    justify-content: center;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .boardTitle {
+    font-size: 16px;
   }
   .board {
-    padding: 14px 14px 96px;
+    padding: 12px 12px 88px;
   }
   .boardViewToolbar {
-    justify-content: flex-start;
+    width: min(316px, calc(100vw - 20px));
+    gap: 6px;
+  }
+  .boardViewToolbarItem {
+    height: 38px;
   }
   .column {
-    width: calc(100vw - 32px);
+    width: calc(100vw - 24px);
   }
   .modalOverlay {
     padding: 10px 0 0;
@@ -4947,7 +5377,12 @@
     margin-left: auto;
   }
   .plannerPanel {
-    width: 100%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: calc(100dvh - 96px);
+    border-radius: 18px 18px 0 0;
   }
   .plannerPanelHeader h2 {
     font-size: 18px;

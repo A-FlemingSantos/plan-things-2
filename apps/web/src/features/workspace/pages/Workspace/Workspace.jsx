@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { buildCanvasPath, buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
+import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
@@ -18,7 +18,6 @@ import styles from './Workspace.module.css'
 ═══════════════════════════════════════════ */
 function HomeIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function PopoverIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function CanvasIcon()   { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg> }
 function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.8v2.8M11 1.8v2.8M2.5 6.5h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
 function FilesIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function PlusIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
@@ -49,9 +48,7 @@ const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
   ...item,
   Icon:
     item.id === 'home' ? HomeIcon :
-    item.id === 'canvas' ? CanvasIcon :
-    item.id === 'calendar' ? CalendarIcon :
-    FilesIcon,
+    item.id === 'calendar' ? CalendarIcon : FilesIcon,
 }))
 
 const PLAN_TAGS = [
@@ -584,7 +581,6 @@ function resolvePlanBackgroundPickerPosition(anchorRect) {
 function PlanOptionsMenu({ anchorRect, onAction }) {
   const actions = [
     { id: 'board', label: 'Abrir quadro', Icon: GridIcon },
-    { id: 'canvas', label: 'Abrir Canvas', Icon: CanvasIcon },
     { id: 'rename', label: 'Renomear', Icon: PencilIcon },
     { id: 'background', label: 'Alterar background', Icon: ImagePlusIcon },
     { id: 'delete', label: 'Excluir', Icon: TrashIcon, danger: true },
@@ -1160,9 +1156,6 @@ export default function Workspace() {
     if (action === 'board') {
       setBackgroundPicker(null)
       openBoard(plan.id)
-    } else if (action === 'canvas') {
-      setBackgroundPicker(null)
-      openCanvas(plan.id)
     } else if (action === 'rename') {
       startInlineRename(plan)
     } else if (action === 'background') {
@@ -1205,12 +1198,6 @@ export default function Workspace() {
     setBackgroundPicker(null)
     selectPlan(planId)
     navigate(buildWorkspaceBoardPath(planId))
-  }
-
-  const openCanvas = (planId) => {
-    setBackgroundPicker(null)
-    selectPlan(planId)
-    navigate(buildCanvasPath(planId))
   }
 
   const openNewPlan = (event) => {
@@ -1269,6 +1256,7 @@ export default function Workspace() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         contentTag="main"
+        mobileTitle="Início"
       >
           {/* Top bar */}
           <div className={styles.topbar}>
@@ -1321,17 +1309,13 @@ export default function Workspace() {
                     </span>
                   </div>
                   <p className={styles.currentPlanText}>
-                    {activePlan.description || 'Continue de onde parou no quadro e no Canvas.'}
+                    {activePlan.description || 'Continue de onde parou no quadro deste plano.'}
                   </p>
                 </div>
                 <div className={styles.currentPlanActions}>
                   <button className={styles.currentPlanAction} onClick={() => openBoard(activePlan.id)}>
                     <GridIcon />
                     Abrir quadro
-                  </button>
-                  <button className={styles.currentPlanAction} onClick={() => openCanvas(activePlan.id)}>
-                    <CanvasIcon />
-                    Abrir Canvas
                   </button>
                 </div>
               </section>
@@ -1363,7 +1347,7 @@ export default function Workspace() {
                 <p className={styles.emptyStateHint}>
                   {search
                     ? `Tente outro termo ou limpe "${search}" para ver tudo.`
-                    : 'Crie seu primeiro plano para organizar o trabalho no quadro e no Canvas.'}
+                    : 'Crie seu primeiro plano para organizar o trabalho no quadro.'}
                 </p>
                 <div className={styles.emptyStateActions}>
                   {search && (

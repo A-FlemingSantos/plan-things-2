@@ -1,6 +1,6 @@
 # Plan Things
 
-Plan Things é um monorepo para uma aplicação de planejamento colaborativo. O produto combina um app web em React com uma API Spring Boot, cobrindo quadros Kanban, planos compartilhados, convites, arquivos, calendário, canvas visual, preferências de usuário e integração Gmail para envio operacional de e-mails.
+Plan Things é um monorepo para uma aplicação de planejamento colaborativo. O produto combina um app web em React com uma API Spring Boot, cobrindo quadros Kanban, planos compartilhados, convites, arquivos, calendário, preferências de usuário e integração Gmail para envio operacional de e-mails.
 
 ## Visão geral
 
@@ -19,7 +19,7 @@ O workspace npm da raiz orquestra principalmente o app web. A API é mantida com
 - Convites de plano enviados por Gmail conectado.
 - Inbox operacional no KanbanBoard: soltar um card na Inbox envia e-mail por Gmail para membros selecionados, atribui os membros ao card e registra histórico persistente.
 - Biblioteca de arquivos, anexos em cards e compartilhamento por plano.
-- Calendário e canvas visual.
+- Calendário integrado ao workspace.
 - Configurações de usuário, tema, página inicial e integração Gmail.
 
 ## Stack

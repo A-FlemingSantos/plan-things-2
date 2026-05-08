@@ -33,7 +33,6 @@ import styles from './FilesPage.module.css'
 const Icon = {
   Logo:       () => <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" fill="currentColor"/><rect x="11" y="2" width="7" height="7" rx="2" fill="currentColor" opacity=".35"/><rect x="2" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".55"/><rect x="11" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".75"/></svg>,
   Home:       () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
-  Canvas:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
   Calendar:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.8v2.8M11 1.8v2.8M2.5 6.5h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Files:      () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Chevron:    () => <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -94,7 +93,6 @@ const FILE_TYPES = {
 
 const SIDEBAR_NAV = [
   { id: 'home',     label: 'Início',   Icon: Icon.Home,     path: ROUTES.workspace },
-  { id: 'canvas',   label: 'Canvas',   Icon: Icon.Canvas,   path: ROUTES.canvas },
   { id: 'calendar', label: 'Calendário', Icon: Icon.Calendar, path: ROUTES.calendar },
   { id: 'files',    label: 'Arquivos', Icon: Icon.Files,    path: ROUTES.files },
 ]
@@ -959,7 +957,7 @@ export default function FilesPage() {
     setUploads(prev => prev.filter(u => u.id !== id))
   }
 
-  const handleCanvasBackground = (e) => {
+  const handleContentBackground = (e) => {
     if (e.target === e.currentTarget) {
       setSelected(null)
       setDetailItemId(null)
@@ -1090,21 +1088,22 @@ export default function FilesPage() {
       <ProductAppShell
         styles={styles}
         activeNav={activeNav}
-      onNavItemClick={handleNavItemClick}
-      navItems={SIDEBAR_NAV.map(({ id, label, Icon: IconComponent, hint }) => ({
-        id,
-        label,
-        Icon: IconComponent,
-        hint,
-      }))}
-      LogoIcon={Icon.Logo}
-      CollapseIcon={Icon.Collapse}
-      ChevronIcon={Icon.Chevron}
-      HintIcon={Icon.Popover}
-      secondaryContent={renderSidebarSecondaryContent}
-      bottomContent={renderSidebarBottomContent}
-      contentClassName={styles.main}
-    >
+        onNavItemClick={handleNavItemClick}
+        navItems={SIDEBAR_NAV.map(({ id, label, Icon: IconComponent, hint }) => ({
+          id,
+          label,
+          Icon: IconComponent,
+          hint,
+        }))}
+        LogoIcon={Icon.Logo}
+        CollapseIcon={Icon.Collapse}
+        ChevronIcon={Icon.Chevron}
+        HintIcon={Icon.Popover}
+        secondaryContent={renderSidebarSecondaryContent}
+        bottomContent={renderSidebarBottomContent}
+        contentClassName={styles.main}
+        mobileTitle={sectionLabel}
+      >
 
         {/* Top bar */}
         <header className={styles.topBar}>
@@ -1152,54 +1151,59 @@ export default function FilesPage() {
               </div>
             ) : (
               <>
-                {/* Search */}
-                <div className={styles.searchWrap}>
-                  <span className={styles.searchIcon}><Icon.Search /></span>
-                  <input
-                    className={styles.searchInput}
-                    placeholder="Buscar arquivos..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                  {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                <div className={styles.topBarFilterRow}>
+                  {/* Search */}
+                  <div className={styles.searchWrap}>
+                    <span className={styles.searchIcon}><Icon.Search /></span>
+                    <input
+                      className={styles.searchInput}
+                      placeholder="Buscar arquivos..."
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                    />
+                    {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                  </div>
+
+                  {/* Sort */}
+                  <div className={styles.sortWrap}>
+                    <Icon.Sort />
+                    <select
+                      className={styles.sortSelect}
+                      value={sortBy}
+                      onChange={e => setSortBy(e.target.value)}
+                    >
+                      <option value="modified">Modificado</option>
+                      <option value="name">Nome</option>
+                      <option value="size">Tamanho</option>
+                    </select>
+                  </div>
                 </div>
 
-                {/* Sort */}
-                <div className={styles.sortWrap}>
-                  <Icon.Sort />
-                  <select
-                    className={styles.sortSelect}
-                    value={sortBy}
-                    onChange={e => setSortBy(e.target.value)}
-                  >
-                    <option value="modified">Modificado</option>
-                    <option value="name">Nome</option>
-                    <option value="size">Tamanho</option>
-                  </select>
+                <div className={styles.topBarActionRow}>
+                  {/* View toggle */}
+                  <div className={styles.viewToggle}>
+                    <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
+                    <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
+                  </div>
+
+                  {/* New folder */}
+                  <button className={styles.newFolderBtn} onClick={handleNewFolder}>
+                    <Icon.NewFolder />
+                    Nova pasta
+                  </button>
+
+                  {/* Upload */}
+                  <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
+                    <Icon.Upload />
+                    Enviar
+                  </button>
+
+                  <div className={styles.topBarNotification}>
+                    <InviteNotifications />
+                  </div>
                 </div>
-
-                {/* View toggle */}
-                <div className={styles.viewToggle}>
-                  <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
-                  <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
-                </div>
-
-                <div className={styles.topBarDivider} />
-
-                {/* New folder */}
-                <button className={styles.newFolderBtn} onClick={handleNewFolder}>
-                  <Icon.NewFolder />
-                  Nova pasta
-                </button>
-
-                {/* Upload */}
-                <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
-                  <Icon.Upload />
-                  Enviar
-                </button>
               </>
             )}
-            <InviteNotifications />
             <input ref={fileInputRef} type="file" multiple className={styles.hiddenInput} onChange={handleFileInput} />
           </div>
         </header>
@@ -1207,7 +1211,7 @@ export default function FilesPage() {
         {/* Content area */}
         <div
           className={`${styles.content} ${detailItem ? styles.contentWithPanel : ''}`}
-          onClick={handleCanvasBackground}
+          onClick={handleContentBackground}
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false) }}
           onDrop={handleDrop}

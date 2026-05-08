@@ -66,6 +66,9 @@
   --transition-fast:   150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow:   400ms ease;
+  --mobile-app-header-height: 60px;
+  --mobile-app-header-safe-top: env(safe-area-inset-top, 0px);
+  --mobile-app-header-offset: calc(var(--mobile-app-header-height) + var(--mobile-app-header-safe-top));
 
   /* ============================================================
      SEMANTIC UI TOKENS (themeable via [data-theme])
@@ -139,31 +142,6 @@
   --filetype-zip-bg:    #f5f5f5;
   --filetype-generic-fg:#a0a0a0;
   --filetype-generic-bg:#f5f5f5;
-
-  /* Canvas card tints (used as inline styles in Canvas) */
-  --canvas-card-stone-accent: #1a1a1a;
-  --canvas-card-stone-bg: #ffffff;
-  --canvas-card-stone-border: #e0e0e0;
-
-  --canvas-card-blue-accent: #4290da;
-  --canvas-card-blue-bg: #f0f7ff;
-  --canvas-card-blue-border: #bdd8f5;
-
-  --canvas-card-purple-accent: #9b7ec8;
-  --canvas-card-purple-bg: #f7f3ff;
-  --canvas-card-purple-border: #d8c8f0;
-
-  --canvas-card-green-accent: #0f703a;
-  --canvas-card-green-bg: #f0fbf4;
-  --canvas-card-green-border: #b3e0c6;
-
-  --canvas-card-red-accent: #d94f4f;
-  --canvas-card-red-bg: #fff4f4;
-  --canvas-card-red-border: #f5c6c6;
-
-  --canvas-card-amber-accent: #c47800;
-  --canvas-card-amber-bg: #fffbf0;
-  --canvas-card-amber-border: #f0d8a0;
 }
 
 [data-theme='dark'] {
@@ -217,25 +195,6 @@
   --filetype-code-bg: rgba(155,126,200,.14);
   --filetype-zip-bg: rgba(160,160,160,.12);
   --filetype-generic-bg: rgba(160,160,160,.12);
-
-  --canvas-card-stone-accent: #f4f4f4;
-  --canvas-card-stone-bg: #121212;
-  --canvas-card-stone-border: #222222;
-
-  --canvas-card-blue-bg: rgba(66,144,218,.12);
-  --canvas-card-blue-border: rgba(66,144,218,.30);
-
-  --canvas-card-purple-bg: rgba(155,126,200,.12);
-  --canvas-card-purple-border: rgba(155,126,200,.30);
-
-  --canvas-card-green-bg: rgba(15,112,58,.12);
-  --canvas-card-green-border: rgba(15,112,58,.30);
-
-  --canvas-card-red-bg: rgba(217,79,79,.12);
-  --canvas-card-red-border: rgba(217,79,79,.30);
-
-  --canvas-card-amber-bg: rgba(196,120,0,.12);
-  --canvas-card-amber-border: rgba(196,120,0,.30);
 }
 
 [data-theme='light'] {
@@ -295,30 +254,6 @@
   --filetype-zip-bg:    #f5f5f5;
   --filetype-generic-fg:#a0a0a0;
   --filetype-generic-bg:#f5f5f5;
-
-  --canvas-card-stone-accent: #1a1a1a;
-  --canvas-card-stone-bg: #ffffff;
-  --canvas-card-stone-border: #e0e0e0;
-
-  --canvas-card-blue-accent: #4290da;
-  --canvas-card-blue-bg: #f0f7ff;
-  --canvas-card-blue-border: #bdd8f5;
-
-  --canvas-card-purple-accent: #9b7ec8;
-  --canvas-card-purple-bg: #f7f3ff;
-  --canvas-card-purple-border: #d8c8f0;
-
-  --canvas-card-green-accent: #0f703a;
-  --canvas-card-green-bg: #f0fbf4;
-  --canvas-card-green-border: #b3e0c6;
-
-  --canvas-card-red-accent: #d94f4f;
-  --canvas-card-red-bg: #fff4f4;
-  --canvas-card-red-border: #f5c6c6;
-
-  --canvas-card-amber-accent: #c47800;
-  --canvas-card-amber-bg: #fffbf0;
-  --canvas-card-amber-border: #f0d8a0;
 }
 
 *, *::before, *::after {
@@ -375,6 +310,157 @@ ul, ol { list-style: none; }
 }
 @media (max-width: 640px) {
   :root { --container-px: 20px; --section-py: 64px; }
+}
+
+/* ──────────────────────────────────────────
+   SHARED MOBILE APP SHELL
+   ────────────────────────────────────────── */
+
+.productAppShellMobile {
+  min-height: 100dvh;
+  background: var(--app-bg);
+  overflow-x: hidden;
+}
+
+.productAppShellHeader {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: var(--mobile-app-header-offset);
+  padding: calc(8px + var(--mobile-app-header-safe-top)) 14px 8px;
+  border-bottom: 1px solid var(--border-1);
+  background: var(--frosted-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.productAppShellHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.productAppShellHeaderText {
+  min-width: 0;
+}
+
+.productAppShellHeaderTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.productAppShellHeaderTitle {
+  font-size: 17px;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.productAppShellHeaderMeta {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.productAppShellHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.productAppShellIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  background: var(--surface-1);
+  color: var(--text-1);
+}
+
+.productAppShellOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  background: rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.productAppShellOverlayOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.productAppShellDrawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 49;
+  width: min(304px, calc(100vw - 16px));
+  transform: translateX(-100%);
+  transition: transform var(--transition-normal);
+  pointer-events: none;
+}
+
+.productAppShellDrawerOpen {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.productAppShellDrawerSidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  height: 100%;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-1);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-app-shell][data-mobile='true'] [data-app-shell-content] {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+@media (max-width: 560px) {
+  :root {
+    --mobile-app-header-height: 54px;
+  }
+
+  .productAppShellHeader {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .productAppShellHeaderTitle {
+    font-size: 16px;
+  }
+
+  .productAppShellIconButton {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 /* ──────────────────────────────────────────

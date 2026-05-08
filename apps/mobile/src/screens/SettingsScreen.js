@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native'
+import * as FileSystem from 'expo-file-system'
+import * as Sharing from 'expo-sharing'
 import {
   AlarmClock,
   AtSign,
@@ -24,9 +26,27 @@ import {
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
-import { mobileApiRequest } from '../services/api'
+import { mobileApiRequest, mobileApiUrl } from '../services/api'
+import { buildPasswordRequest, getPasswordFlowCopy, resolvePasswordFlow } from './settingsPasswordFlow'
 import { theme } from '../theme/tokens'
 import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
+
+const DELETE_CONFIRMATION_PHRASE = 'EXCLUIR MINHA CONTA'
+
+function sanitizeFilename(name = 'arquivo') {
+  return String(name).replace(/[\\/:*?"<>|]+/g, '-').trim() || 'arquivo'
+}
+
+function triggerWebDownload(blob, filename) {
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.URL.revokeObjectURL(url)
+}
 
 function SectionCard({ title, hint, children }) {
   return (
@@ -139,7 +159,21 @@ export default function SettingsScreen() {
   const [workspaceNameValue, setWorkspaceNameValue] = useState('')
   const [currentPasswordValue, setCurrentPasswordValue] = useState('')
   const [newPasswordValue, setNewPasswordValue] = useState('')
+  const [sheetBusy, setSheetBusy] = useState(false)
+  const [sheetError, setSheetError] = useState(null)
+  const [sheetSuccess, setSheetSuccess] = useState(null)
+  const [activeSessions, setActiveSessions] = useState([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [sessionActionId, setSessionActionId] = useState(null)
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('')
+  const [deleteConfirmPhrase, setDeleteConfirmPhrase] = useState('')
+  const [deletePasswordValue, setDeletePasswordValue] = useState('')
   const gmail = settingsSnapshot?.integrations?.gmail
+  const { localPasswordEnabled, externalIdentityLinked, canSetupPasswordWithoutCurrent } = resolvePasswordFlow({
+    settingsAccount: settingsSnapshot?.account,
+    sessionUser: session?.user,
+  })
+  const passwordFlowCopy = getPasswordFlowCopy(canSetupPasswordWithoutCurrent)
 
   const request = useCallback((path, options = {}) => mobileApiRequest(path, {
     ...options,
@@ -277,23 +311,194 @@ export default function SettingsScreen() {
   }
 
   const savePassword = async () => {
-    await request('/api/settings/password', {
-      method: 'PATCH',
-      body: {
+    setSheetBusy(true)
+    setSheetError(null)
+
+    try {
+      const passwordRequest = buildPasswordRequest({
+        canSetupPasswordWithoutCurrent,
         currentPassword: currentPasswordValue,
         newPassword: newPasswordValue,
-      },
-    })
-    setCurrentPasswordValue('')
-    setNewPasswordValue('')
-    closeSheet()
+      })
+
+      await request(passwordRequest.path, passwordRequest.options)
+      setCurrentPasswordValue('')
+      setNewPasswordValue('')
+      const updatedPasswordState = {
+        localPasswordEnabled: true,
+        externalIdentityLinked,
+      }
+      setSettingsSnapshot((current) => (current ? {
+        ...current,
+        account: {
+          ...current.account,
+          ...updatedPasswordState,
+        },
+      } : current))
+      await patchSession({ user: updatedPasswordState })
+      try {
+        await loadSettings()
+      } catch {
+        // Keep the UI on the normal password flow even if the background refresh fails.
+      }
+      closeSheet()
+    } catch (error) {
+      setSheetError(error?.message ?? 'Nao foi possivel atualizar a senha.')
+    } finally {
+      setSheetBusy(false)
+    }
+  }
+
+  const loadActiveSessions = useCallback(async () => {
+    if (!accessToken) return
+    setSessionsLoading(true)
+    setSheetError(null)
+    try {
+      const sessions = await request('/api/settings/security/sessions')
+      setActiveSessions(Array.isArray(sessions) ? sessions : [])
+    } catch (error) {
+      setSheetError(error?.message ?? 'Nao foi possivel carregar as sessoes ativas.')
+    } finally {
+      setSessionsLoading(false)
+    }
+  }, [accessToken, request])
+
+  useEffect(() => {
+    if (activeSheet === 'sessions') {
+      void loadActiveSessions()
+    }
+  }, [activeSheet, loadActiveSessions])
+
+  const revokeSession = async (sessionId) => {
+    setSessionActionId(sessionId)
+    setSheetError(null)
+    setSheetSuccess(null)
+    try {
+      await request(`/api/settings/security/sessions/${sessionId}`, {
+        method: 'DELETE',
+      })
+      setSheetSuccess('Sessao encerrada com sucesso.')
+      await loadActiveSessions()
+    } catch (error) {
+      setSheetError(error?.message ?? 'Nao foi possivel encerrar a sessao.')
+    } finally {
+      setSessionActionId(null)
+    }
+  }
+
+  const revokeOtherSessions = async () => {
+    setSessionActionId('revoke-others')
+    setSheetError(null)
+    setSheetSuccess(null)
+    try {
+      await request('/api/settings/security/sessions/revoke-others', {
+        method: 'POST',
+      })
+      setSheetSuccess('As outras sessoes foram encerradas.')
+      await loadActiveSessions()
+    } catch (error) {
+      setSheetError(error?.message ?? 'Nao foi possivel encerrar as outras sessoes.')
+    } finally {
+      setSessionActionId(null)
+    }
+  }
+
+  const exportData = async () => {
+    setSheetBusy(true)
+    setSheetError(null)
+    setSheetSuccess(null)
+
+    try {
+      const filename = sanitizeFilename(`plan-things-export-${new Date().toISOString().slice(0, 10)}.zip`)
+
+      if (Platform.OS === 'web') {
+        const blob = await request('/api/settings/export', {
+          responseType: 'blob',
+        })
+        triggerWebDownload(blob, filename)
+        setSheetSuccess('A exportacao foi iniciada.')
+        return
+      }
+
+      const destination = `${FileSystem.documentDirectory}${filename}`
+      const result = await FileSystem.downloadAsync(
+        mobileApiUrl('/api/settings/export'),
+        destination,
+        {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        },
+      )
+
+      if (result.status >= 400) {
+        throw new Error('Nao foi possivel exportar seus dados.')
+      }
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(result.uri)
+      }
+
+      setSheetSuccess('Exportacao pronta para compartilhar.')
+    } catch (error) {
+      setSheetError(error?.message ?? 'Nao foi possivel exportar seus dados.')
+    } finally {
+      setSheetBusy(false)
+    }
+  }
+
+  const deleteAccount = async () => {
+    if (deleteConfirmEmail.trim().toLowerCase() !== session.user.email.trim().toLowerCase()) {
+      setSheetError('Digite o e-mail da conta exatamente como exibido.')
+      return
+    }
+
+    if (deleteConfirmPhrase.trim() !== DELETE_CONFIRMATION_PHRASE) {
+      setSheetError(`Digite a frase ${DELETE_CONFIRMATION_PHRASE} para confirmar.`)
+      return
+    }
+
+    if (localPasswordEnabled && !deletePasswordValue.trim()) {
+      setSheetError('Informe sua senha atual para excluir a conta.')
+      return
+    }
+
+    setSheetBusy(true)
+    setSheetError(null)
+    setSheetSuccess(null)
+
+    try {
+      await request('/api/settings/account/delete', {
+        method: 'POST',
+        body: {
+          confirmEmail: deleteConfirmEmail,
+          confirmPhrase: deleteConfirmPhrase,
+          currentPassword: localPasswordEnabled ? deletePasswordValue : null,
+        },
+      })
+      await logout()
+      closeSheet()
+    } catch (error) {
+      setSheetError(error?.message ?? 'Nao foi possivel excluir a conta.')
+    } finally {
+      setSheetBusy(false)
+    }
   }
 
   const firstName = useMemo(() => session.user.fullName.split(' ')[0] ?? session.user.fullName, [session.user.fullName])
   const workspaceInitial = useMemo(() => session.workspace.initial ?? (session.workspace.name?.[0] ?? 'W'), [session.workspace.initial, session.workspace.name])
   const selectedThemeLabel = themeLabels[themePreference] ?? themeLabels.system
   const effectiveThemeLabel = effectiveTheme === 'dark' ? 'escuro' : 'claro'
-  const closeSheet = () => setActiveSheet(null)
+  const closeSheet = () => {
+    setActiveSheet(null)
+    setSheetBusy(false)
+    setSheetError(null)
+    setSheetSuccess(null)
+    setSessionActionId(null)
+    setCurrentPasswordValue('')
+    setNewPasswordValue('')
+    setDeleteConfirmEmail('')
+    setDeleteConfirmPhrase('')
+    setDeletePasswordValue('')
+  }
 
   if (!session) {
     return null
@@ -348,7 +553,7 @@ export default function SettingsScreen() {
           icon={KeyRound}
           label="Senha"
           hint="Recomendado: senha forte + gerenciador."
-          right={<InlineButton label="Alterar" onPress={() => setActiveSheet('password')} />}
+          right={<InlineButton label={passwordFlowCopy.actionLabel} onPress={() => setActiveSheet('password')} />}
         />
         <Row
           icon={LogOut}
@@ -489,6 +694,12 @@ export default function SettingsScreen() {
         hint="Proteção de conta e controle de dados."
       >
         <Row
+          icon={KeyRound}
+          label="Senha"
+          hint={passwordFlowCopy.rowHint}
+          right={<InlineButton label={passwordFlowCopy.actionLabel} onPress={() => setActiveSheet('password')} />}
+        />
+        <Row
           icon={Shield}
           label="Autenticação em dois fatores"
           hint="Adicione uma camada extra de proteção."
@@ -499,8 +710,7 @@ export default function SettingsScreen() {
           icon={Laptop}
           label="Sessões ativas"
           hint="Gerencie dispositivos conectados."
-          right={<Pill label="Em breve" />}
-          disabled
+          right={<InlineButton label="Gerenciar" onPress={() => setActiveSheet('sessions')} />}
         />
         <Row
           icon={Download}
@@ -542,7 +752,7 @@ export default function SettingsScreen() {
         onClose={closeSheet}
         title={
           activeSheet === 'profile' ? 'Perfil' :
-          activeSheet === 'password' ? 'Senha' :
+          activeSheet === 'password' ? passwordFlowCopy.sheetTitle :
           activeSheet === 'language' ? 'Idioma' :
           activeSheet === 'timezone' ? 'Fuso horário' :
           activeSheet === 'theme' ? 'Tema' :
@@ -667,15 +877,18 @@ export default function SettingsScreen() {
 
         {activeSheet === 'password' ? (
           <View style={styles.sheetBlock}>
-            <TextInput
-              value={currentPasswordValue}
-              onChangeText={setCurrentPasswordValue}
-              style={styles.sheetInput}
-              selectionColor={theme.colors.text1}
-              secureTextEntry
-              placeholder="Senha atual"
-              placeholderTextColor={theme.colors.text3}
-            />
+            {passwordFlowCopy.sheetDescription ? <Text style={styles.sheetBodyText}>{passwordFlowCopy.sheetDescription}</Text> : null}
+            {!canSetupPasswordWithoutCurrent ? (
+              <TextInput
+                value={currentPasswordValue}
+                onChangeText={setCurrentPasswordValue}
+                style={styles.sheetInput}
+                selectionColor={theme.colors.text1}
+                secureTextEntry
+                placeholder="Senha atual"
+                placeholderTextColor={theme.colors.text3}
+              />
+            ) : null}
             <TextInput
               value={newPasswordValue}
               onChangeText={setNewPasswordValue}
@@ -685,20 +898,139 @@ export default function SettingsScreen() {
               placeholder="Nova senha"
               placeholderTextColor={theme.colors.text3}
             />
+            {sheetError ? <Text style={styles.inlineError}>{sheetError}</Text> : null}
             <View style={styles.sheetActions}>
-              <InlineButton label="Salvar" tone="primary" onPress={savePassword} disabled={!currentPasswordValue || newPasswordValue.length < 8} />
+              <InlineButton
+                label={sheetBusy ? 'Salvando...' : passwordFlowCopy.submitLabel}
+                tone="primary"
+                onPress={savePassword}
+                disabled={sheetBusy || (!canSetupPasswordWithoutCurrent && !currentPasswordValue) || newPasswordValue.length < 8}
+              />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
             </View>
           </View>
         ) : null}
 
-        {activeSheet === 'export' || activeSheet === 'sessions' || activeSheet === 'delete' ? (
+        {activeSheet === 'export' ? (
           <View style={styles.sheetBlock}>
             <Text style={styles.sheetBodyText}>
-              Ação disponível em uma atualização futura. Esta tela já segue a mesma estrutura e linguagem do Ajustes do web, adaptada para mobile.
+              Gere um arquivo ZIP com seus dados e compartilhe a exportação com o sistema do dispositivo.
             </Text>
+            {sheetError ? <Text style={styles.inlineError}>{sheetError}</Text> : null}
+            {sheetSuccess ? <Text style={styles.inlineSuccess}>{sheetSuccess}</Text> : null}
             <View style={styles.sheetActions}>
+              <InlineButton
+                label={sheetBusy ? 'Preparando...' : 'Baixar e compartilhar'}
+                tone="primary"
+                onPress={exportData}
+                disabled={sheetBusy}
+              />
               <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
+            </View>
+          </View>
+        ) : null}
+
+        {activeSheet === 'sessions' ? (
+          <View style={styles.sheetBlock}>
+            <Text style={styles.sheetBodyText}>
+              Revogue sessões antigas ou encerre todos os outros dispositivos com um toque.
+            </Text>
+            {sheetError ? <Text style={styles.inlineError}>{sheetError}</Text> : null}
+            {sheetSuccess ? <Text style={styles.inlineSuccess}>{sheetSuccess}</Text> : null}
+            <View style={styles.sheetDivider} />
+            <View style={styles.sessionsList}>
+              {sessionsLoading ? (
+                <Text style={styles.sheetBodyText}>Carregando sessões...</Text>
+              ) : activeSessions.length === 0 ? (
+                <Text style={styles.sheetBodyText}>Nenhuma outra sessão ativa encontrada.</Text>
+              ) : activeSessions.map((sessionItem) => (
+                <View key={sessionItem.id} style={styles.sessionItem}>
+                  <View style={styles.sessionItemBody}>
+                    <View style={styles.sessionItemTop}>
+                      <Text style={styles.sessionItemTitle}>{sessionItem.deviceLabel || 'Sessão ativa'}</Text>
+                      <Pill label={sessionItem.current ? 'Atual' : sessionItem.client === 'mobile' ? 'Mobile' : 'Web'} tone={sessionItem.current ? 'accent' : 'neutral'} />
+                    </View>
+                    <Text style={styles.sessionItemHint}>
+                      Ativa em {sessionItem.lastSeenAt?.text ?? sessionItem.createdAt?.text ?? 'momento recente'}
+                    </Text>
+                    <Text style={styles.sessionItemHint}>
+                      Iniciada em {sessionItem.createdAt?.text ?? 'data indisponível'}
+                    </Text>
+                  </View>
+                  {sessionItem.revocable ? (
+                    <InlineButton
+                      label={sessionActionId === sessionItem.id ? 'Encerrando...' : 'Encerrar'}
+                      tone="secondary"
+                      onPress={() => revokeSession(sessionItem.id)}
+                      disabled={sessionActionId === sessionItem.id || sessionActionId === 'revoke-others'}
+                    />
+                  ) : (
+                    <Pill label="Em uso" tone="accent" />
+                  )}
+                </View>
+              ))}
+            </View>
+            <View style={styles.sheetActions}>
+              <InlineButton
+                label={sessionActionId === 'revoke-others' ? 'Encerrando...' : 'Encerrar outras'}
+                tone="primary"
+                onPress={revokeOtherSessions}
+                disabled={sessionsLoading || sessionActionId === 'revoke-others'}
+              />
+              <InlineButton label="Fechar" tone="secondary" onPress={closeSheet} />
+            </View>
+          </View>
+        ) : null}
+
+        {activeSheet === 'delete' ? (
+          <View style={styles.sheetBlock}>
+            <Text style={styles.sheetBodyText}>
+              Digite o e-mail da conta e a frase {DELETE_CONFIRMATION_PHRASE} para confirmar a exclusão permanente.
+            </Text>
+            <TextInput
+              value={deleteConfirmEmail}
+              onChangeText={setDeleteConfirmEmail}
+              style={styles.sheetInput}
+              selectionColor={theme.colors.text1}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder={session.user.email}
+              placeholderTextColor={theme.colors.text3}
+            />
+            <TextInput
+              value={deleteConfirmPhrase}
+              onChangeText={setDeleteConfirmPhrase}
+              style={styles.sheetInput}
+              selectionColor={theme.colors.text1}
+              autoCapitalize="characters"
+              placeholder={DELETE_CONFIRMATION_PHRASE}
+              placeholderTextColor={theme.colors.text3}
+            />
+            {localPasswordEnabled ? (
+              <TextInput
+                value={deletePasswordValue}
+                onChangeText={setDeletePasswordValue}
+                style={styles.sheetInput}
+                selectionColor={theme.colors.text1}
+                secureTextEntry
+                placeholder="Senha atual"
+                placeholderTextColor={theme.colors.text3}
+              />
+            ) : null}
+            {sheetError ? <Text style={styles.inlineError}>{sheetError}</Text> : null}
+            <View style={styles.sheetActions}>
+              <InlineButton
+                label={sheetBusy ? 'Excluindo...' : 'Excluir conta'}
+                tone="danger"
+                onPress={deleteAccount}
+                disabled={
+                  sheetBusy
+                  || !deleteConfirmEmail.trim()
+                  || deleteConfirmPhrase.trim() !== DELETE_CONFIRMATION_PHRASE
+                  || (localPasswordEnabled && !deletePasswordValue.trim())
+                }
+              />
+              <InlineButton label="Cancelar" tone="secondary" onPress={closeSheet} />
             </View>
           </View>
         ) : null}
@@ -910,6 +1242,17 @@ const createStyles = (theme) => StyleSheet.create({
     borderRadius: 8,
     backgroundColor: theme.colors.surface2,
   },
+  inlineSuccess: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surface2,
+  },
   rowRight: {
     alignItems: 'flex-end',
     justifyContent: 'center',
@@ -1073,6 +1416,38 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 6,
+  },
+  sessionsList: {
+    gap: 10,
+  },
+  sessionItem: {
+    gap: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface2,
+  },
+  sessionItemBody: {
+    gap: 4,
+  },
+  sessionItemTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  sessionItemTitle: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.text1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sessionItemHint: {
+    color: theme.colors.text2,
+    fontSize: 12,
+    lineHeight: 16,
   },
   sheetInput: {
     minHeight: 44,

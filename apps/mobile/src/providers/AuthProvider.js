@@ -173,7 +173,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(async ({ email, password }) => {
     const response = await mobileApiRequest('/api/auth/login', {
       method: 'POST',
-      body: { email, password },
+      body: { email, password, client: 'mobile' },
     })
     return saveSession(response)
   }, [saveSession])
@@ -181,7 +181,7 @@ export function AuthProvider({ children }) {
   const register = useCallback(async ({ fullName, email, password }) => {
     const response = await mobileApiRequest('/api/auth/register', {
       method: 'POST',
-      body: { fullName, email, password },
+      body: { fullName, email, password, client: 'mobile' },
     })
     return saveSession(response)
   }, [saveSession])

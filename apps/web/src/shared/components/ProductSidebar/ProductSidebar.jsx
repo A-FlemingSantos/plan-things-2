@@ -5,6 +5,8 @@ import './ProductSidebar.css'
 
 export default function ProductSidebar({
   styles,
+  mode = 'desktop',
+  className = '',
   collapsed,
   onToggleCollapse,
   activeNav,
@@ -19,6 +21,9 @@ export default function ProductSidebar({
   workspaceName = 'Workspace do Arthur',
   workspaceInitial = 'A',
   workspaceAvatarUrl = null,
+  showCollapseButton = true,
+  headerControl = null,
+  ariaLabel,
 }) {
   const secondaryWrapperStyle = {
     flex: 1,
@@ -33,9 +38,15 @@ export default function ProductSidebar({
 
   return (
     <aside
-      className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}
+      className={[
+        mode === 'desktop' ? styles.sidebar : '',
+        mode === 'desktop' && collapsed ? styles.sidebarCollapsed : '',
+        className,
+      ].filter(Boolean).join(' ')}
       data-product-sidebar
+      data-sidebar-mode={mode}
       data-collapsed={collapsed ? 'true' : 'false'}
+      aria-label={ariaLabel}
     >
       <div className={styles.sidebarTop} data-sidebar-top>
         <div className={styles.logoRow} data-sidebar-logo-row>
@@ -49,20 +60,22 @@ export default function ProductSidebar({
             <span className={styles.sidebarLogoMark} data-sidebar-logo-mark><LogoIcon /></span>
             <span className={styles.sidebarLogoText} data-sidebar-logo-text>Plan Things</span>
           </Link>
-          <button
-            type="button"
-            className={styles.collapseBtn}
-            onClick={onToggleCollapse}
-            aria-label={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
-            data-sidebar-collapse-button
-          >
-            <span
-              className={`${styles.collapseBtnIcon} ${collapsed ? styles.collapseBtnFlipped : ''}`}
-              data-sidebar-collapse-icon
+          {headerControl || (showCollapseButton ? (
+            <button
+              type="button"
+              className={styles.collapseBtn}
+              onClick={onToggleCollapse}
+              aria-label={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+              data-sidebar-collapse-button
             >
-              <CollapseIcon />
-            </span>
-          </button>
+              <span
+                className={`${styles.collapseBtnIcon} ${collapsed ? styles.collapseBtnFlipped : ''}`}
+                data-sidebar-collapse-icon
+              >
+                <CollapseIcon />
+              </span>
+            </button>
+          ) : null)}
         </div>
 
         <button

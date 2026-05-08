@@ -24,6 +24,11 @@ import { usePreferences } from '../../../preferences/context/PreferencesContext.
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { formatFileSize, getFileTypeFromName } from '../../../files/data/libraryRepository.js'
 import { buildPlannerView, filterPlannerItems } from './plannerFilters.js'
+import {
+  KANBAN_COLUMN_COLOR_OPTIONS,
+  resolveKanbanAccentColor,
+  resolveKanbanAccentForeground,
+} from '../../data/kanbanColorPalette.js'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -32,7 +37,6 @@ import styles from './KanbanBoard.module.css'
 const Icon = {
   Home:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Popover:  () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Canvas:   () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="1.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="8.5" y="8.5" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
   Files:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Download: () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4.5 6.5L7 9l2.5-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1.5A1.5 1.5 0 0 0 3.5 13h7a1.5 1.5 0 0 0 1.5-1.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Plus:     () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
@@ -93,15 +97,6 @@ const CALENDAR_DAYS = [
   { label: 19 }, { label: 20 }, { label: 21 }, { label: 22 }, { label: 23 }, { label: 24 }, { label: 25 },
   { label: 26 }, { label: 27 }, { label: 28 }, { label: 29 }, { label: 30 }, { label: 1, muted: true }, { label: 2, muted: true },
   { label: 3, muted: true }, { label: 4, muted: true }, { label: 5, muted: true }, { label: 6, muted: true }, { label: 7, muted: true }, { label: 8, muted: true }, { label: 9, muted: true },
-]
-
-const COL_COLORS = [
-  { id: 'gray',   value: '#a0a0a0' },
-  { id: 'blue',   value: '#4290da' },
-  { id: 'purple', value: '#d4aef1' },
-  { id: 'green',  value: '#0f703a' },
-  { id: 'red',    value: '#ff6766' },
-  { id: 'orange', value: '#f5a623' },
 ]
 
 const uid = () => Math.random().toString(36).slice(2, 9)
@@ -220,50 +215,11 @@ function addDaysToDateKey(dateKeyValue, days) {
   return dateKey(date)
 }
 
-function moveCardInColumns(columns, cardId, targetColumnId, targetPosition = 0) {
-  const nextColumns = columns.map((column) => ({
-    ...column,
-    cards: Array.isArray(column.cards) ? [...column.cards] : [],
-  }))
-
-  let movedCard = null
-  let sourceColumnId = null
-
-  nextColumns.forEach((column) => {
-    const index = column.cards.findIndex((card) => card.id === cardId)
-    if (index < 0) return
-    movedCard = column.cards[index]
-    sourceColumnId = column.id
-    column.cards.splice(index, 1)
-  })
-
-  if (!movedCard || sourceColumnId === targetColumnId) {
-    return columns
-  }
-
-  const targetColumn = nextColumns.find((column) => column.id === targetColumnId)
-  if (!targetColumn) {
-    return columns
-  }
-
-  const nextCard = {
-    ...movedCard,
-    columnId: targetColumnId,
-  }
-
-  const clampedPosition = Math.max(0, Math.min(targetColumn.cards.length, targetPosition))
-  targetColumn.cards.splice(clampedPosition, 0, nextCard)
-
-  return nextColumns
-}
-
 const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
   ...item,
   Icon:
     item.id === 'home' ? Icon.Home :
-    item.id === 'canvas' ? Icon.Canvas :
-    item.id === 'calendar' ? Icon.Calendar :
-    Icon.Files,
+    item.id === 'calendar' ? Icon.Calendar : Icon.Files,
 }))
 
 function formatInviteStatus(status) {
@@ -370,11 +326,16 @@ export default function KanbanBoard() {
   const [isPlannerFilterOpen, setIsPlannerFilterOpen] = useState(false)
   const [plannerFilter, setPlannerFilter] = useState('my-day')
   const plannerFilterWrapRef = useRef(null)
-  const previousColumnByCardIdRef = useRef(new Map())
   const [plannerPinnedById, setPlannerPinnedById] = useState({})
-  const { generalPreferences, formatClockTime } = usePreferences()
+  const { generalPreferences, localPreferences, formatClockTime } = usePreferences()
   const timeZone = generalPreferences.timezone
   const dateFormat = generalPreferences.dateFormat
+  const boardAccentColor = resolveKanbanAccentColor(localPreferences?.kanbanAccentColor)
+  const boardAccentForeground = resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor)
+  const boardAccentStyle = useMemo(() => ({
+    '--kanban-accent-color': boardAccentColor,
+    '--kanban-accent-foreground': boardAccentForeground,
+  }), [boardAccentColor, boardAccentForeground])
   const today = useMemo(() => new Date(), [timeZone])
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
@@ -502,6 +463,10 @@ export default function KanbanBoard() {
     updateCard,
     deleteCard,
     moveCard,
+    createChecklist,
+    deleteChecklist,
+    createChecklistItem,
+    updateChecklistItem,
   } = useBoardColumns({
     activePlanId: activePlan?.id,
     boardColumns: activePlan?.boardColumns,
@@ -1098,10 +1063,6 @@ export default function KanbanBoard() {
 	    [timeZone, today],
 	  )
 	  const tomorrowKey = useMemo(() => addDaysToDateKey(todayKey, 1), [todayKey])
-	  const doneColumn = useMemo(() => {
-	    const doneMatcher = /(^|\b)(conclu[ií]do|feito|done|completed)(\b|$)/i
-	    return columns.find((column) => doneMatcher.test(column.title ?? ''))
-	  }, [columns])
 	  const plannerPinnedStorageKey = useMemo(
 	    () => `plan-things:plannerPinned:${activePlan?.id ?? 'none'}`,
 	    [activePlan?.id],
@@ -1187,7 +1148,6 @@ export default function KanbanBoard() {
 
 	  const plannerBaseItems = useMemo(() => {
 	    const planName = activePlan?.name ?? 'Plano'
-	    const doneColumnId = doneColumn?.id ?? null
 
 	    const formatDateLabel = (key) => {
 	      if (!key) return 'Sem data'
@@ -1221,7 +1181,7 @@ export default function KanbanBoard() {
 	          dueKey,
 	          scheduleKey,
 	          timeMinutes: timeValueMinutes(timeValue),
-	          isCompleted: Boolean(doneColumnId && card.columnId === doneColumnId),
+	          isCompleted: Boolean(card.isCompleted),
 	          isAssignedToMe: Boolean(
 	            currentUser?.id &&
 	            Array.isArray(card.memberIds) &&
@@ -1258,7 +1218,6 @@ export default function KanbanBoard() {
 	    activePlan?.name,
 	    columns,
 	    currentUser?.id,
-	    doneColumn?.id,
 	    formatClockTime,
 	    plannerDateFormatter,
 	    plannerCalendarEvents,
@@ -1290,34 +1249,11 @@ export default function KanbanBoard() {
 	  }), [plannerBaseItems, plannerFilter, todayKey])
 
   const togglePlannerCardCompleted = async (card) => {
-    const doneColumnId = doneColumn?.id
-    if (!doneColumnId) {
-      showNotification('Crie uma coluna "Concluído" para marcar tarefas como feitas.')
-      return
-    }
-
-    const isCompleted = card.columnId === doneColumnId
-    if (!isCompleted) {
-      previousColumnByCardIdRef.current.set(card.id, card.columnId)
-    }
-
-    const fallbackColumnId = columns.find((column) => column.id !== doneColumnId)?.id ?? null
-    const previousColumnId = previousColumnByCardIdRef.current.get(card.id) ?? null
-    const undoTargetId =
-      previousColumnId && previousColumnId !== doneColumnId
-        ? previousColumnId
-        : fallbackColumnId
-    const targetColumnId = isCompleted ? undoTargetId : doneColumnId
-
-    if (!targetColumnId) return
-
-    if (!isBackendDriven) {
-      updateColumns((prev) => moveCardInColumns(prev, card.id, targetColumnId, 0))
-      return
-    }
-
     try {
-      await moveCard(card.id, targetColumnId, 0)
+      await updateCard({
+        ...card,
+        isCompleted: !card.isCompleted,
+      })
     } catch (error) {
       showNotification(error?.message ?? 'Não foi possível atualizar a tarefa.')
     }
@@ -2055,6 +1991,7 @@ export default function KanbanBoard() {
 
   return (
     <AppThemeScope>
+      <div className={styles.boardAccentScope} style={boardAccentStyle}>
       <ProductAppShell
         styles={styles}
         activeNav={activeNav}
@@ -2067,6 +2004,8 @@ export default function KanbanBoard() {
         secondaryContent={renderSidebarSecondaryContent}
         bottomContent={renderSidebarBottomContent}
         contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted || isFilesPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen || isFilesOpen ? styles.boardWrapperWithPlanner : ''}`}
+        mobileTitle={boardHeaderTitle}
+        mobileTitleMeta={boardHeaderMeta}
       >
         <div className={boardMainClassName} style={boardCoverStyle}>
         <PlanPageHeader
@@ -2251,15 +2190,17 @@ export default function KanbanBoard() {
                 onRenameCol={renameColumn}
                 onChangeColColor={changeColColor}
                 onCardClick={(card, colTitle) => setActiveCard({ card, colTitle })}
+                onToggleCardCompleted={togglePlannerCardCompleted}
                 labels={planLabels}
                 members={planMembers}
-                colorOptions={COL_COLORS}
+                colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
                 icons={{
                   Plus: Icon.Plus,
                   More: Icon.More,
                   Edit: Icon.Edit,
                   Trash: Icon.Trash,
                   X: Icon.X,
+                  Check: Icon.Check,
                   Comment: Icon.Comment,
                   Clock: Icon.Clock,
                 }}
@@ -2292,6 +2233,7 @@ export default function KanbanBoard() {
             className={`${styles.boardViewToolbarItem} ${isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-expanded={isInboxOpen}
             aria-controls="board-inbox-panel"
+            title="Caixa de entrada"
             onClick={openInbox}
           >
             <Icon.Inbox />
@@ -2303,6 +2245,7 @@ export default function KanbanBoard() {
             className={`${styles.boardViewToolbarItem} ${isPlannerOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-expanded={isPlannerOpen}
             aria-controls="board-planner-panel"
+            title="Planejador"
             onClick={openPlanner}
           >
             <Icon.Calendar />
@@ -2313,6 +2256,7 @@ export default function KanbanBoard() {
             type="button"
             className={`${styles.boardViewToolbarItem} ${!isPlannerOpen && !isInboxOpen && !isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-current={!isPlannerOpen && !isInboxOpen && !isFilesOpen ? 'page' : undefined}
+            title="Quadro"
             onClick={closeFloatingPanel}
           >
             <Icon.Board />
@@ -2324,6 +2268,7 @@ export default function KanbanBoard() {
             className={`${styles.boardViewToolbarItem} ${isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-expanded={isFilesOpen}
             aria-controls="board-files-panel"
+            title="Arquivos"
             onClick={openFiles}
           >
             <Icon.Files />
@@ -2379,6 +2324,12 @@ export default function KanbanBoard() {
           onUploadLocalFile={uploadLocalFileToCard}
           onRemoveAttachment={removeAttachmentFromCard}
           onDownloadFile={downloadFile}
+          onCreateChecklist={createChecklist}
+          onDeleteChecklist={deleteChecklist}
+          onCreateChecklistItem={createChecklistItem}
+          onUpdateChecklistItem={updateChecklistItem}
+          timeZone={timeZone}
+          dateFormat={dateFormat}
         />
       )}
 
@@ -2457,7 +2408,7 @@ export default function KanbanBoard() {
           {notification}
         </div>
       )}
-
+      </div>
     </AppThemeScope>
   )
 }

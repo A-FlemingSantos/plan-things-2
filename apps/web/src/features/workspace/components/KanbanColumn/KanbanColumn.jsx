@@ -19,6 +19,7 @@ export default function KanbanColumn({
   onRenameCol,
   onChangeColColor,
   onCardClick,
+  onToggleCardCompleted,
   labels,
   members,
   colorOptions,
@@ -35,6 +36,8 @@ export default function KanbanColumn({
   const [isAddingCard, setIsAddingCard] = useState(false)
   const addInputRef = useRef(null)
   const renameRef = useRef(null)
+  const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
+  const hasColumnColor = Boolean(col.color?.trim())
 
   const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
   const getCardHasDraggedFile = (card) => {
@@ -121,9 +124,11 @@ export default function KanbanColumn({
         onDrop({ type: 'col', colId: col.id })
       }}
     >
-      <div className={styles.colHeader}>
+      <div
+        className={`${styles.colHeader} ${hasColumnColor ? styles.colHeaderColored : ''}`}
+        style={hasColumnColor ? { '--column-header-color': col.color } : undefined}
+      >
         <div className={styles.colHeaderLeft}>
-          <span className={styles.colDot} style={{ background: col.color }} />
           {renaming ? (
             <input
               ref={renameRef}
@@ -192,7 +197,7 @@ export default function KanbanColumn({
       </div>
       {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
 
-      <div className={styles.colCards}>
+      <div className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}>
         {col.cards.map((card) => (
           <KanbanCard
             key={card.id}
@@ -210,10 +215,13 @@ export default function KanbanColumn({
             onFileDragOver={onFileDragOver}
             onFileDrop={onFileDrop}
             onClick={() => onCardClick(card, col.title)}
+            isConfirmed={Boolean(card.isCompleted)}
+            onToggleConfirmed={onToggleCardCompleted}
             labels={labels}
             members={members}
+            CheckIcon={icons.Check}
             CommentIcon={icons.Comment}
-            ClockIcon={icons.Clock}
+            ClockIcon={icons.Calendar}
             styles={styles}
           />
         ))}

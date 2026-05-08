@@ -58,6 +58,17 @@ class PlanApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldCreatePlansWithAnEmptyBoard() throws Exception {
+    String token = registerAndGetToken("Arthur Empty", "arthur-empty-board@example.com", "12345678");
+    String planId = createPlan(token, "Plano vazio").path("plan").path("id").asText();
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns").isEmpty());
+  }
+
+  @Test
   void shouldExposeTaskCountInPlanSummaryList() throws Exception {
     String token = registerAndGetToken("Arthur Santos", "arthur-plan-summary@example.com", "12345678");
     JsonNode createdPlan = createPlan(token, "Plano com contagem");
@@ -67,7 +78,7 @@ class PlanApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
 
     mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)

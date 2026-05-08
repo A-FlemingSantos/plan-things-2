@@ -32,6 +32,9 @@ public class BoardCardEntity extends BaseEntity {
   @Column(nullable = false)
   private Integer positionIndex;
 
+  @Column(nullable = false)
+  private Boolean completed = false;
+
   @Column
   private OffsetDateTime startAt;
 
@@ -92,6 +95,14 @@ public class BoardCardEntity extends BaseEntity {
 
   public void setPositionIndex(Integer positionIndex) {
     this.positionIndex = positionIndex;
+  }
+
+  public Boolean getCompleted() {
+    return completed;
+  }
+
+  public void setCompleted(Boolean completed) {
+    this.completed = completed;
   }
 
   public OffsetDateTime getStartAt() {

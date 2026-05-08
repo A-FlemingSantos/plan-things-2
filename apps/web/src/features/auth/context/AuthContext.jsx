@@ -148,7 +148,10 @@ export function AuthProvider({ children }) {
 
     const response = await apiRequest('/api/auth/login', {
       method: 'POST',
-      body: credentials,
+      body: {
+        ...credentials,
+        client: 'web',
+      },
     })
 
     return saveSession({
@@ -164,7 +167,10 @@ export function AuthProvider({ children }) {
 
     const response = await apiRequest('/api/auth/register', {
       method: 'POST',
-      body: payload,
+      body: {
+        ...payload,
+        client: 'web',
+      },
     })
 
     return saveSession({

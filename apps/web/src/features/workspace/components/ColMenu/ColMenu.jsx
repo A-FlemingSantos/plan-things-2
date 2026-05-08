@@ -46,10 +46,13 @@ export default function ColMenu({
           key={color.id}
           className={styles.colMenuColorOpt}
           onClick={() => { onChangeColor(color.value); onClose() }}
-          aria-label={`Definir cor da coluna: ${color.id}`}
-          title={color.id}
+          aria-label={`Definir cor da coluna: ${color.label ?? color.id}`}
+          title={color.label ?? color.id}
         >
-          <span className={styles.colMenuColorDot} style={{ background: color.value }} />
+          <span
+            className={`${styles.colMenuColorDot} ${color.value ? '' : styles.colMenuColorDotNone}`}
+            style={color.value ? { background: color.value } : undefined}
+          />
         </button>
       ))}
 

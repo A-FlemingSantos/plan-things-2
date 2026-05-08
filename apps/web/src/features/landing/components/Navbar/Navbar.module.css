@@ -94,6 +94,27 @@
   flex-shrink: 0;
 }
 
+.menuBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-1);
+}
+
+.menuBtn span {
+  width: 16px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
 .actionLink {
   display: inline-block;
   padding: 7px 16px;
@@ -122,11 +143,98 @@
 
 .ctaBtn:hover { opacity: .82; }
 
+.mobileOverlay {
+  position: fixed;
+  inset: 72px 0 0;
+  background: rgba(0, 0, 0, 0.24);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.mobileOverlayOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobileMenu {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  transform: translateY(-16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.mobileMenuOpen {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobileMenuInner {
+  padding-top: 20px;
+  padding-bottom: 20px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.mobileMenuLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobileMenuLink {
+  display: block;
+  padding: 12px 0;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--text-1);
+  border-bottom: 1px solid var(--border-1);
+}
+
+.mobileMenuActions {
+  display: flex;
+  gap: 10px;
+  padding-top: 18px;
+}
+
+.mobileActionLink,
+.mobileCtaBtn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.mobileActionLink {
+  color: var(--text-1);
+  border: 1px solid var(--border-1);
+}
+
+.mobileCtaBtn {
+  background: var(--text-1);
+  color: var(--text-inverse);
+}
+
 @media (max-width: 1024px) {
   .navLinks { display: none; }
   .divider   { display: none; }
+  .actionLink,
+  .ctaBtn { display: none; }
+  .menuBtn { display: inline-flex; }
 }
 
 @media (max-width: 640px) {
-  .actionLink { display: none; }
+  .mobileMenuActions {
+    flex-direction: column;
+  }
 }

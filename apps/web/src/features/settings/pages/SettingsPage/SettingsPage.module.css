@@ -333,6 +333,11 @@
   align-items: start;
 }
 
+.fieldInlineControl {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+}
+
 .fieldBlock {
   display: flex;
   flex-direction: column;
@@ -365,6 +370,16 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.fieldInlineControl .fieldMeta {
+  padding-top: 0;
+}
+
+.fieldInlineControl .fieldControl {
+  align-items: flex-end;
+  justify-self: end;
+  padding-top: 2px;
 }
 
 .rowActions {
@@ -686,27 +701,153 @@
 }
 
 /* ════════════════════════════════════════
-   DENSITY
+   KANBAN ACCENT
 ════════════════════════════════════════ */
-.densityGroup {
+.colorPreferenceControl {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.colorSwatchList {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.densityBtn {
-  padding: 7px 14px;
+.colorSwatchButton {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.colorSwatchButton:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-2);
+}
+
+.colorSwatchButtonActive {
+  border-color: var(--text-1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-1) 12%, transparent);
+}
+
+.colorSwatchDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.colorSwatchDotFill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  display: block;
+}
+
+.colorSwatchDotDefault {
+  border: 1px solid var(--color-black);
+  background: var(--color-black);
+}
+
+.colorSwatchDotDefaultInner {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: inherit;
+}
+
+[data-theme='dark'] .colorSwatchDotDefault {
+  border-color: color-mix(in srgb, var(--color-white) 82%, var(--border-2));
+  background: var(--color-white);
+}
+
+.colorPaletteTrigger {
+  height: 34px;
+  padding: 0 12px 0 8px;
   font-family: var(--font-family);
   font-size: 13px;
   color: var(--text-2);
-  background: var(--surface-2);
+  background: var(--surface-1);
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
-.densityBtn:hover { border-color: var(--border-2); color: var(--text-1); background: var(--hover); }
-.densityBtnActive { border-color: var(--text-1); background: var(--text-1); color: var(--text-inverse) !important; }
+
+.colorPaletteTrigger:hover {
+  border-color: var(--border-2);
+  color: var(--text-1);
+  background: var(--hover);
+}
+
+.colorPaletteTriggerActive {
+  border-color: var(--text-1);
+  color: var(--text-1);
+}
+
+.colorPaletteTriggerDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--border-2) 85%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.colorPaletteTriggerPlus {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-2);
+}
+
+.colorPalettePopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 3;
+  min-width: 240px;
+  padding: 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-1) 96%, transparent);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(14px);
+}
+
+.colorPaletteTitle {
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+
+.colorPaletteGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.colorPaletteSwatch {
+  width: 32px;
+  height: 32px;
+}
 
 /* ════════════════════════════════════════
    THEME CARDS
@@ -1108,6 +1249,89 @@
   font-weight: var(--font-weight-light);
 }
 
+.securityActionBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.securityHint {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.5;
+  font-weight: var(--font-weight-light);
+}
+
+.sessionsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sessionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sessionCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.sessionCardMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sessionCardTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sessionTitle {
+  font-size: 13px;
+  color: var(--text-1);
+  font-weight: var(--font-weight-regular);
+}
+
+.sessionBadge,
+.sessionCurrentLabel {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border-1);
+  white-space: nowrap;
+}
+
+.sessionBadge {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.sessionCurrentLabel {
+  background: color-mix(in srgb, var(--focus-ring) 10%, var(--surface-1));
+  color: var(--text-1);
+}
+
+.sessionHint {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.45;
+  font-weight: var(--font-weight-light);
+}
+
 /* ════════════════════════════════════════
    DANGER ZONE
 ════════════════════════════════════════ */
@@ -1141,6 +1365,73 @@
 }
 
 /* ════════════════════════════════════════
+   DIALOG
+════════════════════════════════════════ */
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--text-1) 24%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 40;
+}
+
+.dialogCard {
+  width: min(100%, 560px);
+  border-radius: 20px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialogEyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--danger-text);
+  margin-bottom: 6px;
+}
+
+.dialogTitle {
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+
+.dialogText {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.dialogFields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dialogActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ════════════════════════════════════════
    ANIMATIONS
 ════════════════════════════════════════ */
 @keyframes fadeSlide {
@@ -1164,17 +1455,42 @@
 
   .settingsNav {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     height: auto;
-    position: static;
-    padding: 10px 16px;
+    min-height: 0;
+    align-items: center;
+    position: relative;
+    top: auto;
+    z-index: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 16px 12px;
     border-right: none;
     border-bottom: 1px solid var(--border-1);
-    gap: 3px;
+    gap: 8px;
+    background: var(--surface-1);
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .settingsNav::-webkit-scrollbar {
+    display: none;
   }
 
   .settingsNavItem {
     width: auto;
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--border-1);
+    border-radius: 999px;
+    background: var(--surface-1);
+    scroll-snap-align: center;
+  }
+
+  .settingsNavItemActive {
+    border-color: color-mix(in srgb, var(--focus-ring) 32%, var(--border-1));
+    background: color-mix(in srgb, var(--focus-ring) 8%, var(--surface-1));
   }
 
   .settingsNavLabel {
@@ -1182,7 +1498,23 @@
   }
 
   .settingsContent {
-    padding: 20px 20px 40px;
+    padding: 18px 20px 40px;
+  }
+
+  .sessionCard,
+  .dangerItem,
+  .dialogActions,
+  .dialogHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dialogOverlay {
+    padding: 16px;
+  }
+
+  .dialogCard {
+    padding: 20px;
   }
 }
 
@@ -1196,6 +1528,10 @@
   .field {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+  .fieldInlineControl {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
   }
   .fieldMeta { padding-top: 0; }
 

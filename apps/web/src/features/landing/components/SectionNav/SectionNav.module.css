@@ -74,3 +74,9 @@
 }
 
 .cta:hover { opacity: .8; }
+
+@media (max-width: 1024px) {
+  .wrapper {
+    display: none;
+  }
+}

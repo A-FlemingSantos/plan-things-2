@@ -36,7 +36,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     JsonNode board = readJson(mockMvc.perform(get("/api/plans/" + planId + "/board").header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
@@ -152,7 +152,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + ownerToken))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(ownerToken, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + ownerToken)
             .contentType(MediaType.APPLICATION_JSON)
@@ -240,7 +240,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = board.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
@@ -317,7 +317,7 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andReturn()).path("data");
-    String columnId = ownerBoard.path("columns").get(0).path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
     String cardId = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
@@ -536,3 +536,5 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     }
   }
 }
+
+

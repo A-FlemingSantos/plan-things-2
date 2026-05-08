@@ -1,8 +1,7 @@
-import { createEmptyCanvasState } from '../../features/canvas/data/canvasTemplates.js'
 import { getFileTypeFromName } from '../../features/files/data/libraryRepository.js'
 import { normalizeCalendarSnapshot } from './calendarContracts.js'
 import { normalizeLibraryItem } from './fileContracts.js'
-import { normalizeCanvasState, normalizePlanRecord } from './planContracts.js'
+import { normalizePlanRecord } from './planContracts.js'
 
 const MEMBER_COLORS = ['#000000', '#4290da', '#0f703a', '#d4aef1', '#ff6766', '#f5a623']
 const PLAN_COVERS = ['#f4f0ff', '#f0fff5', '#fff9f0', '#fff0f0', '#f0f6ff', '#f5f5f5']
@@ -368,7 +367,6 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     coverImage,
     coverImageThumb,
     boardColumns: [],
-    canvasState: createEmptyCanvasState(),
     role: summary.role,
     memberCount: summary.memberCount,
     createdAt: summary.createdAt,
@@ -376,8 +374,6 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     labelsMeta: [],
     membersMeta: [],
     boardLoaded: false,
-    canvasLoaded: false,
-    canvasVersion: 0,
   })
 }
 
@@ -444,6 +440,7 @@ function mapBoardCard(card, options = {}) {
     columnId: card.columnId,
     title: card.title,
     description: card.description ?? '',
+    isCompleted: Boolean(card.completed),
     labelId: card.label?.id ?? '',
     memberIds: card.assignees.map((member) => member.id),
     dueDate: formatCardDueLabel(card.dueAt, { locale, timeZone }),
@@ -531,25 +528,6 @@ export function mergeBoardIntoPlan(plan, boardView, options = {}) {
   }
 }
 
-export function mapCanvasDocumentToState(canvasDocument) {
-  if (!canvasDocument?.documentJson) {
-    return createEmptyCanvasState()
-  }
-
-  try {
-    return normalizeCanvasState(JSON.parse(canvasDocument.documentJson))
-  } catch {
-    return createEmptyCanvasState()
-  }
-}
-
-export function buildCanvasSavePayload(canvasState, expectedVersion) {
-  return {
-    expectedVersion,
-    documentJson: JSON.stringify(canvasState),
-  }
-}
-
 export function buildBoardCardPayload(card, options = {}) {
   const dateFormat = options.dateFormat ?? 'dd/MM/yyyy'
   const timeZone = normalizeTimeZone(options.timeZone)
@@ -572,6 +550,7 @@ export function buildBoardCardPayload(card, options = {}) {
     description: card.description,
     labelId: card.labelId || null,
     assigneeIds: Array.isArray(card.memberIds) ? card.memberIds : [],
+    completed: Boolean(card.isCompleted),
     startAt,
     dueAt,
   }

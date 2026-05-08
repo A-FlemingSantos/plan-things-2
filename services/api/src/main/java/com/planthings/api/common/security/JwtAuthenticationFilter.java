@@ -1,6 +1,9 @@
 package com.planthings.api.common.security;
 
+import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.auth.UserSessionEntity;
+import com.planthings.api.auth.UserSessionService;
 import com.planthings.api.common.error.UnauthorizedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,10 +21,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtService jwtService;
   private final UserRepository userRepository;
+  private final UserSessionService userSessionService;
 
-  public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
+  public JwtAuthenticationFilter(
+      JwtService jwtService,
+      UserRepository userRepository,
+      UserSessionService userSessionService
+  ) {
     this.jwtService = jwtService;
     this.userRepository = userRepository;
+    this.userSessionService = userSessionService;
   }
 
   @Override
@@ -44,19 +53,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         throw new UnauthorizedException("TOKEN_INVALIDO", "Sua sessao expirou. Faca login novamente.");
       }
 
-      String email = jwtService.extractEmail(token);
+      java.util.UUID userId = jwtService.extractUserId(token);
+      java.util.UUID sessionId = jwtService.extractSessionId(token);
+      if (sessionId == null) {
+        throw new UnauthorizedException("SESSAO_INVALIDA", "Sua sessao nao e mais valida.");
+      }
 
       if (SecurityContextHolder.getContext().getAuthentication() == null) {
-        userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
-          SecurityUser principal = new SecurityUser(user.getId(), user.getEmail(), user.getPasswordHash());
-          UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-              principal,
-              null,
-              principal.getAuthorities()
-          );
-          authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-          SecurityContextHolder.getContext().setAuthentication(authentication);
-        });
+        UserSessionEntity session = userSessionService.requireActiveSession(userId, sessionId);
+        UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new UnauthorizedException("USUARIO_INVALIDO", "Nao foi possivel identificar o usuario autenticado."));
+
+        SecurityUser principal = new SecurityUser(user.getId(), session.getId(), user.getEmail(), user.getPasswordHash());
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+            principal,
+            null,
+            principal.getAuthorities()
+        );
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        userSessionService.touchSession(session);
       }
     } catch (RuntimeException ex) {
       SecurityContextHolder.clearContext();

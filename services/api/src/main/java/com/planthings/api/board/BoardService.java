@@ -118,7 +118,7 @@ public class BoardService {
     BoardColumnEntity column = new BoardColumnEntity();
     column.setPlanId(planId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
-    column.setColor(color == null || color.isBlank() ? "#a0a0a0" : color.trim());
+    column.setColor(normalizeColumnColor(color));
     column.setPositionIndex(boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).size());
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
@@ -130,9 +130,7 @@ public class BoardService {
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardColumnEntity column = requireColumn(planId, columnId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
-    if (color != null && !color.isBlank()) {
-      column.setColor(color.trim());
-    }
+    column.setColor(normalizeColumnColor(color));
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
   }
@@ -175,7 +173,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     requireColumn(planId, columnId);
@@ -191,6 +189,7 @@ public class BoardService {
     card.setDescription(normalizeOptional(description));
     card.setLabelId(labelId);
     card.setPositionIndex(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId).size());
+    card.setCompleted(Boolean.TRUE.equals(completed));
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
@@ -201,7 +200,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
@@ -220,6 +219,9 @@ public class BoardService {
     card.setTitle(requireText(title, "O titulo do cartao e obrigatorio."));
     card.setDescription(normalizeOptional(description));
     card.setLabelId(labelId);
+    if (completed != null) {
+      card.setCompleted(Boolean.TRUE.equals(completed));
+    }
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
@@ -295,6 +297,19 @@ public class BoardService {
     checklist.setPositionIndex(boardChecklistRepository.findByCardIdOrderByPositionIndexAsc(cardId).size());
     boardChecklistRepository.save(checklist);
     return toChecklistView(checklist);
+  }
+
+  @Transactional
+  public MessageResponse deleteChecklist(UUID planId, UUID checklistId) {
+    UUID userId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, userId);
+    BoardChecklistEntity checklist = requireChecklist(planId, checklistId);
+    UUID cardId = checklist.getCardId();
+
+    boardChecklistItemRepository.deleteAll(boardChecklistItemRepository.findByChecklistIdOrderByPositionIndexAsc(checklistId));
+    boardChecklistRepository.delete(checklist);
+    reorder(boardChecklistRepository.findByCardIdOrderByPositionIndexAsc(cardId), BoardChecklistEntity::setPositionIndex);
+    return new MessageResponse("Checklist excluida com sucesso.");
   }
 
   @Transactional
@@ -535,6 +550,7 @@ public class BoardService {
         card.getColumnId(),
         card.getTitle(),
         card.getDescription(),
+        Boolean.TRUE.equals(card.getCompleted()),
         deriveCardKind(card),
         card.getPositionIndex(),
         toUserSummary(author),
@@ -812,6 +828,7 @@ public class BoardService {
       UUID columnId,
       String title,
       String description,
+      boolean completed,
       CardKind kind,
       int position,
       UserSummary author,
@@ -828,6 +845,10 @@ public class BoardService {
   }
 
   public record UserSummary(UUID id, String fullName, String email, String avatarUrl) {
+  }
+
+  private String normalizeColumnColor(String color) {
+    return color == null ? "" : color.trim();
   }
 
   public record LabelView(UUID id, String name, String color) {

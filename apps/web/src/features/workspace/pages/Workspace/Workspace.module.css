@@ -2112,6 +2112,15 @@
     line-height: 1.1;
   }
   .content { padding: 20px 20px 40px; }
+  .sectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .sectionLeft {
+    width: 100%;
+    justify-content: space-between;
+  }
   .grid    { grid-template-columns: 1fr; }
   .currentPlanPanel {
     padding: 16px 18px;
@@ -2122,6 +2131,14 @@
   .currentPlanAction {
     flex: 1;
     justify-content: center;
+  }
+  .viewToggle {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .viewBtn {
+    flex: 1 1 0;
+    height: 32px;
   }
   .notification {
     left: 12px;
@@ -2163,10 +2180,7 @@
   }
   .viewToggle {
     width: 100%;
-    justify-content: center;
-  }
-  .viewBtn {
-    flex: 1;
+    justify-content: stretch;
   }
   .emptyState {
     min-height: 260px;

@@ -72,3 +72,21 @@
   color: var(--text-1);
   background: var(--hover);
 }
+
+@media (max-width: 768px) {
+  .avatar,
+  .addButton,
+  .membersButton {
+    width: 28px;
+    height: 28px;
+  }
+
+  .avatar:not(:first-child) {
+    margin-left: -6px;
+  }
+
+  .addButton,
+  .membersButton {
+    margin-left: 6px;
+  }
+}

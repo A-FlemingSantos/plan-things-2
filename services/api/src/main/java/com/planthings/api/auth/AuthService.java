@@ -38,6 +38,7 @@ public class AuthService {
   private final WorkspaceStorageService workspaceStorageService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final AvatarImageService avatarImageService;
+  private final UserSessionService userSessionService;
   private final Clock clock;
   private final long passwordResetMinutes;
 
@@ -53,6 +54,7 @@ public class AuthService {
       WorkspaceStorageService workspaceStorageService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       AvatarImageService avatarImageService,
+      UserSessionService userSessionService,
       Clock clock,
       @Value("${app.jwt.password-reset-minutes}") long passwordResetMinutes
   ) {
@@ -67,12 +69,13 @@ public class AuthService {
     this.workspaceStorageService = workspaceStorageService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.avatarImageService = avatarImageService;
+    this.userSessionService = userSessionService;
     this.clock = clock;
     this.passwordResetMinutes = passwordResetMinutes;
   }
 
   @Transactional
-  public SessionResponse register(String fullName, String email, String password) {
+  public SessionResponse register(String fullName, String email, String password, String client, String userAgent) {
     String normalizedName = normalizeName(fullName);
     String normalizedEmail = normalizeEmail(email);
     validatePassword(password);
@@ -90,10 +93,11 @@ public class AuthService {
 
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
-    return buildSessionResponse(user, workspace);
+    return buildSessionResponse(user, workspace, client, userAgent);
   }
 
-  public SessionResponse login(String email, String password) {
+  @Transactional
+  public SessionResponse login(String email, String password, String client, String userAgent) {
     String normalizedEmail = normalizeEmail(email);
     UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos uma conta com este e-mail."));
@@ -111,11 +115,11 @@ public class AuthService {
 
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
-    return buildSessionResponse(user, workspace);
+    return buildSessionResponse(user, workspace, client, userAgent);
   }
 
   @Transactional
-  public SessionResponse loginWithExternalIdentity(OAuthIdentity identity) {
+  public UserEntity loginWithExternalIdentity(OAuthIdentity identity) {
     String provider = normalizeProvider(identity.provider());
     String providerSubject = normalizeExternalSubject(identity.providerSubject());
     String normalizedEmail = normalizeEmail(identity.email());
@@ -129,12 +133,13 @@ public class AuthService {
         .orElseGet(() -> loginAndLinkExternalIdentity(provider, providerSubject, identity, normalizedEmail));
   }
 
-  public SessionResponse sessionForUserId(UUID userId) {
+  @Transactional
+  public SessionResponse sessionForUserId(UUID userId, String client, String userAgent) {
     UserEntity user = userRepository.findById(userId)
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos o usuario vinculado a este login."));
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
 
-    return buildSessionResponse(user, workspace);
+    return buildSessionResponse(user, workspace, client, userAgent);
   }
 
   @Transactional
@@ -181,6 +186,7 @@ public class AuthService {
 
     userRepository.save(user);
     passwordResetTokenRepository.save(tokenEntity);
+    userSessionService.revokeAllSessions(user.getId());
 
     return new MessageResponse("Senha redefinida com sucesso.");
   }
@@ -192,8 +198,9 @@ public class AuthService {
     return new CurrentUserResponse(toUserSummary(user), toWorkspaceSummary(workspace));
   }
 
-  private SessionResponse buildSessionResponse(UserEntity user, WorkspaceEntity workspace) {
-    String token = jwtService.generateAccessToken(user.getId(), user.getEmail());
+  private SessionResponse buildSessionResponse(UserEntity user, WorkspaceEntity workspace, String client, String userAgent) {
+    UserSessionEntity session = userSessionService.createSession(user.getId(), client, userAgent);
+    String token = jwtService.generateAccessToken(user.getId(), user.getEmail(), session.getId());
     return new SessionResponse(token, toUserSummary(user), toWorkspaceSummary(workspace));
   }
 
@@ -232,7 +239,7 @@ public class AuthService {
     return normalized;
   }
 
-  private SessionResponse loginExistingExternalIdentity(
+  private UserEntity loginExistingExternalIdentity(
       UserExternalIdentityEntity externalIdentity,
       OAuthIdentity identity,
       String normalizedEmail
@@ -242,12 +249,10 @@ public class AuthService {
 
     updateExternalIdentitySnapshot(externalIdentity, identity, normalizedEmail);
     externalIdentityRepository.save(externalIdentity);
-
-    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
-    return buildSessionResponse(user, workspace);
+    return user;
   }
 
-  private SessionResponse loginAndLinkExternalIdentity(
+  private UserEntity loginAndLinkExternalIdentity(
       String provider,
       String providerSubject,
       OAuthIdentity identity,
@@ -271,9 +276,7 @@ public class AuthService {
     externalIdentity.setProviderSubject(providerSubject);
     updateExternalIdentitySnapshot(externalIdentity, identity, normalizedEmail);
     externalIdentityRepository.save(externalIdentity);
-
-    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
-    return buildSessionResponse(user, workspace);
+    return user;
   }
 
   private UserEntity createExternalUser(OAuthIdentity identity, String normalizedEmail) {
