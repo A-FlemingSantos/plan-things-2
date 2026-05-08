@@ -12,6 +12,7 @@ export function useCanvasInteractions({
   setConnections,
   setPan,
   setZoom,
+  persistCurrentState,
   tools,
   canvasGridClassName,
   cardWidth,
@@ -30,12 +31,33 @@ export function useCanvasInteractions({
   const draggingCard = useRef(null)
   const didMove = useRef(false)
   const cardHeights = useRef({})
+  const interactionSaveTimerRef = useRef(null)
 
   useEffect(() => {
     setSelected(null)
     setConnectFrom(null)
     setSvgMouse(null)
+    if (interactionSaveTimerRef.current) {
+      clearTimeout(interactionSaveTimerRef.current)
+      interactionSaveTimerRef.current = null
+    }
   }, [activePlanId])
+
+  useEffect(() => () => {
+    if (interactionSaveTimerRef.current) {
+      clearTimeout(interactionSaveTimerRef.current)
+    }
+  }, [])
+
+  const queueCanvasPersist = useCallback(() => {
+    if (interactionSaveTimerRef.current) {
+      clearTimeout(interactionSaveTimerRef.current)
+    }
+
+    interactionSaveTimerRef.current = setTimeout(() => {
+      persistCurrentState()
+    }, 180)
+  }, [persistCurrentState])
 
   const switchTool = useCallback((nextTool) => {
     setTool(nextTool)
@@ -106,19 +128,25 @@ export function useCanvasInteractions({
 
       setCards((prev) => prev.map((card) => (
         card.id === cardId ? { ...card, x: startCX + cdx, y: startCY + cdy } : card
-      )))
+      )), { persist: false })
       return
     }
 
     if (isPanning.current) {
-      setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }))
+      setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }), { persist: false })
       lastMouse.current = { x: event.clientX, y: event.clientY }
+      queueCanvasPersist()
     }
-  }, [connectFrom, setCards, setPan, zoom])
+  }, [connectFrom, queueCanvasPersist, setCards, setPan, zoom])
 
   const handlePointerUp = useCallback((event) => {
+    const wasDraggingCard = Boolean(draggingCard.current)
     draggingCard.current = null
     isPanning.current = false
+
+    if (wasDraggingCard && didMove.current) {
+      persistCurrentState()
+    }
 
     if (!didMove.current && tool === 'card') {
       const rect = canvasRef.current.getBoundingClientRect()
@@ -140,7 +168,7 @@ export function useCanvasInteractions({
     }
 
     didMove.current = false
-  }, [cardWidth, pan.x, pan.y, setCards, tool, zoom])
+  }, [cardWidth, pan.x, pan.y, persistCurrentState, setCards, tool, zoom])
 
   const handleCardPointerDown = useCallback((event, cardId) => {
     if (tool !== 'select') return
@@ -219,10 +247,11 @@ export function useCanvasInteractions({
       const my = event.clientY - rect.top
       const cx = (mx - pan.x) / prev
       const cy = (my - pan.y) / prev
-      setPan({ x: mx - cx * next, y: my - cy * next })
+      setPan({ x: mx - cx * next, y: my - cy * next }, { persist: false })
       return next
-    })
-  }, [maxZoom, minZoom, pan.x, pan.y, setPan, setZoom])
+    }, { persist: false })
+    queueCanvasPersist()
+  }, [maxZoom, minZoom, pan.x, pan.y, queueCanvasPersist, setPan, setZoom])
 
   useEffect(() => {
     const canvasElement = canvasRef.current
@@ -249,17 +278,20 @@ export function useCanvasInteractions({
     setPan({
       x: (viewportWidth - (maxX - minX) * nextZoom) / 2 - minX * nextZoom,
       y: (viewportHeight - (maxY - minY) * nextZoom) / 2 - minY * nextZoom,
-    })
-    setZoom(nextZoom)
-  }, [cardWidth, cards, setPan, setZoom])
+    }, { persist: false })
+    setZoom(nextZoom, { persist: false })
+    queueCanvasPersist()
+  }, [cardWidth, cards, queueCanvasPersist, setPan, setZoom])
 
   const handleZoomIn = useCallback(() => {
-    setZoom((prev) => Math.min(maxZoom, +(prev * 1.2).toFixed(2)))
-  }, [maxZoom, setZoom])
+    setZoom((prev) => Math.min(maxZoom, +(prev * 1.2).toFixed(2)), { persist: false })
+    queueCanvasPersist()
+  }, [maxZoom, queueCanvasPersist, setZoom])
 
   const handleZoomOut = useCallback(() => {
-    setZoom((prev) => Math.max(minZoom, +(prev / 1.2).toFixed(2)))
-  }, [minZoom, setZoom])
+    setZoom((prev) => Math.max(minZoom, +(prev / 1.2).toFixed(2)), { persist: false })
+    queueCanvasPersist()
+  }, [minZoom, queueCanvasPersist, setZoom])
 
   const canvasCursor =
     tool === 'pan' ? (isPanning.current ? 'grabbing' : 'grab') :

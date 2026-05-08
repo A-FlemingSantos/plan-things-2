@@ -133,6 +133,7 @@ export default function CanvasPage() {
     setConnections,
     setPan,
     setZoom,
+    persistCurrentState,
   } = useCanvasState({
     activePlanId: activePlan?.id,
     activeCanvasState: activePlan?.canvasState,
@@ -154,13 +155,24 @@ export default function CanvasPage() {
       : `${cards.length} ${cards.length === 1 ? 'cartão' : 'cartões'}${saveMessage ? ` · ${saveMessage}` : ''}`
 
   useEffect(() => {
+    let active = true
+
     setCanvasLoadError(null)
-    if (!activePlan?.id || !isBackendDriven) return
+    if (!activePlan?.id || !isBackendDriven || activePlan.canvasLoaded) {
+      return () => {
+        active = false
+      }
+    }
 
     loadPlanCanvas(activePlan.id).catch((error) => {
+      if (!active) return
       setCanvasLoadError(error?.message ?? 'Não foi possível carregar o canvas deste plano.')
     })
-  }, [activePlan?.id, isBackendDriven, loadPlanCanvas])
+
+    return () => {
+      active = false
+    }
+  }, [activePlan?.canvasLoaded, activePlan?.id, isBackendDriven, loadPlanCanvas])
 
   const retryLoadCanvas = async () => {
     if (!activePlan?.id || !isBackendDriven) return
@@ -201,6 +213,7 @@ export default function CanvasPage() {
     setConnections,
     setPan,
     setZoom,
+    persistCurrentState,
     tools: TOOLS,
     canvasGridClassName: styles.canvasGrid,
     cardWidth: CARD_W,

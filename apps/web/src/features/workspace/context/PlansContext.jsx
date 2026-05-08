@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
@@ -41,6 +41,9 @@ export function PlansProvider({ children }) {
     generalPreferences.timezone,
   ])
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
+  const plansByIdRef = useRef(plansById)
+  const canvasSaveRequestRef = useRef(new Map())
+  plansByIdRef.current = plansById
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
   const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
   const sessionKey = mode === 'backend' ? `${currentUser?.id ?? 'anonymous'}:${accessToken ?? ''}` : mode
@@ -381,7 +384,7 @@ export function PlansProvider({ children }) {
 
   const loadPlanCanvas = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {
-      return getPlanById(planId)?.canvasState ?? null
+      return plansByIdRef.current.get(planId)?.canvasState ?? null
     }
 
     const canvasDocument = await apiRequest(`/api/plans/${planId}/canvas`, {
@@ -401,7 +404,7 @@ export function PlansProvider({ children }) {
     )))
 
     return canvasState
-  }, [accessToken, backendEnabled, getPlanById])
+  }, [accessToken, backendEnabled])
 
   const savePlanCanvas = useCallback(async (planId, canvasState) => {
     if (!backendEnabled || !planId) {
@@ -409,7 +412,9 @@ export function PlansProvider({ children }) {
       return canvasState
     }
 
-    const currentPlan = plansById.get(planId)
+    const currentPlan = plansByIdRef.current.get(planId)
+    const requestId = (canvasSaveRequestRef.current.get(planId) ?? 0) + 1
+    canvasSaveRequestRef.current.set(planId, requestId)
     const canvasDocument = await apiRequest(`/api/plans/${planId}/canvas`, {
       method: 'PUT',
       token: accessToken,
@@ -417,6 +422,11 @@ export function PlansProvider({ children }) {
     })
 
     const nextCanvasState = mapCanvasDocumentToState(canvasDocument)
+
+    if (canvasSaveRequestRef.current.get(planId) !== requestId) {
+      return nextCanvasState
+    }
+
     setPlans((prev) => prev.map((plan) => (
       plan.id === planId
         ? {
@@ -429,7 +439,7 @@ export function PlansProvider({ children }) {
     )))
 
     return nextCanvasState
-  }, [accessToken, backendEnabled, plansById, updatePlanCanvas])
+  }, [accessToken, backendEnabled, updatePlanCanvas])
 
   const value = useMemo(() => ({
     plans,

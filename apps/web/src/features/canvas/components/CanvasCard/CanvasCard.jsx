@@ -24,7 +24,7 @@ export default function CanvasCard({
     if (ref.current) {
       onHeightChange(card.id, ref.current.offsetHeight)
     }
-  })
+  }, [card.content, card.id, card.title, cardWidth, onHeightChange])
 
   useEffect(() => {
     if (!showMenu) return
