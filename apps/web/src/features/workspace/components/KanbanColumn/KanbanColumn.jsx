@@ -37,6 +37,7 @@ export default function KanbanColumn({
   const addInputRef = useRef(null)
   const renameRef = useRef(null)
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
+  const hasColumnColor = Boolean(col.color?.trim())
 
   const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
   const getCardHasDraggedFile = (card) => {
@@ -123,9 +124,11 @@ export default function KanbanColumn({
         onDrop({ type: 'col', colId: col.id })
       }}
     >
-      <div className={styles.colHeader}>
+      <div
+        className={`${styles.colHeader} ${hasColumnColor ? styles.colHeaderColored : ''}`}
+        style={hasColumnColor ? { '--column-header-color': col.color } : undefined}
+      >
         <div className={styles.colHeaderLeft}>
-          <span className={styles.colDot} style={{ background: col.color }} />
           {renaming ? (
             <input
               ref={renameRef}

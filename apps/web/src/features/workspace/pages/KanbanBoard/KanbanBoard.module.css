@@ -1809,6 +1809,14 @@
   border-bottom: 1px solid var(--border-1);
   gap: 8px;
   flex-shrink: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.colHeaderColored {
+  background: var(--column-header-color);
+  border-bottom-color: color-mix(in srgb, black 22%, var(--column-header-color));
+  padding-top: 12px;
+  padding-bottom: 10px;
 }
 
 .colHeaderLeft {
@@ -1817,14 +1825,6 @@
   gap: 8px;
   min-width: 0;
   flex: 1;
-}
-
-.colDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: background var(--transition-fast);
 }
 
 .colTitle {
@@ -1878,6 +1878,26 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 .colActionBtn:hover { background: var(--hover); color: var(--text-1); }
+
+.colHeaderColored .colTitle,
+.colHeaderColored .colRenameInput,
+.colHeaderColored .colCount,
+.colHeaderColored .colActionBtn {
+  color: var(--text-on-accent);
+}
+
+.colHeaderColored .colRenameInput {
+  border-bottom-color: currentColor;
+}
+
+.colHeaderColored .colCount {
+  background: color-mix(in srgb, var(--text-on-accent) 16%, transparent);
+}
+
+.colHeaderColored .colActionBtn:hover {
+  background: color-mix(in srgb, var(--text-on-accent) 16%, transparent);
+  color: var(--text-on-accent);
+}
 
 /* Column menu */
 .colMenuWrap { position: relative; }
@@ -1934,6 +1954,24 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
+}
+
+.colMenuColorDotNone {
+  position: relative;
+  border: 1px solid var(--border-2);
+  background: transparent;
+}
+
+.colMenuColorDotNone::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 2px;
+  width: 10px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: var(--text-3);
+  transform: rotate(-35deg);
 }
 
 .colMenuDivider {

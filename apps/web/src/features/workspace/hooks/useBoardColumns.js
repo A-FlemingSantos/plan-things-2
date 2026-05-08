@@ -33,7 +33,7 @@ export function useBoardColumns({
     if (!isBackendDriven) {
       updateColumns((prev) => [
         ...prev,
-        { id: uid(), title: nextTitle, color: '#a0a0a0', cards: [] },
+        { id: uid(), title: nextTitle, color: '', cards: [] },
       ])
       return true
     }
@@ -44,7 +44,7 @@ export function useBoardColumns({
         token: accessToken,
         body: {
           title: nextTitle,
-          color: '#a0a0a0',
+          color: '',
         },
       })
 
@@ -91,7 +91,7 @@ export function useBoardColumns({
         token: accessToken,
         body: {
           title,
-          color: currentColumn?.color ?? '#a0a0a0',
+          color: currentColumn?.color ?? '',
         },
       })
 

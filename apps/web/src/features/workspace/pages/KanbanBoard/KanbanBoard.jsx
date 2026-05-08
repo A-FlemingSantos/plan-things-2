@@ -96,12 +96,13 @@ const CALENDAR_DAYS = [
 ]
 
 const COL_COLORS = [
-  { id: 'gray',   value: '#a0a0a0' },
-  { id: 'blue',   value: '#4290da' },
-  { id: 'purple', value: '#d4aef1' },
-  { id: 'green',  value: '#0f703a' },
-  { id: 'red',    value: '#ff6766' },
-  { id: 'orange', value: '#f5a623' },
+  { id: 'none',   label: 'Sem cor', value: '' },
+  { id: 'gray',   label: 'Cinza', value: '#a0a0a0' },
+  { id: 'blue',   label: 'Azul', value: '#4290da' },
+  { id: 'purple', label: 'Roxo', value: '#d4aef1' },
+  { id: 'green',  label: 'Verde', value: '#0f703a' },
+  { id: 'red',    label: 'Vermelho', value: '#ff6766' },
+  { id: 'orange', label: 'Laranja', value: '#f5a623' },
 ]
 
 const uid = () => Math.random().toString(36).slice(2, 9)

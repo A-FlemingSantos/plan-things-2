@@ -118,7 +118,7 @@ public class BoardService {
     BoardColumnEntity column = new BoardColumnEntity();
     column.setPlanId(planId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
-    column.setColor(color == null || color.isBlank() ? "#a0a0a0" : color.trim());
+    column.setColor(normalizeColumnColor(color));
     column.setPositionIndex(boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).size());
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
@@ -130,9 +130,7 @@ public class BoardService {
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardColumnEntity column = requireColumn(planId, columnId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
-    if (color != null && !color.isBlank()) {
-      column.setColor(color.trim());
-    }
+    column.setColor(normalizeColumnColor(color));
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
   }
@@ -834,6 +832,10 @@ public class BoardService {
   }
 
   public record UserSummary(UUID id, String fullName, String email, String avatarUrl) {
+  }
+
+  private String normalizeColumnColor(String color) {
+    return color == null ? "" : color.trim();
   }
 
   public record LabelView(UUID id, String name, String color) {
