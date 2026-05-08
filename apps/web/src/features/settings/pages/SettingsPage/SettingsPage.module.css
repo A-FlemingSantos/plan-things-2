@@ -333,6 +333,11 @@
   align-items: start;
 }
 
+.fieldInlineControl {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+}
+
 .fieldBlock {
   display: flex;
   flex-direction: column;
@@ -365,6 +370,16 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.fieldInlineControl .fieldMeta {
+  padding-top: 0;
+}
+
+.fieldInlineControl .fieldControl {
+  align-items: flex-end;
+  justify-self: end;
+  padding-top: 2px;
 }
 
 .rowActions {
@@ -1442,17 +1457,20 @@
     flex-direction: row;
     flex-wrap: nowrap;
     height: auto;
-    position: sticky;
-    top: var(--mobile-app-header-offset);
-    z-index: 4;
+    min-height: 0;
+    align-items: center;
+    position: relative;
+    top: auto;
+    z-index: auto;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 8px 16px;
+    padding: 10px 16px 12px;
     border-right: none;
     border-bottom: 1px solid var(--border-1);
-    gap: 6px;
+    gap: 8px;
     background: var(--surface-1);
     scrollbar-width: none;
+    scroll-snap-type: x proximity;
   }
 
   .settingsNav::-webkit-scrollbar {
@@ -1462,13 +1480,17 @@
   .settingsNavItem {
     width: auto;
     flex: 0 0 auto;
-    padding: 8px 10px;
-    border: 1px solid transparent;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--border-1);
+    border-radius: 999px;
+    background: var(--surface-1);
+    scroll-snap-align: center;
   }
 
   .settingsNavItemActive {
-    border-color: var(--border-1);
-    background: var(--surface-2);
+    border-color: color-mix(in srgb, var(--focus-ring) 32%, var(--border-1));
+    background: color-mix(in srgb, var(--focus-ring) 8%, var(--surface-1));
   }
 
   .settingsNavLabel {
@@ -1506,6 +1528,10 @@
   .field {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+  .fieldInlineControl {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
   }
   .fieldMeta { padding-top: 0; }
 

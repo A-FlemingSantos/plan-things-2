@@ -1301,7 +1301,7 @@
 
   .monthHeader {
     position: sticky;
-    top: var(--mobile-app-header-offset);
+    top: 0;
     z-index: 4;
     flex-wrap: wrap;
     height: auto;

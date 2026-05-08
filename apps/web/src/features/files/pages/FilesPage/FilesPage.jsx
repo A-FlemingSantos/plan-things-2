@@ -1151,54 +1151,59 @@ export default function FilesPage() {
               </div>
             ) : (
               <>
-                {/* Search */}
-                <div className={styles.searchWrap}>
-                  <span className={styles.searchIcon}><Icon.Search /></span>
-                  <input
-                    className={styles.searchInput}
-                    placeholder="Buscar arquivos..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                  {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                <div className={styles.topBarFilterRow}>
+                  {/* Search */}
+                  <div className={styles.searchWrap}>
+                    <span className={styles.searchIcon}><Icon.Search /></span>
+                    <input
+                      className={styles.searchInput}
+                      placeholder="Buscar arquivos..."
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                    />
+                    {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                  </div>
+
+                  {/* Sort */}
+                  <div className={styles.sortWrap}>
+                    <Icon.Sort />
+                    <select
+                      className={styles.sortSelect}
+                      value={sortBy}
+                      onChange={e => setSortBy(e.target.value)}
+                    >
+                      <option value="modified">Modificado</option>
+                      <option value="name">Nome</option>
+                      <option value="size">Tamanho</option>
+                    </select>
+                  </div>
                 </div>
 
-                {/* Sort */}
-                <div className={styles.sortWrap}>
-                  <Icon.Sort />
-                  <select
-                    className={styles.sortSelect}
-                    value={sortBy}
-                    onChange={e => setSortBy(e.target.value)}
-                  >
-                    <option value="modified">Modificado</option>
-                    <option value="name">Nome</option>
-                    <option value="size">Tamanho</option>
-                  </select>
+                <div className={styles.topBarActionRow}>
+                  {/* View toggle */}
+                  <div className={styles.viewToggle}>
+                    <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
+                    <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
+                  </div>
+
+                  {/* New folder */}
+                  <button className={styles.newFolderBtn} onClick={handleNewFolder}>
+                    <Icon.NewFolder />
+                    Nova pasta
+                  </button>
+
+                  {/* Upload */}
+                  <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
+                    <Icon.Upload />
+                    Enviar
+                  </button>
+
+                  <div className={styles.topBarNotification}>
+                    <InviteNotifications />
+                  </div>
                 </div>
-
-                {/* View toggle */}
-                <div className={styles.viewToggle}>
-                  <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
-                  <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
-                </div>
-
-                <div className={styles.topBarDivider} />
-
-                {/* New folder */}
-                <button className={styles.newFolderBtn} onClick={handleNewFolder}>
-                  <Icon.NewFolder />
-                  Nova pasta
-                </button>
-
-                {/* Upload */}
-                <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
-                  <Icon.Upload />
-                  Enviar
-                </button>
               </>
             )}
-            <InviteNotifications />
             <input ref={fileInputRef} type="file" multiple className={styles.hiddenInput} onChange={handleFileInput} />
           </div>
         </header>

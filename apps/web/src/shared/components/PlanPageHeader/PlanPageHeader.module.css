@@ -121,11 +121,11 @@
 
 @media (max-width: 768px) {
   .sticky {
-    top: var(--mobile-app-header-offset);
+    top: 0;
   }
 
   .header {
-    padding: 16px;
+    padding: 14px 16px 12px;
     align-items: flex-start;
   }
 
@@ -133,8 +133,22 @@
     display: none;
   }
 
+  .titleRow {
+    gap: 8px;
+  }
+
+  .titleMedium {
+    font-size: 18px;
+  }
+
+  .meta {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
   .actions {
     width: 100%;
     flex-wrap: wrap;
+    gap: 8px;
   }
 }

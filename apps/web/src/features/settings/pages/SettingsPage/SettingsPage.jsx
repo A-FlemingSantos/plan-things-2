@@ -133,9 +133,14 @@ function Toggle({ checked, onChange, id, disabled = false }) {
   )
 }
 
-function Field({ label, hint, htmlFor, children, row = true }) {
+function Field({ label, hint, htmlFor, children, row = true, inlineControl = false }) {
+  const className = [
+    row ? styles.field : styles.fieldBlock,
+    row && inlineControl ? styles.fieldInlineControl : '',
+  ].filter(Boolean).join(' ')
+
   return (
-    <div className={row ? styles.field : styles.fieldBlock}>
+    <div className={className}>
       <div className={styles.fieldMeta}>
         <label className={styles.fieldLabel} htmlFor={htmlFor}>{label}</label>
         {hint && <p className={styles.fieldHint}>{hint}</p>}
@@ -274,6 +279,7 @@ export default function SettingsPage() {
   const [deleteCurrentPassword, setDeleteCurrentPassword] = useState('')
   const [deleteState, setDeleteState] = useState('idle')
   const [deleteFeedback, setDeleteFeedback] = useState('')
+  const sectionButtonRefs = useRef(new Map())
 
   const workspaceRequestRef = useRef(0)
   const language = generalPreferences.language
@@ -463,6 +469,20 @@ export default function SettingsPage() {
       active = false
     }
   }, [accessToken, backendEnabled, currentUser?.externalIdentityLinked, currentUser?.localPasswordEnabled, location.search])
+
+  useEffect(() => {
+    const activeButton = sectionButtonRefs.current.get(activeSection)
+    if (!activeButton || typeof activeButton.scrollIntoView !== 'function') return
+
+    const schedule = window.requestAnimationFrame ?? ((callback) => window.setTimeout(callback, 0))
+    schedule(() => {
+      activeButton.scrollIntoView({
+        block: 'nearest',
+        inline: 'center',
+        behavior: 'smooth',
+      })
+    })
+  }, [activeSection])
 
   useEffect(() => {
     if (activeSection !== 'workspace') {
@@ -1438,18 +1458,21 @@ export default function SettingsPage() {
         <Field
           label="Confirmar ações destrutivas"
           hint="Solicita confirmação antes de excluir itens importantes."
+          inlineControl
         >
           <Toggle checked={confirmDestructiveActions} onChange={(value) => handleLocalGeneralFieldChange('confirmDestructiveActions', value)} />
         </Field>
         <Field
           label="Abrir no último contexto usado"
           hint="O app lembrará onde você estava ao sair."
+          inlineControl
         >
           <Toggle checked={openLastCtx} onChange={(value) => handleLocalGeneralFieldChange('openLastCtx', value)} />
         </Field>
         <Field
           label="Liquid-glass"
           hint="Preferência salva para o futuro efeito de vidro líquido no KanbanBoard."
+          inlineControl
         >
           <Toggle checked={liquidGlass} onChange={(value) => handleLocalGeneralFieldChange('liquidGlass', value)} />
         </Field>
@@ -1644,6 +1667,7 @@ export default function SettingsPage() {
         <Field
           label="Exibir seção de plano atual"
           hint="Mostra o painel de retomada do plano ativo no Workspace."
+          inlineControl
         >
           <Toggle checked={showCurrentPlanSection} onChange={(value) => handleLocalGeneralFieldChange('showCurrentPlanSection', value)} />
         </Field>
@@ -1788,12 +1812,14 @@ export default function SettingsPage() {
         <Field
           label="Lembretes de eventos"
           hint="Alertas antes de eventos do calendário."
+          inlineControl
         >
           <Toggle checked={eventReminders} onChange={(value) => handleNotificationToggle('eventReminders', value)} />
         </Field>
         <Field
           label="Alertas de prazo de tarefas"
           hint="Notificação quando tarefas se aproximam do vencimento."
+          inlineControl
         >
           <Toggle checked={deadlineAlerts} onChange={(value) => handleNotificationToggle('deadlineAlerts', value)} />
         </Field>
@@ -1803,6 +1829,7 @@ export default function SettingsPage() {
         <Field
           label="Notificações por e-mail"
           hint="Receba atualizações importantes por e-mail."
+          inlineControl
         >
           <Toggle checked={emailNotifs} onChange={(value) => handleNotificationToggle('emailNotifs', value)} />
         </Field>
@@ -1822,12 +1849,14 @@ export default function SettingsPage() {
         <Field
           label="Resumo diário"
           hint="Disponível em breve."
+          inlineControl
         >
           <Toggle checked={dailySummary} onChange={setDailySummary} disabled />
         </Field>
         <Field
           label="Resumo semanal"
           hint="Disponível em breve."
+          inlineControl
         >
           <Toggle checked={weeklySummary} onChange={setWeeklySummary} disabled />
         </Field>
@@ -2021,6 +2050,13 @@ export default function SettingsPage() {
               <button
                 key={id}
                 type="button"
+                ref={(node) => {
+                  if (node) {
+                    sectionButtonRefs.current.set(id, node)
+                  } else {
+                    sectionButtonRefs.current.delete(id)
+                  }
+                }}
                 className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
                 onClick={() => setActiveSection(id)}
                 aria-current={activeSection === id ? 'page' : undefined}

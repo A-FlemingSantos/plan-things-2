@@ -374,6 +374,26 @@
   gap: 10px;
 }
 
+.boardHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.boardHeaderIdentityRow,
+.boardHeaderCommandRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.boardHeaderUtilitySlot {
+  display: flex;
+  align-items: center;
+}
+
 .boardMembers { display: flex; align-items: center; }
 
 .boardMemberAvatar {
@@ -5151,6 +5171,20 @@
     gap: 8px;
     justify-content: flex-start;
   }
+  .boardHeaderActions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .boardHeaderIdentityRow {
+    justify-content: space-between;
+  }
+  .boardHeaderCommandRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
   .boardTitleRow {
     flex-wrap: wrap;
     gap: 8px;
@@ -5165,21 +5199,27 @@
   }
   .boardHeaderBtn,
   .boardHeaderBtnPrimary {
-    height: 32px;
-    padding: 0 11px;
-    font-size: 11px;
+    width: 100%;
+    justify-content: center;
+    height: 36px;
+    padding: 0 12px;
+    font-size: 12px;
   }
   .board  { padding: 14px 14px 92px; gap: 8px; }
   .boardViewToolbar {
     position: fixed;
-    left: 12px;
-    right: 12px;
+    left: 50%;
+    right: auto;
     bottom: 12px;
-    transform: none;
-    width: auto;
-    max-width: none;
-    overflow-x: auto;
-    justify-content: flex-start;
+    transform: translateX(-50%);
+    width: min(332px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    overflow: visible;
+    justify-content: stretch;
     scrollbar-width: none;
     animation: none;
   }
@@ -5187,10 +5227,19 @@
     display: none;
   }
   .boardViewToolbarItem {
-    height: 30px;
-    padding: 0 10px;
-    font-size: 11px;
-    gap: 6px;
+    width: 100%;
+    height: 40px;
+    padding: 0;
+    font-size: 0;
+    gap: 0;
+    justify-content: center;
+  }
+  .boardViewToolbarItem span {
+    display: none;
+  }
+  .boardViewToolbarItem svg {
+    width: 18px;
+    height: 18px;
   }
   .boardViewMenu {
     right: 0;
@@ -5282,11 +5331,12 @@
     gap: 14px;
   }
   .boardHeaderDivider { display: none; }
+  .boardHeaderIdentityRow {
+    gap: 8px;
+  }
   .boardHeaderBtn,
   .boardHeaderBtnPrimary {
-    flex: 1 1 calc(50% - 4px);
-    justify-content: center;
-    height: 30px;
+    height: 34px;
     padding: 0 10px;
     font-size: 11px;
   }
@@ -5297,15 +5347,11 @@
     padding: 12px 12px 88px;
   }
   .boardViewToolbar {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-    overflow: visible;
+    width: min(316px, calc(100vw - 20px));
+    gap: 6px;
   }
   .boardViewToolbarItem {
-    width: 100%;
-    padding: 0 8px;
-    font-size: 10px;
+    height: 38px;
   }
   .column {
     width: calc(100vw - 24px);

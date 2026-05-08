@@ -2005,6 +2005,7 @@ export default function KanbanBoard() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted || isFilesPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen || isFilesOpen ? styles.boardWrapperWithPlanner : ''}`}
         mobileTitle={boardHeaderTitle}
+        mobileTitleMeta={boardHeaderMeta}
       >
         <div className={boardMainClassName} style={boardCoverStyle}>
         <PlanPageHeader
@@ -2232,6 +2233,7 @@ export default function KanbanBoard() {
             className={`${styles.boardViewToolbarItem} ${isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-expanded={isInboxOpen}
             aria-controls="board-inbox-panel"
+            title="Caixa de entrada"
             onClick={openInbox}
           >
             <Icon.Inbox />
@@ -2243,6 +2245,7 @@ export default function KanbanBoard() {
             className={`${styles.boardViewToolbarItem} ${isPlannerOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-expanded={isPlannerOpen}
             aria-controls="board-planner-panel"
+            title="Planejador"
             onClick={openPlanner}
           >
             <Icon.Calendar />
@@ -2253,6 +2256,7 @@ export default function KanbanBoard() {
             type="button"
             className={`${styles.boardViewToolbarItem} ${!isPlannerOpen && !isInboxOpen && !isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-current={!isPlannerOpen && !isInboxOpen && !isFilesOpen ? 'page' : undefined}
+            title="Quadro"
             onClick={closeFloatingPanel}
           >
             <Icon.Board />
@@ -2264,6 +2268,7 @@ export default function KanbanBoard() {
             className={`${styles.boardViewToolbarItem} ${isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
             aria-expanded={isFilesOpen}
             aria-controls="board-files-panel"
+            title="Arquivos"
             onClick={openFiles}
           >
             <Icon.Files />
