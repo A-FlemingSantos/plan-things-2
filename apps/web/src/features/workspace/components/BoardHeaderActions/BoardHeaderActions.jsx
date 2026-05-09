@@ -24,11 +24,31 @@ export default function BoardHeaderActions({
           membersTitle="Membros do plano"
         />
 
-        {notifications ? (
-          <div className={styles.boardHeaderUtilitySlot}>
-            {notifications}
-          </div>
-        ) : null}
+        <div className={styles.boardHeaderUtilityGroup}>
+          {notifications ? (
+            <div className={styles.boardHeaderUtilitySlot}>
+              {notifications}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            className={styles.boardHeaderIconBtn}
+            onClick={onFilter}
+            aria-label="Filtrar"
+          >
+            <icons.Filter />
+          </button>
+
+          <button
+            type="button"
+            className={styles.boardHeaderIconBtn}
+            onClick={onShare}
+            aria-label="Compartilhar"
+          >
+            <icons.Share />
+          </button>
+        </div>
       </div>
 
       <div className={styles.boardHeaderCommandRow}>

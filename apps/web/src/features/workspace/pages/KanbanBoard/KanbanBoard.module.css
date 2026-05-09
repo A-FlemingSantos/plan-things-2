@@ -394,6 +394,12 @@
   align-items: center;
 }
 
+.boardHeaderUtilityGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .boardMembers { display: flex; align-items: center; }
 
 .boardMemberAvatar {
@@ -471,6 +477,21 @@
   transition: opacity var(--transition-fast);
 }
 .boardHeaderBtnPrimary:hover { opacity: .82; }
+
+.boardHeaderIconBtn {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-2);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+.boardHeaderIconBtn:hover { border-color: var(--border-2); color: var(--text-1); background: var(--hover); }
 
 /* ── Members panel (collapsible) ── */
 .planMembersPanel {
@@ -5179,11 +5200,15 @@
   }
   .boardHeaderIdentityRow {
     justify-content: space-between;
+    width: 100%;
+  }
+  .boardHeaderUtilityGroup {
+    margin-left: auto;
+    gap: 8px;
+    flex-shrink: 0;
   }
   .boardHeaderCommandRow {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: none;
   }
   .boardTitleRow {
     flex-wrap: wrap;
@@ -5197,13 +5222,8 @@
     font-size: 10px;
     padding: 2px 7px;
   }
-  .boardHeaderBtn,
-  .boardHeaderBtnPrimary {
-    width: 100%;
-    justify-content: center;
-    height: 36px;
-    padding: 0 12px;
-    font-size: 12px;
+  .boardHeaderIconBtn {
+    display: inline-flex;
   }
   .board  { padding: 14px 14px 92px; gap: 8px; }
   .boardViewToolbar {
@@ -5334,11 +5354,9 @@
   .boardHeaderIdentityRow {
     gap: 8px;
   }
-  .boardHeaderBtn,
-  .boardHeaderBtnPrimary {
+  .boardHeaderIconBtn {
     height: 34px;
-    padding: 0 10px;
-    font-size: 11px;
+    width: 34px;
   }
   .boardTitle {
     font-size: 16px;
