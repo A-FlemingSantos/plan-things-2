@@ -45,6 +45,7 @@ const Ic = {
   Gmail: () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="4" width="14" height="10" rx="1.8" fill="#fff"/><path d="M4 4h10c1.1 0 2 .9 2 2v8H2V6c0-1.1.9-2 2-2z" fill="#fff"/><path d="M3.2 5.05 9 9.28l5.8-4.23A2 2 0 0 1 16 6.88V14h-2.4V8.9L9 12.24 4.4 8.9V14H2V6.88c0-.78.46-1.46 1.2-1.83z" fill="#EA4335"/><path d="M2 6.88V14h2.4V8.9L3.2 5.05A2 2 0 0 0 2 6.88z" fill="#C5221F"/><path d="M13.6 8.9V14H16V6.88c0-.78-.46-1.46-1.2-1.83L13.6 8.9z" fill="#F4B400"/><path d="M4.4 8.9 9 12.24l4.6-3.34 1.2-3.85L9 9.28 3.2 5.05 4.4 8.9z" fill="#FBBC04"/></svg>,
   Outlook:  () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="9" height="9" rx="1" stroke="#0078D4" strokeWidth="1.2"/><path d="M10.5 5.5l4-2v9l-4-2v-5z" stroke="#0078D4" strokeWidth="1.2" strokeLinejoin="round"/><circle cx="5.5" cy="8.5" r="1.5" fill="#0078D4"/></svg>,
   Upload:   () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 11V5M5.5 7.5L8 5l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  Close:    () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4.5 4.5l9 9M13.5 4.5l-9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
 }
 
 function SidebarCollapseIcon() {
@@ -82,6 +83,7 @@ const EMPTY_GMAIL_INTEGRATION = {
 const AVATAR_ACCEPT = 'image/png,image/jpeg,image/webp'
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 const DELETE_CONFIRMATION_PHRASE = 'EXCLUIR MINHA CONTA'
+const MODAL_CLOSE_DURATION_MS = 220
 
 function validateAvatarFile(file) {
   if (!file) return 'Selecione uma imagem.'
@@ -191,7 +193,7 @@ function AutoSaveStatus({ state = 'idle', errorMessage = '', successMessage = ''
    MAIN COMPONENT
 ═══════════════════════════════════════════ */
 
-export default function SettingsPage() {
+export default function SettingsPage({ modal = false }) {
   const { currentUser, workspace, accessToken, isAuthenticated, isDemoSession, patchSession, logout } = useAuth()
   const {
     generalPreferences,
@@ -206,9 +208,12 @@ export default function SettingsPage() {
   const { isMobile } = useResponsiveViewport()
   const location = useLocation()
   const navigate = useNavigate()
+  const modalBackgroundLocation = modal ? location.state?.backgroundLocation ?? null : null
   const backendEnabled = isAuthenticated && !isDemoSession
 
   const [activeSection, setActiveSection] = useState('account')
+  const [exiting, setExiting] = useState(false)
+  const closeTimerRef = useRef(null)
 
   // ── Account state
   const [fullName, setFullName] = useState(currentUser?.fullName ?? '')
@@ -1059,7 +1064,10 @@ export default function SettingsPage() {
     setShowPassForm(true)
     setPasswordFeedback('')
     setPasswordSaveState('idle')
-    navigate(`${location.pathname}?section=account`, { replace: true })
+    navigate(`${location.pathname}?section=account`, {
+      replace: true,
+      state: location.state,
+    })
   }
 
   const loadSecuritySessions = async () => {
@@ -1175,6 +1183,62 @@ export default function SettingsPage() {
     setDeleteFeedback('')
     setDeleteState('idle')
   }
+
+  const closeModal = () => {
+    if (!modal) {
+      return
+    }
+
+    if (exiting) {
+      return
+    }
+
+    if (deleteDialogOpen) {
+      closeDeleteDialog()
+      return
+    }
+
+    setExiting(true)
+    closeTimerRef.current = window.setTimeout(() => {
+      if (modalBackgroundLocation) {
+        navigate(
+          `${modalBackgroundLocation.pathname ?? ''}${modalBackgroundLocation.search ?? ''}${modalBackgroundLocation.hash ?? ''}`,
+          { replace: true },
+        )
+        return
+      }
+
+      navigate(-1)
+    }, MODAL_CLOSE_DURATION_MS)
+  }
+
+  useEffect(() => {
+    if (!modal || typeof document === 'undefined') {
+      return undefined
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        closeModal()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [closeModal, modal])
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current)
+    }
+  }, [])
 
   const handleDeleteAccount = async () => {
     const normalizedEmail = currentUser?.email?.trim() ?? ''
@@ -2023,12 +2087,195 @@ export default function SettingsPage() {
 
     const params = new URLSearchParams(location.search)
     params.set('section', nextSection)
-    navigate(`${location.pathname}?${params.toString()}`, { replace: true })
+    navigate(`${location.pathname}?${params.toString()}`, {
+      replace: true,
+      state: location.state,
+    })
   }
 
   const renderSidebarBottomContent = ({ collapsed }) => (
     <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
+
+  const settingsHeader = modal ? (
+    <PlanPageHeader
+      title="Configurações"
+      breadcrumbCurrent="Configurações"
+      breadcrumbRootLabel="Workspace"
+      tone="solid"
+      titleSize="medium"
+      actions={(
+        <button
+          type="button"
+          className={styles.settingsModalCloseButton}
+          onClick={closeModal}
+          aria-label="Fechar configurações"
+        >
+          <Ic.Close />
+        </button>
+      )}
+    />
+  ) : !isMobile ? (
+    <PlanPageHeader
+      title="Configurações"
+      breadcrumbCurrent="Configurações"
+      breadcrumbRootLabel="Workspace"
+      tone="solid"
+      titleSize="medium"
+    />
+  ) : null
+
+  const settingsLayout = (
+    <div className={`${styles.settingsLayout} ${modal ? styles.settingsLayoutModal : ''}`}>
+      <nav
+        className={`${styles.settingsNav} ${modal ? styles.settingsNavModal : ''}`}
+        aria-label="Seções de configurações"
+      >
+        {SECTIONS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            ref={(node) => {
+              if (node) {
+                sectionButtonRefs.current.set(id, node)
+              } else {
+                sectionButtonRefs.current.delete(id)
+              }
+            }}
+            className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
+            onClick={() => handleSectionChange(id)}
+            aria-current={activeSection === id ? 'page' : undefined}
+          >
+            <span className={styles.settingsNavIcon}><Icon /></span>
+            <span className={styles.settingsNavLabel}>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <main className={`${styles.settingsContent} ${modal ? styles.settingsContentModal : ''}`}>
+        {!isMobile ? (
+          <div className={styles.settingsContentHeader}>
+            <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
+          </div>
+        ) : null}
+        <div className={styles.settingsContentBody}>
+          {renderContent()}
+        </div>
+      </main>
+    </div>
+  )
+
+  if (modal) {
+    return (
+      <AppThemeScope>
+        <div
+          className={`${styles.settingsModalOverlay} ${exiting ? styles.settingsOverlayOut : ''}`}
+          role="presentation"
+          onClick={closeModal}
+        >
+          <div
+            className={`${styles.settingsModalCard} ${exiting ? styles.settingsPanelOut : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Configurações"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.settingsModalBody}>
+              {settingsHeader}
+              {settingsLayout}
+            </div>
+
+            {deleteDialogOpen && (
+              <div className={styles.dialogOverlay} role="presentation" onClick={closeDeleteDialog}>
+                <div
+                  className={styles.dialogCard}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="delete-account-title"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className={styles.dialogHeader}>
+                    <div>
+                      <p className={styles.dialogEyebrow}>Zona de perigo</p>
+                      <h3 id="delete-account-title" className={styles.dialogTitle}>Excluir conta</h3>
+                    </div>
+                    <button type="button" className={styles.btnGhost} onClick={closeDeleteDialog} disabled={deleteState === 'saving'}>
+                      Fechar
+                    </button>
+                  </div>
+                  <p className={styles.dialogText}>
+                    Para confirmar, digite seu e-mail e a frase <strong>{DELETE_CONFIRMATION_PHRASE}</strong>.
+                    {localPasswordEnabled ? ' Sua senha atual tambem sera solicitada.' : ''}
+                  </p>
+                  <div className={styles.dialogFields}>
+                    <div className={styles.fieldBlock}>
+                      <label className={styles.fieldLabel} htmlFor="delete-confirm-email">E-mail da conta</label>
+                      <input
+                        id="delete-confirm-email"
+                        type="email"
+                        className={styles.input}
+                        value={deleteConfirmEmail}
+                        onChange={(event) => setDeleteConfirmEmail(event.target.value)}
+                        placeholder={currentUser?.email ?? 'voce@exemplo.com'}
+                        disabled={deleteState === 'saving'}
+                      />
+                    </div>
+                    <div className={styles.fieldBlock}>
+                      <label className={styles.fieldLabel} htmlFor="delete-confirm-phrase">Frase de confirmação</label>
+                      <input
+                        id="delete-confirm-phrase"
+                        type="text"
+                        className={styles.input}
+                        value={deleteConfirmPhrase}
+                        onChange={(event) => setDeleteConfirmPhrase(event.target.value)}
+                        placeholder={DELETE_CONFIRMATION_PHRASE}
+                        disabled={deleteState === 'saving'}
+                      />
+                    </div>
+                    {localPasswordEnabled && (
+                      <div className={styles.fieldBlock}>
+                        <label className={styles.fieldLabel} htmlFor="delete-current-password">Senha atual</label>
+                        <input
+                          id="delete-current-password"
+                          type="password"
+                          className={styles.input}
+                          value={deleteCurrentPassword}
+                          onChange={(event) => setDeleteCurrentPassword(event.target.value)}
+                          placeholder="Digite sua senha atual"
+                          disabled={deleteState === 'saving'}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {(deleteFeedback || deleteState === 'saving') && (
+                    <AutoSaveStatus state={deleteState} errorMessage={deleteFeedback} successMessage={deleteFeedback} />
+                  )}
+                  <div className={styles.dialogActions}>
+                    <button type="button" className={styles.btnGhost} onClick={closeDeleteDialog} disabled={deleteState === 'saving'}>
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btnDanger}
+                      onClick={handleDeleteAccount}
+                      disabled={
+                        deleteState === 'saving'
+                        || deleteConfirmEmail.trim().length === 0
+                        || !isDeletePhraseValid(deleteConfirmPhrase)
+                        || (localPasswordEnabled && deleteCurrentPassword.trim().length === 0)
+                      }
+                    >
+                      {deleteState === 'saving' ? 'Excluindo...' : 'Excluir conta permanentemente'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </AppThemeScope>
+    )
+  }
 
   return (
     <AppThemeScope>
@@ -2045,52 +2292,8 @@ export default function SettingsPage() {
         contentClassName={styles.settingsWrapper}
         mobileTitle={activeLabel}
       >
-        {!isMobile ? (
-          <PlanPageHeader
-            title="Configurações"
-            breadcrumbCurrent="Configurações"
-            breadcrumbRootLabel="Workspace"
-            tone="solid"
-            titleSize="medium"
-          />
-        ) : null}
-
-        <div className={styles.settingsLayout}>
-          {/* Settings nav */}
-          <nav className={styles.settingsNav} aria-label="Seções de configurações">
-            {SECTIONS.map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                type="button"
-                ref={(node) => {
-                  if (node) {
-                    sectionButtonRefs.current.set(id, node)
-                  } else {
-                    sectionButtonRefs.current.delete(id)
-                  }
-                }}
-                className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
-                onClick={() => handleSectionChange(id)}
-                aria-current={activeSection === id ? 'page' : undefined}
-              >
-                <span className={styles.settingsNavIcon}><Icon /></span>
-                <span className={styles.settingsNavLabel}>{label}</span>
-              </button>
-            ))}
-          </nav>
-
-          {/* Settings content */}
-          <main className={styles.settingsContent}>
-            {!isMobile ? (
-              <div className={styles.settingsContentHeader}>
-                <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
-              </div>
-            ) : null}
-            <div className={styles.settingsContentBody}>
-              {renderContent()}
-            </div>
-          </main>
-        </div>
+        {settingsHeader}
+        {settingsLayout}
 
         {deleteDialogOpen && (
           <div className={styles.dialogOverlay} role="presentation" onClick={closeDeleteDialog}>

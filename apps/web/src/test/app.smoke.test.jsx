@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { normalizePlanRecord } from '../shared/contracts/planContracts.js'
@@ -281,17 +281,31 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
   })
 
-  it('opens the settings page from the shared sidebar account menu', async () => {
+  it('opens the settings panel as an overlay from the shared sidebar account menu', async () => {
     const user = userEvent.setup()
 
     renderApp('/files')
 
+    expect(await screen.findByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+
     await user.click(await screen.findByRole('button', { name: /arthur santos/i }))
     await user.click(await screen.findByRole('menuitem', { name: 'Configurações' }))
 
-    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace' }))
+
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Fechar configurações' }))
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/files')
+      expect(screen.queryByRole('dialog', { name: 'Configurações' })).not.toBeInTheDocument()
+    })
   })
 
   it('keeps save action only in account and uses autosave sections', async () => {
@@ -299,11 +313,12 @@ describe('App smoke flows', () => {
 
     renderApp('/settings')
 
-    expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
+    const settingsDialog = await screen.findByRole('dialog', { name: 'Configurações' })
+    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Salvar alterações' })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /salvar preferências/i })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Notificações' }))
+    await user.click(within(settingsDialog).getByRole('button', { name: 'Notificações' }))
 
     const switches = screen.getAllByRole('switch')
     const disabledSwitches = switches.filter((item) => item.hasAttribute('disabled'))

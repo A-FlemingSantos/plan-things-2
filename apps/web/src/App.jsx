@@ -103,102 +103,121 @@ function AppBootstrapScreen() {
 
 export default function App() {
   const { isReady } = useAuth()
+  const { resolveInitialRoute } = usePreferences()
+  const location = useLocation()
+  const modalBackgroundLocation = normalizePathname(location.pathname) === ROUTES.settings
+    ? (
+        location.state?.backgroundLocation
+        ?? {
+          pathname: resolveInitialRoute(),
+          search: '',
+          hash: '',
+        }
+      )
+    : null
+  const renderedLocation = modalBackgroundLocation ?? location
 
   if (!isReady) {
     return <AppBootstrapScreen />
   }
 
   return (
-    <Routes>
-      <Route
-        path={ROUTES.home}
-        element={(
-          <AppThemeScope preference="system">
-            <LandingPage />
-          </AppThemeScope>
-        )}
-      />
-      <Route
-        path={ROUTES.login}
-        element={(
-          <AppThemeScope preference="system">
-            <Auth initialMode="login" />
-          </AppThemeScope>
-        )}
-      />
-      <Route
-        path={ROUTES.register}
-        element={(
-          <AppThemeScope preference="system">
-            <Auth initialMode="register" />
-          </AppThemeScope>
-        )}
-      />
-      <Route
-        path={ROUTES.oauthCallback}
-        element={(
-          <AppThemeScope preference="system">
-            <OAuthCallback />
-          </AppThemeScope>
-        )}
-      />
-      <Route
-        path={ROUTES.forgot}
-        element={(
-          <AppThemeScope preference="system">
-            <PasswordRecovery mode="forgot" />
-          </AppThemeScope>
-        )}
-      />
-      <Route
-        path={ROUTES.reset}
-        element={(
-          <AppThemeScope preference="system">
-            <PasswordRecovery mode="reset" />
-          </AppThemeScope>
-        )}
-      />
-      <Route
-        path="/plans/invites/:token"
-        element={(
-          <AppThemeScope preference="system">
-            <InviteAccept />
-          </AppThemeScope>
-        )}
-      />
-      <Route path="/app" element={<PreferredAppEntryRedirect />} />
-      <Route path={ROUTES.workspace} element={<Workspace />} />
-      <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
-      <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />
-      <Route path={ROUTES.calendar} element={<CalendarPage />} />
-      <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
-      <Route path={ROUTES.settings} element={<SettingsPage />} />
-
-      {Object.entries(INFO_PAGES).map(([path, page]) => (
+    <>
+      <Routes location={renderedLocation}>
         <Route
-          key={path}
-          path={path}
+          path={ROUTES.home}
           element={(
             <AppThemeScope preference="system">
-              <InfoPage {...page} />
+              <LandingPage />
             </AppThemeScope>
           )}
         />
-      ))}
-
-      {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (
         <Route
-          key={path}
-          path={path}
-          element={<LegacyPlanRedirect buildPath={buildWorkspaceBoardPath} />}
+          path={ROUTES.login}
+          element={(
+            <AppThemeScope preference="system">
+              <Auth initialMode="login" />
+            </AppThemeScope>
+          )}
         />
-      ))}
+        <Route
+          path={ROUTES.register}
+          element={(
+            <AppThemeScope preference="system">
+              <Auth initialMode="register" />
+            </AppThemeScope>
+          )}
+        />
+        <Route
+          path={ROUTES.oauthCallback}
+          element={(
+            <AppThemeScope preference="system">
+              <OAuthCallback />
+            </AppThemeScope>
+          )}
+        />
+        <Route
+          path={ROUTES.forgot}
+          element={(
+            <AppThemeScope preference="system">
+              <PasswordRecovery mode="forgot" />
+            </AppThemeScope>
+          )}
+        />
+        <Route
+          path={ROUTES.reset}
+          element={(
+            <AppThemeScope preference="system">
+              <PasswordRecovery mode="reset" />
+            </AppThemeScope>
+          )}
+        />
+        <Route
+          path="/plans/invites/:token"
+          element={(
+            <AppThemeScope preference="system">
+              <InviteAccept />
+            </AppThemeScope>
+          )}
+        />
+        <Route path="/app" element={<PreferredAppEntryRedirect />} />
+        <Route path={ROUTES.workspace} element={<Workspace />} />
+        <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
+        <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />
+        <Route path={ROUTES.calendar} element={<CalendarPage />} />
+        <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
+        {Object.entries(INFO_PAGES).map(([path, page]) => (
+          <Route
+            key={path}
+            path={path}
+            element={(
+              <AppThemeScope preference="system">
+                <InfoPage {...page} />
+              </AppThemeScope>
+            )}
+          />
+        ))}
 
-      {ROUTE_ALIASES.map(({ from, to }) => (
-        <Route key={from} path={from} element={<Navigate to={to} replace />} />
-      ))}
+        {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (
+          <Route
+            key={path}
+            path={path}
+            element={<LegacyPlanRedirect buildPath={buildWorkspaceBoardPath} />}
+          />
+        ))}
 
-      <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
-    </Routes>
+        {ROUTE_ALIASES.map(({ from, to }) => (
+          <Route key={from} path={from} element={<Navigate to={to} replace />} />
+        ))}
+
+        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+      </Routes>
+
+      {normalizePathname(location.pathname) === ROUTES.settings ? (
+        <Routes>
+          <Route path={ROUTES.settings} element={<SettingsPage modal />} />
+        </Routes>
+      ) : null}
+    </>
   )
 }

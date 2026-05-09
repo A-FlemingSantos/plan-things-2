@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { ROUTES } from '../../config/routes.js'
 import { getWorkspacePlanLabel } from '../../utils/workspaceSubscriptionPlans.js'
@@ -43,6 +43,7 @@ export default function SidebarAccountMenu({
   plan = 'Professional',
   initials = 'AS',
 }) {
+  const location = useLocation()
   const navigate = useNavigate()
   const { currentUser, workspace, isAuthenticated, logout } = useAuth()
   const [open, setOpen] = useState(false)
@@ -84,7 +85,13 @@ export default function SidebarAccountMenu({
       logout()
       navigate(ROUTES.login)
     } else if (id === 'settings') {
-      navigate(ROUTES.settings)
+      if (location.pathname !== ROUTES.settings) {
+        navigate(ROUTES.settings, {
+          state: {
+            backgroundLocation: location,
+          },
+        })
+      }
     }
   }
 
