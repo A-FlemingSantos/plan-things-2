@@ -18,6 +18,7 @@ import {
   KANBAN_ACCENT_BASE_COLOR_OPTIONS,
   KANBAN_ACCENT_EXTRA_COLOR_OPTIONS,
   isKanbanAccentBaseColor,
+  resolveKanbanAccentColor,
 } from '../../../workspace/data/kanbanColorPalette.js'
 import styles from './SettingsPage.module.css'
 
@@ -46,6 +47,7 @@ const Ic = {
   Outlook:  () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="9" height="9" rx="1" stroke="#0078D4" strokeWidth="1.2"/><path d="M10.5 5.5l4-2v9l-4-2v-5z" stroke="#0078D4" strokeWidth="1.2" strokeLinejoin="round"/><circle cx="5.5" cy="8.5" r="1.5" fill="#0078D4"/></svg>,
   Upload:   () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 11V5M5.5 7.5L8 5l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Close:    () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4.5 4.5l9 9M13.5 4.5l-9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  Undefined: () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.75" stroke="currentColor" strokeWidth="1.3"/><path d="M4 10 10 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
 }
 
 function SidebarCollapseIcon() {
@@ -452,10 +454,16 @@ export default function SettingsPage({ modal = false }) {
   const liquidGlass = localPreferences.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass
   const showCurrentPlanSection = localPreferences.showCurrentPlanSection ?? DEFAULT_LOCAL_PREFERENCES.showCurrentPlanSection
   const kanbanAccentColor = localPreferences.kanbanAccentColor ?? DEFAULT_LOCAL_PREFERENCES.kanbanAccentColor
+  const settingsToggleAccentColor = kanbanAccentColor
+    ? resolveKanbanAccentColor(kanbanAccentColor)
+    : 'var(--settings-neutral-accent)'
   const hasCustomKanbanAccentColor = Boolean(kanbanAccentColor) && !isKanbanAccentBaseColor(kanbanAccentColor)
   const emailNotifs = notificationPreferences.emailNotifs
   const eventReminders = notificationPreferences.eventReminders
   const deadlineAlerts = notificationPreferences.deadlineAlerts
+  const settingsThemeStyle = {
+    '--settings-toggle-accent': settingsToggleAccentColor,
+  }
 
   const replaceAccountAvatarPreview = (nextUrl) => {
     if (accountAvatarObjectUrlRef.current && accountAvatarObjectUrlRef.current !== nextUrl) {
@@ -1714,7 +1722,9 @@ export default function SettingsPage({ modal = false }) {
                   >
                     <span className={`${styles.colorSwatchDot} ${isDefaultOption ? styles.colorSwatchDotDefault : ''}`}>
                       {isDefaultOption ? (
-                        <span className={styles.colorSwatchDotDefaultInner} />
+                        <span className={styles.colorSwatchDotDefaultIcon}>
+                          <Ic.Undefined />
+                        </span>
                       ) : (
                         <span className={styles.colorSwatchDotFill} style={{ background: option.value }} />
                       )}
@@ -2363,6 +2373,7 @@ export default function SettingsPage({ modal = false }) {
             role="dialog"
             aria-modal="true"
             aria-label="Configurações"
+            style={settingsThemeStyle}
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.settingsModalBody}>
@@ -2477,8 +2488,10 @@ export default function SettingsPage({ modal = false }) {
         contentClassName={styles.settingsWrapper}
         mobileTitle={activeLabel}
       >
-        {settingsHeader}
-        {settingsLayout}
+        <div style={settingsThemeStyle}>
+          {settingsHeader}
+          {settingsLayout}
+        </div>
 
         {deleteDialogOpen && (
           <div className={styles.dialogOverlay} role="presentation" onClick={closeDeleteDialog}>

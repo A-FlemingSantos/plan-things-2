@@ -197,12 +197,17 @@
    SETTINGS WRAPPER (content area)
 ════════════════════════════════════════ */
 .settingsWrapper {
+  --settings-neutral-accent: var(--color-black);
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow-y: auto;
   background: var(--app-bg);
+}
+
+[data-theme='dark'] .settingsWrapper {
+  --settings-neutral-accent: var(--color-white);
 }
 
 .settingsModalOverlay {
@@ -220,6 +225,7 @@
 }
 
 .settingsModalCard {
+  --settings-neutral-accent: var(--color-black);
   --settings-panel-scrollbar-size: 2px;
   --settings-panel-scrollbar-thumb: #000000;
   --settings-panel-scrollbar-thumb-hover: #000000;
@@ -237,6 +243,7 @@
 }
 
 [data-theme='dark'] .settingsModalCard {
+  --settings-neutral-accent: var(--color-white);
   --settings-panel-scrollbar-thumb: #ffffff;
   --settings-panel-scrollbar-thumb-hover: #ffffff;
 }
@@ -733,7 +740,7 @@
   transition: transform var(--transition-normal);
   box-shadow: var(--shadow-xs);
 }
-.toggleOn { background: var(--focus-ring); }
+.toggleOn { background: var(--settings-toggle-accent, var(--focus-ring)); }
 .toggleOn::after { transform: translateX(18px); }
 .toggleDisabled {
   opacity: 0.55;
@@ -937,20 +944,19 @@
 }
 
 .colorSwatchDotDefault {
-  border: 1px solid var(--color-black);
-  background: var(--color-black);
+  color: var(--text-2);
 }
 
-.colorSwatchDotDefaultInner {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: inherit;
+.colorSwatchDotDefaultIcon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-[data-theme='dark'] .colorSwatchDotDefault {
-  border-color: color-mix(in srgb, var(--color-white) 82%, var(--border-2));
-  background: var(--color-white);
+.colorSwatchButtonActive .colorSwatchDotDefault {
+  color: var(--text-1);
 }
 
 .colorPaletteTrigger {
