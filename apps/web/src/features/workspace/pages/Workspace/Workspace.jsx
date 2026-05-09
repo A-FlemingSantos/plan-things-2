@@ -6,6 +6,7 @@ import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigati
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
+import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -1008,6 +1009,7 @@ function WorkspaceLoadingState({ view }) {
 ═══════════════════════════════════════════ */
 export default function Workspace() {
   const navigate = useNavigate()
+  const { isMobile } = useResponsiveViewport()
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
@@ -1261,34 +1263,50 @@ export default function Workspace() {
           {/* Top bar */}
           <div className={styles.topbar}>
             <div className={styles.topbarLeft}>
-              <h1 className={styles.pageTitle}>Início</h1>
+              <div className={styles.pageTitleRow}>
+                <h1 className={styles.pageTitle}>Início</h1>
+                {isMobile ? (
+                  <button
+                    type="button"
+                    className={styles.newPlanBtn}
+                    onClick={openNewPlan}
+                  >
+                    <PlusIcon />
+                    Novo plano
+                  </button>
+                ) : null}
+              </div>
               <p className={styles.pageSubtitle}>Bom dia, {currentUser?.fullName?.split(' ')[0] ?? 'Arthur'}.</p>
             </div>
             <div className={styles.topbarRight}>
-              <div className={styles.searchWrap}>
-                <span className={styles.searchIcon}><SearchIcon /></span>
-                <input
-                  className={styles.searchInput}
-                  placeholder="Buscar planos..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    className={styles.searchClear}
-                    onClick={() => setSearch('')}
-                    aria-label="Limpar busca de planos"
-                  >
-                    <XIcon />
-                  </button>
-                )}
+              <div className={styles.topbarUtility}>
+                <div className={styles.searchWrap}>
+                  <span className={styles.searchIcon}><SearchIcon /></span>
+                  <input
+                    className={styles.searchInput}
+                    placeholder="Buscar planos..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      className={styles.searchClear}
+                      onClick={() => setSearch('')}
+                      aria-label="Limpar busca de planos"
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+                </div>
+                <InviteNotifications />
               </div>
-              <InviteNotifications />
-              <button className={styles.newPlanBtn} onClick={openNewPlan}>
+              {!isMobile ? (
+                <button type="button" className={styles.newPlanBtn} onClick={openNewPlan}>
                 <PlusIcon />
                 Novo plano
-              </button>
+                </button>
+              ) : null}
             </div>
           </div>
 

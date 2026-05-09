@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
-import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
@@ -482,7 +481,6 @@ function CalendarLoadingState({ styles }) {
 
 export default function CalendarPage() {
   const { generalPreferences, formatIntl, formatClockTime, formatMonthLabel } = usePreferences()
-  const { isMobile } = useResponsiveViewport()
   const locale = generalPreferences.language
   const timeZone = generalPreferences.timezone
   const initialToday = useMemo(() => currentDateInTimeZone(timeZone), [timeZone])
@@ -538,12 +536,6 @@ export default function CalendarPage() {
     if (view === 'week') return buildRangeDays(startOfWeek(selectedDate), 7)
     return []
   }, [selectedDate, view])
-
-  useEffect(() => {
-    if (isMobile && view === 'month') {
-      setView('day')
-    }
-  }, [isMobile, view])
 
   useEffect(() => {
     const nextToday = currentDateInTimeZone(timeZone)

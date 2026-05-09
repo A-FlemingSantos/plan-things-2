@@ -543,6 +543,14 @@
 
 .topbarLeft  { display: flex; flex-direction: column; gap: 4px; }
 
+.pageTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
 .pageTitle {
   font-size: 22px;
   font-weight: var(--font-weight-regular);
@@ -561,6 +569,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.topbarUtility {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* Search */
@@ -2084,16 +2100,26 @@
   .sidebar { display: none; }
   .topbar  {
     padding: 20px 20px 18px;
-    flex-wrap: wrap;
-    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .topbarLeft {
+    width: 100%;
+    gap: 6px;
   }
   .topbarRight {
     width: 100%;
-    flex-wrap: wrap;
-    justify-content: stretch;
+    display: block;
+  }
+  .topbarUtility {
+    width: 100%;
+    display: flex;
   }
   .searchWrap {
-    flex: 1 1 220px;
+    flex: 1 1 0;
+    width: 100%;
     min-width: 0;
   }
   .searchInput {
@@ -2101,8 +2127,8 @@
     min-width: 0;
   }
   .newPlanBtn {
-    flex: 1 1 180px;
-    justify-content: center;
+    flex-shrink: 0;
+    margin-left: auto;
   }
   .viewToggle {
     flex-shrink: 0;
@@ -2113,13 +2139,14 @@
   }
   .content { padding: 20px 20px 40px; }
   .sectionHeader {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
   .sectionLeft {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    min-width: 0;
+    justify-content: flex-start;
   }
   .grid    { grid-template-columns: 1fr; }
   .currentPlanPanel {
@@ -2133,11 +2160,11 @@
     justify-content: center;
   }
   .viewToggle {
-    width: 100%;
-    justify-content: stretch;
+    width: auto;
+    justify-content: flex-start;
   }
   .viewBtn {
-    flex: 1 1 0;
+    width: 32px;
     height: 32px;
   }
   .notification {
@@ -2171,16 +2198,18 @@
     padding: 16px 16px 32px;
     gap: 20px;
   }
-  .topbarRight {
+  .topbarUtility {
     gap: 8px;
   }
-  .searchWrap,
-  .newPlanBtn {
-    flex-basis: 100%;
+  .pageTitleRow {
+    gap: 12px;
+  }
+  .searchWrap {
+    flex-basis: auto;
   }
   .viewToggle {
-    width: 100%;
-    justify-content: stretch;
+    width: auto;
+    justify-content: flex-start;
   }
   .emptyState {
     min-height: 260px;
