@@ -287,7 +287,7 @@
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: var(--z-app-page-sticky);
 }
 
 .topBarLeft { flex: 1; min-width: 0; }
@@ -323,6 +323,13 @@
   animation: toolbarIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.selectionToolbarMobile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(5, 40px);
+  gap: 8px;
+  align-items: center;
+}
+
 @keyframes toolbarIn {
   from { opacity: 0; transform: translateY(-4px) scale(.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -356,6 +363,10 @@
 }
 .selectionAction:hover { background: var(--hover); color: var(--text-1); }
 
+.selectionActionLabel {
+  white-space: nowrap;
+}
+
 .selectionDanger { color: var(--danger-text); }
 .selectionDanger:hover { background: var(--danger-bg); color: var(--danger-text); }
 
@@ -366,6 +377,53 @@
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .selectionClear:hover { background: var(--hover); color: var(--text-1); }
+
+.mobileCommandMenuWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mobileCommandMenuButton {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-1);
+  border-radius: 14px;
+  background: var(--surface-1);
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+.mobileCommandMenuButton:hover { border-color: var(--border-2); color: var(--text-1); background: var(--hover); }
+
+.mobileCommandMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 156px;
+  padding: 6px;
+  border: 1px solid var(--border-1);
+  border-radius: 16px;
+  background: var(--frosted-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-app-page-sheet);
+}
+
+.mobileCommandMenuItem {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.mobileCommandMenuItem:hover { background: var(--hover); color: var(--text-1); }
 
 /* Breadcrumb */
 .breadcrumb {
@@ -568,6 +626,17 @@
   text-transform: uppercase;
   letter-spacing: .08em;
   color: var(--text-3);
+}
+
+.filesAreaCurrentFolder {
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .filesAreaMeta {
@@ -1028,8 +1097,14 @@
   animation: panelIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
   overflow-y: auto;
   scrollbar-width: none;
+  position: relative;
+  z-index: var(--z-app-page-base);
 }
 .detailPanel::-webkit-scrollbar { display: none; }
+
+.detailSheetBackdrop {
+  display: none;
+}
 
 @keyframes panelIn {
   from { opacity: 0; transform: translateX(16px); }
@@ -1598,9 +1673,9 @@
   .sidebar { display: none; }
   .topBar {
     top: 0;
-    z-index: 720;
-    padding: 12px 14px;
-    gap: 10px;
+    z-index: var(--z-app-page-sticky);
+    padding: 12px 16px 10px;
+    gap: 12px;
     flex-wrap: wrap;
     height: auto;
     min-height: 0;
@@ -1613,115 +1688,159 @@
   }
   .topBarRight { width: 100%; }
   .topBarRight {
+    display: block;
+  }
+  .topBarMobileRow {
     display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 108px) auto auto;
+    gap: 8px;
     align-items: stretch;
-    gap: 10px;
-  }
-  .topBarFilterRow {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 148px);
-    gap: 8px;
-  }
-  .topBarActionRow {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
   }
   .searchWrap {
     min-width: 0;
-    height: 38px;
-    border-radius: 14px;
+    height: 40px;
+    border-radius: 16px;
   }
   .searchInput {
     width: 100%;
   }
   .sortWrap {
     min-width: 0;
-    height: 38px;
-    border-radius: 14px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 16px;
+  }
+  .sortSelect {
+    min-width: 0;
+    width: 100%;
   }
   .viewToggle {
-    width: 100%;
     min-width: 0;
-    height: 38px;
+    height: 40px;
     padding: 3px;
-    border-radius: 14px;
+    border-radius: 16px;
   }
   .viewBtn {
-    width: auto;
-    flex: 1 1 0;
-    height: 30px;
+    width: 34px;
+    height: 34px;
   }
   .topBarDivider {
     display: none;
   }
-  .newFolderBtn,
-  .uploadBtn {
+  .topBarNotification {
+    display: none;
+  }
+  .selectionToolbarMobile {
     width: 100%;
-    justify-content: center;
-    height: 38px;
-    padding: 0 10px;
+    padding: 8px;
+    overflow: hidden;
+  }
+  .selectionToolbarMobile .selectionCount {
+    padding: 0 4px;
     font-size: 12px;
+  }
+  .selectionToolbarMobile .selectionAction,
+  .selectionToolbarMobile .selectionClear {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
     border-radius: 14px;
   }
-  .topBarNotification {
-    justify-content: flex-end;
-  }
-  .selectionToolbar {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
-    padding: 8px;
-  }
-  .selectionCount {
-    grid-column: 1 / -1;
-    padding: 0 36px 0 4px;
-    align-self: center;
-  }
-  .selectionAction {
-    width: 100%;
-    justify-content: center;
-  }
-  .selectionClear {
-    position: absolute;
-    top: 8px;
-    right: 8px;
+  .selectionToolbarMobile .selectionClear {
     border-left: none;
-    border-radius: var(--radius-sm);
   }
-  .filesArea { padding: 14px 14px 24px; }
-  .filesAreaHeader { align-items: start; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-  .fileGrid { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; }
+  .selectionToolbarMobile .selectionActionLabel {
+    display: none;
+  }
+  .filesArea {
+    padding: 12px 16px 24px;
+  }
+  .filesAreaHeader {
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .filesAreaMeta {
+    gap: 6px;
+    font-size: 11px;
+  }
+  .fileGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .fileCard {
+    border-radius: 20px;
+  }
+  .fileCardThumb {
+    height: 96px;
+  }
+  .fileCardFooter {
+    padding: 10px 10px 12px;
+    gap: 6px;
+  }
+  .fileCardName {
+    font-size: 12px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .fileCardDate,
+  .fileCardSize {
+    font-size: 10px;
+  }
+  .sharedBadge {
+    font-size: 8px;
+  }
+  .fileList {
+    border-radius: 20px;
+  }
   .detailPanel {
     position: fixed;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    z-index: 710;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: var(--z-app-page-sheet);
     width: auto;
-    max-height: min(78vh, 680px);
+    max-height: min(70vh, 680px);
     border: 1px solid var(--border-1);
-    border-radius: var(--radius-xl);
+    border-left: 1px solid var(--border-1);
+    border-radius: 22px;
     box-shadow: var(--shadow-lg);
     animation: sheetIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  .detailPanelPreview { height: 120px; }
+  .detailSheetBackdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.14);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: calc(var(--z-app-page-sheet) - 1);
+  }
+  .detailPanelHeader {
+    padding: 14px 16px 12px;
+  }
+  .detailPanelPreview { height: 112px; }
+  .detailPanelBody {
+    padding: 16px 16px 22px;
+    gap: 14px;
+  }
   .detailTabs { grid-template-columns: repeat(2, 1fr); }
   .fileList .fileListHeader { display: none; }
   .fileRow {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
     align-items: flex-start;
+    padding: 12px 14px;
   }
   .fileRowMeta {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
   .fileRowActions {
     opacity: 1;
@@ -1752,27 +1871,29 @@
   .topBarRight {
     gap: 8px;
   }
-  .topBarActionRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .topBarMobileRow {
+    grid-template-columns: minmax(0, 1fr) 96px auto auto;
+    gap: 6px;
   }
-  .viewToggle {
-    grid-column: span 2;
-  }
-  .topBarNotification {
-    display: none;
+  .sortWrap {
+    padding: 0 10px;
   }
   .fileGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .fileCardThumb {
+    height: 90px;
   }
   .detailPanel {
     left: 0;
     right: 0;
     bottom: 0;
-    max-height: 82vh;
-    border-radius: 18px 18px 0 0;
+    max-height: 74vh;
+    border-radius: 20px 20px 0 0;
   }
   .detailPanelPreview {
-    height: 104px;
+    height: 100px;
   }
   .uploadToastItem {
     padding: 10px 12px;

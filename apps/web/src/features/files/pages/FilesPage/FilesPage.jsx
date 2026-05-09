@@ -5,6 +5,7 @@ import { buildLibraryTreeFromApi } from '../../../../shared/contracts/backendAda
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
+import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { createClientId } from '../../../../shared/utils/createClientId.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
@@ -223,7 +224,7 @@ function FileCard({
   return (
     <div
       className={`${styles.fileCard} ${selected ? styles.fileCardSelected : ''}`}
-      onClick={e => { e.stopPropagation(); onSelect(item.id) }}
+      onClick={e => { e.stopPropagation(); onSelect(item) }}
       onDoubleClick={() => onOpen(item)}
       onContextMenu={e => { e.preventDefault(); onContextMenu(e, item) }}
     >
@@ -294,7 +295,7 @@ function FileRow({
   return (
     <div
       className={`${styles.fileRow} ${selected ? styles.fileRowSelected : ''}`}
-      onClick={e => { e.stopPropagation(); onSelect(item.id) }}
+      onClick={e => { e.stopPropagation(); onSelect(item) }}
       onDoubleClick={() => onOpen(item)}
       onContextMenu={e => { e.preventDefault(); onContextMenu(e, item) }}
     >
@@ -334,7 +335,7 @@ function FileRow({
 /* ═══════════════════════════════════════════
    DETAIL PANEL
 ═══════════════════════════════════════════ */
-function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled, modifiedLabel }) {
+function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled, modifiedLabel, mobile = false }) {
   const typeInfo = FILE_TYPES[item.type] || FILE_TYPES.generic
   const FileIcon = typeInfo.icon
   const imgGrad = IMG_GRADIENTS[item.name]
@@ -349,11 +350,11 @@ function DetailPanel({ item, onClose, onToggleStar, onAction, backendEnabled, mo
   ]
 
   return (
-    <div className={styles.detailPanel}>
+    <div className={`${styles.detailPanel} ${mobile ? styles.detailPanelMobile : ''}`}>
       <div className={styles.detailPanelHeader}>
         <div>
-          <p className={styles.detailPanelEyebrow}>Inspetor</p>
-          <p className={styles.detailPanelTitle}>Info do arquivo</p>
+          <p className={styles.detailPanelEyebrow}>{mobile ? 'Arquivo selecionado' : 'Inspetor'}</p>
+          <p className={styles.detailPanelTitle}>{mobile ? 'Detalhes do arquivo' : 'Info do arquivo'}</p>
         </div>
         <button className={styles.detailPanelClose} onClick={onClose}><Icon.X /></button>
       </div>
@@ -534,6 +535,7 @@ export default function FilesPage() {
   const { formatDateTime } = usePreferences()
   const backendEnabled = isAuthenticated && !isDemoSession
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const { isMobile } = useResponsiveViewport()
   const [sidebarSection, setSidebarSection]     = useState('my-files') // my-files | recent | starred | shared | trash
   const [view, setView]                         = useState('grid')
   const [search, setSearch]                     = useState('')
@@ -549,9 +551,11 @@ export default function FilesPage() {
   const [uploads, setUploads]                   = useState([])
   const [sortBy, setSortBy]                     = useState('modified') // modified | name | size
   const [notification, setNotification]         = useState(null)
+  const [mobileCommandMenuOpen, setMobileCommandMenuOpen] = useState(false)
   const notificationTimerRef = useRef(null)
   const uploadIntervalsRef = useRef(new Map())
   const fileInputRef = useRef(null)
+  const mobileCommandMenuRef = useRef(null)
 
   const reloadLibrary = useCallback(async (trash = false) => {
     if (!backendEnabled) return
@@ -600,6 +604,29 @@ export default function FilesPage() {
     }
   }, [currentPath, itemById])
 
+  useEffect(() => {
+    if (!mobileCommandMenuOpen) return undefined
+
+    const handlePointerDown = (event) => {
+      if (mobileCommandMenuRef.current && !mobileCommandMenuRef.current.contains(event.target)) {
+        setMobileCommandMenuOpen(false)
+      }
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setMobileCommandMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [mobileCommandMenuOpen])
+
   // Navigate into folder
   const openItem = (item) => {
     if (item.type === 'folder') {
@@ -607,6 +634,7 @@ export default function FilesPage() {
       setCurrentPath([...item.pathIds, item.id])
       setSelected(null)
       setDetailItemId(null)
+      setMobileCommandMenuOpen(false)
     }
   }
 
@@ -618,6 +646,7 @@ export default function FilesPage() {
     }
     setSelected(null)
     setDetailItemId(null)
+    setMobileCommandMenuOpen(false)
   }
 
   // Section filtering
@@ -697,6 +726,7 @@ export default function FilesPage() {
 
   const handleContextAction = useCallback(async (action, item) => {
     setContextMenu(null)
+    setMobileCommandMenuOpen(false)
     if (action === 'star' || action === 'unstar') {
       await toggleStar(item.id)
     } else if (action === 'rename') {
@@ -911,6 +941,8 @@ export default function FilesPage() {
   }
 
   const handleNewFolder = async () => {
+    setMobileCommandMenuOpen(false)
+
     if (backendEnabled) {
       const parentId = sidebarSection === 'my-files' ? currentPath[currentPath.length - 1] : null
 
@@ -961,6 +993,7 @@ export default function FilesPage() {
     if (e.target === e.currentTarget) {
       setSelected(null)
       setDetailItemId(null)
+      setMobileCommandMenuOpen(false)
     }
   }
 
@@ -971,8 +1004,24 @@ export default function FilesPage() {
     'shared':   'Compartilhados',
     'trash':    'Lixeira',
   }[sidebarSection]
+  const mobileCurrentFolder = breadcrumb.length ? breadcrumb[breadcrumb.length - 1]?.name ?? null : null
 
   const selectedItem = selected ? filteredFiles.find((item) => item.id === selected) || detailItem : null
+  const handleSelectItem = useCallback((item) => {
+    const nextSelected = selected === item.id ? null : item.id
+    setSelected(nextSelected)
+    setDetailItemId(!isMobile && nextSelected ? item.id : null)
+    setMobileCommandMenuOpen(false)
+  }, [isMobile, selected])
+
+  const openDetailPanel = useCallback((item) => {
+    if (!item) return
+
+    setSelected(item.id)
+    setDetailItemId(item.id)
+    setMobileCommandMenuOpen(false)
+  }, [])
+
   const emptyState = search
     ? {
         icon: Icon.Search,
@@ -1132,25 +1181,153 @@ export default function FilesPage() {
 
           <div className={styles.topBarRight}>
             {selectedItem ? (
-              <div className={styles.selectionToolbar}>
+              <div className={`${styles.selectionToolbar} ${isMobile ? styles.selectionToolbarMobile : ''}`}>
                 <span className={styles.selectionCount}>1 selecionado</span>
                 {selectedItem.deleted ? (
                   <>
-                    <button className={styles.selectionAction} onClick={() => handleContextAction('restore', selectedItem)}><Icon.Move /> Restaurar</button>
-                    <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('permanent-delete', selectedItem)}><Icon.Trash /> Excluir permanentemente</button>
+                    <button
+                      className={styles.selectionAction}
+                      aria-label="Ver detalhes"
+                      onClick={() => openDetailPanel(selectedItem)}
+                    >
+                      <Icon.Info />
+                      {!isMobile ? <span className={styles.selectionActionLabel}>Detalhes</span> : null}
+                    </button>
+                    <button
+                      className={styles.selectionAction}
+                      aria-label="Restaurar"
+                      onClick={() => handleContextAction('restore', selectedItem)}
+                    >
+                      <Icon.Move />
+                      {!isMobile ? <span className={styles.selectionActionLabel}>Restaurar</span> : null}
+                    </button>
+                    <button
+                      className={`${styles.selectionAction} ${styles.selectionDanger}`}
+                      aria-label="Excluir permanentemente"
+                      onClick={() => handleContextAction('permanent-delete', selectedItem)}
+                    >
+                      <Icon.Trash />
+                      {!isMobile ? <span className={styles.selectionActionLabel}>Excluir permanentemente</span> : null}
+                    </button>
                   </>
                 ) : (
                   <>
-                    <button className={styles.selectionAction} onClick={() => handleContextAction('download', selectedItem)}><Icon.Download /> Baixar</button>
-                    <button className={styles.selectionAction} onClick={() => handleContextAction('share', selectedItem)}><Icon.Share /> Compartilhar</button>
-                    <button className={styles.selectionAction} onClick={() => handleContextAction('move', selectedItem)}><Icon.Move /> Mover</button>
-                    <button className={`${styles.selectionAction} ${styles.selectionDanger}`} onClick={() => handleContextAction('delete', selectedItem)}><Icon.Trash /> Excluir</button>
+                    <button
+                      className={styles.selectionAction}
+                      aria-label="Ver detalhes"
+                      onClick={() => openDetailPanel(selectedItem)}
+                    >
+                      <Icon.Info />
+                      {!isMobile ? <span className={styles.selectionActionLabel}>Detalhes</span> : null}
+                    </button>
+                    <button
+                      className={styles.selectionAction}
+                      aria-label={selectedItem.type === 'folder' ? 'Abrir pasta' : 'Baixar arquivo'}
+                      onClick={() => handleContextAction(selectedItem.type === 'folder' ? 'open' : 'download', selectedItem)}
+                    >
+                      {selectedItem.type === 'folder' ? <Icon.FolderSm /> : <Icon.Download />}
+                      {!isMobile ? (
+                        <span className={styles.selectionActionLabel}>
+                          {selectedItem.type === 'folder' ? 'Abrir' : 'Baixar'}
+                        </span>
+                      ) : null}
+                    </button>
+                    <button
+                      className={styles.selectionAction}
+                      aria-label="Compartilhar"
+                      onClick={() => handleContextAction('share', selectedItem)}
+                    >
+                      <Icon.Share />
+                      {!isMobile ? <span className={styles.selectionActionLabel}>Compartilhar</span> : null}
+                    </button>
+                    <button
+                      className={`${styles.selectionAction} ${styles.selectionDanger}`}
+                      aria-label="Excluir"
+                      onClick={() => handleContextAction('delete', selectedItem)}
+                    >
+                      <Icon.Trash />
+                      {!isMobile ? <span className={styles.selectionActionLabel}>Excluir</span> : null}
+                    </button>
                   </>
                 )}
-                <button className={styles.selectionClear} onClick={() => { setSelected(null); setDetailItemId(null) }}><Icon.X /></button>
+                <button
+                  className={styles.selectionClear}
+                  aria-label="Limpar seleção"
+                  onClick={() => { setSelected(null); setDetailItemId(null) }}
+                >
+                  <Icon.X />
+                </button>
               </div>
             ) : (
-              <>
+              isMobile ? (
+                <div className={styles.topBarMobileRow}>
+                  <div className={styles.searchWrap}>
+                    <span className={styles.searchIcon}><Icon.Search /></span>
+                    <input
+                      className={styles.searchInput}
+                      placeholder="Buscar arquivos..."
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                    />
+                    {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                  </div>
+
+                  <div className={styles.sortWrap}>
+                    <Icon.Sort />
+                    <select
+                      className={styles.sortSelect}
+                      value={sortBy}
+                      onChange={e => setSortBy(e.target.value)}
+                    >
+                      <option value="modified">Modificado</option>
+                      <option value="name">Nome</option>
+                      <option value="size">Tamanho</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.viewToggle}>
+                    <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
+                    <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
+                  </div>
+
+                  <div className={styles.mobileCommandMenuWrap} ref={mobileCommandMenuRef}>
+                    <button
+                      type="button"
+                      className={styles.mobileCommandMenuButton}
+                      aria-label="Mais ações"
+                      aria-expanded={mobileCommandMenuOpen}
+                      onClick={() => setMobileCommandMenuOpen((value) => !value)}
+                    >
+                      <Icon.More />
+                    </button>
+
+                    {mobileCommandMenuOpen ? (
+                      <div className={styles.mobileCommandMenu}>
+                        <button
+                          type="button"
+                          className={styles.mobileCommandMenuItem}
+                          onClick={() => {
+                            setMobileCommandMenuOpen(false)
+                            fileInputRef.current?.click()
+                          }}
+                        >
+                          <Icon.Upload />
+                          Enviar
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.mobileCommandMenuItem}
+                          onClick={handleNewFolder}
+                        >
+                          <Icon.NewFolder />
+                          Nova pasta
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <>
                 <div className={styles.topBarFilterRow}>
                   {/* Search */}
                   <div className={styles.searchWrap}>
@@ -1202,7 +1379,8 @@ export default function FilesPage() {
                     <InviteNotifications />
                   </div>
                 </div>
-              </>
+                </>
+              )
             )}
             <input ref={fileInputRef} type="file" multiple className={styles.hiddenInput} onChange={handleFileInput} />
           </div>
@@ -1229,9 +1407,13 @@ export default function FilesPage() {
           {/* Files area */}
           <div className={styles.filesArea}>
             <div className={styles.filesAreaHeader}>
-              <p className={styles.filesAreaKicker}>
-                {breadcrumb.length ? breadcrumb[breadcrumb.length - 1].name : sectionLabel}
-              </p>
+              {isMobile ? (
+                mobileCurrentFolder ? <p className={styles.filesAreaCurrentFolder}>{mobileCurrentFolder}</p> : <span />
+              ) : (
+                <p className={styles.filesAreaKicker}>
+                  {breadcrumb.length ? breadcrumb[breadcrumb.length - 1].name : sectionLabel}
+                </p>
+              )}
               <div className={styles.filesAreaMeta}>
                 <span>{filesAreaStatus}</span>
                 {hasLoadedLibrary && (
@@ -1277,11 +1459,7 @@ export default function FilesPage() {
                     item={item}
                     modifiedLabel={formatModifiedLabel(item)}
                     selected={selected === item.id}
-                    onSelect={id => {
-                      setSelected(id)
-                      const f = filteredFiles.find(x => x.id === id)
-                      if (f) setDetailItemId(f.id)
-                    }}
+                    onSelect={handleSelectItem}
                     onOpen={openItem}
                     onContextMenu={(e, item) => setContextMenu({ x: e.clientX, y: e.clientY, item })}
                     onToggleStar={toggleStar}
@@ -1306,11 +1484,7 @@ export default function FilesPage() {
                     item={item}
                     modifiedLabel={formatModifiedLabel(item)}
                     selected={selected === item.id}
-                    onSelect={id => {
-                      setSelected(id)
-                      const f = filteredFiles.find(x => x.id === id)
-                      if (f) setDetailItemId(f.id)
-                    }}
+                    onSelect={handleSelectItem}
                     onOpen={openItem}
                     onContextMenu={(e, item) => setContextMenu({ x: e.clientX, y: e.clientY, item })}
                     onToggleStar={toggleStar}
@@ -1324,14 +1498,19 @@ export default function FilesPage() {
           </div>
 
           {/* Detail panel */}
+          {detailItem && isMobile ? (
+            <div className={styles.detailSheetBackdrop} onClick={() => setDetailItemId(null)} aria-hidden="true" />
+          ) : null}
+
           {detailItem && (
             <DetailPanel
               item={detailItem}
               modifiedLabel={formatModifiedLabel(detailItem)}
-              onClose={() => { setDetailItemId(null); setSelected(null) }}
+              onClose={() => setDetailItemId(null)}
               onToggleStar={toggleStar}
               onAction={handleContextAction}
               backendEnabled={backendEnabled}
+              mobile={isMobile}
             />
           )}
         </div>

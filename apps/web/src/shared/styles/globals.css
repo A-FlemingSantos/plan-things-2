@@ -69,6 +69,12 @@
   --mobile-app-header-height: 60px;
   --mobile-app-header-safe-top: env(safe-area-inset-top, 0px);
   --mobile-app-header-offset: calc(var(--mobile-app-header-height) + var(--mobile-app-header-safe-top));
+  --z-app-page-base: 1;
+  --z-app-page-sticky: 8;
+  --z-app-page-sheet: 18;
+  --z-app-shell-header: 30;
+  --z-app-shell-overlay: 40;
+  --z-app-shell-drawer: 50;
 
   /* ============================================================
      SEMANTIC UI TOKENS (themeable via [data-theme])
@@ -320,12 +326,13 @@ ul, ol { list-style: none; }
   min-height: 100dvh;
   background: var(--app-bg);
   overflow-x: hidden;
+  align-content: start;
 }
 
 .productAppShellHeader {
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: var(--z-app-shell-header);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -399,7 +406,7 @@ ul, ol { list-style: none; }
 .productAppShellOverlay {
   position: fixed;
   inset: 0;
-  z-index: 48;
+  z-index: var(--z-app-shell-overlay);
   background: rgba(0, 0, 0, 0.28);
   opacity: 0;
   pointer-events: none;
@@ -414,7 +421,7 @@ ul, ol { list-style: none; }
 .productAppShellDrawer {
   position: fixed;
   inset: 0 auto 0 0;
-  z-index: 49;
+  z-index: var(--z-app-shell-drawer);
   width: min(304px, calc(100vw - 16px));
   transform: translateX(-100%);
   transition: transform var(--transition-normal);

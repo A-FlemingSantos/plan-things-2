@@ -9,6 +9,7 @@ import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClien
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
+import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
 import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
@@ -202,6 +203,7 @@ export default function SettingsPage() {
     updateNotifications,
   } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
+  const { isMobile } = useResponsiveViewport()
   const location = useLocation()
   const navigate = useNavigate()
   const backendEnabled = isAuthenticated && !isDemoSession
@@ -2016,6 +2018,14 @@ export default function SettingsPage() {
 
   const activeLabel = SECTIONS.find(s => s.id === activeSection)?.label ?? 'Configurações'
 
+  const handleSectionChange = (nextSection) => {
+    setActiveSection(nextSection)
+
+    const params = new URLSearchParams(location.search)
+    params.set('section', nextSection)
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true })
+  }
+
   const renderSidebarBottomContent = ({ collapsed }) => (
     <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
@@ -2035,13 +2045,15 @@ export default function SettingsPage() {
         contentClassName={styles.settingsWrapper}
         mobileTitle={activeLabel}
       >
-        <PlanPageHeader
-          title="Configurações"
-          breadcrumbCurrent="Configurações"
-          breadcrumbRootLabel="Workspace"
-          tone="solid"
-          titleSize="medium"
-        />
+        {!isMobile ? (
+          <PlanPageHeader
+            title="Configurações"
+            breadcrumbCurrent="Configurações"
+            breadcrumbRootLabel="Workspace"
+            tone="solid"
+            titleSize="medium"
+          />
+        ) : null}
 
         <div className={styles.settingsLayout}>
           {/* Settings nav */}
@@ -2058,7 +2070,7 @@ export default function SettingsPage() {
                   }
                 }}
                 className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
-                onClick={() => setActiveSection(id)}
+                onClick={() => handleSectionChange(id)}
                 aria-current={activeSection === id ? 'page' : undefined}
               >
                 <span className={styles.settingsNavIcon}><Icon /></span>
@@ -2069,9 +2081,11 @@ export default function SettingsPage() {
 
           {/* Settings content */}
           <main className={styles.settingsContent}>
-            <div className={styles.settingsContentHeader}>
-              <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
-            </div>
+            {!isMobile ? (
+              <div className={styles.settingsContentHeader}>
+                <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
+              </div>
+            ) : null}
             <div className={styles.settingsContentBody}>
               {renderContent()}
             </div>
