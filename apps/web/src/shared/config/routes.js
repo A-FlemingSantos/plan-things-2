@@ -32,6 +32,84 @@ export function normalizePathname(pathname = '') {
   return pathname.replace(/\/+$/, '') || '/'
 }
 
+export function isInternalAppPath(pathname) {
+  const normalized = normalizePathname(pathname ?? '')
+
+  if (!normalized) return false
+
+  if (normalized === '/app') return true
+
+  const internalBases = [
+    ROUTES.workspace,
+    ROUTES.workspaceBoard,
+    ROUTES.calendar,
+    ROUTES.files,
+    ROUTES.settings,
+  ]
+
+  for (const base of internalBases) {
+    if (normalized === base || normalized.startsWith(`${base}/`)) return true
+  }
+
+  for (const { from } of ROUTE_ALIASES) {
+    const aliasPath = normalizePathname(from)
+    if (normalized === aliasPath || normalized.startsWith(`${aliasPath}/`)) return true
+  }
+
+  const legacyPrefixes = [
+    ...LEGACY_PLAN_ROUTE_ALIASES.board,
+  ]
+    .map((pattern) => pattern.replace('/:planId', ''))
+    .map((path) => normalizePathname(path))
+
+  for (const prefix of legacyPrefixes) {
+    if (normalized === prefix || normalized.startsWith(`${prefix}/`)) return true
+  }
+
+  return false
+}
+
+export function sanitizeInternalAppRedirect(value) {
+  if (!value) return null
+
+  const text = String(value).trim()
+  if (!text.startsWith('/') || text.startsWith('//') || text.includes('://')) {
+    return null
+  }
+
+  try {
+    const url = new URL(text, 'https://planthings.local')
+    const pathname = normalizePathname(url.pathname)
+    if (!isInternalAppPath(pathname)) {
+      return null
+    }
+
+    return `${pathname}${url.search}${url.hash}`
+  } catch {
+    return null
+  }
+}
+
+export function toRouteLocation(value) {
+  const sanitized = sanitizeInternalAppRedirect(value)
+  if (!sanitized) return null
+
+  const url = new URL(sanitized, 'https://planthings.local')
+  return {
+    pathname: normalizePathname(url.pathname),
+    search: url.search,
+    hash: url.hash,
+  }
+}
+
+export function toRouteString(location) {
+  if (!location?.pathname) return null
+
+  return sanitizeInternalAppRedirect(
+    `${location.pathname}${location.search ?? ''}${location.hash ?? ''}`,
+  )
+}
+
 export function buildWorkspaceBoardPath(planId) {
   return planId ? `${ROUTES.workspaceBoard}/${planId}` : ROUTES.workspaceBoard
 }

@@ -107,6 +107,23 @@ class GmailIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldPreserveWebBackgroundRouteAcrossGmailCallback() throws Exception {
+    String token = registerAndGetToken("Gmail Owner", "gmail-owner@example.com", "12345678");
+    String state = startGmailAndReturnState(token, "web", "/files?view=shared#recent");
+
+    MvcResult callback = mockMvc.perform(get("/api/settings/integrations/gmail/callback")
+            .queryParam("state", state)
+            .queryParam("code", "gmail-owner"))
+        .andExpect(status().isFound())
+        .andReturn();
+
+    String location = callback.getResponse().getHeader("Location");
+    assertEquals("http://localhost/settings", URI.create(location).getScheme() + "://" + URI.create(location).getHost() + URI.create(location).getPath());
+    assertEquals("connected", queryParam(location, "gmail"));
+    assertEquals("/files?view=shared#recent", queryParam(location, "background"));
+  }
+
+  @Test
   void shouldRejectMissingRefreshToken() throws Exception {
     String token = registerAndGetToken("Gmail Owner", "gmail-owner@example.com", "12345678");
     String state = startGmailAndReturnState(token);
@@ -161,11 +178,19 @@ class GmailIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   private String startGmailAndReturnState(String token, String client) throws Exception {
-    String body = client == null ? "{}" : """
+    return startGmailAndReturnState(token, client, null);
+  }
+
+  private String startGmailAndReturnState(String token, String client, String redirectTo) throws Exception {
+    String body = """
         {
-          "client": "%s"
+          "client": %s,
+          "redirectTo": %s
         }
-        """.formatted(client);
+        """.formatted(
+        client == null ? "null" : "\"" + client + "\"",
+        redirectTo == null ? "null" : "\"" + redirectTo.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+    );
 
     JsonNode start = readJson(mockMvc.perform(post("/api/settings/integrations/gmail/start")
             .header("Authorization", "Bearer " + token)

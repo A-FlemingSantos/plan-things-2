@@ -11,6 +11,7 @@ import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPag
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
+import { toRouteString } from '../../../../shared/config/routes.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
 import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -343,7 +344,7 @@ function usePanelScrollbar(enabled, refreshKey) {
    MAIN COMPONENT
 ═══════════════════════════════════════════ */
 
-export default function SettingsPage({ modal = false }) {
+export default function SettingsPage({ modal = false, backgroundLocation = null }) {
   const { currentUser, workspace, accessToken, isAuthenticated, isDemoSession, patchSession, logout } = useAuth()
   const {
     generalPreferences,
@@ -358,7 +359,7 @@ export default function SettingsPage({ modal = false }) {
   const { isMobile } = useResponsiveViewport()
   const location = useLocation()
   const navigate = useNavigate()
-  const modalBackgroundLocation = modal ? location.state?.backgroundLocation ?? null : null
+  const modalBackgroundLocation = modal ? backgroundLocation : null
   const backendEnabled = isAuthenticated && !isDemoSession
 
   const [activeSection, setActiveSection] = useState('account')
@@ -1180,10 +1181,14 @@ export default function SettingsPage({ modal = false }) {
     setGmailFeedback('Abrindo permissao do Google...')
 
     try {
+      const redirectTo = toRouteString(modalBackgroundLocation)
+      const body = redirectTo
+        ? { client: 'web', redirectTo }
+        : { client: 'web' }
       const response = await apiRequest('/api/settings/integrations/gmail/start', {
         method: 'POST',
         token: accessToken,
-        body: { client: 'web' },
+        body,
       })
 
       window.location.assign(response.authorizationUrl)
@@ -1225,7 +1230,9 @@ export default function SettingsPage({ modal = false }) {
     setShowPassForm(true)
     setPasswordFeedback('')
     setPasswordSaveState('idle')
-    navigate(`${location.pathname}?section=account`, {
+    const params = new URLSearchParams(location.search)
+    params.set('section', 'account')
+    navigate(`${location.pathname}?${params.toString()}`, {
       replace: true,
       state: location.state,
     })

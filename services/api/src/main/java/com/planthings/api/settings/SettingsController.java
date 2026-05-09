@@ -144,7 +144,10 @@ public class SettingsController {
   public ApiEnvelope<GmailIntegrationService.AuthorizationStartResponse> startGmailIntegration(
       @RequestBody(required = false) GmailStartRequest request
   ) {
-    return ApiEnvelope.ok(gmailIntegrationService.startAuthorization(request == null ? null : request.client()));
+    return ApiEnvelope.ok(gmailIntegrationService.startAuthorization(
+        request == null ? null : request.client(),
+        request == null ? null : request.redirectTo()
+    ));
   }
 
   @GetMapping("/integrations/gmail/callback")
@@ -203,6 +206,6 @@ public class SettingsController {
   ) {
   }
 
-  public record GmailStartRequest(String client) {
+  public record GmailStartRequest(String client, String redirectTo) {
   }
 }

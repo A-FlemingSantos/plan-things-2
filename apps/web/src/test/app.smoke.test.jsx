@@ -308,6 +308,23 @@ describe('App smoke flows', () => {
     })
   })
 
+  it('reopens settings over the original page after a Gmail callback redirect', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/settings?section=integrations&gmail=connected&background=%2Ffiles')
+
+    expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+    expect(await screen.findByText('Gmail conectado com sucesso.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Fechar configurações' }))
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/files')
+      expect(screen.queryByRole('dialog', { name: 'Configurações' })).not.toBeInTheDocument()
+    })
+  })
+
   it('keeps save action only in account and uses autosave sections', async () => {
     const user = userEvent.setup()
 

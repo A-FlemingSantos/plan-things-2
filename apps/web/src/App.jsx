@@ -16,48 +16,13 @@ import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.j
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import {
   buildWorkspaceBoardPath,
+  isInternalAppPath,
   LEGACY_PLAN_ROUTE_ALIASES,
   normalizePathname,
   ROUTE_ALIASES,
   ROUTES,
+  toRouteLocation,
 } from './shared/config/routes.js'
-
-function isInternalAppPath(pathname) {
-  const normalized = normalizePathname(pathname ?? '')
-
-  if (!normalized) return false
-
-  if (normalized === '/app') return true
-
-  const internalBases = [
-    ROUTES.workspace,
-    ROUTES.workspaceBoard,
-    ROUTES.calendar,
-    ROUTES.files,
-    ROUTES.settings,
-  ]
-
-  for (const base of internalBases) {
-    if (normalized === base || normalized.startsWith(`${base}/`)) return true
-  }
-
-  for (const { from } of ROUTE_ALIASES) {
-    const aliasPath = normalizePathname(from)
-    if (normalized === aliasPath || normalized.startsWith(`${aliasPath}/`)) return true
-  }
-
-  const legacyPrefixes = [
-    ...LEGACY_PLAN_ROUTE_ALIASES.board,
-  ]
-    .map((pattern) => pattern.replace('/:planId', ''))
-    .map((path) => normalizePathname(path))
-
-  for (const prefix of legacyPrefixes) {
-    if (normalized === prefix || normalized.startsWith(`${prefix}/`)) return true
-  }
-
-  return false
-}
 
 function LegacyPlanRedirect({ buildPath }) {
   const { planId } = useParams()
@@ -105,9 +70,20 @@ export default function App() {
   const { isReady } = useAuth()
   const { resolveInitialRoute } = usePreferences()
   const location = useLocation()
+  const callbackBackgroundLocation = normalizePathname(location.pathname) === ROUTES.settings
+    ? toRouteLocation(new URLSearchParams(location.search).get('background'))
+    : null
+  const stateBackgroundLocation = normalizePathname(location.pathname) === ROUTES.settings
+    ? toRouteLocation(
+        location.state?.backgroundLocation?.pathname
+          ? `${location.state.backgroundLocation.pathname}${location.state.backgroundLocation.search ?? ''}${location.state.backgroundLocation.hash ?? ''}`
+          : null,
+      )
+    : null
   const modalBackgroundLocation = normalizePathname(location.pathname) === ROUTES.settings
     ? (
-        location.state?.backgroundLocation
+        stateBackgroundLocation
+        ?? callbackBackgroundLocation
         ?? {
           pathname: resolveInitialRoute(),
           search: '',
@@ -215,7 +191,7 @@ export default function App() {
 
       {normalizePathname(location.pathname) === ROUTES.settings ? (
         <Routes>
-          <Route path={ROUTES.settings} element={<SettingsPage modal />} />
+          <Route path={ROUTES.settings} element={<SettingsPage modal backgroundLocation={modalBackgroundLocation} />} />
         </Routes>
       ) : null}
     </>

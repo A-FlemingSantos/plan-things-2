@@ -65,7 +65,7 @@ public class GmailIntegrationService {
   }
 
   @Transactional
-  public AuthorizationStartResponse startAuthorization(String client) {
+  public AuthorizationStartResponse startAuthorization(String client, String redirectTo) {
     UserEntity user = authenticatedUserService.requireUser();
     OAuthProperties.Provider providerConfig = requireGoogleProviderConfig();
     String normalizedClient = normalizeClient(client);
@@ -77,6 +77,7 @@ public class GmailIntegrationService {
     stateEntity.setStateToken(state);
     stateEntity.setNonce(nonce);
     stateEntity.setClient(normalizedClient);
+    stateEntity.setRedirectPath(sanitizeRedirectPath(redirectTo));
     stateEntity.setExpiresAt(OffsetDateTime.now(clock).plusMinutes(gmailProperties.getStateMinutes()));
     stateRepository.save(stateEntity);
 
@@ -100,14 +101,16 @@ public class GmailIntegrationService {
   @Transactional
   public URI completeProviderCallback(String state, String code, String error) {
     String callbackClient = "web";
+    String callbackRedirectPath = null;
 
     try {
       GmailOAuthStateEntity stateEntity = consumeState(state);
       callbackClient = stateEntity.getClient();
+      callbackRedirectPath = stateEntity.getRedirectPath();
 
       if (StringUtils.hasText(error)) {
         rememberLastError(stateEntity.getUserId(), "GMAIL_PROVIDER_ERROR");
-        return buildFrontendReturn("error", "GMAIL_PROVIDER_ERROR", callbackClient);
+        return buildFrontendReturn("error", "GMAIL_PROVIDER_ERROR", callbackClient, callbackRedirectPath);
       }
 
       if (!StringUtils.hasText(code)) {
@@ -126,11 +129,11 @@ public class GmailIntegrationService {
 
       validateGmailIdentity(user, tokenResponse);
       saveConnection(user, tokenResponse);
-      return buildFrontendReturn("connected", null, callbackClient);
+      return buildFrontendReturn("connected", null, callbackClient, callbackRedirectPath);
     } catch (ApiException exception) {
-      return buildFrontendReturn("error", exception.getCode(), callbackClient);
+      return buildFrontendReturn("error", exception.getCode(), callbackClient, callbackRedirectPath);
     } catch (RuntimeException exception) {
-      return buildFrontendReturn("error", "GMAIL_TOKEN_EXCHANGE_FALHOU", callbackClient);
+      return buildFrontendReturn("error", "GMAIL_TOKEN_EXCHANGE_FALHOU", callbackClient, callbackRedirectPath);
     }
   }
 
@@ -249,7 +252,7 @@ public class GmailIntegrationService {
     return providerConfig;
   }
 
-  private URI buildFrontendReturn(String gmailStatus, String errorCode, String client) {
+  private URI buildFrontendReturn(String gmailStatus, String errorCode, String client, String redirectPath) {
     URI returnUrl = "mobile".equals(normalizeClient(client))
         ? gmailProperties.getMobileReturnUrl()
         : gmailProperties.getWebReturnUrl();
@@ -257,6 +260,9 @@ public class GmailIntegrationService {
         .queryParam("section", "integrations")
         .queryParam("gmail", gmailStatus);
 
+    if (StringUtils.hasText(redirectPath)) {
+      builder.queryParam("background", redirectPath);
+    }
     if (StringUtils.hasText(errorCode)) {
       builder.queryParam("error", errorCode);
     }
@@ -273,6 +279,37 @@ public class GmailIntegrationService {
   private String normalizeClient(String client) {
     String normalized = client == null ? "" : client.trim().toLowerCase(Locale.ROOT);
     return "mobile".equals(normalized) ? "mobile" : "web";
+  }
+
+  private String sanitizeRedirectPath(String redirectTo) {
+    if (!StringUtils.hasText(redirectTo)) {
+      return null;
+    }
+
+    try {
+      URI uri = URI.create(redirectTo.trim());
+      String path = uri.getPath();
+      if (uri.isAbsolute() || !StringUtils.hasText(path) || !path.startsWith("/") || redirectTo.startsWith("//")) {
+        return null;
+      }
+
+      boolean allowed = oauthProperties.getAllowedRedirectPaths().stream()
+          .anyMatch(prefix -> "/".equals(prefix) ? "/".equals(path) : path.equals(prefix) || path.startsWith(prefix + "/"));
+      if (!allowed) {
+        return null;
+      }
+
+      StringBuilder sanitized = new StringBuilder(path);
+      if (uri.getRawQuery() != null) {
+        sanitized.append('?').append(uri.getRawQuery());
+      }
+      if (uri.getRawFragment() != null) {
+        sanitized.append('#').append(uri.getRawFragment());
+      }
+      return sanitized.toString();
+    } catch (IllegalArgumentException exception) {
+      return null;
+    }
   }
 
   public record AuthorizationStartResponse(String authorizationUrl) {

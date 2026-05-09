@@ -23,6 +23,9 @@ public class GmailOAuthStateEntity extends BaseEntity {
   @Column(nullable = false, length = 20)
   private String client = "web";
 
+  @Column(length = 500)
+  private String redirectPath;
+
   @Column(nullable = false)
   private OffsetDateTime expiresAt;
 
@@ -58,6 +61,14 @@ public class GmailOAuthStateEntity extends BaseEntity {
 
   public void setClient(String client) {
     this.client = client;
+  }
+
+  public String getRedirectPath() {
+    return redirectPath;
+  }
+
+  public void setRedirectPath(String redirectPath) {
+    this.redirectPath = redirectPath;
   }
 
   public OffsetDateTime getExpiresAt() {

@@ -154,6 +154,36 @@ describe('SettingsPage Gmail integration', () => {
     expect(within(gmailCard).getByRole('button', { name: 'Aguarde' })).toBeDisabled()
   })
 
+  it('includes the original background route when starting Gmail from the settings modal', async () => {
+    mockSettingsSnapshot({ connected: false })
+    apiMock.apiRequest.mockImplementation((path, options = {}) => {
+      if (path === '/api/settings/integrations/gmail/start' && options.method === 'POST') {
+        return new Promise(() => {})
+      }
+      return Promise.resolve(settingsSnapshot({ connected: false }))
+    })
+
+    renderModalSettings('/settings?section=integrations', {
+      pathname: '/files',
+      search: '?view=shared',
+      hash: '#recent',
+    })
+
+    const gmailCard = await findIntegrationCard('Gmail')
+    await userEvent.click(within(gmailCard).getByRole('button', { name: 'Conectar' }))
+
+    await waitFor(() => {
+      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/settings/integrations/gmail/start', {
+        method: 'POST',
+        token: 'test-token',
+        body: {
+          client: 'web',
+          redirectTo: '/files?view=shared#recent',
+        },
+      })
+    })
+  })
+
   it('disconnects Gmail and updates the card state', async () => {
     mockSettingsSnapshot({
       connected: true,
@@ -456,6 +486,24 @@ function renderSettings(path) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <SettingsPage />
+    </MemoryRouter>,
+  )
+}
+
+function renderModalSettings(path, backgroundLocation) {
+  return render(
+    <MemoryRouter
+      initialEntries={[
+        {
+          pathname: '/settings',
+          search: path.replace('/settings', ''),
+          state: {
+            backgroundLocation,
+          },
+        },
+      ]}
+    >
+      <SettingsPage modal backgroundLocation={backgroundLocation} />
     </MemoryRouter>,
   )
 }
