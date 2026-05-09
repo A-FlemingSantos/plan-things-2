@@ -13,6 +13,7 @@ import { createInitialPlansSnapshot } from '../data/plansRepository.js'
 
 const PlansContext = createContext(null)
 const INITIAL_PLANS = createInitialPlansSnapshot()
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function setPlanById(plans, planId, updater) {
   return plans.map((plan) => {
@@ -20,6 +21,10 @@ function setPlanById(plans, planId, updater) {
     const nextPlan = typeof updater === 'function' ? updater(plan) : updater
     return normalizePlanRecord(nextPlan)
   })
+}
+
+function isBackendPlanId(planId) {
+  return typeof planId === 'string' && UUID_PATTERN.test(planId)
 }
 
 export function PlansProvider({ children }) {
@@ -278,6 +283,10 @@ export function PlansProvider({ children }) {
       return getPlanById(planId)
     }
 
+    if (!isBackendPlanId(planId)) {
+      return null
+    }
+
     const currentPlan = plansById.get(planId)
     if (!currentPlan) return null
     if (currentPlan.membersMeta?.length || currentPlan.labelsMeta?.length) {
@@ -302,7 +311,7 @@ export function PlansProvider({ children }) {
       return getPlanById(planId)
     }
 
-    if (!planId) {
+    if (!isBackendPlanId(planId)) {
       return null
     }
 
@@ -350,6 +359,10 @@ export function PlansProvider({ children }) {
   const loadPlanBoard = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {
       return getPlanById(planId)?.boardColumns ?? []
+    }
+
+    if (!isBackendPlanId(planId)) {
+      return []
     }
 
     await ensurePlanDetails(planId)

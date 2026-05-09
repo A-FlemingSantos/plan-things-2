@@ -6,7 +6,9 @@ export function useResolvedPlanRoute({ planId, buildPath }) {
   const navigate = useNavigate()
   const { plans, activePlanId, getPlanById, selectPlan } = usePlans()
   const fallbackPlan = plans[0] ?? null
-  const activePlan = getPlanById(planId ?? activePlanId) ?? fallbackPlan
+  const routePlan = planId ? getPlanById(planId) : null
+  const selectedPlan = getPlanById(activePlanId) ?? null
+  const activePlan = routePlan ?? selectedPlan ?? fallbackPlan
 
   useEffect(() => {
     if (!plans.length) return
@@ -16,15 +18,19 @@ export function useResolvedPlanRoute({ planId, buildPath }) {
       return
     }
 
-    if (!activePlan) {
-      navigate(buildPath(fallbackPlan?.id), { replace: true })
+    if (!routePlan) {
+      const replacementPlan = selectedPlan ?? fallbackPlan
+      navigate(buildPath(replacementPlan?.id), { replace: true })
+      if (replacementPlan && activePlanId !== replacementPlan.id) {
+        selectPlan(replacementPlan.id)
+      }
       return
     }
 
-    if (activePlanId !== activePlan.id) {
-      selectPlan(activePlan.id)
+    if (activePlanId !== routePlan.id) {
+      selectPlan(routePlan.id)
     }
-  }, [activePlan, activePlanId, buildPath, fallbackPlan, navigate, planId, plans.length, selectPlan])
+  }, [activePlan, activePlanId, buildPath, fallbackPlan, navigate, planId, plans.length, routePlan, selectPlan, selectedPlan])
 
   const openPlan = useCallback((nextPlanId) => {
     selectPlan(nextPlanId)

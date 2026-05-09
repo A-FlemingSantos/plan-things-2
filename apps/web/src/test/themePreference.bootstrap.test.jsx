@@ -55,7 +55,7 @@ describe('Theme preference bootstrap', () => {
     window.history.pushState({}, '', '/app')
 
     const createUi = () => (
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <PreferencesProvider>
           <App />
         </PreferencesProvider>

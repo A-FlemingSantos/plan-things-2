@@ -9,7 +9,7 @@ export function renderApp(route = '/') {
   window.history.pushState({}, '', route)
 
   return render(
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <PreferencesProvider>
           <PlansProvider>
