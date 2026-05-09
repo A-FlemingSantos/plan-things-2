@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { ROUTES } from '../../config/routes.js'
@@ -6,6 +6,11 @@ import { getWorkspacePlanLabel } from '../../utils/workspaceSubscriptionPlans.js
 import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import SidebarUserCard from '../SidebarUserCard/SidebarUserCard.jsx'
 import menuStyles from './SidebarAccountMenu.module.css'
+
+const COLLAPSED_MENU_WIDTH = 220
+const COLLAPSED_MENU_FALLBACK_HEIGHT = 320
+const COLLAPSED_MENU_GAP = 12
+const COLLAPSED_MENU_MARGIN = 12
 
 function UserIcon() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M2 12c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
@@ -47,7 +52,9 @@ export default function SidebarAccountMenu({
   const navigate = useNavigate()
   const { currentUser, workspace, isAuthenticated, logout } = useAuth()
   const [open, setOpen] = useState(false)
+  const [collapsedMenuPosition, setCollapsedMenuPosition] = useState(null)
   const containerRef = useRef(null)
+  const menuRef = useRef(null)
   const menuIdRef = useRef(`sidebar-account-menu-${Math.random().toString(36).slice(2, 10)}`)
   const resolvedName = currentUser?.fullName ?? name
   const resolvedEmail = currentUser?.email ?? email
@@ -56,6 +63,40 @@ export default function SidebarAccountMenu({
     ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
     : initials
   const resolvedPlanLabel = workspace?.subscriptionPlan ? getWorkspacePlanLabel(workspace.subscriptionPlan) : plan
+
+  const updateCollapsedMenuPosition = useCallback((anchorRectOverride = null) => {
+    if (!collapsed) {
+      setCollapsedMenuPosition(null)
+      return
+    }
+
+    const anchorRect = anchorRectOverride
+      ?? containerRef.current?.querySelector('[data-sidebar-user-button]')?.getBoundingClientRect()
+
+    if (!anchorRect) return
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const menuRect = menuRef.current?.getBoundingClientRect()
+    const menuWidth = menuRect?.width || COLLAPSED_MENU_WIDTH
+    const menuHeight = menuRect?.height || COLLAPSED_MENU_FALLBACK_HEIGHT
+    const nextLeft = Math.min(
+      anchorRect.right + COLLAPSED_MENU_GAP,
+      viewportWidth - menuWidth - COLLAPSED_MENU_MARGIN,
+    )
+    const preferredTop = anchorRect.bottom - menuHeight
+    const maxTop = Math.max(COLLAPSED_MENU_MARGIN, viewportHeight - menuHeight - COLLAPSED_MENU_MARGIN)
+    const nextTop = Math.min(
+      Math.max(preferredTop, COLLAPSED_MENU_MARGIN),
+      maxTop,
+    )
+
+    setCollapsedMenuPosition({
+      left: Math.max(COLLAPSED_MENU_MARGIN, nextLeft),
+      top: nextTop,
+      width: menuWidth,
+    })
+  }, [collapsed])
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -79,8 +120,50 @@ export default function SidebarAccountMenu({
     }
   }, [])
 
+  useEffect(() => {
+    if (!open || !collapsed) return
+
+    updateCollapsedMenuPosition()
+
+    const handleViewportChange = () => updateCollapsedMenuPosition()
+
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('scroll', handleViewportChange, true)
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('scroll', handleViewportChange, true)
+    }
+  }, [collapsed, open, updateCollapsedMenuPosition])
+
+  const handleToggle = (event) => {
+    setOpen((currentOpen) => {
+      const nextOpen = !currentOpen
+
+      if (nextOpen && collapsed) {
+        updateCollapsedMenuPosition(event.currentTarget.getBoundingClientRect())
+      }
+
+      if (!nextOpen) {
+        setCollapsedMenuPosition(null)
+      }
+
+      return nextOpen
+    })
+  }
+
+  const collapsedMenuStyle = collapsed && collapsedMenuPosition
+    ? {
+        position: 'fixed',
+        left: `${collapsedMenuPosition.left}px`,
+        top: `${collapsedMenuPosition.top}px`,
+        width: `${collapsedMenuPosition.width}px`,
+      }
+    : undefined
+
   const handleItemClick = (id) => {
     setOpen(false)
+    setCollapsedMenuPosition(null)
     if (id === 'logout' && isAuthenticated) {
       logout()
       navigate(ROUTES.login)
@@ -105,19 +188,22 @@ export default function SidebarAccountMenu({
         initials={resolvedInitials}
         avatarUrl={resolvedAvatarUrl}
         active={open}
-        onClick={() => setOpen((value) => !value)}
+        onClick={handleToggle}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuIdRef.current}
       >
         {open && (
           <div
+            ref={menuRef}
             id={menuIdRef.current}
             className={[
               menuStyles.menu,
               collapsed ? menuStyles.menuCollapsed : '',
+              collapsed ? menuStyles.menuDetached : '',
             ].filter(Boolean).join(' ')}
             role="menu"
+            style={collapsedMenuStyle}
           >
             <div className={menuStyles.header}>
               <AuthenticatedAvatar

@@ -18,10 +18,14 @@
 }
 
 .menuCollapsed {
-  left: 56px;
-  right: auto;
   width: 220px;
-  bottom: 10px;
+}
+
+.menuDetached {
+  left: auto;
+  right: auto;
+  bottom: auto;
+  transform-origin: left bottom;
 }
 
 @keyframes menuEnter {
