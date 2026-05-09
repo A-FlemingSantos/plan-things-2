@@ -98,6 +98,11 @@ public class AuthController {
     return ApiEnvelope.ok(oauthLoginService.exchangeCompletionCode(request.code(), httpRequest.getHeader("User-Agent")));
   }
 
+  @PostMapping("/auth/refresh")
+  public ApiEnvelope<AuthService.SessionResponse> refresh() {
+    return ApiEnvelope.ok(authService.refreshSession());
+  }
+
   @GetMapping("/me")
   public ApiEnvelope<AuthService.CurrentUserResponse> me() {
     return ApiEnvelope.ok(authService.me());

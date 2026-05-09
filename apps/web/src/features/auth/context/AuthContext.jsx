@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { apiRequest } from '../../../shared/api/apiClient.js'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 
 const SESSION_STORAGE_KEY = 'plan-things.session'
+const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
+const TOKEN_REFRESH_RETRY_MS = 30 * 1000
+const MIN_TOKEN_REFRESH_DELAY_MS = 5 * 1000
 const AuthContext = createContext(null)
 
 function isTestEnvironment() {
@@ -71,9 +74,39 @@ function persistSession(session) {
   window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
 }
 
+function decodeBase64Url(value) {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+  const padSize = normalized.length % 4
+  const padded = padSize === 0 ? normalized : normalized.padEnd(normalized.length + (4 - padSize), '=')
+  return window.atob(padded)
+}
+
+function readAccessTokenExpiresAt(accessToken) {
+  if (!accessToken) return null
+
+  try {
+    const [, payload] = accessToken.split('.')
+    if (!payload) return null
+
+    const parsed = JSON.parse(decodeBase64Url(payload))
+    return typeof parsed.exp === 'number' ? parsed.exp * 1000 : null
+  } catch {
+    return null
+  }
+}
+
+function isAuthFailure(error) {
+  return error instanceof ApiClientError && (error.status === 401 || error.status === 403)
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => readStoredSession())
   const [isReady, setIsReady] = useState(false)
+  const saveSession = useCallback((nextSession) => {
+    setSession(nextSession)
+    persistSession(nextSession)
+    return nextSession
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -90,25 +123,20 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const currentUser = await apiRequest('/api/me', {
+        const refreshedSession = await apiRequest('/api/auth/refresh', {
+          method: 'POST',
           token: storedSession.accessToken,
         })
 
         if (!active) return
 
-        const nextSession = {
-          ...storedSession,
-          user: currentUser.user,
-          workspace: currentUser.workspace,
+        saveSession({
+          ...refreshedSession,
           demo: false,
-        }
-
-        setSession(nextSession)
-        persistSession(nextSession)
+        })
       } catch {
         if (!active) return
-        setSession(null)
-        persistSession(null)
+        saveSession(null)
       } finally {
         if (active) {
           setIsReady(true)
@@ -121,13 +149,72 @@ export function AuthProvider({ children }) {
     return () => {
       active = false
     }
-  }, [])
+  }, [saveSession])
 
-  const saveSession = (nextSession) => {
-    setSession(nextSession)
-    persistSession(nextSession)
-    return nextSession
-  }
+  useEffect(() => {
+    if (!session?.accessToken || session.demo) {
+      return undefined
+    }
+
+    const accessToken = session.accessToken
+    let active = true
+    let timeoutId = null
+
+    const clearRefreshTimer = () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+
+    const scheduleRefresh = (delayMs) => {
+      clearRefreshTimer()
+      if (!active) return
+      timeoutId = window.setTimeout(refreshSession, Math.max(MIN_TOKEN_REFRESH_DELAY_MS, delayMs))
+    }
+
+    async function refreshSession() {
+      try {
+        const refreshedSession = await apiRequest('/api/auth/refresh', {
+          method: 'POST',
+          token: accessToken,
+        })
+
+        if (!active) return
+
+        saveSession({
+          ...refreshedSession,
+          demo: false,
+        })
+      } catch (error) {
+        if (!active) return
+
+        if (isAuthFailure(error)) {
+          saveSession(null)
+          return
+        }
+
+        const expiresAt = readAccessTokenExpiresAt(accessToken)
+        if (expiresAt !== null && expiresAt <= Date.now()) {
+          saveSession(null)
+          return
+        }
+
+        scheduleRefresh(TOKEN_REFRESH_RETRY_MS)
+      }
+    }
+
+    const expiresAt = readAccessTokenExpiresAt(accessToken)
+    if (expiresAt === null) {
+      scheduleRefresh(TOKEN_REFRESH_RETRY_MS)
+    } else {
+      scheduleRefresh(expiresAt - Date.now() - TOKEN_REFRESH_BUFFER_MS)
+    }
+
+    return () => {
+      active = false
+      clearRefreshTimer()
+    }
+  }, [saveSession, session?.accessToken, session?.demo])
 
   const patchSession = ({ user, workspace } = {}) => {
     if (!session) return null

@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -86,5 +88,41 @@ class AuthApiIntegrationTest extends ApiIntegrationTestSupport {
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.accessToken").isNotEmpty());
+  }
+
+  @Test
+  void shouldRefreshCurrentSessionWithoutCreatingAnotherSessionRecord() throws Exception {
+    JsonNode register = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Arthur Santos",
+                  "email": "arthur-refresh@example.com",
+                  "password": "12345678",
+                  "client": "web"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn());
+
+    String originalToken = register.path("data").path("accessToken").asText();
+
+    JsonNode refresh = readJson(mockMvc.perform(post("/api/auth/refresh")
+            .header("Authorization", "Bearer " + originalToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.user.email").value("arthur-refresh@example.com"))
+        .andReturn());
+
+    String refreshedToken = refresh.path("data").path("accessToken").asText();
+
+    JsonNode sessions = readJson(mockMvc.perform(get("/api/settings/security/sessions")
+            .header("Authorization", "Bearer " + refreshedToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.length()").value(1))
+        .andReturn());
+
+    assertEquals(1, sessions.path("data").size());
+    assertEquals("web", sessions.path("data").get(0).path("client").asText());
+    assertEquals(true, sessions.path("data").get(0).path("current").asBoolean());
   }
 }

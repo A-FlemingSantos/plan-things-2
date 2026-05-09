@@ -142,6 +142,15 @@ public class AuthService {
     return buildSessionResponse(user, workspace, client, userAgent);
   }
 
+  public SessionResponse refreshSession() {
+    UserEntity user = authenticatedUserService.requireUser();
+    UUID sessionId = authenticatedUserService.requireSessionId();
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
+
+    userSessionService.requireActiveSession(user.getId(), sessionId);
+    return buildSessionResponse(user, workspace, sessionId);
+  }
+
   @Transactional
   public ForgotPasswordResponse forgotPassword(String email) {
     String normalizedEmail = normalizeEmail(email);
@@ -200,7 +209,11 @@ public class AuthService {
 
   private SessionResponse buildSessionResponse(UserEntity user, WorkspaceEntity workspace, String client, String userAgent) {
     UserSessionEntity session = userSessionService.createSession(user.getId(), client, userAgent);
-    String token = jwtService.generateAccessToken(user.getId(), user.getEmail(), session.getId());
+    return buildSessionResponse(user, workspace, session.getId());
+  }
+
+  private SessionResponse buildSessionResponse(UserEntity user, WorkspaceEntity workspace, UUID sessionId) {
+    String token = jwtService.generateAccessToken(user.getId(), user.getEmail(), sessionId);
     return new SessionResponse(token, toUserSummary(user), toWorkspaceSummary(workspace));
   }
 
