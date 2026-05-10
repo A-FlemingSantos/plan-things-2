@@ -1,5 +1,10 @@
+import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
-import { useAuth } from './features/auth/context/AuthContext.jsx'
+import {
+  clearPendingLogoutRedirect,
+  peekPendingLogoutRedirect,
+  useAuth,
+} from './features/auth/context/AuthContext.jsx'
 import { usePreferences } from './features/preferences/context/PreferencesContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import OAuthCallback from './features/auth/pages/OAuthCallback/OAuthCallback.jsx'
@@ -67,9 +72,11 @@ function AppBootstrapScreen() {
 }
 
 export default function App() {
-  const { isReady } = useAuth()
+  const { isAuthenticated, isReady } = useAuth()
   const { resolveInitialRoute } = usePreferences()
   const location = useLocation()
+  const pendingLogoutRedirect = !isAuthenticated ? peekPendingLogoutRedirect() : null
+  const normalizedPathname = normalizePathname(location.pathname)
   const callbackBackgroundLocation = normalizePathname(location.pathname) === ROUTES.settings
     ? toRouteLocation(new URLSearchParams(location.search).get('background'))
     : null
@@ -93,8 +100,31 @@ export default function App() {
     : null
   const renderedLocation = modalBackgroundLocation ?? location
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      clearPendingLogoutRedirect()
+      return
+    }
+
+    if (!pendingLogoutRedirect) {
+      return
+    }
+
+    const targetPathname = normalizePathname(new URL(pendingLogoutRedirect.to, 'https://planthings.local').pathname)
+    if (normalizedPathname === targetPathname) {
+      clearPendingLogoutRedirect()
+    }
+  }, [isAuthenticated, normalizedPathname, pendingLogoutRedirect])
+
   if (!isReady) {
     return <AppBootstrapScreen />
+  }
+
+  if (pendingLogoutRedirect) {
+    const targetPathname = normalizePathname(new URL(pendingLogoutRedirect.to, 'https://planthings.local').pathname)
+    if (normalizedPathname !== targetPathname) {
+      return <Navigate to={pendingLogoutRedirect.to} replace={pendingLogoutRedirect.replace} />
+    }
   }
 
   return (

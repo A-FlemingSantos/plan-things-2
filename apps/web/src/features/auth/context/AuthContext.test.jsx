@@ -43,6 +43,7 @@ describe('AuthProvider', () => {
   beforeEach(() => {
     apiMock.apiRequest.mockReset()
     window.localStorage.clear()
+    window.sessionStorage.clear()
     vi.useRealTimers()
   })
 
@@ -133,5 +134,34 @@ describe('AuthProvider', () => {
       token: initialToken,
     })
     expect(result.current.accessToken).toBe(renewedToken)
+  })
+
+  it('clears the session and persists a pending redirect when logout is explicit', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true)
+    })
+
+    await act(async () => {
+      await result.current.login({
+        email: 'arthur@example.com',
+        password: 'segredo123',
+      })
+    })
+
+    act(() => {
+      result.current.logout({
+        redirectTo: '/login',
+        replace: true,
+      })
+    })
+
+    expect(result.current.accessToken).toBeNull()
+    expect(window.localStorage.getItem('plan-things.session')).toBeNull()
+    expect(JSON.parse(window.sessionStorage.getItem('plan-things.logout-redirect'))).toEqual({
+      to: '/login',
+      replace: true,
+    })
   })
 })

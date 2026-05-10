@@ -73,4 +73,22 @@ describe('SidebarAccountMenu', () => {
     expect(menu.style.top).toBe('400px')
     expect(menu.style.width).toBe('220px')
   })
+
+  it('uses the centralized logout redirect flow from the sidebar menu', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <SidebarAccountMenu styles={styles} />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: /arthur santos/i }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Sair' }))
+
+    expect(authState.logout).toHaveBeenCalledWith({
+      redirectTo: '/login',
+      replace: true,
+    })
+  })
 })

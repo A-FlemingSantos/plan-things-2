@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
+import { normalizePathname } from '../../../shared/config/routes.js'
 
 const SESSION_STORAGE_KEY = 'plan-things.session'
+const LOGOUT_REDIRECT_STORAGE_KEY = 'plan-things.logout-redirect'
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
 const TOKEN_REFRESH_RETRY_MS = 30 * 1000
 const MIN_TOKEN_REFRESH_DELAY_MS = 5 * 1000
@@ -74,6 +76,66 @@ function persistSession(session) {
   window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
 }
 
+function normalizeLogoutRedirect(value) {
+  if (!value) return null
+
+  const text = String(value).trim()
+  if (!text.startsWith('/') || text.startsWith('//') || text.includes('://')) {
+    return null
+  }
+
+  try {
+    const url = new URL(text, 'https://planthings.local')
+    return `${normalizePathname(url.pathname)}${url.search}${url.hash}`
+  } catch {
+    return null
+  }
+}
+
+function readPendingLogoutRedirect() {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const rawValue = window.sessionStorage.getItem(LOGOUT_REDIRECT_STORAGE_KEY)
+    if (!rawValue) return null
+
+    const parsed = JSON.parse(rawValue)
+    const to = normalizeLogoutRedirect(parsed?.to)
+    if (!to) return null
+
+    return {
+      to,
+      replace: parsed?.replace !== false,
+    }
+  } catch {
+    return null
+  }
+}
+
+function persistPendingLogoutRedirect(value) {
+  if (typeof window === 'undefined') return
+
+  const to = normalizeLogoutRedirect(value?.to)
+  if (!to) {
+    window.sessionStorage.removeItem(LOGOUT_REDIRECT_STORAGE_KEY)
+    return
+  }
+
+  window.sessionStorage.setItem(LOGOUT_REDIRECT_STORAGE_KEY, JSON.stringify({
+    to,
+    replace: value?.replace !== false,
+  }))
+}
+
+export function clearPendingLogoutRedirect() {
+  if (typeof window === 'undefined') return
+  window.sessionStorage.removeItem(LOGOUT_REDIRECT_STORAGE_KEY)
+}
+
+export function peekPendingLogoutRedirect() {
+  return readPendingLogoutRedirect()
+}
+
 function decodeBase64Url(value) {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
   const padSize = normalized.length % 4
@@ -105,6 +167,9 @@ export function AuthProvider({ children }) {
   const saveSession = useCallback((nextSession) => {
     setSession(nextSession)
     persistSession(nextSession)
+    if (nextSession?.accessToken) {
+      clearPendingLogoutRedirect()
+    }
     return nextSession
   }, [])
 
@@ -328,8 +393,17 @@ export function AuthProvider({ children }) {
     })
   }
 
-  const logout = () => {
+  const logout = (options = {}) => {
+    const redirectTo = normalizeLogoutRedirect(options.redirectTo)
     saveSession(null)
+    if (redirectTo) {
+      persistPendingLogoutRedirect({
+        to: redirectTo,
+        replace: options.replace !== false,
+      })
+    } else {
+      clearPendingLogoutRedirect()
+    }
   }
 
   const value = useMemo(() => ({

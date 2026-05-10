@@ -165,8 +165,10 @@ export default function SidebarAccountMenu({
     setOpen(false)
     setCollapsedMenuPosition(null)
     if (id === 'logout' && isAuthenticated) {
-      logout()
-      navigate(ROUTES.login)
+      logout({
+        redirectTo: ROUTES.login,
+        replace: true,
+      })
     } else if (id === 'settings') {
       if (location.pathname !== ROUTES.settings) {
         navigate(ROUTES.settings, {

@@ -11,7 +11,7 @@ import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPag
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
-import { toRouteString } from '../../../../shared/config/routes.js'
+import { ROUTES, toRouteString } from '../../../../shared/config/routes.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
 import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
 import {
@@ -1407,8 +1407,10 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           currentPassword: requiresPassword ? deleteCurrentPassword : null,
         },
       })
-      logout()
-      navigate('/login', { replace: true })
+      logout({
+        redirectTo: ROUTES.login,
+        replace: true,
+      })
     } catch (error) {
       setDeleteState('error')
       setDeleteFeedback(error?.message ?? 'Nao foi possivel excluir a conta.')

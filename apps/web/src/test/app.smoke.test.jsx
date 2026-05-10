@@ -281,6 +281,24 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
   })
 
+  it('returns to the login route after logging out from the shared sidebar account menu', async () => {
+    const user = userEvent.setup()
+
+    seedDemoSession('logout-route-user')
+    renderApp('/files')
+
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
+    await user.click(await screen.findByRole('menuitem', { name: 'Sair' }))
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/login')
+    })
+
+    expect(screen.getByRole('button', { name: /continuar com e-mail/i })).toBeInTheDocument()
+  })
+
   it('opens the settings panel as an overlay from the shared sidebar account menu', async () => {
     const user = userEvent.setup()
 
