@@ -2,18 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import { resolveAuthRedirectTarget } from '../../utils/authRedirect.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
-
-function sanitizeRedirectTo(value) {
-  if (!value) return null
-
-  const text = String(value)
-  if (!text.startsWith('/') || text.startsWith('//') || text.includes('://')) {
-    return null
-  }
-
-  return text
-}
 
 export default function OAuthCallback() {
   const location = useLocation()
@@ -31,7 +21,10 @@ export default function OAuthCallback() {
     const params = new URLSearchParams(location.search)
     const code = params.get('code')
     const error = params.get('error')
-    const redirectTo = sanitizeRedirectTo(params.get('redirectTo'))
+    const redirectTo = resolveAuthRedirectTarget(
+      params.get('redirectTo'),
+      null,
+    )
 
     async function completeLogin() {
       if (error) {
@@ -43,7 +36,7 @@ export default function OAuthCallback() {
 
       const session = await completeOAuthLogin(code)
 
-      navigate(redirectTo ?? resolveInitialRoute(session?.user?.id), { replace: true })
+      navigate(resolveAuthRedirectTarget(redirectTo, resolveInitialRoute(session?.user?.id)), { replace: true })
     }
 
     completeLogin().catch((error) => {

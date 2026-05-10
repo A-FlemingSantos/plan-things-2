@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import { resolveAuthRedirectTarget } from '../../utils/authRedirect.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
 
@@ -115,8 +116,11 @@ export default function Auth({ initialMode = 'login' }) {
         })
       }
 
-      const redirectTo = location.state?.redirectTo
-      navigate(redirectTo ? String(redirectTo) : resolveInitialRoute(session?.user?.id), { replace: true })
+      const redirectTo = resolveAuthRedirectTarget(
+        location.state?.redirectTo,
+        resolveInitialRoute(session?.user?.id),
+      )
+      navigate(redirectTo, { replace: true })
     } catch (error) {
       setErrorMessage(error.message ?? 'Nao foi possivel concluir a autenticacao.')
     } finally {
@@ -130,9 +134,9 @@ export default function Auth({ initialMode = 'login' }) {
     setLoading(provider)
 
     try {
-      const redirectTo = location.state?.redirectTo
+      const redirectTo = resolveAuthRedirectTarget(location.state?.redirectTo, null)
       const response = await startOAuthLogin(provider, {
-        redirectTo: redirectTo ? String(redirectTo) : undefined,
+        redirectTo: redirectTo ?? undefined,
       })
 
       window.location.assign(response.authorizationUrl)

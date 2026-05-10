@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { usePlans } from '../../context/PlansContext.jsx'
@@ -25,7 +26,8 @@ function formatInviteStatus(status) {
 
 export default function InviteNotifications() {
   const navigate = useNavigate()
-  const { accessToken, isAuthenticated, isDemoSession } = useAuth()
+  const auth = useAuth()
+  const { accessToken } = auth
   const { refreshPlans } = usePlans()
   const [open, setOpen] = useState(false)
   const [invites, setInvites] = useState([])
@@ -33,7 +35,7 @@ export default function InviteNotifications() {
   const [error, setError] = useState('')
   const [actingToken, setActingToken] = useState('')
   const wrapRef = useRef(null)
-  const enabled = isAuthenticated && !isDemoSession && accessToken
+  const enabled = readSessionModeFromAuthState(auth) === 'authenticated' && accessToken
 
   const loadInvites = async () => {
     if (!enabled) {

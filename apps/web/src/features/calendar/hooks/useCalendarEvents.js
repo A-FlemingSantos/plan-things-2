@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import { buildCalendarEventPayload, mapCalendarEventsToSnapshot } from '../../../shared/contracts/backendAdapters.js'
@@ -84,12 +85,15 @@ export function useCalendarEvents({
   includeGeneratedFromCard = true,
   enrichGeneratedCardKinds: shouldEnrichGeneratedCardKinds = true,
 } = {}) {
-  const { accessToken, isAuthenticated, isDemoSession } = useAuth()
+  const auth = useAuth()
+  const { accessToken } = auth
   const { generalPreferences } = usePreferences()
-  const backendEnabled = isAuthenticated && !isDemoSession
+  const sessionMode = readSessionModeFromAuthState(auth)
+  const backendEnabled = sessionMode === 'authenticated'
+  const demoEnabled = sessionMode === 'demo'
   const timeZone = generalPreferences.timezone
   const [snapshot, setSnapshot] = useState(() => {
-    if (!backendEnabled) return createInitialCalendarSnapshot()
+    if (demoEnabled) return createInitialCalendarSnapshot()
     return EMPTY_CALENDAR_SNAPSHOT
   })
   const [isLoading, setIsLoading] = useState(() => backendEnabled && enabled)
@@ -102,7 +106,7 @@ export function useCalendarEvents({
     async function loadEvents() {
       if (!backendEnabled) {
         if (active) {
-          setSnapshot(createInitialCalendarSnapshot())
+          setSnapshot(demoEnabled ? createInitialCalendarSnapshot() : EMPTY_CALENDAR_SNAPSHOT)
           setLoadError(null)
           setIsLoading(false)
         }
@@ -152,7 +156,7 @@ export function useCalendarEvents({
     return () => {
       active = false
     }
-  }, [accessToken, backendEnabled, enabled, includeGeneratedFromCard, shouldEnrichGeneratedCardKinds, timeZone])
+  }, [accessToken, backendEnabled, demoEnabled, enabled, includeGeneratedFromCard, shouldEnrichGeneratedCardKinds, timeZone])
 
   useEffect(() => {
     if (!backendEnabled || !enabled) return
@@ -169,13 +173,17 @@ export function useCalendarEvents({
   }, [searchTerm, snapshot.events])
 
   const createEvent = async (data) => {
-    if (!backendEnabled) {
+    if (demoEnabled) {
       const event = createCalendarEventDraft(data, snapshot.sources)
       setSnapshot((current) => ({
         ...current,
         events: insertCalendarEvent(current.events, event),
       }))
       return event
+    }
+
+    if (!backendEnabled) {
+      throw new Error('Faça login para criar eventos.')
     }
 
     const payload = buildCalendarEventPayload(data, { timeZone })
@@ -197,7 +205,7 @@ export function useCalendarEvents({
   }
 
   const updateEvent = async (eventId, data) => {
-    if (!backendEnabled) {
+    if (demoEnabled) {
       let updatedEvent = null
 
       setSnapshot((current) => {
@@ -219,6 +227,10 @@ export function useCalendarEvents({
       return updatedEvent
     }
 
+    if (!backendEnabled) {
+      throw new Error('Faça login para editar eventos.')
+    }
+
     const payload = buildCalendarEventPayload(data, { timeZone })
     assertValidEventPayload(payload)
 
@@ -238,12 +250,16 @@ export function useCalendarEvents({
   }
 
   const deleteEvent = async (eventId) => {
-    if (!backendEnabled) {
+    if (demoEnabled) {
       setSnapshot((current) => ({
         ...current,
         events: current.events.filter((event) => event.id !== eventId),
       }))
       return true
+    }
+
+    if (!backendEnabled) {
+      throw new Error('Faça login para excluir eventos.')
     }
 
     await apiRequest(`/api/calendar/events/${eventId}`, {

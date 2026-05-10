@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js'
 import {
   DEFAULT_LOCAL_PREFERENCES,
   usePreferences,
@@ -351,7 +352,8 @@ function usePanelScrollbar(enabled, refreshKey) {
 ═══════════════════════════════════════════ */
 
 export default function SettingsPage({ modal = false, backgroundLocation = null }) {
-  const { currentUser, workspace, accessToken, isAuthenticated, isDemoSession, patchSession, logout } = useAuth()
+  const auth = useAuth()
+  const { currentUser, workspace, accessToken, patchSession, logout } = auth
   const {
     generalPreferences,
     localPreferences,
@@ -366,7 +368,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const location = useLocation()
   const navigate = useNavigate()
   const modalBackgroundLocation = modal ? backgroundLocation : null
-  const backendEnabled = isAuthenticated && !isDemoSession
+  const backendEnabled = readSessionModeFromAuthState(auth) === 'authenticated'
 
   const [activeSection, setActiveSection] = useState('account')
   const [exiting, setExiting] = useState(false)

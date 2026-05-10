@@ -2,7 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { normalizePlanRecord } from '../shared/contracts/planContracts.js'
-import { renderApp } from './renderApp.jsx'
+import {
+  createDemoSession,
+  renderApp,
+} from './renderApp.jsx'
 
 function formatTodayAsScheduleDateValue() {
   const today = new Date()
@@ -24,24 +27,10 @@ function formatCalendarHeading(monthOffset = 0) {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 
-function seedDemoSession(userId = 'demo-user-route') {
-  window.localStorage.setItem('plan-things.session', JSON.stringify({
-    accessToken: 'demo-login-token',
-    demo: true,
-    user: {
-      id: userId,
-      fullName: 'Arthur Santos',
-      email: 'arthur@example.com',
-      locale: 'pt-BR',
-      timeZone: 'America/Sao_Paulo',
-    },
-    workspace: {
-      id: 'demo-workspace',
-      name: 'Workspace de Arthur Santos',
-    },
-  }))
-
-  return userId
+async function loginFromProtectedRedirect(user) {
+  await user.type(await screen.findByLabelText('E-mail'), 'arthur@example.com')
+  await user.type(screen.getByLabelText('Senha'), '12345678')
+  await user.click(screen.getByRole('button', { name: /continuar com e-mail/i }))
 }
 
 describe('App smoke flows', () => {
@@ -71,8 +60,15 @@ describe('App smoke flows', () => {
     expect(ptBrDateCard.schedule.dueDateValue).toBe('03/02/26')
   })
 
-  it('redirects the legacy app route to the workspace', async () => {
+  it('redirects anonymous /app access to login', async () => {
     renderApp('/app')
+
+    expect(await screen.findByRole('button', { name: /continuar com e-mail/i })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/login')
+  })
+
+  it('redirects the legacy app route to the workspace for a demo session', async () => {
+    renderApp('/app', { session: createDemoSession() })
 
     expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/workspace')
@@ -81,7 +77,12 @@ describe('App smoke flows', () => {
   })
 
   it('resolves /app to last context when openLastCtx is enabled', async () => {
-    const userId = seedDemoSession('route-last-context-user')
+    const session = createDemoSession({
+      user: {
+        id: 'route-last-context-user',
+      },
+    })
+    const userId = session.user.id
     window.localStorage.setItem(
       `plan-things:settings:v1:${userId}`,
       JSON.stringify({
@@ -91,14 +92,19 @@ describe('App smoke flows', () => {
     )
     window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
 
-    renderApp('/app')
+    renderApp('/app', { session })
 
     expect(await screen.findAllByRole('button', { name: /^meus arquivos$/i })).not.toHaveLength(0)
     expect(window.location.pathname).toBe('/files')
   })
 
   it('resolves /app to homePage when openLastCtx is disabled', async () => {
-    const userId = seedDemoSession('route-home-page-user')
+    const session = createDemoSession({
+      user: {
+        id: 'route-home-page-user',
+      },
+    })
+    const userId = session.user.id
     window.localStorage.setItem(
       `plan-things:settings:v1:${userId}`,
       JSON.stringify({
@@ -108,16 +114,82 @@ describe('App smoke flows', () => {
     )
     window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
 
-    renderApp('/app')
+    renderApp('/app', { session })
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/calendar')
   })
 
-  it('opens the current plan board from the workspace', async () => {
+  it('restores the workspace after login when the route was protected', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace')
+
+    await loginFromProtectedRedirect(user)
+
+    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/workspace')
+  })
+
+  it('restores the board route after login when the route was protected', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/workspace/board/product-launch-q3')
+
+    await loginFromProtectedRedirect(user)
+
+    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
+  })
+
+  it('restores the files route after login when the route was protected', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/files')
+
+    await loginFromProtectedRedirect(user)
+
+    expect(await screen.findByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/files')
+  })
+
+  it('restores the calendar route after login when the route was protected', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/calendar')
+
+    await loginFromProtectedRedirect(user)
+
+    expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/calendar')
+  })
+
+  it('redirects anonymous invite access to login with the invite notice', async () => {
+    renderApp('/plans/invites/token-123')
+
+    expect(await screen.findByRole('button', { name: /continuar com e-mail/i })).toBeInTheDocument()
+    expect(screen.getByText('Faça login para aceitar o convite.')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/login')
+  })
+
+  it('preserves the settings modal background after logging in from a protected callback route', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/settings?section=integrations&gmail=connected&background=%2Ffiles')
+
+    expect(await screen.findByRole('button', { name: /continuar com e-mail/i })).toBeInTheDocument()
+
+    await loginFromProtectedRedirect(user)
+
+    expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/settings')
+  })
+
+  it('opens the current plan board from the workspace', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/workspace', { session: createDemoSession() })
 
     await user.click(await screen.findByRole('button', { name: /abrir quadro/i }))
 
@@ -129,7 +201,7 @@ describe('App smoke flows', () => {
   it('marks only the active toolbar view when opening the files panel', async () => {
     const user = userEvent.setup()
 
-    renderApp('/workspace/board/product-launch-q3')
+    renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     const boardButton = await screen.findByRole('button', { name: 'Quadro' })
     const toolbar = boardButton.closest('div[aria-label="Atalhos do quadro"]')
@@ -149,7 +221,7 @@ describe('App smoke flows', () => {
   it('keeps legacy seeded due dates in pt-BR after opening and saving the date modal', async () => {
     const user = userEvent.setup()
 
-    renderApp('/workspace/board/product-launch-q3')
+    renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     await user.click(await screen.findByText('Pesquisa de concorrentes'))
     expect(await screen.findByRole('button', { name: 'Salvar alterações' })).toBeInTheDocument()
@@ -169,7 +241,7 @@ describe('App smoke flows', () => {
   it('keeps legacy relative due dates in pt-BR after opening and saving the date modal', async () => {
     const user = userEvent.setup()
 
-    renderApp('/workspace/board/product-launch-q3')
+    renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     await user.click(await screen.findByText('Copy da campanha de lançamento'))
     expect(await screen.findByRole('button', { name: 'Salvar alterações' })).toBeInTheDocument()
@@ -185,7 +257,7 @@ describe('App smoke flows', () => {
   })
 
   it('preserves the plan id when redirecting legacy board deep links', async () => {
-    renderApp('/kanban/product-launch-q3')
+    renderApp('/kanban/product-launch-q3', { session: createDemoSession() })
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
     expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
@@ -193,7 +265,7 @@ describe('App smoke flows', () => {
   })
 
   it('renders the global files library', async () => {
-    renderApp('/files')
+    renderApp('/files', { session: createDemoSession() })
 
     expect(await screen.findAllByRole('button', { name: /^meus arquivos$/i })).not.toHaveLength(0)
     expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
@@ -206,7 +278,7 @@ describe('App smoke flows', () => {
   it('renders the calendar agenda and opens the event dialog', async () => {
     const user = userEvent.setup()
 
-    renderApp('/calendar')
+    renderApp('/calendar', { session: createDemoSession() })
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /novo evento/i })).toBeInTheDocument()
@@ -221,7 +293,7 @@ describe('App smoke flows', () => {
   it('switches calendar views, navigates months, creates events, and keeps search safe', async () => {
     const user = userEvent.setup()
 
-    renderApp('/calendar')
+    renderApp('/calendar', { session: createDemoSession() })
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
 
@@ -272,9 +344,11 @@ describe('App smoke flows', () => {
   it('opens the shared sidebar account menu outside the workspace', async () => {
     const user = userEvent.setup()
 
-    renderApp('/files')
+    renderApp('/files', { session: createDemoSession() })
 
-    await user.click(await screen.findByRole('button', { name: /arthur santos/i }))
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
 
     expect(await screen.findByRole('menu')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument()
@@ -284,8 +358,13 @@ describe('App smoke flows', () => {
   it('returns to the login route after logging out from the shared sidebar account menu', async () => {
     const user = userEvent.setup()
 
-    seedDemoSession('logout-route-user')
-    renderApp('/files')
+    renderApp('/files', {
+      session: createDemoSession({
+        user: {
+          id: 'logout-route-user',
+        },
+      }),
+    })
 
     const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
     expect(accountMenuTrigger).not.toBeNull()
@@ -302,11 +381,13 @@ describe('App smoke flows', () => {
   it('opens the settings panel as an overlay from the shared sidebar account menu', async () => {
     const user = userEvent.setup()
 
-    renderApp('/files')
+    renderApp('/files', { session: createDemoSession() })
 
     expect(await screen.findByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
 
-    await user.click(await screen.findByRole('button', { name: /arthur santos/i }))
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
     await user.click(await screen.findByRole('menuitem', { name: 'Configurações' }))
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
@@ -329,7 +410,9 @@ describe('App smoke flows', () => {
   it('reopens settings over the original page after a Gmail callback redirect', async () => {
     const user = userEvent.setup()
 
-    renderApp('/settings?section=integrations&gmail=connected&background=%2Ffiles')
+    renderApp('/settings?section=integrations&gmail=connected&background=%2Ffiles', {
+      session: createDemoSession(),
+    })
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
@@ -346,7 +429,7 @@ describe('App smoke flows', () => {
   it('keeps save action only in account and uses autosave sections', async () => {
     const user = userEvent.setup()
 
-    renderApp('/settings')
+    renderApp('/settings', { session: createDemoSession() })
 
     const settingsDialog = await screen.findByRole('dialog', { name: 'Configurações' })
     expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
@@ -363,7 +446,7 @@ describe('App smoke flows', () => {
   it('navigates into folders in files without breaking the breadcrumb', async () => {
     const user = userEvent.setup()
 
-    renderApp('/files')
+    renderApp('/files', { session: createDemoSession() })
 
     await user.dblClick(await screen.findByText('Design do Produto'))
 
@@ -376,7 +459,7 @@ describe('App smoke flows', () => {
   it('creates a new plan from the workspace', async () => {
     const user = userEvent.setup()
 
-    renderApp('/workspace')
+    renderApp('/workspace', { session: createDemoSession() })
 
     await user.click((await screen.findAllByRole('button', { name: /novo plano/i }))[0])
 
@@ -393,7 +476,7 @@ describe('App smoke flows', () => {
   it('keeps the sidebar collapsed state across product screens', async () => {
     const user = userEvent.setup()
 
-    renderApp('/workspace')
+    renderApp('/workspace', { session: createDemoSession() })
 
     await user.click(await screen.findByRole('button', { name: /recolher barra lateral/i }))
     await user.click(await screen.findByRole('button', { name: /abrir quadro/i }))
@@ -405,7 +488,7 @@ describe('App smoke flows', () => {
   it('shows the liquid-glass preference in general settings', async () => {
     const user = userEvent.setup()
 
-    renderApp('/settings')
+    renderApp('/settings', { session: createDemoSession() })
 
     expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
 

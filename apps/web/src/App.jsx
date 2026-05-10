@@ -1,10 +1,8 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
-import {
-  clearPendingLogoutRedirect,
-  peekPendingLogoutRedirect,
-  useAuth,
-} from './features/auth/context/AuthContext.jsx'
+import { useAuth } from './features/auth/context/AuthContext.jsx'
+import { buildAuthRedirectState } from './features/auth/utils/authRedirect.js'
+import { readSessionModeFromAuthState } from './features/auth/utils/sessionMode.js'
 import { usePreferences } from './features/preferences/context/PreferencesContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import OAuthCallback from './features/auth/pages/OAuthCallback/OAuthCallback.jsx'
@@ -36,14 +34,27 @@ function LegacyPlanRedirect({ buildPath }) {
 }
 
 function PreferredAppEntryRedirect() {
-  const { isAuthenticated } = useAuth()
   const { resolveInitialRoute } = usePreferences()
 
-  if (!isAuthenticated) {
-    return <Navigate to={ROUTES.workspace} replace />
+  return <Navigate to={resolveInitialRoute()} replace />
+}
+
+function RequireSession({ children, notice = '' }) {
+  const auth = useAuth()
+  const location = useLocation()
+  const sessionMode = readSessionModeFromAuthState(auth)
+
+  if (sessionMode === 'anonymous') {
+    return (
+      <Navigate
+        to={ROUTES.login}
+        replace
+        state={buildAuthRedirectState(location, notice ? { notice } : {})}
+      />
+    )
   }
 
-  return <Navigate to={resolveInitialRoute()} replace />
+  return children
 }
 
 function AppBootstrapScreen() {
@@ -72,10 +83,13 @@ function AppBootstrapScreen() {
 }
 
 export default function App() {
-  const { isAuthenticated, isReady } = useAuth()
+  const auth = useAuth()
+  const isReady = auth.isReady
+  const pendingLogoutRedirect = auth.pendingLogoutRedirect ?? null
+  const clearPendingLogoutRedirect = auth.clearPendingLogoutRedirect ?? (() => {})
   const { resolveInitialRoute } = usePreferences()
   const location = useLocation()
-  const pendingLogoutRedirect = !isAuthenticated ? peekPendingLogoutRedirect() : null
+  const sessionMode = readSessionModeFromAuthState(auth)
   const normalizedPathname = normalizePathname(location.pathname)
   const callbackBackgroundLocation = normalizePathname(location.pathname) === ROUTES.settings
     ? toRouteLocation(new URLSearchParams(location.search).get('background'))
@@ -101,7 +115,7 @@ export default function App() {
   const renderedLocation = modalBackgroundLocation ?? location
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (sessionMode !== 'anonymous') {
       clearPendingLogoutRedirect()
       return
     }
@@ -114,9 +128,9 @@ export default function App() {
     if (normalizedPathname === targetPathname) {
       clearPendingLogoutRedirect()
     }
-  }, [isAuthenticated, normalizedPathname, pendingLogoutRedirect])
+  }, [clearPendingLogoutRedirect, normalizedPathname, pendingLogoutRedirect, sessionMode])
 
-  if (!isReady) {
+  if (!isReady || sessionMode === 'boot') {
     return <AppBootstrapScreen />
   }
 
@@ -181,17 +195,19 @@ export default function App() {
         <Route
           path="/plans/invites/:token"
           element={(
-            <AppThemeScope preference="system">
-              <InviteAccept />
-            </AppThemeScope>
+            <RequireSession notice="Faça login para aceitar o convite.">
+              <AppThemeScope preference="system">
+                <InviteAccept />
+              </AppThemeScope>
+            </RequireSession>
           )}
         />
-        <Route path="/app" element={<PreferredAppEntryRedirect />} />
-        <Route path={ROUTES.workspace} element={<Workspace />} />
-        <Route path={ROUTES.workspaceBoard} element={<KanbanBoard />} />
-        <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<KanbanBoard />} />
-        <Route path={ROUTES.calendar} element={<CalendarPage />} />
-        <Route path={`${ROUTES.files}/*`} element={<FilesPage />} />
+        <Route path="/app" element={<RequireSession><PreferredAppEntryRedirect /></RequireSession>} />
+        <Route path={ROUTES.workspace} element={<RequireSession><Workspace /></RequireSession>} />
+        <Route path={ROUTES.workspaceBoard} element={<RequireSession><KanbanBoard /></RequireSession>} />
+        <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<RequireSession><KanbanBoard /></RequireSession>} />
+        <Route path={ROUTES.calendar} element={<RequireSession><CalendarPage /></RequireSession>} />
+        <Route path={`${ROUTES.files}/*`} element={<RequireSession><FilesPage /></RequireSession>} />
         {Object.entries(INFO_PAGES).map(([path, page]) => (
           <Route
             key={path}
@@ -221,7 +237,14 @@ export default function App() {
 
       {normalizePathname(location.pathname) === ROUTES.settings ? (
         <Routes>
-          <Route path={ROUTES.settings} element={<SettingsPage modal backgroundLocation={modalBackgroundLocation} />} />
+          <Route
+            path={ROUTES.settings}
+            element={(
+              <RequireSession>
+                <SettingsPage modal backgroundLocation={modalBackgroundLocation} />
+              </RequireSession>
+            )}
+          />
         </Routes>
       ) : null}
     </>

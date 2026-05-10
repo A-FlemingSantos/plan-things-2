@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import { ROUTES, normalizePathname } from '../../../shared/config/routes.js'
 import { normalizeKanbanAccentColor } from '../../workspace/data/kanbanColorPalette.js'
@@ -360,14 +361,14 @@ export function formatCompactDayMonthWithPreferences(value, preferences = {}) {
 
 export function PreferencesProvider({ children }) {
   const location = useLocation()
+  const auth = useAuth()
   const {
     currentUser,
     accessToken,
-    isAuthenticated,
-    isDemoSession,
     patchSession,
-  } = useAuth()
-  const backendEnabled = isAuthenticated && !isDemoSession
+  } = auth
+  const sessionMode = readSessionModeFromAuthState(auth)
+  const backendEnabled = sessionMode === 'authenticated'
   const [generalPreferences, setGeneralPreferences] = useState(() => ({
     ...DEFAULT_GENERAL_PREFERENCES,
     theme:

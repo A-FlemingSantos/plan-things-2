@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import {
@@ -28,9 +29,12 @@ function isBackendPlanId(planId) {
 }
 
 export function PlansProvider({ children }) {
-  const { accessToken, isAuthenticated, isDemoSession, currentUser, workspace, isReady } = useAuth()
+  const auth = useAuth()
+  const { accessToken, currentUser, workspace } = auth
   const { generalPreferences } = usePreferences()
-  const backendEnabled = isAuthenticated && !isDemoSession
+  const sessionMode = readSessionModeFromAuthState(auth)
+  const backendEnabled = sessionMode === 'authenticated'
+  const demoEnabled = sessionMode === 'demo'
   const [plans, setPlans] = useState([])
   const [activePlanId, setActivePlanId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -45,18 +49,29 @@ export function PlansProvider({ children }) {
   ])
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
-  const mode = !isReady ? 'boot' : backendEnabled ? 'backend' : 'demo'
-  const sessionKey = mode === 'backend' ? `${currentUser?.id ?? 'anonymous'}:${accessToken ?? ''}` : mode
+  const sessionKey = backendEnabled ? `${currentUser?.id ?? 'anonymous'}:${accessToken ?? ''}` : sessionMode
+
+  const ensureInteractiveSession = useCallback(() => {
+    if (demoEnabled) {
+      return 'demo'
+    }
+
+    if (backendEnabled) {
+      return 'authenticated'
+    }
+
+    throw new Error('Faça login para acessar os planos.')
+  }, [backendEnabled, demoEnabled])
 
   useLayoutEffect(() => {
-    if (mode === 'boot') {
+    if (sessionMode === 'boot') {
       setPlans([])
       setActivePlanId(null)
       setIsLoading(true)
       return
     }
 
-    if (mode === 'demo') {
+    if (demoEnabled) {
       setPlans(INITIAL_PLANS)
       setActivePlanId((current) => (
         current && INITIAL_PLANS.some((plan) => plan.id === current)
@@ -67,16 +82,23 @@ export function PlansProvider({ children }) {
       return
     }
 
+    if (sessionMode === 'anonymous') {
+      setPlans([])
+      setActivePlanId(null)
+      setIsLoading(false)
+      return
+    }
+
     setPlans([])
     setActivePlanId(null)
     setIsLoading(true)
-  }, [mode, sessionKey])
+  }, [demoEnabled, sessionKey, sessionMode])
 
   useEffect(() => {
     let active = true
 
     async function hydrateBackendPlans() {
-      if (mode !== 'backend') {
+      if (!backendEnabled) {
         return
       }
 
@@ -113,10 +135,10 @@ export function PlansProvider({ children }) {
     return () => {
       active = false
     }
-  }, [accessToken, mode, sessionKey])
+  }, [accessToken, backendEnabled, sessionKey])
 
   const createPlan = useCallback(async (data) => {
-    if (!backendEnabled) {
+    if (ensureInteractiveSession() === 'demo') {
       const newPlan = normalizePlanRecord({
         ...data,
         id: crypto.randomUUID?.() ?? `plan-${Math.random().toString(36).slice(2, 10)}`,
@@ -145,10 +167,12 @@ export function PlansProvider({ children }) {
     setPlans((prev) => [nextPlan, ...prev])
     setActivePlanId(nextPlan.id)
     return nextPlan
-  }, [accessToken, backendEnabled, plans.length])
+  }, [accessToken, ensureInteractiveSession, plans.length])
 
   const deletePlan = useCallback(async (planId) => {
     if (!planId) return
+
+    ensureInteractiveSession()
 
     if (backendEnabled) {
       await apiRequest(`/api/plans/${planId}`, {
@@ -166,7 +190,7 @@ export function PlansProvider({ children }) {
     })
 
     return nextPlansSnapshot
-  }, [accessToken, backendEnabled])
+  }, [accessToken, backendEnabled, ensureInteractiveSession])
 
   const renamePlan = useCallback(async (planId, name) => {
     const trimmedName = name?.trim()
@@ -179,7 +203,7 @@ export function PlansProvider({ children }) {
       throw new Error('Plano nao encontrado.')
     }
 
-    if (!backendEnabled) {
+    if (ensureInteractiveSession() === 'demo') {
       const renamedPlan = normalizePlanRecord({ ...currentPlan, name: trimmedName })
       setPlans((prev) => setPlanById(prev, planId, renamedPlan))
       return renamedPlan
@@ -206,7 +230,7 @@ export function PlansProvider({ children }) {
     })
     setPlans((prev) => setPlanById(prev, planId, renamedPlan))
     return renamedPlan
-  }, [accessToken, backendEnabled, plansById])
+  }, [accessToken, ensureInteractiveSession, plansById])
 
   const updatePlanCover = useCallback(async (planId, coverData = {}) => {
     if (!planId) {
@@ -229,7 +253,7 @@ export function PlansProvider({ children }) {
       coverImageThumb: coverData.coverImageThumb ?? coverData.coverImage ?? null,
     }
 
-    if (!backendEnabled) {
+    if (ensureInteractiveSession() === 'demo') {
       const updatedPlan = normalizePlanRecord({
         ...currentPlan,
         ...nextPlanPatch,
@@ -256,7 +280,7 @@ export function PlansProvider({ children }) {
     })
     setPlans((prev) => setPlanById(prev, planId, updatedPlan))
     return updatedPlan
-  }, [accessToken, backendEnabled, plansById])
+  }, [accessToken, ensureInteractiveSession, plansById])
 
   const selectPlan = useCallback((planId) => {
     setActivePlanId(planId)
@@ -332,7 +356,7 @@ export function PlansProvider({ children }) {
   }, [accessToken, backendEnabled, getPlanById, plansById])
 
   const refreshPlans = useCallback(async ({ selectPlanId } = {}) => {
-    if (mode !== 'backend') {
+    if (!backendEnabled) {
       return plans
     }
 
@@ -354,7 +378,7 @@ export function PlansProvider({ children }) {
     })
 
     return mappedPlans
-  }, [accessToken, mode, plans])
+  }, [accessToken, backendEnabled, plans])
 
   const loadPlanBoard = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {

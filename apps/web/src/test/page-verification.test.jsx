@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { renderApp } from './renderApp.jsx'
+import { createDemoSession, renderApp } from './renderApp.jsx'
 import { installMatchMediaController } from './matchMedia.js'
 
 describe('Page verification flows', () => {
@@ -68,7 +68,7 @@ describe('Page verification flows', () => {
   it('verifies workspace search empty state and recovery', async () => {
     const user = userEvent.setup()
 
-    renderApp('/workspace')
+    renderApp('/workspace', { session: createDemoSession() })
 
     const search = await screen.findByPlaceholderText('Buscar planos...')
     await user.type(search, 'nao-existe')
@@ -83,7 +83,7 @@ describe('Page verification flows', () => {
   it('verifies kanban utility panels', async () => {
     const user = userEvent.setup()
 
-    renderApp('/workspace/board/product-launch-q3')
+    renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
 
@@ -104,7 +104,7 @@ describe('Page verification flows', () => {
   it('keeps the mobile kanban as web without app-style list/task switching', async () => {
     installMatchMediaController(390)
 
-    renderApp('/workspace/board/product-launch-q3')
+    renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
     expect(screen.queryByRole('tablist', { name: 'Visões do quadro' })).not.toBeInTheDocument()
@@ -114,7 +114,7 @@ describe('Page verification flows', () => {
   it('verifies files filters and detail inspector opening', async () => {
     const user = userEvent.setup()
 
-    renderApp('/files')
+    renderApp('/files', { session: createDemoSession() })
 
     await user.click(await screen.findByRole('button', { name: /^favoritos$/i }))
     expect(screen.getByText('plano-lancamento-q3.pdf')).toBeInTheDocument()

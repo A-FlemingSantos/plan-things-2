@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 import { normalizePathname } from '../../../shared/config/routes.js'
+import { resolveSessionMode } from '../utils/sessionMode.js'
 
 const SESSION_STORAGE_KEY = 'plan-things.session'
-const LOGOUT_REDIRECT_STORAGE_KEY = 'plan-things.logout-redirect'
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
 const TOKEN_REFRESH_RETRY_MS = 30 * 1000
 const MIN_TOKEN_REFRESH_DELAY_MS = 5 * 1000
@@ -92,50 +92,6 @@ function normalizeLogoutRedirect(value) {
   }
 }
 
-function readPendingLogoutRedirect() {
-  if (typeof window === 'undefined') return null
-
-  try {
-    const rawValue = window.sessionStorage.getItem(LOGOUT_REDIRECT_STORAGE_KEY)
-    if (!rawValue) return null
-
-    const parsed = JSON.parse(rawValue)
-    const to = normalizeLogoutRedirect(parsed?.to)
-    if (!to) return null
-
-    return {
-      to,
-      replace: parsed?.replace !== false,
-    }
-  } catch {
-    return null
-  }
-}
-
-function persistPendingLogoutRedirect(value) {
-  if (typeof window === 'undefined') return
-
-  const to = normalizeLogoutRedirect(value?.to)
-  if (!to) {
-    window.sessionStorage.removeItem(LOGOUT_REDIRECT_STORAGE_KEY)
-    return
-  }
-
-  window.sessionStorage.setItem(LOGOUT_REDIRECT_STORAGE_KEY, JSON.stringify({
-    to,
-    replace: value?.replace !== false,
-  }))
-}
-
-export function clearPendingLogoutRedirect() {
-  if (typeof window === 'undefined') return
-  window.sessionStorage.removeItem(LOGOUT_REDIRECT_STORAGE_KEY)
-}
-
-export function peekPendingLogoutRedirect() {
-  return readPendingLogoutRedirect()
-}
-
 function decodeBase64Url(value) {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
   const padSize = normalized.length % 4
@@ -164,13 +120,17 @@ function isAuthFailure(error) {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => readStoredSession())
   const [isReady, setIsReady] = useState(false)
+  const [pendingLogoutRedirect, setPendingLogoutRedirect] = useState(null)
   const saveSession = useCallback((nextSession) => {
     setSession(nextSession)
     persistSession(nextSession)
     if (nextSession?.accessToken) {
-      clearPendingLogoutRedirect()
+      setPendingLogoutRedirect(null)
     }
     return nextSession
+  }, [])
+  const clearPendingLogoutRedirect = useCallback(() => {
+    setPendingLogoutRedirect(null)
   }, [])
 
   useEffect(() => {
@@ -397,7 +357,7 @@ export function AuthProvider({ children }) {
     const redirectTo = normalizeLogoutRedirect(options.redirectTo)
     saveSession(null)
     if (redirectTo) {
-      persistPendingLogoutRedirect({
+      setPendingLogoutRedirect({
         to: redirectTo,
         replace: options.replace !== false,
       })
@@ -406,12 +366,18 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const sessionMode = resolveSessionMode({
+    session,
+    isReady,
+  })
+
   const value = useMemo(() => ({
     accessToken: session?.accessToken ?? null,
     currentUser: session?.user ?? null,
     workspace: session?.workspace ?? null,
     isAuthenticated: Boolean(session?.accessToken),
     isDemoSession: Boolean(session?.demo),
+    sessionMode,
     isReady,
     login,
     register,
@@ -421,7 +387,23 @@ export function AuthProvider({ children }) {
     completeOAuthLogin,
     patchSession,
     logout,
-  }), [isReady, session])
+    pendingLogoutRedirect,
+    clearPendingLogoutRedirect,
+  }), [
+    clearPendingLogoutRedirect,
+    completeOAuthLogin,
+    forgotPassword,
+    isReady,
+    login,
+    logout,
+    patchSession,
+    pendingLogoutRedirect,
+    register,
+    resetPassword,
+    session,
+    sessionMode,
+    startOAuthLogin,
+  ])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

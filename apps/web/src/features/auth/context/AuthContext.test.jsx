@@ -79,6 +79,7 @@ describe('AuthProvider', () => {
       method: 'POST',
       token: storedToken,
     })
+    expect(result.current.sessionMode).toBe('authenticated')
     expect(result.current.accessToken).toBe(refreshedToken)
     expect(result.current.currentUser?.fullName).toBe('Arthur Fleming')
 
@@ -133,10 +134,41 @@ describe('AuthProvider', () => {
       method: 'POST',
       token: initialToken,
     })
+    expect(result.current.sessionMode).toBe('authenticated')
     expect(result.current.accessToken).toBe(renewedToken)
   })
 
-  it('clears the session and persists a pending redirect when logout is explicit', async () => {
+  it('exposes anonymous mode when no session is stored', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true)
+    })
+
+    expect(result.current.sessionMode).toBe('anonymous')
+    expect(result.current.isAuthenticated).toBe(false)
+    expect(result.current.pendingLogoutRedirect).toBeNull()
+  })
+
+  it('exposes demo mode after a test-environment login', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true)
+    })
+
+    await act(async () => {
+      await result.current.login({
+        email: 'arthur@example.com',
+        password: 'segredo123',
+      })
+    })
+
+    expect(result.current.sessionMode).toBe('demo')
+    expect(result.current.isDemoSession).toBe(true)
+  })
+
+  it('clears the session and stores a pending in-memory redirect when logout is explicit', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
 
     await waitFor(() => {
@@ -158,8 +190,9 @@ describe('AuthProvider', () => {
     })
 
     expect(result.current.accessToken).toBeNull()
+    expect(result.current.sessionMode).toBe('anonymous')
     expect(window.localStorage.getItem('plan-things.session')).toBeNull()
-    expect(JSON.parse(window.sessionStorage.getItem('plan-things.logout-redirect'))).toEqual({
+    expect(result.current.pendingLogoutRedirect).toEqual({
       to: '/login',
       replace: true,
     })

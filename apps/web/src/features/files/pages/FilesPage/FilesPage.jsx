@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import { buildLibraryTreeFromApi } from '../../../../shared/contracts/backendAdapters.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
@@ -531,16 +532,21 @@ function FilesLoadingState({ view }) {
    MAIN FILES PAGE
 ═══════════════════════════════════════════ */
 export default function FilesPage() {
-  const { accessToken, isAuthenticated, isDemoSession, workspace } = useAuth()
+  const auth = useAuth()
+  const { accessToken, workspace } = auth
   const { formatDateTime } = usePreferences()
-  const backendEnabled = isAuthenticated && !isDemoSession
+  const sessionMode = readSessionModeFromAuthState(auth)
+  const backendEnabled = sessionMode === 'authenticated'
+  const demoEnabled = sessionMode === 'demo'
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { isMobile } = useResponsiveViewport()
   const [sidebarSection, setSidebarSection]     = useState('my-files') // my-files | recent | starred | shared | trash
   const [view, setView]                         = useState('grid')
   const [search, setSearch]                     = useState('')
   const [currentPath, setCurrentPath]           = useState([]) // array of folder ids
-  const [library, setLibrary]                   = useState(() => (backendEnabled ? [] : createInitialLibrarySnapshot()))
+  const [library, setLibrary]                   = useState(() => (
+    backendEnabled ? [] : demoEnabled ? createInitialLibrarySnapshot() : []
+  ))
   const [hasLoadedLibrary, setHasLoadedLibrary] = useState(() => !backendEnabled)
   const [libraryError, setLibraryError]         = useState(null)
   const [selected, setSelected]                 = useState(null)
@@ -579,7 +585,7 @@ export default function FilesPage() {
 
   useEffect(() => {
     if (!backendEnabled) {
-      setLibrary(createInitialLibrarySnapshot())
+      setLibrary(demoEnabled ? createInitialLibrarySnapshot() : [])
       setHasLoadedLibrary(true)
       setLibraryError(null)
       return
@@ -591,7 +597,7 @@ export default function FilesPage() {
     setDetailItemId(null)
     setCurrentPath([])
     reloadLibrary(sidebarSection === 'trash')
-  }, [backendEnabled, reloadLibrary, sidebarSection])
+  }, [backendEnabled, demoEnabled, reloadLibrary, sidebarSection])
 
   const flattenedItems = useMemo(() => flattenLibrary(library), [library])
   const itemById = useMemo(() => new Map(flattenedItems.map((item) => [item.id, item])), [flattenedItems])
@@ -719,10 +725,14 @@ export default function FilesPage() {
       return
     }
 
+    if (!demoEnabled) {
+      return
+    }
+
     setLibrary((prev) =>
       updateLibraryItem(prev, id, (current) => ({ ...current, starred: !current.starred })),
     )
-  }, [accessToken, backendEnabled, itemById])
+  }, [accessToken, backendEnabled, demoEnabled, itemById])
 
   const handleContextAction = useCallback(async (action, item) => {
     setContextMenu(null)
@@ -734,6 +744,9 @@ export default function FilesPage() {
         showNotification('Renomear ainda não está disponível nesta integração do backend.')
         return
       }
+      if (!demoEnabled) {
+        return
+      }
       setRenamingId(item.id)
     } else if (action === 'delete') {
       try {
@@ -743,8 +756,10 @@ export default function FilesPage() {
             token: accessToken,
           })
           await reloadLibrary(sidebarSection === 'trash')
-        } else {
+        } else if (demoEnabled) {
           setLibrary((prev) => updateLibraryItem(prev, item.id, markLibraryItemDeleted))
+        } else {
+          return
         }
 
         if (detailItemId === item.id) setDetailItemId(null)
@@ -761,8 +776,10 @@ export default function FilesPage() {
             token: accessToken,
           })
           await reloadLibrary(sidebarSection === 'trash')
-        } else {
+        } else if (demoEnabled) {
           setLibrary((prev) => restoreLibraryItem(prev, item.id))
+        } else {
+          return
         }
 
         if (detailItemId === item.id) setDetailItemId(null)
@@ -782,8 +799,10 @@ export default function FilesPage() {
             token: accessToken,
           })
           await reloadLibrary(sidebarSection === 'trash')
-        } else {
+        } else if (demoEnabled) {
           setLibrary((prev) => removeLibraryItem(prev, item.id))
+        } else {
+          return
         }
 
         if (detailItemId === item.id) setDetailItemId(null)
@@ -810,12 +829,17 @@ export default function FilesPage() {
           showNotification(error?.message ?? `Não foi possível baixar "${item.name}"`)
           return
         }
-      } else {
+      } else if (demoEnabled) {
         showNotification(`Baixando "${item.name}"...`)
+      } else {
+        return
       }
     } else if (action === 'share') {
       if (backendEnabled) {
         showNotification('Compartilhamento será disponibilizado pelas telas de plano.')
+        return
+      }
+      if (!demoEnabled) {
         return
       }
       showNotification(`Link de "${item.name}" copiado`)
@@ -829,7 +853,7 @@ export default function FilesPage() {
     } else if (action === 'move') {
       showNotification(`Opções de mover abertas para "${item.name}"`)
     }
-  }, [accessToken, backendEnabled, detailItemId, reloadLibrary, selected, sidebarSection, toggleStar])
+  }, [accessToken, backendEnabled, demoEnabled, detailItemId, reloadLibrary, selected, sidebarSection, toggleStar])
 
   const showNotification = (msg) => {
     if (notificationTimerRef.current) {
@@ -865,6 +889,11 @@ export default function FilesPage() {
       return
     }
 
+    if (!demoEnabled) {
+      setRenamingId(null)
+      return
+    }
+
     if (newName.trim()) {
       setLibrary((prev) =>
         updateLibraryItem(prev, id, (current) => ({ ...current, name: newName.trim() })),
@@ -875,6 +904,10 @@ export default function FilesPage() {
 
   // Upload simulation
   const simulateUpload = async (fileLike) => {
+    if (!backendEnabled && !demoEnabled) {
+      return
+    }
+
     const name = typeof fileLike === 'string' ? fileLike : fileLike.name
     const id = createClientId('upload')
     setUploads(prev => [...prev, { id, name, progress: 0 }])
@@ -963,6 +996,10 @@ export default function FilesPage() {
         showNotification(error?.message ?? 'Não foi possível criar a pasta.')
       }
 
+      return
+    }
+
+    if (!demoEnabled) {
       return
     }
 
