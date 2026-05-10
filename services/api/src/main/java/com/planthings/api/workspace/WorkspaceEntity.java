@@ -22,6 +22,10 @@ public class WorkspaceEntity extends BaseEntity {
   @Column(nullable = false, length = 20)
   private WorkspaceSubscriptionPlan subscriptionPlan = WorkspaceSubscriptionPlan.BASIC;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "icon_key", nullable = false, length = 40)
+  private WorkspaceIconKey iconKey = WorkspaceIconKey.BUILDING;
+
   public UUID getOwnerUserId() {
     return ownerUserId;
   }
@@ -44,5 +48,13 @@ public class WorkspaceEntity extends BaseEntity {
 
   public void setSubscriptionPlan(WorkspaceSubscriptionPlan subscriptionPlan) {
     this.subscriptionPlan = subscriptionPlan;
+  }
+
+  public WorkspaceIconKey getIconKey() {
+    return iconKey;
+  }
+
+  public void setIconKey(WorkspaceIconKey iconKey) {
+    this.iconKey = iconKey;
   }
 }

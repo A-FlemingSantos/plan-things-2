@@ -132,7 +132,6 @@ public class AccountDeletionService {
           where plan_id in (select id from plans where workspace_id = :workspaceId)
           """, params);
       jdbcTemplate.update("delete from calendar_events where workspace_id = :workspaceId", params);
-      jdbcTemplate.update("delete from avatar_images where owner_type = 'WORKSPACE' and owner_id = :workspaceId", params);
       jdbcTemplate.update("delete from plans where workspace_id = :workspaceId", params);
       jdbcTemplate.update("delete from workspaces where id = :workspaceId", params);
     }

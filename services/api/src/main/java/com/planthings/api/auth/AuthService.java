@@ -11,6 +11,7 @@ import com.planthings.api.avatar.AvatarImageService;
 import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
+import com.planthings.api.workspace.WorkspaceIconKey;
 import com.planthings.api.workspace.WorkspaceStorageService;
 import com.planthings.api.workspace.WorkspaceSubscriptionPlan;
 import java.time.Clock;
@@ -236,7 +237,7 @@ public class AuthService {
     return new WorkspaceSummary(
         workspace.getId(),
         workspace.getName(),
-        avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
+        workspace.getIconKey(),
         workspace.getSubscriptionPlan(),
         storage.storageUsedBytes(),
         storage.storageQuotaBytes(),
@@ -412,7 +413,7 @@ public class AuthService {
   public record WorkspaceSummary(
       UUID id,
       String name,
-      String avatarUrl,
+      WorkspaceIconKey iconKey,
       WorkspaceSubscriptionPlan subscriptionPlan,
       long storageUsedBytes,
       long storageQuotaBytes,

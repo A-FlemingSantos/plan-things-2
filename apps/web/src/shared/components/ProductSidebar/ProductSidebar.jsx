@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../../config/routes.js'
-import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import { WorkspaceIconGlyph, normalizeWorkspaceIconKey } from '../WorkspaceIconBadge/WorkspaceIconBadge.jsx'
 import './ProductSidebar.css'
 
 export default function ProductSidebar({
@@ -19,12 +19,12 @@ export default function ProductSidebar({
   secondaryContent = null,
   bottomContent = null,
   workspaceName = 'Workspace do Arthur',
-  workspaceInitial = 'A',
-  workspaceAvatarUrl = null,
+  workspaceIconKey = null,
   showCollapseButton = true,
   headerControl = null,
   ariaLabel,
 }) {
+  const resolvedWorkspaceIconKey = normalizeWorkspaceIconKey(workspaceIconKey)
   const secondaryWrapperStyle = {
     flex: 1,
     minHeight: 0,
@@ -86,14 +86,13 @@ export default function ProductSidebar({
           aria-hidden={collapsed ? true : undefined}
           data-sidebar-workspace-picker
         >
-          <AuthenticatedAvatar
+          <span
             className={styles.wsAvatar}
-            imageClassName="authenticatedAvatarImage"
-            avatarUrl={workspaceAvatarUrl}
-            fallback={workspaceInitial}
             title={workspaceName}
             data-sidebar-workspace-avatar
-          />
+          >
+            <WorkspaceIconGlyph iconKey={resolvedWorkspaceIconKey} />
+          </span>
           <span className={styles.wsName} data-sidebar-workspace-name>{workspaceName}</span>
           <span className={styles.wsChevron} data-sidebar-workspace-chevron><ChevronIcon /></span>
         </button>

@@ -14,6 +14,12 @@ import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNav
 import { toRouteString } from '../../../../shared/config/routes.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
 import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
+import {
+  getWorkspaceIconOption,
+  normalizeWorkspaceIconKey,
+  WorkspaceIconGlyph,
+  WORKSPACE_ICON_OPTIONS,
+} from '../../../../shared/components/WorkspaceIconBadge/WorkspaceIconBadge.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import {
   KANBAN_ACCENT_BASE_COLOR_OPTIONS,
@@ -391,18 +397,17 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const [generalSaveState, setGeneralSaveState] = useState('idle')
   const [generalError, setGeneralError] = useState('')
   const [isKanbanAccentPaletteOpen, setIsKanbanAccentPaletteOpen] = useState(false)
+  const [isWorkspaceIconPickerOpen, setIsWorkspaceIconPickerOpen] = useState(false)
 
   // ── Workspace state
   const [wsName, setWsName] = useState(workspace?.name ?? '')
-  const [workspaceAvatarUrl, setWorkspaceAvatarUrl] = useState(workspace?.avatarUrl ?? null)
-  const [workspaceAvatarPreview, setWorkspaceAvatarPreview] = useState(null)
+  const [workspaceIconKey, setWorkspaceIconKey] = useState(() => normalizeWorkspaceIconKey(workspace?.iconKey))
   const [workspaceSaveState, setWorkspaceSaveState] = useState('idle')
   const [workspaceError, setWorkspaceError] = useState('')
-  const [workspaceAvatarState, setWorkspaceAvatarState] = useState('idle')
-  const [workspaceAvatarFeedback, setWorkspaceAvatarFeedback] = useState('')
-  const workspaceAvatarInputRef = useRef(null)
-  const workspaceAvatarObjectUrlRef = useRef(null)
+  const [workspaceIconState, setWorkspaceIconState] = useState('idle')
+  const [workspaceIconFeedback, setWorkspaceIconFeedback] = useState('')
   const kanbanAccentPickerRef = useRef(null)
+  const workspaceIconPickerRef = useRef(null)
   const [workspacePlan, setWorkspacePlan] = useState(() => workspace?.subscriptionPlan ?? 'BASIC')
   const [workspaceStorageUsedBytes, setWorkspaceStorageUsedBytes] = useState(() => workspace?.storageUsedBytes ?? 0)
   const [workspaceStorageQuotaBytes, setWorkspaceStorageQuotaBytes] = useState(() => (
@@ -474,32 +479,21 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     setAccountAvatarPreview(nextUrl)
   }
 
-  const replaceWorkspaceAvatarPreview = (nextUrl) => {
-    if (workspaceAvatarObjectUrlRef.current && workspaceAvatarObjectUrlRef.current !== nextUrl) {
-      window.URL.revokeObjectURL(workspaceAvatarObjectUrlRef.current)
-    }
-    workspaceAvatarObjectUrlRef.current = nextUrl?.startsWith('blob:') ? nextUrl : null
-    setWorkspaceAvatarPreview(nextUrl)
-  }
-
   useEffect(() => {
     setFullName(currentUser?.fullName ?? '')
     setWsName(workspace?.name ?? '')
     setAccountAvatarUrl(currentUser?.avatarUrl ?? null)
-    setWorkspaceAvatarUrl(workspace?.avatarUrl ?? null)
+    setWorkspaceIconKey(normalizeWorkspaceIconKey(workspace?.iconKey))
     setWorkspacePlan(workspace?.subscriptionPlan ?? 'BASIC')
     setWorkspaceStorageUsedBytes(workspace?.storageUsedBytes ?? 0)
     setWorkspaceStorageQuotaBytes(workspace?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(workspace?.subscriptionPlan ?? 'BASIC'))
     setLocalPasswordEnabled(currentUser?.localPasswordEnabled ?? true)
     setExternalIdentityLinked(currentUser?.externalIdentityLinked ?? false)
-  }, [currentUser?.avatarUrl, currentUser?.externalIdentityLinked, currentUser?.fullName, currentUser?.localPasswordEnabled, workspace?.avatarUrl, workspace?.name, workspace?.storageQuotaBytes, workspace?.storageUsedBytes, workspace?.subscriptionPlan])
+  }, [currentUser?.avatarUrl, currentUser?.externalIdentityLinked, currentUser?.fullName, currentUser?.localPasswordEnabled, workspace?.iconKey, workspace?.name, workspace?.storageQuotaBytes, workspace?.storageUsedBytes, workspace?.subscriptionPlan])
 
   useEffect(() => () => {
     if (accountAvatarObjectUrlRef.current) {
       window.URL.revokeObjectURL(accountAvatarObjectUrlRef.current)
-    }
-    if (workspaceAvatarObjectUrlRef.current) {
-      window.URL.revokeObjectURL(workspaceAvatarObjectUrlRef.current)
     }
   }, [])
 
@@ -528,6 +522,30 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   }, [isKanbanAccentPaletteOpen])
 
   useEffect(() => {
+    if (!isWorkspaceIconPickerOpen) return undefined
+
+    const handlePointerDown = (event) => {
+      if (!workspaceIconPickerRef.current?.contains(event.target)) {
+        setIsWorkspaceIconPickerOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsWorkspaceIconPickerOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isWorkspaceIconPickerOpen])
+
+  useEffect(() => {
     let active = true
 
     if (!backendEnabled || !accessToken || !accountAvatarUrl) {
@@ -554,34 +572,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       active = false
     }
   }, [accessToken, accountAvatarUrl, backendEnabled])
-
-  useEffect(() => {
-    let active = true
-
-    if (!backendEnabled || !accessToken || !workspaceAvatarUrl) {
-      if (!workspaceAvatarUrl) replaceWorkspaceAvatarPreview(null)
-      return () => {
-        active = false
-      }
-    }
-
-    apiRequest(workspaceAvatarUrl, { token: accessToken, responseType: 'blob' })
-      .then((blob) => {
-        const objectUrl = window.URL.createObjectURL(blob)
-        if (active) {
-          replaceWorkspaceAvatarPreview(objectUrl)
-        } else {
-          window.URL.revokeObjectURL(objectUrl)
-        }
-      })
-      .catch(() => {
-        if (active) replaceWorkspaceAvatarPreview(null)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [accessToken, backendEnabled, workspaceAvatarUrl])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -673,11 +663,13 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
 
         if (!active) return
 
+        setWorkspaceIconKey(normalizeWorkspaceIconKey(snapshot?.iconKey))
         setWorkspacePlan(snapshot?.subscriptionPlan ?? 'BASIC')
         setWorkspaceStorageUsedBytes(snapshot?.storageUsedBytes ?? 0)
         setWorkspaceStorageQuotaBytes(snapshot?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(snapshot?.subscriptionPlan ?? 'BASIC'))
         patchSession?.({
           workspace: {
+            iconKey: normalizeWorkspaceIconKey(snapshot?.iconKey),
             subscriptionPlan: snapshot?.subscriptionPlan ?? 'BASIC',
             storageUsedBytes: snapshot?.storageUsedBytes ?? 0,
             storageQuotaBytes: snapshot?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(snapshot?.subscriptionPlan ?? 'BASIC'),
@@ -782,7 +774,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       patchSession?.({
         workspace: {
           name: response.name,
-          avatarUrl: response.avatarUrl,
+          iconKey: normalizeWorkspaceIconKey(response.iconKey),
           subscriptionPlan: response.subscriptionPlan ?? 'BASIC',
           storageUsedBytes: response.storageUsedBytes ?? 0,
           storageQuotaBytes: response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? 'BASIC'),
@@ -793,6 +785,48 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       if (requestId !== workspaceRequestRef.current) return
       setWorkspaceError(error?.message ?? 'Nao foi possivel salvar o nome do workspace.')
       setWorkspaceSaveState('error')
+    }
+  }
+
+  const persistWorkspaceIcon = async (nextIconKey, previousIconKey = workspaceIconKey) => {
+    const normalizedIconKey = normalizeWorkspaceIconKey(nextIconKey)
+    setWorkspaceIconState('saving')
+    setWorkspaceIconFeedback('')
+
+    if (!backendEnabled || !accessToken) {
+      patchSession?.({ workspace: { iconKey: normalizedIconKey } })
+      setWorkspaceIconState('saved')
+      setWorkspaceIconFeedback('Ícone atualizado no modo local.')
+      return
+    }
+
+    try {
+      const response = await apiRequest('/api/workspace/icon', {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          iconKey: normalizedIconKey,
+        },
+      })
+
+      setWorkspaceIconKey(normalizeWorkspaceIconKey(response?.iconKey))
+      setWorkspacePlan(response?.subscriptionPlan ?? workspacePlan ?? 'BASIC')
+      setWorkspaceStorageUsedBytes(response?.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0)
+      setWorkspaceStorageQuotaBytes(response?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response?.subscriptionPlan ?? workspacePlan ?? 'BASIC'))
+      patchSession?.({
+        workspace: {
+          iconKey: normalizeWorkspaceIconKey(response?.iconKey),
+          subscriptionPlan: response?.subscriptionPlan ?? workspacePlan ?? 'BASIC',
+          storageUsedBytes: response?.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0,
+          storageQuotaBytes: response?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response?.subscriptionPlan ?? workspacePlan ?? 'BASIC'),
+        },
+      })
+      setWorkspaceIconState('saved')
+      setWorkspaceIconFeedback('Ícone atualizado.')
+    } catch (error) {
+      setWorkspaceIconKey(previousIconKey)
+      setWorkspaceIconState('error')
+      setWorkspaceIconFeedback(error?.message ?? 'Nao foi possivel atualizar o ícone.')
     }
   }
 
@@ -810,6 +844,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       setWorkspaceStorageQuotaBytes(quotaBytes)
       patchSession?.({
         workspace: {
+          iconKey: workspaceIconKey,
           subscriptionPlan: nextPlan,
           storageQuotaBytes: quotaBytes,
         },
@@ -832,6 +867,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       setWorkspaceStorageQuotaBytes(response?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response?.subscriptionPlan ?? nextPlan))
       patchSession?.({
         workspace: {
+          iconKey: normalizeWorkspaceIconKey(response?.iconKey ?? workspaceIconKey),
           subscriptionPlan: response?.subscriptionPlan ?? nextPlan,
           storageUsedBytes: response?.storageUsedBytes ?? workspaceStorageUsedBytes,
           storageQuotaBytes: response?.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response?.subscriptionPlan ?? nextPlan),
@@ -1072,90 +1108,12 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     persistWorkspaceName(value)
   }
 
-  const handleWorkspaceAvatarSelected = async (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    const validation = validateAvatarFile(file)
-    if (validation) {
-      setWorkspaceAvatarState('error')
-      setWorkspaceAvatarFeedback(validation)
-      return
-    }
-
-    replaceWorkspaceAvatarPreview(window.URL.createObjectURL(file))
-    setWorkspaceAvatarState('saving')
-    setWorkspaceAvatarFeedback('')
-
-    if (!backendEnabled || !accessToken) {
-      setWorkspaceAvatarState('saved')
-      setWorkspaceAvatarFeedback('Avatar atualizado no modo local.')
-      return
-    }
-
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      const response = await apiRequest('/api/workspace/avatar', {
-        method: 'POST',
-        token: accessToken,
-        body: formData,
-      })
-      setWorkspaceAvatarUrl(response.avatarUrl ?? null)
-      setWorkspacePlan(response.subscriptionPlan ?? workspacePlan ?? 'BASIC')
-      setWorkspaceStorageUsedBytes(response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0)
-      setWorkspaceStorageQuotaBytes(response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'))
-      patchSession?.({
-        workspace: {
-          avatarUrl: response.avatarUrl ?? null,
-          subscriptionPlan: response.subscriptionPlan ?? workspacePlan ?? 'BASIC',
-          storageUsedBytes: response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0,
-          storageQuotaBytes: response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'),
-        },
-      })
-      setWorkspaceAvatarState('saved')
-      setWorkspaceAvatarFeedback('Avatar atualizado.')
-    } catch (error) {
-      setWorkspaceAvatarState('error')
-      setWorkspaceAvatarFeedback(error?.message ?? 'Nao foi possivel atualizar o avatar.')
-    }
-  }
-
-  const handleRemoveWorkspaceAvatar = async () => {
-    setWorkspaceAvatarState('saving')
-    setWorkspaceAvatarFeedback('')
-
-    if (!backendEnabled || !accessToken) {
-      setWorkspaceAvatarUrl(null)
-      replaceWorkspaceAvatarPreview(null)
-      setWorkspaceAvatarState('saved')
-      setWorkspaceAvatarFeedback('Avatar removido no modo local.')
-      return
-    }
-
-    try {
-      const response = await apiRequest('/api/workspace/avatar', {
-        method: 'DELETE',
-        token: accessToken,
-      })
-      setWorkspaceAvatarUrl(response.avatarUrl ?? null)
-      replaceWorkspaceAvatarPreview(null)
-      setWorkspacePlan(response.subscriptionPlan ?? workspacePlan ?? 'BASIC')
-      setWorkspaceStorageUsedBytes(response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0)
-      setWorkspaceStorageQuotaBytes(response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'))
-      patchSession?.({
-        workspace: {
-          avatarUrl: response.avatarUrl ?? null,
-          subscriptionPlan: response.subscriptionPlan ?? workspacePlan ?? 'BASIC',
-          storageUsedBytes: response.storageUsedBytes ?? workspaceStorageUsedBytes ?? 0,
-          storageQuotaBytes: response.storageQuotaBytes ?? getWorkspacePlanQuotaBytes(response.subscriptionPlan ?? workspacePlan ?? 'BASIC'),
-        },
-      })
-      setWorkspaceAvatarState('saved')
-      setWorkspaceAvatarFeedback('Avatar removido.')
-    } catch (error) {
-      setWorkspaceAvatarState('error')
-      setWorkspaceAvatarFeedback(error?.message ?? 'Nao foi possivel remover o avatar.')
-    }
+  const handleWorkspaceIconChange = (value) => {
+    const previousIconKey = workspaceIconKey
+    const normalizedIconKey = normalizeWorkspaceIconKey(value)
+    setWorkspaceIconKey(normalizedIconKey)
+    setIsWorkspaceIconPickerOpen(false)
+    persistWorkspaceIcon(normalizedIconKey, previousIconKey)
   }
 
   const handleNotificationToggle = (field, value) => {
@@ -1469,10 +1427,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const userInitials = fullName
     ? fullName.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
     : 'AS'
-
-  const wsInitials = wsName
-    ? wsName.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
-    : 'WS'
 
   /* ── Section: Conta ── */
   const renderAccount = () => (
@@ -1846,47 +1800,63 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     const storagePercent = storageQuotaBytes > 0
       ? Math.min(100, (storageUsedBytes / storageQuotaBytes) * 100)
       : 0
+    const selectedWorkspaceIcon = getWorkspaceIconOption(workspaceIconKey)
 
     return (
       <>
       <SectionGroup title="Identidade do workspace">
         <div className={styles.wsIdentityRow}>
-          <div className={styles.wsAvatarBox}>
-            {workspaceAvatarPreview ? (
-              <img className={styles.wsAvatarImage} src={workspaceAvatarPreview} alt="" />
-            ) : wsInitials}
-          </div>
-          <div className={styles.wsIdentityMeta}>
-            <p className={styles.wsIdentityLabel}>Logo ou iniciais do workspace</p>
-            <p className={styles.wsIdentityHint}>PNG, JPG ou WebP. Recomendado: 128×128 px.</p>
-            <input
-              ref={workspaceAvatarInputRef}
-              type="file"
-              className={styles.fileInput}
-              accept={AVATAR_ACCEPT}
-              onChange={handleWorkspaceAvatarSelected}
-            />
-            <div className={styles.avatarActions}>
+          <div className={styles.wsIdentityPickerRow}>
+            <div className={styles.wsAvatarBox}>
+              <WorkspaceIconGlyph iconKey={workspaceIconKey} className={styles.wsAvatarIcon} />
+            </div>
+            <div ref={workspaceIconPickerRef} className={styles.workspaceIconControl}>
               <button
                 type="button"
-                className={styles.btnSecondary}
-                onClick={() => workspaceAvatarInputRef.current?.click()}
-                disabled={workspaceAvatarState === 'saving'}
+                className={`${styles.workspaceIconTrigger} ${isWorkspaceIconPickerOpen ? styles.workspaceIconTriggerActive : ''}`}
+                onClick={() => setIsWorkspaceIconPickerOpen((value) => !value)}
+                aria-haspopup="dialog"
+                aria-expanded={isWorkspaceIconPickerOpen}
+                aria-label={`Selecionar ícone do workspace. Atual: ${selectedWorkspaceIcon.label}`}
+                title={`Ícone atual: ${selectedWorkspaceIcon.label}`}
+                disabled={workspaceIconState === 'saving'}
               >
-                <Ic.Upload /> Alterar avatar
+                <span className={styles.workspaceIconTriggerPreview}>
+                  <WorkspaceIconGlyph iconKey={workspaceIconKey} className={styles.workspaceIconTriggerGlyph} />
+                </span>
+                <span className={styles.workspaceIconTriggerText}>Escolher ícone</span>
+                <span className={styles.workspaceIconTriggerChevron}><Ic.Chevron /></span>
               </button>
-              {(workspaceAvatarPreview || workspaceAvatarUrl) && (
-                <button
-                  type="button"
-                  className={styles.btnGhost}
-                  onClick={handleRemoveWorkspaceAvatar}
-                  disabled={workspaceAvatarState === 'saving'}
-                >
-                  Remover
-                </button>
-              )}
+
+              {isWorkspaceIconPickerOpen ? (
+                <div className={styles.workspaceIconPopover} role="dialog" aria-label="Selecionar ícone do workspace">
+                  <div className={styles.workspaceIconGrid}>
+                    {WORKSPACE_ICON_OPTIONS.map((option) => {
+                      const isSelected = workspaceIconKey === option.key
+
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          className={`${styles.workspaceIconOption} ${isSelected ? styles.workspaceIconOptionActive : ''}`}
+                          onClick={() => handleWorkspaceIconChange(option.key)}
+                          aria-pressed={isSelected}
+                          aria-label={`Usar ícone ${option.label}`}
+                          title={option.label}
+                        >
+                          <WorkspaceIconGlyph iconKey={option.key} className={styles.workspaceIconOptionGlyph} />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
-            <AutoSaveStatus state={workspaceAvatarState} errorMessage={workspaceAvatarFeedback} successMessage={workspaceAvatarFeedback} />
+          </div>
+          <div className={styles.wsIdentityMeta}>
+            <p className={styles.wsIdentityLabel}>Ícone do workspace</p>
+            <p className={styles.wsIdentityHint}>Escolha um ícone para identificar o workspace em toda a navegação.</p>
+            <AutoSaveStatus state={workspaceIconState} errorMessage={workspaceIconFeedback} successMessage={workspaceIconFeedback} />
           </div>
         </div>
 

@@ -46,7 +46,7 @@ export default function ProductAppShell({
   bottomContent = null,
   workspaceName,
   workspaceInitial,
-  workspaceAvatarUrl,
+  workspaceIconKey,
   contentClassName,
   contentTag = 'div',
   mobileTitle = 'Workspace',
@@ -68,7 +68,7 @@ export default function ProductAppShell({
   const [drawerOpen, setDrawerOpen] = useState(false)
   const ContentTag = contentTag
   const resolvedWorkspaceName = workspaceName ?? workspace?.name ?? 'Workspace'
-  const resolvedWorkspaceAvatarUrl = workspaceAvatarUrl ?? workspace?.avatarUrl ?? null
+  const resolvedWorkspaceIconKey = workspaceIconKey ?? workspace?.iconKey ?? null
   const resolvedWorkspaceInitial = workspaceInitial
     ?? workspace?.name?.trim()?.charAt(0)?.toUpperCase()
     ?? currentUser?.fullName?.trim()?.charAt(0)?.toUpperCase()
@@ -201,7 +201,7 @@ export default function ProductAppShell({
               bottomContent={resolvedBottomContent}
               workspaceName={resolvedWorkspaceName}
               workspaceInitial={resolvedWorkspaceInitial}
-              workspaceAvatarUrl={resolvedWorkspaceAvatarUrl}
+              workspaceIconKey={resolvedWorkspaceIconKey}
               showCollapseButton={false}
               ariaLabel={mobileDrawerAriaLabel}
               headerControl={(
@@ -238,7 +238,7 @@ export default function ProductAppShell({
           bottomContent={resolvedBottomContent}
           workspaceName={resolvedWorkspaceName}
           workspaceInitial={resolvedWorkspaceInitial}
-          workspaceAvatarUrl={resolvedWorkspaceAvatarUrl}
+          workspaceIconKey={resolvedWorkspaceIconKey}
         />
       ) : null}
 

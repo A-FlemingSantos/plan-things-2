@@ -124,9 +124,7 @@ public class AvatarImageService {
   }
 
   private String urlFor(AvatarImageEntity avatar) {
-    String basePath = avatar.getOwnerType() == AvatarOwnerType.USER
-        ? "/api/avatars/users/" + avatar.getOwnerId()
-        : "/api/workspace/avatar";
+    String basePath = "/api/avatars/users/" + avatar.getOwnerId();
     long version = avatar.getUpdatedAt() == null ? 0L : avatar.getUpdatedAt().toInstant().toEpochMilli();
     return basePath + "?v=" + version;
   }

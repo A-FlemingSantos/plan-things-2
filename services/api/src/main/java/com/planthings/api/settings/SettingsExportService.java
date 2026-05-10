@@ -232,8 +232,9 @@ public class SettingsExportService {
         select avatar
         from AvatarImageEntity avatar
         where avatar.ownerId in :ownerIds
+          and avatar.ownerType = :ownerType
         order by avatar.createdAt asc
-        """, AvatarImageEntity.class, params("ownerIds", workspaceId == null ? List.of(user.getId()) : List.of(user.getId(), workspaceId)));
+        """, AvatarImageEntity.class, params("ownerIds", List.of(user.getId()), "ownerType", AvatarOwnerType.USER));
 
     List<Map<String, Object>> externalIdentities = query("""
         select identity
@@ -341,8 +342,7 @@ public class SettingsExportService {
       );
 
       for (AvatarImageEntity avatar : avatars) {
-        String scope = avatar.getOwnerType() == AvatarOwnerType.USER ? "user-avatar" : "workspace-avatar";
-        writeZipEntry(zipOutputStream, "avatars/" + scope + extensionForMimeType(avatar.getMimeType()), avatar.getContent());
+        writeZipEntry(zipOutputStream, "avatars/user-avatar" + extensionForMimeType(avatar.getMimeType()), avatar.getContent());
       }
 
       for (FileEntryEntity file : files) {

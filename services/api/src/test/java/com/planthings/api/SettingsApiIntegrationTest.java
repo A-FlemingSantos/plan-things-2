@@ -134,11 +134,24 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.name").value("Workspace Produto"));
 
+    mockMvc.perform(patch("/api/workspace/icon")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "iconKey": "ROCKET"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.iconKey").value("ROCKET"));
+
     mockMvc.perform(get("/api/me")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.user.fullName").value("Arthur Fleming"))
-        .andExpect(jsonPath("$.data.workspace.name").value("Workspace Produto"));
+        .andExpect(jsonPath("$.data.workspace.name").value("Workspace Produto"))
+        .andExpect(jsonPath("$.data.workspace.iconKey").value("ROCKET"))
+        .andExpect(jsonPath("$.data.workspace.avatarUrl").doesNotExist());
 
     mockMvc.perform(patch("/api/settings/password")
             .header("Authorization", "Bearer " + token)
@@ -197,34 +210,6 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.user.avatarUrl").value(org.hamcrest.Matchers.matchesPattern("/api/avatars/users/.+\\?v=.+")));
 
     mockMvc.perform(delete("/api/settings/account/avatar")
-            .header("Authorization", "Bearer " + token))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.avatarUrl").doesNotExist());
-  }
-
-  @Test
-  void shouldUploadServeAndRemoveWorkspaceAvatar() throws Exception {
-    String token = registerAndGetToken("Arthur Santos", "arthur-workspace-avatar@example.com", "12345678");
-    MockMultipartFile file = new MockMultipartFile("file", "workspace.png", "image/png", PNG_AVATAR);
-
-    mockMvc.perform(multipart("/api/workspace/avatar")
-            .file(file)
-            .header("Authorization", "Bearer " + token))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/workspace/avatar?v=")));
-
-    mockMvc.perform(get("/api/workspace/avatar")
-            .header("Authorization", "Bearer " + token))
-        .andExpect(status().isOk())
-        .andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_PNG))
-        .andExpect(content().bytes(PNG_AVATAR));
-
-    mockMvc.perform(get("/api/me")
-            .header("Authorization", "Bearer " + token))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.workspace.avatarUrl").value(org.hamcrest.Matchers.startsWith("/api/workspace/avatar?v=")));
-
-    mockMvc.perform(delete("/api/workspace/avatar")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.avatarUrl").doesNotExist());

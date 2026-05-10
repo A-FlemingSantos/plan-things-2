@@ -1,8 +1,6 @@
 package com.planthings.api.workspace;
 
 import com.planthings.api.auth.UserEntity;
-import com.planthings.api.avatar.AvatarImageService;
-import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.calendar.CalendarEventRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
@@ -13,7 +11,6 @@ import com.planthings.api.plans.PlanMemberRepository;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class WorkspaceService {
@@ -25,7 +22,6 @@ public class WorkspaceService {
   private final CalendarEventRepository calendarEventRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
-  private final AvatarImageService avatarImageService;
   private final WorkspaceStorageService workspaceStorageService;
 
   public WorkspaceService(
@@ -36,7 +32,6 @@ public class WorkspaceService {
       CalendarEventRepository calendarEventRepository,
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper,
-      AvatarImageService avatarImageService,
       WorkspaceStorageService workspaceStorageService
   ) {
     this.personalWorkspaceService = personalWorkspaceService;
@@ -46,7 +41,6 @@ public class WorkspaceService {
     this.calendarEventRepository = calendarEventRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
-    this.avatarImageService = avatarImageService;
     this.workspaceStorageService = workspaceStorageService;
   }
 
@@ -63,7 +57,7 @@ public class WorkspaceService {
     return new WorkspaceDashboard(
         workspace.getId(),
         workspace.getName(),
-        avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
+        workspace.getIconKey(),
         workspace.getSubscriptionPlan(),
         storage.storageUsedBytes(),
         storage.storageQuotaBytes(),
@@ -106,26 +100,14 @@ public class WorkspaceService {
   }
 
   @Transactional
-  public WorkspaceSummary uploadCurrentWorkspaceAvatar(MultipartFile avatar) {
+  public WorkspaceSummary updateCurrentWorkspaceIcon(WorkspaceIconKey iconKey) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
-    avatarImageService.upload(AvatarOwnerType.WORKSPACE, workspace.getId(), avatar);
-    return toWorkspaceSummary(workspace);
-  }
 
-  @Transactional
-  public WorkspaceSummary removeCurrentWorkspaceAvatar() {
-    UserEntity currentUser = authenticatedUserService.requireUser();
-    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
-    avatarImageService.remove(AvatarOwnerType.WORKSPACE, workspace.getId());
-    return toWorkspaceSummary(workspace);
-  }
+    workspace.setIconKey(iconKey);
+    workspaceRepository.save(workspace);
 
-  @Transactional(readOnly = true)
-  public AvatarImageService.AvatarDownload getCurrentWorkspaceAvatar() {
-    UserEntity currentUser = authenticatedUserService.requireUser();
-    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
-    return avatarImageService.download(AvatarOwnerType.WORKSPACE, workspace.getId());
+    return toWorkspaceSummary(workspace);
   }
 
   private String requireName(String value) {
@@ -144,7 +126,7 @@ public class WorkspaceService {
     return new WorkspaceSummary(
         workspace.getId(),
         workspace.getName(),
-        avatarImageService.avatarUrlFor(AvatarOwnerType.WORKSPACE, workspace.getId()),
+        workspace.getIconKey(),
         workspace.getSubscriptionPlan(),
         storage.storageUsedBytes(),
         storage.storageQuotaBytes(),
@@ -155,7 +137,7 @@ public class WorkspaceService {
   public record WorkspaceDashboard(
       UUID id,
       String name,
-      String avatarUrl,
+      WorkspaceIconKey iconKey,
       WorkspaceSubscriptionPlan subscriptionPlan,
       long storageUsedBytes,
       long storageQuotaBytes,
@@ -173,7 +155,7 @@ public class WorkspaceService {
   public record WorkspaceSummary(
       UUID id,
       String name,
-      String avatarUrl,
+      WorkspaceIconKey iconKey,
       WorkspaceSubscriptionPlan subscriptionPlan,
       long storageUsedBytes,
       long storageQuotaBytes,
