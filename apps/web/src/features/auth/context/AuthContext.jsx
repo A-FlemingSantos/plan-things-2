@@ -117,6 +117,15 @@ function isAuthFailure(error) {
   return error instanceof ApiClientError && (error.status === 401 || error.status === 403)
 }
 
+function shouldClearSessionAfterRefreshFailure(error, accessToken) {
+  if (isAuthFailure(error)) {
+    return true
+  }
+
+  const expiresAt = readAccessTokenExpiresAt(accessToken)
+  return expiresAt !== null && expiresAt <= Date.now()
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => readStoredSession())
   const [isReady, setIsReady] = useState(false)
@@ -159,9 +168,12 @@ export function AuthProvider({ children }) {
           ...refreshedSession,
           demo: false,
         })
-      } catch {
+      } catch (error) {
         if (!active) return
-        saveSession(null)
+
+        if (shouldClearSessionAfterRefreshFailure(error, storedSession.accessToken)) {
+          saveSession(null)
+        }
       } finally {
         if (active) {
           setIsReady(true)
@@ -213,13 +225,7 @@ export function AuthProvider({ children }) {
       } catch (error) {
         if (!active) return
 
-        if (isAuthFailure(error)) {
-          saveSession(null)
-          return
-        }
-
-        const expiresAt = readAccessTokenExpiresAt(accessToken)
-        if (expiresAt !== null && expiresAt <= Date.now()) {
+        if (shouldClearSessionAfterRefreshFailure(error, accessToken)) {
           saveSession(null)
           return
         }

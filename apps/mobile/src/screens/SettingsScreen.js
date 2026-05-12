@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
+import WorkspaceIconBadge from '../components/WorkspaceIconBadge'
 import { useAuth } from '../providers/AuthProvider'
 import { mobileApiRequest, mobileApiUrl } from '../services/api'
 import { buildPasswordRequest, getPasswordFlowCopy, resolvePasswordFlow } from './settingsPasswordFlow'
@@ -484,7 +485,6 @@ export default function SettingsScreen() {
   }
 
   const firstName = useMemo(() => session.user.fullName.split(' ')[0] ?? session.user.fullName, [session.user.fullName])
-  const workspaceInitial = useMemo(() => session.workspace.initial ?? (session.workspace.name?.[0] ?? 'W'), [session.workspace.initial, session.workspace.name])
   const selectedThemeLabel = themeLabels[themePreference] ?? themeLabels.system
   const effectiveThemeLabel = effectiveTheme === 'dark' ? 'escuro' : 'claro'
   const closeSheet = () => {
@@ -525,12 +525,11 @@ export default function SettingsScreen() {
           <Text style={styles.identityName} numberOfLines={1}>{session.user.fullName}</Text>
           <Text style={styles.identityEmail} numberOfLines={1}>{session.user.email}</Text>
           <View style={styles.identityMetaRow}>
-            <AuthenticatedAvatar
+            <WorkspaceIconBadge
               style={styles.workspaceBadge}
-              textStyle={styles.workspaceBadgeText}
-              avatarUrl={session.workspace.avatarUrl}
-              fallback={workspaceInitial}
-              accessibilityLabel={`Avatar de ${session.workspace.name}`}
+              color={theme.colors.text2}
+              iconKey={session.workspace.iconKey}
+              accessibilityLabel={`Icone do workspace ${session.workspace.name}`}
             />
             <Text style={styles.identityWorkspace} numberOfLines={1}>{session.workspace.name}</Text>
           </View>
@@ -1125,11 +1124,6 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.surface3,
     borderWidth: 1,
     borderColor: theme.colors.border1,
-  },
-  workspaceBadgeText: {
-    color: theme.colors.text2,
-    fontSize: 11,
-    fontWeight: '700',
   },
   identityWorkspace: {
     flex: 1,

@@ -91,6 +91,37 @@ describe('AuthProvider', () => {
     })
   })
 
+  it('keeps the stored session when bootstrap refresh fails transiently', async () => {
+    const expiresLater = Date.now() + (60 * 60 * 1000)
+    const storedToken = createAccessToken(expiresLater)
+
+    window.localStorage.setItem('plan-things.session', JSON.stringify({
+      accessToken: storedToken,
+      user: { id: 'user-1', fullName: 'Arthur Santos' },
+      workspace: { id: 'workspace-1', name: 'Workspace antigo' },
+      demo: false,
+    }))
+
+    apiMock.apiRequest.mockRejectedValueOnce(new Error('network unavailable'))
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true)
+    })
+
+    expect(apiMock.apiRequest).toHaveBeenCalledTimes(1)
+    expect(result.current.sessionMode).toBe('authenticated')
+    expect(result.current.accessToken).toBe(storedToken)
+    expect(result.current.currentUser?.fullName).toBe('Arthur Santos')
+    expect(JSON.parse(window.localStorage.getItem('plan-things.session'))).toMatchObject({
+      accessToken: storedToken,
+      user: { fullName: 'Arthur Santos' },
+      workspace: { name: 'Workspace antigo' },
+      demo: false,
+    })
+  })
+
   it('renews the token before expiration while the user stays active', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-05-09T12:00:00.000Z'))
