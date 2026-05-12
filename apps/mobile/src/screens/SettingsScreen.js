@@ -27,6 +27,7 @@ import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import WorkspaceIconBadge from '../components/WorkspaceIconBadge'
 import { useAuth } from '../providers/AuthProvider'
+import { isMobileSettingsReturnUrl } from '../services/mobileLinking'
 import { mobileApiRequest, mobileApiUrl } from '../services/api'
 import { buildPasswordRequest, getPasswordFlowCopy, resolvePasswordFlow } from './settingsPasswordFlow'
 import { theme } from '../theme/tokens'
@@ -206,7 +207,7 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     const subscription = Linking.addEventListener('url', ({ url }) => {
-      if (url.startsWith('planthings://settings')) {
+      if (isMobileSettingsReturnUrl(url)) {
         void loadSettings()
       }
     })

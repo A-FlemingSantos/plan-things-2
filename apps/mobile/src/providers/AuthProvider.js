@@ -2,6 +2,7 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import { Linking, Platform } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { mobileApiRequest } from '../services/api.js'
+import { parseMobileOAuthCallback } from '../services/mobileLinking.js'
 import {
   MIN_TOKEN_REFRESH_DELAY_MS,
   TOKEN_REFRESH_BUFFER_MS,
@@ -71,21 +72,7 @@ async function persistSession(session) {
 }
 
 function parseOAuthUrl(url) {
-  try {
-    const parsed = new URL(url)
-    const isNativeOAuthCallback = parsed.protocol === 'planthings:' && parsed.hostname === 'oauth' && parsed.pathname === '/callback'
-    const isWebOAuthCallback = (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.pathname === '/oauth/callback'
-    const isOAuthCallback = isNativeOAuthCallback || isWebOAuthCallback
-    if (!isOAuthCallback) return null
-
-    return {
-      code: parsed.searchParams.get('code'),
-      error: parsed.searchParams.get('error'),
-      redirectTo: parsed.searchParams.get('redirectTo'),
-    }
-  } catch {
-    return null
-  }
+  return parseMobileOAuthCallback(url)
 }
 
 export function AuthProvider({ children }) {

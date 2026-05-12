@@ -1,9 +1,15 @@
 import { Platform } from 'react-native'
+import Constants from 'expo-constants'
 import { apiRequest, buildApiUrl } from '@plan-things/shared-client/api'
+import { resolveMobileApiBaseUrl } from './apiBaseUrl.js'
 
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL
-  ?? (Platform.OS === 'android' ? 'http://10.0.2.2:8080' : 'http://localhost:8080')
+const expoHostUri = Constants.expoConfig?.hostUri ?? Constants.expoGoConfig?.debuggerHost ?? null
+
+export const API_BASE_URL = resolveMobileApiBaseUrl({
+  envBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,
+  expoHostUri,
+  platformOs: Platform.OS,
+})
 
 export function mobileApiRequest(path, options = {}) {
   return apiRequest(path, {
