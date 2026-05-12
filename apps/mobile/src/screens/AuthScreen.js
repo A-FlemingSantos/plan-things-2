@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Path, Rect } from 'react-native-svg'
 import { useAuth } from '../providers/AuthProvider'
+import { resolveAuthScreenModeFromRedirect } from '../providers/authSessionPolicy.js'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
 
@@ -26,7 +27,15 @@ function oauthErrorMessage(errorCode) {
 
 export default function AuthScreen() {
   styles = useThemedStyles(createStyles)
-  const { clearOAuthError, login, oauthError, register, startOAuthLogin } = useAuth()
+  const {
+    clearOAuthError,
+    clearPendingLogoutRedirect,
+    login,
+    oauthError,
+    pendingLogoutRedirect,
+    register,
+    startOAuthLogin,
+  } = useAuth()
   const [mode, setMode] = useState('welcome')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -35,6 +44,17 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false)
   const isRegister = mode === 'register'
   const isWelcome = mode === 'welcome'
+
+  useEffect(() => {
+    if (!pendingLogoutRedirect) return
+
+    const nextMode = resolveAuthScreenModeFromRedirect(pendingLogoutRedirect?.to)
+    if (nextMode) {
+      setMode(nextMode)
+    }
+
+    clearPendingLogoutRedirect()
+  }, [clearPendingLogoutRedirect, pendingLogoutRedirect])
 
   const submit = async () => {
     if (loading) return

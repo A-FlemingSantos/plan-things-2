@@ -1,7 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Linking, Platform } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
-import { mobileApiRequest } from '../services/api'
+import { mobileApiRequest } from '../services/api.js'
+import {
+  MIN_TOKEN_REFRESH_DELAY_MS,
+  TOKEN_REFRESH_BUFFER_MS,
+  TOKEN_REFRESH_RETRY_MS,
+  normalizeLogoutRedirect,
+  readAccessTokenExpiresAt,
+  resolveSessionMode,
+  shouldClearSessionAfterRefreshFailure,
+} from './authSessionPolicy.js'
 
 const SESSION_STORAGE_KEY = 'plan-things.session'
 const AuthContext = createContext(null)
@@ -48,6 +57,7 @@ async function persistSession(session) {
       window.localStorage.removeItem(SESSION_STORAGE_KEY)
       return
     }
+
     window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
     return
   }
@@ -83,6 +93,7 @@ export function AuthProvider({ children }) {
   const [isReady, setIsReady] = useState(false)
   const [oauthRedirectTo, setOauthRedirectTo] = useState(null)
   const [oauthError, setOauthError] = useState(null)
+  const [pendingLogoutRedirect, setPendingLogoutRedirect] = useState(null)
   const sessionRef = useRef(null)
 
   const saveSession = useCallback(async (nextSession) => {
@@ -90,43 +101,129 @@ export function AuthProvider({ children }) {
     sessionRef.current = normalized
     setSession(normalized)
     await persistSession(normalized)
+    if (normalized?.accessToken) {
+      setPendingLogoutRedirect(null)
+    }
     return normalized
   }, [])
 
-  const logout = useCallback(async () => {
+  const clearPendingLogoutRedirect = useCallback(() => {
+    setPendingLogoutRedirect(null)
+  }, [])
+
+  const clearSession = useCallback(async () => {
     sessionRef.current = null
     setSession(null)
     await persistSession(null)
   }, [])
 
-  const bootstrap = useCallback(async () => {
-    const storedSession = await readStoredSession()
+  const logout = useCallback(async (options = {}) => {
+    const redirectTo = normalizeLogoutRedirect(options.redirectTo)
+    await clearSession()
+    if (redirectTo) {
+      setPendingLogoutRedirect({
+        to: redirectTo,
+        replace: options.replace !== false,
+      })
+    } else {
+      clearPendingLogoutRedirect()
+    }
+  }, [clearPendingLogoutRedirect, clearSession])
 
-    if (!storedSession?.accessToken) {
+  const bootstrap = useCallback(async () => {
+    const storedSession = normalizeSession(await readStoredSession())
+
+    sessionRef.current = storedSession
+    setSession(storedSession)
+
+    if (!storedSession?.accessToken || storedSession.demo) {
       setIsReady(true)
       return
     }
 
     try {
-      const currentUser = await mobileApiRequest('/api/me', {
+      const refreshedSession = await mobileApiRequest('/api/auth/refresh', {
+        method: 'POST',
         token: storedSession.accessToken,
       })
 
       await saveSession({
-        ...storedSession,
-        user: currentUser.user,
-        workspace: currentUser.workspace,
+        ...refreshedSession,
+        demo: false,
       })
-    } catch {
-      await logout()
+    } catch (error) {
+      if (shouldClearSessionAfterRefreshFailure(error, storedSession.accessToken)) {
+        await saveSession(null)
+      }
     } finally {
       setIsReady(true)
     }
-  }, [logout, saveSession])
+  }, [saveSession])
 
   useEffect(() => {
-    bootstrap()
+    void bootstrap()
   }, [bootstrap])
+
+  useEffect(() => {
+    if (!session?.accessToken || session.demo) {
+      return undefined
+    }
+
+    const accessToken = session.accessToken
+    let active = true
+    let timeoutId = null
+
+    const clearRefreshTimer = () => {
+      if (timeoutId !== null) {
+        globalThis.clearTimeout(timeoutId)
+      }
+    }
+
+    const scheduleRefresh = (delayMs) => {
+      clearRefreshTimer()
+      if (!active) return
+      timeoutId = globalThis.setTimeout(() => {
+        void refreshSession()
+      }, Math.max(MIN_TOKEN_REFRESH_DELAY_MS, delayMs))
+    }
+
+    async function refreshSession() {
+      try {
+        const refreshedSession = await mobileApiRequest('/api/auth/refresh', {
+          method: 'POST',
+          token: accessToken,
+        })
+
+        if (!active) return
+
+        await saveSession({
+          ...refreshedSession,
+          demo: false,
+        })
+      } catch (error) {
+        if (!active) return
+
+        if (shouldClearSessionAfterRefreshFailure(error, accessToken)) {
+          await saveSession(null)
+          return
+        }
+
+        scheduleRefresh(TOKEN_REFRESH_RETRY_MS)
+      }
+    }
+
+    const expiresAt = readAccessTokenExpiresAt(accessToken)
+    if (expiresAt === null) {
+      scheduleRefresh(TOKEN_REFRESH_RETRY_MS)
+    } else {
+      scheduleRefresh(expiresAt - Date.now() - TOKEN_REFRESH_BUFFER_MS)
+    }
+
+    return () => {
+      active = false
+      clearRefreshTimer()
+    }
+  }, [saveSession, session?.accessToken, session?.demo])
 
   const completeOAuthLogin = useCallback(async (code) => {
     const response = await mobileApiRequest('/api/auth/oauth/exchange', {
@@ -144,6 +241,7 @@ export function AuthProvider({ children }) {
     if (payload.redirectTo) {
       setOauthRedirectTo(payload.redirectTo)
     }
+
     if (payload.error) {
       setOauthError(payload.error)
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -151,22 +249,36 @@ export function AuthProvider({ children }) {
       }
       return
     }
+
     if (payload.code) {
-      await completeOAuthLogin(payload.code)
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.history.replaceState({}, '', '/')
+      try {
+        await completeOAuthLogin(payload.code)
+        setOauthError(null)
+      } catch (error) {
+        setOauthError(error?.code ?? 'OAUTH_PROVIDER_ERROR')
+      } finally {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.history.replaceState({}, '', '/')
+        }
       }
     }
   }, [completeOAuthLogin])
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
-      if (url) handleIncomingUrl(url)
-      if (!url && Platform.OS === 'web' && typeof window !== 'undefined') {
-        handleIncomingUrl(window.location.href)
+      if (url) {
+        void handleIncomingUrl(url)
+        return
+      }
+
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        void handleIncomingUrl(window.location.href)
       }
     })
-    const subscription = Linking.addEventListener('url', ({ url }) => handleIncomingUrl(url))
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void handleIncomingUrl(url)
+    })
     return () => subscription.remove()
   }, [handleIncomingUrl])
 
@@ -175,6 +287,7 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: { email, password, client: 'mobile' },
     })
+
     return saveSession(response)
   }, [saveSession])
 
@@ -183,6 +296,7 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: { fullName, email, password, client: 'mobile' },
     })
+
     return saveSession(response)
   }, [saveSession])
 
@@ -218,25 +332,49 @@ export function AuthProvider({ children }) {
     })
   }, [saveSession])
 
+  const sessionMode = resolveSessionMode({
+    session,
+    isReady,
+  })
+
   const value = useMemo(() => ({
     accessToken: session?.accessToken ?? null,
     currentUser: session?.user ?? null,
     workspace: session?.workspace ?? null,
     session,
     isAuthenticated: Boolean(session?.accessToken),
+    isDemoSession: Boolean(session?.demo),
+    sessionMode,
     isReady,
     oauthRedirectTo,
     oauthError,
+    pendingLogoutRedirect,
     clearOAuthError,
+    clearPendingLogoutRedirect,
     login,
     register,
     startOAuthLogin,
     completeOAuthLogin,
     patchSession,
     logout,
-  }), [clearOAuthError, completeOAuthLogin, isReady, login, logout, oauthError, oauthRedirectTo, patchSession, register, session, startOAuthLogin])
+  }), [
+    clearOAuthError,
+    clearPendingLogoutRedirect,
+    completeOAuthLogin,
+    isReady,
+    login,
+    logout,
+    oauthError,
+    oauthRedirectTo,
+    patchSession,
+    pendingLogoutRedirect,
+    register,
+    session,
+    sessionMode,
+    startOAuthLogin,
+  ])
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return createElement(AuthContext.Provider, { value }, children)
 }
 
 export function useAuth() {
