@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, Easing, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { shouldUseNativeDriver } from '../theme/platformRuntime'
 import { platformShadow } from '../theme/shadowStyles'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
@@ -24,7 +25,7 @@ export default function BottomSheet({ children, onClose, title, visible }) {
       toValue: 1,
       duration: 230,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start()
   }, [dragY, progress, visible])
 
@@ -34,7 +35,7 @@ export default function BottomSheet({ children, onClose, title, visible }) {
       toValue: 0,
       duration: 190,
       easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start(({ finished }) => {
       if (finished) onClose?.()
     })
@@ -56,7 +57,7 @@ export default function BottomSheet({ children, onClose, title, visible }) {
         damping: 18,
         stiffness: 180,
         mass: 0.7,
-        useNativeDriver: true,
+        useNativeDriver: shouldUseNativeDriver,
       }).start()
     },
   }), [close, dragY])

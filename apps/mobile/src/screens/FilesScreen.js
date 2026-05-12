@@ -27,6 +27,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react-native'
+import { shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
 import { platformShadow } from '../theme/shadowStyles'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
@@ -185,7 +186,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       toValue: 1,
       duration: 240,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start()
   }, [sheetDragY, sheetProgress])
 
@@ -204,7 +205,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       toValue: 0,
       duration: 210,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start(({ finished }) => {
       if (finished) setNewItemSheetVisible(false)
     })
@@ -226,7 +227,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
         damping: 18,
         stiffness: 190,
         mass: 0.7,
-        useNativeDriver: true,
+        useNativeDriver: shouldUseNativeDriver,
       }).start()
     },
   }), [closeNewItemSheet, sheetDragY])
@@ -533,8 +534,10 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
       />
 
       <View
-        style={[styles.sheetLayer, { bottom: -bottomOverlayOffset }]}
-        pointerEvents={newItemSheetVisible ? 'box-none' : 'none'}
+        {...withPlatformPointerEvents(
+          [styles.sheetLayer, { bottom: -bottomOverlayOffset }],
+          newItemSheetVisible ? 'box-none' : 'none',
+        )}
       >
         <Animated.View style={[styles.sheetOverlay, { opacity: sheetOverlayOpacity }]}>
           <Pressable

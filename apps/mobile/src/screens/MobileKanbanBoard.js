@@ -41,6 +41,7 @@ import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
+import { shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
 
@@ -368,7 +369,7 @@ function CardDetailScreen({
       toValue: 0,
       duration: 260,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start()
   }, [slideProgress])
 
@@ -377,7 +378,7 @@ function CardDetailScreen({
       toValue: 1,
       duration: 210,
       easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start(({ finished }) => {
       if (finished) {
         onClose()
@@ -1421,7 +1422,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
         damping: 22,
         stiffness: 210,
         mass: 0.8,
-        useNativeDriver: true,
+        useNativeDriver: shouldUseNativeDriver,
       }).start()
       return
     }
@@ -1432,7 +1433,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       toValue: -safeIndex * pageWidth,
       duration: 260,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start(({ finished }) => {
       if (finished) {
         setActiveColumnIndex(safeIndex)
@@ -1457,7 +1458,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       damping: 22,
       stiffness: 210,
       mass: 0.8,
-      useNativeDriver: true,
+      useNativeDriver: shouldUseNativeDriver,
     }).start()
   }
 
@@ -1914,7 +1915,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       </ScrollView>
 
       {boardView === 'tasks' ? (
-        <View pointerEvents="box-none" style={styles.tasksFabOverlay}>
+        <View {...withPlatformPointerEvents(styles.tasksFabOverlay, 'box-none')}>
           <Pressable
             style={styles.tasksFab}
             onPress={() => openAddCardSheet(boardColumnsState[0]?.id, true)}
@@ -1926,7 +1927,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
         </View>
       ) : null}
 
-      <View pointerEvents="box-none" style={styles.viewToolbarOverlay}>
+      <View {...withPlatformPointerEvents(styles.viewToolbarOverlay, 'box-none')}>
         <View style={styles.viewToolbar}>
           {[
             { id: 'lists', label: 'Listas', icon: Kanban },
