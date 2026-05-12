@@ -5,6 +5,7 @@ vi.mock('react-native', () => ({
 }))
 
 const { interactivePointerEventsStyle, withPlatformPointerEvents } = await import('../../../../mobile/src/theme/platformRuntime.js')
+const { buildTaskCompletionPatch, isTaskDone } = await import('../../../../mobile/src/screens/mobileTaskCompletion.js')
 const { buildBoardCardPayload, mapBoardCard } = await import('../../../../../packages/shared-client/src/board.js')
 
 describe('mobile kanban task interactions', () => {
@@ -24,6 +25,7 @@ describe('mobile kanban task interactions', () => {
       columnId: 'col-1',
       title: 'Tarefa',
       description: '',
+      completed: true,
       starred: true,
       label: null,
       assignees: [],
@@ -35,7 +37,9 @@ describe('mobile kanban task interactions', () => {
       checklists: [],
     })
 
+    expect(mappedCard.isCompleted).toBe(true)
     expect(mappedCard.starred).toBe(true)
+    expect(isTaskDone(mappedCard, { title: 'Backlog' })).toBe(true)
 
     expect(buildBoardCardPayload({
       ...mappedCard,
@@ -45,7 +49,16 @@ describe('mobile kanban task interactions', () => {
         dueEnabled: false,
       },
     })).toMatchObject({
+      completed: true,
       starred: true,
+    })
+  })
+
+  it('builds a completion patch from card state instead of relying on the column title', () => {
+    expect(isTaskDone({ isCompleted: false }, { title: 'Fazer' })).toBe(false)
+    expect(buildTaskCompletionPatch({ isCompleted: false }, { title: 'Fazer' })).toEqual({
+      isCompleted: true,
+      completed: true,
     })
   })
 })

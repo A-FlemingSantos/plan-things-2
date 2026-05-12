@@ -41,6 +41,7 @@ import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
+import { buildTaskCompletionPatch, isLegacyDoneColumn, isTaskDone } from './mobileTaskCompletion'
 import { interactivePointerEventsStyle, shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
@@ -60,7 +61,7 @@ function findMembers(memberIds = []) {
 }
 
 function isDoneColumn(column) {
-  return Boolean(column?.title?.toLowerCase().includes('conclu'))
+  return isLegacyDoneColumn(column)
 }
 
 function MemberAvatar({ member, style, textStyle, fallback = 'PT' }) {
@@ -106,6 +107,8 @@ function createLocalCard(title) {
     title,
     columnId: null,
     description: '',
+    isCompleted: false,
+    completed: false,
     starred: false,
     labelId: null,
     memberIds: [],
@@ -1309,7 +1312,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       column.cards.map((card) => ({
         card,
         column,
-        isDone: isDoneColumn(column),
+        isDone: isTaskDone(card, column),
         isPinned: Boolean(card.starred),
       }))
     ))
@@ -1676,17 +1679,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
 
   const toggleTaskDone = (card, column, isDone) => {
     if (!card || !column) return
-
-    if (isDone) {
-      const targetColumn = boardColumnsState.find((item) => !isDoneColumn(item))
-      if (!targetColumn || targetColumn.id === column.id) return
-      moveCard(card.id, targetColumn.id)
-      return
-    }
-
-    const doneColumn = boardColumnsState.find(isDoneColumn)
-    if (!doneColumn || doneColumn.id === column.id) return
-    moveCard(card.id, doneColumn.id)
+    updateCard(card.id, buildTaskCompletionPatch(card, column))
   }
 
   const toggleTaskPinned = (cardId) => {
