@@ -55,12 +55,12 @@ public class BoardController {
 
   @PostMapping("/cards")
   public ApiEnvelope<BoardService.BoardCardView> createCard(@PathVariable UUID planId, @Valid @RequestBody CardRequest request) {
-    return ApiEnvelope.ok(boardService.createCard(planId, request.columnId(), request.title(), request.description(), request.labelId(), request.assigneeIds(), request.completed(), request.startAt(), request.dueAt()));
+    return ApiEnvelope.ok(boardService.createCard(planId, request.columnId(), request.title(), request.description(), request.labelId(), request.assigneeIds(), request.completed(), request.starred(), request.startAt(), request.dueAt()));
   }
 
   @PatchMapping("/cards/{cardId}")
   public ApiEnvelope<BoardService.BoardCardView> updateCard(@PathVariable UUID planId, @PathVariable UUID cardId, @Valid @RequestBody CardRequest request) {
-    return ApiEnvelope.ok(boardService.updateCard(planId, cardId, request.columnId(), request.title(), request.description(), request.labelId(), request.assigneeIds(), request.completed(), request.startAt(), request.dueAt()));
+    return ApiEnvelope.ok(boardService.updateCard(planId, cardId, request.columnId(), request.title(), request.description(), request.labelId(), request.assigneeIds(), request.completed(), request.starred(), request.startAt(), request.dueAt()));
   }
 
   @PutMapping("/cards/{cardId}/move")
@@ -126,6 +126,7 @@ public class BoardController {
       UUID labelId,
       List<UUID> assigneeIds,
       Boolean completed,
+      Boolean starred,
       OffsetDateTime startAt,
       OffsetDateTime dueAt
   ) {

@@ -35,6 +35,9 @@ public class BoardCardEntity extends BaseEntity {
   @Column(nullable = false)
   private Boolean completed = false;
 
+  @Column(name = "is_starred", nullable = false)
+  private Boolean starred = false;
+
   @Column
   private OffsetDateTime startAt;
 
@@ -103,6 +106,14 @@ public class BoardCardEntity extends BaseEntity {
 
   public void setCompleted(Boolean completed) {
     this.completed = completed;
+  }
+
+  public Boolean getStarred() {
+    return starred;
+  }
+
+  public void setStarred(Boolean starred) {
+    this.starred = starred;
   }
 
   public OffsetDateTime getStartAt() {

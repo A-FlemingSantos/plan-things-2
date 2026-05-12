@@ -173,7 +173,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, Boolean starred, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     requireColumn(planId, columnId);
@@ -190,6 +190,7 @@ public class BoardService {
     card.setLabelId(labelId);
     card.setPositionIndex(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId).size());
     card.setCompleted(Boolean.TRUE.equals(completed));
+    card.setStarred(Boolean.TRUE.equals(starred));
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
@@ -200,7 +201,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, OffsetDateTime startAt, OffsetDateTime dueAt) {
+  public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, Boolean starred, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
@@ -221,6 +222,9 @@ public class BoardService {
     card.setLabelId(labelId);
     if (completed != null) {
       card.setCompleted(Boolean.TRUE.equals(completed));
+    }
+    if (starred != null) {
+      card.setStarred(Boolean.TRUE.equals(starred));
     }
     card.setStartAt(startAt);
     card.setDueAt(dueAt);
@@ -551,6 +555,7 @@ public class BoardService {
         card.getTitle(),
         card.getDescription(),
         Boolean.TRUE.equals(card.getCompleted()),
+        Boolean.TRUE.equals(card.getStarred()),
         deriveCardKind(card),
         card.getPositionIndex(),
         toUserSummary(author),
@@ -829,6 +834,7 @@ public class BoardService {
       String title,
       String description,
       boolean completed,
+      boolean starred,
       CardKind kind,
       int position,
       UserSummary author,

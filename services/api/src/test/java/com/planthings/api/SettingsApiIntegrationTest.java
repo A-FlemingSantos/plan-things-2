@@ -407,7 +407,8 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
                   "password": "12345678"
                 }
                 """))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error.code").value("USUARIO_NAO_ENCONTRADO"));
   }
 
   private Map<String, byte[]> unzipEntries(byte[] zipContent) throws Exception {

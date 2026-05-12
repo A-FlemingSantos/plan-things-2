@@ -1,23 +1,30 @@
 package com.planthings.api.common.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
 import com.planthings.api.auth.UserSessionEntity;
 import com.planthings.api.auth.UserSessionService;
+import com.planthings.api.common.api.ApiEnvelope;
+import com.planthings.api.common.api.ApiErrorResponse;
 import com.planthings.api.common.error.UnauthorizedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.http.MediaType;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+  private static final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
   private final JwtService jwtService;
   private final UserRepository userRepository;
@@ -74,10 +81,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         userSessionService.touchSession(session);
       }
+    } catch (UnauthorizedException ex) {
+      SecurityContextHolder.clearContext();
+      writeUnauthorizedResponse(request, response, ex);
+      return;
     } catch (RuntimeException ex) {
       SecurityContextHolder.clearContext();
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private void writeUnauthorizedResponse(
+      HttpServletRequest request,
+      HttpServletResponse response,
+      UnauthorizedException ex
+  ) throws IOException {
+    if (response.isCommitted()) {
+      return;
+    }
+
+    ApiErrorResponse error = new ApiErrorResponse(
+        ex.getCode(),
+        ex.getMessage(),
+        request.getRequestURI(),
+        OffsetDateTime.now(),
+        null
+    );
+
+    response.setStatus(ex.getStatus().value());
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    objectMapper.writeValue(response.getWriter(), ApiEnvelope.error(error));
   }
 }

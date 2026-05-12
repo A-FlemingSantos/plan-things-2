@@ -133,6 +133,62 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.columns[0].cards[0].columnId").value(columnId))
         .andExpect(jsonPath("$.data.columns[0].cards[0].completed").value(true));
   }
+
+  @Test
+  void shouldPersistStarredStateAcrossBoardReads() throws Exception {
+    JsonNode session = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Arthur Starred",
+                  "email": "arthur-starred@example.com",
+                  "password": "12345678"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String token = session.path("accessToken").asText();
+
+    JsonNode plan = createPlan(token, "Plano com estrela persistida");
+    String planId = plan.path("plan").path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
+
+    JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card estrelavel",
+                  "starred": true
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.starred").value(true))
+        .andReturn()).path("data");
+
+    String cardId = createdCard.path("id").asText();
+
+    mockMvc.perform(patch("/api/plans/" + planId + "/board/cards/" + cardId)
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card estrelavel",
+                  "starred": false
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.starred").value(false));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].cards[0].id").value(cardId))
+        .andExpect(jsonPath("$.data.columns[0].cards[0].starred").value(false));
+  }
 }
 
 

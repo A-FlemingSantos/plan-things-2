@@ -1103,6 +1103,12 @@ export default function KanbanBoard() {
 	    return true
 	  }
 
+	  const persistPlannerPinnedState = (next) => {
+	    try {
+	      window.localStorage.setItem(plannerPinnedStorageKey, JSON.stringify(Object.keys(next)))
+	    } catch {}
+	  }
+
 	  const isPlannerSectionOpen = (sectionId) => {
 	    const stored = plannerSectionOpenById?.[sectionId]
 	    if (typeof stored === 'boolean') return stored
@@ -1124,7 +1130,28 @@ export default function KanbanBoard() {
 	    })
 	  }
 
-	  const togglePlannerPinned = (itemId) => {
+	  const togglePlannerPinned = async (item) => {
+	    if (item?.type === 'card') {
+	      const nextStarred = !Boolean(item.pinned)
+	      await updateCard({
+	        ...item.card,
+	        starred: nextStarred,
+	      })
+	      if (plannerPinnedById[item.id]) {
+	        setPlannerPinnedById((current) => {
+	          if (!current[item.id]) return current
+	          const next = { ...current }
+	          delete next[item.id]
+	          persistPlannerPinnedState(next)
+	          return next
+	        })
+	      }
+	      return
+	    }
+
+	    const itemId = item?.id
+	    if (!itemId) return
+
 	    setPlannerPinnedById((current) => {
 	      const next = { ...current }
 	      if (next[itemId]) {
@@ -1132,12 +1159,50 @@ export default function KanbanBoard() {
       } else {
         next[itemId] = true
       }
-      try {
-        window.localStorage.setItem(plannerPinnedStorageKey, JSON.stringify(Object.keys(next)))
-      } catch {}
+      persistPlannerPinnedState(next)
       return next
 	    })
 	  }
+
+	  useEffect(() => {
+	    const legacyPinnedCardIds = Object.keys(plannerPinnedById).filter((itemId) => itemId.startsWith('card:'))
+	    if (!legacyPinnedCardIds.length) return
+
+	    const cardByPlannerItemId = new Map(
+	      columns.flatMap((column) => column.cards.map((card) => [`card:${card.id}`, card])),
+	    )
+	    const pendingCards = legacyPinnedCardIds
+	      .map((itemId) => ({ itemId, card: cardByPlannerItemId.get(itemId) }))
+	      .filter(({ card }) => card && !card.starred)
+
+	    if (!pendingCards.length) return
+
+	    let active = true
+
+	    void (async () => {
+	      for (const { itemId, card } of pendingCards) {
+	        if (!active) return
+	        try {
+	          await updateCard({
+	            ...card,
+	            starred: true,
+	          })
+	          if (!active) return
+	          setPlannerPinnedById((current) => {
+	            if (!current[itemId]) return current
+	            const next = { ...current }
+	            delete next[itemId]
+	            persistPlannerPinnedState(next)
+	            return next
+	          })
+	        } catch {}
+	      }
+	    })()
+
+	    return () => {
+	      active = false
+	    }
+	  }, [columns, plannerPinnedById, plannerPinnedStorageKey, updateCard])
 
 	  const plannerDateFormatter = useMemo(() => new Intl.DateTimeFormat('pt-BR', {
 	    timeZone,
@@ -1176,7 +1241,7 @@ export default function KanbanBoard() {
 	          type: 'card',
 	          title: card.title,
 	          meta: `${planName} · ${column.title} · ${dateLabel}`,
-	          pinned: Boolean(plannerPinnedById[itemId]),
+	          pinned: Boolean(card.starred) || Boolean(plannerPinnedById[itemId]),
 	          startKey,
 	          dueKey,
 	          scheduleKey,
@@ -1878,7 +1943,7 @@ export default function KanbanBoard() {
 	              onClick={(event) => {
 	                event.preventDefault()
 	                event.stopPropagation()
-	                togglePlannerPinned(item.id)
+	                void togglePlannerPinned(item)
 	              }}
 	            >
 	              {item.pinned ? <Icon.StarFill /> : <Icon.Star />}

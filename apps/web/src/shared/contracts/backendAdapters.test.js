@@ -93,6 +93,7 @@ describe('timezone-aware payload serializers', () => {
         columnId: 'col-1',
         title: 'Card 1',
         description: '',
+        starred: true,
         memberIds: [],
         labelId: null,
         schedule: {
@@ -109,6 +110,7 @@ describe('timezone-aware payload serializers', () => {
     )
 
     expect(payload.dueAt).toBe('2026-06-15T14:30:00-04:00')
+    expect(payload.starred).toBe(true)
   })
 })
 
@@ -125,6 +127,7 @@ describe('board mapping with preferences', () => {
             columnId: 'col-1',
             title: 'Card timezone',
             description: '',
+            starred: true,
             label: null,
             assignees: [],
             startAt: null,
@@ -184,6 +187,7 @@ describe('board mapping with preferences', () => {
     const [column] = mapBoardViewToColumns(sampleBoardView)
     const [card] = column.cards
 
+    expect(card.starred).toBe(true)
     expect(card.attachments).toEqual([
       expect.objectContaining({
         id: 'att-1',

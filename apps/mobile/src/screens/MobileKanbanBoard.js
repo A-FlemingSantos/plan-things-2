@@ -41,7 +41,7 @@ import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
-import { shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
+import { interactivePointerEventsStyle, shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
 
@@ -106,6 +106,7 @@ function createLocalCard(title) {
     title,
     columnId: null,
     description: '',
+    starred: false,
     labelId: null,
     memberIds: [],
     dueDate: '',
@@ -1150,7 +1151,7 @@ function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard, ...access
   )
 }
 
-function TaskListRow({ card, column, isDone, onPress, onToggleDone }) {
+function TaskListRow({ card, column, isDone, isPinned, onPress, onToggleDone, onTogglePinned }) {
   const label = findLabel(card.labelId)
   const members = findMembers(card.memberIds)
   const metaText = card.dueDate || card.schedule?.displayLabel || label?.text || column.title
@@ -1210,10 +1211,17 @@ function TaskListRow({ card, column, isDone, onPress, onToggleDone }) {
 
       <Pressable
         style={styles.taskStarButton}
+        onPress={() => onTogglePinned?.(card.id)}
         accessibilityRole="button"
-        accessibilityLabel={`Favoritar ${card.title}`}
+        accessibilityState={{ selected: isPinned }}
+        accessibilityLabel={isPinned ? `Remover estrela de ${card.title}` : `Marcar ${card.title} com estrela`}
       >
-        <Star size={18} color={theme.colors.text2} strokeWidth={1.7} />
+        <Star
+          size={18}
+          color={isPinned ? theme.colors.amber : theme.colors.text2}
+          fill={isPinned ? theme.colors.amber : 'transparent'}
+          strokeWidth={1.7}
+        />
       </Pressable>
     </View>
   )
@@ -1302,6 +1310,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
         card,
         column,
         isDone: isDoneColumn(column),
+        isPinned: Boolean(card.starred),
       }))
     ))
 
@@ -1680,6 +1689,14 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     moveCard(card.id, doneColumn.id)
   }
 
+  const toggleTaskPinned = (cardId) => {
+    if (!cardId) return
+
+    const currentCard = boardColumnsState.flatMap((column) => column.cards).find((card) => card.id === cardId)
+    if (!currentCard) return
+    updateCard(cardId, { starred: !currentCard.starred })
+  }
+
   const attachCardFile = async (cardId, file) => {
     if (!planId || !file?.id) return
     await attachFileToCard(planId, file.id, cardId)
@@ -1875,14 +1892,16 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
             </View>
 
             <View style={styles.taskListGroup}>
-              {taskGroups.active.map(({ card, column, isDone }) => (
+              {taskGroups.active.map(({ card, column, isDone, isPinned }) => (
                 <TaskListRow
                   key={card.id}
                   card={card}
                   column={column}
                   isDone={isDone}
+                  isPinned={isPinned}
                   onPress={() => setSelectedCardEntry({ card, column })}
                   onToggleDone={toggleTaskDone}
+                  onTogglePinned={toggleTaskPinned}
                 />
               ))}
             </View>
@@ -1896,14 +1915,16 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
                 </View>
 
                 <View style={styles.taskListGroup}>
-                  {taskGroups.done.map(({ card, column, isDone }) => (
+                  {taskGroups.done.map(({ card, column, isDone, isPinned }) => (
                     <TaskListRow
                       key={card.id}
                       card={card}
                       column={column}
                       isDone={isDone}
+                      isPinned={isPinned}
                       onPress={() => setSelectedCardEntry({ card, column })}
                       onToggleDone={toggleTaskDone}
+                      onTogglePinned={toggleTaskPinned}
                     />
                   ))}
                 </View>
@@ -1917,7 +1938,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       {boardView === 'tasks' ? (
         <View {...withPlatformPointerEvents(styles.tasksFabOverlay, 'box-none')}>
           <Pressable
-            style={styles.tasksFab}
+            style={[styles.tasksFab, interactivePointerEventsStyle]}
             onPress={() => openAddCardSheet(boardColumnsState[0]?.id, true)}
             accessibilityRole="button"
             accessibilityLabel="Adicionar tarefa"
@@ -1928,7 +1949,7 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
       ) : null}
 
       <View {...withPlatformPointerEvents(styles.viewToolbarOverlay, 'box-none')}>
-        <View style={styles.viewToolbar}>
+        <View style={[styles.viewToolbar, interactivePointerEventsStyle]}>
           {[
             { id: 'lists', label: 'Listas', icon: Kanban },
             { id: 'tasks', label: 'Tarefas', icon: ListChecks },

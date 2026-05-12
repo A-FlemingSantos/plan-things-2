@@ -27,7 +27,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react-native'
-import { shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
+import { interactivePointerEventsStyle, shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
 import { platformShadow } from '../theme/shadowStyles'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
@@ -539,7 +539,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           newItemSheetVisible ? 'box-none' : 'none',
         )}
       >
-        <Animated.View style={[styles.sheetOverlay, { opacity: sheetOverlayOpacity }]}>
+        <Animated.View style={[styles.sheetOverlay, interactivePointerEventsStyle, { opacity: sheetOverlayOpacity }]}>
           <Pressable
             style={styles.sheetOverlayPress}
             onPress={closeNewItemSheet}
@@ -551,6 +551,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
         <Animated.View
           style={[
             styles.addSheet,
+            interactivePointerEventsStyle,
             {
               paddingBottom: 2 + bottomOverlayOffset,
               transform: [{ translateY: sheetTranslateY }],

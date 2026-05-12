@@ -53,6 +53,7 @@ export function mapBoardCard(card, options = {}) {
     columnId: card.columnId,
     title: card.title,
     description: card.description ?? '',
+    starred: Boolean(card.starred),
     labelId: card.label?.id ?? '',
     memberIds: (card.assignees ?? []).map((member) => member.id),
     dueDate: formatCardDueLabel(card.dueAt, { locale, timeZone }),
@@ -129,6 +130,7 @@ export function buildBoardCardPayload(card, options = {}) {
     description: card.description ?? '',
     labelId: card.labelId || null,
     assigneeIds: Array.isArray(card.memberIds) ? card.memberIds : [],
+    starred: Boolean(card.starred),
     startAt,
     dueAt,
   }
