@@ -4,6 +4,7 @@ import { Bell, Paperclip, Search, SquarePen } from 'lucide-react-native'
 import { StatusBar } from 'expo-status-bar'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import { inboxThreads } from '../data/demoData'
+import { platformShadow } from '../theme/shadowStyles'
 import { theme } from '../theme/tokens'
 import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
 
@@ -217,11 +218,14 @@ const createStyles = (theme) => StyleSheet.create({
   },
   segmentItemActive: {
     backgroundColor: theme.colors.surface1,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 2,
+    ...platformShadow({
+      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 2 },
+      opacity: 0.08,
+      radius: 5,
+      elevation: 2,
+    }),
   },
   segmentItemPressed: {
     opacity: 0.9,
@@ -357,11 +361,14 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.surface1,
     borderWidth: 1,
     borderColor: stylesVars.accent,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 8,
+    ...platformShadow({
+      boxShadow: '0 10px 18px rgba(0, 0, 0, 0.12)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 10 },
+      opacity: 0.12,
+      radius: 18,
+      elevation: 8,
+    }),
   },
 })
 

@@ -5,6 +5,7 @@ import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
 import { usePlans } from '../providers/PlansProvider'
+import { platformShadow } from '../theme/shadowStyles'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
 
@@ -634,10 +635,13 @@ const createStyles = (theme) => StyleSheet.create({
   },
   viewToggleBtnActive: {
     backgroundColor: theme.colors.surface1,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
+    ...platformShadow({
+      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 2 },
+      opacity: 0.08,
+      radius: 5,
+    }),
   },
   grid: {
     flexDirection: 'row',
@@ -654,10 +658,13 @@ const createStyles = (theme) => StyleSheet.create({
   },
   planCardActive: {
     borderColor: theme.colors.focus,
-    shadowColor: theme.colors.focus,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    ...platformShadow({
+      boxShadow: `0 0 2px ${theme.colors.focus}`,
+      color: theme.colors.focus,
+      offset: { width: 0, height: 0 },
+      opacity: 0.2,
+      radius: 2,
+    }),
   },
   planCardPressed: {
     opacity: 0.82,
@@ -804,10 +811,13 @@ const createStyles = (theme) => StyleSheet.create({
   },
   planListRowActive: {
     borderColor: theme.colors.focus,
-    shadowColor: theme.colors.focus,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 2,
+    ...platformShadow({
+      boxShadow: `0 0 2px ${theme.colors.focus}`,
+      color: theme.colors.focus,
+      offset: { width: 0, height: 0 },
+      opacity: 0.18,
+      radius: 2,
+    }),
   },
   planListBody: {
     flex: 1,

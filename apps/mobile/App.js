@@ -7,6 +7,7 @@ import AppShell from './src/screens/AppShell'
 import { AuthProvider, useAuth } from './src/providers/AuthProvider'
 import { PlansProvider } from './src/providers/PlansProvider'
 import { FilesProvider } from './src/providers/FilesProvider'
+import { platformShadow } from './src/theme/shadowStyles'
 import { theme } from './src/theme/tokens'
 import { MobileThemeProvider, useMobileTheme, useThemedStyles } from './src/theme/ThemeProvider'
 
@@ -87,10 +88,13 @@ const createStyles = (theme) => StyleSheet.create({
     maxWidth: 430,
     minHeight: Platform.OS === 'web' ? '100vh' : undefined,
     backgroundColor: theme.colors.appBg,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.08,
-    shadowRadius: 42,
+    ...platformShadow({
+      boxShadow: '0 18px 42px rgba(0, 0, 0, 0.08)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 18 },
+      opacity: 0.08,
+      radius: 42,
+    }),
   },
 })
 

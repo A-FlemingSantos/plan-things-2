@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Path, Rect } from 'react-native-svg'
 import { useAuth } from '../providers/AuthProvider'
 import { resolveAuthScreenModeFromRedirect } from '../providers/authSessionPolicy.js'
+import { platformShadow } from '../theme/shadowStyles'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
 
@@ -486,11 +487,14 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 14,
-    shadowColor: theme.colors.black,
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    ...platformShadow({
+      boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 1 },
+      opacity: 0.04,
+      radius: 4,
+      elevation: 1,
+    }),
   },
   providerIcon: {
     width: 24,

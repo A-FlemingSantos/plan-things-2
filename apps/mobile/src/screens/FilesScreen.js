@@ -27,6 +27,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react-native'
+import { platformShadow } from '../theme/shadowStyles'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useAuth } from '../providers/AuthProvider'
@@ -956,10 +957,13 @@ const createStyles = (theme) => StyleSheet.create({
   },
   viewToggleBtnActive: {
     backgroundColor: theme.colors.surface1,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
+    ...platformShadow({
+      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 2 },
+      opacity: 0.08,
+      radius: 5,
+    }),
   },
   sortButton: {
     flex: 1,
@@ -1106,11 +1110,14 @@ const createStyles = (theme) => StyleSheet.create({
     paddingLeft: 18,
     borderRadius: 8,
     backgroundColor: theme.colors.surface1,
-    shadowColor: theme.colors.black,
-    shadowOpacity: 0.13,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    ...platformShadow({
+      boxShadow: '0 8px 18px rgba(0, 0, 0, 0.13)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 8 },
+      opacity: 0.13,
+      radius: 18,
+      elevation: 8,
+    }),
   },
   viewMenuTitle: {
     color: theme.colors.text1,
@@ -1155,9 +1162,13 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 29,
-    shadowColor: theme.colors.black,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 4 },
+    ...platformShadow({
+      boxShadow: '0 4px 9px rgba(0, 0, 0, 0.16)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 4 },
+      opacity: 0.16,
+      radius: 9,
+    }),
   },
   search: {
     height: 58,
@@ -1165,10 +1176,14 @@ const createStyles = (theme) => StyleSheet.create({
     borderRadius: 29,
     borderWidth: 1,
     outlineStyle: 'none',
-    shadowColor: theme.colors.black,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...platformShadow({
+      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.16)',
+      color: theme.colors.black,
+      offset: { width: 0, height: 4 },
+      opacity: 0.16,
+      radius: 10,
+      elevation: 4,
+    }),
   },
   expandedSearchContent: {
     flex: 1,
@@ -1328,11 +1343,14 @@ const createStyles = (theme) => StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     backgroundColor: theme.colors.surface1,
-    shadowColor: theme.colors.black,
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: -5 },
-    elevation: 14,
+    ...platformShadow({
+      boxShadow: '0 -5px 18px rgba(0, 0, 0, 0.16)',
+      color: theme.colors.black,
+      offset: { width: 0, height: -5 },
+      opacity: 0.16,
+      radius: 18,
+      elevation: 14,
+    }),
   },
   sheetHandle: {
     width: 48,

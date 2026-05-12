@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, Easing, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { platformShadow } from '../theme/shadowStyles'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
 
@@ -130,11 +131,14 @@ const createStyles = (theme) => StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     backgroundColor: theme.colors.surface1,
-    shadowColor: theme.colors.black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    elevation: 12,
+    ...platformShadow({
+      boxShadow: '0 -4px 18px rgba(0, 0, 0, 0.14)',
+      color: theme.colors.black,
+      offset: { width: 0, height: -4 },
+      opacity: 0.14,
+      radius: 18,
+      elevation: 12,
+    }),
   },
   dragArea: {
     marginRight: -22,
