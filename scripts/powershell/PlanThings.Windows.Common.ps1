@@ -1,5 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$script:PlanThingsInputShown = $false
 
 function Import-PlanThingsLocalSecrets {
   $localSecretsPath = Join-Path $PSScriptRoot 'local.secrests.ps1'
@@ -50,14 +51,71 @@ function Get-PlanThingsExpoGoBaseUrl {
   return "exp://$(Get-PlanThingsLocalIPv4):8081"
 }
 
-function Write-PlanThingsStep {
+function Start-PlanThingsScript {
   param(
     [Parameter(Mandatory = $true)]
-    [string]$Message
+    [string]$Name,
+    [Parameter(Mandatory = $true)]
+    [string]$Target
   )
 
   Write-Host ''
-  Write-Host "==> $Message" -ForegroundColor Cyan
+  Write-Host "[$Name]  $Target" -ForegroundColor Cyan
+  Write-Host ''
+  $script:PlanThingsInputShown = $false
+}
+
+function Show-PlanThingsInputHeader {
+  if (-not $script:PlanThingsInputShown) {
+    Write-Host 'input'
+    $script:PlanThingsInputShown = $true
+  }
+}
+
+function New-PlanThingsConfigRow {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Key,
+    [Parameter(Mandatory = $true)]
+    [string]$Value
+  )
+
+  return [pscustomobject]@{
+    Key = $Key
+    Value = $Value
+  }
+}
+
+function Write-PlanThingsConfig {
+  param(
+    [Parameter(Mandatory = $true)]
+    [object[]]$Rows
+  )
+
+  if ($Rows.Count -eq 0) {
+    return
+  }
+
+  if ($script:PlanThingsInputShown) {
+    Write-Host ''
+  }
+
+  Write-Host 'config'
+  foreach ($row in $Rows) {
+    Write-Host ("  {0,-20} {1}" -f $row.Key, $row.Value)
+  }
+  Write-Host ''
+}
+
+function Write-PlanThingsRun {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Command
+  )
+
+  Write-Host 'run'
+  Write-Host "  $Command"
+  Write-Host ''
 }
 
 function Assert-PlanThingsCommand {
@@ -80,9 +138,10 @@ function Read-PlanThingsValue {
   )
 
   while ($true) {
+    Show-PlanThingsInputHeader
     if ($Secret) {
       $suffix = if ([string]::IsNullOrEmpty($Default)) { '' } else { ' [Enter usa o valor atual]' }
-      $value = Read-Host "$Prompt$suffix"
+      $value = Read-Host "  $Prompt$suffix"
 
       if ([string]::IsNullOrWhiteSpace($value)) {
         if (-not [string]::IsNullOrEmpty($Default)) {
@@ -97,7 +156,7 @@ function Read-PlanThingsValue {
     }
 
     $suffix = if ([string]::IsNullOrEmpty($Default)) { '' } else { " [$Default]" }
-    $value = Read-Host ($Prompt + $suffix)
+    $value = Read-Host ("  $Prompt" + $suffix)
 
     if (-not [string]::IsNullOrWhiteSpace($value)) {
       return $value.Trim()
@@ -124,13 +183,11 @@ function Set-PlanThingsEnvVar {
 
   $current = [Environment]::GetEnvironmentVariable($Name, 'Process')
   if (-not [string]::IsNullOrWhiteSpace($current)) {
-    Write-Host "$Name ja definido no ambiente atual." -ForegroundColor DarkGray
     return $current
   }
 
   if ($UseDefaultIfMissing -and -not [string]::IsNullOrEmpty($Default)) {
     [Environment]::SetEnvironmentVariable($Name, $Default, 'Process')
-    Write-Host "$Name usando padrao $Default." -ForegroundColor DarkGray
     return $Default
   }
 
@@ -145,7 +202,8 @@ function Use-PlanThingsOptionalGoogleSetup {
   )
 
   $defaultLabel = if ($Default) { 'S/n' } else { 's/N' }
-  $answer = Read-Host "Configurar Google OAuth/Gmail agora? [$defaultLabel]"
+  Show-PlanThingsInputHeader
+  $answer = Read-Host "  google_oauth [$defaultLabel]"
 
   if ([string]::IsNullOrWhiteSpace($answer)) {
     return $Default
@@ -155,9 +213,9 @@ function Use-PlanThingsOptionalGoogleSetup {
 }
 
 function Set-PlanThingsGoogleEnvVars {
-  $null = Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_ID' -Prompt 'Google OAuth Client ID'
-  $null = Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_SECRET' -Prompt 'Google OAuth Client Secret' -Secret
-  $null = Set-PlanThingsEnvVar -Name 'APP_INTEGRATION_TOKEN_KEY_B64' -Prompt 'APP_INTEGRATION_TOKEN_KEY_B64' -Secret
+  $null = Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_ID' -Prompt 'google_oauth_client_id'
+  $null = Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_SECRET' -Prompt 'google_oauth_client_secret' -Secret
+  $null = Set-PlanThingsEnvVar -Name 'APP_INTEGRATION_TOKEN_KEY_B64' -Prompt 'app_integration_token_key_b64' -Secret
 }
 
 function Invoke-PlanThingsCommand {

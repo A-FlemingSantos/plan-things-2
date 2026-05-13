@@ -6,15 +6,18 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Get-PlanThingsRepoRoot
 $apiRoot = Join-Path $repoRoot 'services\api'
 
-Write-PlanThingsStep 'Validando ferramentas'
+Start-PlanThingsScript -Name 'start-mobile-android-backend' -Target 'expo android api'
 Assert-PlanThingsCommand -Name 'mvn'
 
-Write-PlanThingsStep 'Configurando backend para Expo Go Android'
-$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
+$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'spring_db_password' -Secret
 
-if (Use-PlanThingsOptionalGoogleSetup -Default $true) {
-  $ngrokUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_NGROK_PUBLIC_URL' -Prompt 'URL publica do ngrok (ex.: https://seu-subdominio.ngrok-free.app)'
-  $expoGoBaseUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_GO_BASE_URL' -Prompt 'URL base atual do Expo Go (ex.: exp://192.168.1.109:8081)' -Default (Get-PlanThingsExpoGoBaseUrl) -UseDefaultIfMissing
+$googleOAuth = Use-PlanThingsOptionalGoogleSetup -Default $true
+$ngrokUrl = ''
+$expoGoBaseUrl = ''
+
+if ($googleOAuth) {
+  $ngrokUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_NGROK_PUBLIC_URL' -Prompt 'ngrok_url'
+  $expoGoBaseUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_GO_BASE_URL' -Prompt 'expo_go_base' -Default (Get-PlanThingsExpoGoBaseUrl) -UseDefaultIfMissing
 
   Set-PlanThingsGoogleEnvVars
   [Environment]::SetEnvironmentVariable('GOOGLE_OAUTH_REDIRECT_URI', "$ngrokUrl/api/auth/oauth/google/callback", 'Process')
@@ -23,5 +26,18 @@ if (Use-PlanThingsOptionalGoogleSetup -Default $true) {
   [Environment]::SetEnvironmentVariable('GMAIL_INTEGRATION_MOBILE_RETURN_URL', "$expoGoBaseUrl/--/settings", 'Process')
 }
 
-Write-PlanThingsStep 'Subindo o backend em services/api'
+$configRows = @(
+  (New-PlanThingsConfigRow 'spring_db_password' 'loaded'),
+  (New-PlanThingsConfigRow 'google_oauth' ($(if ($googleOAuth) { 'on' } else { 'off' })))
+)
+
+if ($googleOAuth) {
+  $configRows += New-PlanThingsConfigRow 'expo_go_base' $expoGoBaseUrl
+  $configRows += New-PlanThingsConfigRow 'ngrok_url' $ngrokUrl
+  $configRows += New-PlanThingsConfigRow 'oauth_callback' "$expoGoBaseUrl/--/oauth/callback"
+  $configRows += New-PlanThingsConfigRow 'gmail_return' "$expoGoBaseUrl/--/settings"
+}
+
+Write-PlanThingsConfig -Rows $configRows
+Write-PlanThingsRun -Command 'mvn spring-boot:run'
 Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('spring-boot:run')

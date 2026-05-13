@@ -6,21 +6,24 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Get-PlanThingsRepoRoot
 $apiRoot = Join-Path $repoRoot 'services\api'
 
-Write-PlanThingsStep 'Validando ferramentas'
+Start-PlanThingsScript -Name 'start-shared-backend' -Target 'web + mobile:web + expo android'
 Assert-PlanThingsCommand -Name 'mvn'
 
-Write-PlanThingsStep 'Configurando backend compartilhado para site web + mobile:web + Expo Go Android'
-$webPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_WEB_PORT' -Prompt 'Porta do app web (npm run dev)' -Default '5173' -UseDefaultIfMissing
-$expoWebPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_WEB_PORT' -Prompt 'Porta do Expo Web' -Default '8081' -UseDefaultIfMissing
-$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
+$webPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_WEB_PORT' -Prompt 'web_port' -Default '5173' -UseDefaultIfMissing
+$expoWebPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_WEB_PORT' -Prompt 'expo_web_port' -Default '8081' -UseDefaultIfMissing
+$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'spring_db_password' -Secret
 
 [Environment]::SetEnvironmentVariable('APP_CORS_ALLOWED_ORIGINS', "http://localhost:$expoWebPort,http://127.0.0.1:$expoWebPort,http://localhost:$webPort,http://127.0.0.1:$webPort", 'Process')
 [Environment]::SetEnvironmentVariable('APP_OAUTH_MOBILE_WEB_CALLBACK_URL', "http://localhost:$expoWebPort/oauth/callback", 'Process')
 [Environment]::SetEnvironmentVariable('GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL', "http://localhost:$expoWebPort/settings", 'Process')
 
-if (Use-PlanThingsOptionalGoogleSetup -Default $true) {
-  $ngrokUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_NGROK_PUBLIC_URL' -Prompt 'URL publica do ngrok (ex.: https://seu-subdominio.ngrok-free.app)'
-  $expoGoBaseUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_GO_BASE_URL' -Prompt 'URL base atual do Expo Go (ex.: exp://192.168.1.109:8081)' -Default (Get-PlanThingsExpoGoBaseUrl) -UseDefaultIfMissing
+$googleOAuth = Use-PlanThingsOptionalGoogleSetup -Default $true
+$ngrokUrl = ''
+$expoGoBaseUrl = ''
+
+if ($googleOAuth) {
+  $ngrokUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_NGROK_PUBLIC_URL' -Prompt 'ngrok_url'
+  $expoGoBaseUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_GO_BASE_URL' -Prompt 'expo_go_base' -Default (Get-PlanThingsExpoGoBaseUrl) -UseDefaultIfMissing
 
   Set-PlanThingsGoogleEnvVars
   [Environment]::SetEnvironmentVariable('GOOGLE_OAUTH_REDIRECT_URI', "$ngrokUrl/api/auth/oauth/google/callback", 'Process')
@@ -29,5 +32,18 @@ if (Use-PlanThingsOptionalGoogleSetup -Default $true) {
   [Environment]::SetEnvironmentVariable('GMAIL_INTEGRATION_MOBILE_RETURN_URL', "$expoGoBaseUrl/--/settings", 'Process')
 }
 
-Write-PlanThingsStep 'Subindo o backend compartilhado em services/api'
+$configRows = @(
+  (New-PlanThingsConfigRow 'web_port' $webPort),
+  (New-PlanThingsConfigRow 'expo_web_port' $expoWebPort),
+  (New-PlanThingsConfigRow 'spring_db_password' 'loaded'),
+  (New-PlanThingsConfigRow 'google_oauth' ($(if ($googleOAuth) { 'on' } else { 'off' })))
+)
+
+if ($googleOAuth) {
+  $configRows += New-PlanThingsConfigRow 'expo_go_base' $expoGoBaseUrl
+  $configRows += New-PlanThingsConfigRow 'ngrok_url' $ngrokUrl
+}
+
+Write-PlanThingsConfig -Rows $configRows
+Write-PlanThingsRun -Command 'mvn spring-boot:run'
 Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('spring-boot:run')

@@ -6,15 +6,19 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Get-PlanThingsRepoRoot
 $apiRoot = Join-Path $repoRoot 'services\api'
 
-Write-PlanThingsStep 'Validando ferramentas'
+Start-PlanThingsScript -Name 'start-web-backend' -Target 'web api'
 Assert-PlanThingsCommand -Name 'mvn'
 
-Write-PlanThingsStep 'Configurando backend local para npm run dev'
-$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
-
-if (Use-PlanThingsOptionalGoogleSetup) {
+$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'spring_db_password' -Secret
+$googleOAuth = Use-PlanThingsOptionalGoogleSetup
+if ($googleOAuth) {
   Set-PlanThingsGoogleEnvVars
 }
 
-Write-PlanThingsStep 'Subindo o backend em services/api'
+Write-PlanThingsConfig -Rows @(
+  (New-PlanThingsConfigRow 'web_port' '5173'),
+  (New-PlanThingsConfigRow 'spring_db_password' 'loaded'),
+  (New-PlanThingsConfigRow 'google_oauth' ($(if ($googleOAuth) { 'on' } else { 'off' })))
+)
+Write-PlanThingsRun -Command 'mvn spring-boot:run'
 Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('spring-boot:run')

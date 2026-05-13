@@ -6,21 +6,29 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Get-PlanThingsRepoRoot
 $apiRoot = Join-Path $repoRoot 'services\api'
 
-Write-PlanThingsStep 'Validando ferramentas'
+Start-PlanThingsScript -Name 'start-mobile-web-backend' -Target 'mobile:web api'
 Assert-PlanThingsCommand -Name 'mvn'
 
-Write-PlanThingsStep 'Configurando backend para mobile:web'
-$expoWebPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_WEB_PORT' -Prompt 'Porta do Expo Web' -Default '8081' -UseDefaultIfMissing
-$webPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_WEB_PORT' -Prompt 'Porta do app web (npm run dev)' -Default '5173' -UseDefaultIfMissing
+$expoWebPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_WEB_PORT' -Prompt 'expo_web_port' -Default '8081' -UseDefaultIfMissing
+$webPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_WEB_PORT' -Prompt 'web_port' -Default '5173' -UseDefaultIfMissing
+$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'spring_db_password' -Secret
 
-$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
 [Environment]::SetEnvironmentVariable('APP_OAUTH_MOBILE_WEB_CALLBACK_URL', "http://localhost:$expoWebPort/oauth/callback", 'Process')
 [Environment]::SetEnvironmentVariable('GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL', "http://localhost:$expoWebPort/settings", 'Process')
 [Environment]::SetEnvironmentVariable('APP_CORS_ALLOWED_ORIGINS', "http://localhost:$expoWebPort,http://127.0.0.1:$expoWebPort,http://localhost:$webPort,http://127.0.0.1:$webPort", 'Process')
 
-if (Use-PlanThingsOptionalGoogleSetup -Default $true) {
+$googleOAuth = Use-PlanThingsOptionalGoogleSetup -Default $true
+if ($googleOAuth) {
   Set-PlanThingsGoogleEnvVars
 }
 
-Write-PlanThingsStep 'Subindo o backend em services/api'
+Write-PlanThingsConfig -Rows @(
+  (New-PlanThingsConfigRow 'web_port' $webPort),
+  (New-PlanThingsConfigRow 'expo_web_port' $expoWebPort),
+  (New-PlanThingsConfigRow 'mobile_web_callback' "http://localhost:$expoWebPort/oauth/callback"),
+  (New-PlanThingsConfigRow 'gmail_return' "http://localhost:$expoWebPort/settings"),
+  (New-PlanThingsConfigRow 'spring_db_password' 'loaded'),
+  (New-PlanThingsConfigRow 'google_oauth' ($(if ($googleOAuth) { 'on' } else { 'off' })))
+)
+Write-PlanThingsRun -Command 'mvn spring-boot:run'
 Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('spring-boot:run')

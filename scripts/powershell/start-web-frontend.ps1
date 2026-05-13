@@ -5,8 +5,11 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Get-PlanThingsRepoRoot
 
-Write-PlanThingsStep 'Validando ferramentas'
+Start-PlanThingsScript -Name 'start-web-frontend' -Target 'web app'
 Assert-PlanThingsCommand -Name 'npm'
 
-Write-PlanThingsStep 'Subindo npm run dev na raiz'
+Write-PlanThingsConfig -Rows @(
+  (New-PlanThingsConfigRow 'cwd' $repoRoot)
+)
+Write-PlanThingsRun -Command 'npm run dev'
 Invoke-PlanThingsCommand -WorkingDirectory $repoRoot -FilePath 'npm' -Arguments @('run', 'dev')

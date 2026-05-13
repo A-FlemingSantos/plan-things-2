@@ -5,11 +5,14 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Get-PlanThingsRepoRoot
 
-Write-PlanThingsStep 'Validando ferramentas'
+Start-PlanThingsScript -Name 'start-mobile-android-expo' -Target 'expo android'
 Assert-PlanThingsCommand -Name 'npm'
 
-Write-PlanThingsStep 'Configurando Expo Go Android'
-$null = Set-PlanThingsEnvVar -Name 'EXPO_PUBLIC_API_BASE_URL' -Prompt 'URL publica da API (ex.: https://seu-subdominio.ngrok-free.app)'
+$null = Set-PlanThingsEnvVar -Name 'EXPO_PUBLIC_API_BASE_URL' -Prompt 'api_base_url'
+$apiBaseUrl = [Environment]::GetEnvironmentVariable('EXPO_PUBLIC_API_BASE_URL', 'Process')
 
-Write-PlanThingsStep 'Subindo npm run mobile:android'
+Write-PlanThingsConfig -Rows @(
+  (New-PlanThingsConfigRow 'api_base_url' $apiBaseUrl)
+)
+Write-PlanThingsRun -Command 'npm run mobile:android'
 Invoke-PlanThingsCommand -WorkingDirectory $repoRoot -FilePath 'npm' -Arguments @('run', 'mobile:android')
