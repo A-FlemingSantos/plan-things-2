@@ -11,11 +11,7 @@ Scripts prontos para os cenarios locais mais comuns:
 - `start-mobile-android-backend.ps1`: backend para Expo Go Android
 - `start-shared-backend.ps1`: backend unico para site web + `mobile:web` + Expo Go Android
 
-Todos pedem apenas o que faltar no ambiente atual. As portas padrao do projeto sao aplicadas automaticamente:
-
-- web: `5173`
-- mobile:web: `8081`
-- backend: `8080`
+Todos pedem apenas o que faltar no ambiente atual.
 
 Exemplos:
 
@@ -23,3 +19,5 @@ Exemplos:
 powershell -ExecutionPolicy Bypass -File .\scripts\powershell\start-web-backend.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\powershell\start-web-frontend.ps1
 ```
+
+

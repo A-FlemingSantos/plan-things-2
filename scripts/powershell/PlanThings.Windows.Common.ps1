@@ -1,8 +1,53 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Import-PlanThingsLocalSecrets {
+  $localSecretsPath = Join-Path $PSScriptRoot 'local.secrests.ps1'
+  if (Test-Path $localSecretsPath) {
+    . $localSecretsPath
+  }
+}
+
 function Get-PlanThingsRepoRoot {
   return (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+}
+
+function Get-PlanThingsLocalIPv4 {
+  $route = Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
+    Sort-Object RouteMetric, ifMetric |
+    Select-Object -First 1
+
+  if ($null -ne $route) {
+    $ip = Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex $route.InterfaceIndex -ErrorAction SilentlyContinue |
+      Where-Object {
+        $_.IPAddress -and
+        $_.IPAddress -notlike '169.254.*' -and
+        $_.IPAddress -ne '127.0.0.1'
+      } |
+      Select-Object -ExpandProperty IPAddress -First 1
+
+    if (-not [string]::IsNullOrWhiteSpace($ip)) {
+      return $ip
+    }
+  }
+
+  $fallbackIp = [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) |
+    Where-Object {
+      $_.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork -and
+      $_.IPAddressToString -notlike '169.254.*' -and
+      $_.IPAddressToString -ne '127.0.0.1'
+    } |
+    Select-Object -ExpandProperty IPAddressToString -First 1
+
+  if (-not [string]::IsNullOrWhiteSpace($fallbackIp)) {
+    return $fallbackIp
+  }
+
+  throw 'Nao foi possivel detectar automaticamente o IPv4 local desta maquina.'
+}
+
+function Get-PlanThingsExpoGoBaseUrl {
+  return "exp://$(Get-PlanThingsLocalIPv4):8081"
 }
 
 function Write-PlanThingsStep {
@@ -110,9 +155,9 @@ function Use-PlanThingsOptionalGoogleSetup {
 }
 
 function Set-PlanThingsGoogleEnvVars {
-  Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_ID' -Prompt 'Google OAuth Client ID'
-  Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_SECRET' -Prompt 'Google OAuth Client Secret' -Secret
-  Set-PlanThingsEnvVar -Name 'APP_INTEGRATION_TOKEN_KEY_B64' -Prompt 'APP_INTEGRATION_TOKEN_KEY_B64' -Secret
+  $null = Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_ID' -Prompt 'Google OAuth Client ID'
+  $null = Set-PlanThingsEnvVar -Name 'GOOGLE_OAUTH_CLIENT_SECRET' -Prompt 'Google OAuth Client Secret' -Secret
+  $null = Set-PlanThingsEnvVar -Name 'APP_INTEGRATION_TOKEN_KEY_B64' -Prompt 'APP_INTEGRATION_TOKEN_KEY_B64' -Secret
 }
 
 function Invoke-PlanThingsCommand {
@@ -131,3 +176,5 @@ function Invoke-PlanThingsCommand {
     Pop-Location
   }
 }
+
+Import-PlanThingsLocalSecrets

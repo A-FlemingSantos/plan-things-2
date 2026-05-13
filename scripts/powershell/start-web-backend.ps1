@@ -10,7 +10,7 @@ Write-PlanThingsStep 'Validando ferramentas'
 Assert-PlanThingsCommand -Name 'mvn'
 
 Write-PlanThingsStep 'Configurando backend local para npm run dev'
-Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
+$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
 
 if (Use-PlanThingsOptionalGoogleSetup) {
   Set-PlanThingsGoogleEnvVars

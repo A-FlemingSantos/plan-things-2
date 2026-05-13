@@ -10,11 +10,11 @@ Write-PlanThingsStep 'Validando ferramentas'
 Assert-PlanThingsCommand -Name 'mvn'
 
 Write-PlanThingsStep 'Configurando backend para Expo Go Android'
-Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
+$null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
 
 if (Use-PlanThingsOptionalGoogleSetup -Default $true) {
   $ngrokUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_NGROK_PUBLIC_URL' -Prompt 'URL publica do ngrok (ex.: https://seu-subdominio.ngrok-free.app)'
-  $expoGoBaseUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_GO_BASE_URL' -Prompt 'URL base atual do Expo Go (ex.: exp://192.168.1.109:8081)'
+  $expoGoBaseUrl = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_GO_BASE_URL' -Prompt 'URL base atual do Expo Go (ex.: exp://192.168.1.109:8081)' -Default (Get-PlanThingsExpoGoBaseUrl) -UseDefaultIfMissing
 
   Set-PlanThingsGoogleEnvVars
   [Environment]::SetEnvironmentVariable('GOOGLE_OAUTH_REDIRECT_URI', "$ngrokUrl/api/auth/oauth/google/callback", 'Process')

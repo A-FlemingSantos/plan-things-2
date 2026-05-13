@@ -21,3 +21,4 @@ pnpm-debug.log*
 .expo/
 .gitnexus
 .mvn-home/
+scripts/powershell/local.secrests.ps1
