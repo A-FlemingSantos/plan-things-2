@@ -4,7 +4,7 @@ vi.mock('react-native', () => ({
   Platform: { OS: 'web' },
 }))
 
-const { interactivePointerEventsStyle, withPlatformPointerEvents } = await import('../../../../mobile/src/theme/platformRuntime.js')
+const { interactivePointerEventsStyle, resolveInteractivePointerEventsStyle, withPlatformPointerEvents } = await import('../../../../mobile/src/theme/platformRuntime.js')
 const { buildTaskCompletionPatch, isTaskDone } = await import('../../../../mobile/src/screens/mobileTaskCompletion.js')
 const { buildBoardCardPayload, mapBoardCard } = await import('../../../../../packages/shared-client/src/board.js')
 
@@ -17,6 +17,11 @@ describe('mobile kanban task interactions', () => {
       ],
     })
     expect(interactivePointerEventsStyle).toEqual({ pointerEvents: 'auto' })
+  })
+
+  it('keeps the files overlay non-interactive while the add sheet is closed', () => {
+    expect(resolveInteractivePointerEventsStyle(false)).toBeNull()
+    expect(resolveInteractivePointerEventsStyle(true)).toEqual({ pointerEvents: 'auto' })
   })
 
   it('keeps the mobile board card star in the shared payload contract', () => {

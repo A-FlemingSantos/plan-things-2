@@ -27,7 +27,7 @@ import {
   UsersRound,
   X,
 } from 'lucide-react-native'
-import { interactivePointerEventsStyle, shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
+import { interactivePointerEventsStyle, resolveInteractivePointerEventsStyle, shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
 import { platformShadow } from '../theme/shadowStyles'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
@@ -120,6 +120,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   const selectedFile = localFiles.find((file) => file.id === selectedFileId) ?? null
   const CreateFlowIcon = createFlow?.icon
   const activeSectionLabel = fileSections.find((section) => section.id === activeSection)?.label ?? 'Arquivos'
+  const sheetInteractiveStyle = resolveInteractivePointerEventsStyle(newItemSheetVisible)
 
   const sectionCounts = useMemo(() => {
     const counts = {
@@ -539,7 +540,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           newItemSheetVisible ? 'box-none' : 'none',
         )}
       >
-        <Animated.View style={[styles.sheetOverlay, interactivePointerEventsStyle, { opacity: sheetOverlayOpacity }]}>
+        <Animated.View style={[styles.sheetOverlay, sheetInteractiveStyle, { opacity: sheetOverlayOpacity }]}>
           <Pressable
             style={styles.sheetOverlayPress}
             onPress={closeNewItemSheet}
@@ -551,7 +552,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
         <Animated.View
           style={[
             styles.addSheet,
-            interactivePointerEventsStyle,
+            sheetInteractiveStyle,
             {
               paddingBottom: 2 + bottomOverlayOffset,
               transform: [{ translateY: sheetTranslateY }],

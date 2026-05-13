@@ -5,6 +5,10 @@ export const interactivePointerEventsStyle = Platform.OS === 'web'
   ? { pointerEvents: 'auto' }
   : null
 
+export function resolveInteractivePointerEventsStyle(isVisible) {
+  return isVisible ? interactivePointerEventsStyle : null
+}
+
 function resolveWebPointerEvents(pointerEvents) {
   if (pointerEvents === 'none' || pointerEvents === 'box-none') {
     return 'none'
