@@ -28,6 +28,7 @@ import BottomSheet from '../components/BottomSheet'
 import WorkspaceIconBadge from '../components/WorkspaceIconBadge'
 import { useAuth } from '../providers/AuthProvider'
 import { isMobileSettingsReturnUrl } from '../services/mobileLinking'
+import { resolveMobileCallbackClient } from '../services/mobileClient'
 import { mobileApiRequest, mobileApiUrl } from '../services/api'
 import { buildPasswordRequest, getPasswordFlowCopy, resolvePasswordFlow } from './settingsPasswordFlow'
 import { theme } from '../theme/tokens'
@@ -249,7 +250,7 @@ export default function SettingsScreen() {
   const connectGmail = async () => {
     const response = await request('/api/settings/integrations/gmail/start', {
       method: 'POST',
-      body: { client: 'mobile' },
+      body: { client: resolveMobileCallbackClient(Platform.OS) },
     })
     if (response?.authorizationUrl) {
       await Linking.openURL(response.authorizationUrl)

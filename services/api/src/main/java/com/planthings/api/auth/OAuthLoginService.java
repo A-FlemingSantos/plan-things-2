@@ -23,6 +23,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class OAuthLoginService {
 
   private static final Set<String> SUPPORTED_PROVIDERS = Set.of("google", "microsoft");
+  private static final String CLIENT_WEB = "web";
+  private static final String CLIENT_MOBILE = "mobile";
+  private static final String CLIENT_MOBILE_WEB = "mobile-web";
   private static final Logger logger = LoggerFactory.getLogger(OAuthLoginService.class);
 
   private final OAuthProperties properties;
@@ -196,9 +199,12 @@ public class OAuthLoginService {
   }
 
   private URI buildFrontendCallback(String completionCode, String redirectPath, String errorCode, String client) {
-    URI callbackUrl = "mobile".equals(normalizeClient(client))
-        ? properties.getMobileCallbackUrl()
-        : properties.getWebCallbackUrl();
+    String normalizedClient = normalizeClient(client);
+    URI callbackUrl = switch (normalizedClient) {
+      case CLIENT_MOBILE -> properties.getMobileCallbackUrl();
+      case CLIENT_MOBILE_WEB -> properties.getMobileWebCallbackUrl();
+      default -> properties.getWebCallbackUrl();
+    };
     UriComponentsBuilder builder = UriComponentsBuilder.fromUri(callbackUrl);
 
     if (StringUtils.hasText(completionCode)) {
@@ -250,7 +256,13 @@ public class OAuthLoginService {
 
   private String normalizeClient(String client) {
     String normalized = client == null ? "" : client.trim().toLowerCase(Locale.ROOT);
-    return "mobile".equals(normalized) ? "mobile" : "web";
+    if (CLIENT_MOBILE.equals(normalized)) {
+      return CLIENT_MOBILE;
+    }
+    if (CLIENT_MOBILE_WEB.equals(normalized)) {
+      return CLIENT_MOBILE_WEB;
+    }
+    return CLIENT_WEB;
   }
 
   public record AuthorizationStartResponse(String authorizationUrl) {

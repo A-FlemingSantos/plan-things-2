@@ -15,6 +15,7 @@ public class OAuthProperties {
   private URI frontendCallbackUrl;
   private URI webCallbackUrl;
   private URI mobileCallbackUrl;
+  private URI mobileWebCallbackUrl;
   private long stateMinutes = 10;
   private long completionCodeMinutes = 5;
   private List<String> allowedRedirectPaths = new ArrayList<>(List.of("/"));
@@ -42,6 +43,14 @@ public class OAuthProperties {
 
   public void setMobileCallbackUrl(URI mobileCallbackUrl) {
     this.mobileCallbackUrl = mobileCallbackUrl;
+  }
+
+  public URI getMobileWebCallbackUrl() {
+    return mobileWebCallbackUrl == null ? getMobileCallbackUrl() : mobileWebCallbackUrl;
+  }
+
+  public void setMobileWebCallbackUrl(URI mobileWebCallbackUrl) {
+    this.mobileWebCallbackUrl = mobileWebCallbackUrl;
   }
 
   public long getStateMinutes() {

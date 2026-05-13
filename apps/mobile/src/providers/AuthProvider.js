@@ -2,6 +2,7 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import { Linking, Platform } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { mobileApiRequest } from '../services/api.js'
+import { resolveMobileCallbackClient } from '../services/mobileClient.js'
 import { parseMobileOAuthCallback } from '../services/mobileLinking.js'
 import {
   MIN_TOKEN_REFRESH_DELAY_MS,
@@ -293,7 +294,7 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: {
         redirectTo: options.redirectTo,
-        client: 'mobile',
+        client: resolveMobileCallbackClient(Platform.OS),
       },
     })
 

@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "app.oauth.frontend-callback-url=http://localhost/oauth/callback",
     "app.oauth.web-callback-url=http://localhost/oauth/callback",
     "app.oauth.mobile-callback-url=planthings://oauth/callback",
+    "app.oauth.mobile-web-callback-url=http://localhost:8081/oauth/callback",
     "app.oauth.providers.google.client-id=test-google-client",
     "app.oauth.providers.google.client-secret=test-google-secret",
     "app.oauth.providers.google.authorization-uri=https://accounts.google.com/o/oauth2/v2/auth",
@@ -277,6 +278,22 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
     String location = callback.getResponse().getHeader("Location");
     assertTrue(location.startsWith("planthings://oauth/callback"));
     assertEquals("OAUTH_CALLBACK_FALHOU", queryParam(location, "error"));
+  }
+
+  @Test
+  void shouldUseMobileWebCallbackForMobileWebClient() throws Exception {
+    String state = startOAuthAndReturnState("google", "/settings", "mobile-web");
+
+    MvcResult callback = mockMvc.perform(get("/api/auth/oauth/google/callback")
+            .queryParam("state", state)
+            .queryParam("code", "google-new"))
+        .andExpect(status().isFound())
+        .andReturn();
+
+    String location = callback.getResponse().getHeader("Location");
+    assertTrue(location.startsWith("http://localhost:8081/oauth/callback"));
+    assertEquals("/settings", queryParam(location, "redirectTo"));
+    assertFalse(queryParam(location, "code").isBlank());
   }
 
   @Test

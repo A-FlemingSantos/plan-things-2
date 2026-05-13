@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "app.integrations.gmail.redirect-uri=http://localhost/api/settings/integrations/gmail/callback",
     "app.integrations.gmail.frontend-return-url=http://localhost/settings",
     "app.integrations.gmail.mobile-return-url=planthings://settings",
+    "app.integrations.gmail.mobile-web-return-url=http://localhost:8081/settings",
     "app.integrations.token-key-base64=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 })
 class GmailIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
@@ -171,6 +172,23 @@ class GmailIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
     assertTrue(location.startsWith("planthings://settings"));
     assertEquals("error", queryParam(location, "gmail"));
     assertEquals("GMAIL_REFRESH_TOKEN_AUSENTE", queryParam(location, "error"));
+  }
+
+  @Test
+  void shouldUseMobileWebReturnUrlForMobileWebClient() throws Exception {
+    String token = registerAndGetToken("Gmail Owner", "gmail-owner@example.com", "12345678");
+    String state = startGmailAndReturnState(token, "mobile-web", "/files");
+
+    MvcResult callback = mockMvc.perform(get("/api/settings/integrations/gmail/callback")
+            .queryParam("state", state)
+            .queryParam("code", "gmail-owner"))
+        .andExpect(status().isFound())
+        .andReturn();
+
+    String location = callback.getResponse().getHeader("Location");
+    assertTrue(location.startsWith("http://localhost:8081/settings"));
+    assertEquals("connected", queryParam(location, "gmail"));
+    assertEquals("/files", queryParam(location, "background"));
   }
 
   private String startGmailAndReturnState(String token) throws Exception {

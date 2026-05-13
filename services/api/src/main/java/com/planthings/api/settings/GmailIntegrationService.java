@@ -27,6 +27,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class GmailIntegrationService {
 
   private static final String GOOGLE_PROVIDER = "google";
+  private static final String CLIENT_WEB = "web";
+  private static final String CLIENT_MOBILE = "mobile";
+  private static final String CLIENT_MOBILE_WEB = "mobile-web";
 
   private final AuthenticatedUserService authenticatedUserService;
   private final UserRepository userRepository;
@@ -253,9 +256,12 @@ public class GmailIntegrationService {
   }
 
   private URI buildFrontendReturn(String gmailStatus, String errorCode, String client, String redirectPath) {
-    URI returnUrl = "mobile".equals(normalizeClient(client))
-        ? gmailProperties.getMobileReturnUrl()
-        : gmailProperties.getWebReturnUrl();
+    String normalizedClient = normalizeClient(client);
+    URI returnUrl = switch (normalizedClient) {
+      case CLIENT_MOBILE -> gmailProperties.getMobileReturnUrl();
+      case CLIENT_MOBILE_WEB -> gmailProperties.getMobileWebReturnUrl();
+      default -> gmailProperties.getWebReturnUrl();
+    };
     UriComponentsBuilder builder = UriComponentsBuilder.fromUri(returnUrl)
         .queryParam("section", "integrations")
         .queryParam("gmail", gmailStatus);
@@ -278,7 +284,13 @@ public class GmailIntegrationService {
 
   private String normalizeClient(String client) {
     String normalized = client == null ? "" : client.trim().toLowerCase(Locale.ROOT);
-    return "mobile".equals(normalized) ? "mobile" : "web";
+    if (CLIENT_MOBILE.equals(normalized)) {
+      return CLIENT_MOBILE;
+    }
+    if (CLIENT_MOBILE_WEB.equals(normalized)) {
+      return CLIENT_MOBILE_WEB;
+    }
+    return CLIENT_WEB;
   }
 
   private String sanitizeRedirectPath(String redirectTo) {

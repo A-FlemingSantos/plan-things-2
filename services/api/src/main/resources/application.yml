@@ -52,6 +52,7 @@ app:
     frontend-callback-url: ${APP_OAUTH_FRONTEND_CALLBACK_URL:http://localhost:5173/oauth/callback}
     web-callback-url: ${APP_OAUTH_WEB_CALLBACK_URL:${APP_OAUTH_FRONTEND_CALLBACK_URL:http://localhost:5173/oauth/callback}}
     mobile-callback-url: ${APP_OAUTH_MOBILE_CALLBACK_URL:planthings://oauth/callback}
+    mobile-web-callback-url: ${APP_OAUTH_MOBILE_WEB_CALLBACK_URL:}
     state-minutes: ${APP_OAUTH_STATE_MINUTES:10}
     completion-code-minutes: ${APP_OAUTH_COMPLETION_CODE_MINUTES:5}
     allowed-redirect-paths:
@@ -94,6 +95,7 @@ app:
       frontend-return-url: ${GMAIL_INTEGRATION_FRONTEND_RETURN_URL:http://localhost:5173/settings}
       web-return-url: ${GMAIL_INTEGRATION_WEB_RETURN_URL:${GMAIL_INTEGRATION_FRONTEND_RETURN_URL:http://localhost:5173/settings}}
       mobile-return-url: ${GMAIL_INTEGRATION_MOBILE_RETURN_URL:planthings://settings}
+      mobile-web-return-url: ${GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL:}
       state-minutes: ${GMAIL_INTEGRATION_STATE_MINUTES:10}
       scopes:
         - openid

@@ -9,6 +9,7 @@ Scripts prontos para os cenarios locais mais comuns:
 - `start-mobile-android-ngrok.ps1`: sobe `ngrok http 8080`
 - `start-mobile-android-expo.ps1`: roda `npm run mobile:android`
 - `start-mobile-android-backend.ps1`: backend para Expo Go Android
+- `start-shared-backend.ps1`: backend unico para site web + `mobile:web` + Expo Go Android
 
 Todos pedem apenas o que faltar no ambiente atual.
 
