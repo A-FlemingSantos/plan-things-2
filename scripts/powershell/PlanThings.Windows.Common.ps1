@@ -92,13 +92,20 @@ function Set-PlanThingsEnvVar {
     [Parameter(Mandatory = $true)]
     [string]$Prompt,
     [string]$Default,
-    [switch]$Secret
+    [switch]$Secret,
+    [switch]$UseDefaultIfMissing
   )
 
   $current = [Environment]::GetEnvironmentVariable($Name, 'Process')
   if (-not [string]::IsNullOrWhiteSpace($current)) {
     Write-Host "$Name ja definido no ambiente atual." -ForegroundColor DarkGray
     return $current
+  }
+
+  if ($UseDefaultIfMissing -and -not [string]::IsNullOrEmpty($Default)) {
+    [Environment]::SetEnvironmentVariable($Name, $Default, 'Process')
+    Write-Host "$Name usando padrao $Default." -ForegroundColor DarkGray
+    return $Default
   }
 
   $value = Read-PlanThingsValue -Prompt $Prompt -Default $Default -Secret:$Secret

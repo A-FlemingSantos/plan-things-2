@@ -11,7 +11,11 @@ Scripts prontos para os cenarios locais mais comuns:
 - `start-mobile-android-backend.ps1`: backend para Expo Go Android
 - `start-shared-backend.ps1`: backend unico para site web + `mobile:web` + Expo Go Android
 
-Todos pedem apenas o que faltar no ambiente atual.
+Todos pedem apenas o que faltar no ambiente atual. As portas padrao do projeto sao aplicadas automaticamente:
+
+- web: `5173`
+- mobile:web: `8081`
+- backend: `8080`
 
 Exemplos:
 

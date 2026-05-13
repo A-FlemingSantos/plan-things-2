@@ -10,8 +10,8 @@ Write-PlanThingsStep 'Validando ferramentas'
 Assert-PlanThingsCommand -Name 'mvn'
 
 Write-PlanThingsStep 'Configurando backend para mobile:web'
-$expoWebPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_WEB_PORT' -Prompt 'Porta do Expo Web' -Default '8081'
-$webPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_WEB_PORT' -Prompt 'Porta do app web (npm run dev)' -Default '5173'
+$expoWebPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_WEB_PORT' -Prompt 'Porta do Expo Web' -Default '8081' -UseDefaultIfMissing
+$webPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_WEB_PORT' -Prompt 'Porta do app web (npm run dev)' -Default '5173' -UseDefaultIfMissing
 
 Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'Senha do SQL Server (SPRING_DATASOURCE_PASSWORD)' -Secret
 [Environment]::SetEnvironmentVariable('APP_OAUTH_MOBILE_WEB_CALLBACK_URL', "http://localhost:$expoWebPort/oauth/callback", 'Process')
