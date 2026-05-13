@@ -1,93 +1,80 @@
 # Plan Things
 
-Plan Things é um monorepo para uma aplicação de planejamento colaborativo. O produto combina um app web em React com uma API Spring Boot, cobrindo quadros Kanban, planos compartilhados, convites, arquivos, calendário, preferências de usuário e integração Gmail para envio operacional de e-mails.
-
-## Visão geral
-
-- `apps/web`: aplicação Vite + React.
-- `services/api`: backend Spring Boot 3.5 com Java 21.
-- `apps/mobile`: placeholder para um futuro app mobile.
-- `scripts`: automações auxiliares do repositório.
-
-O workspace npm da raiz orquestra principalmente o app web. A API é mantida como serviço Java/Maven dentro do mesmo repositório.
-
-## Funcionalidades atuais
-
-- Autenticação local e OAuth Google com sessão própria do Plan Things.
-- Workspace com planos, membros, convites e papéis.
-- Quadro Kanban com colunas, cards, responsáveis, comentários, checklists e filtros.
-- Convites de plano enviados por Gmail conectado.
-- Inbox operacional no KanbanBoard: soltar um card na Inbox envia e-mail por Gmail para membros selecionados, atribui os membros ao card e registra histórico persistente.
-- Biblioteca de arquivos, anexos em cards e compartilhamento por plano.
-- Calendário integrado ao workspace.
-- Configurações de usuário, tema, página inicial e integração Gmail.
-
-## Stack
-
-**Web**
-
-- React 18
-- Vite 5
-- React Router
-- Vitest + Testing Library
-- CSS Modules
-
-**API**
-
-- Java 21
-- Spring Boot 3.5
-- Spring Security
-- Spring Data JPA
-- Flyway
-- SQL Server
-- JWT
+Monorepo do Plan Things: app web em React, app mobile em Expo e API Spring Boot para autenticação, Kanban, planos compartilhados, arquivos, calendário, preferências e integração Gmail.
 
 ## Estrutura
 
-```text
-plan-things/
-  apps/
-    web/
-      src/
-        features/      Módulos de produto
-        shared/        Componentes, contratos, API client e estilos comuns
-      vite.config.js
-    mobile/            Placeholder
-  services/
-    api/
-      src/main/java/   API Spring Boot
-      src/main/resources/db/migration/
-      src/test/java/   Testes de integração e unidade da API
-      pom.xml
-  scripts/
-    generate-background-thumbs.mjs
-```
+- `apps/web`: frontend Vite + React.
+- `apps/mobile`: app Expo para `mobile:web` e Expo Go.
+- `services/api`: backend Spring Boot 3.5 / Java 21.
+- `packages/shared-client`: cliente e contratos compartilhados.
+- `scripts`: automações auxiliares do repositório.
+
+## Stack
+
+- Web: React 18, Vite 5, React Router, Vitest.
+- Mobile: Expo 52, React Native 0.76, React Native Web.
+- API: Java 21, Spring Boot 3.5, Spring Security, JPA, Flyway, SQL Server, JWT.
 
 ## Requisitos
 
-- Node.js 24 e npm 11, alinhados ao ambiente de desenvolvimento atual.
-- Java 21.
-- Maven disponível no ambiente.
-- Docker com Docker Compose para o SQL Server em container, ou SQL Server local acessível pela API.
+- Node.js 24 + npm 11
+- Java 21
+- Maven no PATH
+- SQL Server local ou em container
 
-Por padrão, a API usa `jdbc:sqlserver://localhost:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true`, usuário `sa` e exige `SPRING_DATASOURCE_PASSWORD` por variável de ambiente. Ajuste as configurações por variáveis de ambiente ou pelo arquivo de configuração local quando necessário.
+O backend usa por padrão:
 
-## Como rodar
+```text
+jdbc:sqlserver://localhost:1433;databaseName=plan_things_db;encrypt=false;trustServerCertificate=true
+```
 
-Instale as dependências npm a partir da raiz:
+Usuário padrão: `sa`  
+Senha obrigatória: `SPRING_DATASOURCE_PASSWORD`
+
+## Instalação
 
 ```sh
 npm install
 ```
 
-Rode a API:
+## Desenvolvimento local no Windows
 
-```sh
-cd services/api
-SPRING_DATASOURCE_PASSWORD=<senha-local> mvn spring-boot:run
-```
+Os scripts PowerShell em [scripts/powershell/README.md](C:/Users/Arthur%20Fleming/plan-things-2/scripts/powershell/README.md:1) são o caminho recomendado. Se o seu `$PROFILE` já foi configurado, você pode chamar os comandos sem `.ps1`.
 
-No PowerShell:
+### Site web
+
+1. `start-web-backend`
+2. `start-web-frontend`
+
+### Mobile web
+
+1. `start-mobile-web-backend`
+2. `start-mobile-web-expo`
+
+### Expo Go Android
+
+1. `start-mobile-android-ngrok`
+2. `start-mobile-android-backend`
+3. `start-mobile-android-expo`
+
+### Cenário completo
+
+1. `start-mobile-android-ngrok`
+2. `start-shared-backend`
+3. `start-web-frontend`
+4. `start-mobile-web-expo`
+5. `start-mobile-android-expo`
+
+No cenário completo:
+
+- web: `5173`
+- `mobile:web`: `8081`
+- Expo Go Android: `8082`
+
+## Desenvolvimento manual
+
+### Backend
 
 ```powershell
 cd services/api
@@ -95,89 +82,98 @@ $env:SPRING_DATASOURCE_PASSWORD="<senha-local>"
 mvn spring-boot:run
 ```
 
-Em outro terminal, rode o app web a partir da raiz:
+### Web
 
-```sh
+```powershell
 npm run dev
 ```
 
-O Vite abre o frontend em `http://localhost:5173` e encaminha chamadas `/api` para `http://localhost:8080`.
-
-## Desenvolvimento local com Docker
-
-O repositório inclui um compose de desenvolvimento para SQL Server:
-
-```sh
-MSSQL_SA_PASSWORD=ChangeThis-12345 docker compose -f .devcontainer/docker-compose.yml up -d sqlserver sqlserver-init
-```
-
-No PowerShell:
+### Mobile web
 
 ```powershell
-$env:MSSQL_SA_PASSWORD="ChangeThis-12345"
-docker compose -f .devcontainer/docker-compose.yml up -d sqlserver sqlserver-init
+$env:EXPO_PUBLIC_API_BASE_URL="http://localhost:8080"
+npm run mobile:web
 ```
 
-Depois rode a API e o frontend normalmente. O compose publica o SQL Server em `127.0.0.1:1433`, usa volume Docker para preservar dados de desenvolvimento e cria `plan_things_db` se o banco ainda não existir.
+### Expo Go Android
 
-Se usar um SQL Server local já existente, defina `SPRING_DATASOURCE_PASSWORD` antes de iniciar a API.
+```powershell
+$env:EXPO_PUBLIC_API_BASE_URL="<url-publica-da-api>"
+npm run mobile:android
+```
+
+Para OAuth e Gmail no Android local, a API precisa estar acessível por URL pública, normalmente via `ngrok`.
 
 ## GitHub Codespaces
 
-O ambiente Codespaces usa `.devcontainer/devcontainer.json` e `.devcontainer/docker-compose.yml`.
-
-Antes de testar login/OAuth/Gmail no Codespace, configure os secrets do Codespaces:
-
-- `GOOGLE_OAUTH_CLIENT_ID`
-- `GOOGLE_OAUTH_CLIENT_SECRET`
-- `APP_INTEGRATION_TOKEN_KEY_B64`
-- `APP_JWT_SECRET`
-
-`MSSQL_SA_PASSWORD` tambem pode ser configurado como secret para trocar a senha do SQL Server de desenvolvimento. Se ele nao existir, o devcontainer usa um fallback apenas para ambiente local/remoto de desenvolvimento, suficiente para o Codespace sair do recovery mode.
-
-Dentro do Codespace, os comandos principais são:
+No Codespaces, rode a API e o frontend em terminais separados:
 
 ```sh
 cd services/api
 mvn spring-boot:run
 ```
 
-Em outro terminal:
-
 ```sh
-npm run dev:codespaces --workspace apps/web
+npm run dev
 ```
 
-As portas esperadas são:
+Portas esperadas:
 
-- `5173`: frontend Vite, pública.
-- `8080`: API Spring Boot, pública para callbacks OAuth/Gmail.
-- `1433`: SQL Server, privado.
+- `5173`: web
+- `8080`: API
+- `1433`: SQL Server
 
-O frontend continua chamando `/api` por proxy Vite. Em Codespaces, o proxy aponta para `http://localhost:8080` dentro do container de workspace.
+Para OAuth e Gmail remotos, configure secrets/variáveis com os domínios públicos do Codespaces para:
 
-## Comandos principais
+- `APP_FRONTEND_BASE_URL`
+- `APP_OAUTH_WEB_CALLBACK_URL`
+- `GMAIL_INTEGRATION_WEB_RETURN_URL`
+- `GOOGLE_OAUTH_REDIRECT_URI`
+- `GMAIL_INTEGRATION_REDIRECT_URI`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `APP_INTEGRATION_TOKEN_KEY_B64`
+- `APP_JWT_SECRET`
 
-Na raiz do repositório:
+## Variáveis principais
+
+### Backend
+
+- `SPRING_DATASOURCE_PASSWORD`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `APP_INTEGRATION_TOKEN_KEY_B64`
+- `APP_JWT_SECRET`
+- `APP_FRONTEND_BASE_URL`
+- `APP_CORS_ALLOWED_ORIGINS`
+- `APP_OAUTH_WEB_CALLBACK_URL`
+- `APP_OAUTH_MOBILE_WEB_CALLBACK_URL`
+- `APP_OAUTH_MOBILE_CALLBACK_URL`
+- `GOOGLE_OAUTH_REDIRECT_URI`
+- `GMAIL_INTEGRATION_WEB_RETURN_URL`
+- `GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL`
+- `GMAIL_INTEGRATION_MOBILE_RETURN_URL`
+- `GMAIL_INTEGRATION_REDIRECT_URI`
+
+### Frontend / mobile
+
+- `EXPO_PUBLIC_API_BASE_URL`
+
+## Comandos úteis
+
+Na raiz:
 
 ```sh
-npm run dev       # inicia o app web
-npm run build     # gera build do app web
-npm run preview   # serve o build do app web
-npm run test      # roda Vitest em modo watch
-npm run test:run  # roda Vitest uma vez
-npm run thumbs    # regenera thumbnails de backgrounds
+npm run dev
+npm run build
+npm run preview
+npm run test
+npm run test:run
+npm run mobile:web
+npm run mobile:android
 ```
 
 No backend:
-
-```sh
-cd services/api
-SPRING_DATASOURCE_PASSWORD=<senha-local> mvn test
-SPRING_DATASOURCE_PASSWORD=<senha-local> mvn spring-boot:run
-```
-
-No PowerShell:
 
 ```powershell
 cd services/api
@@ -186,56 +182,12 @@ mvn test
 mvn spring-boot:run
 ```
 
-Também é possível chamar scripts diretamente no workspace web:
+## Testes
 
-```sh
-npm --workspace apps/web run dev
-npm --workspace apps/web run build
-npm --workspace apps/web run test:run
-```
+- Frontend/mobile compartilhado: `npm run test:run`
+- Backend: `mvn test`
 
-## Variáveis e integrações
-
-A API possui defaults para desenvolvimento local, mas algumas integrações precisam de configuração real:
-
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `APP_CORS_ALLOWED_ORIGINS`
-- `GOOGLE_OAUTH_CLIENT_ID`
-- `GOOGLE_OAUTH_CLIENT_SECRET`
-- `GOOGLE_OAUTH_REDIRECT_URI`
-- `GMAIL_INTEGRATION_REDIRECT_URI`
-- `GMAIL_INTEGRATION_FRONTEND_RETURN_URL`
-- `APP_INTEGRATION_TOKEN_KEY_B64`
-- `APP_JWT_SECRET`
-- `APP_FRONTEND_BASE_URL`
-- `APP_OAUTH_FRONTEND_CALLBACK_URL`
-
-A integração Gmail atual usa o escopo `gmail.send`. Leitura real de caixa Gmail e Google Calendar são frentes futuras separadas.
-
-No frontend, o padrão recomendado é usar `/api` via proxy Vite. `VITE_API_PROXY_TARGET` controla o destino do proxy e usa `http://localhost:8080` como default. `VITE_API_BASE_URL` ainda pode ser usado em cenários especiais em que a API não esteja no mesmo host/proxy padrão.
-
-O backend permite CORS para a origem de `APP_FRONTEND_BASE_URL`. Use `APP_CORS_ALLOWED_ORIGINS` somente para origens extras, separadas por virgula, quando o frontend chamar a API diretamente em vez de passar pelo proxy `/api`.
-
-### OAuth Google em ambiente remoto
-
-Use um OAuth Client Google separado para Codespaces/dev remoto. O Google exige redirect URIs exatas, então cada Codespace pode precisar de URIs próprias:
-
-```text
-https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/api/auth/oauth/google/callback
-https://${CODESPACE_NAME}-8080.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/api/settings/integrations/gmail/callback
-```
-
-As URLs de retorno do frontend no Codespaces seguem este formato:
-
-```text
-APP_FRONTEND_BASE_URL=https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}
-APP_OAUTH_FRONTEND_CALLBACK_URL=https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/oauth/callback
-GMAIL_INTEGRATION_FRONTEND_RETURN_URL=https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/settings
-```
-
-Essas configurações ficam fora do Git: use GitHub Codespaces Secrets, variáveis do shell ou `.env.local` local não versionado.
+Os testes cobrem auth, Kanban, preferências, arquivos, Gmail, Inbox e contratos compartilhados.
 
 ## Banco de dados
 
@@ -245,35 +197,9 @@ As migrações ficam em:
 services/api/src/main/resources/db/migration/
 ```
 
-O Hibernate está configurado com `ddl-auto: validate`; portanto, o schema esperado deve ser criado e evoluído via Flyway.
+O Hibernate usa `ddl-auto: validate`, então o schema deve ser criado e evoluído via Flyway.
 
-## Testes
+## Referências
 
-Frontend:
-
-```sh
-npm run test:run
-```
-
-Backend:
-
-```sh
-cd services/api
-SPRING_DATASOURCE_PASSWORD=<senha-local> mvn test
-```
-
-No PowerShell:
-
-```powershell
-cd services/api
-$env:SPRING_DATASOURCE_PASSWORD="<senha-local>"
-mvn test
-```
-
-Os testes cobrem fluxos de auth, preferências, Kanban, convites, arquivos, Gmail, Inbox e contratos compartilhados entre frontend e backend.
-
-## Estado do produto
-
-O estado detalhado das entregas vive em [STATUS_OVERVIEW.md](STATUS_OVERVIEW.md). A sequência planejada de implementação vive em [IMPLEMENTATION_SEQUENCE.md](IMPLEMENTATION_SEQUENCE.md).
-
-Em resumo, as bases principais de colaboração, OAuth Google, Gmail, convites e Inbox operacional já existem. As próximas frentes descritas no repositório são governança de colaboração, refinamento de arquivos/anexos, ajustes finais de Settings e Google Calendar como integração opcional futura.
+- Estado do produto: [STATUS_OVERVIEW.md](C:/Users/Arthur%20Fleming/plan-things-2/STATUS_OVERVIEW.md:1)
+- Sequência planejada: [IMPLEMENTATION_SEQUENCE.md](C:/Users/Arthur%20Fleming/plan-things-2/IMPLEMENTATION_SEQUENCE.md:1)
