@@ -95,6 +95,11 @@ $env:EXPO_PUBLIC_API_BASE_URL="http://localhost:8080"
 npm run mobile:web
 ```
 
+Para OAuth e Gmail no `mobile:web`, o backend deve usar:
+
+- `APP_OAUTH_MOBILE_WEB_CALLBACK_URL=http://localhost:8081/oauth/callback`
+- `GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL=http://localhost:8081/settings`
+
 ### Expo Go Android
 
 ```powershell
@@ -106,28 +111,59 @@ Para OAuth e Gmail no Android local, a API precisa estar acessível por URL púb
 
 ## GitHub Codespaces
 
-No Codespaces, rode a API e o frontend em terminais separados:
+No Codespaces, carregue `./.env.codespaces` antes de subir a API ou o app mobile. Ele prepara:
+
+- `EXPO_PUBLIC_API_BASE_URL`
+- `APP_FRONTEND_BASE_URL`
+- `APP_OAUTH_FRONTEND_CALLBACK_URL`
+- `APP_OAUTH_MOBILE_WEB_CALLBACK_URL`
+- `GOOGLE_OAUTH_REDIRECT_URI`
+- `GMAIL_INTEGRATION_FRONTEND_RETURN_URL`
+- `GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL`
+- `GMAIL_INTEGRATION_REDIRECT_URI`
+- `APP_CORS_ALLOWED_ORIGINS`
+
+Exemplo para site web:
 
 ```sh
+source ./.env.codespaces
 cd services/api
 mvn spring-boot:run
 ```
 
 ```sh
+source ./.env.codespaces
 npm run dev
+```
+
+Exemplo para `mobile:web`:
+
+```sh
+source ./.env.codespaces
+cd services/api
+mvn spring-boot:run
+```
+
+```sh
+source ./.env.codespaces
+npm run mobile:web
 ```
 
 Portas esperadas:
 
 - `5173`: web
+- `8081`: `mobile:web`
 - `8080`: API
 - `1433`: SQL Server
 
 Para OAuth e Gmail remotos, configure secrets/variáveis com os domínios públicos do Codespaces para:
 
 - `APP_FRONTEND_BASE_URL`
+- `APP_OAUTH_FRONTEND_CALLBACK_URL`
 - `APP_OAUTH_WEB_CALLBACK_URL`
+- `APP_OAUTH_MOBILE_WEB_CALLBACK_URL`
 - `GMAIL_INTEGRATION_WEB_RETURN_URL`
+- `GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL`
 - `GOOGLE_OAUTH_REDIRECT_URI`
 - `GMAIL_INTEGRATION_REDIRECT_URI`
 - `GOOGLE_OAUTH_CLIENT_ID`

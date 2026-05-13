@@ -51,13 +51,15 @@ Failed to launch 'planthings://oauth/callback?...' because the scheme does not h
 
 ### O que configurar
 
-- No backend (`services/api`): defina `APP_OAUTH_MOBILE_CALLBACK_URL` apontando para a URL do Expo web.
+- No backend (`services/api`): defina `APP_OAUTH_MOBILE_WEB_CALLBACK_URL` apontando para a URL do Expo web.
+- Para Gmail no `mobile:web`, defina tambem `GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL`.
 - No app mobile (Expo): garanta que o app aponte para o backend correto via `EXPO_PUBLIC_API_BASE_URL` (se necessario).
 
 Exemplo (Linux/macOS), assumindo Expo web em `8081` e backend em `8080`:
 
 ```sh
-export APP_OAUTH_MOBILE_CALLBACK_URL="http://localhost:8081/oauth/callback"
+export APP_OAUTH_MOBILE_WEB_CALLBACK_URL="http://localhost:8081/oauth/callback"
+export GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL="http://localhost:8081/settings"
 
 # (se estiver rodando o backend local)
 cd services/api
@@ -71,7 +73,7 @@ EXPO_PUBLIC_API_BASE_URL="http://localhost:8080" npm run mobile:web
 Observacoes:
 
 - A porta do Expo web pode variar; use a URL exibida pelo `expo start --web`/`npx expo start --web`.
-- Em Android nativo (Expo Go/app instalado), o retorno esperado continua sendo `planthings://oauth/callback`.
+- Em Android nativo (Expo Go/app instalado), o retorno esperado continua sendo `planthings://oauth/callback` e `planthings://settings`.
 
 Tambem funciona iniciar com `npm run mobile:start` e pressionar `w` no terminal do Expo.
 
@@ -83,4 +85,4 @@ npm run mobile:android:device
 
 ## Estado atual
 
-Este app é demo-first. Login e cadastro entram no app em modo de desenvolvimento e as telas usam dados locais inspirados no app web. Nenhuma chamada à API real é feita nesta primeira base.
+O app mobile compartilha a API real com o restante do monorepo e cobre login, cadastro, OAuth, Kanban, arquivos, preferencias, sessoes e integracao Gmail em `mobile:web` e Expo Go.
