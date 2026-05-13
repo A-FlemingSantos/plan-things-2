@@ -149,12 +149,41 @@ source ./.env.codespaces
 npm run mobile:web
 ```
 
+Exemplo para Expo Go Android:
+
+```sh
+source ./.env.codespaces
+cd apps/mobile
+npx expo start --tunnel --port "${APP_EXPO_GO_PORT}"
+```
+
+Depois, no terminal da API:
+
+```sh
+source ./.env.codespaces
+export APP_OAUTH_MOBILE_CALLBACK_URL="<EXPO_GO_BASE_URL>/--/oauth/callback"
+export GMAIL_INTEGRATION_MOBILE_RETURN_URL="<EXPO_GO_BASE_URL>/--/settings"
+
+cd services/api
+mvn spring-boot:run
+```
+
 Portas esperadas:
 
 - `5173`: web
 - `8081`: `mobile:web`
+- `8082`: Expo Go Android
 - `8080`: API
 - `1433`: SQL Server
+
+No cenário completo em Codespaces, rode:
+
+1. API com `source ./.env.codespaces`
+2. web em `5173`
+3. `mobile:web` em `8081`
+4. Expo Go Android com `npx expo start --tunnel --port "${APP_EXPO_GO_PORT}"`
+
+O `mobile:web` usa as URLs configuradas por `.env.codespaces`. O Expo Go Android continua exigindo o `EXPO_GO_BASE_URL` atual do túnel do Expo para sobrescrever `APP_OAUTH_MOBILE_CALLBACK_URL` e `GMAIL_INTEGRATION_MOBILE_RETURN_URL`.
 
 Para OAuth e Gmail remotos, configure secrets/variáveis com os domínios públicos do Codespaces para:
 
