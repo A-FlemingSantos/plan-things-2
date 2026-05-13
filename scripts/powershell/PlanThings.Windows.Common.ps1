@@ -26,22 +26,6 @@ function Assert-PlanThingsCommand {
   }
 }
 
-function ConvertTo-PlainText {
-  param(
-    [Parameter(Mandatory = $true)]
-    [Security.SecureString]$SecureValue
-  )
-
-  $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureValue)
-  try {
-    return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
-  } finally {
-    if ($ptr -ne [IntPtr]::Zero) {
-      [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)
-    }
-  }
-}
-
 function Read-PlanThingsValue {
   param(
     [Parameter(Mandatory = $true)]
@@ -52,13 +36,10 @@ function Read-PlanThingsValue {
 
   while ($true) {
     if ($Secret) {
-      if ([string]::IsNullOrEmpty($Default)) {
-        $secureValue = Read-Host "$Prompt (entrada oculta)"
-      } else {
-        $secureValue = Read-Host "$Prompt (entrada oculta; Enter usa o valor atual)"
-      }
+      $suffix = if ([string]::IsNullOrEmpty($Default)) { '' } else { ' [Enter usa o valor atual]' }
+      $value = Read-Host "$Prompt$suffix"
 
-      if ($secureValue.Length -eq 0) {
+      if ([string]::IsNullOrWhiteSpace($value)) {
         if (-not [string]::IsNullOrEmpty($Default)) {
           return $Default
         }
@@ -67,7 +48,7 @@ function Read-PlanThingsValue {
         continue
       }
 
-      return (ConvertTo-PlainText -SecureValue $secureValue)
+      return $value.Trim()
     }
 
     $suffix = if ([string]::IsNullOrEmpty($Default)) { '' } else { " [$Default]" }
