@@ -48,7 +48,25 @@ function Get-PlanThingsLocalIPv4 {
 }
 
 function Get-PlanThingsExpoGoBaseUrl {
-  return "exp://$(Get-PlanThingsLocalIPv4):8081"
+  $expoGoPort = [Environment]::GetEnvironmentVariable('PLAN_THINGS_EXPO_GO_PORT', 'Process')
+  if ([string]::IsNullOrWhiteSpace($expoGoPort)) {
+    $expoGoPort = '8082'
+  }
+
+  return "exp://$(Get-PlanThingsLocalIPv4):$expoGoPort"
+}
+
+function Get-PlanThingsBackendBaseUrl {
+  return 'http://localhost:8080'
+}
+
+function Get-PlanThingsTrimmedUrl {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Url
+  )
+
+  return $Url.Trim().TrimEnd('/')
 }
 
 function Start-PlanThingsScript {
@@ -194,6 +212,32 @@ function Set-PlanThingsEnvVar {
   $value = Read-PlanThingsValue -Prompt $Prompt -Default $Default -Secret:$Secret
   [Environment]::SetEnvironmentVariable($Name, $value, 'Process')
   return $value
+}
+
+function Set-PlanThingsProcessEnvVar {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Name,
+    [string]$Value
+  )
+
+  if ([string]::IsNullOrWhiteSpace($Value)) {
+    [Environment]::SetEnvironmentVariable($Name, $null, 'Process')
+    return
+  }
+
+  [Environment]::SetEnvironmentVariable($Name, $Value, 'Process')
+}
+
+function Clear-PlanThingsEnvVars {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string[]]$Names
+  )
+
+  foreach ($name in $Names) {
+    [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+  }
 }
 
 function Use-PlanThingsOptionalGoogleSetup {

@@ -11,8 +11,21 @@ Assert-PlanThingsCommand -Name 'mvn'
 
 $webPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_WEB_PORT' -Prompt 'web_port' -Default '5173' -UseDefaultIfMissing
 $null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'spring_db_password' -Secret
-[Environment]::SetEnvironmentVariable('APP_OAUTH_WEB_CALLBACK_URL', "http://localhost:$webPort/oauth/callback", 'Process')
-[Environment]::SetEnvironmentVariable('GMAIL_INTEGRATION_WEB_RETURN_URL', "http://localhost:$webPort/settings", 'Process')
+$backendBaseUrl = Get-PlanThingsBackendBaseUrl
+
+Set-PlanThingsProcessEnvVar -Name 'APP_OAUTH_WEB_CALLBACK_URL' -Value "http://localhost:$webPort/oauth/callback"
+Set-PlanThingsProcessEnvVar -Name 'GMAIL_INTEGRATION_WEB_RETURN_URL' -Value "http://localhost:$webPort/settings"
+Set-PlanThingsProcessEnvVar -Name 'GOOGLE_OAUTH_REDIRECT_URI' -Value "$backendBaseUrl/api/auth/oauth/google/callback"
+Set-PlanThingsProcessEnvVar -Name 'GMAIL_INTEGRATION_REDIRECT_URI' -Value "$backendBaseUrl/api/settings/integrations/gmail/callback"
+
+Clear-PlanThingsEnvVars -Names @(
+  'APP_CORS_ALLOWED_ORIGINS',
+  'APP_OAUTH_MOBILE_WEB_CALLBACK_URL',
+  'APP_OAUTH_MOBILE_CALLBACK_URL',
+  'GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL',
+  'GMAIL_INTEGRATION_MOBILE_RETURN_URL'
+)
+
 $googleOAuth = Use-PlanThingsOptionalGoogleSetup
 if ($googleOAuth) {
   Set-PlanThingsGoogleEnvVars
