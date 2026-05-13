@@ -161,12 +161,15 @@ Depois, no terminal da API:
 
 ```sh
 source ./.env.codespaces
-export APP_OAUTH_MOBILE_CALLBACK_URL="<EXPO_GO_BASE_URL>/--/oauth/callback"
-export GMAIL_INTEGRATION_MOBILE_RETURN_URL="<EXPO_GO_BASE_URL>/--/settings"
+export APP_OAUTH_MOBILE_CALLBACK_URL="<EXPO_GO_BASE_URL>"
+export GMAIL_INTEGRATION_MOBILE_RETURN_URL="<EXPO_GO_BASE_URL>"
 
 cd services/api
 mvn spring-boot:run
 ```
+
+Use `EXPO_GO_BASE_URL` as the exact `exp://...` URL shown by `npx expo start --tunnel --port "${APP_EXPO_GO_PORT}"`.
+The backend will preserve the Expo tunnel query string and derive `/--/oauth/callback` and `/--/settings` automatically for native mobile returns.
 
 Portas esperadas:
 

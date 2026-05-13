@@ -1,8 +1,9 @@
 function normalizePathname(pathname = '') {
-  if (pathname.startsWith('/--/')) {
-    return pathname.slice(3)
+  const markerIndex = pathname.indexOf('/--/')
+  if (markerIndex >= 0) {
+    return pathname.slice(markerIndex + 3)
   }
-  if (pathname === '/--') {
+  if (pathname === '/--' || pathname.endsWith('/--')) {
     return '/'
   }
   return pathname || '/'

@@ -2,6 +2,7 @@ package com.planthings.api.auth;
 
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.error.ApiException;
+import com.planthings.api.common.url.ExpoGoReturnUrlResolver;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -201,7 +202,7 @@ public class OAuthLoginService {
   private URI buildFrontendCallback(String completionCode, String redirectPath, String errorCode, String client) {
     String normalizedClient = normalizeClient(client);
     URI callbackUrl = switch (normalizedClient) {
-      case CLIENT_MOBILE -> properties.getMobileCallbackUrl();
+      case CLIENT_MOBILE -> ExpoGoReturnUrlResolver.forOAuthCallback(properties.getMobileCallbackUrl());
       case CLIENT_MOBILE_WEB -> properties.getMobileWebCallbackUrl();
       default -> properties.getWebCallbackUrl();
     };

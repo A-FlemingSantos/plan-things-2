@@ -9,6 +9,7 @@ import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.common.url.ExpoGoReturnUrlResolver;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -258,7 +259,7 @@ public class GmailIntegrationService {
   private URI buildFrontendReturn(String gmailStatus, String errorCode, String client, String redirectPath) {
     String normalizedClient = normalizeClient(client);
     URI returnUrl = switch (normalizedClient) {
-      case CLIENT_MOBILE -> gmailProperties.getMobileReturnUrl();
+      case CLIENT_MOBILE -> ExpoGoReturnUrlResolver.forSettingsReturn(gmailProperties.getMobileReturnUrl());
       case CLIENT_MOBILE_WEB -> gmailProperties.getMobileWebReturnUrl();
       default -> gmailProperties.getWebReturnUrl();
     };
