@@ -14,7 +14,9 @@ $expoWebPort = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_EXPO_WEB_PORT' -Prompt 'e
 $null = Set-PlanThingsEnvVar -Name 'SPRING_DATASOURCE_PASSWORD' -Prompt 'spring_db_password' -Secret
 
 [Environment]::SetEnvironmentVariable('APP_CORS_ALLOWED_ORIGINS', "http://localhost:$expoWebPort,http://127.0.0.1:$expoWebPort,http://localhost:$webPort,http://127.0.0.1:$webPort", 'Process')
+[Environment]::SetEnvironmentVariable('APP_OAUTH_WEB_CALLBACK_URL', "http://localhost:$webPort/oauth/callback", 'Process')
 [Environment]::SetEnvironmentVariable('APP_OAUTH_MOBILE_WEB_CALLBACK_URL', "http://localhost:$expoWebPort/oauth/callback", 'Process')
+[Environment]::SetEnvironmentVariable('GMAIL_INTEGRATION_WEB_RETURN_URL', "http://localhost:$webPort/settings", 'Process')
 [Environment]::SetEnvironmentVariable('GMAIL_INTEGRATION_MOBILE_WEB_RETURN_URL', "http://localhost:$expoWebPort/settings", 'Process')
 
 $googleOAuth = Use-PlanThingsOptionalGoogleSetup -Default $true
@@ -43,6 +45,11 @@ if ($googleOAuth) {
   $configRows += New-PlanThingsConfigRow 'expo_go_base' $expoGoBaseUrl
   $configRows += New-PlanThingsConfigRow 'ngrok_url' $ngrokUrl
 }
+
+$configRows += New-PlanThingsConfigRow 'web_callback' "http://localhost:$webPort/oauth/callback"
+$configRows += New-PlanThingsConfigRow 'web_gmail_return' "http://localhost:$webPort/settings"
+$configRows += New-PlanThingsConfigRow 'mobile_web_callback' "http://localhost:$expoWebPort/oauth/callback"
+$configRows += New-PlanThingsConfigRow 'mobile_web_gmail' "http://localhost:$expoWebPort/settings"
 
 Write-PlanThingsConfig -Rows $configRows
 Write-PlanThingsRun -Command 'mvn spring-boot:run'
