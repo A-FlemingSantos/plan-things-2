@@ -24,9 +24,8 @@ do tunnel.
 No modo development build, os scripts usam `planthings://oauth/callback` e
 `planthings://settings`, e o Metro sobe com `--dev-client`.
 
-Segredos locais podem ficar em `local.secrets.ps1`. O nome antigo
-`local.secrests.ps1` ainda e carregado para compatibilidade. Variaveis ja
-definidas no processo atual tem prioridade sobre esses arquivos locais.
+Segredos locais ficam em `local.secrets.ps1`. Variaveis ja definidas no
+processo atual tem prioridade sobre esse arquivo local.
 
 Exemplos:
 

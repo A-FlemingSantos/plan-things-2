@@ -3,20 +3,15 @@ $ErrorActionPreference = 'Stop'
 $script:PlanThingsInputShown = $false
 
 function Import-PlanThingsLocalSecrets {
-  $localSecretsPaths = @(
-    (Join-Path $PSScriptRoot 'local.secrests.ps1'),
-    (Join-Path $PSScriptRoot 'local.secrets.ps1')
-  )
+  $localSecretsPath = Join-Path $PSScriptRoot 'local.secrets.ps1'
   $originalEnvironment = @{}
 
   foreach ($entry in [Environment]::GetEnvironmentVariables('Process').GetEnumerator()) {
     $originalEnvironment[$entry.Key] = $entry.Value
   }
 
-  foreach ($localSecretsPath in $localSecretsPaths) {
-    if (Test-Path $localSecretsPath) {
-      . $localSecretsPath
-    }
+  if (Test-Path $localSecretsPath) {
+    . $localSecretsPath
   }
 
   foreach ($name in $originalEnvironment.Keys) {
