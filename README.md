@@ -5,7 +5,7 @@ Monorepo do Plan Things: app web em React, app mobile em Expo e API Spring Boot 
 ## Estrutura
 
 - `apps/web`: frontend Vite + React.
-- `apps/mobile`: app Expo para `mobile:web` e Expo Go.
+- `apps/mobile`: app Expo para `mobile:web`, Expo Go e Android development build.
 - `services/api`: backend Spring Boot 3.5 / Java 21.
 - `packages/shared-client`: cliente e contratos compartilhados.
 - `scripts`: automações auxiliares do repositório.
@@ -58,6 +58,8 @@ Os scripts PowerShell em [scripts/powershell/README.md](C:/Users/Arthur%20Flemin
 2. `start-mobile-android-backend`
 3. `start-mobile-android-expo`
 
+Para OAuth Android confiável, prefira o Android development build descrito na seção de Codespaces. Expo Go continua útil para testes rápidos, mas callbacks OAuth por `exp://...` dependem do tunnel atual do Expo.
+
 ### Cenário completo
 
 1. `start-mobile-android-ngrok`
@@ -109,6 +111,13 @@ npm run mobile:android
 
 Para OAuth e Gmail no Android local, a API precisa estar acessível por URL pública, normalmente via `ngrok`.
 
+Para Android development build, use callbacks nativos no backend:
+
+- `APP_OAUTH_MOBILE_CALLBACK_URL=planthings://oauth/callback`
+- `GMAIL_INTEGRATION_MOBILE_RETURN_URL=planthings://settings`
+
+Nesse modo, o app instalado abre pelo scheme `planthings://` e não depende de `exp://...` como retorno final de OAuth.
+
 ## GitHub Codespaces
 
 No Codespaces, carregue `./.env.codespaces` antes de subir a API ou o app mobile. Ele prepara:
@@ -149,7 +158,49 @@ source ./.env.codespaces
 npm run mobile:web
 ```
 
-Exemplo para Expo Go Android:
+### Android development build em Codespaces
+
+Este é o caminho recomendado para testar OAuth e Gmail no Android físico. O APK development build registra o scheme nativo `planthings://`, então o backend não precisa redirecionar para uma URL transitória `exp://...`.
+
+Primeira configuração do EAS/dev build, se ainda não existir no projeto:
+
+```sh
+cd apps/mobile
+npx eas-cli@latest login
+npx eas-cli@latest init
+npx expo install expo-dev-client
+npx eas-cli@latest build:configure
+npx eas-cli@latest build --profile development --platform android
+```
+
+Instale o APK gerado no Android. Depois, para rodar o app:
+
+```sh
+source ./.env.codespaces
+cd apps/mobile
+npx expo start --tunnel --dev-client --clear --port "${APP_EXPO_GO_PORT}"
+```
+
+Abra o app instalado `Plan Things Development Build` e conecte ao servidor mostrado pelo terminal. Se o QR code não funcionar, use `Enter URL manually` no app e cole a URL `exp://...exp.direct` mostrada pelo Metro.
+
+No terminal da API:
+
+```sh
+source ./.env.codespaces
+export APP_OAUTH_MOBILE_CALLBACK_URL="planthings://oauth/callback"
+export GMAIL_INTEGRATION_MOBILE_RETURN_URL="planthings://settings"
+
+cd services/api
+mvn spring-boot:run
+```
+
+Importante: suba o Expo sempre dentro de `apps/mobile`. Se iniciar da raiz do monorepo, o Metro tenta resolver `/workspaces/plan-things-2/App` e o development build recebe erro 500.
+
+Novo APK só é necessário quando mudar configuração/código nativo, por exemplo `app.json`, `scheme`, `android.package`, plugins, permissões, bibliotecas nativas ou SDK Expo/React Native. Mudanças comuns em JS/telas/serviços carregam pelo Metro.
+
+### Expo Go Android em Codespaces
+
+Expo Go continua disponível como alternativa rápida, mas o OAuth por `exp://...` é best effort. Para o fluxo estável, use o development build acima.
 
 ```sh
 source ./.env.codespaces
@@ -175,7 +226,7 @@ Portas esperadas:
 
 - `5173`: web
 - `8081`: `mobile:web`
-- `8082`: Expo Go Android
+- `8082`: Expo Go Android ou Android development build
 - `8080`: API
 - `1433`: SQL Server
 
@@ -184,9 +235,9 @@ No cenário completo em Codespaces, rode:
 1. API com `source ./.env.codespaces`
 2. web em `5173`
 3. `mobile:web` em `8081`
-4. Expo Go Android com `npx expo start --tunnel --port "${APP_EXPO_GO_PORT}"`
+4. Android development build com `npx expo start --tunnel --dev-client --port "${APP_EXPO_GO_PORT}"` ou Expo Go com `npx expo start --tunnel --port "${APP_EXPO_GO_PORT}"`
 
-O `mobile:web` usa as URLs configuradas por `.env.codespaces`. O Expo Go Android continua exigindo o `EXPO_GO_BASE_URL` atual do túnel do Expo para sobrescrever `APP_OAUTH_MOBILE_CALLBACK_URL` e `GMAIL_INTEGRATION_MOBILE_RETURN_URL`.
+O `mobile:web` usa as URLs configuradas por `.env.codespaces`. O Android development build deve sobrescrever `APP_OAUTH_MOBILE_CALLBACK_URL` e `GMAIL_INTEGRATION_MOBILE_RETURN_URL` para `planthings://...`. O Expo Go Android continua exigindo o `EXPO_GO_BASE_URL` atual do túnel do Expo para esses retornos.
 
 Para OAuth e Gmail remotos, configure secrets/variáveis com os domínios públicos do Codespaces para:
 
