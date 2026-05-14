@@ -3,9 +3,26 @@ $ErrorActionPreference = 'Stop'
 $script:PlanThingsInputShown = $false
 
 function Import-PlanThingsLocalSecrets {
-  $localSecretsPath = Join-Path $PSScriptRoot 'local.secrests.ps1'
-  if (Test-Path $localSecretsPath) {
-    . $localSecretsPath
+  $localSecretsPaths = @(
+    (Join-Path $PSScriptRoot 'local.secrests.ps1'),
+    (Join-Path $PSScriptRoot 'local.secrets.ps1')
+  )
+  $originalEnvironment = @{}
+
+  foreach ($entry in [Environment]::GetEnvironmentVariables('Process').GetEnumerator()) {
+    $originalEnvironment[$entry.Key] = $entry.Value
+  }
+
+  foreach ($localSecretsPath in $localSecretsPaths) {
+    if (Test-Path $localSecretsPath) {
+      . $localSecretsPath
+    }
+  }
+
+  foreach ($name in $originalEnvironment.Keys) {
+    if ([Environment]::GetEnvironmentVariable($name, 'Process') -ne $originalEnvironment[$name]) {
+      [Environment]::SetEnvironmentVariable($name, $originalEnvironment[$name], 'Process')
+    }
   }
 }
 
@@ -58,6 +75,32 @@ function Get-PlanThingsExpoGoBaseUrl {
 
 function Get-PlanThingsBackendBaseUrl {
   return 'http://localhost:8080'
+}
+
+function Get-PlanThingsAndroidClient {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Value
+  )
+
+  $normalizedValue = $Value.Trim().ToLowerInvariant()
+  switch ($normalizedValue) {
+    'expo' { return 'expo-go' }
+    'expo-go' { return 'expo-go' }
+    'go' { return 'expo-go' }
+    'dev' { return 'dev-build' }
+    'dev-build' { return 'dev-build' }
+    'development-build' { return 'dev-build' }
+  }
+
+  throw "Cliente Android invalido: $Value. Use expo-go ou dev-build."
+}
+
+function Set-PlanThingsAndroidClientEnvVar {
+  $androidClient = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_ANDROID_CLIENT' -Prompt 'android_client' -Default 'expo-go' -UseDefaultIfMissing
+  $androidClient = Get-PlanThingsAndroidClient -Value $androidClient
+  Set-PlanThingsProcessEnvVar -Name 'PLAN_THINGS_ANDROID_CLIENT' -Value $androidClient
+  return $androidClient
 }
 
 function Get-PlanThingsTrimmedUrl {
