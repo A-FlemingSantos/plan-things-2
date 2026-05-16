@@ -19,7 +19,7 @@ const COLLAPSED_MENU_FALLBACK_HEIGHT = 320
 const COLLAPSED_MENU_GAP = 12
 const COLLAPSED_MENU_MARGIN = 12
 const SUBMENU_FALLBACK_WIDTH = 280
-const SUBMENU_FALLBACK_HEIGHT = 360
+const SUBMENU_FALLBACK_HEIGHT = 160
 const SUBMENU_GAP = 8
 const SUBMENU_MARGIN = 12
 
@@ -149,6 +149,7 @@ export default function SidebarAccountMenu({
     const menuWidth = submenuRect?.width || SUBMENU_FALLBACK_WIDTH
     const menuHeight = submenuRect?.height || SUBMENU_FALLBACK_HEIGHT
     const availableHeight = Math.max(160, viewportHeight - (SUBMENU_MARGIN * 2))
+    const visibleHeight = Math.min(menuHeight, availableHeight)
     const width = Math.min(menuWidth, viewportWidth - (SUBMENU_MARGIN * 2))
     const rightAlignedLeft = anchorRect.right + SUBMENU_GAP
     const leftAlignedLeft = anchorRect.left - width - SUBMENU_GAP
@@ -160,9 +161,10 @@ export default function SidebarAccountMenu({
             SUBMENU_MARGIN,
             Math.min(rightAlignedLeft, viewportWidth - width - SUBMENU_MARGIN),
           )
+    const preferredTop = anchorRect.bottom - visibleHeight
     const top = Math.max(
       SUBMENU_MARGIN,
-      Math.min(anchorRect.top, viewportHeight - Math.min(menuHeight, availableHeight) - SUBMENU_MARGIN),
+      Math.min(preferredTop, viewportHeight - visibleHeight - SUBMENU_MARGIN),
     )
 
     setAccountsMenuPosition({
