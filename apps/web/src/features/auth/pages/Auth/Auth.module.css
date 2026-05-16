@@ -14,8 +14,8 @@
 .shell {
   position: relative;
   z-index: 1;
-  width: calc(100vw - 80px);
-  min-height: calc(100vh - 80px);
+  width: calc(100vw - 136px);
+  min-height: calc(100vh - 136px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(336px, 396px);
   background: var(--surface-1);
