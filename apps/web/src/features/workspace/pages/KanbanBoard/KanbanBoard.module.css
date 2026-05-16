@@ -2952,8 +2952,8 @@
 }
 
 .cmToolbarBtn {
-  height: 34px;
-  padding: 0 14px;
+  min-height: 34px;
+  padding: 7px 14px;
   border-radius: 6px;
   border: 1px solid var(--border-1);
   background: var(--surface-2);
@@ -2963,8 +2963,56 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   cursor: pointer;
   transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmToolbarAvatarStack {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.cmToolbarAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-2);
+  color: var(--text-on-accent);
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: .03em;
+  overflow: hidden;
+}
+
+.cmToolbarAvatar + .cmToolbarAvatar {
+  margin-left: -6px;
+}
+
+.cmToolbarLabelChip {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmToolbarBtnValue {
+  max-width: 100%;
+  color: var(--text-3);
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cmToolbarBtn:hover {
@@ -2985,6 +3033,7 @@
   justify-content: center;
   color: var(--text-3);
   flex-shrink: 0;
+  margin-left: auto;
   transform: rotate(90deg);
 }
 

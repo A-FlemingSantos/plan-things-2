@@ -809,7 +809,16 @@ export default function CardModal({
     setPreserveDisplayLabel(false)
     setShowDateMenu(false)
   }
+  const getMemberName = (member) => {
+    if (!member) return 'Membro'
+    return member.name ?? member.email ?? member.initials ?? 'Membro'
+  }
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
+  const selectedMembersSummary = selectedMembers.map(getMemberName).join(', ')
+  const selectedLabelSummary = label?.text ?? ''
+  const selectedDueDateSummary = dueEnabled && dueDateValue && (displayLabel || dueDate)
+    ? dueDateValue
+    : ''
   const pickerSourceFiles = filePickerFilter === 'plan' ? planFiles : libraryFiles
   const pickerFiles = pickerSourceFiles.filter((file) => {
     const matchesSearch = file.name.toLowerCase().includes(fileSearch.trim().toLowerCase())
@@ -821,10 +830,6 @@ export default function CardModal({
   const isFilePickerLoading = filePickerOpening || filesLoading
   const attachedFileIds = new Set(attachments.map((attachment) => attachment.fileId))
   const activeFileTypeLabel = FILE_TYPE_OPTIONS.find((option) => option.id === filePickerTypeFilter)?.label ?? 'Tipo'
-  const getMemberName = (member) => {
-    if (!member) return 'Membro'
-    return member.name ?? member.email ?? member.initials ?? 'Membro'
-  }
   const getCommentPresenter = (commentItem) => {
     const memberId = commentItem.authorId ?? commentItem.author
     const member = memberId ? members.find((item) => item.id === memberId) : null
@@ -1474,8 +1479,26 @@ export default function CardModal({
                 aria-expanded={showMembersMenu}
                 aria-haspopup="menu"
               >
-                <icons.User />
-                Membros
+                {selectedMembers.length > 0 ? (
+                  <span className={styles.cmToolbarAvatarStack} title={selectedMembersSummary}>
+                    {selectedMembers.map(member => (
+                      <AuthenticatedAvatar
+                        key={member.id}
+                        className={styles.cmToolbarAvatar}
+                        imageClassName={styles.avatarImage}
+                        style={{ background: member.color }}
+                        avatarUrl={member.avatarUrl}
+                        fallback={member.initials}
+                        title={getMemberName(member)}
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  <>
+                    <icons.User />
+                    <span>Membros</span>
+                  </>
+                )}
                 <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
               </button>
               <button
@@ -1486,8 +1509,20 @@ export default function CardModal({
                 aria-expanded={showLabelMenu}
                 aria-haspopup="menu"
               >
-                <icons.Tag />
-                Etiquetas
+                {selectedLabelSummary ? (
+                  <span
+                    className={styles.cmToolbarLabelChip}
+                    style={{ background: `${label.color}20`, color: label.color }}
+                    title={selectedLabelSummary}
+                  >
+                    {selectedLabelSummary}
+                  </span>
+                ) : (
+                  <>
+                    <icons.Tag />
+                    <span>Etiquetas</span>
+                  </>
+                )}
                 <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
               </button>
               <button
@@ -1498,8 +1533,16 @@ export default function CardModal({
                 aria-expanded={showDateMenu}
                 aria-haspopup="dialog"
               >
-                <icons.Clock />
-                Datas
+                {selectedDueDateSummary ? (
+                  <span className={styles.cmToolbarBtnValue} title={selectedDueDateSummary}>
+                    {selectedDueDateSummary}
+                  </span>
+                ) : (
+                  <>
+                    <icons.Clock />
+                    <span>Datas</span>
+                  </>
+                )}
                 <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
               </button>
               <button
