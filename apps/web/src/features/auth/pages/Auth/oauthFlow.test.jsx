@@ -20,7 +20,7 @@ describe('OAuth auth flow', () => {
     })
   })
 
-  it('merges a new account into the saved store when OAuth completes in add-account mode', async () => {
+  it('merges a new account into the saved store when OAuth completes in add-account mode and lands on the new account home', async () => {
     window.sessionStorage.setItem('plan-things.auth.intent', JSON.stringify({
       mode: 'add-account',
       redirectTo: '/files',
@@ -37,8 +37,8 @@ describe('OAuth auth flow', () => {
       ]),
     })
 
-    expect(await screen.findByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/files')
+    await screen.findByRole('button', { name: /workspace atual: workspace de google demo/i })
+    expect(window.location.pathname).toBe('/workspace')
 
     const sessionStore = readStoredSessionValue()
     expect(sessionStore.activeAccountId).toBe('demo-user-google-example-com')

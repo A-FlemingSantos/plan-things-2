@@ -2,12 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
-import { buildAuthRedirectState } from '../../../features/auth/utils/authRedirect.js'
-import {
-  DEFAULT_LOCAL_PREFERENCES,
-  readStoredLocalPreferences,
-  resolveInitialRouteForState,
-} from '../../../features/preferences/context/PreferencesContext.jsx'
+import { buildAuthRedirectState, resolveAccountHomeRoute } from '../../../features/auth/utils/authRedirect.js'
 import { ROUTES } from '../../config/routes.js'
 import { getWorkspacePlanLabel } from '../../utils/workspaceSubscriptionPlans.js'
 import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
@@ -325,17 +320,6 @@ export default function SidebarAccountMenu({
     }
   }
 
-  const resolveAccountHomeRoute = (accountId) => {
-    if (!accountId) {
-      return ROUTES.workspace
-    }
-
-    return resolveInitialRouteForState({
-      localPreferences: readStoredLocalPreferences(accountId) ?? DEFAULT_LOCAL_PREFERENCES,
-      lastContext: null,
-    })
-  }
-
   const handleOpenAddAccount = () => {
     setOpen(false)
     setAccountsOpen(false)
@@ -345,6 +329,8 @@ export default function SidebarAccountMenu({
     navigate(ROUTES.login, {
       state: buildAuthRedirectState(location, {
         authMode: 'add-account',
+      }, {
+        includeRedirectTo: false,
       }),
     })
   }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
-import { resolveAuthRedirectTarget } from '../../utils/authRedirect.js'
+import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/authRedirect.js'
 import { clearAuthIntent, readAuthIntent } from '../../utils/authIntent.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 
@@ -41,7 +41,12 @@ export default function OAuthCallback() {
         mode: authMode,
       })
 
-      navigate(resolveAuthRedirectTarget(redirectTo, resolveInitialRoute(session?.user?.id)), { replace: true })
+      navigate(resolvePostAuthRoute({
+        authMode,
+        redirectTo,
+        userId: session?.user?.id,
+        resolveInitialRoute,
+      }), { replace: true })
     }
 
     completeLogin().catch((error) => {

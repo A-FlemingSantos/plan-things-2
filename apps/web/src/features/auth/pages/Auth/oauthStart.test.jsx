@@ -14,13 +14,31 @@ const preferenceMocks = vi.hoisted(() => ({
   resolveInitialRoute: vi.fn(() => '/workspace'),
 }))
 
+const navigationMocks = vi.hoisted(() => ({
+  navigate: vi.fn(),
+}))
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+
+  return {
+    ...actual,
+    useNavigate: () => navigationMocks.navigate,
+  }
+})
+
 vi.mock('../../context/AuthContext.jsx', () => ({
   useAuth: () => authMocks,
 }))
 
-vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
-  usePreferences: () => preferenceMocks,
-}))
+vi.mock('../../../preferences/context/PreferencesContext.jsx', async () => {
+  const actual = await vi.importActual('../../../preferences/context/PreferencesContext.jsx')
+
+  return {
+    ...actual,
+    usePreferences: () => preferenceMocks,
+  }
+})
 
 describe('OAuth start buttons', () => {
   beforeEach(() => {
@@ -28,6 +46,7 @@ describe('OAuth start buttons', () => {
     authMocks.register.mockReset()
     authMocks.startOAuthLogin.mockReset()
     preferenceMocks.resolveInitialRoute.mockClear()
+    navigationMocks.navigate.mockReset()
   })
 
   it('starts Google OAuth with the pending internal redirect', async () => {
@@ -46,7 +65,7 @@ describe('OAuth start buttons', () => {
     expect(screen.getByRole('button', { name: /google/i })).toBeDisabled()
   })
 
-  it('starts OAuth in add-account mode and preserves the current redirect target', async () => {
+  it('starts OAuth in add-account mode without preserving the current redirect target', async () => {
     authMocks.startOAuthLogin.mockReturnValue(new Promise(() => {}))
 
     renderAuth('/login', {
@@ -58,13 +77,12 @@ describe('OAuth start buttons', () => {
 
     await waitFor(() => {
       expect(authMocks.startOAuthLogin).toHaveBeenCalledWith('google', {
-        redirectTo: '/files',
         mode: 'add-account',
       })
     })
   })
 
-  it('submits email login in add-account mode', async () => {
+  it('submits email login in add-account mode and redirects to the new account home', async () => {
     authMocks.login.mockResolvedValue({
       user: { id: 'user-2' },
     })
@@ -85,10 +103,11 @@ describe('OAuth start buttons', () => {
       }, {
         mode: 'add-account',
       })
+      expect(navigationMocks.navigate).toHaveBeenCalledWith('/workspace', { replace: true })
     })
   })
 
-  it('submits registration in add-account mode', async () => {
+  it('submits registration in add-account mode and redirects to the new account home', async () => {
     authMocks.register.mockResolvedValue({
       user: { id: 'user-3' },
     })
@@ -119,6 +138,7 @@ describe('OAuth start buttons', () => {
       }, {
         mode: 'add-account',
       })
+      expect(navigationMocks.navigate).toHaveBeenCalledWith('/workspace', { replace: true })
     })
   })
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
-import { resolveAuthRedirectTarget } from '../../utils/authRedirect.js'
+import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/authRedirect.js'
 import { clearAuthIntent, persistAuthIntent } from '../../utils/authIntent.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
@@ -120,10 +120,12 @@ export default function Auth({ initialMode = 'login' }) {
         }, { mode: authMode })
       }
 
-      const redirectTo = resolveAuthRedirectTarget(
-        location.state?.redirectTo,
-        resolveInitialRoute(session?.user?.id),
-      )
+      const redirectTo = resolvePostAuthRoute({
+        authMode,
+        redirectTo: location.state?.redirectTo,
+        userId: session?.user?.id,
+        resolveInitialRoute,
+      })
       navigate(redirectTo, { replace: true })
     } catch (error) {
       setErrorMessage(error.message ?? 'Nao foi possivel concluir a autenticacao.')
@@ -139,17 +141,18 @@ export default function Auth({ initialMode = 'login' }) {
 
     try {
       clearAuthIntent()
-      const redirectTo = resolveAuthRedirectTarget(location.state?.redirectTo, null)
+      const redirectTo = isAddAccountMode
+        ? null
+        : resolveAuthRedirectTarget(location.state?.redirectTo, null)
       if (isAddAccountMode) {
         persistAuthIntent({
           mode: authMode,
-          redirectTo: redirectTo ?? undefined,
         })
       }
 
       const response = await startOAuthLogin(provider, {
-        redirectTo: redirectTo ?? undefined,
         mode: authMode,
+        ...(redirectTo ? { redirectTo } : {}),
       })
 
       window.location.assign(response.authorizationUrl)
