@@ -29,7 +29,7 @@ function UserIcon() {
 }
 
 function AddUserIcon() {
-  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M1 12c0-2 1.8-3.5 4.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M10 8.5v4M8 10.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.25v9.5M3.25 8h9.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
 }
 
 function UpgradeIcon() {
@@ -46,6 +46,10 @@ function LogOutIcon() {
 
 function ChevronRightIcon() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L8.5 7 5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+}
+
+function CheckIcon() {
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l2.2 2.2L11 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
 }
 
 const MENU_ITEMS = [
@@ -478,7 +482,6 @@ export default function SidebarAccountMenu({
               aria-label="Contas salvas"
               style={accountsMenuPosition ?? undefined}
             >
-              <div className={menuStyles.submenuHeader}>Contas salvas</div>
               {orderedAccounts.map((account) => {
                 const accountInitials = account.user?.fullName
                   ? account.user.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
@@ -500,34 +503,43 @@ export default function SidebarAccountMenu({
                     disabled={switchingAccountId !== null}
                     onClick={() => handleSwitchAccount(account.accountId)}
                   >
-                    <AuthenticatedAvatar
-                      className={menuStyles.avatar}
-                      imageClassName="authenticatedAvatarImage"
-                      avatarUrl={account.user?.avatarUrl ?? null}
-                      fallback={accountInitials}
-                      title={account.user?.fullName ?? 'Conta'}
-                    />
-                    <span className={menuStyles.accountIdentity}>
-                      <span className={menuStyles.accountNameRow}>
-                        <span className={menuStyles.accountName}>{account.user?.fullName ?? 'Conta sem nome'}</span>
-                        {isActive ? <span className={menuStyles.accountBadge}>Ativa</span> : null}
+                    <span className={menuStyles.accountMain}>
+                      <AuthenticatedAvatar
+                        className={[menuStyles.avatar, menuStyles.accountAvatar].join(' ')}
+                        imageClassName="authenticatedAvatarImage"
+                        avatarUrl={account.user?.avatarUrl ?? null}
+                        fallback={accountInitials}
+                        title={account.user?.fullName ?? 'Conta'}
+                      />
+                      <span className={menuStyles.accountIdentity}>
+                        <span className={menuStyles.accountNameRow}>
+                          <span className={menuStyles.accountName}>{account.user?.fullName ?? 'Conta sem nome'}</span>
+                        </span>
                       </span>
-                      <span className={menuStyles.accountEmail}>{account.user?.email ?? 'Sem e-mail'}</span>
+                    </span>
+                    <span
+                      className={[
+                        menuStyles.accountCheck,
+                        isActive ? menuStyles.accountCheckVisible : '',
+                      ].filter(Boolean).join(' ')}
+                      aria-hidden="true"
+                    >
+                      <CheckIcon />
                     </span>
                   </button>
                 )
               })}
 
-              <div className={menuStyles.divider} />
+              <div className={[menuStyles.divider, menuStyles.submenuDivider].join(' ')} />
 
               <button
                 type="button"
-                className={menuStyles.item}
+                className={[menuStyles.item, menuStyles.addAccountItem].join(' ')}
                 role="menuitem"
                 disabled={switchingAccountId !== null}
                 onClick={handleOpenAddAccount}
               >
-                <span className={menuStyles.icon}><AddUserIcon /></span>
+                <span className={[menuStyles.icon, menuStyles.addAccountIcon].join(' ')}><AddUserIcon /></span>
                 Adicionar conta
               </button>
 
