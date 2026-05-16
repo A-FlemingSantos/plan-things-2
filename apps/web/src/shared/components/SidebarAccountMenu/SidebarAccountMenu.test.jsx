@@ -189,7 +189,7 @@ describe('SidebarAccountMenu', () => {
     })
 
     expect(container.querySelector('[data-app-theme-scope]')?.contains(submenu)).toBe(true)
-    expect(submenu.style.left).toBe('228px')
+    expect(submenu.style.left).toBe('210px')
     expect(submenu.style.top).toBe('428px')
     expect(submenu.style.maxHeight).toBe('776px')
   })

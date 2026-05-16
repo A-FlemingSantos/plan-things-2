@@ -20,7 +20,7 @@ const COLLAPSED_MENU_GAP = 12
 const COLLAPSED_MENU_MARGIN = 12
 const SUBMENU_FALLBACK_WIDTH = 280
 const SUBMENU_FALLBACK_HEIGHT = 160
-const SUBMENU_GAP = 8
+const SUBMENU_OVERLAP = 10
 const SUBMENU_MARGIN = 12
 
 function UserIcon() {
@@ -151,8 +151,8 @@ export default function SidebarAccountMenu({
     const availableHeight = Math.max(160, viewportHeight - (SUBMENU_MARGIN * 2))
     const visibleHeight = Math.min(menuHeight, availableHeight)
     const width = Math.min(menuWidth, viewportWidth - (SUBMENU_MARGIN * 2))
-    const rightAlignedLeft = anchorRect.right + SUBMENU_GAP
-    const leftAlignedLeft = anchorRect.left - width - SUBMENU_GAP
+    const rightAlignedLeft = anchorRect.right - SUBMENU_OVERLAP
+    const leftAlignedLeft = anchorRect.left - width + SUBMENU_OVERLAP
     const preferredLeft = rightAlignedLeft + width <= viewportWidth - SUBMENU_MARGIN
       ? rightAlignedLeft
       : leftAlignedLeft >= SUBMENU_MARGIN
