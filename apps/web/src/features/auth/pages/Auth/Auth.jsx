@@ -6,6 +6,7 @@ import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/aut
 import { clearAuthIntent, persistAuthIntent } from '../../utils/authIntent.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import clothesBackground from '../../../../assets/images/auth/clothes.webp'
+import clothesLightBackground from '../../../../assets/images/auth/clothes-light.webp'
 import styles from './Auth.module.css'
 
 function GoogleIcon() {
@@ -190,11 +191,18 @@ export default function Auth({ initialMode = 'login' }) {
 
       <main className={styles.shell}>
         <section className={styles.brandPanel}>
-          <div
-            className={styles.brandMedia}
-            style={{ backgroundImage: `url(${clothesBackground})` }}
-            aria-hidden
-          />
+          <div className={styles.brandMedia} aria-hidden>
+            <img
+              className={`${styles.brandMediaImage} ${styles.brandMediaImageDark}`}
+              src={clothesBackground}
+              alt=""
+            />
+            <img
+              className={`${styles.brandMediaImage} ${styles.brandMediaImageLight}`}
+              src={clothesLightBackground}
+              alt=""
+            />
+          </div>
 
           <Link to={ROUTES.home} className={styles.backLink}>
             <ArrowLeftIcon />
