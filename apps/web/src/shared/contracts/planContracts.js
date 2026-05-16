@@ -136,6 +136,7 @@ function normalizeBoardCard(card = {}) {
   const schedule = normalizeBoardCardSchedule(card.schedule, card.dueDate)
 
   return {
+    ...card,
     id: card.id ?? createClientId('card'),
     title: card.title ?? 'Cartão sem título',
     description: card.description ?? '',
@@ -149,6 +150,7 @@ function normalizeBoardCard(card = {}) {
 
 function normalizeBoardColumn(column = {}) {
   return {
+    ...column,
     id: column.id ?? createClientId('col'),
     title: column.title ?? 'Lista sem título',
     color: typeof column.color === 'string' ? column.color : '',

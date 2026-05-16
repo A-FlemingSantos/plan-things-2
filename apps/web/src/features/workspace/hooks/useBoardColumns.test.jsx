@@ -24,6 +24,7 @@ function buildFrontendCard(overrides = {}) {
   return {
     id: 'card-1',
     columnId: 'col-1',
+    position: 0,
     title: 'Card original',
     description: 'Descricao original',
     isCompleted: false,
@@ -55,6 +56,7 @@ function buildBackendCardView(overrides = {}) {
   return {
     id: 'card-1',
     columnId: 'col-1',
+    position: 0,
     title: 'Card original',
     description: 'Descricao original',
     completed: false,
@@ -215,5 +217,265 @@ describe('useBoardColumns card saves without board reload', () => {
         text: 'Novo comentário',
       }),
     ])
+  })
+
+  it('creates and deletes cards locally without reloading the board', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [buildFrontendCard()],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const loadPlanBoard = vi.fn()
+
+    apiClientMock.apiRequest
+      .mockResolvedValueOnce(buildBackendCardView({
+        id: 'card-2',
+        position: 1,
+        title: 'Novo card',
+        description: '',
+      }))
+      .mockResolvedValueOnce({ message: 'ok' })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard,
+      timeZone: 'America/Sao_Paulo',
+      dateFormat: 'dd/MM/yyyy',
+    }))
+
+    let createdCard = null
+    await act(async () => {
+      createdCard = await result.current.addCard('col-1', 'Novo card')
+    })
+
+    expect(createdCard).toMatchObject({
+      id: 'card-2',
+      title: 'Novo card',
+    })
+    expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-1', 'card-2'])
+
+    await act(async () => {
+      await result.current.deleteCard('card-1')
+    })
+
+    expect(loadPlanBoard).not.toHaveBeenCalled()
+    expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-2'])
+  })
+
+  it('deletes columns locally without reloading the board', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [buildFrontendCard()],
+      },
+      {
+        id: 'col-2',
+        title: 'Doing',
+        color: '',
+        cards: [],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const loadPlanBoard = vi.fn()
+
+    apiClientMock.apiRequest.mockResolvedValueOnce({ message: 'ok' })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard,
+    }))
+
+    await act(async () => {
+      await result.current.deleteColumn('col-2')
+    })
+
+    expect(loadPlanBoard).not.toHaveBeenCalled()
+    expect(boardState.map((column) => column.id)).toEqual(['col-1'])
+  })
+
+  it('updates checklist mutations locally without reloading the board', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [
+          buildFrontendCard({
+            checklists: [],
+          }),
+        ],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const loadPlanBoard = vi.fn()
+
+    apiClientMock.apiRequest
+      .mockResolvedValueOnce({
+        id: 'checklist-1',
+        title: 'Entrega',
+        position: 0,
+        items: [],
+      })
+      .mockResolvedValueOnce({
+        id: 'item-1',
+        title: 'Enviar briefing',
+        completed: false,
+        position: 0,
+        assignee: null,
+        startAt: null,
+        dueAt: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'item-1',
+        title: 'Enviar briefing',
+        completed: true,
+        position: 0,
+        assignee: null,
+        startAt: null,
+        dueAt: null,
+      })
+      .mockResolvedValueOnce({ message: 'ok' })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard,
+    }))
+
+    let checklist = null
+    await act(async () => {
+      checklist = await result.current.createChecklist('card-1', 'Entrega')
+    })
+
+    expect(checklist).toMatchObject({
+      id: 'checklist-1',
+      title: 'Entrega',
+    })
+    expect(boardState[0].cards[0].checklists).toEqual([
+      expect.objectContaining({
+        id: 'checklist-1',
+        title: 'Entrega',
+      }),
+    ])
+
+    await act(async () => {
+      await result.current.createChecklistItem('checklist-1', {
+        title: 'Enviar briefing',
+        assigneeUserId: null,
+        startAt: null,
+        dueAt: null,
+      })
+    })
+
+    expect(boardState[0].cards[0].checklists[0].items).toEqual([
+      expect.objectContaining({
+        id: 'item-1',
+        completed: false,
+      }),
+    ])
+
+    await act(async () => {
+      await result.current.updateChecklistItem({
+        id: 'item-1',
+        title: 'Enviar briefing',
+        completed: true,
+        assigneeUserId: null,
+        startAt: null,
+        dueAt: null,
+      })
+    })
+
+    expect(boardState[0].cards[0].checklists[0].items).toEqual([
+      expect.objectContaining({
+        id: 'item-1',
+        completed: true,
+      }),
+    ])
+
+    await act(async () => {
+      await result.current.deleteChecklist('checklist-1')
+    })
+
+    expect(loadPlanBoard).not.toHaveBeenCalled()
+    expect(boardState[0].cards[0].checklists).toEqual([])
+  })
+
+  it('preserves untouched column references during localized updates', async () => {
+    const untouchedColumn = {
+      id: 'col-2',
+      title: 'Doing',
+      color: '',
+      cards: [buildFrontendCard({ id: 'card-2', columnId: 'col-2', title: 'Outro card' })],
+    }
+
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [buildFrontendCard()],
+      },
+      untouchedColumn,
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+
+    apiClientMock.apiRequest.mockResolvedValueOnce({
+      id: 'comment-1',
+      authorName: 'Arthur Fleming',
+      message: 'Novo comentário',
+      createdAt: { text: 'Agora' },
+      author: {
+        id: 'user-1',
+        avatarUrl: null,
+      },
+    })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    await act(async () => {
+      await result.current.addCardComment('card-1', 'Novo comentário')
+    })
+
+    expect(boardState[1]).toBe(untouchedColumn)
   })
 })

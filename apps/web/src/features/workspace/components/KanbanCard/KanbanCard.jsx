@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 
-export default function KanbanCard({
+function KanbanCard({
   card,
   colId,
   isDragging,
@@ -209,3 +210,22 @@ export default function KanbanCard({
     </div>
   )
 }
+
+function areKanbanCardPropsEqual(prevProps, nextProps) {
+  return prevProps.card === nextProps.card
+    && prevProps.colId === nextProps.colId
+    && prevProps.isDragging === nextProps.isDragging
+    && prevProps.isDropTarget === nextProps.isDropTarget
+    && prevProps.draggedFile === nextProps.draggedFile
+    && prevProps.isFileDropTarget === nextProps.isFileDropTarget
+    && prevProps.isFileDropDisabled === nextProps.isFileDropDisabled
+    && prevProps.isConfirmed === nextProps.isConfirmed
+    && prevProps.labels === nextProps.labels
+    && prevProps.members === nextProps.members
+    && prevProps.CheckIcon === nextProps.CheckIcon
+    && prevProps.CommentIcon === nextProps.CommentIcon
+    && prevProps.ClockIcon === nextProps.ClockIcon
+    && prevProps.styles === nextProps.styles
+}
+
+export default memo(KanbanCard, areKanbanCardPropsEqual)

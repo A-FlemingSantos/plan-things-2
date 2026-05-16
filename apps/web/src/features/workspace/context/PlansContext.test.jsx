@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const apiMock = vi.hoisted(() => ({
@@ -141,5 +141,214 @@ describe('PlansProvider', () => {
     expect(result.current.isBackendDriven).toBe(true)
     expect(result.current.plans).toHaveLength(1)
     expect(result.current.plans[0].name).toBe('Plano backend')
+  })
+
+  it('updates board columns without renormalizing every card in the plan', async () => {
+    authState.current = {
+      accessToken: 'real-token',
+      currentUser: {
+        id: 'user-1',
+        fullName: 'Arthur Santos',
+      },
+      workspace: {
+        id: 'workspace-1',
+        name: 'Workspace real',
+      },
+      isAuthenticated: true,
+      isDemoSession: false,
+      isReady: true,
+      sessionMode: 'authenticated',
+    }
+
+    apiMock.apiRequest.mockResolvedValueOnce([
+      {
+        id: 'plan-1',
+        name: 'Plano backend',
+        description: 'Sincronizado da API',
+        role: 'OWNER',
+        memberCount: 2,
+        taskCount: 5,
+        createdAt: { iso: '2026-05-09T12:00:00.000Z' },
+        updatedAt: { iso: '2026-05-09T12:00:00.000Z' },
+      },
+    ])
+
+    const { result } = renderHook(() => usePlans(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await act(async () => {
+      result.current.applyBoardView('plan-1', {
+        columns: [
+          {
+            id: 'col-1',
+            title: 'Backlog',
+            color: '',
+            position: 0,
+            cards: [
+              {
+                id: 'card-1',
+                columnId: 'col-1',
+                position: 0,
+                title: 'Card 1',
+                description: '',
+                completed: false,
+                starred: false,
+                kind: 'CARTAO',
+                assignees: [],
+                comments: [],
+                checklists: [
+                  {
+                    id: 'checklist-1',
+                    title: 'Checklist',
+                    position: 0,
+                    items: [],
+                  },
+                ],
+                attachments: [
+                  {
+                    id: 'att-1',
+                    fileId: 'file-1',
+                    name: 'briefing.pdf',
+                    type: 'FILE',
+                    mimeType: 'application/pdf',
+                    sizeBytes: 1200,
+                    attachedBy: 'Arthur',
+                    attachedByCurrentUser: true,
+                    canRemove: true,
+                    createdAt: null,
+                  },
+                ],
+                label: null,
+                startAt: null,
+                dueAt: null,
+              },
+            ],
+          },
+          {
+            id: 'col-2',
+            title: 'Doing',
+            color: '',
+            position: 1,
+            cards: [
+              {
+                id: 'card-2',
+                columnId: 'col-2',
+                position: 0,
+                title: 'Card 2',
+                description: '',
+                completed: false,
+                starred: false,
+                kind: 'CARTAO',
+                assignees: [],
+                comments: [],
+                checklists: [],
+                attachments: [],
+                label: null,
+                startAt: null,
+                dueAt: null,
+              },
+            ],
+          },
+        ],
+        labels: [],
+        inboxItems: [],
+      })
+    })
+
+    const initialFirstCard = result.current.activePlan.boardColumns[0].cards[0]
+    const untouchedColumn = result.current.activePlan.boardColumns[1]
+    const untouchedCard = untouchedColumn.cards[0]
+
+    await act(async () => {
+      result.current.updatePlanBoard('plan-1', (prev) => prev.map((column) => {
+        if (column.id !== 'col-1') {
+          return column
+        }
+
+        return {
+          ...column,
+          cards: column.cards.map((card) => (
+            card.id === 'card-1'
+              ? { ...card, title: 'Card 1 atualizado' }
+              : card
+          )),
+        }
+      }))
+    })
+
+    expect(result.current.activePlan.boardColumns[1]).toBe(untouchedColumn)
+    expect(result.current.activePlan.boardColumns[1].cards[0]).toBe(untouchedCard)
+    expect(result.current.activePlan.boardColumns[0].cards[0]).not.toBe(initialFirstCard)
+    expect(result.current.activePlan.boardColumns[0].cards[0]).toMatchObject({
+      id: 'card-1',
+      title: 'Card 1 atualizado',
+    })
+    expect(result.current.activePlan.boardColumns[0].cards[0].attachments).toEqual([
+      expect.objectContaining({
+        id: 'att-1',
+        name: 'briefing.pdf',
+      }),
+    ])
+    expect(result.current.activePlan.boardColumns[0].cards[0].checklists).toEqual([
+      expect.objectContaining({
+        id: 'checklist-1',
+        title: 'Checklist',
+      }),
+    ])
+  })
+
+  it('keeps loadPlanBoard stable across local board updates', async () => {
+    authState.current = {
+      accessToken: 'real-token',
+      currentUser: {
+        id: 'user-1',
+        fullName: 'Arthur Santos',
+      },
+      workspace: {
+        id: 'workspace-1',
+        name: 'Workspace real',
+      },
+      isAuthenticated: true,
+      isDemoSession: false,
+      isReady: true,
+      sessionMode: 'authenticated',
+    }
+
+    apiMock.apiRequest.mockResolvedValueOnce([
+      {
+        id: 'plan-1',
+        name: 'Plano backend',
+        description: 'Sincronizado da API',
+        role: 'OWNER',
+        memberCount: 2,
+        taskCount: 5,
+        createdAt: { iso: '2026-05-09T12:00:00.000Z' },
+        updatedAt: { iso: '2026-05-09T12:00:00.000Z' },
+      },
+    ])
+
+    const { result } = renderHook(() => usePlans(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    const initialLoadPlanBoard = result.current.loadPlanBoard
+
+    await act(async () => {
+      result.current.updatePlanBoard('plan-1', [
+        {
+          id: 'col-1',
+          title: 'Backlog',
+          color: '',
+          cards: [],
+        },
+      ])
+    })
+
+    expect(result.current.loadPlanBoard).toBe(initialLoadPlanBoard)
   })
 })

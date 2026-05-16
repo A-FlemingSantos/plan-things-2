@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
@@ -518,6 +518,10 @@ export default function KanbanBoard() {
     await deleteCard(cardId)
     setActiveCard(null)
   }
+
+  const handleBoardCardClick = useCallback((card, colTitle) => {
+    setActiveCard({ card, colTitle })
+  }, [])
 
   useEffect(() => {
     setBoardLoadError(null)
@@ -1313,7 +1317,7 @@ export default function KanbanBoard() {
 	    todayKey,
 	  }), [plannerBaseItems, plannerFilter, todayKey])
 
-  const togglePlannerCardCompleted = async (card) => {
+  const togglePlannerCardCompleted = useCallback(async (card) => {
     try {
       await updateCard({
         ...card,
@@ -1322,7 +1326,17 @@ export default function KanbanBoard() {
     } catch (error) {
       showNotification(error?.message ?? 'Não foi possível atualizar a tarefa.')
     }
-  }
+  }, [showNotification, updateCard])
+  const boardColumnIcons = useMemo(() => ({
+    Plus: Icon.Plus,
+    More: Icon.More,
+    Edit: Icon.Edit,
+    Trash: Icon.Trash,
+    X: Icon.X,
+    Check: Icon.Check,
+    Comment: Icon.Comment,
+    Clock: Icon.Clock,
+  }), [])
   const hasNoPlan = isBackendDriven && !isLoading && !activePlan
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
   const boardHeaderTitle = isBoardLoading
@@ -2254,21 +2268,12 @@ export default function KanbanBoard() {
                 onDeleteCol={deleteColumn}
                 onRenameCol={renameColumn}
                 onChangeColColor={changeColColor}
-                onCardClick={(card, colTitle) => setActiveCard({ card, colTitle })}
+                onCardClick={handleBoardCardClick}
                 onToggleCardCompleted={togglePlannerCardCompleted}
                 labels={planLabels}
                 members={planMembers}
                 colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
-                icons={{
-                  Plus: Icon.Plus,
-                  More: Icon.More,
-                  Edit: Icon.Edit,
-                  Trash: Icon.Trash,
-                  X: Icon.X,
-                  Check: Icon.Check,
-                  Comment: Icon.Comment,
-                  Clock: Icon.Clock,
-                }}
+                icons={boardColumnIcons}
                 styles={styles}
               />
             ))}

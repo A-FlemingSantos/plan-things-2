@@ -438,6 +438,7 @@ export function mapBoardCard(card, options = {}) {
   return {
     id: card.id,
     columnId: card.columnId,
+    position: Number.isFinite(card.position) ? card.position : null,
     title: card.title,
     description: card.description ?? '',
     isCompleted: Boolean(card.completed),

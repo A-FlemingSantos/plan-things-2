@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
@@ -48,6 +48,8 @@ export function PlansProvider({ children }) {
     generalPreferences.timezone,
   ])
   const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
+  const plansByIdRef = useRef(plansById)
+  plansByIdRef.current = plansById
   const activePlan = plansById.get(activePlanId) ?? plans[0] ?? null
   const sessionKey = backendEnabled ? `${currentUser?.id ?? 'anonymous'}:${accessToken ?? ''}` : sessionMode
 
@@ -288,30 +290,31 @@ export function PlansProvider({ children }) {
 
   const getPlanById = useCallback((planId) => {
     if (!planId) return null
-    return plansById.get(planId) ?? null
-  }, [plansById])
+    return plansByIdRef.current.get(planId) ?? null
+  }, [])
 
   const updatePlan = useCallback((planId, updater) => {
     setPlans((prev) => setPlanById(prev, planId, updater))
   }, [])
 
   const updatePlanBoard = useCallback((planId, updater) => {
-    updatePlan(planId, (plan) => {
+    setPlans((prev) => prev.map((plan) => {
+      if (plan.id !== planId) return plan
       const nextColumns = typeof updater === 'function' ? updater(plan.boardColumns) : updater
       return { ...plan, boardColumns: nextColumns }
-    })
-  }, [updatePlan])
+    }))
+  }, [])
 
   const ensurePlanDetails = useCallback(async (planId) => {
     if (!backendEnabled) {
-      return getPlanById(planId)
+      return plansByIdRef.current.get(planId) ?? null
     }
 
     if (!isBackendPlanId(planId)) {
       return null
     }
 
-    const currentPlan = plansById.get(planId)
+    const currentPlan = plansByIdRef.current.get(planId)
     if (!currentPlan) return null
     if (currentPlan.membersMeta?.length || currentPlan.labelsMeta?.length) {
       return currentPlan
@@ -328,18 +331,18 @@ export function PlansProvider({ children }) {
       return mergedPlan
     }))
     return mergedPlan
-  }, [accessToken, backendEnabled, getPlanById, plansById])
+  }, [accessToken, backendEnabled])
 
   const refreshPlanDetails = useCallback(async (planId) => {
     if (!backendEnabled) {
-      return getPlanById(planId)
+      return plansByIdRef.current.get(planId) ?? null
     }
 
     if (!isBackendPlanId(planId)) {
       return null
     }
 
-    const currentPlan = plansById.get(planId)
+    const currentPlan = plansByIdRef.current.get(planId)
     if (!currentPlan) return null
 
     const details = await apiRequest(`/api/plans/${planId}`, {
@@ -353,7 +356,7 @@ export function PlansProvider({ children }) {
       return mergedPlan
     }))
     return mergedPlan
-  }, [accessToken, backendEnabled, getPlanById, plansById])
+  }, [accessToken, backendEnabled])
 
   const refreshPlans = useCallback(async ({ selectPlanId } = {}) => {
     if (!backendEnabled) {
@@ -382,7 +385,7 @@ export function PlansProvider({ children }) {
 
   const loadPlanBoard = useCallback(async (planId) => {
     if (!backendEnabled || !planId) {
-      return getPlanById(planId)?.boardColumns ?? []
+      return plansByIdRef.current.get(planId)?.boardColumns ?? []
     }
 
     if (!isBackendPlanId(planId)) {
@@ -399,7 +402,7 @@ export function PlansProvider({ children }) {
     )))
 
     return mapBoardViewToColumns(boardView, boardMappingOptions)
-  }, [accessToken, backendEnabled, boardMappingOptions, ensurePlanDetails, getPlanById])
+  }, [accessToken, backendEnabled, boardMappingOptions, ensurePlanDetails])
 
   const applyBoardView = useCallback((planId, boardView) => {
     setPlans((prev) => prev.map((plan) => (

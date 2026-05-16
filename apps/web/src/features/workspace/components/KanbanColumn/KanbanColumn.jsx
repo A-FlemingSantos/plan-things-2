@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard from '../KanbanCard/KanbanCard.jsx'
 
-export default function KanbanColumn({
+function KanbanColumn({
   col,
   dragState,
   dropTarget,
@@ -280,3 +280,18 @@ export default function KanbanColumn({
     </div>
   )
 }
+
+function areKanbanColumnPropsEqual(prevProps, nextProps) {
+  return prevProps.col === nextProps.col
+    && prevProps.dragState === nextProps.dragState
+    && prevProps.dropTarget === nextProps.dropTarget
+    && prevProps.draggedFile === nextProps.draggedFile
+    && prevProps.fileDropTargetCardId === nextProps.fileDropTargetCardId
+    && prevProps.labels === nextProps.labels
+    && prevProps.members === nextProps.members
+    && prevProps.colorOptions === nextProps.colorOptions
+    && prevProps.icons === nextProps.icons
+    && prevProps.styles === nextProps.styles
+}
+
+export default memo(KanbanColumn, areKanbanColumnPropsEqual)

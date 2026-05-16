@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useMemo } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 import { buildBoardCardPayload, mapBoardCard } from '../../../shared/contracts/backendAdapters.js'
 
@@ -18,6 +18,22 @@ function mapBoardComment(comment) {
   }
 }
 
+function insertCardInOrder(cards, nextCard) {
+  const cardsWithoutCurrent = cards.filter((card) => card.id !== nextCard.id)
+  const rawPosition = nextCard.position
+
+  if (!Number.isFinite(rawPosition)) {
+    return [...cardsWithoutCurrent, nextCard]
+  }
+
+  const insertionIndex = Math.max(0, Math.min(rawPosition, cardsWithoutCurrent.length))
+  return [
+    ...cardsWithoutCurrent.slice(0, insertionIndex),
+    nextCard,
+    ...cardsWithoutCurrent.slice(insertionIndex),
+  ]
+}
+
 function replaceCardInColumns(columns, nextCard) {
   if (!Array.isArray(columns) || !nextCard?.id || !nextCard?.columnId) {
     return columns
@@ -28,22 +44,26 @@ function replaceCardInColumns(columns, nextCard) {
     return columns
   }
 
-  return columns.map((column) => {
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
     const hasCard = column.cards.some((card) => card.id === nextCard.id)
 
     if (column.id === nextCard.columnId) {
-      if (hasCard) {
-        return {
-          ...column,
-          cards: column.cards.map((card) => (
-            card.id === nextCard.id ? nextCard : card
-          )),
-        }
+      const nextCards = hasCard
+        ? column.cards.map((card) => (card.id === nextCard.id ? nextCard : card))
+        : insertCardInOrder(column.cards, nextCard)
+      const cardsChanged = nextCards.length !== column.cards.length
+        || nextCards.some((card, index) => card !== column.cards[index])
+
+      if (!cardsChanged) {
+        return column
       }
 
+      hasChanges = true
       return {
         ...column,
-        cards: [...column.cards, nextCard],
+        cards: nextCards,
       }
     }
 
@@ -51,11 +71,14 @@ function replaceCardInColumns(columns, nextCard) {
       return column
     }
 
+    hasChanges = true
     return {
       ...column,
       cards: column.cards.filter((card) => card.id !== nextCard.id),
     }
   })
+
+  return hasChanges ? nextColumns : columns
 }
 
 function appendCommentToCard(columns, cardId, nextComment) {
@@ -63,9 +86,12 @@ function appendCommentToCard(columns, cardId, nextComment) {
     return columns
   }
 
-  return columns.map((column) => ({
-    ...column,
-    cards: column.cards.map((card) => {
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
       if (card.id !== cardId) {
         return card
       }
@@ -74,12 +100,247 @@ function appendCommentToCard(columns, cardId, nextComment) {
         return card
       }
 
+      columnChanged = true
+      hasChanges = true
       return {
         ...card,
         comments: [...card.comments, nextComment],
       }
-    }),
-  }))
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function insertCardIntoColumn(columns, targetColumnId, nextCard) {
+  if (!Array.isArray(columns) || !targetColumnId || !nextCard?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    if (column.id === targetColumnId) {
+      hasChanges = true
+      return {
+        ...column,
+        cards: insertCardInOrder(column.cards, nextCard),
+      }
+    }
+
+    const nextCards = column.cards.filter((card) => card.id !== nextCard.id)
+    if (nextCards.length === column.cards.length) {
+      return column
+    }
+
+    hasChanges = true
+    return {
+      ...column,
+      cards: nextCards,
+    }
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function removeCardFromColumns(columns, cardId) {
+  if (!Array.isArray(columns) || !cardId) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    const nextCards = column.cards.filter((card) => card.id !== cardId)
+    if (nextCards.length === column.cards.length) {
+      return column
+    }
+
+    hasChanges = true
+    return {
+      ...column,
+      cards: nextCards,
+    }
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function removeColumnFromColumns(columns, columnId) {
+  if (!Array.isArray(columns) || !columnId) {
+    return columns
+  }
+
+  return columns.filter((column) => column.id !== columnId)
+}
+
+function replaceChecklistInCard(card, nextChecklist) {
+  if (!card || !nextChecklist?.id) {
+    return card
+  }
+
+  const currentChecklists = Array.isArray(card.checklists) ? card.checklists : []
+  const existingChecklistIndex = currentChecklists.findIndex((checklist) => checklist.id === nextChecklist.id)
+  const nextChecklists = existingChecklistIndex >= 0
+    ? currentChecklists.map((checklist) => (checklist.id === nextChecklist.id ? nextChecklist : checklist))
+    : [...currentChecklists, nextChecklist]
+
+  return {
+    ...card,
+    checklists: nextChecklists,
+  }
+}
+
+function addChecklistToCard(columns, cardId, nextChecklist) {
+  if (!Array.isArray(columns) || !cardId || !nextChecklist?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
+      if (card.id !== cardId) {
+        return card
+      }
+
+      const nextCard = replaceChecklistInCard(card, nextChecklist)
+      if (nextCard !== card) {
+        columnChanged = true
+        hasChanges = true
+      }
+      return nextCard
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function removeChecklistFromColumns(columns, checklistId) {
+  if (!Array.isArray(columns) || !checklistId) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
+      const currentChecklists = Array.isArray(card.checklists) ? card.checklists : []
+      const nextChecklists = currentChecklists.filter((checklist) => checklist.id !== checklistId)
+      if (nextChecklists.length === currentChecklists.length) {
+        return card
+      }
+
+      columnChanged = true
+      hasChanges = true
+      return {
+        ...card,
+        checklists: nextChecklists,
+      }
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function appendChecklistItemToColumns(columns, checklistId, nextItem) {
+  if (!Array.isArray(columns) || !checklistId || !nextItem?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
+      let cardChanged = false
+      const nextChecklists = (Array.isArray(card.checklists) ? card.checklists : []).map((checklist) => {
+        if (checklist.id !== checklistId) {
+          return checklist
+        }
+
+        cardChanged = true
+        hasChanges = true
+        return {
+          ...checklist,
+          items: [...(Array.isArray(checklist.items) ? checklist.items : []), nextItem],
+        }
+      })
+
+      if (!cardChanged) {
+        return card
+      }
+
+      columnChanged = true
+      return {
+        ...card,
+        checklists: nextChecklists,
+      }
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function replaceChecklistItemInColumns(columns, nextItem) {
+  if (!Array.isArray(columns) || !nextItem?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
+      let cardChanged = false
+      const nextChecklists = (Array.isArray(card.checklists) ? card.checklists : []).map((checklist) => {
+        let checklistChanged = false
+        const nextItems = (Array.isArray(checklist.items) ? checklist.items : []).map((item) => {
+          if (item.id !== nextItem.id) {
+            return item
+          }
+
+          checklistChanged = true
+          cardChanged = true
+          columnChanged = true
+          hasChanges = true
+          return nextItem
+        })
+
+        return checklistChanged
+          ? {
+              ...checklist,
+              items: nextItems,
+            }
+          : checklist
+      })
+
+      return cardChanged
+        ? {
+            ...card,
+            checklists: nextChecklists,
+          }
+        : card
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
 }
 
 export function useBoardColumns({
@@ -94,7 +355,6 @@ export function useBoardColumns({
   dateFormat = 'dd/MM/yyyy',
 }) {
   const columns = boardColumns ?? []
-  const cardMutationRef = useRef(0)
 
   const updateColumns = useCallback((updater) => {
     if (!activePlanId) return
@@ -137,7 +397,7 @@ export function useBoardColumns({
     if (!activePlanId) return
 
     if (!isBackendDriven) {
-      updateColumns((prev) => prev.filter((column) => column.id !== colId))
+      updateColumns((prev) => removeColumnFromColumns(prev, colId))
       return
     }
 
@@ -146,11 +406,11 @@ export function useBoardColumns({
         method: 'DELETE',
         token: accessToken,
       })
-      await loadPlanBoard(activePlanId)
+      updateColumns((prev) => removeColumnFromColumns(prev, colId))
     } catch (error) {
       console.error(error)
     }
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard, updateColumns])
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const renameColumn = useCallback(async (colId, title) => {
     if (!activePlanId) return
@@ -223,14 +483,13 @@ export function useBoardColumns({
       }
 
       updateColumns((prev) => prev.map((column) => (
-        column.id === colId ? { ...column, cards: [card, ...column.cards] } : column
+        column.id === colId ? { ...column, cards: [...column.cards, card] } : column
       )))
       return true
     }
 
     try {
-      const requestId = ++cardMutationRef.current
-      await apiRequest(`/api/plans/${activePlanId}/board/cards`, {
+      const createdCardView = await apiRequest(`/api/plans/${activePlanId}/board/cards`, {
         method: 'POST',
         token: accessToken,
         body: {
@@ -244,16 +503,17 @@ export function useBoardColumns({
         },
       })
 
-      if (requestId !== cardMutationRef.current) {
-        return true
-      }
+      const createdCard = mapBoardCard(createdCardView, {
+        timeZone,
+        dateFormat,
+      })
 
-      await loadPlanBoard(activePlanId)
-      return true
+      updateColumns((prev) => insertCardIntoColumn(prev, colId, createdCard))
+      return createdCard
     } catch (error) {
       throw error
     }
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard, updateColumns])
+  }, [accessToken, activePlanId, dateFormat, isBackendDriven, timeZone, updateColumns])
 
   const updateCard = useCallback(async (updatedCard) => {
     if (!activePlanId) return false
@@ -337,10 +597,7 @@ export function useBoardColumns({
     if (!activePlanId) return false
 
     if (!isBackendDriven) {
-      updateColumns((prev) => prev.map((column) => ({
-        ...column,
-        cards: column.cards.filter((card) => card.id !== cardId),
-      })))
+      updateColumns((prev) => removeCardFromColumns(prev, cardId))
       return true
     }
 
@@ -348,9 +605,9 @@ export function useBoardColumns({
       method: 'DELETE',
       token: accessToken,
     })
-    await loadPlanBoard(activePlanId)
+    updateColumns((prev) => removeCardFromColumns(prev, cardId))
     return true
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard, updateColumns])
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const addCardComment = useCallback(async (cardId, message) => {
     if (!activePlanId || !isBackendDriven) return null
@@ -399,9 +656,9 @@ export function useBoardColumns({
       },
     })
 
-    await loadPlanBoard(activePlanId)
+    updateColumns((prev) => addChecklistToCard(prev, cardId, checklist))
     return checklist
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const deleteChecklist = useCallback(async (checklistId) => {
     if (!activePlanId || !isBackendDriven) return false
@@ -411,9 +668,9 @@ export function useBoardColumns({
       token: accessToken,
     })
 
-    await loadPlanBoard(activePlanId)
+    updateColumns((prev) => removeChecklistFromColumns(prev, checklistId))
     return true
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const createChecklistItem = useCallback(async (checklistId, item) => {
     if (!activePlanId || !isBackendDriven) return null
@@ -429,9 +686,9 @@ export function useBoardColumns({
       },
     })
 
-    await loadPlanBoard(activePlanId)
+    updateColumns((prev) => appendChecklistItemToColumns(prev, checklistId, createdItem))
     return createdItem
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const updateChecklistItem = useCallback(async (item) => {
     if (!activePlanId || !isBackendDriven) return null
@@ -448,9 +705,9 @@ export function useBoardColumns({
       },
     })
 
-    await loadPlanBoard(activePlanId)
+    updateColumns((prev) => replaceChecklistItemInColumns(prev, updatedItem))
     return updatedItem
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const totalCards = useMemo(
     () => columns.reduce((sum, column) => sum + column.cards.length, 0),
