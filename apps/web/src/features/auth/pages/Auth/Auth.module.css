@@ -14,15 +14,15 @@
 .shell {
   position: relative;
   z-index: 1;
-  width: calc(100vw - 136px);
-  min-height: calc(100vh - 136px);
+  width: 100vw;
+  min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(336px, 396px);
   background: var(--surface-1);
   color: var(--text-1);
   border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--border-1);
+  border: 0;
 }
 
 .brandPanel,
@@ -37,6 +37,23 @@
   justify-content: space-between;
   padding: 28px 30px 24px;
   background: var(--surface-1);
+}
+
+.brandMedia {
+  position: absolute;
+  inset: 0;
+  background-color: var(--surface-1);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0.58;
+}
+
+.brandMedia::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--surface-1) 30%, transparent);
 }
 
 .brandAmbient {
