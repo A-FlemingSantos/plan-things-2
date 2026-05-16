@@ -478,4 +478,50 @@ describe('useBoardColumns card saves without board reload', () => {
 
     expect(boardState[1]).toBe(untouchedColumn)
   })
+
+  it('preserves untouched column references when updating local cards', async () => {
+    const localCard = buildFrontendCard({ columnId: undefined })
+    const untouchedColumn = {
+      id: 'col-2',
+      title: 'Doing',
+      color: '',
+      cards: [buildFrontendCard({ id: 'card-2', columnId: 'col-2', title: 'Outro card' })],
+    }
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [localCard],
+      },
+      untouchedColumn,
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: false,
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    await act(async () => {
+      await result.current.updateCard({
+        ...localCard,
+        title: 'Card local atualizado',
+      })
+    })
+
+    expect(boardState[1]).toBe(untouchedColumn)
+    expect(boardState[0].cards[0]).toMatchObject({
+      id: 'card-1',
+      columnId: 'col-1',
+      title: 'Card local atualizado',
+    })
+  })
 })

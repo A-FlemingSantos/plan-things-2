@@ -4,6 +4,7 @@ import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvat
 function KanbanCard({
   card,
   colId,
+  colTitle,
   isDragging,
   isDropTarget,
   draggedFile,
@@ -47,6 +48,9 @@ function KanbanCard({
     event.preventDefault()
     event.stopPropagation()
     onToggleConfirmed?.(card)
+  }
+  const openCard = () => {
+    onClick?.(card, colTitle)
   }
 
   return (
@@ -92,11 +96,11 @@ function KanbanCard({
         onDrop({ type: 'card', cardId: card.id, colId })
       }}
       onDragEnd={onDragEnd}
-      onClick={onClick}
+      onClick={openCard}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          onClick()
+          openCard()
         }
       }}
       aria-label={`Abrir cartão ${card.title}`}
@@ -214,6 +218,7 @@ function KanbanCard({
 function areKanbanCardPropsEqual(prevProps, nextProps) {
   return prevProps.card === nextProps.card
     && prevProps.colId === nextProps.colId
+    && prevProps.colTitle === nextProps.colTitle
     && prevProps.isDragging === nextProps.isDragging
     && prevProps.isDropTarget === nextProps.isDropTarget
     && prevProps.draggedFile === nextProps.draggedFile
@@ -225,6 +230,7 @@ function areKanbanCardPropsEqual(prevProps, nextProps) {
     && prevProps.CheckIcon === nextProps.CheckIcon
     && prevProps.CommentIcon === nextProps.CommentIcon
     && prevProps.ClockIcon === nextProps.ClockIcon
+    && prevProps.onClick === nextProps.onClick
     && prevProps.styles === nextProps.styles
 }
 

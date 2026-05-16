@@ -203,6 +203,7 @@ function KanbanColumn({
             key={card.id}
             card={card}
             colId={col.id}
+            colTitle={col.title}
             isDragging={dragState?.cardId === card.id}
             isDropTarget={dropTarget?.type === 'card' && dropTarget.cardId === card.id}
             draggedFile={draggedFile}
@@ -214,14 +215,14 @@ function KanbanColumn({
             onDragEnd={onDragEnd}
             onFileDragOver={onFileDragOver}
             onFileDrop={onFileDrop}
-            onClick={() => onCardClick(card, col.title)}
+            onClick={onCardClick}
             isConfirmed={Boolean(card.isCompleted)}
             onToggleConfirmed={onToggleCardCompleted}
             labels={labels}
             members={members}
             CheckIcon={icons.Check}
             CommentIcon={icons.Comment}
-            ClockIcon={icons.Calendar}
+            ClockIcon={icons.Clock}
             styles={styles}
           />
         ))}

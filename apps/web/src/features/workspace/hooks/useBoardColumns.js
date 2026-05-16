@@ -35,11 +35,20 @@ function insertCardInOrder(cards, nextCard) {
 }
 
 function replaceCardInColumns(columns, nextCard) {
-  if (!Array.isArray(columns) || !nextCard?.id || !nextCard?.columnId) {
+  if (!Array.isArray(columns) || !nextCard?.id) {
     return columns
   }
 
-  const hasTargetColumn = columns.some((column) => column.id === nextCard.columnId)
+  const inferredColumnId = nextCard.columnId
+    ?? columns.find((column) => column.cards.some((card) => card.id === nextCard.id))?.id
+  if (!inferredColumnId) {
+    return columns
+  }
+
+  const cardForColumns = nextCard.columnId === inferredColumnId
+    ? nextCard
+    : { ...nextCard, columnId: inferredColumnId }
+  const hasTargetColumn = columns.some((column) => column.id === inferredColumnId)
   if (!hasTargetColumn) {
     return columns
   }
@@ -49,10 +58,10 @@ function replaceCardInColumns(columns, nextCard) {
   const nextColumns = columns.map((column) => {
     const hasCard = column.cards.some((card) => card.id === nextCard.id)
 
-    if (column.id === nextCard.columnId) {
+    if (column.id === inferredColumnId) {
       const nextCards = hasCard
-        ? column.cards.map((card) => (card.id === nextCard.id ? nextCard : card))
-        : insertCardInOrder(column.cards, nextCard)
+        ? column.cards.map((card) => (card.id === cardForColumns.id ? cardForColumns : card))
+        : insertCardInOrder(column.cards, cardForColumns)
       const cardsChanged = nextCards.length !== column.cards.length
         || nextCards.some((card, index) => card !== column.cards[index])
 
@@ -473,6 +482,7 @@ export function useBoardColumns({
     if (!isBackendDriven) {
       const card = {
         id: uid(),
+        columnId: colId,
         title,
         description: '',
         isCompleted: false,
@@ -519,12 +529,7 @@ export function useBoardColumns({
     if (!activePlanId) return false
 
     if (!isBackendDriven) {
-      updateColumns((prev) => prev.map((column) => ({
-        ...column,
-        cards: column.cards.map((card) => (
-          card.id === updatedCard.id ? updatedCard : card
-        )),
-      })))
+      updateColumns((prev) => replaceCardInColumns(prev, updatedCard))
       return updatedCard
     }
 

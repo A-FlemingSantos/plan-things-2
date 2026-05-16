@@ -8,7 +8,7 @@ function Icon() {
   return <span aria-hidden="true" />
 }
 
-function renderColumn(props = {}) {
+function buildColumnProps(props = {}) {
   const defaults = {
     col: {
       id: 'col-1',
@@ -40,12 +40,17 @@ function renderColumn(props = {}) {
       Edit: Icon,
       Trash: Icon,
       X: Icon,
+      Check: Icon,
       Comment: Icon,
       Clock: Icon,
     },
     styles,
   }
-  const mergedProps = { ...defaults, ...props }
+  return { ...defaults, ...props }
+}
+
+function renderColumn(props = {}) {
+  const mergedProps = buildColumnProps(props)
 
   render(<KanbanColumn {...mergedProps} />)
 
@@ -76,5 +81,75 @@ describe('KanbanColumn card composer', () => {
     })
 
     resolveCreation(true)
+  })
+
+  it('opens cards with the latest column title after the column is renamed', () => {
+    const card = {
+      id: 'card-1',
+      title: 'Card memoizado',
+      labelId: '',
+      memberIds: [],
+      comments: [],
+      attachments: [],
+      checklists: [],
+      dueDate: '',
+    }
+    const onCardClick = vi.fn()
+    const props = buildColumnProps({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards: [card],
+      },
+      onCardClick,
+    })
+
+    const { rerender } = render(<KanbanColumn {...props} />)
+
+    rerender(
+      <KanbanColumn
+        {...props}
+        col={{
+          ...props.col,
+          title: 'Em progresso',
+        }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /abrir cartão card memoizado/i }))
+
+    expect(onCardClick).toHaveBeenCalledWith(card, 'Em progresso')
+  })
+
+  it('passes the clock icon through to cards with due dates', () => {
+    function DueIcon() {
+      return <span data-testid="due-icon" />
+    }
+
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards: [
+          {
+            id: 'card-1',
+            title: 'Card com data',
+            labelId: '',
+            memberIds: [],
+            comments: [],
+            attachments: [],
+            checklists: [],
+            dueDate: 'Hoje',
+          },
+        ],
+      },
+      icons: {
+        ...buildColumnProps().icons,
+        Clock: DueIcon,
+      },
+    })
+
+    expect(screen.getByTestId('due-icon')).toBeInTheDocument()
   })
 })
