@@ -15,9 +15,10 @@ import SidebarUserCard from '../SidebarUserCard/SidebarUserCard.jsx'
 import menuStyles from './SidebarAccountMenu.module.css'
 
 const COLLAPSED_MENU_WIDTH = 220
-const COLLAPSED_MENU_FALLBACK_HEIGHT = 320
-const COLLAPSED_MENU_GAP = 12
-const COLLAPSED_MENU_MARGIN = 12
+const EXPANDED_MENU_HORIZONTAL_INSET = 10
+const MENU_FALLBACK_HEIGHT = 320
+const MENU_MARGIN = 12
+const MENU_VERTICAL_OFFSET = 6
 const SUBMENU_FALLBACK_WIDTH = 280
 const SUBMENU_FALLBACK_HEIGHT = 160
 const SUBMENU_OVERLAP = 10
@@ -77,7 +78,7 @@ export default function SidebarAccountMenu({
   const [accountsOpen, setAccountsOpen] = useState(false)
   const [switchingAccountId, setSwitchingAccountId] = useState(null)
   const [switchError, setSwitchError] = useState('')
-  const [collapsedMenuPosition, setCollapsedMenuPosition] = useState(null)
+  const [menuPosition, setMenuPosition] = useState(null)
   const [accountsMenuPosition, setAccountsMenuPosition] = useState(null)
   const containerRef = useRef(null)
   const menuRef = useRef(null)
@@ -103,35 +104,42 @@ export default function SidebarAccountMenu({
     return accounts
   }, [activeAccountId, savedAccounts])
 
-  const updateCollapsedMenuPosition = useCallback((anchorRectOverride = null) => {
-    if (!collapsed) {
-      setCollapsedMenuPosition(null)
-      return
-    }
-
+  const updateMenuPosition = useCallback((anchorRectOverride = null) => {
     const anchorRect = anchorRectOverride
       ?? containerRef.current?.querySelector('[data-sidebar-user-button]')?.getBoundingClientRect()
+    const containerRect = containerRef.current?.getBoundingClientRect()
 
-    if (!anchorRect) return
+    if (!anchorRect || !containerRect) return
 
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
     const menuRect = menuRef.current?.getBoundingClientRect()
-    const menuWidth = menuRect?.width || COLLAPSED_MENU_WIDTH
-    const menuHeight = menuRect?.height || COLLAPSED_MENU_FALLBACK_HEIGHT
-    const nextLeft = Math.min(
-      anchorRect.right + COLLAPSED_MENU_GAP,
-      viewportWidth - menuWidth - COLLAPSED_MENU_MARGIN,
+    const preferredWidth = collapsed
+      ? COLLAPSED_MENU_WIDTH
+      : Math.max(180, containerRect.width - (EXPANDED_MENU_HORIZONTAL_INSET * 2))
+    const menuWidth = Math.min(
+      menuRect?.width || preferredWidth,
+      viewportWidth - (MENU_MARGIN * 2),
     )
-    const preferredTop = anchorRect.bottom - menuHeight
-    const maxTop = Math.max(COLLAPSED_MENU_MARGIN, viewportHeight - menuHeight - COLLAPSED_MENU_MARGIN)
+    const menuHeight = menuRect?.height || MENU_FALLBACK_HEIGHT
+    const preferredLeft = collapsed
+      ? anchorRect.left
+      : containerRect.left + EXPANDED_MENU_HORIZONTAL_INSET
+    const minimumLeft = collapsed ? MENU_MARGIN : EXPANDED_MENU_HORIZONTAL_INSET
+    const nextLeft = Math.min(
+      Math.max(preferredLeft, minimumLeft),
+      viewportWidth - menuWidth - MENU_MARGIN,
+    )
+    const preferredTop = anchorRect.top - menuHeight - MENU_VERTICAL_OFFSET
+    const maxTop = Math.max(MENU_MARGIN, viewportHeight - menuHeight - MENU_MARGIN)
     const nextTop = Math.min(
-      Math.max(preferredTop, COLLAPSED_MENU_MARGIN),
+      Math.max(preferredTop, MENU_MARGIN),
       maxTop,
     )
 
-    setCollapsedMenuPosition({
-      left: Math.max(COLLAPSED_MENU_MARGIN, nextLeft),
+    setMenuPosition({
+      position: 'fixed',
+      left: `${nextLeft}px`,
       top: nextTop,
       width: menuWidth,
     })
@@ -179,13 +187,15 @@ export default function SidebarAccountMenu({
   useEffect(() => {
     const handlePointerDown = (event) => {
       const clickedInsideContainer = containerRef.current?.contains(event.target) ?? false
+      const clickedInsideMenu = menuRef.current?.contains(event.target) ?? false
       const clickedInsideAccountsMenu = accountsMenuRef.current?.contains(event.target) ?? false
 
-      if (!clickedInsideContainer && !clickedInsideAccountsMenu) {
+      if (!clickedInsideContainer && !clickedInsideMenu && !clickedInsideAccountsMenu) {
         setOpen(false)
         setAccountsOpen(false)
         setSwitchError('')
         setAccountsMenuPosition(null)
+        setMenuPosition(null)
       }
     }
 
@@ -195,6 +205,7 @@ export default function SidebarAccountMenu({
         setAccountsOpen(false)
         setSwitchError('')
         setAccountsMenuPosition(null)
+        setMenuPosition(null)
       }
     }
 
@@ -208,11 +219,11 @@ export default function SidebarAccountMenu({
   }, [])
 
   useLayoutEffect(() => {
-    if (!open || !collapsed) return
+    if (!open) return
 
-    updateCollapsedMenuPosition()
+    updateMenuPosition()
 
-    const handleViewportChange = () => updateCollapsedMenuPosition()
+    const handleViewportChange = () => updateMenuPosition()
 
     window.addEventListener('resize', handleViewportChange)
     window.addEventListener('scroll', handleViewportChange, true)
@@ -221,7 +232,7 @@ export default function SidebarAccountMenu({
       window.removeEventListener('resize', handleViewportChange)
       window.removeEventListener('scroll', handleViewportChange, true)
     }
-  }, [collapsed, open, updateCollapsedMenuPosition])
+  }, [collapsed, open, updateMenuPosition])
 
   useLayoutEffect(() => {
     if (!open || !accountsOpen) return
@@ -244,11 +255,11 @@ export default function SidebarAccountMenu({
       const nextOpen = !currentOpen
 
       if (nextOpen && collapsed) {
-        setCollapsedMenuPosition(null)
+        setMenuPosition(null)
       }
 
       if (!nextOpen) {
-        setCollapsedMenuPosition(null)
+        setMenuPosition(null)
         setAccountsMenuPosition(null)
         setAccountsOpen(false)
         setSwitchError('')
@@ -258,12 +269,12 @@ export default function SidebarAccountMenu({
     })
   }
 
-  const collapsedMenuStyle = collapsed && collapsedMenuPosition
+  const resolvedMenuStyle = menuPosition
     ? {
-        position: 'fixed',
-        left: `${collapsedMenuPosition.left}px`,
-        top: `${collapsedMenuPosition.top}px`,
-        width: `${collapsedMenuPosition.width}px`,
+        position: menuPosition.position,
+        left: menuPosition.left,
+        top: `${menuPosition.top}px`,
+        width: `${menuPosition.width}px`,
       }
     : undefined
 
@@ -294,7 +305,7 @@ export default function SidebarAccountMenu({
     setOpen(false)
     setAccountsOpen(false)
     setSwitchError('')
-    setCollapsedMenuPosition(null)
+    setMenuPosition(null)
     setAccountsMenuPosition(null)
     if (id === 'logout' && isAuthenticated) {
       logout({
@@ -325,7 +336,7 @@ export default function SidebarAccountMenu({
     setOpen(false)
     setAccountsOpen(false)
     setSwitchError('')
-    setCollapsedMenuPosition(null)
+    setMenuPosition(null)
     setAccountsMenuPosition(null)
     navigate(ROUTES.login, {
       state: buildAuthRedirectState(location, {
@@ -358,7 +369,7 @@ export default function SidebarAccountMenu({
       const nextSession = await switchAccount(accountId)
       setOpen(false)
       setAccountsOpen(false)
-      setCollapsedMenuPosition(null)
+      setMenuPosition(null)
       setAccountsMenuPosition(null)
       navigate(resolveAccountHomeRoute(nextSession?.user?.id ?? accountId))
     } catch (error) {
@@ -382,18 +393,19 @@ export default function SidebarAccountMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuIdRef.current}
-      >
-        {open && (
+      />
+
+      {open && typeof document !== 'undefined'
+        ? createPortal(
           <div
             ref={menuRef}
             id={menuIdRef.current}
             className={[
               menuStyles.menu,
               collapsed ? menuStyles.menuCollapsed : '',
-              collapsed ? menuStyles.menuDetached : '',
             ].filter(Boolean).join(' ')}
             role="menu"
-            style={collapsedMenuStyle}
+            style={resolvedMenuStyle}
           >
             <button
               ref={accountsTriggerRef}
@@ -451,9 +463,10 @@ export default function SidebarAccountMenu({
                 {label}
               </button>
             ))}
-          </div>
-        )}
-      </SidebarUserCard>
+          </div>,
+          portalRoot,
+        )
+        : null}
 
       {open && accountsOpen && typeof document !== 'undefined'
         ? createPortal(

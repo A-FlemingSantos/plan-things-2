@@ -94,8 +94,8 @@ describe('SidebarAccountMenu', () => {
       expect(menu.style.position).toBe('fixed')
     })
 
-    expect(menu.style.left).toBe('56px')
-    expect(menu.style.top).toBe('400px')
+    expect(menu.style.left).toBe('12px')
+    expect(menu.style.top).toBe('350px')
     expect(menu.style.width).toBe('220px')
   })
 
@@ -134,6 +134,58 @@ describe('SidebarAccountMenu', () => {
     await waitFor(() => {
       expect(screen.getByRole('menu')).toBeInTheDocument()
     })
+  })
+
+  it('positions the expanded avatar menu as the same fixed overlay used by the collapsed sidebar', async () => {
+    const user = userEvent.setup()
+
+    const { container } = render(
+      <div data-app-theme-scope data-theme="dark">
+        <MemoryRouter>
+          <SidebarAccountMenu styles={styles} />
+        </MemoryRouter>
+      </div>,
+    )
+
+    const trigger = screen.getByRole('button', { name: /arthur santos/i })
+    const menuContainer = trigger.closest('.userSection')?.parentElement
+
+    menuContainer.getBoundingClientRect = () => ({
+      x: 0,
+      y: 640,
+      left: 0,
+      top: 640,
+      right: 260,
+      bottom: 720,
+      width: 260,
+      height: 80,
+      toJSON: () => ({}),
+    })
+
+    trigger.getBoundingClientRect = () => ({
+      x: 10,
+      y: 676,
+      left: 10,
+      top: 676,
+      right: 250,
+      bottom: 720,
+      width: 240,
+      height: 44,
+      toJSON: () => ({}),
+    })
+
+    await user.click(trigger)
+
+    const menu = screen.getByRole('menu', { name: '' })
+
+    await waitFor(() => {
+      expect(menu.style.position).toBe('fixed')
+    })
+
+    expect(container.querySelector('[data-app-theme-scope]')?.contains(menu)).toBe(true)
+    expect(menu.style.left).toBe('10px')
+    expect(menu.style.top).toBe('350px')
+    expect(menu.style.width).toBe('240px')
   })
 
   it('opens the secondary accounts menu from the active account header', async () => {

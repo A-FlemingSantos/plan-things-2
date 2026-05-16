@@ -3,10 +3,7 @@
 }
 
 .menu {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 10px;
-  right: 10px;
+  position: fixed;
   background: var(--menu-bg);
   border: 1px solid var(--border-1);
   border-radius: var(--radius-lg);
@@ -14,18 +11,11 @@
   overflow: visible;
   z-index: 200;
   animation: menuEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transform-origin: bottom center;
+  transform-origin: left bottom;
 }
 
 .menuCollapsed {
   width: 220px;
-}
-
-.menuDetached {
-  left: auto;
-  right: auto;
-  bottom: auto;
-  transform-origin: left bottom;
 }
 
 @keyframes menuEnter {
