@@ -351,6 +351,7 @@ export default function CardModal({
   const [dueTimeValue, setDueTimeValue] = useState(initialSchedule.dueTimeValue)
   const [displayLabel, setDisplayLabel] = useState(initialSchedule.displayLabel)
   const [preserveDisplayLabel, setPreserveDisplayLabel] = useState(initialSchedule.preserveDisplayLabel)
+  const [savedSchedule, setSavedSchedule] = useState(initialSchedule)
   const [checklistTitle, setChecklistTitle] = useState('Checklist')
   const [activeChecklist, setActiveChecklist] = useState(() => buildInitialChecklist(card))
   const [newChecklistItem, setNewChecklistItem] = useState('')
@@ -489,6 +490,45 @@ export default function CardModal({
     }
   }
 
+  const applyPersistedCard = (nextCard, options = {}) => {
+    if (!nextCard || typeof nextCard !== 'object') {
+      return
+    }
+
+    const nextTitle = nextCard.title ?? ''
+    const nextDescription = nextCard.description ?? ''
+    const nextSchedule = buildInitialCardSchedule(nextCard)
+    const shouldSyncTitleDraft = options.syncTitleDraft ?? (title === savedTitle)
+    const shouldSyncDescriptionDraft = options.syncDescriptionDraft ?? (desc === savedDesc)
+
+    if (shouldSyncTitleDraft) {
+      setTitle(nextTitle)
+    }
+    setSavedTitle(nextTitle)
+
+    if (shouldSyncDescriptionDraft) {
+      setDesc(nextDescription)
+    }
+    setSavedDesc(nextDescription)
+
+    setLabelId(nextCard.labelId ?? '')
+    setMIds(Array.isArray(nextCard.memberIds) ? nextCard.memberIds : [])
+    setDueDate(nextCard.dueDate ?? '')
+    setComments(Array.isArray(nextCard.comments) ? nextCard.comments : [])
+    setAttachments(Array.isArray(nextCard.attachments) ? nextCard.attachments : [])
+
+    setSavedSchedule(nextSchedule)
+    setSelectedCalendarDay(nextSchedule.selectedCalendarDay)
+    setDateMenuMonth(buildCalendarBaseDate(nextSchedule.dueDateValue || nextSchedule.startDateValue))
+    setStartEnabled(nextSchedule.startEnabled)
+    setStartDateValue(nextSchedule.startDateValue)
+    setDueEnabled(nextSchedule.dueEnabled)
+    setDueDateValue(nextSchedule.dueDateValue)
+    setDueTimeValue(nextSchedule.dueTimeValue)
+    setDisplayLabel(nextSchedule.displayLabel)
+    setPreserveDisplayLabel(nextSchedule.preserveDisplayLabel)
+  }
+
   const persistCardChanges = async (overrides = {}, options = {}) => {
     if (isInteractionBlocked) return false
 
@@ -497,12 +537,13 @@ export default function CardModal({
     updateSaveStatus(options.pendingMessage ?? 'Salvando...')
 
     try {
-      await onUpdate(buildNextCard(overrides))
+      const persistedCard = await onUpdate(buildNextCard(overrides))
+      applyPersistedCard(persistedCard, options.syncState)
       if (typeof options.onSuccess === 'function') {
-        options.onSuccess()
+        options.onSuccess(persistedCard)
       }
       updateSaveStatus(options.successMessage ?? 'Alterações salvas.')
-      return true
+      return persistedCard ?? true
     } catch (error) {
       setSubmitError(error?.message ?? options.errorMessage ?? 'Não foi possível salvar as alterações do cartão.')
       updateSaveStatus('')
@@ -536,9 +577,10 @@ export default function CardModal({
       {
         errorMessage: 'Não foi possível salvar o título do cartão.',
         successMessage: 'Título salvo.',
+        syncState: {
+          syncTitleDraft: true,
+        },
         onSuccess: () => {
-          setTitle(nextTitle)
-          setSavedTitle(nextTitle)
           setIsEditingTitle(false)
         },
       },
@@ -563,8 +605,8 @@ export default function CardModal({
       {
         errorMessage: 'Não foi possível salvar a descrição do cartão.',
         successMessage: 'Descrição salva.',
-        onSuccess: () => {
-          setSavedDesc(desc)
+        syncState: {
+          syncDescriptionDraft: true,
         },
       },
     )
@@ -934,13 +976,13 @@ export default function CardModal({
 
     const shouldPreserveDisplayLabel =
       dueEnabled &&
-      initialSchedule.preserveDisplayLabel &&
-      dueDateValue === initialSchedule.dueDateValue &&
-      selectedCalendarDay === initialSchedule.selectedCalendarDay
+      savedSchedule.preserveDisplayLabel &&
+      dueDateValue === savedSchedule.dueDateValue &&
+      selectedCalendarDay === savedSchedule.selectedCalendarDay
 
     const nextDueDate = dueEnabled
       ? (shouldPreserveDisplayLabel
-          ? initialSchedule.displayLabel
+          ? savedSchedule.displayLabel
           : formatDueDateLabelFromValue(dueDateValue, selectedCalendarDay))
       : ''
 

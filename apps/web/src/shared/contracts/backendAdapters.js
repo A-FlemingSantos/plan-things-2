@@ -427,7 +427,7 @@ function mapBoardComment(comment) {
   }
 }
 
-function mapBoardCard(card, options = {}) {
+export function mapBoardCard(card, options = {}) {
   const timeZone = normalizeTimeZone(options.timeZone)
   const locale = options.locale ?? DEFAULT_LOCALE
   const dateFormat = options.dateFormat ?? 'dd/MM/yyyy'

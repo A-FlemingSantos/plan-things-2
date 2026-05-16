@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
-import { buildBoardCardPayload } from '../../../shared/contracts/backendAdapters.js'
+import { buildBoardCardPayload, mapBoardCard } from '../../../shared/contracts/backendAdapters.js'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
@@ -16,6 +16,70 @@ function mapBoardComment(comment) {
     text: comment.message,
     time: comment.createdAt?.text ?? 'Agora',
   }
+}
+
+function replaceCardInColumns(columns, nextCard) {
+  if (!Array.isArray(columns) || !nextCard?.id || !nextCard?.columnId) {
+    return columns
+  }
+
+  const hasTargetColumn = columns.some((column) => column.id === nextCard.columnId)
+  if (!hasTargetColumn) {
+    return columns
+  }
+
+  return columns.map((column) => {
+    const hasCard = column.cards.some((card) => card.id === nextCard.id)
+
+    if (column.id === nextCard.columnId) {
+      if (hasCard) {
+        return {
+          ...column,
+          cards: column.cards.map((card) => (
+            card.id === nextCard.id ? nextCard : card
+          )),
+        }
+      }
+
+      return {
+        ...column,
+        cards: [...column.cards, nextCard],
+      }
+    }
+
+    if (!hasCard) {
+      return column
+    }
+
+    return {
+      ...column,
+      cards: column.cards.filter((card) => card.id !== nextCard.id),
+    }
+  })
+}
+
+function appendCommentToCard(columns, cardId, nextComment) {
+  if (!Array.isArray(columns) || !cardId || !nextComment?.id) {
+    return columns
+  }
+
+  return columns.map((column) => ({
+    ...column,
+    cards: column.cards.map((card) => {
+      if (card.id !== cardId) {
+        return card
+      }
+
+      if (card.comments.some((comment) => comment.id === nextComment.id)) {
+        return card
+      }
+
+      return {
+        ...card,
+        comments: [...card.comments, nextComment],
+      }
+    }),
+  }))
 }
 
 export function useBoardColumns({
@@ -201,16 +265,16 @@ export function useBoardColumns({
           card.id === updatedCard.id ? updatedCard : card
         )),
       })))
-      return true
+      return updatedCard
     }
 
     const previousCard = columns.flatMap((column) => column.cards).find((card) => card.id === updatedCard.id)
     const previousCommentIds = new Set(previousCard?.comments?.map((comment) => comment.id) ?? [])
     const newComments = (updatedCard.comments ?? []).filter((comment) => !previousCommentIds.has(comment.id))
-    let cardUpdated = false
+    let persistedCard = null
 
     try {
-      await apiRequest(`/api/plans/${activePlanId}/board/cards/${updatedCard.id}`, {
+      const cardView = await apiRequest(`/api/plans/${activePlanId}/board/cards/${updatedCard.id}`, {
         method: 'PATCH',
         token: accessToken,
         body: buildBoardCardPayload(updatedCard, {
@@ -218,26 +282,44 @@ export function useBoardColumns({
           dateFormat,
         }),
       })
-      cardUpdated = true
+      persistedCard = mapBoardCard(cardView, {
+        timeZone,
+        dateFormat,
+      })
+
+      updateColumns((prev) => replaceCardInColumns(prev, persistedCard))
 
       if (newComments.length) {
-        await Promise.all(newComments.map((comment) => apiRequest(
-          `/api/plans/${activePlanId}/board/cards/${updatedCard.id}/comments`,
-          {
-            method: 'POST',
-            token: accessToken,
-            body: {
-              message: comment.text,
+        const createdComments = []
+
+        for (const comment of newComments) {
+          const createdComment = await apiRequest(
+            `/api/plans/${activePlanId}/board/cards/${updatedCard.id}/comments`,
+            {
+              method: 'POST',
+              token: accessToken,
+              body: {
+                message: comment.text,
+              },
             },
-          },
-        )))
+          )
+
+          const mappedComment = mapBoardComment(createdComment)
+          createdComments.push(mappedComment)
+          updateColumns((prev) => appendCommentToCard(prev, updatedCard.id, mappedComment))
+        }
+
+        if (createdComments.length) {
+          persistedCard = {
+            ...persistedCard,
+            comments: [...persistedCard.comments, ...createdComments],
+          }
+        }
       }
 
-      await loadPlanBoard(activePlanId)
-      return true
+      return persistedCard
     } catch (error) {
-      if (cardUpdated) {
-        await loadPlanBoard(activePlanId).catch(() => {})
+      if (persistedCard) {
         throw new ApiClientError(
           'Os dados do cartão foram salvos, mas não foi possível concluir o envio dos comentários.',
           {
@@ -249,7 +331,7 @@ export function useBoardColumns({
 
       throw error
     }
-  }, [accessToken, activePlanId, columns, dateFormat, isBackendDriven, loadPlanBoard, timeZone, updateColumns])
+  }, [accessToken, activePlanId, columns, dateFormat, isBackendDriven, timeZone, updateColumns])
 
   const deleteCard = useCallback(async (cardId) => {
     if (!activePlanId) return false
@@ -281,9 +363,10 @@ export function useBoardColumns({
       },
     })
 
-    await loadPlanBoard(activePlanId)
-    return mapBoardComment(createdComment)
-  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+    const mappedComment = mapBoardComment(createdComment)
+    updateColumns((prev) => appendCommentToCard(prev, cardId, mappedComment))
+    return mappedComment
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const moveCard = useCallback(async (cardId, targetColumnId, targetPosition) => {
     if (!activePlanId) return
