@@ -1892,19 +1892,21 @@ export default function CardModal({
                     aria-label="Descrição do cartão"
                     disabled={isMutating}
                   />
-                  <button
-                    type="button"
-                    className={styles.cmDescSaveBtn}
-                    onClick={() => {
-                      void saveDescription()
-                    }}
-                    disabled={isMutating || desc === savedDesc}
-                    aria-label="Salvar descrição"
-                    title="Salvar descrição"
-                  >
-                    <icons.Check />
-                    <span>Salvar</span>
-                  </button>
+                  <div className={styles.cmDescComposerFooter}>
+                    <button
+                      type="button"
+                      className={styles.cmDescSaveBtn}
+                      onClick={() => {
+                        void saveDescription()
+                      }}
+                      disabled={isMutating || desc === savedDesc}
+                      aria-label="Salvar descrição"
+                      title="Salvar descrição"
+                    >
+                      <icons.Check />
+                      <span>Salvar</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

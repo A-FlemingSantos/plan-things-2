@@ -3106,7 +3106,6 @@
 }
 
 .cmDescComposer {
-  position: relative;
   width: 100%;
   border: 1px solid var(--border-2);
   border-radius: 14px;
@@ -3132,7 +3131,7 @@
   border-radius: 0;
   outline: none;
   resize: none;
-  padding: 14px 14px 52px;
+  padding: 14px 14px 12px;
   line-height: 1.5;
   min-height: 96px;
   max-height: 144px;
@@ -3151,19 +3150,26 @@
   cursor: progress;
 }
 
+.cmDescComposerFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 40px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--border-1);
+  background: color-mix(in srgb, var(--surface-1) 86%, white 14%);
+}
+
 .cmDescSaveBtn {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
   background: var(--kanban-accent-color, var(--focus-ring));
   color: var(--kanban-accent-foreground, var(--text-on-accent));
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   cursor: pointer;
   transition: opacity var(--transition-fast);
   font-family: var(--font-family);
