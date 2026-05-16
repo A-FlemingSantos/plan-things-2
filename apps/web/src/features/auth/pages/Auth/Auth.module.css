@@ -14,10 +14,10 @@
 .shell {
   position: relative;
   z-index: 1;
-  width: 100%;
-  min-height: 100vh;
+  width: calc(100vw - 80px);
+  min-height: calc(100vh - 80px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  grid-template-columns: minmax(0, 1fr) minmax(336px, 396px);
   background: #000000;
   color: #f5f5f1;
   border-radius: 0;
@@ -581,6 +581,7 @@
 @media (max-width: 640px) {
   .page {
     background: #000000;
+    padding: 0;
   }
 
   .pageGlow {
