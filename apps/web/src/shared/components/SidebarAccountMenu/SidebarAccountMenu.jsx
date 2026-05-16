@@ -161,6 +161,29 @@ export default function SidebarAccountMenu({
       }
     : undefined
 
+  const openSettingsSection = (section) => {
+    const params = new URLSearchParams()
+    if (section) {
+      params.set('section', section)
+    }
+
+    const target = `${ROUTES.settings}${params.toString() ? `?${params.toString()}` : ''}`
+
+    if (location.pathname === ROUTES.settings) {
+      navigate(target, {
+        replace: true,
+        state: location.state,
+      })
+      return
+    }
+
+    navigate(target, {
+      state: {
+        backgroundLocation: location,
+      },
+    })
+  }
+
   const handleItemClick = (id) => {
     setOpen(false)
     setCollapsedMenuPosition(null)
@@ -169,14 +192,12 @@ export default function SidebarAccountMenu({
         redirectTo: ROUTES.login,
         replace: true,
       })
+    } else if (id === 'profile') {
+      openSettingsSection('account')
+    } else if (id === 'upgrade') {
+      openSettingsSection('workspace')
     } else if (id === 'settings') {
-      if (location.pathname !== ROUTES.settings) {
-        navigate(ROUTES.settings, {
-          state: {
-            backgroundLocation: location,
-          },
-        })
-      }
+      openSettingsSection(null)
     }
   }
 

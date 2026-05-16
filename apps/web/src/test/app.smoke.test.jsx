@@ -355,6 +355,40 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
   })
 
+  it('opens the account section from Meu perfil in the shared sidebar account menu', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/files', { session: createDemoSession() })
+
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
+    await user.click(await screen.findByRole('menuitem', { name: 'Meu perfil' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/settings')
+    expect(window.location.search).toBe('?section=account')
+    expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+  })
+
+  it('opens the workspace section from Upgrade in the shared sidebar account menu', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/files', { session: createDemoSession() })
+
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
+    await user.click(await screen.findByRole('menuitem', { name: 'Upgrade' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/settings')
+    expect(window.location.search).toBe('?section=workspace')
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+  })
+
   it('returns to the login route after logging out from the shared sidebar account menu', async () => {
     const user = userEvent.setup()
 
