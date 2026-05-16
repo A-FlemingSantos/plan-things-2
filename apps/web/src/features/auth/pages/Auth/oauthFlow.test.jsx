@@ -1,17 +1,49 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { renderApp } from '../../../../test/renderApp.jsx'
+import { createAccountStore, createDemoSession, readStoredSessionValue, renderApp } from '../../../../test/renderApp.jsx'
 
 describe('OAuth auth flow', () => {
-  it('exchanges an OAuth completion code and persists the session', async () => {
+  it('exchanges an OAuth completion code and persists the active account in the versioned store', async () => {
     renderApp('/oauth/callback?code=demo-google-oauth-code&redirectTo=/settings')
 
     expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
 
-    const session = JSON.parse(window.localStorage.getItem('plan-things.session'))
-    expect(session.accessToken).toBe('demo-oauth-token')
-    expect(session.demo).toBe(true)
+    const sessionStore = readStoredSessionValue()
+    expect(sessionStore).toMatchObject({
+      version: 2,
+      activeAccountId: 'demo-user-google-example-com',
+      accounts: [expect.objectContaining({
+        accessToken: 'demo-oauth-google-example-com-token',
+        demo: true,
+      })],
+    })
+  })
+
+  it('merges a new account into the saved store when OAuth completes in add-account mode', async () => {
+    window.sessionStorage.setItem('plan-things.auth.intent', JSON.stringify({
+      mode: 'add-account',
+      redirectTo: '/files',
+    }))
+
+    renderApp('/oauth/callback?code=demo-google-oauth-code', {
+      session: createAccountStore([
+        createDemoSession({
+          user: {
+            fullName: 'Arthur Santos',
+            email: 'arthur@example.com',
+          },
+        }),
+      ]),
+    })
+
+    expect(await screen.findByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/files')
+
+    const sessionStore = readStoredSessionValue()
+    expect(sessionStore.activeAccountId).toBe('demo-user-google-example-com')
+    expect(sessionStore.accounts).toHaveLength(2)
+    expect(window.sessionStorage.getItem('plan-things.auth.intent')).toBeNull()
   })
 
   it('shows an OAuth callback error without creating a session', async () => {

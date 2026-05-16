@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { normalizePlanRecord } from '../shared/contracts/planContracts.js'
 import {
+  createAccountStore,
   createDemoSession,
   renderApp,
 } from './renderApp.jsx'
@@ -353,6 +354,88 @@ describe('App smoke flows', () => {
     expect(await screen.findByRole('menu')).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
+  })
+
+  it('opens the saved accounts submenu from the active account area in the shared sidebar menu', async () => {
+    const user = userEvent.setup()
+    const primarySession = createDemoSession({
+      user: {
+        fullName: 'Arthur Santos',
+        email: 'arthur@example.com',
+      },
+    })
+    const secondarySession = createDemoSession({
+      user: {
+        fullName: 'Bruna Costa',
+        email: 'bruna@example.com',
+      },
+    })
+
+    renderApp('/files', {
+      session: createAccountStore([
+        primarySession,
+        secondarySession,
+      ], primarySession.user.id),
+    })
+
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
+    await user.hover(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
+
+    expect(await screen.findByRole('menu', { name: 'Contas salvas' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitemradio', { name: /arthur santos/i })).toBeInTheDocument()
+    expect(screen.getByRole('menuitemradio', { name: /bruna costa/i })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Adicionar conta' })).toBeInTheDocument()
+  })
+
+  it('switches accounts from the sidebar submenu and updates the shell identity', async () => {
+    const user = userEvent.setup()
+    const primarySession = createDemoSession({
+      user: {
+        fullName: 'Arthur Santos',
+        email: 'arthur@example.com',
+      },
+    })
+    const secondarySession = createDemoSession({
+      user: {
+        fullName: 'Bruna Costa',
+        email: 'bruna@example.com',
+      },
+    })
+
+    renderApp('/files', {
+      session: createAccountStore([
+        primarySession,
+        secondarySession,
+      ], primarySession.user.id),
+    })
+
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
+    await user.hover(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /bruna costa/i }))
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-sidebar-user-name]')?.textContent).toBe('Bruna Costa')
+      expect(window.location.pathname).toBe('/workspace')
+    })
+  })
+
+  it('opens the login screen in add-account mode from the sidebar submenu', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/files', { session: createDemoSession() })
+
+    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
+    expect(accountMenuTrigger).not.toBeNull()
+    await user.click(accountMenuTrigger)
+    await user.hover(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Adicionar conta' }))
+
+    expect(await screen.findByRole('heading', { name: 'Entre com outra conta.' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/login')
   })
 
   it('opens the account section from Meu perfil in the shared sidebar account menu', async () => {

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { resolveAuthRedirectTarget } from '../../utils/authRedirect.js'
+import { clearAuthIntent, persistAuthIntent } from '../../utils/authIntent.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import styles from './Auth.module.css'
 
@@ -93,6 +94,8 @@ export default function Auth({ initialMode = 'login' }) {
   const [errorMessage, setErrorMessage] = useState('')
 
   const isRegister = mode === 'register'
+  const authMode = location.state?.authMode === 'add-account' ? 'add-account' : 'default'
+  const isAddAccountMode = authMode === 'add-account'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -101,6 +104,7 @@ export default function Auth({ initialMode = 'login' }) {
     setLoading('email')
 
     try {
+      clearAuthIntent()
       let session = null
 
       if (isRegister) {
@@ -108,12 +112,12 @@ export default function Auth({ initialMode = 'login' }) {
           fullName: name,
           email,
           password,
-        })
+        }, { mode: authMode })
       } else {
         session = await login({
           email,
           password,
-        })
+        }, { mode: authMode })
       }
 
       const redirectTo = resolveAuthRedirectTarget(
@@ -134,9 +138,18 @@ export default function Auth({ initialMode = 'login' }) {
     setLoading(provider)
 
     try {
+      clearAuthIntent()
       const redirectTo = resolveAuthRedirectTarget(location.state?.redirectTo, null)
+      if (isAddAccountMode) {
+        persistAuthIntent({
+          mode: authMode,
+          redirectTo: redirectTo ?? undefined,
+        })
+      }
+
       const response = await startOAuthLogin(provider, {
         redirectTo: redirectTo ?? undefined,
+        mode: authMode,
       })
 
       window.location.assign(response.authorizationUrl)
@@ -155,6 +168,12 @@ export default function Auth({ initialMode = 'login' }) {
   }, [location.state])
 
   const alternateHref = isRegister ? ROUTES.login : ROUTES.register
+  const eyebrowText = isAddAccountMode
+    ? 'Adicionar conta'
+    : (isRegister ? 'Novo por aqui' : 'Bem-vindo de volta')
+  const titleContent = isAddAccountMode
+    ? (isRegister ? 'Crie outra conta' : 'Entre com outra conta')
+    : (isRegister ? 'Crie sua conta' : 'Entre na sua conta')
 
   return (
     <div className={styles.page}>
@@ -183,14 +202,9 @@ export default function Auth({ initialMode = 'login' }) {
 
           {/* Heading */}
           <div className={styles.heading}>
-            <p className={styles.eyebrow}>
-              {isRegister ? 'Novo por aqui' : 'Bem-vindo de volta'}
-            </p>
+            <p className={styles.eyebrow}>{eyebrowText}</p>
             <h1 className={styles.title}>
-              {isRegister
-                ? <>Crie sua conta<span className={styles.titleLight}>.</span></>
-                : <>Entre na sua conta<span className={styles.titleLight}>.</span></>
-              }
+              <>{titleContent}<span className={styles.titleLight}>.</span></>
             </h1>
           </div>
 

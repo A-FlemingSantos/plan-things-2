@@ -11,7 +11,7 @@
   border: 1px solid var(--border-1);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  overflow: hidden;
+  overflow: visible;
   z-index: 200;
   animation: menuEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: bottom center;
@@ -33,11 +33,29 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+.headerButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 14px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.headerButton:hover {
+  background: var(--hover);
+}
+
+.headerButtonActive {
+  background: var(--hover);
+}
+
 .header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 14px 12px;
+  min-width: 0;
 }
 
 .avatar {
@@ -81,6 +99,23 @@
   text-overflow: ellipsis;
 }
 
+.headerChevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.headerButton:hover .headerChevron,
+.headerButtonActive .headerChevron {
+  color: var(--text-2);
+}
+
+.headerChevronOpen {
+  transform: translateX(2px);
+}
+
 .divider {
   height: 1px;
   background: var(--border-1);
@@ -122,6 +157,100 @@
   align-items: center;
   flex-shrink: 0;
   opacity: .7;
+}
+
+.submenu {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 8px);
+  width: min(280px, calc(100vw - 24px));
+  background: var(--menu-bg);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 210;
+  animation: menuEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: left top;
+}
+
+.submenuHeader {
+  padding: 12px 14px 8px;
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.accountItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.accountItem:hover {
+  background: var(--hover);
+}
+
+.accountItemActive {
+  background: color-mix(in srgb, var(--hover) 85%, transparent);
+}
+
+.accountItemBusy {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.accountIdentity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.accountNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accountName {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accountEmail {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accountBadge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-1) 8%, transparent);
+  color: var(--text-2);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.submenuError {
+  padding: 10px 14px 12px;
+  font-size: 11px;
+  color: var(--danger-text);
+  background: color-mix(in srgb, var(--danger-bg) 45%, transparent);
 }
 
 @keyframes itemSlide {

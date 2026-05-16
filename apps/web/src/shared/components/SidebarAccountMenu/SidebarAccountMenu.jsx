@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
+import { buildAuthRedirectState } from '../../../features/auth/utils/authRedirect.js'
+import {
+  DEFAULT_LOCAL_PREFERENCES,
+  readStoredLocalPreferences,
+  resolveInitialRouteForState,
+} from '../../../features/preferences/context/PreferencesContext.jsx'
 import { ROUTES } from '../../config/routes.js'
 import { getWorkspacePlanLabel } from '../../utils/workspaceSubscriptionPlans.js'
 import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
@@ -32,9 +38,12 @@ function LogOutIcon() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9.5 9.5L12 7l-2.5-2.5M5.5 7H12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
 }
 
+function ChevronRightIcon() {
+  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L8.5 7 5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+}
+
 const MENU_ITEMS = [
   { id: 'profile', label: 'Meu perfil', Icon: UserIcon, danger: false },
-  { id: 'add', label: 'Adicionar conta', Icon: AddUserIcon, danger: false },
   { id: 'upgrade', label: 'Upgrade', Icon: UpgradeIcon, danger: false },
   { id: 'settings', label: 'Configurações', Icon: SettingsIcon, danger: false },
   { id: 'logout', label: 'Sair', Icon: LogOutIcon, danger: true },
@@ -50,12 +59,24 @@ export default function SidebarAccountMenu({
 }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { currentUser, workspace, isAuthenticated, logout } = useAuth()
+  const {
+    currentUser,
+    workspace,
+    activeAccountId,
+    savedAccounts,
+    isAuthenticated,
+    switchAccount,
+    logout,
+  } = useAuth()
   const [open, setOpen] = useState(false)
+  const [accountsOpen, setAccountsOpen] = useState(false)
+  const [switchingAccountId, setSwitchingAccountId] = useState(null)
+  const [switchError, setSwitchError] = useState('')
   const [collapsedMenuPosition, setCollapsedMenuPosition] = useState(null)
   const containerRef = useRef(null)
   const menuRef = useRef(null)
   const menuIdRef = useRef(`sidebar-account-menu-${Math.random().toString(36).slice(2, 10)}`)
+  const accountsMenuIdRef = useRef(`sidebar-account-submenu-${Math.random().toString(36).slice(2, 10)}`)
   const resolvedName = currentUser?.fullName ?? name
   const resolvedEmail = currentUser?.email ?? email
   const resolvedAvatarUrl = currentUser?.avatarUrl ?? null
@@ -63,6 +84,15 @@ export default function SidebarAccountMenu({
     ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
     : initials
   const resolvedPlanLabel = workspace?.subscriptionPlan ? getWorkspacePlanLabel(workspace.subscriptionPlan) : plan
+  const orderedAccounts = useMemo(() => {
+    const accounts = Array.isArray(savedAccounts) ? [...savedAccounts] : []
+    accounts.sort((left, right) => {
+      if (left.accountId === activeAccountId) return -1
+      if (right.accountId === activeAccountId) return 1
+      return 0
+    })
+    return accounts
+  }, [activeAccountId, savedAccounts])
 
   const updateCollapsedMenuPosition = useCallback((anchorRectOverride = null) => {
     if (!collapsed) {
@@ -102,12 +132,16 @@ export default function SidebarAccountMenu({
     const handlePointerDown = (event) => {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
         setOpen(false)
+        setAccountsOpen(false)
+        setSwitchError('')
       }
     }
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setOpen(false)
+        setAccountsOpen(false)
+        setSwitchError('')
       }
     }
 
@@ -146,6 +180,8 @@ export default function SidebarAccountMenu({
 
       if (!nextOpen) {
         setCollapsedMenuPosition(null)
+        setAccountsOpen(false)
+        setSwitchError('')
       }
 
       return nextOpen
@@ -186,6 +222,8 @@ export default function SidebarAccountMenu({
 
   const handleItemClick = (id) => {
     setOpen(false)
+    setAccountsOpen(false)
+    setSwitchError('')
     setCollapsedMenuPosition(null)
     if (id === 'logout' && isAuthenticated) {
       logout({
@@ -198,6 +236,56 @@ export default function SidebarAccountMenu({
       openSettingsSection('workspace')
     } else if (id === 'settings') {
       openSettingsSection(null)
+    }
+  }
+
+  const resolveAccountHomeRoute = (accountId) => {
+    if (!accountId) {
+      return ROUTES.workspace
+    }
+
+    return resolveInitialRouteForState({
+      localPreferences: readStoredLocalPreferences(accountId) ?? DEFAULT_LOCAL_PREFERENCES,
+      lastContext: null,
+    })
+  }
+
+  const handleOpenAddAccount = () => {
+    setOpen(false)
+    setAccountsOpen(false)
+    setSwitchError('')
+    setCollapsedMenuPosition(null)
+    navigate(ROUTES.login, {
+      state: buildAuthRedirectState(location, {
+        authMode: 'add-account',
+      }),
+    })
+  }
+
+  const handleAccountsToggle = () => {
+    setAccountsOpen((currentOpen) => !currentOpen)
+    setSwitchError('')
+  }
+
+  const handleAccountsMouseEnter = () => {
+    setAccountsOpen(true)
+    setSwitchError('')
+  }
+
+  const handleSwitchAccount = async (accountId) => {
+    setSwitchingAccountId(accountId)
+    setSwitchError('')
+
+    try {
+      const nextSession = await switchAccount(accountId)
+      setOpen(false)
+      setAccountsOpen(false)
+      setCollapsedMenuPosition(null)
+      navigate(resolveAccountHomeRoute(nextSession?.user?.id ?? accountId))
+    } catch (error) {
+      setSwitchError(error?.message ?? 'Nao foi possivel trocar de conta.')
+    } finally {
+      setSwitchingAccountId(null)
     }
   }
 
@@ -228,19 +316,42 @@ export default function SidebarAccountMenu({
             role="menu"
             style={collapsedMenuStyle}
           >
-            <div className={menuStyles.header}>
-              <AuthenticatedAvatar
-                className={menuStyles.avatar}
-                imageClassName="authenticatedAvatarImage"
-                avatarUrl={resolvedAvatarUrl}
-                fallback={resolvedInitials}
-                title={resolvedName}
-              />
-              <div className={menuStyles.identity}>
-                <p className={menuStyles.name}>{resolvedName}</p>
-                <p className={menuStyles.email}>{resolvedEmail}</p>
+            <button
+              type="button"
+              className={[
+                menuStyles.headerButton,
+                accountsOpen ? menuStyles.headerButtonActive : '',
+              ].filter(Boolean).join(' ')}
+              onMouseEnter={handleAccountsMouseEnter}
+              onClick={handleAccountsToggle}
+              aria-label={`Contas salvas de ${resolvedName}`}
+              aria-expanded={accountsOpen}
+              aria-haspopup="menu"
+              aria-controls={accountsMenuIdRef.current}
+            >
+              <div className={menuStyles.header}>
+                <AuthenticatedAvatar
+                  className={menuStyles.avatar}
+                  imageClassName="authenticatedAvatarImage"
+                  avatarUrl={resolvedAvatarUrl}
+                  fallback={resolvedInitials}
+                  title={resolvedName}
+                />
+                <div className={menuStyles.identity}>
+                  <p className={menuStyles.name}>{resolvedName}</p>
+                  <p className={menuStyles.email}>{resolvedEmail}</p>
+                </div>
               </div>
-            </div>
+              <span
+                className={[
+                  menuStyles.headerChevron,
+                  accountsOpen ? menuStyles.headerChevronOpen : '',
+                ].filter(Boolean).join(' ')}
+                aria-hidden="true"
+              >
+                <ChevronRightIcon />
+              </span>
+            </button>
 
             <div className={menuStyles.divider} />
 
@@ -260,6 +371,74 @@ export default function SidebarAccountMenu({
                 {label}
               </button>
             ))}
+
+            {accountsOpen && (
+              <div
+                id={accountsMenuIdRef.current}
+                className={menuStyles.submenu}
+                role="menu"
+                aria-label="Contas salvas"
+              >
+                <div className={menuStyles.submenuHeader}>Contas salvas</div>
+                {orderedAccounts.map((account) => {
+                  const accountInitials = account.user?.fullName
+                    ? account.user.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+                    : 'PT'
+                  const isActive = account.accountId === activeAccountId
+                  const isBusy = switchingAccountId === account.accountId
+
+                  return (
+                    <button
+                      key={account.accountId}
+                      type="button"
+                      className={[
+                        menuStyles.accountItem,
+                        isActive ? menuStyles.accountItemActive : '',
+                        isBusy ? menuStyles.accountItemBusy : '',
+                      ].filter(Boolean).join(' ')}
+                      role="menuitemradio"
+                      aria-checked={isActive}
+                      disabled={switchingAccountId !== null}
+                      onClick={() => handleSwitchAccount(account.accountId)}
+                    >
+                      <AuthenticatedAvatar
+                        className={menuStyles.avatar}
+                        imageClassName="authenticatedAvatarImage"
+                        avatarUrl={account.user?.avatarUrl ?? null}
+                        fallback={accountInitials}
+                        title={account.user?.fullName ?? 'Conta'}
+                      />
+                      <span className={menuStyles.accountIdentity}>
+                        <span className={menuStyles.accountNameRow}>
+                          <span className={menuStyles.accountName}>{account.user?.fullName ?? 'Conta sem nome'}</span>
+                          {isActive ? <span className={menuStyles.accountBadge}>Ativa</span> : null}
+                        </span>
+                        <span className={menuStyles.accountEmail}>{account.user?.email ?? 'Sem e-mail'}</span>
+                      </span>
+                    </button>
+                  )
+                })}
+
+                <div className={menuStyles.divider} />
+
+                <button
+                  type="button"
+                  className={menuStyles.item}
+                  role="menuitem"
+                  disabled={switchingAccountId !== null}
+                  onClick={handleOpenAddAccount}
+                >
+                  <span className={menuStyles.icon}><AddUserIcon /></span>
+                  Adicionar conta
+                </button>
+
+                {switchError ? (
+                  <div className={menuStyles.submenuError} role="status">
+                    {switchError}
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         )}
       </SidebarUserCard>

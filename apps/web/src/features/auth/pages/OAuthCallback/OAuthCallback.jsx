@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { resolveAuthRedirectTarget } from '../../utils/authRedirect.js'
+import { clearAuthIntent, readAuthIntent } from '../../utils/authIntent.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 
 export default function OAuthCallback() {
@@ -21,9 +22,11 @@ export default function OAuthCallback() {
     const params = new URLSearchParams(location.search)
     const code = params.get('code')
     const error = params.get('error')
+    const storedIntent = readAuthIntent()
+    const authMode = storedIntent?.mode === 'add-account' ? 'add-account' : 'default'
     const redirectTo = resolveAuthRedirectTarget(
       params.get('redirectTo'),
-      null,
+      resolveAuthRedirectTarget(storedIntent?.redirectTo, null),
     )
 
     async function completeLogin() {
@@ -34,7 +37,9 @@ export default function OAuthCallback() {
         throw new Error('Codigo de conclusao ausente.')
       }
 
-      const session = await completeOAuthLogin(code)
+      const session = await completeOAuthLogin(code, {
+        mode: authMode,
+      })
 
       navigate(resolveAuthRedirectTarget(redirectTo, resolveInitialRoute(session?.user?.id)), { replace: true })
     }
@@ -42,6 +47,8 @@ export default function OAuthCallback() {
     completeLogin().catch((error) => {
       setMessage(error.message ?? 'Nao foi possivel concluir o login externo.')
       setFailed(true)
+    }).finally(() => {
+      clearAuthIntent()
     })
   }, [completeOAuthLogin, location.search, navigate, resolveInitialRoute])
 
