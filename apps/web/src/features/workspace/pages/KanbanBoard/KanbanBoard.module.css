@@ -2905,6 +2905,14 @@
   gap: 14px;
 }
 
+.cmTitleEditor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
 .cmTitleMarker {
   width: 18px;
   height: 18px;
@@ -2914,6 +2922,9 @@
 }
 
 .cmTitle {
+  width: 0;
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: var(--font-family);
   font-size: 28px;
   font-weight: 700;
@@ -2925,7 +2936,6 @@
   resize: none;
   padding: 0;
   background: transparent;
-  width: 100%;
   transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
   border-bottom: 1.5px solid transparent;
   padding-bottom: 4px;
@@ -2935,6 +2945,44 @@
 }
 .cmTitle:focus {
   border-bottom-color: var(--text-1);
+}
+
+.cmTitle:disabled {
+  opacity: .7;
+  cursor: progress;
+}
+
+.cmTitleAction {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 0;
+  transition: color .15s ease, opacity .15s ease;
+}
+
+.cmTitleAction:hover:not(:disabled) {
+  color: var(--text-1);
+}
+
+.cmTitleAction:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.cmTitleConfirm:hover:not(:disabled) {
+  color: #16a34a;
+}
+
+.cmTitleCancel:hover:not(:disabled) {
+  color: #dc2626;
 }
 
 .cmActiveLabel {
@@ -3057,36 +3105,96 @@
   font-weight: 600;
 }
 
+.cmDescComposer {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+  background: var(--surface-1);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.cmDescComposer:focus-within {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px var(--focus-ring-glow);
+}
+
 .cmDesc {
+  display: block;
+  width: 100%;
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: 400;
   color: var(--text-1);
-  background: var(--surface-1);
-  border: 1px solid var(--border-2);
-  border-radius: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   outline: none;
   resize: none;
-  padding: 12px 14px;
+  padding: 14px 14px 52px;
   line-height: 1.5;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-  min-height: 64px;
-  max-height: 64px;
-  overflow: hidden;
+  min-height: 96px;
+  max-height: 144px;
+  overflow-y: auto;
 }
+
 .cmDesc::placeholder { color: var(--text-3); }
+
 .cmDesc:focus {
-  border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px var(--focus-ring-glow);
-  background: var(--surface-1);
+  box-shadow: none;
+  background: transparent;
+}
+
+.cmDesc:disabled {
+  opacity: .75;
+  cursor: progress;
+}
+
+.cmDescSaveBtn {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cmDescSaveBtn:hover:not(:disabled) {
+  opacity: .82;
+}
+
+.cmDescSaveBtn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
 }
 
 .cmSaveRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
   padding-top: 8px;
+  min-height: 18px;
+}
+
+.cmSaveStatus {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
 }
 
 .cmChecklistBlock {
@@ -4414,26 +4522,6 @@
   outline: none;
 }
 .cmDateInput::placeholder { color: var(--text-3); }
-
-.cmSaveBtn {
-  width: auto;
-  height: 36px;
-  padding: 0 16px;
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-  letter-spacing: -.005em;
-}
-.cmSaveBtn:hover { opacity: .8; }
-.cmSaveBtn:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-}
 
 .cmChecklistNotice {
   font-size: 12px;

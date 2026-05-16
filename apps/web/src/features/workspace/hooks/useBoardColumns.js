@@ -4,6 +4,20 @@ import { buildBoardCardPayload } from '../../../shared/contracts/backendAdapters
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
+function mapBoardComment(comment) {
+  const author = comment.author ?? null
+
+  return {
+    id: comment.id,
+    author: comment.authorName,
+    authorId: author?.id ?? null,
+    authorName: comment.authorName,
+    authorAvatarUrl: author?.avatarUrl ?? null,
+    text: comment.message,
+    time: comment.createdAt?.text ?? 'Agora',
+  }
+}
+
 export function useBoardColumns({
   activePlanId,
   boardColumns,
@@ -256,6 +270,21 @@ export function useBoardColumns({
     return true
   }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard, updateColumns])
 
+  const addCardComment = useCallback(async (cardId, message) => {
+    if (!activePlanId || !isBackendDriven) return null
+
+    const createdComment = await apiRequest(`/api/plans/${activePlanId}/board/cards/${cardId}/comments`, {
+      method: 'POST',
+      token: accessToken,
+      body: {
+        message,
+      },
+    })
+
+    await loadPlanBoard(activePlanId)
+    return mapBoardComment(createdComment)
+  }, [accessToken, activePlanId, isBackendDriven, loadPlanBoard])
+
   const moveCard = useCallback(async (cardId, targetColumnId, targetPosition) => {
     if (!activePlanId) return
 
@@ -356,6 +385,7 @@ export function useBoardColumns({
     addCard,
     updateCard,
     deleteCard,
+    addCardComment,
     moveCard,
     createChecklist,
     deleteChecklist,

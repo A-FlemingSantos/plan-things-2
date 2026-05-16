@@ -276,6 +276,7 @@ export default function CardModal({
   onClose,
   onUpdate,
   onDelete,
+  onAddComment,
   labels,
   members,
   currentUser,
@@ -301,7 +302,9 @@ export default function CardModal({
 }) {
   const initialSchedule = buildInitialCardSchedule(card)
   const [title,    setTitle]    = useState(card.title)
+  const [savedTitle, setSavedTitle] = useState(card.title)
   const [desc,     setDesc]     = useState(card.description)
+  const [savedDesc, setSavedDesc] = useState(card.description)
   const [labelId,  setLabelId]  = useState(card.labelId)
   const [memberIds,setMIds]     = useState(card.memberIds)
   const [dueDate,  setDueDate]  = useState(card.dueDate)
@@ -366,10 +369,14 @@ export default function CardModal({
   const [isChecklistMutating, setIsChecklistMutating] = useState(false)
   const [togglingChecklistItemId, setTogglingChecklistItemId] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isSendingComment, setIsSendingComment] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [saveStatus, setSaveStatus] = useState('')
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
   const commentComposerRef = useRef(null)
   const commentTextareaRef = useRef(null)
+  const titleTextareaRef = useRef(null)
   const checklistItemTextareaRef = useRef(null)
   const textMenuRef = useRef(null)
   const textMenuButtonRef = useRef(null)
@@ -398,6 +405,7 @@ export default function CardModal({
   const filePickerTypeMenuRef = useRef(null)
   const localFileInputRef = useRef(null)
   const commentTextRefs = useRef({})
+  const saveStatusTimeoutRef = useRef(null)
   const dialogTitleId = `card-modal-title-${card.id}`
 
   const label = labels.find(l => l.id === labelId)
@@ -432,68 +440,205 @@ export default function CardModal({
     resetChecklistItemDraft()
     setChecklistComposerOpen(false)
   }
+  const isInteractionBlocked = isSaving || isDeleting
+  const isMutating = isInteractionBlocked || isSendingComment
+
+  const updateSaveStatus = (message = '') => {
+    if (saveStatusTimeoutRef.current) {
+      clearTimeout(saveStatusTimeoutRef.current)
+      saveStatusTimeoutRef.current = null
+    }
+
+    setSaveStatus(message)
+
+    if (!message || message === 'Salvando...') {
+      return
+    }
+
+    saveStatusTimeoutRef.current = setTimeout(() => {
+      setSaveStatus('')
+      saveStatusTimeoutRef.current = null
+    }, 2200)
+  }
+
+  const buildNextCard = (overrides = {}) => {
+    const hasOverride = (key) => Object.prototype.hasOwnProperty.call(overrides, key)
+    const nextSchedule = {
+      selectedCalendarDay,
+      startEnabled,
+      startDateValue,
+      dueEnabled,
+      dueDateValue,
+      dueTimeValue,
+      displayLabel,
+      preserveDisplayLabel,
+      ...(overrides.schedule ?? {}),
+    }
+
+    return {
+      ...card,
+      title: hasOverride('title') ? overrides.title : savedTitle,
+      description: hasOverride('description') ? overrides.description : savedDesc,
+      labelId: hasOverride('labelId') ? overrides.labelId : labelId,
+      memberIds: hasOverride('memberIds') ? overrides.memberIds : memberIds,
+      dueDate: hasOverride('dueDate') ? overrides.dueDate : dueDate,
+      schedule: nextSchedule,
+      comments: hasOverride('comments') ? overrides.comments : comments,
+      attachments: hasOverride('attachments') ? overrides.attachments : attachments,
+      checklists: hasOverride('checklists') ? overrides.checklists : (activeChecklist ? [activeChecklist] : []),
+    }
+  }
+
+  const persistCardChanges = async (overrides = {}, options = {}) => {
+    if (isInteractionBlocked) return false
+
+    setIsSaving(true)
+    setSubmitError(null)
+    updateSaveStatus(options.pendingMessage ?? 'Salvando...')
+
+    try {
+      await onUpdate(buildNextCard(overrides))
+      if (typeof options.onSuccess === 'function') {
+        options.onSuccess()
+      }
+      updateSaveStatus(options.successMessage ?? 'Alterações salvas.')
+      return true
+    } catch (error) {
+      setSubmitError(error?.message ?? options.errorMessage ?? 'Não foi possível salvar as alterações do cartão.')
+      updateSaveStatus('')
+      return false
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const startClose = () => {
     setExiting(true)
     setTimeout(onClose, 220)
   }
 
   const close = () => {
-    if (isSaving || isDeleting) return
+    if (isMutating) return
     startClose()
   }
 
-  const save = async () => {
-    if (isSaving || isDeleting) return
+  const saveTitle = async () => {
+    const nextTitle = title.trim()
+    if (!nextTitle) return
+    if (nextTitle === savedTitle) {
+      setTitle(savedTitle)
+      setIsEditingTitle(false)
+      return
+    }
 
-    setIsSaving(true)
+    const saved = await persistCardChanges(
+      { title: nextTitle },
+      {
+        errorMessage: 'Não foi possível salvar o título do cartão.',
+        successMessage: 'Título salvo.',
+        onSuccess: () => {
+          setTitle(nextTitle)
+          setSavedTitle(nextTitle)
+          setIsEditingTitle(false)
+        },
+      },
+    )
+
+    if (!saved) {
+      setTimeout(() => titleTextareaRef.current?.focus(), 0)
+    }
+  }
+
+  const cancelTitleEdit = () => {
+    setTitle(savedTitle)
+    setIsEditingTitle(false)
     setSubmitError(null)
+  }
+
+  const saveDescription = async () => {
+    if (desc === savedDesc) return
+
+    await persistCardChanges(
+      { description: desc },
+      {
+        errorMessage: 'Não foi possível salvar a descrição do cartão.',
+        successMessage: 'Descrição salva.',
+        onSuccess: () => {
+          setSavedDesc(desc)
+        },
+      },
+    )
+  }
+
+  const toggleMember = async (id) => {
+    if (isMutating) return
+
+    const previousMemberIds = memberIds
+    const nextMemberIds = previousMemberIds.includes(id)
+      ? previousMemberIds.filter((memberId) => memberId !== id)
+      : [...previousMemberIds, id]
+
+    setMIds(nextMemberIds)
+    const saved = await persistCardChanges(
+      { memberIds: nextMemberIds },
+      {
+        errorMessage: 'Não foi possível atualizar os membros do cartão.',
+        successMessage: 'Membros salvos.',
+      },
+    )
+
+    if (!saved) {
+      setMIds(previousMemberIds)
+    }
+  }
+
+  const addComment = async () => {
+    const nextCommentText = comment.trim()
+    if (!nextCommentText || isMutating) return
+
+    setIsSendingComment(true)
+    setSubmitError(null)
+    updateSaveStatus('Salvando...')
 
     try {
-      await onUpdate({
-        ...card,
-        title,
-        description: desc,
-        labelId,
-        memberIds,
-        dueDate,
-        schedule: {
-          selectedCalendarDay,
-          startEnabled,
-          startDateValue,
-          dueEnabled,
-          dueDateValue,
-          dueTimeValue,
-          displayLabel,
-          preserveDisplayLabel,
-        },
-        comments,
-        attachments,
-        checklists: activeChecklist ? [activeChecklist] : [],
-      })
-      startClose()
+      if (typeof onAddComment === 'function') {
+        const createdComment = await onAddComment(card.id, nextCommentText)
+        if (createdComment) {
+          setComments((prev) => [...prev, createdComment])
+        }
+      } else {
+        const createdComment = {
+          id: uid(),
+          author: currentUser?.id ?? null,
+          authorId: currentUser?.id ?? null,
+          authorName: currentUserName,
+          text: nextCommentText,
+          time: 'Agora',
+        }
+        setComments((prev) => [...prev, createdComment])
+        const saved = await persistCardChanges(
+          { comments: [...comments, createdComment] },
+          {
+            errorMessage: 'Não foi possível salvar o comentário.',
+            successMessage: 'Comentário salvo.',
+          },
+        )
+
+        if (!saved) {
+          setComments((prev) => prev.filter((item) => item.id !== createdComment.id))
+          return
+        }
+      }
+
+      setComment('')
+      setCommentFocused(false)
+      updateSaveStatus('Comentário salvo.')
     } catch (error) {
-      setSubmitError(error?.message ?? 'Não foi possível salvar as alterações do cartão.')
+      setSubmitError(error?.message ?? 'Não foi possível salvar o comentário.')
+      updateSaveStatus('')
     } finally {
-      setIsSaving(false)
+      setIsSendingComment(false)
     }
-  }
-
-  const toggleMember = (id) => {
-    setMIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
-
-  const addComment = () => {
-    if (!comment.trim()) return
-    const c = {
-      id: uid(),
-      author: currentUser?.id ?? null,
-      authorId: currentUser?.id ?? null,
-      authorName: currentUserName,
-      text: comment.trim(),
-      time: 'Agora',
-    }
-    setComments(prev => [...prev, c])
-    setComment('')
   }
 
   const updateFilePickerPosition = () => {
@@ -620,7 +765,7 @@ export default function CardModal({
   }
 
   const handleDelete = async () => {
-    if (isSaving || isDeleting) return
+    if (isMutating) return
 
     setIsDeleting(true)
     setSubmitError(null)
@@ -784,7 +929,9 @@ export default function CardModal({
       items: prev.items.map(item => item.id === itemId ? { ...item, checked: !item.checked } : item),
     }))
   }
-  const handleDateSave = () => {
+  const handleDateSave = async () => {
+    if (isMutating) return
+
     const shouldPreserveDisplayLabel =
       dueEnabled &&
       initialSchedule.preserveDisplayLabel &&
@@ -797,17 +944,104 @@ export default function CardModal({
           : formatDueDateLabelFromValue(dueDateValue, selectedCalendarDay))
       : ''
 
+    const previousDateState = {
+      dueDate,
+      displayLabel,
+      preserveDisplayLabel,
+      dueEnabled,
+      dueDateValue,
+      dueTimeValue,
+      startEnabled,
+      startDateValue,
+      selectedCalendarDay,
+    }
+    const nextSchedule = {
+      selectedCalendarDay,
+      startEnabled,
+      startDateValue,
+      dueEnabled,
+      dueDateValue,
+      dueTimeValue,
+      displayLabel: nextDueDate,
+      preserveDisplayLabel: shouldPreserveDisplayLabel,
+    }
+
     setDueDate(nextDueDate)
     setDisplayLabel(nextDueDate)
     setPreserveDisplayLabel(shouldPreserveDisplayLabel)
     setShowDateMenu(false)
+
+    const saved = await persistCardChanges(
+      {
+        dueDate: nextDueDate,
+        schedule: nextSchedule,
+      },
+      {
+        errorMessage: 'Não foi possível salvar a data do cartão.',
+        successMessage: 'Data salva.',
+      },
+    )
+
+    if (!saved) {
+      setSelectedCalendarDay(previousDateState.selectedCalendarDay)
+      setStartEnabled(previousDateState.startEnabled)
+      setStartDateValue(previousDateState.startDateValue)
+      setDueEnabled(previousDateState.dueEnabled)
+      setDueDateValue(previousDateState.dueDateValue)
+      setDueTimeValue(previousDateState.dueTimeValue)
+      setDueDate(previousDateState.dueDate)
+      setDisplayLabel(previousDateState.displayLabel)
+      setPreserveDisplayLabel(previousDateState.preserveDisplayLabel)
+    }
   }
-  const handleDateRemove = () => {
+  const handleDateRemove = async () => {
+    if (isMutating) return
+
+    const previousDateState = {
+      dueDate,
+      displayLabel,
+      preserveDisplayLabel,
+      dueEnabled,
+      dueDateValue,
+      dueTimeValue,
+    }
+    const nextSchedule = {
+      selectedCalendarDay,
+      startEnabled,
+      startDateValue,
+      dueEnabled: false,
+      dueDateValue: '',
+      dueTimeValue,
+      displayLabel: '',
+      preserveDisplayLabel: false,
+    }
+
     setDueEnabled(false)
+    setDueDateValue('')
     setDueDate('')
     setDisplayLabel('')
     setPreserveDisplayLabel(false)
     setShowDateMenu(false)
+
+    const saved = await persistCardChanges(
+      {
+        dueDate: '',
+        schedule: nextSchedule,
+      },
+      {
+        errorMessage: 'Não foi possível remover a data do cartão.',
+        successMessage: 'Data removida.',
+      },
+    )
+
+    if (!saved) {
+      setDueEnabled(previousDateState.dueEnabled)
+      setDueDateValue(previousDateState.dueDateValue)
+      setDueTimeValue(previousDateState.dueTimeValue)
+      setDueDate(previousDateState.dueDate)
+      setDisplayLabel(previousDateState.displayLabel)
+      setPreserveDisplayLabel(previousDateState.preserveDisplayLabel)
+    }
   }
   const getMemberName = (member) => {
     if (!member) return 'Membro'
@@ -819,6 +1053,25 @@ export default function CardModal({
   const selectedDueDateSummary = dueEnabled && dueDateValue && (displayLabel || dueDate)
     ? dueDateValue
     : ''
+  const handleLabelSelect = async (nextLabelId) => {
+    if (isMutating) return
+
+    const previousLabelId = labelId
+    setLabelId(nextLabelId)
+    setShowLabelMenu(false)
+
+    const saved = await persistCardChanges(
+      { labelId: nextLabelId },
+      {
+        errorMessage: 'Não foi possível salvar a etiqueta do cartão.',
+        successMessage: 'Etiqueta salva.',
+      },
+    )
+
+    if (!saved) {
+      setLabelId(previousLabelId)
+    }
+  }
   const pickerSourceFiles = filePickerFilter === 'plan' ? planFiles : libraryFiles
   const pickerFiles = pickerSourceFiles.filter((file) => {
     const matchesSearch = file.name.toLowerCase().includes(fileSearch.trim().toLowerCase())
@@ -856,6 +1109,12 @@ export default function CardModal({
   useEffect(() => {
     setAttachments(Array.isArray(card.attachments) ? card.attachments : [])
   }, [card.id, card.attachments])
+
+  useEffect(() => () => {
+    if (saveStatusTimeoutRef.current) {
+      clearTimeout(saveStatusTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (showDateMenu) {
@@ -1450,8 +1709,8 @@ export default function CardModal({
             </button>
           </div>
           <div className={styles.cmHeaderActions}>
-            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão" disabled={isSaving || isDeleting}><icons.Trash /></button>
-            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão" disabled={isSaving || isDeleting}><icons.X /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão" disabled={isMutating}><icons.Trash /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão" disabled={isMutating}><icons.X /></button>
           </div>
         </div>
 
@@ -1459,15 +1718,56 @@ export default function CardModal({
           <div className={styles.cmMain}>
             <div className={styles.cmTitleRow}>
               <span className={styles.cmTitleMarker} />
-              <textarea
-                id={dialogTitleId}
-                className={styles.cmTitle}
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                rows={1}
-                placeholder="Título do cartão"
-                aria-label="Título do cartão"
-              />
+              <div className={styles.cmTitleEditor}>
+                <textarea
+                  ref={titleTextareaRef}
+                  id={dialogTitleId}
+                  className={styles.cmTitle}
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  onFocus={() => setIsEditingTitle(true)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      void saveTitle()
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault()
+                      cancelTitleEdit()
+                    }
+                  }}
+                  rows={1}
+                  placeholder="Título do cartão"
+                  aria-label="Título do cartão"
+                  disabled={isMutating}
+                />
+                {isEditingTitle && (
+                  <>
+                    <button
+                      type="button"
+                      className={`${styles.cmTitleAction} ${styles.cmTitleConfirm}`}
+                      aria-label="Confirmar novo título"
+                      title="Confirmar"
+                      disabled={isMutating || !title.trim()}
+                      onClick={() => {
+                        void saveTitle()
+                      }}
+                    >
+                      <icons.Check />
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.cmTitleAction} ${styles.cmTitleCancel}`}
+                      aria-label="Cancelar renomeação"
+                      title="Cancelar"
+                      disabled={isMutating}
+                      onClick={cancelTitleEdit}
+                    >
+                      <icons.X />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className={styles.cmToolbar}>
@@ -1478,6 +1778,7 @@ export default function CardModal({
                 onClick={() => setShowMembersMenu(v => !v)}
                 aria-expanded={showMembersMenu}
                 aria-haspopup="menu"
+                disabled={isMutating}
               >
                 {selectedMembers.length > 0 ? (
                   <span className={styles.cmToolbarAvatarStack} title={selectedMembersSummary}>
@@ -1508,6 +1809,7 @@ export default function CardModal({
                 onClick={() => setShowLabelMenu(v => !v)}
                 aria-expanded={showLabelMenu}
                 aria-haspopup="menu"
+                disabled={isMutating}
               >
                 {selectedLabelSummary ? (
                   <span
@@ -1532,6 +1834,7 @@ export default function CardModal({
                 onClick={() => setShowDateMenu(v => !v)}
                 aria-expanded={showDateMenu}
                 aria-haspopup="dialog"
+                disabled={isMutating}
               >
                 {selectedDueDateSummary ? (
                   <span className={styles.cmToolbarBtnValue} title={selectedDueDateSummary}>
@@ -1572,15 +1875,37 @@ export default function CardModal({
                 <p className={styles.cmSectionTitle}>
                   <icons.List />
                   Descrição
-              </p>
-              <textarea
-                className={styles.cmDesc}
-                value={desc}
-                onChange={e => setDesc(e.target.value)}
-                placeholder="Adicione uma descrição..."
-                rows={1}
-                aria-label="Descrição do cartão"
-                />
+                </p>
+                <div className={styles.cmDescComposer}>
+                  <textarea
+                    className={styles.cmDesc}
+                    value={desc}
+                    onChange={e => setDesc(e.target.value)}
+                    onKeyDown={e => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault()
+                        void saveDescription()
+                      }
+                    }}
+                    placeholder="Adicione uma descrição..."
+                    rows={1}
+                    aria-label="Descrição do cartão"
+                    disabled={isMutating}
+                  />
+                  <button
+                    type="button"
+                    className={styles.cmDescSaveBtn}
+                    onClick={() => {
+                      void saveDescription()
+                    }}
+                    disabled={isMutating || desc === savedDesc}
+                    aria-label="Salvar descrição"
+                    title="Salvar descrição"
+                  >
+                    <icons.Check />
+                    <span>Salvar</span>
+                  </button>
+                </div>
               </div>
 
               <div className={styles.cmSection}>
@@ -1858,14 +2183,7 @@ export default function CardModal({
 
               <div className={styles.cmSaveRow}>
                 {submitError && <p className={styles.cmSubmitError}>{submitError}</p>}
-                {label && (
-                <span className={styles.cmActiveLabel} style={{ background: label.color + '20', color: label.color }}>
-                  {label.text}
-                </span>
-              )}
-              <button type="button" className={styles.cmSaveBtn} onClick={save} disabled={isSaving || isDeleting}>
-                {isSaving ? 'Salvando...' : 'Salvar alterações'}
-              </button>
+                {!submitError && saveStatus ? <p className={styles.cmSaveStatus}>{saveStatus}</p> : null}
             </div>
           </div>
 
@@ -1968,19 +2286,22 @@ export default function CardModal({
                   onKeyDown={e => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
-                      addComment()
+                      void addComment()
                     }
                   }}
+                  disabled={isMutating}
                 />
               </div>
               <button
                 type="button"
                 className={styles.cmSendBtn}
-                onClick={addComment}
-                disabled={!comment.trim()}
+                onClick={() => {
+                  void addComment()
+                }}
+                disabled={!comment.trim() || isMutating}
                 aria-label="Enviar comentário"
               >
-                <icons.Send />
+                {isSendingComment ? <icons.Check /> : <icons.Send />}
               </button>
             </div>
 
@@ -2285,8 +2606,11 @@ export default function CardModal({
                 key={m.id}
                 type="button"
                 className={`${styles.cmMemberOpt} ${memberIds.includes(m.id) ? styles.cmMemberOptActive : ''}`}
-                onClick={() => toggleMember(m.id)}
+                onClick={() => {
+                  void toggleMember(m.id)
+                }}
                 aria-pressed={memberIds.includes(m.id)}
+                disabled={isMutating}
               >
                 <AuthenticatedAvatar
                   className={styles.cmMemberAvatar}
@@ -2304,6 +2628,7 @@ export default function CardModal({
               type="button"
               className={styles.cmMembersMenuCreate}
               onClick={() => setShowMembersMenu(false)}
+              disabled={isMutating}
             >
               <span className={styles.cmMembersMenuCreateIcon}><icons.Plus /></span>
               Novo membro
@@ -2506,10 +2831,10 @@ export default function CardModal({
                 className={`${styles.cmLabelOpt} ${labelId === l.id ? styles.cmLabelOptActive : ''}`}
                 style={labelId === l.id ? { background: l.color + '20', borderColor: l.color, color: l.color } : {}}
                 onClick={() => {
-                  setLabelId(labelId === l.id ? null : l.id)
-                  setShowLabelMenu(false)
+                  void handleLabelSelect(labelId === l.id ? null : l.id)
                 }}
                 aria-pressed={labelId === l.id}
+                disabled={isMutating}
               >
                 <span className={styles.cmLabelDot} style={{ background: l.color }} />
                 {l.text}
@@ -2520,6 +2845,7 @@ export default function CardModal({
               type="button"
               className={styles.cmLabelMenuCreate}
               onClick={() => setShowLabelMenu(false)}
+              disabled={isMutating}
             >
               <span className={styles.cmLabelMenuCreateIcon}><icons.Plus /></span>
               Nova Etiqueta
@@ -2585,6 +2911,7 @@ export default function CardModal({
                   type="button"
                   className={`${styles.cmDateCheckbox} ${startEnabled ? styles.cmDateCheckboxActive : ''}`}
                   onClick={() => setStartEnabled(v => !v)}
+                  disabled={isMutating}
                 >
                   {startEnabled && <icons.Check />}
                 </button>
@@ -2594,7 +2921,7 @@ export default function CardModal({
                   placeholder="D/M/AAAA"
                   value={startDateValue}
                   onChange={e => setStartDateValue(e.target.value)}
-                  disabled={!startEnabled}
+                  disabled={!startEnabled || isMutating}
                   aria-label="Data inicial"
                 />
               </div>
@@ -2607,6 +2934,7 @@ export default function CardModal({
                   type="button"
                   className={`${styles.cmDateCheckbox} ${dueEnabled ? styles.cmDateCheckboxActive : ''}`}
                   onClick={() => setDueEnabled(v => !v)}
+                  disabled={isMutating}
                 >
                   {dueEnabled && <icons.Check />}
                 </button>
@@ -2615,7 +2943,7 @@ export default function CardModal({
                   className={`${styles.cmDateMenuInput} ${styles.cmDateMenuInputCompact}`}
                   value={dueDateValue}
                   onChange={e => setDueDateValue(e.target.value)}
-                  disabled={!dueEnabled}
+                  disabled={!dueEnabled || isMutating}
                   aria-label="Data de entrega"
                 />
                 <input
@@ -2623,7 +2951,7 @@ export default function CardModal({
                   className={`${styles.cmDateMenuInput} ${styles.cmDateMenuInputTime}`}
                   value={dueTimeValue}
                   onChange={e => setDueTimeValue(e.target.value)}
-                  disabled={!dueEnabled}
+                  disabled={!dueEnabled || isMutating}
                   aria-label="Hora de entrega"
                 />
               </div>
@@ -2632,8 +2960,8 @@ export default function CardModal({
           </div>
 
           <div className={styles.cmDateMenuActions}>
-            <button type="button" className={styles.cmDateMenuSave} onClick={handleDateSave}>Salvar</button>
-            <button type="button" className={styles.cmDateMenuRemove} onClick={handleDateRemove}>Remover</button>
+            <button type="button" className={styles.cmDateMenuSave} onClick={() => { void handleDateSave() }} disabled={isMutating}>Salvar</button>
+            <button type="button" className={styles.cmDateMenuRemove} onClick={() => { void handleDateRemove() }} disabled={isMutating}>Remover</button>
           </div>
         </div>
       )}

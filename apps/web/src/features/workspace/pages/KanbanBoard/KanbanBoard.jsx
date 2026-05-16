@@ -462,6 +462,7 @@ export default function KanbanBoard() {
     addCard,
     updateCard,
     deleteCard,
+    addCardComment,
     moveCard,
     createChecklist,
     deleteChecklist,
@@ -510,8 +511,7 @@ export default function KanbanBoard() {
   }
 
   const handleCardUpdate = async (updatedCard) => {
-    await updateCard(updatedCard)
-    setActiveCard(null)
+    return updateCard(updatedCard)
   }
 
   const handleCardDelete = async (cardId) => {
@@ -2373,6 +2373,7 @@ export default function KanbanBoard() {
           onClose={() => setActiveCard(null)}
           onUpdate={handleCardUpdate}
           onDelete={handleCardDelete}
+          onAddComment={isBackendDriven ? addCardComment : undefined}
           labels={planLabels}
           members={planMembers}
           currentUser={currentUser}
