@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: #000000;
+  background: var(--app-bg);
   position: relative;
   overflow: hidden;
 }
@@ -18,10 +18,11 @@
   min-height: calc(100vh - 80px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(336px, 396px);
-  background: #000000;
-  color: #f5f5f1;
+  background: var(--surface-1);
+  color: var(--text-1);
   border-radius: 0;
   overflow: hidden;
+  border: 1px solid var(--border-1);
 }
 
 .brandPanel,
@@ -35,7 +36,7 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 28px 30px 24px;
-  background: #000000;
+  background: var(--surface-1);
 }
 
 .brandAmbient {
@@ -49,7 +50,7 @@
   font-size: 118px;
   line-height: 0.9;
   letter-spacing: -0.1em;
-  color: rgba(255, 255, 255, 0.035);
+  color: color-mix(in srgb, var(--text-1) 7%, transparent);
   font-weight: 400;
 }
 
@@ -62,9 +63,9 @@
   align-self: flex-start;
   min-height: 34px;
   padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.025);
-  color: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  color: var(--text-2);
   font-size: 11px;
   letter-spacing: 0.01em;
   transition:
@@ -74,9 +75,9 @@
 }
 
 .backLink:hover {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-1);
+  border-color: var(--border-2);
+  background: var(--surface-3);
 }
 
 .brandContent {
@@ -101,13 +102,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  border: 1px solid var(--border-2);
+  color: var(--text-1);
 }
 
 .brandBadgeText {
   font-size: 15px;
-  color: #faf9f6;
+  color: var(--text-1);
   letter-spacing: -0.02em;
 }
 
@@ -121,7 +122,7 @@
   font-size: clamp(20px, 2.2vw, 26px);
   line-height: 1.16;
   letter-spacing: -0.04em;
-  color: #faf8f4;
+  color: var(--text-1);
   max-width: 16ch;
 }
 
@@ -129,7 +130,7 @@
   max-width: 34ch;
   font-size: 13px;
   line-height: 1.65;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--text-2);
 }
 
 .brandFooter {
@@ -139,7 +140,7 @@
   align-items: center;
   gap: 22px;
   margin-top: 36px;
-  color: rgba(255, 255, 255, 0.64);
+  color: var(--text-2);
   font-size: 12px;
 }
 
@@ -148,7 +149,7 @@
 }
 
 .brandFooter a:hover {
-  color: #ffffff;
+  color: var(--text-1);
 }
 
 .formPanel {
@@ -157,7 +158,7 @@
   justify-content: center;
   align-items: center;
   padding: 72px 24px 36px;
-  background: #000000;
+  background: var(--surface-1);
 }
 
 .formIntro {
@@ -173,14 +174,14 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--text-3);
 }
 
 .title {
   font-size: clamp(34px, 4vw, 44px);
   line-height: 0.98;
   letter-spacing: -0.055em;
-  color: #f8f5ee;
+  color: var(--text-1);
   font-weight: 400;
 }
 
@@ -188,7 +189,7 @@
   max-width: 34ch;
   font-size: 13px;
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.48);
+  color: var(--text-2);
 }
 
 .oauthGroup {
@@ -208,9 +209,9 @@
   justify-content: center;
   gap: 10px;
   padding: 0 18px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  color: var(--text-2);
   font-size: 13px;
   letter-spacing: -0.01em;
   transition:
@@ -221,9 +222,9 @@
 }
 
 .oauthBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.075);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--surface-3);
+  border-color: var(--border-2);
+  color: var(--text-1);
   transform: translateY(-1px);
 }
 
@@ -266,26 +267,26 @@
 .label {
   font-size: 11px;
   letter-spacing: -0.01em;
-  color: rgba(255, 255, 255, 0.74);
+  color: var(--text-2);
 }
 
 .forgotLink {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-3);
   transition: color var(--transition-fast);
 }
 
 .forgotLink:hover {
-  color: #ffffff;
+  color: var(--text-1);
 }
 
 .input {
   width: 100%;
   min-height: 48px;
   padding: 0 14px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  color: #f6f4ef;
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  color: var(--text-1);
   font-family: var(--font-family);
   font-size: 14px;
   letter-spacing: -0.015em;
@@ -297,17 +298,17 @@
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.22);
+  color: var(--text-3);
 }
 
 .input:hover {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-2);
 }
 
 .input:focus {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.03);
+  background: var(--surface-1);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px var(--focus-ring-bg);
 }
 
 .passwordWrap {
@@ -323,7 +324,7 @@
   top: 50%;
   right: 14px;
   transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--text-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -331,7 +332,7 @@
 }
 
 .eyeBtn:hover {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--text-1);
 }
 
 .preferenceRow {
@@ -352,13 +353,13 @@
 
 .preferenceTitle {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-1);
 }
 
 .preferenceHint {
   font-size: 11px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--text-3);
   max-width: 32ch;
 }
 
@@ -366,8 +367,8 @@
   width: 34px;
   height: 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-3);
+  border: 1px solid var(--border-1);
   display: inline-flex;
   align-items: center;
   padding: 2px;
@@ -378,22 +379,22 @@
 }
 
 .preferenceToggleEnabled {
-  background: #f5f5f0;
-  border-color: #f5f5f0;
+  background: var(--text-1);
+  border-color: var(--text-1);
 }
 
 .preferenceThumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #121212;
+  background: var(--app-bg);
   transform: translateX(0);
   transition: transform var(--transition-fast), background var(--transition-fast);
 }
 
 .preferenceToggleEnabled .preferenceThumb {
   transform: translateX(14px);
-  background: #121212;
+  background: var(--app-bg);
 }
 
 .agreeRow {
@@ -409,7 +410,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--border-2);
   background: transparent;
   flex-shrink: 0;
   margin-top: 2px;
@@ -419,18 +420,18 @@
 }
 
 .checkboxChecked {
-  border-color: #f5f5f0;
-  background: #f5f5f0;
+  border-color: var(--text-1);
+  background: var(--text-1);
 }
 
 .agreeText {
   font-size: 12px;
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--text-2);
 }
 
 .agreeLink {
-  color: #ffffff;
+  color: var(--text-1);
 }
 
 .agreeLink:hover {
@@ -444,19 +445,19 @@
 }
 
 .formNotice {
-  color: #b3d6ff;
+  color: var(--focus-ring);
 }
 
 .formHint {
-  color: #ff8a84;
+  color: var(--danger-text);
 }
 
 .submitBtn {
   width: 100%;
   min-height: 48px;
   margin-top: 4px;
-  background: #f5f5f1;
-  color: #111111;
+  background: var(--text-1);
+  color: var(--text-inverse);
   font-size: 13px;
   letter-spacing: -0.01em;
   transition:
@@ -468,7 +469,7 @@
 .submitBtn:hover:not(:disabled) {
   opacity: 0.94;
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .submitBtn:disabled {
@@ -484,12 +485,12 @@
   width: min(100%, 360px);
   margin-top: 16px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--text-3);
   animation: fadeUp 0.8s ease both;
 }
 
 .switchBtn {
-  color: #ffffff;
+  color: var(--text-1);
 }
 
 .switchBtn:hover {
@@ -502,7 +503,7 @@
   padding-top: 26px;
   font-size: 11px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.22);
+  color: var(--text-3);
 }
 
 .spinner,
@@ -515,15 +516,15 @@
 .spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(17, 17, 17, 0.18);
-  border-top-color: #111111;
+  border: 2px solid color-mix(in srgb, var(--text-inverse) 18%, transparent);
+  border-top-color: var(--text-inverse);
 }
 
 .spinnerSmall {
   width: 15px;
   height: 15px;
-  border: 1.5px solid rgba(255, 255, 255, 0.22);
-  border-top-color: #ffffff;
+  border: 1.5px solid var(--border-2);
+  border-top-color: var(--text-1);
 }
 
 @keyframes fadeUp {
@@ -555,7 +556,7 @@
     min-height: 320px;
     padding: 24px;
     gap: 40px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-1);
   }
 
   .formPanel {
@@ -580,7 +581,7 @@
 
 @media (max-width: 640px) {
   .page {
-    background: #000000;
+    background: var(--app-bg);
     padding: 0;
   }
 
