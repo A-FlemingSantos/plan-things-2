@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { buildAuthRedirectState } from '../../../features/auth/utils/authRedirect.js'
@@ -154,7 +154,7 @@ export default function SidebarAccountMenu({
     }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open || !collapsed) return
 
     updateCollapsedMenuPosition()
@@ -170,12 +170,12 @@ export default function SidebarAccountMenu({
     }
   }, [collapsed, open, updateCollapsedMenuPosition])
 
-  const handleToggle = (event) => {
+  const handleToggle = () => {
     setOpen((currentOpen) => {
       const nextOpen = !currentOpen
 
       if (nextOpen && collapsed) {
-        updateCollapsedMenuPosition(event.currentTarget.getBoundingClientRect())
+        setCollapsedMenuPosition(null)
       }
 
       if (!nextOpen) {

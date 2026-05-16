@@ -99,6 +99,43 @@ describe('SidebarAccountMenu', () => {
     expect(menu.style.width).toBe('220px')
   })
 
+  it('reopens the collapsed avatar menu after closing it with an outside click', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <SidebarAccountMenu styles={styles} collapsed />
+      </MemoryRouter>,
+    )
+
+    const trigger = screen.getByRole('button', { name: /arthur santos/i })
+    trigger.getBoundingClientRect = () => ({
+      x: 12,
+      y: 676,
+      left: 12,
+      top: 676,
+      right: 44,
+      bottom: 720,
+      width: 32,
+      height: 44,
+      toJSON: () => ({}),
+    })
+
+    await user.click(trigger)
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+
+    await user.click(document.body)
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+
+    await user.click(trigger)
+
+    await waitFor(() => {
+      expect(screen.getByRole('menu')).toBeInTheDocument()
+    })
+  })
+
   it('opens the secondary accounts menu from the active account header', async () => {
     const user = userEvent.setup()
 
