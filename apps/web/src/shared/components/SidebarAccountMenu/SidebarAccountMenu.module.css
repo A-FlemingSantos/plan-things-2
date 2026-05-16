@@ -6,7 +6,7 @@
   position: fixed;
   background: var(--menu-bg);
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   overflow: visible;
   z-index: 200;
@@ -154,7 +154,7 @@
   width: min(280px, calc(100vw - 24px));
   background: var(--menu-bg);
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   overflow-x: hidden;
   overflow-y: auto;
