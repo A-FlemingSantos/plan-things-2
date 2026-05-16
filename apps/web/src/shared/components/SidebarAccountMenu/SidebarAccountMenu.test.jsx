@@ -154,6 +154,94 @@ describe('SidebarAccountMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'Adicionar conta' })).toBeInTheDocument()
   })
 
+  it('positions the accounts submenu with fixed viewport coordinates when the sidebar is expanded', async () => {
+    const user = userEvent.setup()
+
+    const { container } = render(
+      <div data-app-theme-scope data-theme="dark">
+        <MemoryRouter>
+          <SidebarAccountMenu styles={styles} />
+        </MemoryRouter>
+      </div>,
+    )
+
+    await user.click(screen.getByRole('button', { name: /arthur santos/i }))
+
+    const accountsTrigger = screen.getByRole('button', { name: /contas salvas de arthur santos/i })
+    accountsTrigger.getBoundingClientRect = () => ({
+      x: 24,
+      y: 540,
+      left: 24,
+      top: 540,
+      right: 220,
+      bottom: 588,
+      width: 196,
+      height: 48,
+      toJSON: () => ({}),
+    })
+
+    await user.hover(accountsTrigger)
+
+    const submenu = await screen.findByRole('menu', { name: 'Contas salvas' })
+
+    await waitFor(() => {
+      expect(submenu.style.position).toBe('fixed')
+    })
+
+    expect(container.querySelector('[data-app-theme-scope]')?.contains(submenu)).toBe(true)
+    expect(submenu.style.left).toBe('228px')
+    expect(submenu.style.top).toBe('428px')
+    expect(submenu.style.maxHeight).toBe('776px')
+  })
+
+  it('keeps the accounts submenu inside the viewport when it would overflow downward', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <SidebarAccountMenu styles={styles} />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: /arthur santos/i }))
+
+    const accountsTrigger = screen.getByRole('button', { name: /contas salvas de arthur santos/i })
+    accountsTrigger.getBoundingClientRect = () => ({
+      x: 24,
+      y: 760,
+      left: 24,
+      top: 760,
+      right: 220,
+      bottom: 808,
+      width: 196,
+      height: 48,
+      toJSON: () => ({}),
+    })
+
+    await user.hover(accountsTrigger)
+
+    const submenu = await screen.findByRole('menu', { name: 'Contas salvas' })
+    submenu.getBoundingClientRect = () => ({
+      x: 228,
+      y: 760,
+      left: 228,
+      top: 760,
+      right: 508,
+      bottom: 1180,
+      width: 280,
+      height: 420,
+      toJSON: () => ({}),
+    })
+
+    fireEvent(window, new Event('resize'))
+
+    await waitFor(() => {
+      expect(submenu.style.top).toBe('368px')
+    })
+
+    expect(submenu.style.maxHeight).toBe('776px')
+  })
+
   it('switches to another saved account from the submenu', async () => {
     const user = userEvent.setup()
     authState.switchAccount.mockResolvedValue({

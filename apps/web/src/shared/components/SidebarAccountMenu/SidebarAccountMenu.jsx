@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { buildAuthRedirectState } from '../../../features/auth/utils/authRedirect.js'
@@ -17,6 +18,10 @@ const COLLAPSED_MENU_WIDTH = 220
 const COLLAPSED_MENU_FALLBACK_HEIGHT = 320
 const COLLAPSED_MENU_GAP = 12
 const COLLAPSED_MENU_MARGIN = 12
+const SUBMENU_FALLBACK_WIDTH = 280
+const SUBMENU_FALLBACK_HEIGHT = 360
+const SUBMENU_GAP = 8
+const SUBMENU_MARGIN = 12
 
 function UserIcon() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M2 12c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
@@ -73,8 +78,11 @@ export default function SidebarAccountMenu({
   const [switchingAccountId, setSwitchingAccountId] = useState(null)
   const [switchError, setSwitchError] = useState('')
   const [collapsedMenuPosition, setCollapsedMenuPosition] = useState(null)
+  const [accountsMenuPosition, setAccountsMenuPosition] = useState(null)
   const containerRef = useRef(null)
   const menuRef = useRef(null)
+  const accountsTriggerRef = useRef(null)
+  const accountsMenuRef = useRef(null)
   const menuIdRef = useRef(`sidebar-account-menu-${Math.random().toString(36).slice(2, 10)}`)
   const accountsMenuIdRef = useRef(`sidebar-account-submenu-${Math.random().toString(36).slice(2, 10)}`)
   const resolvedName = currentUser?.fullName ?? name
@@ -84,6 +92,7 @@ export default function SidebarAccountMenu({
     ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
     : initials
   const resolvedPlanLabel = workspace?.subscriptionPlan ? getWorkspacePlanLabel(workspace.subscriptionPlan) : plan
+  const portalRoot = containerRef.current?.closest('[data-app-theme-scope]') ?? document.body
   const orderedAccounts = useMemo(() => {
     const accounts = Array.isArray(savedAccounts) ? [...savedAccounts] : []
     accounts.sort((left, right) => {
@@ -128,12 +137,53 @@ export default function SidebarAccountMenu({
     })
   }, [collapsed])
 
+  const updateAccountsMenuPosition = useCallback((anchorRectOverride = null) => {
+    const anchorRect = anchorRectOverride
+      ?? accountsTriggerRef.current?.getBoundingClientRect?.()
+
+    if (!anchorRect) return
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const submenuRect = accountsMenuRef.current?.getBoundingClientRect?.()
+    const menuWidth = submenuRect?.width || SUBMENU_FALLBACK_WIDTH
+    const menuHeight = submenuRect?.height || SUBMENU_FALLBACK_HEIGHT
+    const availableHeight = Math.max(160, viewportHeight - (SUBMENU_MARGIN * 2))
+    const width = Math.min(menuWidth, viewportWidth - (SUBMENU_MARGIN * 2))
+    const rightAlignedLeft = anchorRect.right + SUBMENU_GAP
+    const leftAlignedLeft = anchorRect.left - width - SUBMENU_GAP
+    const preferredLeft = rightAlignedLeft + width <= viewportWidth - SUBMENU_MARGIN
+      ? rightAlignedLeft
+      : leftAlignedLeft >= SUBMENU_MARGIN
+        ? leftAlignedLeft
+        : Math.max(
+            SUBMENU_MARGIN,
+            Math.min(rightAlignedLeft, viewportWidth - width - SUBMENU_MARGIN),
+          )
+    const top = Math.max(
+      SUBMENU_MARGIN,
+      Math.min(anchorRect.top, viewportHeight - Math.min(menuHeight, availableHeight) - SUBMENU_MARGIN),
+    )
+
+    setAccountsMenuPosition({
+      position: 'fixed',
+      left: `${preferredLeft}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      maxHeight: `${availableHeight}px`,
+    })
+  }, [])
+
   useEffect(() => {
     const handlePointerDown = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      const clickedInsideContainer = containerRef.current?.contains(event.target) ?? false
+      const clickedInsideAccountsMenu = accountsMenuRef.current?.contains(event.target) ?? false
+
+      if (!clickedInsideContainer && !clickedInsideAccountsMenu) {
         setOpen(false)
         setAccountsOpen(false)
         setSwitchError('')
+        setAccountsMenuPosition(null)
       }
     }
 
@@ -142,6 +192,7 @@ export default function SidebarAccountMenu({
         setOpen(false)
         setAccountsOpen(false)
         setSwitchError('')
+        setAccountsMenuPosition(null)
       }
     }
 
@@ -170,6 +221,22 @@ export default function SidebarAccountMenu({
     }
   }, [collapsed, open, updateCollapsedMenuPosition])
 
+  useLayoutEffect(() => {
+    if (!open || !accountsOpen) return
+
+    updateAccountsMenuPosition()
+
+    const handleViewportChange = () => updateAccountsMenuPosition()
+
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('scroll', handleViewportChange, true)
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('scroll', handleViewportChange, true)
+    }
+  }, [accountsOpen, open, orderedAccounts.length, switchError, updateAccountsMenuPosition])
+
   const handleToggle = () => {
     setOpen((currentOpen) => {
       const nextOpen = !currentOpen
@@ -180,6 +247,7 @@ export default function SidebarAccountMenu({
 
       if (!nextOpen) {
         setCollapsedMenuPosition(null)
+        setAccountsMenuPosition(null)
         setAccountsOpen(false)
         setSwitchError('')
       }
@@ -225,6 +293,7 @@ export default function SidebarAccountMenu({
     setAccountsOpen(false)
     setSwitchError('')
     setCollapsedMenuPosition(null)
+    setAccountsMenuPosition(null)
     if (id === 'logout' && isAuthenticated) {
       logout({
         redirectTo: ROUTES.login,
@@ -255,6 +324,7 @@ export default function SidebarAccountMenu({
     setAccountsOpen(false)
     setSwitchError('')
     setCollapsedMenuPosition(null)
+    setAccountsMenuPosition(null)
     navigate(ROUTES.login, {
       state: buildAuthRedirectState(location, {
         authMode: 'add-account',
@@ -263,7 +333,13 @@ export default function SidebarAccountMenu({
   }
 
   const handleAccountsToggle = () => {
-    setAccountsOpen((currentOpen) => !currentOpen)
+    setAccountsOpen((currentOpen) => {
+      const nextOpen = !currentOpen
+      if (!nextOpen) {
+        setAccountsMenuPosition(null)
+      }
+      return nextOpen
+    })
     setSwitchError('')
   }
 
@@ -281,6 +357,7 @@ export default function SidebarAccountMenu({
       setOpen(false)
       setAccountsOpen(false)
       setCollapsedMenuPosition(null)
+      setAccountsMenuPosition(null)
       navigate(resolveAccountHomeRoute(nextSession?.user?.id ?? accountId))
     } catch (error) {
       setSwitchError(error?.message ?? 'Nao foi possivel trocar de conta.')
@@ -317,6 +394,7 @@ export default function SidebarAccountMenu({
             style={collapsedMenuStyle}
           >
             <button
+              ref={accountsTriggerRef}
               type="button"
               className={[
                 menuStyles.headerButton,
@@ -371,77 +449,82 @@ export default function SidebarAccountMenu({
                 {label}
               </button>
             ))}
-
-            {accountsOpen && (
-              <div
-                id={accountsMenuIdRef.current}
-                className={menuStyles.submenu}
-                role="menu"
-                aria-label="Contas salvas"
-              >
-                <div className={menuStyles.submenuHeader}>Contas salvas</div>
-                {orderedAccounts.map((account) => {
-                  const accountInitials = account.user?.fullName
-                    ? account.user.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
-                    : 'PT'
-                  const isActive = account.accountId === activeAccountId
-                  const isBusy = switchingAccountId === account.accountId
-
-                  return (
-                    <button
-                      key={account.accountId}
-                      type="button"
-                      className={[
-                        menuStyles.accountItem,
-                        isActive ? menuStyles.accountItemActive : '',
-                        isBusy ? menuStyles.accountItemBusy : '',
-                      ].filter(Boolean).join(' ')}
-                      role="menuitemradio"
-                      aria-checked={isActive}
-                      disabled={switchingAccountId !== null}
-                      onClick={() => handleSwitchAccount(account.accountId)}
-                    >
-                      <AuthenticatedAvatar
-                        className={menuStyles.avatar}
-                        imageClassName="authenticatedAvatarImage"
-                        avatarUrl={account.user?.avatarUrl ?? null}
-                        fallback={accountInitials}
-                        title={account.user?.fullName ?? 'Conta'}
-                      />
-                      <span className={menuStyles.accountIdentity}>
-                        <span className={menuStyles.accountNameRow}>
-                          <span className={menuStyles.accountName}>{account.user?.fullName ?? 'Conta sem nome'}</span>
-                          {isActive ? <span className={menuStyles.accountBadge}>Ativa</span> : null}
-                        </span>
-                        <span className={menuStyles.accountEmail}>{account.user?.email ?? 'Sem e-mail'}</span>
-                      </span>
-                    </button>
-                  )
-                })}
-
-                <div className={menuStyles.divider} />
-
-                <button
-                  type="button"
-                  className={menuStyles.item}
-                  role="menuitem"
-                  disabled={switchingAccountId !== null}
-                  onClick={handleOpenAddAccount}
-                >
-                  <span className={menuStyles.icon}><AddUserIcon /></span>
-                  Adicionar conta
-                </button>
-
-                {switchError ? (
-                  <div className={menuStyles.submenuError} role="status">
-                    {switchError}
-                  </div>
-                ) : null}
-              </div>
-            )}
           </div>
         )}
       </SidebarUserCard>
+
+      {open && accountsOpen && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={accountsMenuRef}
+              id={accountsMenuIdRef.current}
+              className={menuStyles.submenu}
+              role="menu"
+              aria-label="Contas salvas"
+              style={accountsMenuPosition ?? undefined}
+            >
+              <div className={menuStyles.submenuHeader}>Contas salvas</div>
+              {orderedAccounts.map((account) => {
+                const accountInitials = account.user?.fullName
+                  ? account.user.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+                  : 'PT'
+                const isActive = account.accountId === activeAccountId
+                const isBusy = switchingAccountId === account.accountId
+
+                return (
+                  <button
+                    key={account.accountId}
+                    type="button"
+                    className={[
+                      menuStyles.accountItem,
+                      isActive ? menuStyles.accountItemActive : '',
+                      isBusy ? menuStyles.accountItemBusy : '',
+                    ].filter(Boolean).join(' ')}
+                    role="menuitemradio"
+                    aria-checked={isActive}
+                    disabled={switchingAccountId !== null}
+                    onClick={() => handleSwitchAccount(account.accountId)}
+                  >
+                    <AuthenticatedAvatar
+                      className={menuStyles.avatar}
+                      imageClassName="authenticatedAvatarImage"
+                      avatarUrl={account.user?.avatarUrl ?? null}
+                      fallback={accountInitials}
+                      title={account.user?.fullName ?? 'Conta'}
+                    />
+                    <span className={menuStyles.accountIdentity}>
+                      <span className={menuStyles.accountNameRow}>
+                        <span className={menuStyles.accountName}>{account.user?.fullName ?? 'Conta sem nome'}</span>
+                        {isActive ? <span className={menuStyles.accountBadge}>Ativa</span> : null}
+                      </span>
+                      <span className={menuStyles.accountEmail}>{account.user?.email ?? 'Sem e-mail'}</span>
+                    </span>
+                  </button>
+                )
+              })}
+
+              <div className={menuStyles.divider} />
+
+              <button
+                type="button"
+                className={menuStyles.item}
+                role="menuitem"
+                disabled={switchingAccountId !== null}
+                onClick={handleOpenAddAccount}
+              >
+                <span className={menuStyles.icon}><AddUserIcon /></span>
+                Adicionar conta
+              </button>
+
+              {switchError ? (
+                <div className={menuStyles.submenuError} role="status">
+                  {switchError}
+                </div>
+              ) : null}
+            </div>,
+            portalRoot,
+          )
+        : null}
     </div>
   )
 }
