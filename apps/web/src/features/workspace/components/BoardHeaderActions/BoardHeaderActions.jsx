@@ -4,65 +4,52 @@ export default function BoardHeaderActions({
   members,
   icons,
   styles,
-  onAddMember,
   onOpenMembers,
   membersButtonRef,
   membersLoading = false,
   membersPlaceholderCount = 0,
+  onAutomate,
   onFilter,
+  onFavorite,
   onShare,
-  notifications = null,
 }) {
   return (
     <div className={styles.boardHeaderActions}>
-      <div className={styles.boardHeaderIdentityRow}>
-        <MemberAvatarStack
-          members={members}
-          onAddMember={onAddMember}
-          AddIcon={icons.Plus}
-          onOpenMembers={onOpenMembers}
-          membersButtonRef={membersButtonRef}
-          MembersIcon={icons.Users}
-          membersTitle="Membros do plano"
-          isLoading={membersLoading}
-          placeholderCount={membersPlaceholderCount}
-        />
+      <MemberAvatarStack
+        members={members}
+        className={styles.boardHeaderMembersStack}
+        isLoading={membersLoading}
+        placeholderCount={membersPlaceholderCount}
+      />
 
-        <div className={styles.boardHeaderUtilityGroup}>
-          {notifications ? (
-            <div className={styles.boardHeaderUtilitySlot}>
-              {notifications}
-            </div>
-          ) : null}
-
-          <button
-            type="button"
-            className={styles.boardHeaderIconBtn}
-            onClick={onFilter}
-            aria-label="Filtrar"
-          >
-            <icons.Filter />
-          </button>
-
-          <button
-            type="button"
-            className={styles.boardHeaderIconBtn}
-            onClick={onShare}
-            aria-label="Compartilhar"
-          >
-            <icons.Share />
-          </button>
-        </div>
-      </div>
-
-      <div className={styles.boardHeaderCommandRow}>
-        <button type="button" className={styles.boardHeaderBtn} onClick={onFilter}>
-          <icons.Filter /> Filtrar
+      <div className={styles.boardHeaderActionCluster}>
+        <button type="button" className={styles.boardHeaderCompactIconButton} onClick={onAutomate} aria-label="Integrações">
+          <icons.Bolt />
         </button>
-        <button type="button" className={styles.boardHeaderBtnPrimary} onClick={onShare}>
-          <icons.Share /> Compartilhar
+        <button type="button" className={styles.boardHeaderCompactIconButton} onClick={onFavorite} aria-label="Favoritar plano">
+          <icons.Star />
+        </button>
+        <button
+          ref={membersButtonRef}
+          type="button"
+          className={styles.boardHeaderCompactIconButton}
+          onClick={onOpenMembers}
+          aria-label="Membros do plano"
+        >
+          <icons.Users />
         </button>
       </div>
+
+      <button type="button" className={styles.boardHeaderShareButton} onClick={onShare}>
+        <span className={styles.boardHeaderShareIcon} aria-hidden="true">
+          <icons.UserPlus />
+        </span>
+        <span className={styles.boardHeaderShareLabel}>Compartilhar</span>
+      </button>
+
+      <button type="button" className={styles.boardHeaderCompactIconButton} onClick={onFilter} aria-label="Configurações do quadro">
+        <icons.More />
+      </button>
     </div>
   )
 }

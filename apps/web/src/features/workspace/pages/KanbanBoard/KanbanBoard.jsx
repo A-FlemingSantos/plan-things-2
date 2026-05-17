@@ -12,7 +12,6 @@ import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvat
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeaderActions from '../../components/BoardHeaderActions/BoardHeaderActions.jsx'
-import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
 import KanbanColumn from '../../components/KanbanColumn/KanbanColumn.jsx'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { usePlans } from '../../context/PlansContext.jsx'
@@ -43,7 +42,7 @@ const Icon = {
   Users:    () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" stroke="currentColor" strokeWidth="1.3"/><path d="M1.5 14c0-2.4 2-4.3 4.5-4.3S10.5 11.6 10.5 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11.2 7.6a2.4 2.4 0 1 0 0-4.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11 9.9c1.9.3 3.5 1.9 3.5 4.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   X:        () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   Collapse: () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  More:     () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="3" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="11" r="1" fill="currentColor"/></svg>,
+  More:     () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="11" cy="7" r="1" fill="currentColor"/></svg>,
   Check:    () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l2.5 2.5 5.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Edit:     () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Trash:    () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.8 8h6.4L11 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -64,6 +63,9 @@ const Icon = {
   Priority: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v6M7 10.5v1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   List:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M5 5h8M5 10.5h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="2.5" cy="5" r=".9" fill="currentColor"/><circle cx="2.5" cy="10.5" r=".9" fill="currentColor"/></svg>,
   Link:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.4 9.6L9.6 6.4M6 11.5H4.8A2.8 2.8 0 1 1 4.8 5.9H6M10 4.5h1.2a2.8 2.8 0 1 1 0 5.6H10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Plug:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M6 2.5v3M10 2.5v3M5.2 5.5h5.6v1.8a2.8 2.8 0 0 1-2.8 2.8h-.2a2.8 2.8 0 0 1-2.8-2.8V5.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 10.1v3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  Bolt:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9.1 1.8L4.8 8h2.9L6.9 14.2 11.2 8H8.3l.8-6.2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  UserPlus: () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.2" cy="5.4" r="2.3" stroke="currentColor" strokeWidth="1.3"/><path d="M2.4 12.4c0-2 1.8-3.6 3.8-3.6 2.1 0 3.9 1.6 3.9 3.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11.7 4.2v4M9.7 6.2h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Image:    () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4.5 10l2.1-2.2a.8.8 0 0 1 1.2 0l1.7 1.8 1.3-1.3a.8.8 0 0 1 1.1 0L13.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="6" r="1" fill="currentColor"/></svg>,
   Code:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 5L3 8l3 3M10 5l3 3-3 3M8.8 3.5L7.2 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Star:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2.2l1.7 3.5 3.9.6-2.8 2.7.7 3.9L8 11.1 4.5 12.9l.7-3.9L2.4 6.3l3.9-.6L8 2.2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
@@ -2483,20 +2485,21 @@ export default function KanbanBoard() {
             <BoardHeaderActions
               members={planMembers}
               icons={{
-                Plus: Icon.Plus,
+                Bolt: Icon.Bolt,
                 Users: Icon.Users,
-                Filter: Icon.Filter,
-                Share: Icon.Share,
+                Star: Icon.Star,
+                UserPlus: Icon.UserPlus,
+                More: Icon.More,
               }}
               styles={styles}
-              onAddMember={openInviteModal}
               onOpenMembers={toggleMembersPanel}
               membersButtonRef={membersButtonRef}
               membersLoading={isPlanMembersLoading}
               membersPlaceholderCount={membersPlaceholderCount}
-              onFilter={() => showNotification('Filtros avançados em breve')}
-              onShare={() => showNotification('Link do quadro copiado')}
-              notifications={<InviteNotifications />}
+              onAutomate={() => showNotification('Integrações em breve')}
+              onFilter={() => showNotification('Opções do quadro em breve')}
+              onFavorite={() => showNotification('Favoritos em breve')}
+              onShare={openInviteModal}
             />
           )}
         />

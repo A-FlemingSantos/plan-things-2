@@ -377,121 +377,100 @@
 .boardHeaderActions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+  margin-left: auto;
 }
 
-.boardHeaderIdentityRow,
-.boardHeaderCommandRow {
+.boardHeaderMembersStack {
+  flex-shrink: 0;
+}
+
+.boardHeaderActionCluster {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 2px;
+  padding: 0;
 }
 
-.boardHeaderUtilitySlot {
-  display: flex;
-  align-items: center;
-}
-
-.boardHeaderUtilityGroup {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.boardMembers { display: flex; align-items: center; }
-
-.boardMemberAvatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--surface-1);
-  color: var(--text-on-accent);
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: .02em;
-  cursor: pointer;
-  transition: transform var(--transition-fast);
-  overflow: hidden;
-}
-.boardMemberAvatar:not(:first-child) { margin-left: -7px; }
-.boardMemberAvatar:hover { transform: translateY(-2px); z-index: 1; }
-
-.boardMemberAdd {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1.5px dashed var(--border-2);
-  background: var(--surface-2);
-  color: var(--text-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  margin-left: -7px;
-  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
-}
-.boardMemberAdd:hover { border-color: var(--text-1); color: var(--text-1); background: var(--hover); }
-
-.boardHeaderDivider {
-  width: 1px;
-  height: 20px;
-  background: var(--border-1);
-}
-
-.boardHeaderBtn {
+.boardHeaderCompactIconButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
-  font-family: var(--font-family);
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  color: var(--text-2);
-  background: var(--surface-2);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
+  justify-content: center;
+  color: var(--text-1);
   cursor: pointer;
-  transition: border-color var(--transition-fast), color var(--transition-fast);
+  transition: background var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
 }
-.boardHeaderBtn:hover { border-color: var(--border-2); color: var(--text-1); }
 
-.boardHeaderBtnPrimary {
+.boardHeaderCompactIconButton:hover {
+  background: var(--hover);
+  transform: translateY(-1px);
+}
+
+.boardHeaderShareButton {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
+  justify-content: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px 0 11px;
   font-family: var(--font-family);
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  background: var(--text-1);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
   color: var(--text-inverse);
-  border-radius: var(--radius-md);
+  background: var(--text-1);
+  border: 1px solid var(--text-1);
+  border-radius: 8px;
   cursor: pointer;
-  transition: opacity var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
 }
-.boardHeaderBtnPrimary:hover { opacity: .82; }
 
-.boardHeaderIconBtn {
-  display: none;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  color: var(--text-2);
+.boardHeaderShareButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.boardHeaderShareIcon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+  flex-shrink: 0;
 }
-.boardHeaderIconBtn:hover { border-color: var(--border-2); color: var(--text-1); background: var(--hover); }
+
+.boardHeaderShareIcon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.boardHeaderShareLabel {
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .boardAccentScope .boardHeaderShareButton {
+  background: color-mix(in srgb, var(--color-white) 90%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--color-white) 72%, transparent);
+  color: var(--text-inverse);
+}
+
+[data-theme='dark'] .boardAccentScope .boardHeaderShareButton:hover {
+  background: color-mix(in srgb, var(--color-white) 94%, var(--surface-1));
+}
 
 /* ── Members panel (collapsible) ── */
 .planMembersPanel {
@@ -5337,21 +5316,18 @@
   }
   .boardHeaderActions {
     width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .boardHeaderIdentityRow {
-    justify-content: space-between;
-    width: 100%;
-  }
-  .boardHeaderUtilityGroup {
-    margin-left: auto;
+    justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
-    flex-shrink: 0;
   }
-  .boardHeaderCommandRow {
-    display: none;
+  .boardHeaderActionCluster {
+    order: 2;
+  }
+  .boardHeaderShareButton {
+    order: 3;
+  }
+  .boardHeaderMembersStack {
+    order: 1;
   }
   .boardTitleRow {
     flex-wrap: wrap;
@@ -5364,9 +5340,6 @@
   .boardCardBadge {
     font-size: 10px;
     padding: 2px 7px;
-  }
-  .boardHeaderIconBtn {
-    display: inline-flex;
   }
   .board  { padding: 14px 14px 92px; gap: 8px; }
   .boardViewToolbar {
@@ -5493,13 +5466,21 @@
     padding: 12px;
     gap: 14px;
   }
-  .boardHeaderDivider { display: none; }
-  .boardHeaderIdentityRow {
-    gap: 8px;
+  .boardHeaderActions {
+    gap: 6px;
   }
-  .boardHeaderIconBtn {
-    height: 34px;
-    width: 34px;
+  .boardHeaderActionCluster {
+    width: 100%;
+    justify-content: space-between;
+    padding: 2px 4px;
+  }
+  .boardHeaderCompactIconButton {
+    width: 30px;
+    height: 30px;
+  }
+  .boardHeaderShareButton {
+    flex: 1 1 auto;
+    justify-content: center;
   }
   .boardTitle {
     font-size: 16px;
