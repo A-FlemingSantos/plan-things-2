@@ -317,6 +317,25 @@ describe('SidebarAccountMenu', () => {
     })
   })
 
+  it('does not trigger a switch when selecting the already active account', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <SidebarAccountMenu styles={styles} />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: /arthur santos/i }))
+    await user.hover(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(await screen.findByRole('menuitemradio', { name: /arthur santos/i }))
+
+    expect(authState.switchAccount).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.queryByRole('menu', { name: 'Contas salvas' })).not.toBeInTheDocument()
+    })
+  })
+
   it('opens the accounts submenu on click when hover is not used', async () => {
     const user = userEvent.setup()
 

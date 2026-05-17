@@ -15,6 +15,7 @@ import {
 } from './authSessionPolicy.js'
 
 const SESSION_STORAGE_KEY = 'plan-things.session'
+const WEB_ACCOUNT_STORE_VERSION = 2
 const AuthContext = createContext(null)
 
 function withInitials(user = {}) {
@@ -39,15 +40,35 @@ function normalizeSession(session) {
   }
 }
 
+function getSessionAccountId(session) {
+  if (!session?.user?.id) return null
+  return String(session.user.id)
+}
+
+function selectStoredSession(value) {
+  if (
+    value?.version === WEB_ACCOUNT_STORE_VERSION
+    && Array.isArray(value.accounts)
+  ) {
+    const accounts = value.accounts.filter((account) => getSessionAccountId(account))
+    const activeAccountId = value.activeAccountId ? String(value.activeAccountId) : null
+    return accounts.find((account) => getSessionAccountId(account) === activeAccountId)
+      ?? accounts[0]
+      ?? null
+  }
+
+  return value
+}
+
 async function readStoredSession() {
   try {
     if (Platform.OS === 'web') {
       const rawValue = window.localStorage.getItem(SESSION_STORAGE_KEY)
-      return rawValue ? JSON.parse(rawValue) : null
+      return rawValue ? selectStoredSession(JSON.parse(rawValue)) : null
     }
 
     const rawValue = await SecureStore.getItemAsync(SESSION_STORAGE_KEY)
-    return rawValue ? JSON.parse(rawValue) : null
+    return rawValue ? selectStoredSession(JSON.parse(rawValue)) : null
   } catch {
     return null
   }

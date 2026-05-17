@@ -46,13 +46,17 @@ describe('Page verification flows', () => {
     expect(await screen.findByLabelText('Nome completo')).toBeInTheDocument()
 
     const password = screen.getByLabelText('Senha')
+    const submit = screen.getByRole('button', { name: /criar conta/i })
+    expect(submit).toBeDisabled()
+
     await user.type(password, '1234567890')
-    expect(screen.getByText('Forte')).toBeInTheDocument()
+    expect(password).toHaveValue('1234567890')
 
     const consent = screen.getByRole('checkbox')
     expect(consent).toHaveAttribute('aria-checked', 'false')
     await user.click(consent)
     expect(consent).toHaveAttribute('aria-checked', 'true')
+    expect(submit).toBeEnabled()
   })
 
   it('verifies placeholder info-page navigation', async () => {

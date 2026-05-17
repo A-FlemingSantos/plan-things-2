@@ -223,6 +223,44 @@ describe('AuthProvider', () => {
     expect(result.current.activeAccountId).toBe('user-1')
   })
 
+  it('queues a home redirect when the active account expires and a saved account becomes active', async () => {
+    const expiresLater = Date.now() + (60 * 60 * 1000)
+    const activeSession = createSession({
+      token: createAccessToken(expiresLater),
+      userId: 'user-1',
+      fullName: 'Arthur Santos',
+      email: 'arthur@example.com',
+    })
+    const secondarySession = createSession({
+      token: createAccessToken(expiresLater + (60 * 1000)),
+      userId: 'user-2',
+      fullName: 'Bruna Costa',
+      email: 'bruna@example.com',
+    })
+
+    window.localStorage.setItem('plan-things.session', JSON.stringify(
+      createStoredAccountStore([activeSession, secondarySession], 'user-1'),
+    ))
+
+    apiMock.apiRequest.mockRejectedValueOnce(new ApiClientError('expired', {
+      status: 401,
+    }))
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true)
+    })
+
+    expect(result.current.activeAccountId).toBe('user-2')
+    expect(result.current.currentUser?.fullName).toBe('Bruna Costa')
+    expect(result.current.savedAccounts.map((account) => account.accountId)).toEqual(['user-2'])
+    expect(result.current.pendingAccountRedirect).toEqual({
+      accountId: 'user-2',
+      replace: true,
+    })
+  })
+
   it('exposes anonymous mode when no session is stored', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
 

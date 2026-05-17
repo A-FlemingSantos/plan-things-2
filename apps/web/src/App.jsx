@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from './features/auth/context/AuthContext.jsx'
-import { buildAuthRedirectState } from './features/auth/utils/authRedirect.js'
+import { buildAuthRedirectState, resolveAccountHomeRoute } from './features/auth/utils/authRedirect.js'
 import { readSessionModeFromAuthState } from './features/auth/utils/sessionMode.js'
 import { usePreferences } from './features/preferences/context/PreferencesContext.jsx'
 import Auth from './features/auth/pages/Auth/Auth.jsx'
@@ -87,10 +87,15 @@ export default function App() {
   const isReady = auth.isReady
   const pendingLogoutRedirect = auth.pendingLogoutRedirect ?? null
   const clearPendingLogoutRedirect = auth.clearPendingLogoutRedirect ?? (() => {})
+  const pendingAccountRedirect = auth.pendingAccountRedirect ?? null
+  const clearPendingAccountRedirect = auth.clearPendingAccountRedirect ?? (() => {})
   const { resolveInitialRoute } = usePreferences()
   const location = useLocation()
   const sessionMode = readSessionModeFromAuthState(auth)
   const normalizedPathname = normalizePathname(location.pathname)
+  const pendingAccountRedirectTo = pendingAccountRedirect?.accountId
+    ? resolveAccountHomeRoute(pendingAccountRedirect.accountId)
+    : null
   const callbackBackgroundLocation = normalizePathname(location.pathname) === ROUTES.settings
     ? toRouteLocation(new URLSearchParams(location.search).get('background'))
     : null
@@ -130,6 +135,22 @@ export default function App() {
     }
   }, [clearPendingLogoutRedirect, normalizedPathname, pendingLogoutRedirect, sessionMode])
 
+  useEffect(() => {
+    if (!pendingAccountRedirectTo) {
+      return
+    }
+
+    if (sessionMode === 'anonymous') {
+      clearPendingAccountRedirect()
+      return
+    }
+
+    const targetPathname = normalizePathname(new URL(pendingAccountRedirectTo, 'https://planthings.local').pathname)
+    if (normalizedPathname === targetPathname) {
+      clearPendingAccountRedirect()
+    }
+  }, [clearPendingAccountRedirect, normalizedPathname, pendingAccountRedirectTo, sessionMode])
+
   if (!isReady || sessionMode === 'boot') {
     return <AppBootstrapScreen />
   }
@@ -138,6 +159,13 @@ export default function App() {
     const targetPathname = normalizePathname(new URL(pendingLogoutRedirect.to, 'https://planthings.local').pathname)
     if (normalizedPathname !== targetPathname) {
       return <Navigate to={pendingLogoutRedirect.to} replace={pendingLogoutRedirect.replace} />
+    }
+  }
+
+  if (pendingAccountRedirectTo && sessionMode !== 'anonymous') {
+    const targetPathname = normalizePathname(new URL(pendingAccountRedirectTo, 'https://planthings.local').pathname)
+    if (normalizedPathname !== targetPathname) {
+      return <Navigate to={pendingAccountRedirectTo} replace={pendingAccountRedirect.replace !== false} />
     }
   }
 

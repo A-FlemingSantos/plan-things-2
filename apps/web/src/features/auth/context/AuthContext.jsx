@@ -285,6 +285,7 @@ export function AuthProvider({ children }) {
   const [accountStore, setAccountStore] = useState(() => readAccountStore())
   const [isReady, setIsReady] = useState(false)
   const [pendingLogoutRedirect, setPendingLogoutRedirect] = useState(null)
+  const [pendingAccountRedirect, setPendingAccountRedirect] = useState(null)
   const accountStoreRef = useRef(accountStore)
 
   const saveAccountStore = useCallback((nextStore) => {
@@ -302,6 +303,30 @@ export function AuthProvider({ children }) {
     setPendingLogoutRedirect(null)
   }, [])
 
+  const clearPendingAccountRedirect = useCallback(() => {
+    setPendingAccountRedirect(null)
+  }, [])
+
+  const saveAccountStoreAfterAccountRemoval = useCallback((store, removedAccountId) => {
+    const previousStore = normalizeAccountStore(store)
+    const targetAccountId = removedAccountId ? String(removedAccountId) : null
+    const savedStore = saveAccountStore(removeStoredAccount(previousStore, targetAccountId))
+
+    if (
+      targetAccountId
+      && previousStore.activeAccountId === targetAccountId
+      && savedStore.activeAccountId
+      && savedStore.activeAccountId !== targetAccountId
+    ) {
+      setPendingAccountRedirect({
+        accountId: savedStore.activeAccountId,
+        replace: true,
+      })
+    }
+
+    return savedStore
+  }, [saveAccountStore])
+
   const saveAuthenticatedSession = useCallback((nextSession, options = {}) => {
     const mode = options.mode === ADD_ACCOUNT_AUTH_MODE ? ADD_ACCOUNT_AUTH_MODE : DEFAULT_AUTH_MODE
     const normalizedSession = normalizeSession(nextSession)
@@ -313,6 +338,7 @@ export function AuthProvider({ children }) {
     if (mode === ADD_ACCOUNT_AUTH_MODE) {
       const mergedStore = upsertStoredAccount(accountStoreRef.current, normalizedSession)
       saveAccountStore(activateStoredAccount(mergedStore, getAccountId(normalizedSession)))
+      clearPendingAccountRedirect()
       return normalizedSession
     }
 
@@ -321,8 +347,9 @@ export function AuthProvider({ children }) {
       activeAccountId: getAccountId(normalizedSession),
       accounts: [normalizedSession],
     })
+    clearPendingAccountRedirect()
     return normalizedSession
-  }, [saveAccountStore])
+  }, [clearPendingAccountRedirect, saveAccountStore])
 
   useEffect(() => {
     accountStoreRef.current = accountStore
@@ -366,7 +393,7 @@ export function AuthProvider({ children }) {
         if (!active) return
 
         if (shouldClearSessionAfterRefreshFailure(error, storedSession.accessToken)) {
-          saveAccountStore(removeStoredAccount(storedStore, storedSession.user.id))
+          saveAccountStoreAfterAccountRemoval(storedStore, storedSession.user.id)
         } else {
           saveAccountStore(storedStore)
         }
@@ -382,7 +409,7 @@ export function AuthProvider({ children }) {
     return () => {
       active = false
     }
-  }, [saveAccountStore])
+  }, [saveAccountStore, saveAccountStoreAfterAccountRemoval])
 
   useEffect(() => {
     if (!session?.accessToken || session.demo) {
@@ -429,7 +456,7 @@ export function AuthProvider({ children }) {
         if (!active) return
 
         if (shouldClearSessionAfterRefreshFailure(error, accessToken)) {
-          saveAccountStore(removeStoredAccount(accountStoreRef.current, accountId))
+          saveAccountStoreAfterAccountRemoval(accountStoreRef.current, accountId)
           return
         }
 
@@ -448,7 +475,7 @@ export function AuthProvider({ children }) {
       active = false
       clearRefreshTimer()
     }
-  }, [saveAccountStore, session?.accessToken, session?.demo, session?.user?.id])
+  }, [saveAccountStore, saveAccountStoreAfterAccountRemoval, session?.accessToken, session?.demo, session?.user?.id])
 
   const patchSession = useCallback(({ user, workspace } = {}) => {
     if (!session) return null
@@ -667,8 +694,11 @@ export function AuthProvider({ children }) {
     logout,
     pendingLogoutRedirect,
     clearPendingLogoutRedirect,
+    pendingAccountRedirect,
+    clearPendingAccountRedirect,
   }), [
     accountStore.activeAccountId,
+    clearPendingAccountRedirect,
     clearPendingLogoutRedirect,
     completeOAuthLogin,
     forgotPassword,
@@ -676,6 +706,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     patchSession,
+    pendingAccountRedirect,
     pendingLogoutRedirect,
     register,
     resetPassword,

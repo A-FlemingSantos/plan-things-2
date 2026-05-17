@@ -103,6 +103,51 @@ describe('mobile auth provider parity', () => {
     })
   })
 
+  it('reads the active session from the web versioned account store', async () => {
+    const expiresLater = Date.now() + (60 * 60 * 1000)
+    const primaryToken = createAccessToken(expiresLater)
+    const secondaryToken = createAccessToken(expiresLater + (60 * 1000))
+
+    window.localStorage.setItem('plan-things.session', JSON.stringify({
+      version: 2,
+      activeAccountId: 'user-2',
+      accounts: [
+        {
+          accessToken: primaryToken,
+          user: { id: 'user-1', fullName: 'Arthur Santos' },
+          workspace: { id: 'workspace-1', name: 'Workspace Arthur' },
+          demo: false,
+        },
+        {
+          accessToken: secondaryToken,
+          user: { id: 'user-2', fullName: 'Bruna Costa' },
+          workspace: { id: 'workspace-2', name: 'Workspace Bruna' },
+          demo: false,
+        },
+      ],
+    }))
+
+    mobileApiMock.mobileApiRequest.mockResolvedValueOnce({
+      accessToken: secondaryToken,
+      user: { id: 'user-2', fullName: 'Bruna Costa' },
+      workspace: { id: 'workspace-2', name: 'Workspace Bruna' },
+    })
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true)
+    })
+
+    expect(mobileApiMock.mobileApiRequest).toHaveBeenCalledWith('/api/auth/refresh', {
+      method: 'POST',
+      token: secondaryToken,
+    })
+    expect(result.current.sessionMode).toBe('authenticated')
+    expect(result.current.currentUser?.fullName).toBe('Bruna Costa')
+    expect(result.current.workspace?.name).toBe('Workspace Bruna')
+  })
+
   it('renews the token before expiration', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-05-09T12:00:00.000Z'))

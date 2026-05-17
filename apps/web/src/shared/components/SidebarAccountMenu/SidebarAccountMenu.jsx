@@ -327,6 +327,7 @@ export default function SidebarAccountMenu({
     setMenuPosition(null)
     setAccountsMenuPosition(null)
     navigate(ROUTES.login, {
+      replace: true,
       state: buildAuthRedirectState(location, {
         authMode: 'add-account',
       }, {
@@ -352,16 +353,27 @@ export default function SidebarAccountMenu({
   }
 
   const handleSwitchAccount = async (accountId) => {
-    setSwitchingAccountId(accountId)
-    setSwitchError('')
+    const targetAccountId = accountId ? String(accountId) : null
 
-    try {
-      const nextSession = await switchAccount(accountId)
+    if (targetAccountId && targetAccountId === activeAccountId) {
       setOpen(false)
       setAccountsOpen(false)
       setMenuPosition(null)
       setAccountsMenuPosition(null)
-      navigate(resolveAccountHomeRoute(nextSession?.user?.id ?? accountId))
+      setSwitchError('')
+      return
+    }
+
+    setSwitchingAccountId(targetAccountId)
+    setSwitchError('')
+
+    try {
+      const nextSession = await switchAccount(targetAccountId)
+      setOpen(false)
+      setAccountsOpen(false)
+      setMenuPosition(null)
+      setAccountsMenuPosition(null)
+      navigate(resolveAccountHomeRoute(nextSession?.user?.id ?? targetAccountId), { replace: true })
     } catch (error) {
       setSwitchError(error?.message ?? 'Nao foi possivel trocar de conta.')
     } finally {

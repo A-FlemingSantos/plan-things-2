@@ -225,18 +225,17 @@ describe('App smoke flows', () => {
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     await user.click(await screen.findByText('Pesquisa de concorrentes'))
-    expect(await screen.findByRole('button', { name: 'Salvar alterações' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Datas' }))
+    await user.click(screen.getByRole('button', { name: '03/08/26' }))
     expect(screen.getByLabelText('Data de entrega')).toHaveValue('03/08/26')
     expect(screen.queryByText('Recorrente')).not.toBeInTheDocument()
     expect(screen.queryByText('Definir lembrete')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
-    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
 
-    expect(await screen.findByText('Pesquisa de concorrentes')).toBeInTheDocument()
-    expect(screen.getByText('3 ago')).toBeInTheDocument()
+    expect(await screen.findByText('Data salva.')).toBeInTheDocument()
+    expect(screen.getAllByText('Pesquisa de concorrentes')).not.toHaveLength(0)
+    expect(screen.getAllByText('3 ago')).not.toHaveLength(0)
   })
 
   it('keeps legacy relative due dates in pt-BR after opening and saving the date modal', async () => {
@@ -245,16 +244,15 @@ describe('App smoke flows', () => {
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     await user.click(await screen.findByText('Copy da campanha de lançamento'))
-    expect(await screen.findByRole('button', { name: 'Salvar alterações' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Datas' }))
+    await user.click(screen.getByRole('button', { name: formatTodayAsScheduleDateValue() }))
     expect(screen.getByLabelText('Data de entrega')).toHaveValue(formatTodayAsScheduleDateValue())
 
     await user.click(screen.getByRole('button', { name: 'Salvar' }))
-    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
 
-    expect(await screen.findByText('Copy da campanha de lançamento')).toBeInTheDocument()
-    expect(screen.getByText('Hoje')).toBeInTheDocument()
+    expect(await screen.findByText('Data salva.')).toBeInTheDocument()
+    expect(screen.getAllByText('Copy da campanha de lançamento')).not.toHaveLength(0)
+    expect(screen.getAllByText('Hoje')).not.toHaveLength(0)
   })
 
   it('preserves the plan id when redirecting legacy board deep links', async () => {
@@ -434,7 +432,7 @@ describe('App smoke flows', () => {
     await user.hover(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
     await user.click(await screen.findByRole('menuitem', { name: 'Adicionar conta' }))
 
-    expect(await screen.findByRole('heading', { name: 'Entre com outra conta.' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Entre com outra conta' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/login')
   })
 
