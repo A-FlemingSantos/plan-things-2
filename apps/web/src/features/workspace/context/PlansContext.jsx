@@ -316,7 +316,7 @@ export function PlansProvider({ children }) {
 
     const currentPlan = plansByIdRef.current.get(planId)
     if (!currentPlan) return null
-    if (currentPlan.membersMeta?.length || currentPlan.labelsMeta?.length) {
+    if (currentPlan.detailsLoaded) {
       return currentPlan
     }
 
@@ -324,11 +324,11 @@ export function PlansProvider({ children }) {
       token: accessToken,
     })
 
-    let mergedPlan = null
+    const latestPlan = plansByIdRef.current.get(planId) ?? currentPlan
+    const mergedPlan = mergePlanDetails(latestPlan, details)
     setPlans((prev) => prev.map((plan) => {
       if (plan.id !== planId) return plan
-      mergedPlan = mergePlanDetails(plan, details)
-      return mergedPlan
+      return mergePlanDetails(plan, details)
     }))
     return mergedPlan
   }, [accessToken, backendEnabled])
@@ -349,11 +349,11 @@ export function PlansProvider({ children }) {
       token: accessToken,
     })
 
-    let mergedPlan = null
+    const latestPlan = plansByIdRef.current.get(planId) ?? currentPlan
+    const mergedPlan = mergePlanDetails(latestPlan, details)
     setPlans((prev) => prev.map((plan) => {
       if (plan.id !== planId) return plan
-      mergedPlan = mergePlanDetails(plan, details)
-      return mergedPlan
+      return mergePlanDetails(plan, details)
     }))
     return mergedPlan
   }, [accessToken, backendEnabled])

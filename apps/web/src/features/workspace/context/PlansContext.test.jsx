@@ -143,6 +143,109 @@ describe('PlansProvider', () => {
     expect(result.current.plans[0].name).toBe('Plano backend')
   })
 
+  it('fetches members when board labels were loaded before plan details', async () => {
+    const planId = '11111111-1111-4111-8111-111111111111'
+    authState.current = {
+      accessToken: 'real-token',
+      currentUser: {
+        id: 'user-1',
+        fullName: 'Arthur Santos',
+      },
+      workspace: {
+        id: 'workspace-1',
+        name: 'Workspace real',
+      },
+      isAuthenticated: true,
+      isDemoSession: false,
+      isReady: true,
+      sessionMode: 'authenticated',
+    }
+
+    apiMock.apiRequest.mockResolvedValueOnce([
+      {
+        id: planId,
+        name: 'Plano compartilhado',
+        description: 'Sincronizado da API',
+        role: 'OWNER',
+        memberCount: 2,
+        taskCount: 5,
+        createdAt: { iso: '2026-05-09T12:00:00.000Z' },
+        updatedAt: { iso: '2026-05-09T12:00:00.000Z' },
+      },
+    ])
+
+    const { result } = renderHook(() => usePlans(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    await act(async () => {
+      result.current.applyBoardView(planId, {
+        columns: [],
+        labels: [
+          {
+            id: 'label-1',
+            name: 'Urgente',
+            color: '#ff6766',
+          },
+        ],
+        inboxItems: [],
+      })
+    })
+
+    expect(result.current.activePlan.labelsMeta).toHaveLength(1)
+    expect(result.current.activePlan.membersMeta).toEqual([])
+
+    apiMock.apiRequest.mockResolvedValueOnce({
+      plan: {
+        id: planId,
+        name: 'Plano compartilhado',
+        description: 'Sincronizado da API',
+        role: 'OWNER',
+        memberCount: 2,
+        taskCount: 5,
+        createdAt: { iso: '2026-05-09T12:00:00.000Z' },
+        updatedAt: { iso: '2026-05-09T12:00:00.000Z' },
+      },
+      members: [
+        {
+          userId: 'user-1',
+          fullName: 'Arthur Santos',
+          email: 'arthur@example.com',
+          role: 'OWNER',
+        },
+        {
+          userId: 'user-2',
+          fullName: 'Bruna Lima',
+          email: 'bruna@example.com',
+          role: 'MEMBER',
+        },
+      ],
+      labels: [
+        {
+          id: 'label-1',
+          name: 'Urgente',
+          color: '#ff6766',
+        },
+      ],
+    })
+
+    let loadedPlan = null
+    await act(async () => {
+      loadedPlan = await result.current.ensurePlanDetails(planId)
+    })
+
+    expect(apiMock.apiRequest).toHaveBeenLastCalledWith(`/api/plans/${planId}`, {
+      token: 'real-token',
+    })
+    expect(loadedPlan.membersMeta.map((member) => member.email)).toEqual([
+      'arthur@example.com',
+      'bruna@example.com',
+    ])
+    expect(result.current.activePlan.detailsLoaded).toBe(true)
+  })
+
   it('updates board columns without renormalizing every card in the plan', async () => {
     authState.current = {
       accessToken: 'real-token',

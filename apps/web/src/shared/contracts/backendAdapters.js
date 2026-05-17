@@ -373,6 +373,7 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     updatedAt: summary.updatedAt,
     labelsMeta: [],
     membersMeta: [],
+    detailsLoaded: false,
     boardLoaded: false,
   })
 }
@@ -410,6 +411,7 @@ export function mergePlanDetails(plan, details) {
     members: membersMeta.map((member) => member.color),
     membersMeta,
     labelsMeta,
+    detailsLoaded: true,
   }
 }
 
