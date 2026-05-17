@@ -82,13 +82,18 @@ function KanbanColumn({
   }
 
   const submitRename = async () => {
-    if (renameVal.trim()) {
+    const nextTitle = renameVal.trim()
+
+    if (nextTitle) {
+      setRenameError(null)
+      setRenaming(false)
+
       try {
-        await onRenameCol(col.id, renameVal.trim())
-        setRenameError(null)
-        setRenaming(false)
+        await onRenameCol(col.id, nextTitle)
       } catch (error) {
+        setRenameVal(nextTitle)
         setRenameError(error?.message ?? 'Nao foi possivel renomear esta coluna.')
+        setRenaming(true)
         setTimeout(() => renameRef.current?.focus(), 0)
       }
       return

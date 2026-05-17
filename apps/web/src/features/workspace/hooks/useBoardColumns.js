@@ -185,6 +185,49 @@ function removeColumnFromColumns(columns, columnId) {
   return columns.filter((column) => column.id !== columnId)
 }
 
+function findColumnById(columns, columnId) {
+  if (!Array.isArray(columns) || !columnId) {
+    return null
+  }
+
+  return columns.find((column) => column.id === columnId) ?? null
+}
+
+function replaceColumnById(columns, columnId, nextColumn) {
+  if (!Array.isArray(columns) || !columnId || !nextColumn) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    if (column.id !== columnId) {
+      return column
+    }
+
+    const normalizedColumn = nextColumn.id === columnId
+      ? nextColumn
+      : { ...nextColumn, cards: Array.isArray(nextColumn.cards) ? nextColumn.cards : column.cards }
+
+    const columnChanged = normalizedColumn !== column
+      && (
+        normalizedColumn.id !== column.id
+        || normalizedColumn.title !== column.title
+        || normalizedColumn.color !== column.color
+        || normalizedColumn.cards !== column.cards
+      )
+
+    if (!columnChanged) {
+      return column
+    }
+
+    hasChanges = true
+    return normalizedColumn
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
 function replaceChecklistInCard(card, nextChecklist) {
   if (!card || !nextChecklist?.id) {
     return card
@@ -261,6 +304,32 @@ function replaceChecklistByIdInColumns(columns, checklistId, nextChecklist) {
             checklists: nextChecklists,
           }
         : card
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function replaceCardByIdInColumns(columns, cardId, nextCard) {
+  if (!Array.isArray(columns) || !cardId || !nextCard?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
+      if (card.id !== cardId) {
+        return card
+      }
+
+      columnChanged = true
+      hasChanges = true
+      return nextCard
     })
 
     return columnChanged ? { ...column, cards: nextCards } : column
@@ -471,6 +540,17 @@ export function useBoardColumns({
       return true
     }
 
+    const previousColumns = columns
+    const previousColumnIds = new Set(previousColumns.map((column) => column.id))
+    const optimisticColumn = {
+      id: `temp-column-${uid()}`,
+      title: nextTitle,
+      color: '',
+      cards: [],
+    }
+
+    updateColumns((prev) => [...prev, optimisticColumn])
+
     try {
       const boardView = await apiRequest(`/api/plans/${activePlanId}/board/columns`, {
         method: 'POST',
@@ -481,12 +561,33 @@ export function useBoardColumns({
         },
       })
 
-      applyBoardView(activePlanId, boardView)
+      const persistedColumnView = Array.isArray(boardView?.columns)
+        ? (
+            boardView.columns.find((column) => !previousColumnIds.has(column.id))
+            ?? boardView.columns.find((column) => (
+              (column.title ?? '').trim() === nextTitle
+              && (column.color ?? '') === ''
+            ))
+          )
+        : null
+
+      if (persistedColumnView?.id) {
+        updateColumns((prev) => replaceColumnById(prev, optimisticColumn.id, {
+          id: persistedColumnView.id,
+          title: persistedColumnView.title ?? optimisticColumn.title,
+          color: persistedColumnView.color ?? optimisticColumn.color,
+          cards: [],
+        }))
+      } else {
+        applyBoardView(activePlanId, boardView)
+      }
+
       return true
     } catch (error) {
+      updateColumns(() => previousColumns)
       throw error
     }
-  }, [accessToken, activePlanId, applyBoardView, isBackendDriven, updateColumns])
+  }, [accessToken, activePlanId, applyBoardView, columns, isBackendDriven, updateColumns])
 
   const deleteColumn = useCallback(async (colId) => {
     if (!activePlanId) return
@@ -496,16 +597,19 @@ export function useBoardColumns({
       return
     }
 
+    const previousColumns = columns
+    updateColumns((prev) => removeColumnFromColumns(prev, colId))
+
     try {
       await apiRequest(`/api/plans/${activePlanId}/board/columns/${colId}`, {
         method: 'DELETE',
         token: accessToken,
       })
-      updateColumns((prev) => removeColumnFromColumns(prev, colId))
     } catch (error) {
-      console.error(error)
+      updateColumns(() => previousColumns)
+      throw error
     }
-  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
+  }, [accessToken, activePlanId, columns, isBackendDriven, updateColumns])
 
   const renameColumn = useCallback(async (colId, title) => {
     if (!activePlanId) return
@@ -517,20 +621,47 @@ export function useBoardColumns({
       return true
     }
 
-    const currentColumn = columns.find((column) => column.id === colId)
+    const previousColumns = columns
+    const currentColumn = findColumnById(previousColumns, colId)
+    const nextTitle = title.trim()
+
+    updateColumns((prev) => replaceColumnById(prev, colId, {
+      ...(findColumnById(prev, colId) ?? currentColumn),
+      id: colId,
+      title: nextTitle,
+      color: currentColumn?.color ?? '',
+      cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
+    }))
+
     try {
       const boardView = await apiRequest(`/api/plans/${activePlanId}/board/columns/${colId}`, {
         method: 'PATCH',
         token: accessToken,
         body: {
-          title,
+          title: nextTitle,
           color: currentColumn?.color ?? '',
         },
       })
 
-      applyBoardView(activePlanId, boardView)
+      const persistedColumnView = Array.isArray(boardView?.columns)
+        ? boardView.columns.find((column) => column.id === colId)
+        : null
+
+      if (persistedColumnView) {
+        updateColumns((prev) => replaceColumnById(prev, colId, {
+          ...(findColumnById(prev, colId) ?? currentColumn),
+          id: persistedColumnView.id,
+          title: persistedColumnView.title ?? nextTitle,
+          color: persistedColumnView.color ?? currentColumn?.color ?? '',
+          cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
+        }))
+      } else {
+        applyBoardView(activePlanId, boardView)
+      }
+
       return true
     } catch (error) {
+      updateColumns(() => previousColumns)
       throw error
     }
   }, [accessToken, activePlanId, applyBoardView, columns, isBackendDriven, updateColumns])
@@ -545,7 +676,17 @@ export function useBoardColumns({
       return
     }
 
-    const currentColumn = columns.find((column) => column.id === colId)
+    const previousColumns = columns
+    const currentColumn = findColumnById(previousColumns, colId)
+
+    updateColumns((prev) => replaceColumnById(prev, colId, {
+      ...(findColumnById(prev, colId) ?? currentColumn),
+      id: colId,
+      title: currentColumn?.title ?? findColumnById(prev, colId)?.title ?? 'Nova coluna',
+      color,
+      cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
+    }))
+
     try {
       const boardView = await apiRequest(`/api/plans/${activePlanId}/board/columns/${colId}`, {
         method: 'PATCH',
@@ -556,9 +697,24 @@ export function useBoardColumns({
         },
       })
 
-      applyBoardView(activePlanId, boardView)
+      const persistedColumnView = Array.isArray(boardView?.columns)
+        ? boardView.columns.find((column) => column.id === colId)
+        : null
+
+      if (persistedColumnView) {
+        updateColumns((prev) => replaceColumnById(prev, colId, {
+          ...(findColumnById(prev, colId) ?? currentColumn),
+          id: persistedColumnView.id,
+          title: persistedColumnView.title ?? currentColumn?.title ?? 'Nova coluna',
+          color: persistedColumnView.color ?? color,
+          cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
+        }))
+      } else {
+        applyBoardView(activePlanId, boardView)
+      }
     } catch (error) {
-      console.error(error)
+      updateColumns(() => previousColumns)
+      throw error
     }
   }, [accessToken, activePlanId, applyBoardView, columns, isBackendDriven, updateColumns])
 
@@ -584,6 +740,39 @@ export function useBoardColumns({
       return true
     }
 
+    const previousColumns = columns
+    const targetColumn = findColumnById(previousColumns, colId)
+    const optimisticCard = {
+      id: `temp-card-${uid()}`,
+      columnId: colId,
+      position: targetColumn?.cards?.length ?? 0,
+      title,
+      description: '',
+      isCompleted: false,
+      starred: false,
+      labelId: null,
+      memberIds: [],
+      dueDate: '',
+      startAt: null,
+      dueAt: null,
+      comments: [],
+      attachments: [],
+      checklists: [],
+      kind: 'CARTAO',
+      schedule: {
+        selectedCalendarDay: 7,
+        startEnabled: false,
+        startDateValue: '',
+        dueEnabled: false,
+        dueDateValue: '',
+        dueTimeValue: '',
+        displayLabel: '',
+        preserveDisplayLabel: false,
+      },
+    }
+
+    updateColumns((prev) => insertCardIntoColumn(prev, colId, optimisticCard))
+
     try {
       const createdCardView = await apiRequest(`/api/plans/${activePlanId}/board/cards`, {
         method: 'POST',
@@ -604,12 +793,13 @@ export function useBoardColumns({
         dateFormat,
       })
 
-      updateColumns((prev) => insertCardIntoColumn(prev, colId, createdCard))
+      updateColumns((prev) => replaceCardByIdInColumns(prev, optimisticCard.id, createdCard))
       return createdCard
     } catch (error) {
+      updateColumns(() => previousColumns)
       throw error
     }
-  }, [accessToken, activePlanId, dateFormat, isBackendDriven, timeZone, updateColumns])
+  }, [accessToken, activePlanId, columns, dateFormat, isBackendDriven, timeZone, updateColumns])
 
   const updateCard = useCallback(async (updatedCard) => {
     if (!activePlanId) return false
@@ -692,13 +882,20 @@ export function useBoardColumns({
       return true
     }
 
-    await apiRequest(`/api/plans/${activePlanId}/board/cards/${cardId}`, {
-      method: 'DELETE',
-      token: accessToken,
-    })
+    const previousColumns = columns
     updateColumns((prev) => removeCardFromColumns(prev, cardId))
-    return true
-  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
+
+    try {
+      await apiRequest(`/api/plans/${activePlanId}/board/cards/${cardId}`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      return true
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, columns, isBackendDriven, updateColumns])
 
   const addCardComment = useCallback(async (cardId, message) => {
     if (!activePlanId || !isBackendDriven) return null

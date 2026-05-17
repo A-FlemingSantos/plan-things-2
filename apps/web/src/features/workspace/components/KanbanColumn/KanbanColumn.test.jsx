@@ -122,6 +122,31 @@ describe('KanbanColumn card composer', () => {
     expect(onCardClick).toHaveBeenCalledWith(card, 'Em progresso')
   })
 
+  it('closes the rename input immediately while the rename request is pending and reopens it on failure', async () => {
+    let rejectRename
+    const onRenameCol = vi.fn(() => new Promise((_, reject) => {
+      rejectRename = reject
+    }))
+
+    renderColumn({ onRenameCol })
+
+    fireEvent.click(screen.getByRole('button', { name: /opções da coluna/i }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /renomear/i }))
+    fireEvent.change(screen.getByLabelText('Nome da coluna'), {
+      target: { value: 'Em andamento' },
+    })
+    fireEvent.keyDown(screen.getByLabelText('Nome da coluna'), { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Nome da coluna')).toBeNull()
+    })
+
+    rejectRename(new Error('Falha ao renomear'))
+
+    expect(await screen.findByLabelText('Nome da coluna')).toHaveValue('Em andamento')
+    expect(screen.getByText('Falha ao renomear')).toBeInTheDocument()
+  })
+
   it('passes the calendar icon through to cards with due dates', () => {
     function DueIcon() {
       return <span data-testid="due-icon" />

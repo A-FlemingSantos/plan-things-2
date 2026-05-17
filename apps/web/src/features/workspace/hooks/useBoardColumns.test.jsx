@@ -284,6 +284,95 @@ describe('useBoardColumns card saves without board reload', () => {
     expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-2'])
   })
 
+  it('creates cards optimistically and rolls back when the backend creation fails', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [buildFrontendCard()],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+      timeZone: 'America/Sao_Paulo',
+      dateFormat: 'dd/MM/yyyy',
+    }))
+
+    let addPromise
+    await act(async () => {
+      addPromise = result.current.addCard('col-1', 'Novo card')
+    })
+
+    expect(boardState[0].cards).toHaveLength(2)
+    expect(boardState[0].cards[1]).toMatchObject({
+      title: 'Novo card',
+      isCompleted: false,
+      starred: false,
+    })
+
+    await act(async () => {
+      deferred.reject(new Error('Falha ao criar card'))
+      await expect(addPromise).rejects.toThrow('Falha ao criar card')
+    })
+
+    expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-1'])
+  })
+
+  it('deletes cards optimistically and restores them when the backend deletion fails', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [buildFrontendCard()],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let deletePromise
+    await act(async () => {
+      deletePromise = result.current.deleteCard('card-1')
+    })
+
+    expect(boardState[0].cards).toEqual([])
+
+    await act(async () => {
+      deferred.reject(new Error('Falha ao excluir card'))
+      await expect(deletePromise).rejects.toThrow('Falha ao excluir card')
+    })
+
+    expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-1'])
+  })
+
   it('deletes columns locally without reloading the board', async () => {
     let boardState = [
       {
@@ -323,6 +412,176 @@ describe('useBoardColumns card saves without board reload', () => {
 
     expect(loadPlanBoard).not.toHaveBeenCalled()
     expect(boardState.map((column) => column.id)).toEqual(['col-1'])
+  })
+
+  it('creates columns optimistically and rolls back when the backend creation fails', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let createPromise
+    await act(async () => {
+      createPromise = result.current.createColumn('Doing')
+    })
+
+    expect(boardState.map((column) => column.title)).toEqual(['Backlog', 'Doing'])
+
+    await act(async () => {
+      deferred.reject(new Error('Falha ao criar lista'))
+      await expect(createPromise).rejects.toThrow('Falha ao criar lista')
+    })
+
+    expect(boardState.map((column) => column.id)).toEqual(['col-1'])
+  })
+
+  it('renames columns optimistically and restores the previous title when the backend update fails', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '#4290da',
+        cards: [],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let renamePromise
+    await act(async () => {
+      renamePromise = result.current.renameColumn('col-1', 'Em andamento')
+    })
+
+    expect(boardState[0].title).toBe('Em andamento')
+
+    await act(async () => {
+      deferred.reject(new Error('Falha ao renomear lista'))
+      await expect(renamePromise).rejects.toThrow('Falha ao renomear lista')
+    })
+
+    expect(boardState[0].title).toBe('Backlog')
+  })
+
+  it('changes column colors optimistically and restores the previous color when the backend update fails', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '#4290da',
+        cards: [],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let colorPromise
+    await act(async () => {
+      colorPromise = result.current.changeColColor('col-1', '#ff6766')
+    })
+
+    expect(boardState[0].color).toBe('#ff6766')
+
+    await act(async () => {
+      deferred.reject(new Error('Falha ao alterar cor'))
+      await expect(colorPromise).rejects.toThrow('Falha ao alterar cor')
+    })
+
+    expect(boardState[0].color).toBe('#4290da')
+  })
+
+  it('deletes columns optimistically and restores them when the backend deletion fails', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [],
+      },
+      {
+        id: 'col-2',
+        title: 'Doing',
+        color: '#4290da',
+        cards: [],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let deletePromise
+    await act(async () => {
+      deletePromise = result.current.deleteColumn('col-2')
+    })
+
+    expect(boardState.map((column) => column.id)).toEqual(['col-1'])
+
+    await act(async () => {
+      deferred.reject(new Error('Falha ao excluir lista'))
+      await expect(deletePromise).rejects.toThrow('Falha ao excluir lista')
+    })
+
+    expect(boardState.map((column) => column.id)).toEqual(['col-1', 'col-2'])
   })
 
   it('updates checklist mutations locally without reloading the board', async () => {

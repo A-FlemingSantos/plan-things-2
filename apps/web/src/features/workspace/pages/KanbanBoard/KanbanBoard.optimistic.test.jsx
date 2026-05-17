@@ -10,6 +10,15 @@ const boardState = vi.hoisted(() => ({
   updateCard: vi.fn(),
 }))
 
+const boardActions = vi.hoisted(() => ({
+  createColumn: vi.fn(),
+  deleteColumn: vi.fn(),
+  renameColumn: vi.fn(),
+  changeColColor: vi.fn(),
+  addCard: vi.fn(),
+  deleteCard: vi.fn(),
+}))
+
 const activePlan = vi.hoisted(() => ({
   id: 'plan-1',
   name: 'Plano Otimista',
@@ -72,13 +81,13 @@ vi.mock('../../hooks/useBoardColumns.js', () => ({
     columns: boardState.columns,
     totalCards: boardState.columns.reduce((sum, column) => sum + column.cards.length, 0),
     updateColumns: boardState.updateColumns,
-    createColumn: vi.fn(),
-    deleteColumn: vi.fn(),
-    renameColumn: vi.fn(),
-    changeColColor: vi.fn(),
-    addCard: vi.fn(),
+    createColumn: boardActions.createColumn,
+    deleteColumn: boardActions.deleteColumn,
+    renameColumn: boardActions.renameColumn,
+    changeColColor: boardActions.changeColColor,
+    addCard: boardActions.addCard,
     updateCard: boardState.updateCard,
-    deleteCard: vi.fn(),
+    deleteCard: boardActions.deleteCard,
     addCardComment: vi.fn(),
     moveCard: vi.fn(),
     createChecklist: vi.fn(),
@@ -142,23 +151,56 @@ vi.mock('../../components/InviteNotifications/InviteNotifications.jsx', () => ({
 }))
 
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
-  default: ({ col, onToggleCardCompleted }) => (
+  default: ({ col, onToggleCardCompleted, onCardClick }) => (
     <section aria-label={col.title}>
       {col.cards.map((card) => (
-        <button key={card.id} type="button" onClick={() => onToggleCardCompleted(card)}>
-          Concluir {card.title}
-        </button>
+        <div key={card.id}>
+          <button type="button" onClick={() => onToggleCardCompleted(card)}>
+            Concluir {card.title}
+          </button>
+          <button type="button" onClick={() => onCardClick(card, col.title)}>
+            Abrir {card.title}
+          </button>
+        </div>
       ))}
     </section>
   ),
 }))
 
 vi.mock('../../components/CardModal/CardModal.jsx', () => ({
-  default: () => null,
+  default: ({ card, onDelete }) => (
+    <div>
+      <p>{card.title}</p>
+      <button type="button" onClick={() => { onDelete(card.id).catch(() => {}) }}>
+        Excluir cartão
+      </button>
+    </div>
+  ),
 }))
 
 vi.mock('../../components/AddColumnComposer/AddColumnComposer.jsx', () => ({
-  default: () => null,
+  default: ({ addingCol, newColTitle, setNewColTitle, setAddingCol, addColumn, errorMessage }) => (
+    addingCol ? (
+      <div>
+        <input
+          aria-label="Nome da lista"
+          value={newColTitle}
+          onChange={(event) => setNewColTitle(event.target.value)}
+        />
+        {errorMessage ? <p>{errorMessage}</p> : null}
+        <button type="button" onClick={addColumn}>
+          Adicionar lista
+        </button>
+        <button type="button" onClick={() => setAddingCol(false)}>
+          Fechar lista
+        </button>
+      </div>
+    ) : (
+      <button type="button" onClick={() => setAddingCol(true)}>
+        Adicionar lista
+      </button>
+    )
+  ),
 }))
 
 function createDeferred() {
@@ -215,6 +257,12 @@ describe('KanbanBoard optimistic feedback', () => {
     plansMock.loadPlanBoard.mockReset()
     boardState.updateColumns.mockReset()
     boardState.updateCard.mockReset()
+    boardActions.createColumn.mockReset()
+    boardActions.deleteColumn.mockReset()
+    boardActions.renameColumn.mockReset()
+    boardActions.changeColColor.mockReset()
+    boardActions.addCard.mockReset()
+    boardActions.deleteCard.mockReset()
     plansMock.ensurePlanDetails.mockResolvedValue(activePlan)
     plansMock.refreshPlanDetails.mockResolvedValue(activePlan)
     plansMock.loadPlanBoard.mockImplementation(() => Promise.resolve(boardState.columns))
@@ -262,6 +310,45 @@ describe('KanbanBoard optimistic feedback', () => {
     await waitFor(() => {
       expect(boardState.columns[0].cards[0].starred).toBe(false)
     })
+  })
+
+  it('closes the add-column composer immediately while the backend request is pending and reopens it on failure', async () => {
+    const deferred = createDeferred()
+    boardActions.createColumn.mockReturnValue(deferred.promise)
+
+    renderBoard()
+    await userEvent.click(await screen.findByRole('button', { name: 'Adicionar lista' }))
+    await userEvent.type(screen.getByLabelText('Nome da lista'), 'Doing')
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar lista' }))
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Nome da lista')).toBeNull()
+    })
+
+    deferred.reject(new Error('Falha ao criar lista'))
+
+    expect(await screen.findByLabelText('Nome da lista')).toHaveValue('Doing')
+    expect(screen.getAllByText('Falha ao criar lista')).toHaveLength(2)
+  })
+
+  it('closes the card modal immediately while the backend deletion is pending and restores it on failure', async () => {
+    const deferred = createDeferred()
+    boardActions.deleteCard.mockReturnValue(deferred.promise)
+
+    renderBoard()
+    await userEvent.click(await screen.findByRole('button', { name: 'Abrir Card de teste' }))
+    expect(screen.getByRole('button', { name: 'Excluir cartão' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Excluir cartão' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Excluir cartão' })).toBeNull()
+    })
+
+    deferred.reject(new Error('Falha ao excluir cartão'))
+
+    expect(await screen.findByRole('button', { name: 'Excluir cartão' })).toBeInTheDocument()
+    expect(screen.getByText('Falha ao excluir cartão')).toBeInTheDocument()
   })
 })
 

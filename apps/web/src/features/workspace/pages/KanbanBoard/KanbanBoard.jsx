@@ -342,6 +342,29 @@ function replaceCardInColumns(columns, nextCard) {
   return hasChanges ? nextColumns : columns
 }
 
+function removeCardFromColumns(columns, cardId) {
+  if (!Array.isArray(columns) || !cardId) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    const nextCards = column.cards.filter((card) => card.id !== cardId)
+    if (nextCards.length === column.cards.length) {
+      return column
+    }
+
+    hasChanges = true
+    return {
+      ...column,
+      cards: nextCards,
+    }
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
 function findCardInColumns(columns, cardId) {
   if (!Array.isArray(columns) || !cardId) {
     return null
@@ -738,15 +761,19 @@ export default function KanbanBoard() {
   })
 
   const addColumn = async () => {
-    if (!newColTitle.trim()) return
+    const nextTitle = newColTitle.trim()
+    if (!nextTitle) return
+
+    setNewColTitle('')
+    setAddingCol(false)
+    setAddColumnError(null)
 
     try {
-      await createColumn(newColTitle)
-      setNewColTitle('')
-      setAddingCol(false)
-      setAddColumnError(null)
+      await createColumn(nextTitle)
     } catch (error) {
       const message = error?.message ?? 'Não foi possível criar a lista.'
+      setNewColTitle(nextTitle)
+      setAddingCol(true)
       setAddColumnError(message)
       showNotification(message)
     }
@@ -797,8 +824,16 @@ export default function KanbanBoard() {
   }
 
   const handleCardDelete = async (cardId) => {
-    await deleteCard(cardId)
+    const previousActiveCard = activeCard
     setActiveCard(null)
+
+    try {
+      await deleteCard(cardId)
+    } catch (error) {
+      setActiveCard(previousActiveCard ?? null)
+      showNotification(error?.message ?? 'Não foi possível excluir o cartão.')
+      throw error
+    }
   }
 
   const handleBoardCardClick = useCallback((card, colTitle) => {
@@ -834,6 +869,20 @@ export default function KanbanBoard() {
       setNotification(null)
       notificationTimerRef.current = null
     }, 2600)
+  }
+
+  const handleColumnDelete = async (colId) => {
+    try {
+      await deleteColumn(colId)
+    } catch (error) {
+      showNotification(error?.message ?? 'Não foi possível excluir a lista.')
+    }
+  }
+
+  const handleColumnColorChange = (colId, color) => {
+    changeColColor(colId, color).catch((error) => {
+      showNotification(error?.message ?? 'Não foi possível alterar a cor da lista.')
+    })
   }
 
   const toggleMembersPanel = (event) => {
@@ -2605,9 +2654,9 @@ export default function KanbanBoard() {
                 onFileDragOver={handleFileDragOverCard}
                 onFileDrop={handleFileDropOnCard}
                 onAddCard={addCard}
-                onDeleteCol={deleteColumn}
+                onDeleteCol={handleColumnDelete}
                 onRenameCol={renameColumn}
-                onChangeColColor={changeColColor}
+                onChangeColColor={handleColumnColorChange}
                 onCardClick={handleBoardCardClick}
                 onToggleCardCompleted={togglePlannerCardCompleted}
                 labels={planLabels}
