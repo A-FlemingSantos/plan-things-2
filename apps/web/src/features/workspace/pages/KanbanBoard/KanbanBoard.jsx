@@ -1735,7 +1735,7 @@ export default function KanbanBoard() {
     ? 'Sincronizando quadro'
     : hasNoPlan
       ? 'Crie um plano para usar o quadro'
-      : `${totalCards} cartões`
+      : null
   const coverThemeClassName = activePlan?.coverThemeId ? (styles[`theme${activePlan.coverThemeId}`] ?? '') : ''
   const isImageCover = Boolean(activePlan?.coverImage)
   const boardMainClassName = [
