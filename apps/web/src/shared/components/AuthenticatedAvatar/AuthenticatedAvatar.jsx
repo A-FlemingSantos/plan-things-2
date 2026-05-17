@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { apiRequest } from '../../api/apiClient.js'
+import styles from './AuthenticatedAvatar.module.css'
 
 const avatarUrlCache = new Map()
 
@@ -8,31 +9,88 @@ function shouldFetchWithAuth(url) {
   return typeof url === 'string' && url.startsWith('/api/')
 }
 
+function hasAvatarUrl(avatarUrl) {
+  return typeof avatarUrl === 'string' && avatarUrl.trim().length > 0
+}
+
+function createAvatarState(avatarUrl, accessToken) {
+  if (!hasAvatarUrl(avatarUrl)) {
+    return {
+      resolvedUrl: null,
+      isResolving: false,
+      hasFailed: false,
+    }
+  }
+
+  if (!shouldFetchWithAuth(avatarUrl)) {
+    return {
+      resolvedUrl: avatarUrl,
+      isResolving: false,
+      hasFailed: false,
+    }
+  }
+
+  if (!accessToken) {
+    return {
+      resolvedUrl: null,
+      isResolving: false,
+      hasFailed: true,
+    }
+  }
+
+  const cacheKey = `${accessToken}:${avatarUrl}`
+  const cached = avatarUrlCache.get(cacheKey)
+
+  if (cached?.objectUrl) {
+    return {
+      resolvedUrl: cached.objectUrl,
+      isResolving: false,
+      hasFailed: false,
+    }
+  }
+
+  return {
+    resolvedUrl: null,
+    isResolving: true,
+    hasFailed: false,
+  }
+}
+
 function useAuthenticatedAvatarUrl(avatarUrl) {
   const { accessToken } = useAuth()
-  const [resolvedUrl, setResolvedUrl] = useState(() => (
-    avatarUrl && !shouldFetchWithAuth(avatarUrl) ? avatarUrl : null
-  ))
+  const [avatarState, setAvatarState] = useState(() => createAvatarState(avatarUrl, accessToken))
 
   useEffect(() => {
     let active = true
 
-    if (!avatarUrl) {
-      setResolvedUrl(null)
+    if (!hasAvatarUrl(avatarUrl)) {
+      setAvatarState({
+        resolvedUrl: null,
+        isResolving: false,
+        hasFailed: false,
+      })
       return () => {
         active = false
       }
     }
 
     if (!shouldFetchWithAuth(avatarUrl)) {
-      setResolvedUrl(avatarUrl)
+      setAvatarState({
+        resolvedUrl: avatarUrl,
+        isResolving: false,
+        hasFailed: false,
+      })
       return () => {
         active = false
       }
     }
 
     if (!accessToken) {
-      setResolvedUrl(null)
+      setAvatarState({
+        resolvedUrl: null,
+        isResolving: false,
+        hasFailed: true,
+      })
       return () => {
         active = false
       }
@@ -42,11 +100,21 @@ function useAuthenticatedAvatarUrl(avatarUrl) {
     const cached = avatarUrlCache.get(cacheKey)
 
     if (cached?.objectUrl) {
-      setResolvedUrl(cached.objectUrl)
+      setAvatarState({
+        resolvedUrl: cached.objectUrl,
+        isResolving: false,
+        hasFailed: false,
+      })
       return () => {
         active = false
       }
     }
+
+    setAvatarState({
+      resolvedUrl: null,
+      isResolving: true,
+      hasFailed: false,
+    })
 
     const promise = cached?.promise ?? apiRequest(avatarUrl, {
       token: accessToken,
@@ -62,7 +130,13 @@ function useAuthenticatedAvatarUrl(avatarUrl) {
     }
 
     promise.then((objectUrl) => {
-      if (active) setResolvedUrl(objectUrl)
+      if (!active) return
+
+      setAvatarState({
+        resolvedUrl: objectUrl,
+        isResolving: false,
+        hasFailed: !objectUrl,
+      })
     })
 
     return () => {
@@ -70,7 +144,7 @@ function useAuthenticatedAvatarUrl(avatarUrl) {
     }
   }, [accessToken, avatarUrl])
 
-  return resolvedUrl
+  return avatarState
 }
 
 export default function AuthenticatedAvatar({
@@ -83,13 +157,41 @@ export default function AuthenticatedAvatar({
   alt = '',
   ...spanProps
 }) {
-  const resolvedUrl = useAuthenticatedAvatarUrl(avatarUrl)
+  const { resolvedUrl, isResolving, hasFailed } = useAuthenticatedAvatarUrl(avatarUrl)
+  const [loadedImageUrl, setLoadedImageUrl] = useState(null)
+  const [failedImageUrl, setFailedImageUrl] = useState(null)
+  const imageLoaded = Boolean(resolvedUrl && loadedImageUrl === resolvedUrl)
+  const imageFailed = Boolean(resolvedUrl && failedImageUrl === resolvedUrl)
+
+  const shouldShowSkeleton = hasAvatarUrl(avatarUrl)
+    && !hasFailed
+    && !imageFailed
+    && (isResolving || Boolean(resolvedUrl && !imageLoaded))
+  const shouldShowImage = Boolean(resolvedUrl && !imageFailed)
 
   return (
     <span className={className} style={style} title={title} {...spanProps}>
-      {resolvedUrl ? (
-        <img className={imageClassName} src={resolvedUrl} alt={alt} draggable="false" />
-      ) : fallback}
+      {shouldShowSkeleton ? (
+        <span
+          className={styles.avatarSkeleton}
+          aria-hidden="true"
+          data-testid="authenticated-avatar-skeleton"
+        />
+      ) : null}
+
+      {shouldShowImage ? (
+        <img
+          className={imageClassName}
+          src={resolvedUrl}
+          alt={alt}
+          draggable="false"
+          onLoad={() => setLoadedImageUrl(resolvedUrl)}
+          onError={() => setFailedImageUrl(resolvedUrl)}
+          style={imageLoaded ? undefined : { display: 'none' }}
+        />
+      ) : null}
+
+      {!shouldShowSkeleton && !shouldShowImage ? fallback : null}
     </span>
   )
 }
