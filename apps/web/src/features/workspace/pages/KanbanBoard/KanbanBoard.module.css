@@ -396,6 +396,7 @@
   min-width: 0;
   height: 30px;
   padding: 0 10px;
+  position: relative;
   color: var(--text-2);
   background: transparent;
   border: 1px solid transparent;
@@ -411,9 +412,16 @@
 }
 
 .boardHeaderTitleToggle:hover {
-  background: var(--surface-2);
-  border-color: var(--border-2);
+  background: color-mix(in srgb, var(--surface-2) 96%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--border-2) 92%, var(--surface-1));
   box-shadow: none !important;
+}
+
+.boardHeaderTitleToggle:hover:focus,
+.boardHeaderTitleToggle:hover:focus-visible,
+.boardHeaderTitleToggle:hover:active {
+  background: color-mix(in srgb, var(--surface-2) 96%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--border-2) 92%, var(--surface-1));
 }
 
 .boardHeaderTitleToggle:focus,
@@ -431,6 +439,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  pointer-events: none;
 }
 
 .boardHeaderTitleToggleIcon {

@@ -52,7 +52,7 @@
 .title {
   font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  line-height: 1;
+  line-height: 1.12;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
