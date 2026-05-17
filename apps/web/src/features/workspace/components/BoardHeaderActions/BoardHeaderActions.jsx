@@ -7,6 +7,8 @@ export default function BoardHeaderActions({
   onAddMember,
   onOpenMembers,
   membersButtonRef,
+  membersLoading = false,
+  membersPlaceholderCount = 0,
   onFilter,
   onShare,
   notifications = null,
@@ -22,6 +24,8 @@ export default function BoardHeaderActions({
           membersButtonRef={membersButtonRef}
           MembersIcon={icons.Users}
           membersTitle="Membros do plano"
+          isLoading={membersLoading}
+          placeholderCount={membersPlaceholderCount}
         />
 
         <div className={styles.boardHeaderUtilityGroup}>

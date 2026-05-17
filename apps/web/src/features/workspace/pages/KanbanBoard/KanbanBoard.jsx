@@ -349,10 +349,17 @@ export default function KanbanBoard() {
     enrichGeneratedCardKinds: false,
   })
   const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
-  const planMembers = activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS
+  const isPlanMembersLoading = Boolean(isBackendDriven && activePlan?.id && !activePlan.detailsLoaded)
+  const backendPlanMembers = Array.isArray(activePlan?.membersMeta) ? activePlan.membersMeta : []
+  const planMembers = isBackendDriven
+    ? backendPlanMembers
+    : (activePlan ? (activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS) : [])
+  const membersPlaceholderCount = isPlanMembersLoading
+    ? Math.max(1, Math.min(Number.isFinite(activePlan?.memberCount) ? activePlan.memberCount : 1, 4))
+    : 0
   const inboxAssignedMemberIds = new Set(inboxRecipientCard?.memberIds ?? [])
-  const inboxSelectableMembers = activePlan?.membersMeta?.length
-    ? activePlan.membersMeta.filter((member) => !inboxAssignedMemberIds.has(member.id))
+  const inboxSelectableMembers = planMembers.length
+    ? planMembers.filter((member) => !inboxAssignedMemberIds.has(member.id))
     : []
   const canManageMembers = isBackendDriven && (activePlan?.role === 'OWNER' || activePlan?.role === 'ADMIN')
 
@@ -410,14 +417,14 @@ export default function KanbanBoard() {
     if (!isMembersOpen) return
     if (!isBackendDriven) return
     if (!activePlan?.id) return
-    if (activePlan?.membersMeta?.length) return
+    if (activePlan.detailsLoaded) return
 
     setMembersLoadError(null)
 
     ensurePlanDetails(activePlan.id).catch((error) => {
       setMembersLoadError(error?.message ?? 'Não foi possível carregar os membros deste plano.')
     })
-  }, [activePlan?.id, activePlan?.membersMeta?.length, ensurePlanDetails, isBackendDriven, isMembersOpen])
+  }, [activePlan?.detailsLoaded, activePlan?.id, ensurePlanDetails, isBackendDriven, isMembersOpen])
 
   useEffect(() => {
     if (canManageMembers || membersPanelTab !== 'invites') return
@@ -1005,12 +1012,12 @@ export default function KanbanBoard() {
     if (!isInboxPanelMounted) return
     if (!isBackendDriven) return
     if (!activePlan?.id) return
-    if (activePlan?.membersMeta?.length) return
+    if (activePlan.detailsLoaded) return
 
     ensurePlanDetails(activePlan.id).catch((error) => {
       setInboxError(error?.message ?? 'Não foi possível carregar os membros deste plano.')
     })
-  }, [activePlan?.id, activePlan?.membersMeta?.length, ensurePlanDetails, isBackendDriven, isInboxPanelMounted])
+  }, [activePlan?.detailsLoaded, activePlan?.id, ensurePlanDetails, isBackendDriven, isInboxPanelMounted])
 
   useEffect(() => {
     setInboxItems(Array.isArray(activePlan?.inboxItems) ? activePlan.inboxItems : [])
@@ -1642,7 +1649,7 @@ export default function KanbanBoard() {
               )
             }) : (
               <p className={styles.inboxRecipientsEmpty}>
-                {activePlan?.membersMeta?.length ? 'Todos os membros do plano já fazem parte deste cartão.' : 'Carregando membros do plano...'}
+                {isPlanMembersLoading ? 'Carregando membros do plano...' : 'Todos os membros do plano já fazem parte deste cartão.'}
               </p>
             )}
           </div>
@@ -2109,6 +2116,8 @@ export default function KanbanBoard() {
               onAddMember={openInviteModal}
               onOpenMembers={toggleMembersPanel}
               membersButtonRef={membersButtonRef}
+              membersLoading={isPlanMembersLoading}
+              membersPlaceholderCount={membersPlaceholderCount}
               onFilter={() => showNotification('Filtros avançados em breve')}
               onShare={() => showNotification('Link do quadro copiado')}
               notifications={<InviteNotifications />}
@@ -2152,6 +2161,8 @@ export default function KanbanBoard() {
                   <p className={styles.planMembersEmpty}>Nenhum plano ativo.</p>
                 ) : membersLoadError ? (
                   <p className={styles.planMembersEmpty}>{membersLoadError}</p>
+                ) : isPlanMembersLoading ? (
+                  <p className={styles.planMembersEmpty}>Carregando membros do plano...</p>
                 ) : !planMembers?.length ? (
                   <p className={styles.planMembersEmpty}>Nenhum membro para exibir.</p>
                 ) : (

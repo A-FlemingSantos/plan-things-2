@@ -25,6 +25,19 @@
   display: block;
 }
 
+@keyframes avatarSkeletonPulse {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.avatarPlaceholder {
+  background: linear-gradient(90deg, var(--skeleton-1) 0%, var(--skeleton-2) 50%, var(--skeleton-1) 100%);
+  background-size: 200% 100%;
+  box-shadow: none;
+  color: transparent;
+  animation: avatarSkeletonPulse 1.2s ease-in-out infinite;
+}
+
 .avatar:not(:first-child) {
   margin-left: -7px;
 }
@@ -32,6 +45,11 @@
 .avatar:hover {
   transform: translateY(-2px);
   z-index: 1;
+}
+
+.avatarPlaceholder:hover {
+  transform: none;
+  z-index: auto;
 }
 
 .addButton {
