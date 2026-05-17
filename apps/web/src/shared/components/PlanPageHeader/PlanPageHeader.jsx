@@ -4,6 +4,7 @@ export default function PlanPageHeader({
   title,
   meta = null,
   icon = null,
+  titleAccessory = null,
   actions = null,
   sticky = false,
   tone = 'solid',
@@ -33,6 +34,7 @@ export default function PlanPageHeader({
         <div className={titleRowClassName}>
           {icon ? <span className={styles.icon}>{icon}</span> : null}
           <h1 className={titleClassName}>{title}</h1>
+          {titleAccessory}
           {meta ? <span className={styles.meta}>{meta}</span> : null}
         </div>
       </div>

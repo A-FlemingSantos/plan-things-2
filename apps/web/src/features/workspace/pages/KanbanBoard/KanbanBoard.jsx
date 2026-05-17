@@ -1736,6 +1736,26 @@ export default function KanbanBoard() {
     : hasNoPlan
       ? 'Crie um plano para usar o quadro'
       : null
+  const boardHeaderTitleAccessory = !isBoardLoading && !hasNoPlan
+    ? (
+      <button
+        type="button"
+        className={styles.boardHeaderTitleToggle}
+        aria-label="Abrir opções do plano"
+        aria-expanded="false"
+        onClick={(event) => {
+          event.preventDefault()
+        }}
+      >
+        <span className={styles.boardHeaderTitleToggleIcon} aria-hidden="true">
+          <Icon.Board />
+        </span>
+        <span className={styles.boardHeaderTitleToggleChevron} aria-hidden="true">
+          <Icon.Chevron />
+        </span>
+      </button>
+    )
+    : null
   const coverThemeClassName = activePlan?.coverThemeId ? (styles[`theme${activePlan.coverThemeId}`] ?? '') : ''
   const isImageCover = Boolean(activePlan?.coverImage)
   const boardMainClassName = [
@@ -2477,7 +2497,7 @@ export default function KanbanBoard() {
         <PlanPageHeader
           title={boardHeaderTitle}
           meta={boardHeaderMeta}
-          icon={<Icon.Board />}
+          titleAccessory={boardHeaderTitleAccessory}
           sticky
           tone="solid"
           titleSize="medium"

@@ -387,6 +387,73 @@
   flex-shrink: 0;
 }
 
+.boardHeaderTitleToggle {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 30px;
+  padding: 0 10px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  box-shadow: none !important;
+  outline: none !important;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.boardHeaderTitleToggle:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+  box-shadow: none !important;
+}
+
+.boardHeaderTitleToggle:focus,
+.boardHeaderTitleToggle:focus-visible,
+.boardHeaderTitleToggle:active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.boardHeaderTitleToggleIcon,
+.boardHeaderTitleToggleChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.boardHeaderTitleToggleIcon {
+  color: var(--text-2);
+}
+
+.boardHeaderTitleToggleIcon svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.boardHeaderTitleToggleChevron {
+  color: var(--text-3);
+}
+
+.boardHeaderTitleToggleChevron svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+  transform: rotate(90deg);
+}
+
 .boardHeaderActionCluster {
   display: flex;
   align-items: center;
@@ -5336,6 +5403,13 @@
   .boardHeaderMembersStack {
     order: 1;
   }
+  .boardHeaderTitleToggle {
+    gap: 5px;
+  }
+  .boardHeaderTitleToggleIcon svg {
+    width: 14px;
+    height: 14px;
+  }
   .boardTitleRow {
     flex-wrap: wrap;
     gap: 8px;
@@ -5488,6 +5562,9 @@
   .boardHeaderShareButton {
     flex: 1 1 auto;
     justify-content: center;
+  }
+  .boardHeaderTitleToggle {
+    gap: 4px;
   }
   .boardTitle {
     font-size: 16px;
