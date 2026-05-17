@@ -452,6 +452,14 @@
   z-index: 6;
 }
 
+.commandHeaderActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
 .commandLeft,
 .commandRight {
   display: flex;
@@ -1217,6 +1225,7 @@
 }
 
 @media (max-width: 1180px) {
+  .commandHeaderActions,
   .commandBar {
     align-items: flex-start;
     flex-direction: column;
@@ -1257,6 +1266,7 @@
     display: none;
   }
 
+  .commandHeaderActions,
   .commandBar {
     position: static;
     gap: 10px;

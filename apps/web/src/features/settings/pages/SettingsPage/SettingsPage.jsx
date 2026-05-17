@@ -2346,8 +2346,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const settingsHeader = modal ? (
     <PlanPageHeader
       title="Configurações"
-      breadcrumbCurrent="Configurações"
-      breadcrumbRootLabel="Workspace"
       tone="solid"
       titleSize="medium"
       actions={(
@@ -2364,8 +2362,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   ) : !isMobile ? (
     <PlanPageHeader
       title="Configurações"
-      breadcrumbCurrent="Configurações"
-      breadcrumbRootLabel="Workspace"
       tone="solid"
       titleSize="medium"
     />

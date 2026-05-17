@@ -4,6 +4,7 @@ import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import { buildLibraryTreeFromApi } from '../../../../shared/contracts/backendAdapters.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
@@ -644,17 +645,6 @@ export default function FilesPage() {
     }
   }
 
-  const navigateBreadcrumb = (idx) => {
-    if (idx === -1) {
-      setCurrentPath([])
-    } else {
-      setCurrentPath(currentPath.slice(0, idx + 1))
-    }
-    setSelected(null)
-    setDetailItemId(null)
-    setMobileCommandMenuOpen(false)
-  }
-
   // Section filtering
   const filteredFiles = useMemo(() => {
     let base = flattenedItems.filter((item) => !item.isDeletedTree)
@@ -1042,6 +1032,7 @@ export default function FilesPage() {
     'trash':    'Lixeira',
   }[sidebarSection]
   const mobileCurrentFolder = breadcrumb.length ? breadcrumb[breadcrumb.length - 1]?.name ?? null : null
+  const currentFolderLabel = mobileCurrentFolder ?? sectionLabel
 
   const selectedItem = selected ? filteredFiles.find((item) => item.id === selected) || detailItem : null
   const handleSelectItem = useCallback((item) => {
@@ -1188,240 +1179,218 @@ export default function FilesPage() {
         secondaryContent={renderSidebarSecondaryContent}
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
-        mobileTitle={sectionLabel}
+        mobileTitle={currentFolderLabel}
       >
 
-        {/* Top bar */}
-        <header className={styles.topBar}>
-          <div className={styles.topBarLeft}>
-            {/* Breadcrumb */}
-            <nav className={styles.breadcrumb}>
-              <button
-                className={`${styles.breadcrumbItem} ${breadcrumb.length === 0 ? styles.breadcrumbItemActive : ''}`}
-                onClick={() => navigateBreadcrumb(-1)}
-              >
-                {sectionLabel}
-              </button>
-              {breadcrumb.map((crumb, i) => (
-                <span key={i} className={styles.breadcrumbGroup}>
-                  <span className={styles.breadcrumbSep}><Icon.Chevron /></span>
+        <PlanPageHeader
+          title={currentFolderLabel}
+          icon={<Icon.Files />}
+          sticky
+          tone="solid"
+          titleSize="medium"
+          actions={(
+            <div className={styles.topBarRight}>
+              {selectedItem ? (
+                <div className={`${styles.selectionToolbar} ${isMobile ? styles.selectionToolbarMobile : ''}`}>
+                  <span className={styles.selectionCount}>1 selecionado</span>
+                  {selectedItem.deleted ? (
+                    <>
+                      <button
+                        className={styles.selectionAction}
+                        aria-label="Ver detalhes"
+                        onClick={() => openDetailPanel(selectedItem)}
+                      >
+                        <Icon.Info />
+                        {!isMobile ? <span className={styles.selectionActionLabel}>Detalhes</span> : null}
+                      </button>
+                      <button
+                        className={styles.selectionAction}
+                        aria-label="Restaurar"
+                        onClick={() => handleContextAction('restore', selectedItem)}
+                      >
+                        <Icon.Move />
+                        {!isMobile ? <span className={styles.selectionActionLabel}>Restaurar</span> : null}
+                      </button>
+                      <button
+                        className={`${styles.selectionAction} ${styles.selectionDanger}`}
+                        aria-label="Excluir permanentemente"
+                        onClick={() => handleContextAction('permanent-delete', selectedItem)}
+                      >
+                        <Icon.Trash />
+                        {!isMobile ? <span className={styles.selectionActionLabel}>Excluir permanentemente</span> : null}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className={styles.selectionAction}
+                        aria-label="Ver detalhes"
+                        onClick={() => openDetailPanel(selectedItem)}
+                      >
+                        <Icon.Info />
+                        {!isMobile ? <span className={styles.selectionActionLabel}>Detalhes</span> : null}
+                      </button>
+                      <button
+                        className={styles.selectionAction}
+                        aria-label={selectedItem.type === 'folder' ? 'Abrir pasta' : 'Baixar arquivo'}
+                        onClick={() => handleContextAction(selectedItem.type === 'folder' ? 'open' : 'download', selectedItem)}
+                      >
+                        {selectedItem.type === 'folder' ? <Icon.FolderSm /> : <Icon.Download />}
+                        {!isMobile ? (
+                          <span className={styles.selectionActionLabel}>
+                            {selectedItem.type === 'folder' ? 'Abrir' : 'Baixar'}
+                          </span>
+                        ) : null}
+                      </button>
+                      <button
+                        className={styles.selectionAction}
+                        aria-label="Compartilhar"
+                        onClick={() => handleContextAction('share', selectedItem)}
+                      >
+                        <Icon.Share />
+                        {!isMobile ? <span className={styles.selectionActionLabel}>Compartilhar</span> : null}
+                      </button>
+                      <button
+                        className={`${styles.selectionAction} ${styles.selectionDanger}`}
+                        aria-label="Excluir"
+                        onClick={() => handleContextAction('delete', selectedItem)}
+                      >
+                        <Icon.Trash />
+                        {!isMobile ? <span className={styles.selectionActionLabel}>Excluir</span> : null}
+                      </button>
+                    </>
+                  )}
                   <button
-                    className={`${styles.breadcrumbItem} ${i === breadcrumb.length - 1 ? styles.breadcrumbItemActive : ''}`}
-                    onClick={() => navigateBreadcrumb(i)}
+                    className={styles.selectionClear}
+                    aria-label="Limpar seleção"
+                    onClick={() => { setSelected(null); setDetailItemId(null) }}
                   >
-                    {crumb.name}
+                    <Icon.X />
                   </button>
-                </span>
-              ))}
-            </nav>
-          </div>
-
-          <div className={styles.topBarRight}>
-            {selectedItem ? (
-              <div className={`${styles.selectionToolbar} ${isMobile ? styles.selectionToolbarMobile : ''}`}>
-                <span className={styles.selectionCount}>1 selecionado</span>
-                {selectedItem.deleted ? (
-                  <>
-                    <button
-                      className={styles.selectionAction}
-                      aria-label="Ver detalhes"
-                      onClick={() => openDetailPanel(selectedItem)}
-                    >
-                      <Icon.Info />
-                      {!isMobile ? <span className={styles.selectionActionLabel}>Detalhes</span> : null}
-                    </button>
-                    <button
-                      className={styles.selectionAction}
-                      aria-label="Restaurar"
-                      onClick={() => handleContextAction('restore', selectedItem)}
-                    >
-                      <Icon.Move />
-                      {!isMobile ? <span className={styles.selectionActionLabel}>Restaurar</span> : null}
-                    </button>
-                    <button
-                      className={`${styles.selectionAction} ${styles.selectionDanger}`}
-                      aria-label="Excluir permanentemente"
-                      onClick={() => handleContextAction('permanent-delete', selectedItem)}
-                    >
-                      <Icon.Trash />
-                      {!isMobile ? <span className={styles.selectionActionLabel}>Excluir permanentemente</span> : null}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className={styles.selectionAction}
-                      aria-label="Ver detalhes"
-                      onClick={() => openDetailPanel(selectedItem)}
-                    >
-                      <Icon.Info />
-                      {!isMobile ? <span className={styles.selectionActionLabel}>Detalhes</span> : null}
-                    </button>
-                    <button
-                      className={styles.selectionAction}
-                      aria-label={selectedItem.type === 'folder' ? 'Abrir pasta' : 'Baixar arquivo'}
-                      onClick={() => handleContextAction(selectedItem.type === 'folder' ? 'open' : 'download', selectedItem)}
-                    >
-                      {selectedItem.type === 'folder' ? <Icon.FolderSm /> : <Icon.Download />}
-                      {!isMobile ? (
-                        <span className={styles.selectionActionLabel}>
-                          {selectedItem.type === 'folder' ? 'Abrir' : 'Baixar'}
-                        </span>
-                      ) : null}
-                    </button>
-                    <button
-                      className={styles.selectionAction}
-                      aria-label="Compartilhar"
-                      onClick={() => handleContextAction('share', selectedItem)}
-                    >
-                      <Icon.Share />
-                      {!isMobile ? <span className={styles.selectionActionLabel}>Compartilhar</span> : null}
-                    </button>
-                    <button
-                      className={`${styles.selectionAction} ${styles.selectionDanger}`}
-                      aria-label="Excluir"
-                      onClick={() => handleContextAction('delete', selectedItem)}
-                    >
-                      <Icon.Trash />
-                      {!isMobile ? <span className={styles.selectionActionLabel}>Excluir</span> : null}
-                    </button>
-                  </>
-                )}
-                <button
-                  className={styles.selectionClear}
-                  aria-label="Limpar seleção"
-                  onClick={() => { setSelected(null); setDetailItemId(null) }}
-                >
-                  <Icon.X />
-                </button>
-              </div>
-            ) : (
-              isMobile ? (
-                <div className={styles.topBarMobileRow}>
-                  <div className={styles.searchWrap}>
-                    <span className={styles.searchIcon}><Icon.Search /></span>
-                    <input
-                      className={styles.searchInput}
-                      placeholder="Buscar arquivos..."
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                    />
-                    {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
-                  </div>
-
-                  <div className={styles.sortWrap}>
-                    <Icon.Sort />
-                    <select
-                      className={styles.sortSelect}
-                      value={sortBy}
-                      onChange={e => setSortBy(e.target.value)}
-                    >
-                      <option value="modified">Modificado</option>
-                      <option value="name">Nome</option>
-                      <option value="size">Tamanho</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.viewToggle}>
-                    <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
-                    <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
-                  </div>
-
-                  <div className={styles.mobileCommandMenuWrap} ref={mobileCommandMenuRef}>
-                    <button
-                      type="button"
-                      className={styles.mobileCommandMenuButton}
-                      aria-label="Mais ações"
-                      aria-expanded={mobileCommandMenuOpen}
-                      onClick={() => setMobileCommandMenuOpen((value) => !value)}
-                    >
-                      <Icon.More />
-                    </button>
-
-                    {mobileCommandMenuOpen ? (
-                      <div className={styles.mobileCommandMenu}>
-                        <button
-                          type="button"
-                          className={styles.mobileCommandMenuItem}
-                          onClick={() => {
-                            setMobileCommandMenuOpen(false)
-                            fileInputRef.current?.click()
-                          }}
-                        >
-                          <Icon.Upload />
-                          Enviar
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.mobileCommandMenuItem}
-                          onClick={handleNewFolder}
-                        >
-                          <Icon.NewFolder />
-                          Nova pasta
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
                 </div>
               ) : (
-                <>
-                <div className={styles.topBarFilterRow}>
-                  {/* Search */}
-                  <div className={styles.searchWrap}>
-                    <span className={styles.searchIcon}><Icon.Search /></span>
-                    <input
-                      className={styles.searchInput}
-                      placeholder="Buscar arquivos..."
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                    />
-                    {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                isMobile ? (
+                  <div className={styles.topBarMobileRow}>
+                    <div className={styles.searchWrap}>
+                      <span className={styles.searchIcon}><Icon.Search /></span>
+                      <input
+                        className={styles.searchInput}
+                        placeholder="Buscar arquivos..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                      />
+                      {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                    </div>
+
+                    <div className={styles.sortWrap}>
+                      <Icon.Sort />
+                      <select
+                        className={styles.sortSelect}
+                        value={sortBy}
+                        onChange={e => setSortBy(e.target.value)}
+                      >
+                        <option value="modified">Modificado</option>
+                        <option value="name">Nome</option>
+                        <option value="size">Tamanho</option>
+                      </select>
+                    </div>
+
+                    <div className={styles.viewToggle}>
+                      <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
+                      <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
+                    </div>
+
+                    <div className={styles.mobileCommandMenuWrap} ref={mobileCommandMenuRef}>
+                      <button
+                        type="button"
+                        className={styles.mobileCommandMenuButton}
+                        aria-label="Mais ações"
+                        aria-expanded={mobileCommandMenuOpen}
+                        onClick={() => setMobileCommandMenuOpen((value) => !value)}
+                      >
+                        <Icon.More />
+                      </button>
+
+                      {mobileCommandMenuOpen ? (
+                        <div className={styles.mobileCommandMenu}>
+                          <button
+                            type="button"
+                            className={styles.mobileCommandMenuItem}
+                            onClick={() => {
+                              setMobileCommandMenuOpen(false)
+                              fileInputRef.current?.click()
+                            }}
+                          >
+                            <Icon.Upload />
+                            Enviar
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.mobileCommandMenuItem}
+                            onClick={handleNewFolder}
+                          >
+                            <Icon.NewFolder />
+                            Nova pasta
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    <div className={styles.topBarFilterRow}>
+                      <div className={styles.searchWrap}>
+                        <span className={styles.searchIcon}><Icon.Search /></span>
+                        <input
+                          className={styles.searchInput}
+                          placeholder="Buscar arquivos..."
+                          value={search}
+                          onChange={e => setSearch(e.target.value)}
+                        />
+                        {search && <button className={styles.searchClear} onClick={() => setSearch('')}><Icon.X /></button>}
+                      </div>
 
-                  {/* Sort */}
-                  <div className={styles.sortWrap}>
-                    <Icon.Sort />
-                    <select
-                      className={styles.sortSelect}
-                      value={sortBy}
-                      onChange={e => setSortBy(e.target.value)}
-                    >
-                      <option value="modified">Modificado</option>
-                      <option value="name">Nome</option>
-                      <option value="size">Tamanho</option>
-                    </select>
-                  </div>
-                </div>
+                      <div className={styles.sortWrap}>
+                        <Icon.Sort />
+                        <select
+                          className={styles.sortSelect}
+                          value={sortBy}
+                          onChange={e => setSortBy(e.target.value)}
+                        >
+                          <option value="modified">Modificado</option>
+                          <option value="name">Nome</option>
+                          <option value="size">Tamanho</option>
+                        </select>
+                      </div>
+                    </div>
 
-                <div className={styles.topBarActionRow}>
-                  {/* View toggle */}
-                  <div className={styles.viewToggle}>
-                    <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
-                    <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
-                  </div>
+                    <div className={styles.topBarActionRow}>
+                      <div className={styles.viewToggle}>
+                        <button className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Grade"><Icon.Grid /></button>
+                        <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')} title="Lista"><Icon.List /></button>
+                      </div>
 
-                  {/* New folder */}
-                  <button className={styles.newFolderBtn} onClick={handleNewFolder}>
-                    <Icon.NewFolder />
-                    Nova pasta
-                  </button>
+                      <button className={styles.newFolderBtn} onClick={handleNewFolder}>
+                        <Icon.NewFolder />
+                        Nova pasta
+                      </button>
 
-                  {/* Upload */}
-                  <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
-                    <Icon.Upload />
-                    Enviar
-                  </button>
+                      <button className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
+                        <Icon.Upload />
+                        Enviar
+                      </button>
 
-                  <div className={styles.topBarNotification}>
-                    <InviteNotifications />
-                  </div>
-                </div>
-                </>
-              )
-            )}
-            <input ref={fileInputRef} type="file" multiple className={styles.hiddenInput} onChange={handleFileInput} />
-          </div>
-        </header>
+                      <div className={styles.topBarNotification}>
+                        <InviteNotifications />
+                      </div>
+                    </div>
+                  </>
+                )
+              )}
+              <input ref={fileInputRef} type="file" multiple className={styles.hiddenInput} onChange={handleFileInput} />
+            </div>
+          )}
+        />
 
         {/* Content area */}
         <div
@@ -1448,7 +1417,7 @@ export default function FilesPage() {
                 mobileCurrentFolder ? <p className={styles.filesAreaCurrentFolder}>{mobileCurrentFolder}</p> : <span />
               ) : (
                 <p className={styles.filesAreaKicker}>
-                  {breadcrumb.length ? breadcrumb[breadcrumb.length - 1].name : sectionLabel}
+                  {currentFolderLabel}
                 </p>
               )}
               <div className={styles.filesAreaMeta}>

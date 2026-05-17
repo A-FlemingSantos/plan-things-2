@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
@@ -783,36 +784,45 @@ export default function CalendarPage() {
         contentTag="main"
         mobileTitle="Calendário"
       >
-        <header className={styles.commandBar}>
-          <div className={styles.commandLeft}>
-            <button type="button" className={styles.primaryButton} onClick={openCreateDialog}>
-              <Icon.Calendar />
-              Novo evento
-            </button>
-            {VIEW_OPTIONS.map((mode) => (
-              <button
-                type="button"
-                key={mode.id}
-                className={`${styles.commandButton} ${view === mode.id ? styles.commandButtonActive : ''}`}
-                onClick={() => setView(mode.id)}
-              >
-                {mode.label}
-              </button>
-            ))}
-          </div>
+        <PlanPageHeader
+          title="Calendário"
+          icon={<Icon.Calendar />}
+          sticky
+          tone="solid"
+          titleSize="medium"
+          actions={(
+            <div className={styles.commandHeaderActions}>
+              <div className={styles.commandLeft}>
+                <button type="button" className={styles.primaryButton} onClick={openCreateDialog}>
+                  <Icon.Calendar />
+                  Novo evento
+                </button>
+                {VIEW_OPTIONS.map((mode) => (
+                  <button
+                    type="button"
+                    key={mode.id}
+                    className={`${styles.commandButton} ${view === mode.id ? styles.commandButtonActive : ''}`}
+                    onClick={() => setView(mode.id)}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
 
-          <div className={styles.commandRight}>
-            <div className={styles.searchWrap}>
-              <Icon.Search />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar eventos" />
-              {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><Icon.X /></button>}
+              <div className={styles.commandRight}>
+                <div className={styles.searchWrap}>
+                  <Icon.Search />
+                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar eventos" />
+                  {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><Icon.X /></button>}
+                </div>
+                <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avançados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
+                <button type="button" className={styles.commandButton} onClick={() => showNotification('Link do calendário copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
+                <button type="button" className={styles.commandButton} onClick={handlePrint}><Icon.Print />Imprimir</button>
+                <InviteNotifications />
+              </div>
             </div>
-            <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avançados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
-            <button type="button" className={styles.commandButton} onClick={() => showNotification('Link do calendário copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
-            <button type="button" className={styles.commandButton} onClick={handlePrint}><Icon.Print />Imprimir</button>
-            <InviteNotifications />
-          </div>
-        </header>
+          )}
+        />
 
         {loadError && (
           <div className={styles.loadError} role="status" aria-live="polite">

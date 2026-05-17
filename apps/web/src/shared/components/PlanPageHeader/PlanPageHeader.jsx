@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom'
-import { ROUTES } from '../../config/routes.js'
 import styles from './PlanPageHeader.module.css'
 
 export default function PlanPageHeader({
@@ -7,9 +5,6 @@ export default function PlanPageHeader({
   meta = null,
   icon = null,
   actions = null,
-  breadcrumbCurrent,
-  breadcrumbRootLabel = 'Workspace',
-  breadcrumbRootPath = ROUTES.workspace,
   sticky = false,
   tone = 'solid',
   titleSize = 'medium',
@@ -35,12 +30,6 @@ export default function PlanPageHeader({
   return (
     <header className={headerClassName}>
       <div className={styles.left}>
-        <nav className={styles.breadcrumb} aria-label="Caminho">
-          <Link to={breadcrumbRootPath} className={styles.breadcrumbLink}>{breadcrumbRootLabel}</Link>
-          <span className={styles.breadcrumbSep}>›</span>
-          <span className={styles.breadcrumbCurrent}>{breadcrumbCurrent}</span>
-        </nav>
-
         <div className={titleRowClassName}>
           {icon ? <span className={styles.icon}>{icon}</span> : null}
           <h1 className={titleClassName}>{title}</h1>

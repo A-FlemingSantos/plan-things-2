@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
@@ -1260,55 +1261,42 @@ export default function Workspace() {
         contentTag="main"
         mobileTitle="Início"
       >
-          {/* Top bar */}
-          <div className={styles.topbar}>
-            <div className={styles.topbarLeft}>
-              <div className={styles.pageTitleRow}>
-                <h1 className={styles.pageTitle}>Início</h1>
-                {isMobile ? (
-                  <button
-                    type="button"
-                    className={styles.newPlanBtn}
-                    onClick={openNewPlan}
-                  >
-                    <PlusIcon />
-                    Novo plano
-                  </button>
-                ) : null}
-              </div>
-              <p className={styles.pageSubtitle}>Bom dia, {currentUser?.fullName?.split(' ')[0] ?? 'Arthur'}.</p>
-            </div>
-            <div className={styles.topbarRight}>
-              <div className={styles.topbarUtility}>
-                <div className={styles.searchWrap}>
-                  <span className={styles.searchIcon}><SearchIcon /></span>
-                  <input
-                    className={styles.searchInput}
-                    placeholder="Buscar planos..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                  {search && (
-                    <button
-                      type="button"
-                      className={styles.searchClear}
-                      onClick={() => setSearch('')}
-                      aria-label="Limpar busca de planos"
-                    >
-                      <XIcon />
-                    </button>
-                  )}
+          <PlanPageHeader
+            title="Início"
+            meta={`Bom dia, ${currentUser?.fullName?.split(' ')[0] ?? 'Arthur'}.`}
+            tone="solid"
+            titleSize="medium"
+            actions={(
+              <div className={styles.topbarRight}>
+                <div className={styles.topbarUtility}>
+                  <div className={styles.searchWrap}>
+                    <span className={styles.searchIcon}><SearchIcon /></span>
+                    <input
+                      className={styles.searchInput}
+                      placeholder="Buscar planos..."
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                    />
+                    {search && (
+                      <button
+                        type="button"
+                        className={styles.searchClear}
+                        onClick={() => setSearch('')}
+                        aria-label="Limpar busca de planos"
+                      >
+                        <XIcon />
+                      </button>
+                    )}
+                  </div>
+                  <InviteNotifications />
                 </div>
-                <InviteNotifications />
-              </div>
-              {!isMobile ? (
                 <button type="button" className={styles.newPlanBtn} onClick={openNewPlan}>
-                <PlusIcon />
-                Novo plano
+                  <PlusIcon />
+                  Novo plano
                 </button>
-              ) : null}
-            </div>
-          </div>
+              </div>
+            )}
+          />
 
           {/* Content */}
           <div className={styles.content}>

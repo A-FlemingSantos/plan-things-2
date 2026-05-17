@@ -2474,7 +2474,6 @@ export default function KanbanBoard() {
         <div className={boardMainClassName} style={boardCoverStyle}>
         <PlanPageHeader
           title={boardHeaderTitle}
-          breadcrumbCurrent={boardHeaderTitle}
           meta={boardHeaderMeta}
           icon={<Icon.Board />}
           sticky

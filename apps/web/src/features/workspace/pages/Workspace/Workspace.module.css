@@ -2111,7 +2111,9 @@
   }
   .topbarRight {
     width: 100%;
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   .topbarUtility {
     width: 100%;
