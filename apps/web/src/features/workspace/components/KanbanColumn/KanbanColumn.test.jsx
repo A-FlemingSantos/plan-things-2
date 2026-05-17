@@ -43,6 +43,7 @@ function buildColumnProps(props = {}) {
       Check: Icon,
       Comment: Icon,
       Clock: Icon,
+      Calendar: Icon,
     },
     styles,
   }
@@ -121,7 +122,7 @@ describe('KanbanColumn card composer', () => {
     expect(onCardClick).toHaveBeenCalledWith(card, 'Em progresso')
   })
 
-  it('passes the clock icon through to cards with due dates', () => {
+  it('passes the calendar icon through to cards with due dates', () => {
     function DueIcon() {
       return <span data-testid="due-icon" />
     }
@@ -146,7 +147,7 @@ describe('KanbanColumn card composer', () => {
       },
       icons: {
         ...buildColumnProps().icons,
-        Clock: DueIcon,
+        Calendar: DueIcon,
       },
     })
 
