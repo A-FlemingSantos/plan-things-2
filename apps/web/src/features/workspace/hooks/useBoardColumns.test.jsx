@@ -73,6 +73,16 @@ function buildBackendCardView(overrides = {}) {
   }
 }
 
+function createDeferred() {
+  let resolve
+  let reject
+  const promise = new Promise((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('useBoardColumns card saves without board reload', () => {
   beforeEach(() => {
     apiClientMock.apiRequest.mockReset()
@@ -427,6 +437,80 @@ describe('useBoardColumns card saves without board reload', () => {
 
     expect(loadPlanBoard).not.toHaveBeenCalled()
     expect(boardState[0].cards[0].checklists).toEqual([])
+  })
+
+  it('optimistically toggles checklist items and rolls back on backend failure', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [
+          buildFrontendCard({
+            checklists: [
+              {
+                id: 'checklist-1',
+                title: 'Entrega',
+                items: [
+                  {
+                    id: 'item-1',
+                    title: 'Enviar briefing',
+                    completed: false,
+                  },
+                ],
+              },
+            ],
+          }),
+        ],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let updatePromise
+    await act(async () => {
+      updatePromise = result.current.updateChecklistItem({
+        id: 'item-1',
+        title: 'Enviar briefing',
+        completed: true,
+        assigneeUserId: null,
+        startAt: null,
+        dueAt: null,
+      })
+      await Promise.resolve()
+    })
+
+    expect(boardState[0].cards[0].checklists[0].items).toEqual([
+      expect.objectContaining({
+        id: 'item-1',
+        completed: true,
+      }),
+    ])
+
+    deferred.reject(new Error('Falha ao salvar item'))
+
+    await expect(updatePromise).rejects.toThrow('Falha ao salvar item')
+    expect(boardState[0].cards[0].checklists[0].items).toEqual([
+      expect.objectContaining({
+        id: 'item-1',
+        completed: false,
+      }),
+    ])
   })
 
   it('preserves untouched column references during localized updates', async () => {

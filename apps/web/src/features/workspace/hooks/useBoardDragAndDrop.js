@@ -1,5 +1,44 @@
 import { useCallback, useState } from 'react'
 
+function moveCardInColumns(columns, cardId, sourceColId, target) {
+  const nextColumns = columns.map((column) => ({ ...column, cards: [...column.cards] }))
+  const sourceColumn = nextColumns.find((column) => column.id === sourceColId)
+  const card = sourceColumn?.cards.find((item) => item.id === cardId)
+
+  if (!card) {
+    return columns
+  }
+
+  sourceColumn.cards = sourceColumn.cards.filter((item) => item.id !== cardId)
+
+  if (target.type === 'col') {
+    const destinationColumn = nextColumns.find((column) => column.id === target.colId)
+
+    if (!destinationColumn) {
+      return columns
+    }
+
+    destinationColumn.cards.push(card)
+    return nextColumns
+  }
+
+  const destinationColumn = nextColumns.find((column) => column.id === target.colId)
+
+  if (!destinationColumn) {
+    return columns
+  }
+
+  const targetIndex = destinationColumn.cards.findIndex((item) => item.id === target.cardId)
+
+  if (targetIndex === -1) {
+    destinationColumn.cards.push(card)
+  } else {
+    destinationColumn.cards.splice(targetIndex, 0, card)
+  }
+
+  return nextColumns
+}
+
 export function useBoardDragAndDrop({
   activePlanId,
   columns = [],
@@ -35,9 +74,13 @@ export function useBoardDragAndDrop({
         ? Math.max(0, destinationIndex - 1)
         : destinationIndex
 
+      const previousColumns = columns
+
       try {
+        updateColumns((prev) => moveCardInColumns(prev, cardId, sourceColId, target))
         await moveCard(cardId, target.colId, targetPosition)
       } catch (error) {
+        updateColumns(() => previousColumns)
         onMoveError?.(error)
       } finally {
         setDragState(null)
@@ -46,44 +89,7 @@ export function useBoardDragAndDrop({
       return
     }
 
-    updateColumns((prev) => {
-      const nextColumns = prev.map((column) => ({ ...column, cards: [...column.cards] }))
-      const sourceColumn = nextColumns.find((column) => column.id === sourceColId)
-      const card = sourceColumn?.cards.find((item) => item.id === cardId)
-
-      if (!card) {
-        return prev
-      }
-
-      sourceColumn.cards = sourceColumn.cards.filter((item) => item.id !== cardId)
-
-      if (target.type === 'col') {
-        const destinationColumn = nextColumns.find((column) => column.id === target.colId)
-
-        if (!destinationColumn) {
-          return prev
-        }
-
-        destinationColumn.cards.push(card)
-        return nextColumns
-      }
-
-      const destinationColumn = nextColumns.find((column) => column.id === target.colId)
-
-      if (!destinationColumn) {
-        return prev
-      }
-
-      const targetIndex = destinationColumn.cards.findIndex((item) => item.id === target.cardId)
-
-      if (targetIndex === -1) {
-        destinationColumn.cards.push(card)
-      } else {
-        destinationColumn.cards.splice(targetIndex, 0, card)
-      }
-
-      return nextColumns
-    })
+    updateColumns((prev) => moveCardInColumns(prev, cardId, sourceColId, target))
 
     setDragState(null)
     setDropTarget(null)

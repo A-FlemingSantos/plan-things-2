@@ -34,6 +34,16 @@ function buildCard(overrides = {}) {
   }
 }
 
+function createDeferred() {
+  let resolve
+  let reject
+  const promise = new Promise((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('CardModal file picker positioning', () => {
   let originalInnerWidth
   let originalInnerHeight
@@ -168,6 +178,118 @@ describe('CardModal file picker positioning', () => {
     await waitFor(() => {
       expect(createChecklist).toHaveBeenCalledWith('card-1', 'Entrega')
     })
+  })
+
+  it('shows a new checklist immediately while the backend request is still pending', async () => {
+    const user = userEvent.setup()
+    const deferred = createDeferred()
+    const createChecklist = vi.fn(() => deferred.promise)
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        onCreateChecklist={createChecklist}
+        onCreateChecklistItem={async () => {}}
+        onUpdateChecklistItem={async () => {}}
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /checklist/i }))
+    await user.clear(screen.getByLabelText('Título do checklist'))
+    await user.type(screen.getByLabelText('Título do checklist'), 'Entrega')
+
+    const dialogs = screen.getAllByRole('dialog')
+    const checklistDialog = dialogs[dialogs.length - 1]
+    await user.click(within(checklistDialog).getByRole('button', { name: /^Adicionar$/i }))
+
+    expect(screen.getByText('Entrega')).toBeInTheDocument()
+
+    deferred.resolve({
+      id: 'checklist-1',
+      title: 'Entrega',
+      items: [],
+    })
+
+    await waitFor(() => {
+      expect(createChecklist).toHaveBeenCalledWith('card-1', 'Entrega')
+    })
+  })
+
+  it('reverts checklist item toggles when the backend update fails', async () => {
+    const user = userEvent.setup()
+    const deferred = createDeferred()
+    const updateChecklistItem = vi.fn(() => deferred.promise)
+
+    render(
+      <CardModal
+        card={buildCard({
+          checklists: [
+            {
+              id: 'checklist-1',
+              title: 'Entrega',
+              items: [
+                {
+                  id: 'item-1',
+                  title: 'Enviar briefing',
+                  completed: false,
+                },
+              ],
+            },
+          ],
+        })}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        onCreateChecklist={async () => {}}
+        onDeleteChecklist={async () => {}}
+        onCreateChecklistItem={async () => {}}
+        onUpdateChecklistItem={updateChecklistItem}
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    const itemRow = screen.getByText('Enviar briefing').closest('label')
+    const toggleButton = within(itemRow).getByRole('button')
+
+    await user.click(toggleButton)
+
+    expect(screen.getByText('Enviar briefing')).toHaveClass('cmChecklistItemTextChecked')
+
+    await waitFor(() => {
+      expect(updateChecklistItem).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'item-1',
+        completed: true,
+      }))
+    })
+
+    deferred.reject(new Error('Falha ao atualizar item'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Enviar briefing')).not.toHaveClass('cmChecklistItemTextChecked')
+    })
+    expect(screen.getByText('Falha ao atualizar item')).toBeInTheDocument()
   })
 
   it('disables checklist creation when the card already has one', () => {

@@ -827,17 +827,26 @@ export default function CardModal({
     if (canPersistChecklist) {
       if (isChecklistMutating || activeChecklist) return
 
+      const optimisticChecklist = normalizeChecklist({
+        id: `temp-checklist-${uid()}`,
+        title: nextTitle,
+        items: [],
+      })
+
       setIsChecklistMutating(true)
       setSubmitError(null)
+      setActiveChecklist(optimisticChecklist)
+      setChecklistComposerOpen(true)
+      setShowChecklistMenu(false)
+      setChecklistTitle('Checklist')
+      resetChecklistItemDraft()
 
       try {
         const createdChecklist = await onCreateChecklist(card.id, nextTitle)
         setActiveChecklist(normalizeChecklist(createdChecklist))
-        setChecklistComposerOpen(true)
-        setShowChecklistMenu(false)
-        setChecklistTitle('Checklist')
-        resetChecklistItemDraft()
       } catch (error) {
+        setActiveChecklist(null)
+        setChecklistComposerOpen(false)
         setSubmitError(error?.message ?? 'Não foi possível criar a checklist.')
       } finally {
         setIsChecklistMutating(false)
@@ -855,14 +864,18 @@ export default function CardModal({
     if (!activeChecklist || isChecklistMutating) return
 
     if (canDeletePersistedChecklist) {
+      const previousChecklist = activeChecklist
+
       setIsChecklistMutating(true)
       setSubmitError(null)
+      setActiveChecklist(null)
+      closeChecklistComposer()
 
       try {
-        await onDeleteChecklist(activeChecklist.id)
-        setActiveChecklist(null)
-        closeChecklistComposer()
+        await onDeleteChecklist(previousChecklist.id)
       } catch (error) {
+        setActiveChecklist(previousChecklist)
+        setChecklistComposerOpen(true)
         setSubmitError(error?.message ?? 'Não foi possível excluir a checklist.')
       } finally {
         setIsChecklistMutating(false)
@@ -894,8 +907,41 @@ export default function CardModal({
     }
 
     if (canPersistChecklist) {
+      if (isChecklistMutating || activeChecklist.id?.startsWith('temp-checklist-')) return
+
+      const previousChecklist = activeChecklist
+      const previousDraft = {
+        newChecklistItem,
+        checklistAssigneeUserId,
+        checklistStartEnabled,
+        checklistStartDateValue,
+        checklistDueEnabled,
+        checklistDueValue,
+        checklistSelectedDay,
+        checklistDateMenuMonth,
+      }
+      const optimisticItem = normalizeChecklistItem({
+        id: `temp-checklist-item-${uid()}`,
+        title: newChecklistItem.trim(),
+        completed: false,
+        assigneeUserId: checklistAssigneeUserId,
+        assignee: members.find((member) => member.id === checklistAssigneeUserId) ?? null,
+        startAt,
+        dueAt,
+      })
+
       setIsChecklistMutating(true)
       setSubmitError(null)
+      setActiveChecklist((prev) => (
+        prev
+          ? {
+              ...prev,
+              items: [...prev.items, optimisticItem],
+            }
+          : prev
+      ))
+      resetChecklistItemDraft()
+      setChecklistComposerOpen(true)
 
       try {
         const createdItem = await onCreateChecklistItem(activeChecklist.id, {
@@ -909,13 +955,22 @@ export default function CardModal({
           prev
             ? {
                 ...prev,
-                items: [...prev.items, normalizeChecklistItem(createdItem)],
+                items: prev.items.map((item) => (
+                  item.id === optimisticItem.id ? normalizeChecklistItem(createdItem) : item
+                )),
               }
             : prev
         ))
-        resetChecklistItemDraft()
-        setChecklistComposerOpen(true)
       } catch (error) {
+        setActiveChecklist(previousChecklist)
+        setNewChecklistItem(previousDraft.newChecklistItem)
+        setChecklistAssigneeUserId(previousDraft.checklistAssigneeUserId)
+        setChecklistStartEnabled(previousDraft.checklistStartEnabled)
+        setChecklistStartDateValue(previousDraft.checklistStartDateValue)
+        setChecklistDueEnabled(previousDraft.checklistDueEnabled)
+        setChecklistDueValue(previousDraft.checklistDueValue)
+        setChecklistSelectedDay(previousDraft.checklistSelectedDay)
+        setChecklistDateMenuMonth(previousDraft.checklistDateMenuMonth)
         setSubmitError(error?.message ?? 'Não foi possível adicionar o item da checklist.')
       } finally {
         setIsChecklistMutating(false)
@@ -935,8 +990,25 @@ export default function CardModal({
     if (!currentItem) return
 
     if (canPersistChecklist) {
+      if (isChecklistMutating || currentItem.id?.startsWith('temp-checklist-item-')) return
+
+      const optimisticItem = normalizeChecklistItem({
+        ...currentItem,
+        completed: !Boolean(currentItem.completed ?? currentItem.checked),
+      })
+
       setTogglingChecklistItemId(itemId)
       setSubmitError(null)
+      setActiveChecklist((prev) => (
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((item) => (
+                item.id === itemId ? optimisticItem : item
+              )),
+            }
+          : prev
+      ))
 
       try {
         const updatedItem = await onUpdateChecklistItem({
@@ -959,6 +1031,16 @@ export default function CardModal({
             : prev
         ))
       } catch (error) {
+        setActiveChecklist((prev) => (
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((item) => (
+                  item.id === itemId ? currentItem : item
+                )),
+              }
+            : prev
+        ))
         setSubmitError(error?.message ?? 'Não foi possível atualizar o item da checklist.')
       } finally {
         setTogglingChecklistItemId(null)

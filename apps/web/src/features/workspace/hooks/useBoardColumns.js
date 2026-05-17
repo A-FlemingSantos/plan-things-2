@@ -231,6 +231,44 @@ function addChecklistToCard(columns, cardId, nextChecklist) {
   return hasChanges ? nextColumns : columns
 }
 
+function replaceChecklistByIdInColumns(columns, checklistId, nextChecklist) {
+  if (!Array.isArray(columns) || !checklistId || !nextChecklist?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
+      let cardChanged = false
+      const currentChecklists = Array.isArray(card.checklists) ? card.checklists : []
+      const nextChecklists = currentChecklists.map((checklist) => {
+        if (checklist.id !== checklistId) {
+          return checklist
+        }
+
+        cardChanged = true
+        columnChanged = true
+        hasChanges = true
+        return nextChecklist
+      })
+
+      return cardChanged
+        ? {
+            ...card,
+            checklists: nextChecklists,
+          }
+        : card
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
 function removeChecklistFromColumns(columns, checklistId) {
   if (!Array.isArray(columns) || !checklistId) {
     return columns
@@ -320,6 +358,54 @@ function replaceChecklistItemInColumns(columns, nextItem) {
         let checklistChanged = false
         const nextItems = (Array.isArray(checklist.items) ? checklist.items : []).map((item) => {
           if (item.id !== nextItem.id) {
+            return item
+          }
+
+          checklistChanged = true
+          cardChanged = true
+          columnChanged = true
+          hasChanges = true
+          return nextItem
+        })
+
+        return checklistChanged
+          ? {
+              ...checklist,
+              items: nextItems,
+            }
+          : checklist
+      })
+
+      return cardChanged
+        ? {
+            ...card,
+            checklists: nextChecklists,
+          }
+        : card
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function replaceChecklistItemByIdInColumns(columns, itemId, nextItem) {
+  if (!Array.isArray(columns) || !itemId || !nextItem?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+
+    const nextCards = column.cards.map((card) => {
+      let cardChanged = false
+      const nextChecklists = (Array.isArray(card.checklists) ? card.checklists : []).map((checklist) => {
+        let checklistChanged = false
+        const nextItems = (Array.isArray(checklist.items) ? checklist.items : []).map((item) => {
+          if (item.id !== itemId) {
             return item
           }
 
@@ -653,66 +739,117 @@ export function useBoardColumns({
   const createChecklist = useCallback(async (cardId, title) => {
     if (!activePlanId || !isBackendDriven) return null
 
-    const checklist = await apiRequest(`/api/plans/${activePlanId}/board/cards/${cardId}/checklists`, {
-      method: 'POST',
-      token: accessToken,
-      body: {
-        title,
-      },
-    })
+    const previousColumns = columns
+    const optimisticChecklist = {
+      id: `temp-checklist-${uid()}`,
+      title,
+      position: 0,
+      items: [],
+    }
 
-    updateColumns((prev) => addChecklistToCard(prev, cardId, checklist))
-    return checklist
-  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
+    updateColumns((prev) => addChecklistToCard(prev, cardId, optimisticChecklist))
+
+    try {
+      const checklist = await apiRequest(`/api/plans/${activePlanId}/board/cards/${cardId}/checklists`, {
+        method: 'POST',
+        token: accessToken,
+        body: {
+          title,
+        },
+      })
+
+      updateColumns((prev) => replaceChecklistByIdInColumns(prev, optimisticChecklist.id, checklist))
+      return checklist
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, columns, isBackendDriven, updateColumns])
 
   const deleteChecklist = useCallback(async (checklistId) => {
     if (!activePlanId || !isBackendDriven) return false
 
-    await apiRequest(`/api/plans/${activePlanId}/board/checklists/${checklistId}`, {
-      method: 'DELETE',
-      token: accessToken,
-    })
-
+    const previousColumns = columns
     updateColumns((prev) => removeChecklistFromColumns(prev, checklistId))
-    return true
-  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
+
+    try {
+      await apiRequest(`/api/plans/${activePlanId}/board/checklists/${checklistId}`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+
+      return true
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, columns, isBackendDriven, updateColumns])
 
   const createChecklistItem = useCallback(async (checklistId, item) => {
     if (!activePlanId || !isBackendDriven) return null
 
-    const createdItem = await apiRequest(`/api/plans/${activePlanId}/board/checklists/${checklistId}/items`, {
-      method: 'POST',
-      token: accessToken,
-      body: {
-        title: item.title ?? item.text ?? '',
-        assigneeUserId: item.assigneeUserId ?? null,
-        startAt: item.startAt ?? null,
-        dueAt: item.dueAt ?? null,
-      },
-    })
+    const previousColumns = columns
+    const optimisticItem = {
+      id: `temp-checklist-item-${uid()}`,
+      title: item.title ?? item.text ?? '',
+      text: item.title ?? item.text ?? '',
+      completed: false,
+      checked: false,
+      assigneeUserId: item.assigneeUserId ?? null,
+      assignee: null,
+      startAt: item.startAt ?? null,
+      dueAt: item.dueAt ?? null,
+      position: 0,
+    }
 
-    updateColumns((prev) => appendChecklistItemToColumns(prev, checklistId, createdItem))
-    return createdItem
-  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
+    updateColumns((prev) => appendChecklistItemToColumns(prev, checklistId, optimisticItem))
+
+    try {
+      const createdItem = await apiRequest(`/api/plans/${activePlanId}/board/checklists/${checklistId}/items`, {
+        method: 'POST',
+        token: accessToken,
+        body: {
+          title: item.title ?? item.text ?? '',
+          assigneeUserId: item.assigneeUserId ?? null,
+          startAt: item.startAt ?? null,
+          dueAt: item.dueAt ?? null,
+        },
+      })
+
+      updateColumns((prev) => replaceChecklistItemByIdInColumns(prev, optimisticItem.id, createdItem))
+      return createdItem
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, columns, isBackendDriven, updateColumns])
 
   const updateChecklistItem = useCallback(async (item) => {
     if (!activePlanId || !isBackendDriven) return null
 
-    const updatedItem = await apiRequest(`/api/plans/${activePlanId}/board/checklists/items/${item.id}`, {
-      method: 'PATCH',
-      token: accessToken,
-      body: {
-        title: item.title ?? item.text ?? '',
-        completed: Boolean(item.completed ?? item.checked),
-        assigneeUserId: item.assigneeUserId ?? null,
-        startAt: item.startAt ?? null,
-        dueAt: item.dueAt ?? null,
-      },
-    })
+    const previousColumns = columns
+    updateColumns((prev) => replaceChecklistItemInColumns(prev, item))
 
-    updateColumns((prev) => replaceChecklistItemInColumns(prev, updatedItem))
-    return updatedItem
-  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
+    try {
+      const updatedItem = await apiRequest(`/api/plans/${activePlanId}/board/checklists/items/${item.id}`, {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          title: item.title ?? item.text ?? '',
+          completed: Boolean(item.completed ?? item.checked),
+          assigneeUserId: item.assigneeUserId ?? null,
+          startAt: item.startAt ?? null,
+          dueAt: item.dueAt ?? null,
+        },
+      })
+
+      updateColumns((prev) => replaceChecklistItemInColumns(prev, updatedItem))
+      return updatedItem
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, columns, isBackendDriven, updateColumns])
 
   const totalCards = useMemo(
     () => columns.reduce((sum, column) => sum + column.cards.length, 0),

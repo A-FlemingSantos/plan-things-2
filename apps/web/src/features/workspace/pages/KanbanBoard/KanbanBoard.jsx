@@ -270,6 +270,86 @@ function removeFileAttachmentsFromColumns(columns, fileId) {
   return hasChanges ? nextColumns : columns
 }
 
+function insertCardInOrder(cards, nextCard) {
+  const cardsWithoutCurrent = cards.filter((card) => card.id !== nextCard.id)
+  const rawPosition = nextCard.position
+
+  if (!Number.isFinite(rawPosition)) {
+    return [...cardsWithoutCurrent, nextCard]
+  }
+
+  const insertionIndex = Math.max(0, Math.min(rawPosition, cardsWithoutCurrent.length))
+  return [
+    ...cardsWithoutCurrent.slice(0, insertionIndex),
+    nextCard,
+    ...cardsWithoutCurrent.slice(insertionIndex),
+  ]
+}
+
+function replaceCardInColumns(columns, nextCard) {
+  if (!Array.isArray(columns) || !nextCard?.id) {
+    return columns
+  }
+
+  const inferredColumnId = nextCard.columnId
+    ?? columns.find((column) => column.cards.some((card) => card.id === nextCard.id))?.id
+  if (!inferredColumnId) {
+    return columns
+  }
+
+  const cardForColumns = nextCard.columnId === inferredColumnId
+    ? nextCard
+    : { ...nextCard, columnId: inferredColumnId }
+  const hasTargetColumn = columns.some((column) => column.id === inferredColumnId)
+  if (!hasTargetColumn) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    const hasCard = column.cards.some((card) => card.id === nextCard.id)
+
+    if (column.id === inferredColumnId) {
+      const nextCards = hasCard
+        ? column.cards.map((card) => (card.id === cardForColumns.id ? cardForColumns : card))
+        : insertCardInOrder(column.cards, cardForColumns)
+      const cardsChanged = nextCards.length !== column.cards.length
+        || nextCards.some((card, index) => card !== column.cards[index])
+
+      if (!cardsChanged) {
+        return column
+      }
+
+      hasChanges = true
+      return {
+        ...column,
+        cards: nextCards,
+      }
+    }
+
+    if (!hasCard) {
+      return column
+    }
+
+    hasChanges = true
+    return {
+      ...column,
+      cards: column.cards.filter((card) => card.id !== nextCard.id),
+    }
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function findCardInColumns(columns, cardId) {
+  if (!Array.isArray(columns) || !cardId) {
+    return null
+  }
+
+  return columns.flatMap((column) => column.cards).find((card) => card.id === cardId) ?? null
+}
+
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -672,8 +752,48 @@ export default function KanbanBoard() {
     }
   }
 
+  const saveCardOptimistically = useCallback(async (nextCard) => {
+    if (!nextCard?.id) {
+      return updateCard(nextCard)
+    }
+
+    const previousColumns = columns
+    const previousCard = findCardInColumns(previousColumns, nextCard.id)
+
+    updateColumns((currentColumns) => replaceCardInColumns(currentColumns, nextCard))
+    setActiveCard((current) => (
+      current?.card?.id === nextCard.id
+        ? { ...current, card: nextCard }
+        : current
+    ))
+
+    try {
+      const persistedCard = await updateCard(nextCard)
+      if (persistedCard) {
+        setActiveCard((current) => (
+          current?.card?.id === persistedCard.id
+            ? { ...current, card: persistedCard }
+            : current
+        ))
+      }
+      return persistedCard ?? nextCard
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      setActiveCard((current) => {
+        if (current?.card?.id !== nextCard.id) {
+          return current
+        }
+
+        return previousCard
+          ? { ...current, card: previousCard }
+          : current
+      })
+      throw error
+    }
+  }, [columns, updateCard, updateColumns])
+
   const handleCardUpdate = async (updatedCard) => {
-    return updateCard(updatedCard)
+    return saveCardOptimistically(updatedCard)
   }
 
   const handleCardDelete = async (cardId) => {
@@ -1340,24 +1460,33 @@ export default function KanbanBoard() {
 	    })
 	  }
 
-	  const togglePlannerPinned = async (item) => {
-	    if (item?.type === 'card') {
-	      const nextStarred = !Boolean(item.pinned)
-	      await updateCard({
-	        ...item.card,
-	        starred: nextStarred,
-	      })
-	      if (plannerPinnedById[item.id]) {
-	        setPlannerPinnedById((current) => {
-	          if (!current[item.id]) return current
-	          const next = { ...current }
-	          delete next[item.id]
-	          persistPlannerPinnedState(next)
-	          return next
-	        })
-	      }
-	      return
-	    }
+  const togglePlannerPinned = async (item) => {
+    if (item?.type === 'card') {
+      const nextStarred = !Boolean(item.pinned)
+      const previousPinnedById = plannerPinnedById
+      if (previousPinnedById[item.id]) {
+        setPlannerPinnedById((current) => {
+          if (!current[item.id]) return current
+          const next = { ...current }
+          delete next[item.id]
+          persistPlannerPinnedState(next)
+          return next
+        })
+      }
+
+      try {
+        await saveCardOptimistically({
+          ...item.card,
+          starred: nextStarred,
+        })
+      } catch (error) {
+        if (previousPinnedById[item.id]) {
+          setPlannerPinnedById(previousPinnedById)
+        }
+        showNotification(error?.message ?? 'Não foi possível atualizar o destaque da tarefa.')
+      }
+      return
+    }
 
 	    const itemId = item?.id
 	    if (!itemId) return
@@ -1525,14 +1654,14 @@ export default function KanbanBoard() {
 
   const togglePlannerCardCompleted = useCallback(async (card) => {
     try {
-      await updateCard({
+      await saveCardOptimistically({
         ...card,
         isCompleted: !card.isCompleted,
       })
     } catch (error) {
       showNotification(error?.message ?? 'Não foi possível atualizar a tarefa.')
     }
-  }, [showNotification, updateCard])
+  }, [saveCardOptimistically])
   const boardColumnIcons = useMemo(() => ({
     Plus: Icon.Plus,
     More: Icon.More,
