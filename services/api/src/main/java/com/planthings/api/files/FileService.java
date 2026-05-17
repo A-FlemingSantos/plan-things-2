@@ -127,16 +127,17 @@ public class FileService {
   }
 
   @Transactional
-  public MessageResponse uploadAndAttachToCard(MultipartFile multipartFile, UUID cardId) {
+  public CardAttachmentView uploadAndAttachToCard(MultipartFile multipartFile, UUID cardId) {
     UserEntity user = authenticatedUserService.requireUser();
     WorkspaceEntity workspace = requireWorkspace(user.getId());
     CardPlanContext context = requireCardPlanContext(cardId, user.getId());
+    PlanMemberRole currentRole = planAccessService.requireMemberRole(context.plan().getId(), user.getId());
 
     try {
       FileEntryEntity file = persistUploadedFile(multipartFile, null, user, workspace);
       ensureFileSharedWithPlan(file.getId(), context.plan().getId(), user.getId());
       createCardAttachmentIfAbsent(file.getId(), context.card().getId(), user.getId());
-      return new MessageResponse("Arquivo enviado e anexado ao cartao com sucesso.");
+      return requireAttachmentView(context.card().getId(), file.getId(), user, currentRole);
     } catch (BadRequestException | ForbiddenException | NotFoundException ex) {
       throw ex;
     } catch (Exception ex) {
@@ -236,13 +237,14 @@ public class FileService {
   }
 
   @Transactional
-  public MessageResponse attachToCard(UUID fileId, UUID cardId) {
+  public CardAttachmentView attachToCard(UUID fileId, UUID cardId) {
     UserEntity user = authenticatedUserService.requireUser();
     FileEntryEntity file = fileEntryRepository.findById(fileId)
         .orElseThrow(() -> new NotFoundException("ARQUIVO_NAO_ENCONTRADO", "Nao encontramos o arquivo informado."));
     requireRegularFile(file);
     CardPlanContext context = requireCardPlanContext(cardId, user.getId());
     PlanEntity plan = context.plan();
+    PlanMemberRole currentRole = planAccessService.requireMemberRole(plan.getId(), user.getId());
     boolean ownsFile = Objects.equals(file.getOwnerUserId(), user.getId());
     boolean sharedWithCardPlan = filePlanShareRepository.findByPlanIdAndFileEntryId(plan.getId(), file.getId()).isPresent();
 
@@ -256,7 +258,7 @@ public class FileService {
 
     createCardAttachmentIfAbsent(fileId, cardId, user.getId());
 
-    return new MessageResponse("Arquivo anexado ao cartao com sucesso.");
+    return requireAttachmentView(cardId, fileId, user, currentRole);
   }
 
   @Transactional
@@ -393,6 +395,47 @@ public class FileService {
     }
   }
 
+  private CardAttachmentView requireAttachmentView(UUID cardId, UUID fileId, UserEntity currentUser, PlanMemberRole currentRole) {
+    CardAttachmentEntity attachment = cardAttachmentRepository.findByCardId(cardId).stream()
+        .filter(item -> item.getFileEntryId().equals(fileId))
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("ANEXO_NAO_ENCONTRADO", "Nao encontramos o anexo informado."));
+    return toAttachmentView(attachment, currentUser, currentRole);
+  }
+
+  private CardAttachmentView toAttachmentView(CardAttachmentEntity attachment, UserEntity currentUser, PlanMemberRole currentRole) {
+    FileEntryEntity file = fileEntryRepository.findById(attachment.getFileEntryId())
+        .orElseThrow(() -> new NotFoundException("ARQUIVO_NAO_ENCONTRADO", "Nao encontramos o arquivo informado."));
+    boolean attachedByCurrentUser = Objects.equals(attachment.getAttachedByUserId(), currentUser.getId());
+    boolean canRemove = attachedByCurrentUser || currentRole == PlanMemberRole.OWNER || currentRole == PlanMemberRole.ADMIN;
+
+    return new CardAttachmentView(
+        attachment.getId(),
+        file.getId(),
+        file.getName(),
+        file.getType(),
+        file.getMimeType(),
+        file.getSizeBytes(),
+        toUserSummary(currentUser),
+        attachedByCurrentUser,
+        canRemove,
+        brazilDateTimeMapper.toDateTime(attachment.getCreatedAt())
+    );
+  }
+
+  private UserSummary toUserSummary(UserEntity user) {
+    if (user == null) {
+      return null;
+    }
+
+    return new UserSummary(
+        user.getId(),
+        user.getFullName(),
+        user.getEmail(),
+        null
+    );
+  }
+
   private void applySoftDeleteRecursively(FileEntryEntity root, UUID ownerUserId) {
     OffsetDateTime deletedAt = OffsetDateTime.now();
     List<FileEntryEntity> subtree = collectSubtree(root, ownerUserId);
@@ -501,6 +544,23 @@ public class FileService {
   }
 
   public record MessageResponse(String message) {
+  }
+
+  public record CardAttachmentView(
+      UUID id,
+      UUID fileId,
+      String name,
+      FileEntryType type,
+      String mimeType,
+      Long sizeBytes,
+      UserSummary attachedBy,
+      boolean attachedByCurrentUser,
+      boolean canRemove,
+      ApiDateTimeDto createdAt
+  ) {
+  }
+
+  public record UserSummary(UUID id, String fullName, String email, String avatarUrl) {
   }
 
   private record SharedFile(FileEntryEntity file, boolean sharedByCurrentUser, boolean canUnshare) {

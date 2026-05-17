@@ -72,7 +72,10 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
     mockMvc.perform(post("/api/files/" + fileId + "/attach/cards/" + cardId)
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.message").value("Arquivo anexado ao cartao com sucesso."));
+        .andExpect(jsonPath("$.data.id").isNotEmpty())
+        .andExpect(jsonPath("$.data.fileId").value(fileId))
+        .andExpect(jsonPath("$.data.name").value("briefing.txt"))
+        .andExpect(jsonPath("$.data.canRemove").value(true));
 
     mockMvc.perform(get("/api/files/plans/" + planId)
             .header("Authorization", "Bearer " + token))
@@ -264,7 +267,10 @@ class FileApiIntegrationTest extends ApiIntegrationTestSupport {
             .file(multipartFile)
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.message").value("Arquivo enviado e anexado ao cartao com sucesso."));
+        .andExpect(jsonPath("$.data.id").isNotEmpty())
+        .andExpect(jsonPath("$.data.name").value("anexo-atomico.txt"))
+        .andExpect(jsonPath("$.data.canRemove").value(true))
+        .andExpect(jsonPath("$.data.attachedByCurrentUser").value(true));
 
     String fileId = readJson(mockMvc.perform(get("/api/files")
             .header("Authorization", "Bearer " + token))

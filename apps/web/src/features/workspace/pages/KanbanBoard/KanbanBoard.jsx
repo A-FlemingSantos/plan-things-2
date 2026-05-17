@@ -115,6 +115,161 @@ function mapApiFileItem(item) {
   }
 }
 
+function mapApiAttachmentItem(item) {
+  return {
+    id: item.id,
+    fileId: item.fileId,
+    name: item.name,
+    type: item.type === 'FOLDER' ? 'folder' : getFileTypeFromName(item.name),
+    mimeType: item.mimeType ?? '',
+    size: item.sizeBytes ?? 0,
+    attachedBy: item.attachedBy ?? null,
+    attachedByCurrentUser: Boolean(item.attachedByCurrentUser),
+    canRemove: Boolean(item.canRemove),
+    createdAt: item.createdAt ?? null,
+  }
+}
+
+function mapAttachmentToFileItem(attachment) {
+  return {
+    id: attachment.fileId,
+    name: attachment.name,
+    type: attachment.type,
+    mimeType: attachment.mimeType ?? '',
+    size: attachment.size ?? 0,
+    modified: attachment.createdAt?.text ?? 'Agora',
+    sharedByCurrentUser: true,
+    canUnshare: true,
+  }
+}
+
+function upsertFileItem(items, nextItem) {
+  if (!Array.isArray(items) || !nextItem?.id) {
+    return items
+  }
+
+  const existingIndex = items.findIndex((item) => item.id === nextItem.id)
+  if (existingIndex < 0) {
+    return [...items, nextItem]
+  }
+
+  const currentItem = items[existingIndex]
+  const mergedItem = { ...currentItem, ...nextItem }
+  const hasChanges = Object.keys(mergedItem).some((key) => mergedItem[key] !== currentItem[key])
+  if (!hasChanges) {
+    return items
+  }
+
+  const nextItems = [...items]
+  nextItems[existingIndex] = mergedItem
+  return nextItems
+}
+
+function appendAttachmentToColumns(columns, cardId, nextAttachment) {
+  if (!Array.isArray(columns) || !cardId || !nextAttachment?.id) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+    const nextCards = column.cards.map((card) => {
+      if (card.id !== cardId) {
+        return card
+      }
+
+      const currentAttachments = Array.isArray(card.attachments) ? card.attachments : []
+      const existingIndex = currentAttachments.findIndex((attachment) => (
+        attachment.id === nextAttachment.id || attachment.fileId === nextAttachment.fileId
+      ))
+      const nextAttachments = existingIndex >= 0
+        ? currentAttachments.map((attachment, index) => (
+            index === existingIndex ? { ...attachment, ...nextAttachment } : attachment
+          ))
+        : [...currentAttachments, nextAttachment]
+
+      const attachmentsChanged = nextAttachments.length !== currentAttachments.length
+        || nextAttachments.some((attachment, index) => attachment !== currentAttachments[index])
+
+      if (!attachmentsChanged) {
+        return card
+      }
+
+      columnChanged = true
+      hasChanges = true
+      return {
+        ...card,
+        attachments: nextAttachments,
+      }
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function removeAttachmentFromColumns(columns, attachmentId) {
+  if (!Array.isArray(columns) || !attachmentId) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+    const nextCards = column.cards.map((card) => {
+      const currentAttachments = Array.isArray(card.attachments) ? card.attachments : []
+      const nextAttachments = currentAttachments.filter((attachment) => attachment.id !== attachmentId)
+      if (nextAttachments.length === currentAttachments.length) {
+        return card
+      }
+
+      columnChanged = true
+      hasChanges = true
+      return {
+        ...card,
+        attachments: nextAttachments,
+      }
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function removeFileAttachmentsFromColumns(columns, fileId) {
+  if (!Array.isArray(columns) || !fileId) {
+    return columns
+  }
+
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    let columnChanged = false
+    const nextCards = column.cards.map((card) => {
+      const currentAttachments = Array.isArray(card.attachments) ? card.attachments : []
+      const nextAttachments = currentAttachments.filter((attachment) => attachment.fileId !== fileId)
+      if (nextAttachments.length === currentAttachments.length) {
+        return card
+      }
+
+      columnChanged = true
+      hasChanges = true
+      return {
+        ...card,
+        attachments: nextAttachments,
+      }
+    })
+
+    return columnChanged ? { ...column, cards: nextCards } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -730,12 +885,25 @@ export default function KanbanBoard() {
   const attachFileToCard = async (file, cardId) => {
     if (!activePlan?.id || !isBackendDriven) return null
 
-    await apiRequest(`/api/files/${file.id}/attach/cards/${cardId}`, {
+    const createdAttachment = mapApiAttachmentItem(await apiRequest(`/api/files/${file.id}/attach/cards/${cardId}`, {
       method: 'POST',
       token: accessToken,
+    }))
+    let nextColumns = columns
+    updateColumns((prev) => {
+      nextColumns = appendAttachmentToColumns(prev, cardId, createdAttachment)
+      return nextColumns
     })
-    const nextColumns = await loadPlanBoard(activePlan.id)
-    await reloadFileLists()
+    setPlanFiles((current) => upsertFileItem(current, {
+      ...file,
+      sharedByCurrentUser: true,
+      canUnshare: true,
+    }))
+    setLibraryFiles((current) => upsertFileItem(current, {
+      ...file,
+      sharedByCurrentUser: true,
+      canUnshare: true,
+    }))
     showNotification(`"${file.name}" anexado ao cartão.`)
     return refreshActiveCardFromColumns(nextColumns, cardId)
   }
@@ -828,14 +996,19 @@ export default function KanbanBoard() {
     const formData = new FormData()
     formData.append('file', localFile)
 
-    await apiRequest(`/api/files/upload/attach/cards/${cardId}`, {
+    const createdAttachment = mapApiAttachmentItem(await apiRequest(`/api/files/upload/attach/cards/${cardId}`, {
       method: 'POST',
       token: accessToken,
       body: formData,
+    }))
+    const createdFile = mapAttachmentToFileItem(createdAttachment)
+    let nextColumns = columns
+    updateColumns((prev) => {
+      nextColumns = appendAttachmentToColumns(prev, cardId, createdAttachment)
+      return nextColumns
     })
-
-    const nextColumns = await loadPlanBoard(activePlan.id)
-    await reloadFileLists()
+    setPlanFiles((current) => upsertFileItem(current, createdFile))
+    setLibraryFiles((current) => upsertFileItem(current, createdFile))
     showNotification(`"${localFile.name}" enviado para a Biblioteca e anexado ao cartão.`)
     return refreshActiveCardFromColumns(nextColumns, cardId)
   }
@@ -847,7 +1020,11 @@ export default function KanbanBoard() {
       method: 'DELETE',
       token: accessToken,
     })
-    const nextColumns = await loadPlanBoard(activePlan.id)
+    let nextColumns = columns
+    updateColumns((prev) => {
+      nextColumns = removeAttachmentFromColumns(prev, attachment.id)
+      return nextColumns
+    })
     showNotification(`"${attachment.name}" removido do cartão.`)
     return refreshActiveCardFromColumns(nextColumns, activeCard?.card?.id)
   }
@@ -873,7 +1050,16 @@ export default function KanbanBoard() {
       method: 'POST',
       token: accessToken,
     })
-    await reloadFileLists()
+    setPlanFiles((current) => upsertFileItem(current, {
+      ...file,
+      sharedByCurrentUser: true,
+      canUnshare: true,
+    }))
+    setLibraryFiles((current) => upsertFileItem(current, {
+      ...file,
+      sharedByCurrentUser: true,
+      canUnshare: true,
+    }))
     showNotification(`"${file.name}" compartilhado com o plano.`)
   }
 
@@ -884,8 +1070,21 @@ export default function KanbanBoard() {
       method: 'DELETE',
       token: accessToken,
     })
-    const nextColumns = await loadPlanBoard(activePlan.id)
-    await reloadFileLists()
+    let nextColumns = columns
+    updateColumns((prev) => {
+      nextColumns = removeFileAttachmentsFromColumns(prev, file.id)
+      return nextColumns
+    })
+    setPlanFiles((current) => current.filter((item) => item.id !== file.id))
+    setLibraryFiles((current) => current.map((item) => (
+      item.id === file.id
+        ? {
+            ...item,
+            sharedByCurrentUser: false,
+            canUnshare: false,
+          }
+        : item
+    )))
     if (activeCard?.card?.id) {
       refreshActiveCardFromColumns(nextColumns, activeCard.card.id)
     }

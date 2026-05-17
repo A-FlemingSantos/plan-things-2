@@ -51,7 +51,7 @@ public class FileController {
   }
 
   @PostMapping(value = "/upload/attach/cards/{cardId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ApiEnvelope<FileService.MessageResponse> uploadAndAttachToCard(@RequestPart("file") MultipartFile file, @PathVariable UUID cardId) {
+  public ApiEnvelope<FileService.CardAttachmentView> uploadAndAttachToCard(@RequestPart("file") MultipartFile file, @PathVariable UUID cardId) {
     return ApiEnvelope.ok(fileService.uploadAndAttachToCard(file, cardId));
   }
 
@@ -100,7 +100,7 @@ public class FileController {
   }
 
   @PostMapping("/{fileId}/attach/cards/{cardId}")
-  public ApiEnvelope<FileService.MessageResponse> attachToCard(@PathVariable UUID fileId, @PathVariable UUID cardId) {
+  public ApiEnvelope<FileService.CardAttachmentView> attachToCard(@PathVariable UUID fileId, @PathVariable UUID cardId) {
     return ApiEnvelope.ok(fileService.attachToCard(fileId, cardId));
   }
 
