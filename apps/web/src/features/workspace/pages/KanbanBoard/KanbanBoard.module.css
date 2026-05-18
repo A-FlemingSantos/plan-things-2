@@ -387,6 +387,13 @@
   flex-shrink: 0;
 }
 
+.boardHeaderTitleMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .boardHeaderTitleToggle {
   all: unset;
   box-sizing: border-box;
@@ -433,6 +440,11 @@
   outline: none !important;
 }
 
+.boardHeaderTitleToggle[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--surface-2) 96%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--border-2) 92%, var(--surface-1));
+}
+
 .boardHeaderTitleToggleIcon,
 .boardHeaderTitleToggleChevron {
   display: inline-flex;
@@ -461,6 +473,97 @@
   height: 11px;
   display: block;
   transform: rotate(90deg);
+  transition: transform var(--transition-fast);
+}
+
+.boardHeaderTitleToggle[aria-expanded="true"] .boardHeaderTitleToggleChevron svg {
+  transform: rotate(-90deg);
+}
+
+.boardHeaderTitleMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(240px, calc(100vw - 32px));
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--border-1) 92%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-1) 96%, var(--surface-2));
+  box-shadow: var(--shadow-lg);
+  z-index: 45;
+}
+
+.boardHeaderTitleMenu::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 18px;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-1) 92%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--border-1) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 96%, var(--surface-2));
+  transform: rotate(45deg);
+}
+
+.boardHeaderTitleMenuItem {
+  width: 100%;
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text-2);
+  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.boardHeaderTitleMenuItem::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: var(--kanban-accent-color, var(--focus-ring));
+  opacity: 0;
+}
+
+.boardHeaderTitleMenuItem:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.boardHeaderTitleMenuItemActive {
+  background: color-mix(in srgb, var(--surface-2) 94%, var(--surface-1));
+  color: var(--text-1);
+}
+
+.boardHeaderTitleMenuItemActive::before {
+  opacity: 1;
+}
+
+.boardHeaderTitleMenuItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+
+.boardHeaderTitleMenuItemIcon svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.boardHeaderTitleMenuItemLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .boardHeaderActionCluster {

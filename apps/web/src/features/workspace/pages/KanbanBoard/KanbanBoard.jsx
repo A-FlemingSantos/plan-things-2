@@ -37,6 +37,7 @@ const Icon = {
   Home:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Popover:  () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Files:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
+  Library:  () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.4 5.1A1.6 1.6 0 0 1 4 3.5h2.1l1.1 1.2H12a1.6 1.6 0 0 1 1.6 1.6v4.6A1.6 1.6 0 0 1 12 12.5H4a1.6 1.6 0 0 1-1.6-1.6V5.1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M2.8 6.3h10.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Download: () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4.5 6.5L7 9l2.5-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1.5A1.5 1.5 0 0 0 3.5 13h7a1.5 1.5 0 0 0 1.5-1.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Plus:     () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   Users:    () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" stroke="currentColor" strokeWidth="1.3"/><path d="M1.5 14c0-2.4 2-4.3 4.5-4.3S10.5 11.6 10.5 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11.2 7.6a2.4 2.4 0 1 0 0-4.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11 9.9c1.9.3 3.5 1.9 3.5 4.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
@@ -583,6 +584,7 @@ export default function KanbanBoard() {
     plan: true,
     library: true,
   })
+  const boardHeaderSwitcherRef = useRef(null)
   const [isPlannerFilterOpen, setIsPlannerFilterOpen] = useState(false)
   const [plannerFilter, setPlannerFilter] = useState('my-day')
   const plannerFilterWrapRef = useRef(null)
@@ -1738,22 +1740,54 @@ export default function KanbanBoard() {
       : null
   const boardHeaderTitleAccessory = !isBoardLoading && !hasNoPlan
     ? (
-      <button
-        type="button"
-        className={styles.boardHeaderTitleToggle}
-        aria-label="Abrir opções do plano"
-        aria-expanded="false"
-        onClick={(event) => {
-          event.preventDefault()
-        }}
-      >
-        <span className={styles.boardHeaderTitleToggleIcon} aria-hidden="true">
-          <Icon.Board />
-        </span>
-        <span className={styles.boardHeaderTitleToggleChevron} aria-hidden="true">
-          <Icon.Chevron />
-        </span>
-      </button>
+      <div ref={boardHeaderSwitcherRef} className={styles.boardHeaderTitleMenuWrap}>
+        <button
+          type="button"
+          className={styles.boardHeaderTitleToggle}
+          aria-label="Abrir opções do plano"
+          aria-haspopup="menu"
+          aria-controls="board-header-view-menu"
+          aria-expanded={isBoardSwitcherOpen}
+          onClick={() => setIsBoardSwitcherOpen((open) => !open)}
+        >
+          <span className={styles.boardHeaderTitleToggleIcon} aria-hidden="true">
+            <Icon.Board />
+          </span>
+          <span className={styles.boardHeaderTitleToggleChevron} aria-hidden="true">
+            <Icon.Chevron />
+          </span>
+        </button>
+
+        {isBoardSwitcherOpen ? (
+          <div
+            id="board-header-view-menu"
+            className={styles.boardHeaderTitleMenu}
+            role="menu"
+            aria-label="Visualizações do plano"
+          >
+            {[
+              { id: 'board', label: 'Quadro', Icon: Icon.Board },
+              { id: 'calendars', label: 'Calendários', Icon: Icon.Calendar },
+              { id: 'files', label: 'Biblioteca', Icon: Icon.Library },
+            ].map(({ id, label, Icon: ItemIcon }) => (
+              <button
+                key={id}
+                type="button"
+                className={`${styles.boardHeaderTitleMenuItem} ${id === 'board' ? styles.boardHeaderTitleMenuItemActive : ''}`}
+                role="menuitem"
+                onClick={(event) => {
+                  event.preventDefault()
+                }}
+              >
+                <span className={styles.boardHeaderTitleMenuItemIcon} aria-hidden="true">
+                  <ItemIcon />
+                </span>
+                <span className={styles.boardHeaderTitleMenuItemLabel}>{label}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
     )
     : null
   const coverThemeClassName = activePlan?.coverThemeId ? (styles[`theme${activePlan.coverThemeId}`] ?? '') : ''
@@ -1792,14 +1826,22 @@ export default function KanbanBoard() {
     if (!isBoardSwitcherOpen) return undefined
 
     const handlePointerDown = (event) => {
-      if (boardViewToolbarRef.current?.contains(event.target)) return
+      if (boardHeaderSwitcherRef.current?.contains(event.target)) return
       setIsBoardSwitcherOpen(false)
     }
 
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsBoardSwitcherOpen(false)
+      }
+    }
+
     document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
 
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [isBoardSwitcherOpen])
 
