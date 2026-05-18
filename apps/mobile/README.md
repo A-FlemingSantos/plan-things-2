@@ -32,6 +32,33 @@ npm run mobile:android
 
 Esse comando nao exige Android SDK nem `adb`; ele apenas abre o Metro/Expo para o Expo Go.
 
+### Usando `--tunnel` (Codespaces / ambiente remoto)
+
+Em Codespaces (ou qualquer ambiente remoto), e comum precisar iniciar o Expo com tunnel para o celular conseguir acessar o Metro:
+
+```sh
+npx expo start --tunnel --port 8082
+```
+
+Se voce vir um erro parecido com:
+
+```text
+CommandError: TypeError: Cannot read properties of undefined (reading 'body')
+```
+
+isso normalmente acontece porque o ngrok passou a exigir **conta verificada + authtoken** (erro `ERR_NGROK_4018`).
+O `TypeError` e um erro secundario do `@expo/ngrok` ao tentar interpretar a resposta de falha.
+
+**Como resolver**
+
+- Crie/valide sua conta no ngrok e copie seu authtoken.
+- No Codespaces, defina o token via Secret/variavel de ambiente (nao commite esse valor):
+
+```sh
+export NGROK_AUTHTOKEN="<seu_token_aqui>"
+npx expo start --tunnel --port 8082
+```
+
 Para visualizar no navegador:
 
 ```sh
