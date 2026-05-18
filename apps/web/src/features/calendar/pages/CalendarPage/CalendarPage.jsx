@@ -480,7 +480,7 @@ function CalendarLoadingState({ styles }) {
   )
 }
 
-export default function CalendarPage() {
+export function CalendarWorkspaceView({ embedded = false }) {
   const { generalPreferences, formatIntl, formatClockTime, formatMonthLabel } = usePreferences()
   const locale = generalPreferences.language
   const timeZone = generalPreferences.timezone
@@ -767,6 +767,141 @@ export default function CalendarPage() {
     <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
 
+  const commandHeaderActions = (
+    <div className={styles.commandHeaderActions}>
+      <div className={styles.commandLeft}>
+        <button type="button" className={styles.primaryButton} onClick={openCreateDialog}>
+          <Icon.Calendar />
+          Novo evento
+        </button>
+        {VIEW_OPTIONS.map((mode) => (
+          <button
+            type="button"
+            key={mode.id}
+            className={`${styles.commandButton} ${view === mode.id ? styles.commandButtonActive : ''}`}
+            onClick={() => setView(mode.id)}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.commandRight}>
+        <div className={styles.searchWrap}>
+          <Icon.Search />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar eventos" />
+          {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><Icon.X /></button>}
+        </div>
+        <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avançados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
+        <button type="button" className={styles.commandButton} onClick={() => showNotification('Link do calendário copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
+        <button type="button" className={styles.commandButton} onClick={handlePrint}><Icon.Print />Imprimir</button>
+        {!embedded ? <InviteNotifications /> : null}
+      </div>
+    </div>
+  )
+
+  const monthHeaderPrimary = (
+    <div className={styles.monthHeaderPrimary}>
+      <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
+      <button type="button" className={styles.iconButton} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon.ChevLeft /></button>
+      <button type="button" className={styles.iconButton} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon.ChevRight /></button>
+      <h1>{calendarRangeLabel}</h1>
+      <Icon.ChevDown />
+      <span className={styles.viewStatus}>{viewStatus}</span>
+    </div>
+  )
+
+  const calendarWorkspace = (
+    <>
+      {loadError && (
+        <div className={styles.loadError} role="status" aria-live="polite">
+          {loadError}
+        </div>
+      )}
+
+      {deleteError && (
+        <div className={styles.deleteError} role="status" aria-live="polite">
+          <span>{deleteError.message}</span>
+          <button
+            type="button"
+            className={styles.deleteErrorRetry}
+            onClick={() => handleDeleteEventAttempt(deleteError.event, { skipConfirm: true })}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      <div className={`${styles.monthHeader} ${embedded ? styles.monthHeaderEmbedded : ''}`}>
+        {embedded ? (
+          <>
+            {monthHeaderPrimary}
+            {commandHeaderActions}
+          </>
+        ) : (
+          monthHeaderPrimary
+        )}
+      </div>
+
+      {isLoading && !loadError ? (
+        <CalendarLoadingState styles={styles} />
+      ) : view === 'day' || view === 'week' || view === 'work' ? (
+        renderRangeView()
+      ) : (
+        <section className={`${styles.calendarWorkspace} ${agendaPanelOpen ? '' : styles.calendarWorkspaceFull}`}>
+          {renderMonthGrid()}
+          {agendaPanelOpen && (
+            <AgendaList
+              date={selectedDate}
+              events={selectedEvents}
+              onClose={() => setAgendaPanelOpen(false)}
+              onCreate={openCreateDialog}
+              onEditEvent={handleEditEvent}
+              onDeleteEvent={handleDeleteEvent}
+              formatShortDateLabel={formatShortDateLabel}
+              formatEventPrimaryTime={formatEventPrimaryTime}
+              formatEventEndTime={formatEventEndTime}
+            />
+          )}
+        </section>
+      )}
+    </>
+  )
+
+  const calendarOverlays = (
+    <>
+      {dialogOpen && (
+        <EventDialog
+          selectedDate={editingEvent ? (dateFromKey(editingEvent.date) ?? selectedDate) : selectedDate}
+          initialEvent={editingEvent}
+          onClose={() => {
+            setDialogOpen(false)
+            setEditingEvent(null)
+          }}
+          onCreate={handleSaveEvent}
+          formatLongDateLabel={formatLongDateLabel}
+        />
+      )}
+
+      {notification && (
+        <div className={styles.notification} role="status" aria-live="polite">
+          {notification}
+        </div>
+      )}
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <>
+        <div className={`${styles.main} ${styles.mainEmbedded}`}>
+          {calendarWorkspace}
+        </div>
+        {calendarOverlays}
+      </>
+    )
+  }
+
   return (
     <AppThemeScope>
       <ProductAppShell
@@ -790,110 +925,17 @@ export default function CalendarPage() {
           sticky
           tone="solid"
           titleSize="medium"
-          actions={(
-            <div className={styles.commandHeaderActions}>
-              <div className={styles.commandLeft}>
-                <button type="button" className={styles.primaryButton} onClick={openCreateDialog}>
-                  <Icon.Calendar />
-                  Novo evento
-                </button>
-                {VIEW_OPTIONS.map((mode) => (
-                  <button
-                    type="button"
-                    key={mode.id}
-                    className={`${styles.commandButton} ${view === mode.id ? styles.commandButtonActive : ''}`}
-                    onClick={() => setView(mode.id)}
-                  >
-                    {mode.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className={styles.commandRight}>
-                <div className={styles.searchWrap}>
-                  <Icon.Search />
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar eventos" />
-                  {search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><Icon.X /></button>}
-                </div>
-                <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avançados em breve')}><Icon.Filter />Filtro<Icon.ChevDown /></button>
-                <button type="button" className={styles.commandButton} onClick={() => showNotification('Link do calendário copiado')}><Icon.Share />Compartilhar<Icon.ChevDown /></button>
-                <button type="button" className={styles.commandButton} onClick={handlePrint}><Icon.Print />Imprimir</button>
-                <InviteNotifications />
-              </div>
-            </div>
-          )}
+          actions={commandHeaderActions}
         />
 
-        {loadError && (
-          <div className={styles.loadError} role="status" aria-live="polite">
-            {loadError}
-          </div>
-        )}
-
-        {deleteError && (
-          <div className={styles.deleteError} role="status" aria-live="polite">
-            <span>{deleteError.message}</span>
-            <button
-              type="button"
-              className={styles.deleteErrorRetry}
-              onClick={() => handleDeleteEventAttempt(deleteError.event, { skipConfirm: true })}
-            >
-              Tentar novamente
-            </button>
-          </div>
-        )}
-
-        <div className={styles.monthHeader}>
-          <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
-          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon.ChevLeft /></button>
-          <button type="button" className={styles.iconButton} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon.ChevRight /></button>
-          <h1>{calendarRangeLabel}</h1>
-          <Icon.ChevDown />
-          <span className={styles.viewStatus}>{viewStatus}</span>
-        </div>
-
-        {isLoading && !loadError ? (
-          <CalendarLoadingState styles={styles} />
-        ) : view === 'day' || view === 'week' || view === 'work' ? (
-          renderRangeView()
-        ) : (
-          <section className={`${styles.calendarWorkspace} ${agendaPanelOpen ? '' : styles.calendarWorkspaceFull}`}>
-            {renderMonthGrid()}
-            {agendaPanelOpen && (
-              <AgendaList
-                date={selectedDate}
-                events={selectedEvents}
-                onClose={() => setAgendaPanelOpen(false)}
-                onCreate={openCreateDialog}
-                onEditEvent={handleEditEvent}
-                onDeleteEvent={handleDeleteEvent}
-                formatShortDateLabel={formatShortDateLabel}
-                formatEventPrimaryTime={formatEventPrimaryTime}
-                formatEventEndTime={formatEventEndTime}
-              />
-            )}
-          </section>
-        )}
+        {calendarWorkspace}
       </ProductAppShell>
 
-      {dialogOpen && (
-        <EventDialog
-          selectedDate={editingEvent ? (dateFromKey(editingEvent.date) ?? selectedDate) : selectedDate}
-          initialEvent={editingEvent}
-          onClose={() => {
-            setDialogOpen(false)
-            setEditingEvent(null)
-          }}
-          onCreate={handleSaveEvent}
-          formatLongDateLabel={formatLongDateLabel}
-        />
-      )}
-
-      {notification && (
-        <div className={styles.notification} role="status" aria-live="polite">
-          {notification}
-        </div>
-      )}
+      {calendarOverlays}
     </AppThemeScope>
   )
+}
+
+export default function CalendarPage() {
+  return <CalendarWorkspaceView />
 }

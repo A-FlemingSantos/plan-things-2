@@ -7,7 +7,6 @@ import { usePreferences } from './features/preferences/context/PreferencesContex
 import Auth from './features/auth/pages/Auth/Auth.jsx'
 import OAuthCallback from './features/auth/pages/OAuthCallback/OAuthCallback.jsx'
 import PasswordRecovery from './features/auth/pages/PasswordRecovery/PasswordRecovery.jsx'
-import CalendarPage from './features/calendar/pages/CalendarPage/CalendarPage.jsx'
 import FilesPage from './features/files/pages/FilesPage/FilesPage.jsx'
 import { INFO_PAGES } from './features/info/data/infoPages.js'
 import InfoPage from './features/info/pages/InfoPage.jsx'
@@ -234,7 +233,14 @@ export default function App() {
         <Route path={ROUTES.workspace} element={<RequireSession><Workspace /></RequireSession>} />
         <Route path={ROUTES.workspaceBoard} element={<RequireSession><KanbanBoard /></RequireSession>} />
         <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<RequireSession><KanbanBoard /></RequireSession>} />
-        <Route path={ROUTES.calendar} element={<RequireSession><CalendarPage /></RequireSession>} />
+        <Route
+          path={ROUTES.calendar}
+          element={(
+            <RequireSession>
+              <Navigate to={ROUTES.workspaceBoard} replace state={{ boardViewMode: 'calendar' }} />
+            </RequireSession>
+          )}
+        />
         <Route path={`${ROUTES.files}/*`} element={<RequireSession><FilesPage /></RequireSession>} />
         {Object.entries(INFO_PAGES).map(([path, page]) => (
           <Route

@@ -117,6 +117,11 @@ vi.mock('../../../calendar/hooks/useCalendarEvents.js', () => ({
   useCalendarEvents: () => ({ filteredEvents: [] }),
 }))
 
+vi.mock('../../../calendar/pages/CalendarPage/CalendarPage.jsx', () => ({
+  CalendarWorkspaceView: () => <section aria-label="Calendário do quadro">Calendário do quadro</section>,
+  default: () => null,
+}))
+
 vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   usePreferences: () => ({
     generalPreferences: {

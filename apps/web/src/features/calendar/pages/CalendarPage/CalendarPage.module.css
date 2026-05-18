@@ -438,6 +438,12 @@
   background: var(--app-bg);
 }
 
+.mainEmbedded {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .commandBar {
   min-height: 50px;
   display: flex;
@@ -556,6 +562,33 @@
   border-bottom: 1px solid var(--border-1);
 }
 
+.monthHeaderPrimary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.monthHeaderEmbedded {
+  height: auto;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.monthHeaderEmbedded .commandHeaderActions {
+  justify-content: flex-end;
+  flex: 0 1 auto;
+}
+
+.monthHeaderEmbedded .commandRight {
+  justify-content: flex-end;
+}
+
 .todayButton {
   min-width: 110px;
   border: 1px solid var(--border-1);
@@ -596,6 +629,26 @@
 
 .calendarWorkspaceFull {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.mainEmbedded .calendarWorkspace,
+.mainEmbedded .calendarWorkspaceFull,
+.mainEmbedded .rangeWorkspace {
+  min-height: 0;
+  height: 100%;
+}
+
+.mainEmbedded .monthGrid {
+  grid-template-rows: 29px repeat(6, minmax(0, 1fr));
+}
+
+.mainEmbedded .dayCell {
+  min-height: 0;
+}
+
+.mainEmbedded .agendaPanel {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .monthGrid {
@@ -1231,6 +1284,14 @@
     flex-direction: column;
   }
 
+  .monthHeaderEmbedded {
+    align-items: flex-start;
+  }
+
+  .monthHeaderEmbedded .commandHeaderActions {
+    width: 100%;
+  }
+
   .commandLeft,
   .commandRight {
     width: 100%;
@@ -1318,6 +1379,15 @@
     min-height: 48px;
     padding: 10px 12px;
     background: var(--surface-1);
+  }
+
+  .monthHeaderPrimary {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .monthHeaderEmbedded .commandHeaderActions {
+    width: 100%;
   }
 
   .todayButton {

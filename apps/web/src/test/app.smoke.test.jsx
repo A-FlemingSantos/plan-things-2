@@ -118,7 +118,7 @@ describe('App smoke flows', () => {
     renderApp('/app', { session })
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/calendar')
+    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
   })
 
   it('restores the workspace after login when the route was protected', async () => {
@@ -154,7 +154,7 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/files')
   })
 
-  it('restores the calendar route after login when the route was protected', async () => {
+  it('restores the calendar mode inside the board after login when the route was protected', async () => {
     const user = userEvent.setup()
 
     renderApp('/calendar')
@@ -162,7 +162,7 @@ describe('App smoke flows', () => {
     await loginFromProtectedRedirect(user)
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/calendar')
+    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
   })
 
   it('redirects anonymous invite access to login with the invite notice', async () => {
@@ -274,12 +274,13 @@ describe('App smoke flows', () => {
     expect(screen.getByText('Identidade da Marca 2025')).toBeInTheDocument()
   })
 
-  it('renders the calendar agenda and opens the event dialog', async () => {
+  it('renders the calendar board view and opens the event dialog', async () => {
     const user = userEvent.setup()
 
     renderApp('/calendar', { session: createDemoSession() })
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
     expect(screen.getByRole('button', { name: /novo evento/i })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Buscar eventos')).toBeInTheDocument()
     expect(screen.getAllByText('Sync diário de produto')).not.toHaveLength(0)
@@ -295,6 +296,7 @@ describe('App smoke flows', () => {
     renderApp('/calendar', { session: createDemoSession() })
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
 
     await user.click(screen.getByRole('button', { name: 'Dia' }))
     expect(screen.getByRole('region', { name: 'Calendário diário' })).toBeInTheDocument()

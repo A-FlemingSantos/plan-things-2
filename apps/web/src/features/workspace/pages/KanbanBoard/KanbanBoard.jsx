@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
@@ -19,6 +19,7 @@ import { useBoardColumns } from '../../hooks/useBoardColumns.js'
 import { useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
 import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
 import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
+import { CalendarWorkspaceView } from '../../../calendar/pages/CalendarPage/CalendarPage.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { formatFileSize, getFileTypeFromName } from '../../../files/data/libraryRepository.js'
@@ -100,6 +101,11 @@ const CALENDAR_DAYS = [
   { label: 19 }, { label: 20 }, { label: 21 }, { label: 22 }, { label: 23 }, { label: 24 }, { label: 25 },
   { label: 26 }, { label: 27 }, { label: 28 }, { label: 29 }, { label: 30 }, { label: 1, muted: true }, { label: 2, muted: true },
   { label: 3, muted: true }, { label: 4, muted: true }, { label: 5, muted: true }, { label: 6, muted: true }, { label: 7, muted: true }, { label: 8, muted: true }, { label: 9, muted: true },
+]
+
+const BOARD_VIEW_OPTIONS = [
+  { id: 'board', label: 'Quadro', Icon: Icon.Board },
+  { id: 'calendar', label: 'Calendário', Icon: Icon.Calendar },
 ]
 
 const uid = () => Math.random().toString(36).slice(2, 9)
@@ -523,6 +529,7 @@ function BoardLoadingState({ styles }) {
 ═══════════════════════════════════════════════════════════════ */
 export default function KanbanBoard() {
   const { planId } = useParams()
+  const location = useLocation()
   const { accessToken, currentUser } = useAuth()
   const {
     updatePlanBoard,
@@ -537,6 +544,9 @@ export default function KanbanBoard() {
     planId,
     buildPath: buildWorkspaceBoardPath,
   })
+  const [boardViewMode, setBoardViewMode] = useState(() => (
+    location.state?.boardViewMode === 'calendar' ? 'calendar' : 'board'
+  ))
   const [activeCard,setActiveCard]= useState(null)   // { card, colTitle }
   const [addingCol, setAddingCol] = useState(false)
   const [newColTitle,setNewColTitle] = useState('')
@@ -1375,6 +1385,27 @@ export default function KanbanBoard() {
     closeFiles()
   }
 
+  const showBoardView = () => {
+    setBoardViewMode('board')
+    setIsBoardSwitcherOpen(false)
+    closeFloatingPanel()
+  }
+
+  const showCalendarView = () => {
+    setBoardViewMode('calendar')
+    setIsBoardSwitcherOpen(false)
+    closeFloatingPanel()
+  }
+
+  const handleBoardNavItemClick = (id) => {
+    if (id === 'calendar') {
+      showCalendarView()
+      return
+    }
+
+    handleNavItemClick(id)
+  }
+
   useEffect(() => {
     if (!isFilesPanelMounted) return
     reloadFileLists()
@@ -1728,6 +1759,8 @@ export default function KanbanBoard() {
   }), [])
   const hasNoPlan = isBackendDriven && !isLoading && !activePlan
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
+  const currentBoardViewOption = BOARD_VIEW_OPTIONS.find((option) => option.id === boardViewMode) ?? BOARD_VIEW_OPTIONS[0]
+  const CurrentBoardViewIcon = currentBoardViewOption.Icon
   const boardHeaderTitle = isBoardLoading
     ? 'Carregando quadro'
     : hasNoPlan
@@ -1737,7 +1770,9 @@ export default function KanbanBoard() {
     ? 'Sincronizando quadro'
     : hasNoPlan
       ? 'Crie um plano para usar o quadro'
-      : null
+      : boardViewMode === 'calendar'
+        ? 'Calendário do plano'
+        : null
   const boardHeaderTitleAccessory = !isBoardLoading && !hasNoPlan
     ? (
       <div ref={boardHeaderSwitcherRef} className={styles.boardHeaderTitleMenuWrap}>
@@ -1751,7 +1786,7 @@ export default function KanbanBoard() {
           onClick={() => setIsBoardSwitcherOpen((open) => !open)}
         >
           <span className={styles.boardHeaderTitleToggleIcon} aria-hidden="true">
-            <Icon.Board />
+            <CurrentBoardViewIcon />
           </span>
           <span className={styles.boardHeaderTitleToggleChevron} aria-hidden="true">
             <Icon.Chevron />
@@ -1765,19 +1800,14 @@ export default function KanbanBoard() {
             role="menu"
             aria-label="Visualizações do plano"
           >
-            {[
-              { id: 'board', label: 'Quadro', Icon: Icon.Board },
-              { id: 'calendars', label: 'Calendários', Icon: Icon.Calendar },
-              { id: 'files', label: 'Biblioteca', Icon: Icon.Library },
-            ].map(({ id, label, Icon: ItemIcon }) => (
+            {BOARD_VIEW_OPTIONS.map(({ id, label, Icon: ItemIcon }) => (
               <button
                 key={id}
                 type="button"
-                className={`${styles.boardHeaderTitleMenuItem} ${id === 'board' ? styles.boardHeaderTitleMenuItemActive : ''}`}
+                className={`${styles.boardHeaderTitleMenuItem} ${id === boardViewMode ? styles.boardHeaderTitleMenuItemActive : ''}`}
                 role="menuitem"
-                onClick={(event) => {
-                  event.preventDefault()
-                }}
+                aria-pressed={id === boardViewMode}
+                onClick={id === 'calendar' ? showCalendarView : showBoardView}
               >
                 <span className={styles.boardHeaderTitleMenuItemIcon} aria-hidden="true">
                   <ItemIcon />
@@ -2349,8 +2379,7 @@ export default function KanbanBoard() {
 	          return
 	        }
 	        if (isEvent) {
-	          handleNavItemClick('calendar')
-	          closePlanner()
+	          showCalendarView()
 	        }
 	      }
 
@@ -2522,8 +2551,8 @@ export default function KanbanBoard() {
       <div className={styles.boardAccentScope} style={boardAccentStyle}>
       <ProductAppShell
         styles={styles}
-        activeNav={activeNav}
-        onNavItemClick={handleNavItemClick}
+        activeNav={boardViewMode === 'calendar' ? 'calendar' : activeNav}
+        onNavItemClick={handleBoardNavItemClick}
         navItems={NAV}
         LogoIcon={Icon.Logo}
         CollapseIcon={Icon.Collapse}
@@ -2701,6 +2730,8 @@ export default function KanbanBoard() {
               Tentar novamente
             </button>
           </section>
+        ) : boardViewMode === 'calendar' ? (
+          <CalendarWorkspaceView embedded />
         ) : (
           <div className={styles.board}>
             {columns.map(col => (
@@ -2777,10 +2808,10 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={`${styles.boardViewToolbarItem} ${!isPlannerOpen && !isInboxOpen && !isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-current={!isPlannerOpen && !isInboxOpen && !isFilesOpen ? 'page' : undefined}
+            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-current={boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isFilesOpen ? 'page' : undefined}
             title="Quadro"
-            onClick={closeFloatingPanel}
+            onClick={showBoardView}
           >
             <Icon.Board />
             <span>Quadro</span>

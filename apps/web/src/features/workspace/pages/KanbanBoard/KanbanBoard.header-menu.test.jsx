@@ -91,6 +91,11 @@ vi.mock('../../../calendar/hooks/useCalendarEvents.js', () => ({
   useCalendarEvents: () => ({ filteredEvents: [] }),
 }))
 
+vi.mock('../../../calendar/pages/CalendarPage/CalendarPage.jsx', () => ({
+  CalendarWorkspaceView: () => <section aria-label="Calendário do quadro">Calendário do quadro</section>,
+  default: () => null,
+}))
+
 vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   usePreferences: () => ({
     generalPreferences: {
@@ -169,7 +174,7 @@ describe('KanbanBoard header view menu', () => {
     window.requestAnimationFrame = (callback) => callback()
   })
 
-  it('opens the title dropdown with board, calendars, and files options', async () => {
+  it('opens the title dropdown with board and calendar view options', async () => {
     const user = userEvent.setup()
 
     render(
@@ -182,11 +187,10 @@ describe('KanbanBoard header view menu', () => {
 
     expect(screen.getByRole('menu', { name: 'Visualizações do plano' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Quadro' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Calendários' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Biblioteca' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Calendário' })).toBeInTheDocument()
   })
 
-  it('does not open planner or files sidebars from the dropdown options', async () => {
+  it('switches the board into calendar mode without opening utility panels', async () => {
     const user = userEvent.setup()
 
     render(
@@ -196,9 +200,9 @@ describe('KanbanBoard header view menu', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Visualizações do plano' }))
-    await user.click(screen.getByRole('menuitem', { name: 'Calendários' }))
-    await user.click(screen.getByRole('menuitem', { name: 'Biblioteca' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Calendário' }))
 
+    expect(screen.getByLabelText('Calendário do quadro')).toBeInTheDocument()
     expect(screen.queryByLabelText('Planejador')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Arquivos do plano')).not.toBeInTheDocument()
   })
