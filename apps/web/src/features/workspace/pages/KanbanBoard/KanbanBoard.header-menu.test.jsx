@@ -178,7 +178,7 @@ describe('KanbanBoard header view menu', () => {
       </MemoryRouter>,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Abrir opções do plano' }))
+    await user.click(screen.getByRole('button', { name: 'Visualizações do plano' }))
 
     expect(screen.getByRole('menu', { name: 'Visualizações do plano' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Quadro' })).toBeInTheDocument()
@@ -195,7 +195,7 @@ describe('KanbanBoard header view menu', () => {
       </MemoryRouter>,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Abrir opções do plano' }))
+    await user.click(screen.getByRole('button', { name: 'Visualizações do plano' }))
     await user.click(screen.getByRole('menuitem', { name: 'Calendários' }))
     await user.click(screen.getByRole('menuitem', { name: 'Biblioteca' }))
 

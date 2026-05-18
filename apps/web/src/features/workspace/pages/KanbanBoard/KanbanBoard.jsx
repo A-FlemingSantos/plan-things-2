@@ -1744,7 +1744,7 @@ export default function KanbanBoard() {
         <button
           type="button"
           className={styles.boardHeaderTitleToggle}
-          aria-label="Abrir opções do plano"
+          aria-label="Visualizações do plano"
           aria-haspopup="menu"
           aria-controls="board-header-view-menu"
           aria-expanded={isBoardSwitcherOpen}
