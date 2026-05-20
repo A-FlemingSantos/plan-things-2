@@ -73,7 +73,6 @@ describe('App smoke flows', () => {
 
     expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/workspace')
-    expect(screen.getByText('Plano atual')).toBeInTheDocument()
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
 
@@ -185,18 +184,6 @@ describe('App smoke flows', () => {
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Buscar arquivos...')).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
-  })
-
-  it('opens the current plan board from the workspace', async () => {
-    const user = userEvent.setup()
-
-    renderApp('/workspace', { session: createDemoSession() })
-
-    await user.click(await screen.findByRole('button', { name: /abrir quadro/i }))
-
-    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
-    expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
 
   it('opens the Intelligence suspended chat from the board toolbar', async () => {
@@ -587,7 +574,6 @@ describe('App smoke flows', () => {
     await user.click(screen.getByRole('button', { name: 'Criar' }))
 
     expect(await screen.findAllByText('Plano Frontend QA')).not.toHaveLength(0)
-    expect(screen.getByText('Plano atual')).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { name: 'Plano Frontend QA' })).not.toHaveLength(0)
   })
 
@@ -597,7 +583,7 @@ describe('App smoke flows', () => {
     renderApp('/workspace', { session: createDemoSession() })
 
     await user.click(await screen.findByRole('button', { name: /recolher barra lateral/i }))
-    await user.click(await screen.findByRole('button', { name: /abrir quadro/i }))
+    await user.click(await screen.findByRole('button', { name: /lançamento do produto/i }))
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /expandir barra lateral/i })).toBeInTheDocument()

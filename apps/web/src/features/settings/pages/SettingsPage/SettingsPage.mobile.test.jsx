@@ -37,7 +37,7 @@ const preferencesMock = vi.hoisted(() => ({
     openLastCtx: true,
     confirmDestructiveActions: true,
     liquidGlass: false,
-    showCurrentPlanSection: true,
+    showIntelligenceSection: true,
   },
   notificationPreferences: {
     emailNotifs: true,
@@ -60,7 +60,7 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
     openLastCtx: true,
     confirmDestructiveActions: true,
     liquidGlass: false,
-    showCurrentPlanSection: true,
+    showIntelligenceSection: true,
   },
   usePreferences: () => preferencesMock,
 }))
@@ -143,6 +143,8 @@ describe('SettingsPage mobile layout', () => {
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
 
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
+    expect(screen.getByText('Seção do Intelligence')).toBeInTheDocument()
+    expect(screen.getByText('Mostra o painel da IA do Plan Things')).toBeInTheDocument()
     expect(screen.getByTestId('location-search')).toHaveTextContent('?section=workspace')
   })
 })

@@ -31,7 +31,7 @@ const plansMock = vi.hoisted(() => ({
 const preferencesMock = vi.hoisted(() => ({
   localPreferences: {
     confirmDestructiveActions: true,
-    showCurrentPlanSection: false,
+    showIntelligenceSection: true,
   },
 }))
 

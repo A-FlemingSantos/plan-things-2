@@ -970,18 +970,6 @@ function LoadingPlanCard({ view }) {
 function WorkspaceLoadingState({ view }) {
   return (
     <>
-      <section className={styles.loadingCurrentPlan} aria-hidden="true">
-        <div className={styles.loadingCurrentPlanCopy}>
-          <span className={`${styles.loadingBlock} ${styles.loadingEyebrow}`} />
-          <span className={`${styles.loadingBlock} ${styles.loadingCurrentTitle}`} />
-          <span className={`${styles.loadingBlock} ${styles.loadingCurrentText}`} />
-        </div>
-        <div className={styles.loadingCurrentActions}>
-          <span className={`${styles.loadingBlock} ${styles.loadingAction}`} />
-          <span className={`${styles.loadingBlock} ${styles.loadingAction}`} />
-        </div>
-      </section>
-
       <div className={styles.sectionHeader}>
         <div className={styles.sectionLeft}>
           <h2 className={styles.sectionTitle}>Carregando planos</h2>
@@ -1027,7 +1015,6 @@ export default function Workspace() {
   const { localPreferences } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
-  const showCurrentPlanSection = localPreferences.showCurrentPlanSection ?? true
 
   const filtered = plans.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -1304,29 +1291,6 @@ export default function Workspace() {
               <WorkspaceLoadingState view={view} />
             ) : (
               <>
-            {showCurrentPlanSection && activePlan && (
-              <section className={styles.currentPlanPanel}>
-                <div className={styles.currentPlanPanelCopy}>
-                  <p className={styles.currentPlanEyebrow}>Plano atual</p>
-                  <div className={styles.currentPlanHeader}>
-                    <h2 className={styles.currentPlanTitle}>{activePlan.name}</h2>
-                    <span className={styles.cardTag} style={{ background: activePlan.tagColor + '18', color: activePlan.tagColor }}>
-                      {activePlan.tag}
-                    </span>
-                  </div>
-                  <p className={styles.currentPlanText}>
-                    {activePlan.description || 'Continue de onde parou no quadro deste plano.'}
-                  </p>
-                </div>
-                <div className={styles.currentPlanActions}>
-                  <button className={styles.currentPlanAction} onClick={() => openBoard(activePlan.id)}>
-                    <GridIcon />
-                    Abrir quadro
-                  </button>
-                </div>
-              </section>
-            )}
-
             <div className={styles.sectionHeader}>
               <div className={styles.sectionLeft}>
                 <h2 className={styles.sectionTitle}>Todos os planos</h2>

@@ -562,7 +562,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const openLastCtx = localPreferences.openLastCtx
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions
   const liquidGlass = localPreferences.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass
-  const showCurrentPlanSection = localPreferences.showCurrentPlanSection ?? DEFAULT_LOCAL_PREFERENCES.showCurrentPlanSection
+  const showIntelligenceSection = localPreferences.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection
   const kanbanAccentColor = localPreferences.kanbanAccentColor ?? DEFAULT_LOCAL_PREFERENCES.kanbanAccentColor
   const settingsToggleAccentColor = kanbanAccentColor
     ? resolveKanbanAccentColor(kanbanAccentColor)
@@ -1977,11 +1977,11 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
         </Field>
 
         <Field
-          label="Exibir seção de plano atual"
-          hint="Mostra o painel de retomada do plano ativo no Workspace."
+          label="Seção do Intelligence"
+          hint="Mostra o painel da IA do Plan Things"
           inlineControl
         >
-          <Toggle checked={showCurrentPlanSection} onChange={(value) => handleLocalGeneralFieldChange('showCurrentPlanSection', value)} />
+          <Toggle checked={showIntelligenceSection} onChange={(value) => handleLocalGeneralFieldChange('showIntelligenceSection', value)} />
         </Field>
 
         <div className={styles.rowActions}>

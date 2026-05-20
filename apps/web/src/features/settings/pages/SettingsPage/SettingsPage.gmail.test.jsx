@@ -36,7 +36,7 @@ const preferencesMock = vi.hoisted(() => ({
     openLastCtx: true,
     confirmDestructiveActions: true,
     liquidGlass: false,
-    showCurrentPlanSection: true,
+    showIntelligenceSection: true,
   },
   notificationPreferences: {
     emailNotifs: true,
@@ -64,7 +64,7 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
     openLastCtx: true,
     confirmDestructiveActions: true,
     liquidGlass: false,
-    showCurrentPlanSection: true,
+    showIntelligenceSection: true,
   },
   usePreferences: () => preferencesMock,
 }))

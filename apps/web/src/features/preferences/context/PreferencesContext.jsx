@@ -15,7 +15,7 @@ export const DEFAULT_LOCAL_PREFERENCES = {
   openLastCtx: true,
   confirmDestructiveActions: true,
   liquidGlass: false,
-  showCurrentPlanSection: true,
+  showIntelligenceSection: true,
   kanbanAccentColor: '',
 }
 
@@ -166,7 +166,7 @@ export function readStoredLocalPreferences(userId) {
     openLastCtx: parsed.openLastCtx ?? DEFAULT_LOCAL_PREFERENCES.openLastCtx,
     confirmDestructiveActions: parsed.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions,
     liquidGlass: parsed.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass,
-    showCurrentPlanSection: parsed.showCurrentPlanSection ?? DEFAULT_LOCAL_PREFERENCES.showCurrentPlanSection,
+    showIntelligenceSection: parsed.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection,
     kanbanAccentColor: normalizeKanbanAccentColor(parsed.kanbanAccentColor),
   }
 }
@@ -180,7 +180,7 @@ function writeStoredLocalPreferences(userId, preferences) {
     openLastCtx: preferences.openLastCtx,
     confirmDestructiveActions: preferences.confirmDestructiveActions,
     liquidGlass: preferences.liquidGlass,
-    showCurrentPlanSection: preferences.showCurrentPlanSection,
+    showIntelligenceSection: preferences.showIntelligenceSection,
     kanbanAccentColor: normalizeKanbanAccentColor(preferences.kanbanAccentColor),
   })
 }

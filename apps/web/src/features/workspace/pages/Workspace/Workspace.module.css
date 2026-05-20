@@ -654,82 +654,6 @@
   gap: 24px;
 }
 
-.currentPlanPanel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 20px 22px;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-xl);
-  background: var(--surface-2);
-  box-shadow: var(--shadow-sm);
-}
-
-.currentPlanPanelCopy {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.currentPlanEyebrow {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--text-3);
-}
-
-.currentPlanHeader {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.currentPlanTitle {
-  font-size: 20px;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -.03em;
-  color: var(--text-1);
-  line-height: 1.1;
-}
-
-.currentPlanText {
-  font-size: 13px;
-  color: var(--text-2);
-  line-height: 1.6;
-  max-width: 620px;
-}
-
-.currentPlanActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.currentPlanAction {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-1);
-  background: var(--surface-1);
-  color: var(--text-1);
-  font-family: var(--font-family);
-  font-size: 13px;
-  cursor: pointer;
-  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
-}
-
-.currentPlanAction:hover {
-  border-color: var(--border-2);
-  background: var(--hover);
-  transform: translateY(-1px);
-}
-
 .sectionHeader {
   display: flex;
   align-items: center;
@@ -906,52 +830,6 @@
   background: linear-gradient(90deg, var(--skeleton-1) 0%, var(--skeleton-2) 50%, var(--skeleton-1) 100%);
   background-size: 200% 100%;
   animation: skeletonPulse 1.2s ease-in-out infinite;
-}
-
-.loadingCurrentPlan {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 20px 22px;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-xl);
-  background: var(--surface-2);
-  box-shadow: var(--shadow-sm);
-}
-
-.loadingCurrentPlanCopy {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
-}
-
-.loadingEyebrow {
-  width: 96px;
-  height: 10px;
-}
-
-.loadingCurrentTitle {
-  width: min(320px, 72%);
-  height: 24px;
-}
-
-.loadingCurrentText {
-  width: min(460px, 100%);
-  height: 12px;
-}
-
-.loadingCurrentActions {
-  display: flex;
-  gap: 10px;
-}
-
-.loadingAction {
-  width: 132px;
-  height: 42px;
-  border-radius: var(--radius-md);
 }
 
 .loadingPlanCard {
@@ -1407,18 +1285,6 @@
   font-size: 11px;
   color: var(--text-3);
   font-weight: var(--font-weight-light);
-}
-
-.currentPlanPill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--focus-ring) 14%, transparent);
-  color: var(--focus-ring);
-  font-size: 10px;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: .02em;
 }
 
 /* Ghost card */
@@ -2085,13 +1951,6 @@
     flex-wrap: wrap;
     justify-content: flex-end;
   }
-  .currentPlanPanel {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .currentPlanActions {
-    flex-wrap: wrap;
-  }
 }
 
 @media (max-width: 768px) {
@@ -2151,16 +2010,6 @@
     justify-content: flex-start;
   }
   .grid    { grid-template-columns: 1fr; }
-  .currentPlanPanel {
-    padding: 16px 18px;
-  }
-  .currentPlanActions {
-    width: 100%;
-  }
-  .currentPlanAction {
-    flex: 1;
-    justify-content: center;
-  }
   .viewToggle {
     width: auto;
     justify-content: flex-start;
@@ -2216,12 +2065,5 @@
   .emptyState {
     min-height: 260px;
     padding: 22px 18px;
-  }
-  .currentPlanPanel {
-    padding: 14px 16px;
-    gap: 16px;
-  }
-  .currentPlanAction {
-    width: 100%;
   }
 }
