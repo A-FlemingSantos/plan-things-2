@@ -2818,6 +2818,8 @@
    CARD DETAIL MODAL
 ════════════════════════════════════════ */
 .cardModal {
+  --cm-accent: var(--kanban-accent-color, var(--focus-ring));
+  --cm-accent-foreground: var(--kanban-accent-foreground, var(--text-on-accent));
   width: 100%;
   max-width: 980px;
   max-height: calc(100vh - 60px);
@@ -3237,9 +3239,9 @@
 }
 
 .cmToolbarBtnActive {
-  border-color: var(--focus-ring);
-  background: color-mix(in srgb, var(--focus-ring) 10%, var(--surface-1));
-  color: var(--focus-ring);
+  border-color: var(--cm-accent);
+  background: color-mix(in srgb, var(--cm-accent) 10%, var(--surface-1));
+  color: var(--cm-accent);
 }
 
 .cmToolbarBtnChevron {
@@ -3282,8 +3284,8 @@
 }
 
 .cmDescComposerActive {
-  border-color: var(--focus-ring);
-  box-shadow: 0 0 0 1px var(--focus-ring);
+  border-color: var(--cm-accent);
+  box-shadow: 0 0 0 1px var(--cm-accent);
 }
 
 .cmDesc {
@@ -3628,7 +3630,7 @@
 .cmSidebarHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   padding: 0 16px 14px;
   border-bottom: 1px solid var(--border-1);
@@ -3649,26 +3651,6 @@
   color: var(--text-2);
 }
 
-.cmDetailsToggle {
-  min-height: 32px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border-1);
-  background: transparent;
-  color: var(--text-2);
-  font-family: var(--font-family);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.cmDetailsToggle:hover {
-  background: var(--hover);
-  color: var(--text-1);
-  border-color: var(--border-2);
-}
-
 .cmCommentComposer {
   display: block;
   padding: 12px 16px 14px;
@@ -3685,8 +3667,8 @@
 }
 
 .cmCommentComposerBoxActive {
-  border-color: var(--focus-ring);
-  box-shadow: 0 0 0 1px var(--focus-ring);
+  border-color: var(--cm-accent);
+  box-shadow: 0 0 0 1px var(--cm-accent);
 }
 
 .cmCommentToolbar {
@@ -3756,8 +3738,8 @@
 }
 
 .cmCommentToolBtnActive {
-  background: color-mix(in srgb, var(--focus-ring) 12%, transparent);
-  color: var(--focus-ring);
+  background: color-mix(in srgb, var(--cm-accent) 12%, transparent);
+  color: var(--cm-accent);
 }
 
 .cmCommentToolBtnIcon {
@@ -3991,8 +3973,8 @@
   min-height: 32px;
   padding: 0 14px;
   border-radius: 6px;
-  background: var(--focus-ring);
-  color: var(--text-on-accent);
+  background: var(--cm-accent);
+  color: var(--cm-accent-foreground);
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: 600;
@@ -4016,7 +3998,7 @@
   width: 15px;
   height: 15px;
   margin: 0;
-  accent-color: var(--focus-ring);
+  accent-color: var(--cm-accent);
 }
 
 .cmActivityList {
@@ -4058,7 +4040,7 @@
 .cmActivityToggle {
   align-self: flex-start;
   background: transparent;
-  color: var(--focus-ring);
+  color: var(--cm-accent);
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: 500;
@@ -4160,9 +4142,9 @@
 }
 
 .cmLabelMenuCreate:hover {
-  border-color: var(--focus-ring);
-  background: color-mix(in srgb, var(--focus-ring) 10%, var(--surface-2));
-  color: var(--focus-ring);
+  border-color: var(--cm-accent);
+  background: color-mix(in srgb, var(--cm-accent) 10%, var(--surface-2));
+  color: var(--cm-accent);
 }
 
 .cmLabelMenuCreateIcon {
@@ -4201,9 +4183,9 @@
 }
 
 .cmMembersMenuCreate:hover {
-  border-color: var(--focus-ring);
+  border-color: var(--cm-accent);
   background: var(--hover);
-  color: var(--text-1);
+  color: var(--cm-accent);
 }
 
 .cmMembersMenuCreateIcon {

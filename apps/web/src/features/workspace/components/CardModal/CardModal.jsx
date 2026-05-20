@@ -312,7 +312,6 @@ export default function CardModal({
   const [comments, setComments] = useState(card.comments)
   const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
   const [exiting,  setExiting]  = useState(false)
-  const [showDetails, setShowDetails] = useState(false)
   const [commentFocused, setCommentFocused] = useState(false)
   const [commentFollow, setCommentFollow] = useState(false)
   const [showMembersMenu, setShowMembersMenu] = useState(false)
@@ -2385,14 +2384,6 @@ export default function CardModal({
                 <icons.Comment />
                 Comentários e atividade
               </p>
-              <button
-                type="button"
-                className={styles.cmDetailsToggle}
-                onClick={() => setShowDetails(v => !v)}
-                aria-expanded={showDetails}
-              >
-                {showDetails ? 'Ocultar detalhes' : 'Mostrar detalhes'}
-              </button>
             </div>
 
             <div ref={commentComposerRef} className={styles.cmCommentComposer}>
@@ -2573,46 +2564,6 @@ export default function CardModal({
               })}
             </div>
 
-              {showDetails && (
-                <div className={styles.cmDetailsPanel}>
-                  <div className={styles.cmMeta}>
-                    <p className={styles.cmMetaTitle}><icons.Clock /> Data</p>
-                  <input
-                    type="text"
-                    className={styles.cmDateInput}
-                    value={dueDate}
-                    onChange={e => {
-                      setDueDate(e.target.value)
-                      setDisplayLabel(e.target.value)
-                      setPreserveDisplayLabel(false)
-                    }}
-                    placeholder="ex: 14 ago"
-                    aria-label="Data de entrega"
-                  />
-                </div>
-
-                {selectedMembers.length > 0 && (
-                  <div className={styles.cmMeta}>
-                    <p className={styles.cmMetaTitle}>Selecionados</p>
-                    <div className={styles.cmSelectedMembers}>
-                      {selectedMembers.map(member => (
-                        <span key={member.id} className={styles.cmSelectedMember}>
-                          <AuthenticatedAvatar
-                            className={styles.cmMemberAvatar}
-                            imageClassName={styles.avatarImage}
-                            style={{ background: member.color }}
-                            avatarUrl={member.avatarUrl}
-                            fallback={member.initials}
-                            title={getMemberName(member)}
-                          />
-                          {getMemberName(member)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
