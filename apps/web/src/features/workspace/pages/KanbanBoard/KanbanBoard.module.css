@@ -3273,15 +3273,15 @@
 .cmDescComposer {
   width: 100%;
   border: 1px solid var(--border-2);
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--surface-1);
   overflow: hidden;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), border-radius var(--transition-fast);
 }
 
-.cmDescComposer:focus-within {
+.cmDescComposerActive {
   border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px var(--focus-ring-glow);
+  box-shadow: 0 0 0 1px var(--focus-ring);
 }
 
 .cmDesc {
@@ -3296,10 +3296,17 @@
   border-radius: 0;
   outline: none;
   resize: none;
-  padding: 14px 14px 12px;
+  padding: 14px 16px;
   line-height: 1.5;
-  min-height: 96px;
-  max-height: 144px;
+  min-height: 60px;
+  max-height: 60px;
+  overflow-y: hidden;
+  transition: min-height 160ms ease, max-height 160ms ease;
+}
+
+.cmDescExpanded {
+  min-height: 196px;
+  max-height: 320px;
   overflow-y: auto;
 }
 
@@ -3315,19 +3322,18 @@
   cursor: progress;
 }
 
-.cmDescComposerFooter {
+.cmDescActions {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  min-height: 40px;
-  padding: 7px 12px;
-  border-top: 1px solid var(--border-1);
-  background: color-mix(in srgb, var(--surface-1) 86%, white 14%);
+  gap: 10px;
+  padding-top: 10px;
+  flex-wrap: wrap;
 }
 
 .cmDescSaveBtn {
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: 32px;
+  padding: 0 14px;
   border-radius: 8px;
   background: var(--kanban-accent-color, var(--focus-ring));
   color: var(--kanban-accent-foreground, var(--text-on-accent));
@@ -3349,6 +3355,27 @@
 
 .cmDescSaveBtn:disabled {
   opacity: .35;
+  cursor: not-allowed;
+}
+
+.cmDescCancelBtn {
+  min-height: 32px;
+  padding: 0 4px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.cmDescCancelBtn:hover:not(:disabled) {
+  color: var(--text-1);
+}
+
+.cmDescCancelBtn:disabled {
+  opacity: .45;
   cursor: not-allowed;
 }
 

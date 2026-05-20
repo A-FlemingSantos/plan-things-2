@@ -375,9 +375,12 @@ export default function CardModal({
   const [submitError, setSubmitError] = useState(null)
   const [saveStatus, setSaveStatus] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
   const commentComposerRef = useRef(null)
   const commentTextareaRef = useRef(null)
   const titleTextareaRef = useRef(null)
+  const descComposerRef = useRef(null)
+  const descTextareaRef = useRef(null)
   const checklistItemTextareaRef = useRef(null)
   const textMenuRef = useRef(null)
   const textMenuButtonRef = useRef(null)
@@ -597,10 +600,31 @@ export default function CardModal({
     setSubmitError(null)
   }
 
-  const saveDescription = async () => {
-    if (desc === savedDesc) return
+  const collapseDescriptionEditor = () => {
+    setIsEditingDescription(false)
 
-    await persistCardChanges(
+    if (
+      typeof document !== 'undefined'
+      && document.activeElement instanceof HTMLElement
+      && descComposerRef.current?.contains(document.activeElement)
+    ) {
+      document.activeElement.blur()
+    }
+  }
+
+  const cancelDescriptionEdit = () => {
+    setDesc(savedDesc)
+    setSubmitError(null)
+    collapseDescriptionEditor()
+  }
+
+  const saveDescription = async () => {
+    if (desc === savedDesc) {
+      collapseDescriptionEditor()
+      return
+    }
+
+    const saved = await persistCardChanges(
       { description: desc },
       {
         errorMessage: 'Não foi possível salvar a descrição do cartão.',
@@ -608,8 +632,15 @@ export default function CardModal({
         syncState: {
           syncDescriptionDraft: true,
         },
+        onSuccess: () => {
+          collapseDescriptionEditor()
+        },
       },
     )
+
+    if (!saved) {
+      setTimeout(() => descTextareaRef.current?.focus(), 0)
+    }
   }
 
   const toggleMember = async (id) => {
@@ -1233,6 +1264,10 @@ export default function CardModal({
   useEffect(() => {
     setAttachments(Array.isArray(card.attachments) ? card.attachments : [])
   }, [card.id, card.attachments])
+
+  useEffect(() => {
+    setIsEditingDescription(false)
+  }, [card.id])
 
   useEffect(() => () => {
     if (saveStatusTimeoutRef.current) {
@@ -2000,9 +2035,19 @@ export default function CardModal({
                   <icons.List />
                   Descrição
                 </p>
-                <div className={styles.cmDescComposer}>
+                <div
+                  ref={descComposerRef}
+                  className={`${styles.cmDescComposer} ${isEditingDescription ? styles.cmDescComposerActive : ''}`}
+                  onFocus={() => setIsEditingDescription(true)}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) {
+                      setIsEditingDescription(false)
+                    }
+                  }}
+                >
                   <textarea
-                    className={styles.cmDesc}
+                    ref={descTextareaRef}
+                    className={`${styles.cmDesc} ${isEditingDescription ? styles.cmDescExpanded : ''}`}
                     value={desc}
                     onChange={e => setDesc(e.target.value)}
                     onKeyDown={e => {
@@ -2010,16 +2055,24 @@ export default function CardModal({
                         e.preventDefault()
                         void saveDescription()
                       }
+
+                      if (e.key === 'Escape' && !isMutating) {
+                        e.preventDefault()
+                        cancelDescriptionEdit()
+                      }
                     }}
-                    placeholder="Adicione uma descrição..."
+                    placeholder="Adicione uma descrição mais detalhada..."
                     rows={1}
                     aria-label="Descrição do cartão"
                     disabled={isMutating}
                   />
-                  <div className={styles.cmDescComposerFooter}>
+                </div>
+                {isEditingDescription ? (
+                  <div className={styles.cmDescActions}>
                     <button
                       type="button"
                       className={styles.cmDescSaveBtn}
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
                         void saveDescription()
                       }}
@@ -2030,8 +2083,19 @@ export default function CardModal({
                       <icons.Check />
                       <span>Salvar</span>
                     </button>
+                    <button
+                      type="button"
+                      className={styles.cmDescCancelBtn}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={cancelDescriptionEdit}
+                      disabled={isMutating}
+                      aria-label="Cancelar edição da descrição"
+                      title="Cancelar edição da descrição"
+                    >
+                      Cancelar
+                    </button>
                   </div>
-                </div>
+                ) : null}
               </div>
 
               <div className={styles.cmSection}>

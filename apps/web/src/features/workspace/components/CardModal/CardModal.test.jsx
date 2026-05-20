@@ -180,6 +180,50 @@ describe('CardModal file picker positioning', () => {
     })
   })
 
+  it('shows description actions only while editing and restores the saved text on cancel', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    const descriptionField = screen.getByLabelText('Descrição do cartão')
+
+    expect(screen.queryByRole('button', { name: 'Salvar descrição' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancelar edição da descrição' })).not.toBeInTheDocument()
+
+    await user.click(descriptionField)
+
+    expect(screen.getByRole('button', { name: 'Salvar descrição' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancelar edição da descrição' })).toBeInTheDocument()
+
+    await user.clear(descriptionField)
+    await user.type(descriptionField, 'Nova descrição')
+    await user.click(screen.getByRole('button', { name: 'Cancelar edição da descrição' }))
+
+    await waitFor(() => {
+      expect(descriptionField).toHaveValue('Descricao')
+    })
+
+    expect(screen.queryByRole('button', { name: 'Salvar descrição' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancelar edição da descrição' })).not.toBeInTheDocument()
+  })
+
   it('shows a new checklist immediately while the backend request is still pending', async () => {
     const user = userEvent.setup()
     const deferred = createDeferred()
