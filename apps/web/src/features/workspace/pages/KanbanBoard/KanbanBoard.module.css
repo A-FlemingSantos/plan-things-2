@@ -2823,7 +2823,7 @@
   max-height: calc(100vh - 60px);
   background: var(--surface-1);
   border: 1px solid var(--border-1);
-  border-radius: 20px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: flex;
@@ -2998,7 +2998,7 @@
   padding: 14px 22px;
   border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
-  background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%);
+  background: var(--surface-1);
 }
 
 .cmHeaderLeft {
@@ -5579,7 +5579,7 @@
     width: min(320px, calc(100vw - 16px));
   }
   .modalOverlay { padding: 16px 10px 10px; }
-  .cardModal { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--radius-lg); }
+  .cardModal { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--radius-md); }
   .cmHeader,
   .cmMain,
   .cmSidebarHeader,
@@ -5699,7 +5699,7 @@
   }
   .cardModal {
     max-height: 100dvh;
-    border-radius: 18px 18px 0 0;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
   }
   .cmMain,
   .cmSidebar {
