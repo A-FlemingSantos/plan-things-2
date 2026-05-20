@@ -3049,7 +3049,7 @@
 
 .cmBody {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(340px, .95fr);
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 1fr);
   gap: 0;
   overflow-y: auto;
   flex: 1;
@@ -3160,22 +3160,22 @@
 .cmToolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  padding-left: 32px;
+  gap: 8px;
+  justify-content: center;
 }
 
 .cmToolbarBtn {
-  min-height: 34px;
-  padding: 7px 14px;
+  min-height: 30px;
+  padding: 5px 11px;
   border-radius: 6px;
   border: 1px solid var(--border-1);
   background: var(--surface-2);
   color: var(--text-2);
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 12px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   cursor: pointer;
   transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
@@ -3188,8 +3188,8 @@
 }
 
 .cmToolbarAvatar {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 2px solid var(--surface-2);
   color: var(--text-on-accent);
@@ -3203,16 +3203,16 @@
 }
 
 .cmToolbarAvatar + .cmToolbarAvatar {
-  margin-left: -6px;
+  margin-left: -5px;
 }
 
 .cmToolbarLabelChip {
   max-width: 100%;
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3222,7 +3222,7 @@
 .cmToolbarBtnValue {
   max-width: 100%;
   color: var(--text-3);
-  line-height: 1.15;
+  line-height: 1.05;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3251,8 +3251,8 @@
 }
 
 .cmToolbarBtnChevron svg {
-  width: 13px;
-  height: 13px;
+  width: 11px;
+  height: 11px;
 }
 
 .cmSection {
