@@ -2997,7 +2997,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 22px;
+  padding: 14px 8px;
   border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
   background: var(--surface-1);
@@ -3059,7 +3059,7 @@
 }
 
 .cmMain {
-  padding: 24px 28px 32px;
+  padding: 24px 28px 32px 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -3071,6 +3071,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  margin-left: -10px;
 }
 
 .cmTitleEditor {
@@ -3165,6 +3166,7 @@
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-start;
+  margin-left: -10px;
   padding-left: 32px;
 }
 
@@ -3269,6 +3271,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-left: -10px;
   font-size: 14px;
   color: var(--text-1);
   font-weight: 600;
@@ -5687,7 +5690,7 @@
   .cmTitleRow { align-items: flex-start; }
   .cmTitle { font-size: 22px; min-height: 36px; max-height: 72px; }
   .cmSaveRow { flex-direction: column; align-items: flex-start; }
-  .cmToolbar { padding-left: 32px; }
+  .cmToolbar { margin-left: -10px; padding-left: 32px; }
   .cmToolbarBtn {
     flex: 1 1 160px;
     justify-content: center;
