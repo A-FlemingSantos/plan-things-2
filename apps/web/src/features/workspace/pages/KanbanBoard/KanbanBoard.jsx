@@ -599,6 +599,7 @@ export default function KanbanBoard() {
   const [isIntelligencePanelMounted, setIsIntelligencePanelMounted] = useState(false)
   const [isIntelligenceInsertMenuOpen, setIsIntelligenceInsertMenuOpen] = useState(false)
   const [isIntelligencePluginsMenuOpen, setIsIntelligencePluginsMenuOpen] = useState(false)
+  const [selectedIntelligencePluginId, setSelectedIntelligencePluginId] = useState('')
   const [intelligenceDraft, setIntelligenceDraft] = useState('')
   const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
@@ -619,6 +620,10 @@ export default function KanbanBoard() {
     '--kanban-accent-color': boardAccentColor,
     '--kanban-accent-foreground': boardAccentForeground,
   }), [boardAccentColor, boardAccentForeground])
+  const selectedIntelligencePlugin = useMemo(
+    () => INTELLIGENCE_PLUGIN_OPTIONS.find(({ id }) => id === selectedIntelligencePluginId) ?? null,
+    [selectedIntelligencePluginId],
+  )
   const today = useMemo(() => new Date(), [timeZone])
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
@@ -2763,9 +2768,9 @@ export default function KanbanBoard() {
                                     className={styles.intelligenceComposerSubmenuItem}
                                     role="menuitem"
                                     onClick={() => {
+                                      setSelectedIntelligencePluginId(id)
                                       setIsIntelligencePluginsMenuOpen(false)
                                       setIsIntelligenceInsertMenuOpen(false)
-                                      showNotification(`${label} no chat em breve.`)
                                     }}
                                   >
                                     <span className={styles.intelligenceComposerPluginLogo} aria-hidden="true">
@@ -2780,14 +2785,22 @@ export default function KanbanBoard() {
                         </div>
                       ) : null}
                     </div>
-                    <button
-                      type="button"
-                      className={styles.intelligenceComposerGhostButton}
-                      aria-label="Pesquisar"
-                    >
-                      <Icon.Globe />
-                      <span>Search</span>
-                    </button>
+                    {selectedIntelligencePlugin ? (
+                      <button
+                        type="button"
+                        className={`${styles.intelligenceComposerGhostButton} ${styles.intelligenceComposerPluginChip}`}
+                        aria-label={`Plugin selecionado: ${selectedIntelligencePlugin.label}`}
+                        onClick={() => {
+                          setIsIntelligenceInsertMenuOpen(true)
+                          setIsIntelligencePluginsMenuOpen(true)
+                        }}
+                      >
+                        <span className={styles.intelligenceComposerPluginLogo} aria-hidden="true">
+                          <selectedIntelligencePlugin.Logo />
+                        </span>
+                        <span>{selectedIntelligencePlugin.label}</span>
+                      </button>
+                    ) : null}
                   </div>
 
                   <div className={styles.intelligenceComposerActions}>
