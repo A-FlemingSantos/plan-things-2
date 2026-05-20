@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
@@ -581,6 +581,7 @@ export default function KanbanBoard() {
   const intelligenceCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
   const intelligencePanelRef = useRef(null)
+  const intelligenceComposerInputRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
     enabled: isPlannerPanelMounted,
@@ -728,6 +729,22 @@ export default function KanbanBoard() {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isIntelligencePanelMounted])
+
+  useLayoutEffect(() => {
+    if (!intelligenceComposerInputRef.current) return
+
+    const textarea = intelligenceComposerInputRef.current
+    const computedStyle = window.getComputedStyle(textarea)
+    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 18
+    const minimumHeight = Number.parseFloat(computedStyle.minHeight) || lineHeight
+    const maxHeight = Math.round(lineHeight * 5)
+
+    textarea.style.height = 'auto'
+
+    const nextHeight = Math.min(textarea.scrollHeight, maxHeight)
+    textarea.style.height = `${Math.max(nextHeight, minimumHeight)}px`
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
+  }, [intelligenceDraft, isIntelligencePanelMounted])
 
   useEffect(() => {
     if (!isMembersOpen) return
@@ -2550,6 +2567,7 @@ export default function KanbanBoard() {
                 }}
               >
                 <textarea
+                  ref={intelligenceComposerInputRef}
                   className={styles.intelligenceComposerInput}
                   rows={1}
                   value={intelligenceDraft}

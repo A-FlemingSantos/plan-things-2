@@ -1162,6 +1162,8 @@
   border: 0;
   padding: 0;
   resize: none;
+  overflow-x: hidden;
+  overflow-y: hidden;
   background: transparent;
   color: var(--text-1);
   font-family: var(--font-family);
