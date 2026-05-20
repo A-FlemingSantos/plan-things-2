@@ -1314,12 +1314,18 @@
 }
 
 .intelligenceComposerPluginLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: 4px;
-  object-fit: cover;
   flex: 0 0 auto;
-  background: rgba(255, 255, 255, 0.92);
+}
+
+.intelligenceComposerPluginLogo svg {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
 .intelligenceComposerIconButton,
