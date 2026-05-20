@@ -6,14 +6,10 @@ function KanbanColumn({
   col,
   dragState,
   dropTarget,
-  draggedFile,
-  fileDropTargetCardId,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
-  onFileDragOver,
-  onFileDrop,
   onAddCard,
   onDeleteCol,
   onRenameCol,
@@ -40,12 +36,6 @@ function KanbanColumn({
   const hasColumnColor = Boolean(col.color?.trim())
 
   const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
-  const getCardHasDraggedFile = (card) => {
-    if (!draggedFile?.id) return false
-    return (card.attachments ?? []).some((attachment) => (
-      (attachment.fileId ?? attachment.id) === draggedFile.id
-    ))
-  }
 
   const submitCard = async () => {
     if (!newCardText.trim() || isAddingCard) return
@@ -108,23 +98,10 @@ function KanbanColumn({
     <div
       className={`${styles.column} ${isColDropTarget ? styles.columnDropTarget : ''}`}
       onDragOver={(event) => {
-        if (draggedFile) {
-          event.preventDefault()
-          event.dataTransfer.dropEffect = 'none'
-          onFileDragOver?.(null)
-          return
-        }
-
         event.preventDefault()
         onDragOver({ type: 'col', colId: col.id })
       }}
       onDrop={(event) => {
-        if (draggedFile) {
-          event.preventDefault()
-          onFileDrop?.(draggedFile, null)
-          return
-        }
-
         event.preventDefault()
         onDrop({ type: 'col', colId: col.id })
       }}
@@ -211,15 +188,10 @@ function KanbanColumn({
             colTitle={col.title}
             isDragging={dragState?.cardId === card.id}
             isDropTarget={dropTarget?.type === 'card' && dropTarget.cardId === card.id}
-            draggedFile={draggedFile}
-            isFileDropTarget={fileDropTargetCardId === card.id && !getCardHasDraggedFile(card)}
-            isFileDropDisabled={Boolean(draggedFile) && getCardHasDraggedFile(card)}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
-            onFileDragOver={onFileDragOver}
-            onFileDrop={onFileDrop}
             onClick={onCardClick}
             isConfirmed={Boolean(card.isCompleted)}
             onToggleConfirmed={onToggleCardCompleted}
@@ -291,8 +263,6 @@ function areKanbanColumnPropsEqual(prevProps, nextProps) {
   return prevProps.col === nextProps.col
     && prevProps.dragState === nextProps.dragState
     && prevProps.dropTarget === nextProps.dropTarget
-    && prevProps.draggedFile === nextProps.draggedFile
-    && prevProps.fileDropTargetCardId === nextProps.fileDropTargetCardId
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions

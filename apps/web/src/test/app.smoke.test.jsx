@@ -199,7 +199,7 @@ describe('App smoke flows', () => {
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
 
-  it('marks only the active toolbar view when opening the files panel', async () => {
+  it('keeps Intelligence inert in the board toolbar', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
@@ -207,16 +207,16 @@ describe('App smoke flows', () => {
     const boardButton = await screen.findByRole('button', { name: 'Quadro' })
     const toolbar = boardButton.closest('div[aria-label="Atalhos do quadro"]')
     expect(toolbar).not.toBeNull()
-    const filesButton = within(toolbar).getByRole('button', { name: 'Arquivos' })
+    const intelligenceButton = within(toolbar).getByRole('button', { name: 'Intelligence' })
 
     expect(boardButton).toHaveAttribute('aria-current', 'page')
-    expect(filesButton).toHaveAttribute('aria-expanded', 'false')
+    expect(intelligenceButton).not.toHaveAttribute('aria-expanded')
+    expect(intelligenceButton).not.toHaveAttribute('aria-controls')
 
-    await user.click(filesButton)
+    await user.click(intelligenceButton)
 
-    expect(await screen.findByLabelText('Arquivos do plano')).toBeInTheDocument()
-    expect(boardButton).not.toHaveAttribute('aria-current')
-    expect(filesButton).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByLabelText('Arquivos do plano')).not.toBeInTheDocument()
+    expect(boardButton).toHaveAttribute('aria-current', 'page')
   })
 
   it('keeps legacy seeded due dates in pt-BR after opening and saving the date modal', async () => {

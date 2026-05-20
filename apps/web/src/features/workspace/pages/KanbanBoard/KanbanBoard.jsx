@@ -22,7 +22,7 @@ import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
 import { CalendarWorkspaceView } from '../../../calendar/pages/CalendarPage/CalendarPage.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
-import { formatFileSize, getFileTypeFromName } from '../../../files/data/libraryRepository.js'
+import { getFileTypeFromName } from '../../../files/data/libraryRepository.js'
 import { buildPlannerView, filterPlannerItems } from './plannerFilters.js'
 import {
   KANBAN_COLUMN_COLOR_OPTIONS,
@@ -109,7 +109,6 @@ const BOARD_VIEW_OPTIONS = [
 ]
 
 const uid = () => Math.random().toString(36).slice(2, 9)
-const FILE_DRAG_MIME_TYPE = 'application/x-planthings-file'
 
 function mapApiFileItem(item) {
   return {
@@ -231,36 +230,6 @@ function removeAttachmentFromColumns(columns, attachmentId) {
     const nextCards = column.cards.map((card) => {
       const currentAttachments = Array.isArray(card.attachments) ? card.attachments : []
       const nextAttachments = currentAttachments.filter((attachment) => attachment.id !== attachmentId)
-      if (nextAttachments.length === currentAttachments.length) {
-        return card
-      }
-
-      columnChanged = true
-      hasChanges = true
-      return {
-        ...card,
-        attachments: nextAttachments,
-      }
-    })
-
-    return columnChanged ? { ...column, cards: nextCards } : column
-  })
-
-  return hasChanges ? nextColumns : columns
-}
-
-function removeFileAttachmentsFromColumns(columns, fileId) {
-  if (!Array.isArray(columns) || !fileId) {
-    return columns
-  }
-
-  let hasChanges = false
-
-  const nextColumns = columns.map((column) => {
-    let columnChanged = false
-    const nextCards = column.cards.map((card) => {
-      const currentAttachments = Array.isArray(card.attachments) ? card.attachments : []
-      const nextAttachments = currentAttachments.filter((attachment) => attachment.fileId !== fileId)
       if (nextAttachments.length === currentAttachments.length) {
         return card
       }
@@ -580,20 +549,10 @@ export default function KanbanBoard() {
   const [isClearingInbox, setIsClearingInbox] = useState(false)
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
-  const [isFilesOpen, setIsFilesOpen] = useState(false)
-  const [isFilesPanelMounted, setIsFilesPanelMounted] = useState(false)
   const [planFiles, setPlanFiles] = useState([])
   const [libraryFiles, setLibraryFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(false)
   const [filesError, setFilesError] = useState(null)
-  const [draggedFile, setDraggedFile] = useState(null)
-  const [draggedFileRowKey, setDraggedFileRowKey] = useState(null)
-  const [draggedFileVisual, setDraggedFileVisual] = useState(null)
-  const [fileDropTargetCardId, setFileDropTargetCardId] = useState(null)
-  const [filesSectionOpenById, setFilesSectionOpenById] = useState({
-    plan: true,
-    library: true,
-  })
   const boardHeaderSwitcherRef = useRef(null)
   const [isPlannerFilterOpen, setIsPlannerFilterOpen] = useState(false)
   const [plannerFilter, setPlannerFilter] = useState('my-day')
@@ -612,7 +571,6 @@ export default function KanbanBoard() {
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
   const plannerCloseTimerRef = useRef(null)
-  const filesCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
@@ -1091,88 +1049,6 @@ export default function KanbanBoard() {
     return refreshActiveCardFromColumns(nextColumns, cardId)
   }
 
-  const startFileDrag = (event, file, rowKey) => {
-    const sourceRow = event.currentTarget
-    const sourceRect = sourceRow.getBoundingClientRect()
-    const offsetX = event.clientX - sourceRect.left
-    const offsetY = event.clientY - sourceRect.top
-
-    setDraggedFile(file)
-    setDraggedFileRowKey(rowKey)
-    setDraggedFileVisual({
-      file,
-      left: sourceRect.left,
-      top: sourceRect.top,
-      width: sourceRect.width,
-      height: sourceRect.height,
-      offsetX,
-      offsetY,
-    })
-    setFileDropTargetCardId(null)
-    event.dataTransfer.effectAllowed = 'copy'
-    event.dataTransfer.setData(FILE_DRAG_MIME_TYPE, JSON.stringify({ id: file.id }))
-    event.dataTransfer.setData('text/plain', file.name)
-    const transparentDragImage = document.createElement('canvas')
-    transparentDragImage.width = 1
-    transparentDragImage.height = 1
-    event.dataTransfer.setDragImage?.(transparentDragImage, 0, 0)
-  }
-
-  const updateFileDragVisual = (event) => {
-    if (!draggedFileVisual || event.clientX === 0 || event.clientY === 0) return
-
-    setDraggedFileVisual((current) => {
-      if (!current) return current
-      return {
-        ...current,
-        left: event.clientX - current.offsetX,
-        top: event.clientY - current.offsetY,
-      }
-    })
-  }
-
-  useEffect(() => {
-    if (!draggedFileVisual) return undefined
-
-    const handleDragOverWindow = (event) => {
-      updateFileDragVisual(event)
-    }
-
-    window.addEventListener('dragover', handleDragOverWindow, true)
-
-    return () => {
-      window.removeEventListener('dragover', handleDragOverWindow, true)
-    }
-  }, [Boolean(draggedFileVisual)])
-
-  const endFileDrag = () => {
-    setDraggedFile(null)
-    setDraggedFileRowKey(null)
-    setDraggedFileVisual(null)
-    setFileDropTargetCardId(null)
-  }
-
-  const handleFileDragOverCard = (cardId) => {
-    setFileDropTargetCardId(cardId)
-  }
-
-  const handleFileDropOnCard = async (file, cardId) => {
-    if (!file?.id || !cardId) {
-      endFileDrag()
-      return
-    }
-
-    setFileDropTargetCardId(cardId)
-
-    try {
-      await attachFileToCard(file, cardId)
-    } catch (error) {
-      showNotification(error?.message ?? 'Não foi possível anexar este arquivo ao cartão.')
-    } finally {
-      endFileDrag()
-    }
-  }
-
   const uploadLocalFileToCard = async (localFile, cardId) => {
     if (!activePlan?.id || !isBackendDriven || !(localFile instanceof File)) return null
 
@@ -1226,54 +1102,6 @@ export default function KanbanBoard() {
     showNotification(`"${file.name}" baixado.`)
   }
 
-  const shareFileWithPlan = async (file) => {
-    if (!activePlan?.id || !isBackendDriven) return
-
-    await apiRequest(`/api/files/${file.id}/share/plans/${activePlan.id}`, {
-      method: 'POST',
-      token: accessToken,
-    })
-    setPlanFiles((current) => upsertFileItem(current, {
-      ...file,
-      sharedByCurrentUser: true,
-      canUnshare: true,
-    }))
-    setLibraryFiles((current) => upsertFileItem(current, {
-      ...file,
-      sharedByCurrentUser: true,
-      canUnshare: true,
-    }))
-    showNotification(`"${file.name}" compartilhado com o plano.`)
-  }
-
-  const unshareFileFromPlan = async (file) => {
-    if (!activePlan?.id || !isBackendDriven) return
-
-    await apiRequest(`/api/files/${file.id}/share/plans/${activePlan.id}`, {
-      method: 'DELETE',
-      token: accessToken,
-    })
-    let nextColumns = columns
-    updateColumns((prev) => {
-      nextColumns = removeFileAttachmentsFromColumns(prev, file.id)
-      return nextColumns
-    })
-    setPlanFiles((current) => current.filter((item) => item.id !== file.id))
-    setLibraryFiles((current) => current.map((item) => (
-      item.id === file.id
-        ? {
-            ...item,
-            sharedByCurrentUser: false,
-            canUnshare: false,
-          }
-        : item
-    )))
-    if (activeCard?.card?.id) {
-      refreshActiveCardFromColumns(nextColumns, activeCard.card.id)
-    }
-    showNotification(`"${file.name}" removido do plano.`)
-  }
-
   const openPlanner = () => {
     if (plannerCloseTimerRef.current) {
       clearTimeout(plannerCloseTimerRef.current)
@@ -1283,15 +1111,9 @@ export default function KanbanBoard() {
       clearTimeout(inboxCloseTimerRef.current)
       inboxCloseTimerRef.current = null
     }
-    if (filesCloseTimerRef.current) {
-      clearTimeout(filesCloseTimerRef.current)
-      filesCloseTimerRef.current = null
-    }
     setIsBoardSwitcherOpen(false)
     setIsInboxOpen(false)
     setIsInboxPanelMounted(false)
-    setIsFilesOpen(false)
-    setIsFilesPanelMounted(false)
     setIsPlannerFilterOpen(false)
     setIsPlannerPanelMounted(true)
     window.requestAnimationFrame(() => setIsPlannerOpen(true))
@@ -1318,15 +1140,9 @@ export default function KanbanBoard() {
       clearTimeout(plannerCloseTimerRef.current)
       plannerCloseTimerRef.current = null
     }
-    if (filesCloseTimerRef.current) {
-      clearTimeout(filesCloseTimerRef.current)
-      filesCloseTimerRef.current = null
-    }
     setIsBoardSwitcherOpen(false)
     setIsPlannerOpen(false)
     setIsPlannerPanelMounted(false)
-    setIsFilesOpen(false)
-    setIsFilesPanelMounted(false)
     setIsInboxPanelMounted(true)
     window.requestAnimationFrame(() => setIsInboxOpen(true))
   }
@@ -1346,43 +1162,9 @@ export default function KanbanBoard() {
     }, 260)
   }
 
-  const openFiles = () => {
-    if (filesCloseTimerRef.current) {
-      clearTimeout(filesCloseTimerRef.current)
-      filesCloseTimerRef.current = null
-    }
-    if (plannerCloseTimerRef.current) {
-      clearTimeout(plannerCloseTimerRef.current)
-      plannerCloseTimerRef.current = null
-    }
-    if (inboxCloseTimerRef.current) {
-      clearTimeout(inboxCloseTimerRef.current)
-      inboxCloseTimerRef.current = null
-    }
-    setIsBoardSwitcherOpen(false)
-    setIsPlannerOpen(false)
-    setIsPlannerPanelMounted(false)
-    setIsInboxOpen(false)
-    setIsInboxPanelMounted(false)
-    setIsFilesPanelMounted(true)
-    window.requestAnimationFrame(() => setIsFilesOpen(true))
-  }
-
-  const closeFiles = () => {
-    setIsFilesOpen(false)
-    if (filesCloseTimerRef.current) {
-      clearTimeout(filesCloseTimerRef.current)
-    }
-    filesCloseTimerRef.current = setTimeout(() => {
-      setIsFilesPanelMounted(false)
-      filesCloseTimerRef.current = null
-    }, 260)
-  }
-
   const closeFloatingPanel = () => {
     closeInbox()
     closePlanner()
-    closeFiles()
   }
 
   const showBoardView = () => {
@@ -1407,11 +1189,6 @@ export default function KanbanBoard() {
   }
 
   useEffect(() => {
-    if (!isFilesPanelMounted) return
-    reloadFileLists()
-  }, [activePlan?.id, isFilesPanelMounted])
-
-  useEffect(() => {
     if (!isInboxPanelMounted) return
     if (!isBackendDriven) return
     if (!activePlan?.id) return
@@ -1425,18 +1202,6 @@ export default function KanbanBoard() {
   useEffect(() => {
     setInboxItems(Array.isArray(activePlan?.inboxItems) ? activePlan.inboxItems : [])
   }, [activePlan?.id, activePlan?.inboxItems])
-
-  const isFilesSectionOpen = (sectionId) => filesSectionOpenById?.[sectionId] !== false
-
-  const toggleFilesSection = (sectionId) => {
-    setFilesSectionOpenById((current) => {
-      const currentValue = current?.[sectionId] !== false
-      return {
-        ...(current ?? {}),
-        [sectionId]: !currentValue,
-      }
-    })
-  }
 
   useEffect(() => {
     if (!isPlannerFilterOpen) return undefined
@@ -1847,9 +1612,6 @@ export default function KanbanBoard() {
     if (plannerCloseTimerRef.current) {
       clearTimeout(plannerCloseTimerRef.current)
     }
-    if (filesCloseTimerRef.current) {
-      clearTimeout(filesCloseTimerRef.current)
-    }
   }, [])
 
   useEffect(() => {
@@ -1974,7 +1736,6 @@ export default function KanbanBoard() {
   }
 
   const handleInboxDrop = async (event) => {
-    if (draggedFile) return
     event.preventDefault()
     setIsInboxDropActive(false)
 
@@ -1994,7 +1755,7 @@ export default function KanbanBoard() {
   }
 
   const handleInboxDragOver = (event) => {
-    if (draggedFile || !dragState?.cardId) return
+    if (!dragState?.cardId) return
     event.preventDefault()
     event.dataTransfer.dropEffect = 'copy'
     setIsInboxDropActive(true)
@@ -2183,171 +1944,6 @@ export default function KanbanBoard() {
       </div>
     </aside>
   )
-
-  const renderFilesPanel = () => {
-    const runFileAction = async (action) => {
-      try {
-        await action()
-      } catch (error) {
-        showNotification(error?.message ?? 'Não foi possível concluir a ação.')
-      }
-    }
-
-    const sharedPlanFileIds = new Set(planFiles.map((file) => file.id))
-    const fileSections = [
-      {
-        id: 'plan',
-        title: 'Plano',
-        emptyText: 'Nenhum arquivo compartilhado com este plano.',
-        files: planFiles,
-        count: planFiles.length,
-      },
-      {
-        id: 'library',
-        title: 'Biblioteca',
-        emptyText: 'Nenhum arquivo disponível na sua biblioteca.',
-        files: libraryFiles,
-        count: libraryFiles.filter((file) => !sharedPlanFileIds.has(file.id)).length,
-      },
-    ]
-
-    const renderFileRow = (file, sectionId) => {
-      const isSharedLibraryFile = sectionId === 'library' && sharedPlanFileIds.has(file.id)
-      const rowKey = `${sectionId}:${file.id}`
-      const isDraggedFileRow = draggedFileRowKey === rowKey
-
-      return (
-        <div
-          key={file.id}
-          className={`${styles.filesListRow} ${isSharedLibraryFile ? styles.filesListRowMuted : ''} ${isDraggedFileRow ? styles.filesListRowDragging : ''}`}
-          title={isSharedLibraryFile ? 'Já compartilhado com o plano' : undefined}
-          draggable
-          onDragStart={(event) => {
-            startFileDrag(event, file, rowKey)
-          }}
-          onDrag={updateFileDragVisual}
-          onDragEnd={endFileDrag}
-        >
-          <span className={styles.filesListIcon}><Icon.Files /></span>
-          <div className={styles.filesListBody}>
-            <p className={styles.filesListName}>{file.name}</p>
-            <p className={styles.filesListMeta}>{formatFileSize(file.size)} · {file.modified}</p>
-          </div>
-          {isSharedLibraryFile ? null : (
-            <div className={styles.filesListActions}>
-              <button
-                type="button"
-                className={styles.filesActionButton}
-                onClick={() => runFileAction(() => downloadFile(file))}
-                title="Baixar"
-                aria-label={`Baixar ${file.name}`}
-              >
-                <Icon.Download />
-              </button>
-              {sectionId === 'library' ? (
-                <button
-                  type="button"
-                  className={styles.filesActionTextButton}
-                  onClick={() => runFileAction(() => shareFileWithPlan(file))}
-                >
-                  Compartilhar
-                </button>
-              ) : file.canUnshare ? (
-                <button
-                  type="button"
-                  className={styles.filesActionTextButton}
-                  onClick={() => runFileAction(() => unshareFileFromPlan(file))}
-                >
-                  Remover
-                </button>
-              ) : null}
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    const renderFileSection = (section) => {
-      const expanded = isFilesSectionOpen(section.id)
-      return (
-        <div key={section.id} className={styles.plannerSection}>
-          <button
-            type="button"
-            className={styles.plannerSectionHeaderBtn}
-            aria-expanded={expanded}
-            onClick={() => toggleFilesSection(section.id)}
-          >
-            <span className={styles.plannerSectionChevron} aria-hidden="true">
-              <Icon.Chevron />
-            </span>
-            <span className={styles.plannerSectionTitle}>{section.title}</span>
-            <span className={styles.plannerSectionCount}>{section.count ?? section.files.length}</span>
-          </button>
-          {expanded ? (
-            <div className={styles.plannerSectionBody}>
-              {section.files.length ? (
-                section.files.map((file) => renderFileRow(file, section.id))
-              ) : (
-                <p className={styles.filesSectionEmpty}>{section.emptyText}</p>
-              )}
-            </div>
-          ) : null}
-        </div>
-      )
-    }
-
-    return (
-      <aside
-        id="board-files-panel"
-        className={`${styles.plannerPanel} ${styles.filesPanel} ${isFilesOpen ? '' : styles.plannerPanelClosing}`}
-        aria-label="Arquivos do plano"
-      >
-        <div className={styles.plannerPanelHeader}>
-          <div>
-            <span className={styles.plannerEyebrow}>Arquivos</span>
-            <h2>Plano</h2>
-          </div>
-          <button
-            type="button"
-            className={styles.plannerCloseButton}
-            aria-label="Fechar arquivos"
-            onClick={closeFiles}
-          >
-            <Icon.X />
-          </button>
-        </div>
-
-        <section className={styles.filesList} aria-label="Arquivos do plano e da biblioteca">
-          {!isBackendDriven ? (
-            <div className={styles.filesEmptyState}>
-              <Icon.Lock />
-              <strong>Conecte ao backend</strong>
-              <p>Arquivos do plano ficam disponíveis em sessões autenticadas.</p>
-            </div>
-          ) : filesLoading ? (
-            Array.from({ length: 5 }, (_, index) => (
-              <div key={`file-loading-${index}`} className={styles.filesListSkeleton} />
-            ))
-          ) : filesError ? (
-            <div className={styles.filesEmptyState}>
-              <Icon.Files />
-              <strong>Não foi possível carregar</strong>
-              <p>{filesError}</p>
-              <button type="button" onClick={reloadFileLists}>Tentar novamente</button>
-            </div>
-          ) : planFiles.length || libraryFiles.length ? (
-            fileSections.map(renderFileSection)
-          ) : (
-            <div className={styles.filesEmptyState}>
-              <Icon.Files />
-              <strong>Nada para mostrar</strong>
-              <p>Nenhum arquivo disponível no plano ou na sua biblioteca.</p>
-            </div>
-          )}
-        </section>
-      </aside>
-    )
-  }
 
 	  const renderPlannerPanel = () => {
 		    const plannerFilterOptions = [
@@ -2560,7 +2156,7 @@ export default function KanbanBoard() {
         HintIcon={Icon.Popover}
         secondaryContent={renderSidebarSecondaryContent}
         bottomContent={renderSidebarBottomContent}
-        contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted || isFilesPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen || isFilesOpen ? styles.boardWrapperWithPlanner : ''}`}
+        contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
         mobileTitle={boardHeaderTitle}
         mobileTitleMeta={boardHeaderMeta}
       >
@@ -2740,14 +2336,10 @@ export default function KanbanBoard() {
                 col={col}
                 dragState={dragState}
                 dropTarget={dropTarget}
-                draggedFile={draggedFile}
-                fileDropTargetCardId={fileDropTargetCardId}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onDragEnd={handleDragEnd}
-                onFileDragOver={handleFileDragOverCard}
-                onFileDrop={handleFileDropOnCard}
                 onAddCard={addCard}
                 onDeleteCol={handleColumnDelete}
                 onRenameCol={renameColumn}
@@ -2808,8 +2400,8 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-current={boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isFilesOpen ? 'page' : undefined}
+            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-current={boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen ? 'page' : undefined}
             title="Quadro"
             onClick={showBoardView}
           >
@@ -2819,39 +2411,17 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={`${styles.boardViewToolbarItem} ${isFilesOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-expanded={isFilesOpen}
-            aria-controls="board-files-panel"
-            title="Arquivos"
-            onClick={openFiles}
+            className={styles.boardViewToolbarItem}
+            title="Intelligence"
           >
-            <Icon.Files />
-            <span>Arquivos</span>
+            <Icon.Bolt />
+            <span>Intelligence</span>
           </button>
         </div>
         </div>
 
         {isInboxPanelMounted && renderInboxPanel()}
         {isPlannerPanelMounted && renderPlannerPanel()}
-        {isFilesPanelMounted && renderFilesPanel()}
-        {draggedFileVisual ? (
-          <div
-            className={styles.filesDraggedItem}
-            style={{
-              left: draggedFileVisual.left,
-              top: draggedFileVisual.top,
-              width: draggedFileVisual.width,
-              minHeight: draggedFileVisual.height,
-            }}
-            aria-hidden="true"
-          >
-            <span className={styles.filesListIcon}><Icon.Files /></span>
-            <div className={styles.filesListBody}>
-              <p className={styles.filesListName}>{draggedFileVisual.file.name}</p>
-              <p className={styles.filesListMeta}>{formatFileSize(draggedFileVisual.file.size)} · {draggedFileVisual.file.modified}</p>
-            </div>
-          </div>
-        ) : null}
       </ProductAppShell>
 
       {/* ── Card modal ── */}

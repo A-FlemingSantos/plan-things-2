@@ -7,16 +7,11 @@ function KanbanCard({
   colTitle,
   isDragging,
   isDropTarget,
-  draggedFile,
-  isFileDropTarget,
-  isFileDropDisabled,
   isConfirmed,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
-  onFileDragOver,
-  onFileDrop,
   onClick,
   onToggleConfirmed,
   labels,
@@ -61,36 +56,17 @@ function KanbanCard({
         ${isConfirmed ? styles.cardConfirmed : ''}
         ${isDragging ? styles.cardDragging : ''}
         ${isDropTarget ? styles.cardDropTarget : ''}
-        ${isFileDropTarget ? styles.cardFileDropTarget : ''}
-        ${isFileDropDisabled ? styles.cardFileDropDisabled : ''}
       `}
       role="button"
       tabIndex={0}
       draggable
       onDragStart={() => onDragStart(card.id, colId)}
       onDragOver={(event) => {
-        if (draggedFile) {
-          event.preventDefault()
-          event.stopPropagation()
-          event.dataTransfer.dropEffect = isFileDropDisabled ? 'none' : 'copy'
-          onFileDragOver?.(isFileDropDisabled ? null : card.id)
-          return
-        }
-
         event.preventDefault()
         event.stopPropagation()
         onDragOver({ type: 'card', cardId: card.id, colId })
       }}
       onDrop={(event) => {
-        if (draggedFile) {
-          event.preventDefault()
-          event.stopPropagation()
-          if (!isFileDropDisabled) {
-            onFileDrop?.(draggedFile, card.id)
-          }
-          return
-        }
-
         event.preventDefault()
         event.stopPropagation()
         onDrop({ type: 'card', cardId: card.id, colId })
@@ -221,9 +197,6 @@ function areKanbanCardPropsEqual(prevProps, nextProps) {
     && prevProps.colTitle === nextProps.colTitle
     && prevProps.isDragging === nextProps.isDragging
     && prevProps.isDropTarget === nextProps.isDropTarget
-    && prevProps.draggedFile === nextProps.draggedFile
-    && prevProps.isFileDropTarget === nextProps.isFileDropTarget
-    && prevProps.isFileDropDisabled === nextProps.isFileDropDisabled
     && prevProps.isConfirmed === nextProps.isConfirmed
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members

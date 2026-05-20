@@ -28,15 +28,10 @@ function renderCard(props = {}) {
     colId: 'col-1',
     isDragging: false,
     isDropTarget: false,
-    draggedFile: null,
-    isFileDropTarget: false,
-    isFileDropDisabled: false,
     onDragStart: vi.fn(),
     onDragOver: vi.fn(),
     onDrop: vi.fn(),
     onDragEnd: vi.fn(),
-    onFileDragOver: vi.fn(),
-    onFileDrop: vi.fn(),
     onClick: vi.fn(),
     labels: [],
     members: [],
@@ -60,68 +55,19 @@ function buildDataTransfer() {
     effectAllowed: 'move',
     getData: vi.fn(),
     setData: vi.fn(),
-    types: ['application/x-planthings-file'],
+    types: [],
   }
 }
 
-describe('KanbanCard file drag-and-drop', () => {
-  it('accepts an eligible dragged file and calls the file drop handler', () => {
-    const draggedFile = { id: 'file-1', name: 'briefing.pdf' }
-    const onFileDrop = vi.fn()
-    const onDrop = vi.fn()
-    const onFileDragOver = vi.fn()
-    const { cardElement } = renderCard({
-      draggedFile,
-      isFileDropTarget: true,
-      onFileDrop,
-      onDrop,
-      onFileDragOver,
-    })
-    const dataTransfer = buildDataTransfer()
-
-    fireEvent.dragOver(cardElement, { dataTransfer })
-    fireEvent.drop(cardElement, { dataTransfer })
-
-    expect(onFileDragOver).toHaveBeenCalledWith('card-1')
-    expect(onFileDrop).toHaveBeenCalledWith(draggedFile, 'card-1')
-    expect(onDrop).not.toHaveBeenCalled()
-    expect(dataTransfer.dropEffect).toBe('copy')
-  })
-
-  it('blocks file drops when the dragged file is already attached', () => {
-    const draggedFile = { id: 'file-1', name: 'briefing.pdf' }
-    const onFileDrop = vi.fn()
-    const onFileDragOver = vi.fn()
-    const { cardElement } = renderCard({
-      card: buildCard({
-        attachments: [{ id: 'attachment-1', fileId: 'file-1', name: 'briefing.pdf' }],
-      }),
-      draggedFile,
-      isFileDropDisabled: true,
-      onFileDrop,
-      onFileDragOver,
-    })
-    const dataTransfer = buildDataTransfer()
-
-    fireEvent.dragOver(cardElement, { dataTransfer })
-    fireEvent.drop(cardElement, { dataTransfer })
-
-    expect(cardElement).toHaveClass('cardFileDropDisabled')
-    expect(onFileDragOver).toHaveBeenCalledWith(null)
-    expect(onFileDrop).not.toHaveBeenCalled()
-    expect(dataTransfer.dropEffect).toBe('none')
-  })
-
+describe('KanbanCard drag-and-drop', () => {
   it('keeps the existing card drag behavior when no file is being dragged', () => {
     const onDragStart = vi.fn()
     const onDragOver = vi.fn()
     const onDrop = vi.fn()
-    const onFileDrop = vi.fn()
     const { cardElement } = renderCard({
       onDragStart,
       onDragOver,
       onDrop,
-      onFileDrop,
     })
     const dataTransfer = buildDataTransfer()
 
@@ -132,7 +78,6 @@ describe('KanbanCard file drag-and-drop', () => {
     expect(onDragStart).toHaveBeenCalledWith('card-1', 'col-1')
     expect(onDragOver).toHaveBeenCalledWith({ type: 'card', cardId: 'card-1', colId: 'col-1' })
     expect(onDrop).toHaveBeenCalledWith({ type: 'card', cardId: 'card-1', colId: 'col-1' })
-    expect(onFileDrop).not.toHaveBeenCalled()
   })
 
   it('renders attachment count and checklist progress metadata', () => {
