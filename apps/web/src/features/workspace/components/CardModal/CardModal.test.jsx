@@ -224,6 +224,47 @@ describe('CardModal file picker positioning', () => {
     expect(screen.queryByRole('button', { name: 'Cancelar edição da descrição' })).not.toBeInTheDocument()
   })
 
+  it('opens the comment editor actions on focus and saves the comment through the footer button', async () => {
+    const user = userEvent.setup()
+    const deferred = createDeferred()
+    const addComment = vi.fn(() => deferred.promise)
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        onAddComment={addComment}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    const commentField = screen.getByLabelText('Escrever comentário')
+    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('tabindex', '-1')
+
+    await user.click(commentField)
+    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('tabindex', '0')
+    expect(screen.getByLabelText('Anexar ao comentário')).toHaveAttribute('tabindex', '0')
+    expect(screen.getByLabelText('Ajuda do comentário')).toHaveAttribute('tabindex', '0')
+
+    await user.type(commentField, 'Ola!')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    await waitFor(() => {
+      expect(addComment).toHaveBeenCalledWith('card-1', 'Ola!')
+    })
+  })
+
   it('shows a new checklist immediately while the backend request is still pending', async () => {
     const user = userEvent.setup()
     const deferred = createDeferred()
