@@ -111,6 +111,24 @@ const BOARD_VIEW_OPTIONS = [
   { id: 'calendar', label: 'Calendário', Icon: Icon.Calendar },
 ]
 
+const INTELLIGENCE_PLUGIN_OPTIONS = [
+  {
+    id: 'github',
+    label: 'GitHub',
+    logo: 'https://www.google.com/s2/favicons?domain=github.com&sz=64',
+  },
+  {
+    id: 'teams',
+    label: 'Teams',
+    logo: 'https://www.google.com/s2/favicons?domain=teams.microsoft.com&sz=64',
+  },
+  {
+    id: 'google-calendar',
+    label: 'Google Calendar',
+    logo: 'https://www.google.com/s2/favicons?domain=calendar.google.com&sz=64',
+  },
+]
+
 const uid = () => Math.random().toString(36).slice(2, 9)
 
 function mapApiFileItem(item) {
@@ -554,6 +572,8 @@ export default function KanbanBoard() {
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
   const [isIntelligenceOpen, setIsIntelligenceOpen] = useState(false)
   const [isIntelligencePanelMounted, setIsIntelligencePanelMounted] = useState(false)
+  const [isIntelligenceInsertMenuOpen, setIsIntelligenceInsertMenuOpen] = useState(false)
+  const [isIntelligencePluginsMenuOpen, setIsIntelligencePluginsMenuOpen] = useState(false)
   const [intelligenceDraft, setIntelligenceDraft] = useState('')
   const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
@@ -582,6 +602,8 @@ export default function KanbanBoard() {
   const boardViewToolbarRef = useRef(null)
   const intelligencePanelRef = useRef(null)
   const intelligenceComposerInputRef = useRef(null)
+  const intelligenceInsertButtonRef = useRef(null)
+  const intelligenceInsertMenuRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
     enabled: isPlannerPanelMounted,
@@ -745,6 +767,30 @@ export default function KanbanBoard() {
     textarea.style.height = `${Math.max(nextHeight, minimumHeight)}px`
     textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
   }, [intelligenceDraft, isIntelligencePanelMounted])
+
+  useEffect(() => {
+    if (!isIntelligenceInsertMenuOpen) return undefined
+
+    const handleMouseDown = (event) => {
+      const button = intelligenceInsertButtonRef.current
+      const menu = intelligenceInsertMenuRef.current
+      if (button?.contains(event.target) || menu?.contains(event.target)) return
+      setIsIntelligenceInsertMenuOpen(false)
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      setIsIntelligenceInsertMenuOpen(false)
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isIntelligenceInsertMenuOpen])
 
   useEffect(() => {
     if (!isMembersOpen) return
@@ -1258,6 +1304,8 @@ export default function KanbanBoard() {
     setIsPlannerPanelMounted(false)
     setIsIntelligenceOpen(false)
     setIsIntelligencePanelMounted(false)
+    setIsIntelligenceInsertMenuOpen(false)
+    setIsIntelligencePluginsMenuOpen(false)
     setIsInboxPanelMounted(true)
     window.requestAnimationFrame(() => setIsInboxOpen(true))
   }
@@ -1296,12 +1344,16 @@ export default function KanbanBoard() {
     setIsPlannerFilterOpen(false)
     setIsInboxOpen(false)
     setIsInboxPanelMounted(false)
+    setIsIntelligenceInsertMenuOpen(false)
+    setIsIntelligencePluginsMenuOpen(false)
     setIsIntelligencePanelMounted(true)
     setIsIntelligenceOpen(true)
   }
 
   const closeIntelligence = () => {
     setIsIntelligenceOpen(false)
+    setIsIntelligenceInsertMenuOpen(false)
+    setIsIntelligencePluginsMenuOpen(false)
     if (intelligenceCloseTimerRef.current) {
       clearTimeout(intelligenceCloseTimerRef.current)
     }
@@ -2583,13 +2635,130 @@ export default function KanbanBoard() {
 
                 <div className={styles.intelligenceComposerFooter}>
                   <div className={styles.intelligenceComposerTools}>
-                    <button
-                      type="button"
-                      className={styles.intelligenceComposerIconButton}
-                      aria-label="Adicionar contexto"
-                    >
-                      <Icon.Plus />
-                    </button>
+                    <div className={styles.intelligenceComposerMenuWrap}>
+                      <button
+                        ref={intelligenceInsertButtonRef}
+                        type="button"
+                        className={styles.intelligenceComposerIconButton}
+                        aria-label="Adicionar contexto"
+                        aria-haspopup="menu"
+                        aria-controls="intelligence-composer-insert-menu"
+                        aria-expanded={isIntelligenceInsertMenuOpen}
+                        onClick={() => {
+                          setIsIntelligenceInsertMenuOpen((open) => !open)
+                          setIsIntelligencePluginsMenuOpen(false)
+                        }}
+                      >
+                        <Icon.Plus />
+                      </button>
+
+                      {isIntelligenceInsertMenuOpen ? (
+                        <div
+                          id="intelligence-composer-insert-menu"
+                          ref={intelligenceInsertMenuRef}
+                          className={styles.intelligenceComposerMenu}
+                          role="menu"
+                          aria-label="Adicionar ao chat"
+                        >
+                          <button
+                            type="button"
+                            className={styles.intelligenceComposerMenuItem}
+                            role="menuitem"
+                            onClick={() => {
+                              setIsIntelligenceInsertMenuOpen(false)
+                              setIsIntelligencePluginsMenuOpen(false)
+                              showNotification('Adição de arquivos ao chat em breve.')
+                            }}
+                          >
+                            <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
+                              <Icon.Files />
+                            </span>
+                            <span>Adicionar arquivos</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.intelligenceComposerMenuItem}
+                            role="menuitem"
+                            onClick={() => {
+                              setIsIntelligenceInsertMenuOpen(false)
+                              setIsIntelligencePluginsMenuOpen(false)
+                              showNotification('Vinculação de item do Kanban ao chat em breve.')
+                            }}
+                          >
+                            <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
+                              <Icon.Board />
+                            </span>
+                            <span>Item do Kanban</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.intelligenceComposerMenuItem}
+                            role="menuitem"
+                            onClick={() => {
+                              setIsIntelligenceInsertMenuOpen(false)
+                              setIsIntelligencePluginsMenuOpen(false)
+                              openInbox()
+                            }}
+                          >
+                            <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
+                              <Icon.Inbox />
+                            </span>
+                            <span>Inbox</span>
+                          </button>
+                          <div className={styles.intelligenceComposerSubmenuWrap}>
+                            <button
+                              type="button"
+                              className={`${styles.intelligenceComposerMenuItem} ${styles.intelligenceComposerMenuItemSubmenu}`}
+                              role="menuitem"
+                              aria-haspopup="menu"
+                              aria-controls="intelligence-composer-plugins-menu"
+                              aria-expanded={isIntelligencePluginsMenuOpen}
+                              onClick={() => setIsIntelligencePluginsMenuOpen((open) => !open)}
+                            >
+                              <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
+                                <Icon.Plug />
+                              </span>
+                              <span className={styles.intelligenceComposerMenuItemLabel}>Plugins</span>
+                              <span className={styles.intelligenceComposerMenuItemChevron} aria-hidden="true">
+                                <Icon.Chevron />
+                              </span>
+                            </button>
+
+                            {isIntelligencePluginsMenuOpen ? (
+                              <div
+                                id="intelligence-composer-plugins-menu"
+                                className={styles.intelligenceComposerSubmenu}
+                                role="menu"
+                                aria-label="Plugins do chat"
+                              >
+                                {INTELLIGENCE_PLUGIN_OPTIONS.map(({ id, label, logo }) => (
+                                  <button
+                                    key={id}
+                                    type="button"
+                                    className={styles.intelligenceComposerSubmenuItem}
+                                    role="menuitem"
+                                    onClick={() => {
+                                      setIsIntelligencePluginsMenuOpen(false)
+                                      setIsIntelligenceInsertMenuOpen(false)
+                                      showNotification(`${label} no chat em breve.`)
+                                    }}
+                                  >
+                                    <img
+                                      src={logo}
+                                      alt=""
+                                      className={styles.intelligenceComposerPluginLogo}
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                    <span>{label}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                     <button
                       type="button"
                       className={styles.intelligenceComposerGhostButton}
