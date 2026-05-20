@@ -2786,20 +2786,22 @@ export default function KanbanBoard() {
                       ) : null}
                     </div>
                     {selectedIntelligencePlugin ? (
-                      <button
-                        type="button"
-                        className={`${styles.intelligenceComposerGhostButton} ${styles.intelligenceComposerPluginChip}`}
-                        aria-label={`Plugin selecionado: ${selectedIntelligencePlugin.label}`}
-                        onClick={() => {
-                          setIsIntelligenceInsertMenuOpen(true)
-                          setIsIntelligencePluginsMenuOpen(true)
-                        }}
-                      >
-                        <span className={styles.intelligenceComposerPluginLogo} aria-hidden="true">
-                          <selectedIntelligencePlugin.Logo />
-                        </span>
-                        <span>{selectedIntelligencePlugin.label}</span>
-                      </button>
+                      <div className={styles.intelligenceComposerPluginChip}>
+                        <button
+                          type="button"
+                          className={`${styles.intelligenceComposerPluginLogo} ${styles.intelligenceComposerPluginLogoSwap} ${styles.intelligenceComposerPluginRemoveButton}`}
+                          aria-label={`Remover plugin ${selectedIntelligencePlugin.label}`}
+                          onClick={() => setSelectedIntelligencePluginId('')}
+                        >
+                          <span className={styles.intelligenceComposerPluginLogoPrimary}>
+                            <selectedIntelligencePlugin.Logo />
+                          </span>
+                          <span className={`${styles.intelligenceComposerPluginLogoRemove} ${styles.intelligenceComposerPluginLogoRemoveIcon}`}>
+                            <Icon.X />
+                          </span>
+                        </button>
+                        <span className={styles.intelligenceComposerPluginChipLabel}>{selectedIntelligencePlugin.label}</span>
+                      </div>
                     ) : null}
                   </div>
 

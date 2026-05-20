@@ -1328,6 +1328,40 @@
   height: 16px;
 }
 
+.intelligenceComposerPluginLogoSwap {
+  position: relative;
+}
+
+.intelligenceComposerPluginLogoPrimary,
+.intelligenceComposerPluginLogoRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.intelligenceComposerPluginLogoPrimary {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.intelligenceComposerPluginLogoRemove {
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.intelligenceComposerPluginChip:hover .intelligenceComposerPluginLogoPrimary {
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.intelligenceComposerPluginChip:hover .intelligenceComposerPluginLogoRemove {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .intelligenceComposerIconButton,
 .intelligenceComposerGhostButton,
 .intelligenceComposerSubmit {
@@ -1370,17 +1404,49 @@
 }
 
 .intelligenceComposerPluginChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   height: 28px;
   padding: 0 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 18%, transparent);
   color: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 82%, var(--text-1));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 1;
 }
 
 .intelligenceComposerPluginChip:hover {
   background: var(--kanban-accent-color, var(--focus-ring));
   color: var(--kanban-accent-foreground, var(--text-inverse));
+}
+
+.intelligenceComposerPluginChipLabel {
+  white-space: nowrap;
+}
+
+.intelligenceComposerPluginRemoveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.intelligenceComposerPluginLogoRemoveIcon svg {
+  width: 8px;
+  height: 8px;
 }
 
 .intelligenceComposerSubmit {
