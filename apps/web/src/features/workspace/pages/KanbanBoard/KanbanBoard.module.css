@@ -1096,37 +1096,23 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   min-height: 100%;
-  padding: 22px 18px 18px;
+  padding: 18px 22px 18px;
   background:
     radial-gradient(circle at top, color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 14%, transparent) 0%, transparent 46%);
 }
 
 .intelligencePanelOrbWrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 84px;
-}
-
-.intelligencePanelOrb {
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 38% 36%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 245, 224, 0.92) 12%, rgba(255, 184, 77, 0.9) 28%, rgba(255, 109, 0, 0.92) 52%, rgba(255, 52, 102, 0.92) 70%, rgba(255, 52, 102, 0.06) 100%),
-    radial-gradient(circle at 66% 36%, color-mix(in srgb, var(--kanban-accent-color, #ffbf69) 58%, rgba(255, 236, 187, 0.92)) 0%, transparent 38%);
-  box-shadow:
-    0 20px 42px color-mix(in srgb, var(--kanban-accent-color, #ffbf69) 20%, rgba(255, 131, 0, 0.16)),
-    inset 0 0 24px rgba(255, 255, 255, 0.5);
-  filter: saturate(1.06);
+  display: none;
 }
 
 .intelligencePanelIntro {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   text-align: center;
 }
@@ -1140,7 +1126,7 @@
 }
 
 .intelligencePanelTitle {
-  max-width: 16ch;
+  max-width: 20ch;
   margin: 0;
   font-size: 18px;
   line-height: 1.18;
@@ -1149,7 +1135,7 @@
 }
 
 .intelligencePanelText {
-  max-width: 28ch;
+  max-width: 32ch;
   margin: 0;
   font-size: 13px;
   line-height: 1.45;
@@ -5760,11 +5746,11 @@
   }
   .intelligencePanelTitle {
     font-size: 17px;
-    max-width: 16ch;
+    max-width: 18ch;
   }
   .intelligencePanelText {
     font-size: 13px;
-    max-width: 24ch;
+    max-width: 26ch;
   }
   .intelligenceComposer {
     padding: 10px 12px 10px;

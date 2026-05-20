@@ -2535,9 +2535,9 @@ export default function KanbanBoard() {
 
               <div className={styles.intelligencePanelIntro}>
                 <span className={styles.intelligencePanelEyebrow}>Intelligence</span>
-                <h2 className={styles.intelligencePanelTitle}>Peça ideias para destravar este quadro.</h2>
+                <h2 className={styles.intelligencePanelTitle}>Peça ideias para destravar este plano.</h2>
                 <p className={styles.intelligencePanelText}>
-                  Resumos, sugestões e próximos passos sem sair do board.
+                  Resumos, sugestões e próximos passos sem sair do plano.
                 </p>
               </div>
 
