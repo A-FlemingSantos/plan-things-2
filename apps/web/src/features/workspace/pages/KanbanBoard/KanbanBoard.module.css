@@ -4131,9 +4131,9 @@
 .cmChecklistMenu {
   position: fixed;
   z-index: 1200;
-  width: 320px;
+  width: 296px;
   border: 1px solid var(--border-1);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--menu-bg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
@@ -4144,21 +4144,21 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 16px 18px 12px;
+  padding: 12px 14px 10px;
 }
 
 .cmChecklistMenuTitle {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-1);
 }
 
 .cmChecklistMenuClose {
   position: absolute;
-  right: 12px;
-  top: 12px;
-  width: 28px;
-  height: 28px;
+  right: 9px;
+  top: 8px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   color: var(--text-3);
   display: flex;
@@ -4168,38 +4168,38 @@
 }
 
 .cmChecklistMenuBody {
-  padding: 12px 14px 14px;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cmChecklistMenuLabel {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-2);
 }
 
 .cmChecklistMenuInput {
   width: 100%;
-  height: 36px;
-  padding: 0 12px;
+  height: 32px;
+  padding: 0 10px;
   border: 1px solid var(--border-1);
   border-radius: 4px;
   background: var(--surface-1);
   color: var(--text-1);
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .cmChecklistMenuAdd {
-  width: 112px;
-  height: 34px;
+  width: 100%;
+  height: 30px;
   border-radius: 6px;
   background: var(--kanban-accent-color, var(--focus-ring));
   color: var(--kanban-accent-foreground, var(--text-on-accent));
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
