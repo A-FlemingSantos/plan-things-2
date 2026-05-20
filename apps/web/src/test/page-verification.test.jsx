@@ -101,13 +101,13 @@ describe('Page verification flows', () => {
     const toolbar = screen.getByText('Quadro').closest('div[aria-label="Atalhos do quadro"]')
     expect(toolbar).not.toBeNull()
     const intelligenceButton = within(toolbar).getByRole('button', { name: 'Intelligence' })
-    expect(intelligenceButton).not.toHaveAttribute('aria-expanded')
-    expect(intelligenceButton).not.toHaveAttribute('aria-controls')
+    expect(intelligenceButton).toHaveAttribute('aria-expanded', 'false')
+    expect(intelligenceButton).toHaveAttribute('aria-controls', 'board-intelligence-panel')
 
     await user.click(intelligenceButton)
 
-    expect(screen.queryByLabelText('Arquivos do plano')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Planejador')).toBeInTheDocument()
+    expect(screen.getByLabelText('Chat de IA')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Planejador')).not.toBeInTheDocument()
   })
 
   it('keeps the mobile kanban as web without app-style list/task switching', async () => {

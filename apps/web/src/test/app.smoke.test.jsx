@@ -199,7 +199,7 @@ describe('App smoke flows', () => {
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
 
-  it('keeps Intelligence inert in the board toolbar', async () => {
+  it('opens the Intelligence suspended chat from the board toolbar', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
@@ -210,13 +210,14 @@ describe('App smoke flows', () => {
     const intelligenceButton = within(toolbar).getByRole('button', { name: 'Intelligence' })
 
     expect(boardButton).toHaveAttribute('aria-current', 'page')
-    expect(intelligenceButton).not.toHaveAttribute('aria-expanded')
-    expect(intelligenceButton).not.toHaveAttribute('aria-controls')
+    expect(intelligenceButton).toHaveAttribute('aria-expanded', 'false')
+    expect(intelligenceButton).toHaveAttribute('aria-controls', 'board-intelligence-panel')
 
     await user.click(intelligenceButton)
 
-    expect(screen.queryByLabelText('Arquivos do plano')).not.toBeInTheDocument()
-    expect(boardButton).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByLabelText('Chat de IA')).toBeInTheDocument()
+    expect(intelligenceButton).toHaveAttribute('aria-expanded', 'true')
+    expect(boardButton).not.toHaveAttribute('aria-current')
   })
 
   it('keeps legacy seeded due dates in pt-BR after opening and saving the date modal', async () => {

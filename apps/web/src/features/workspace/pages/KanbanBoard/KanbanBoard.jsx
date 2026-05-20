@@ -67,6 +67,9 @@ const Icon = {
   Link:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.4 9.6L9.6 6.4M6 11.5H4.8A2.8 2.8 0 1 1 4.8 5.9H6M10 4.5h1.2a2.8 2.8 0 1 1 0 5.6H10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Plug:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M6 2.5v3M10 2.5v3M5.2 5.5h5.6v1.8a2.8 2.8 0 0 1-2.8 2.8h-.2a2.8 2.8 0 0 1-2.8-2.8V5.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 10.1v3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Bolt:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9.1 1.8L4.8 8h2.9L6.9 14.2 11.2 8H8.3l.8-6.2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Globe:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.7" stroke="currentColor" strokeWidth="1.3"/><path d="M2.7 6.1h10.6M2.7 9.9h10.6M8 2.4c1.6 1.6 2.5 3.5 2.5 5.6S9.6 12 8 13.6M8 2.4C6.4 4 5.5 5.9 5.5 8s.9 4 2.5 5.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Mic:      () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="5.2" y="2.2" width="5.6" height="8" rx="2.8" stroke="currentColor" strokeWidth="1.3"/><path d="M3.8 7.8a4.2 4.2 0 0 0 8.4 0M8 12v1.8M5.8 13.8h4.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  ArrowUp:  () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 11V3M3.8 6.2L7 3l3.2 3.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   UserPlus: () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.2" cy="5.4" r="2.3" stroke="currentColor" strokeWidth="1.3"/><path d="M2.4 12.4c0-2 1.8-3.6 3.8-3.6 2.1 0 3.9 1.6 3.9 3.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M11.7 4.2v4M9.7 6.2h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Image:    () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4.5 10l2.1-2.2a.8.8 0 0 1 1.2 0l1.7 1.8 1.3-1.3a.8.8 0 0 1 1.1 0L13.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="6" r="1" fill="currentColor"/></svg>,
   Code:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 5L3 8l3 3M10 5l3 3-3 3M8.8 3.5L7.2 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -549,6 +552,10 @@ export default function KanbanBoard() {
   const [isClearingInbox, setIsClearingInbox] = useState(false)
   const [isPlannerOpen, setIsPlannerOpen] = useState(false)
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
+  const [isIntelligenceOpen, setIsIntelligenceOpen] = useState(false)
+  const [isIntelligencePanelMounted, setIsIntelligencePanelMounted] = useState(false)
+  const [intelligenceDraft, setIntelligenceDraft] = useState('')
+  const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
   const [libraryFiles, setLibraryFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(false)
@@ -571,7 +578,9 @@ export default function KanbanBoard() {
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
   const plannerCloseTimerRef = useRef(null)
+  const intelligenceCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
+  const intelligencePanelRef = useRef(null)
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
     enabled: isPlannerPanelMounted,
@@ -642,6 +651,83 @@ export default function KanbanBoard() {
       window.removeEventListener('scroll', handleResize, true)
     }
   }, [isMembersOpen])
+
+  useEffect(() => {
+    const toolbar = boardViewToolbarRef.current
+    if (!toolbar || typeof window === 'undefined') return undefined
+
+    const updateToolbarMetrics = () => {
+      const rect = toolbar.getBoundingClientRect()
+      const computedStyles = window.getComputedStyle(toolbar)
+      const nextMetrics = {
+        left: Math.round(rect.left + (rect.width / 2)),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        bottom: Math.round(Number.parseFloat(computedStyles.bottom) || 24),
+      }
+
+      setToolbarMetrics((current) => (
+        current.left === nextMetrics.left
+        && current.width === nextMetrics.width
+        && current.height === nextMetrics.height
+        && current.bottom === nextMetrics.bottom
+          ? current
+          : nextMetrics
+      ))
+    }
+
+    updateToolbarMetrics()
+
+    const resizeHandler = () => updateToolbarMetrics()
+    window.addEventListener('resize', resizeHandler)
+
+    let observer = null
+    if (typeof ResizeObserver === 'function') {
+      observer = new ResizeObserver(() => updateToolbarMetrics())
+      observer.observe(toolbar)
+    }
+
+    return () => {
+      window.removeEventListener('resize', resizeHandler)
+      observer?.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isIntelligencePanelMounted) return undefined
+
+    const closePanel = () => {
+      setIsIntelligenceOpen(false)
+      if (intelligenceCloseTimerRef.current) {
+        clearTimeout(intelligenceCloseTimerRef.current)
+      }
+      intelligenceCloseTimerRef.current = setTimeout(() => {
+        setIsIntelligencePanelMounted(false)
+        intelligenceCloseTimerRef.current = null
+      }, 260)
+    }
+
+    const handleMouseDown = (event) => {
+      const panel = intelligencePanelRef.current
+      const toolbar = boardViewToolbarRef.current
+      if (panel?.contains(event.target) || toolbar?.contains(event.target)) {
+        return
+      }
+      closePanel()
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      closePanel()
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isIntelligencePanelMounted])
 
   useEffect(() => {
     if (!isMembersOpen) return
@@ -1111,9 +1197,15 @@ export default function KanbanBoard() {
       clearTimeout(inboxCloseTimerRef.current)
       inboxCloseTimerRef.current = null
     }
+    if (intelligenceCloseTimerRef.current) {
+      clearTimeout(intelligenceCloseTimerRef.current)
+      intelligenceCloseTimerRef.current = null
+    }
     setIsBoardSwitcherOpen(false)
     setIsInboxOpen(false)
     setIsInboxPanelMounted(false)
+    setIsIntelligenceOpen(false)
+    setIsIntelligencePanelMounted(false)
     setIsPlannerFilterOpen(false)
     setIsPlannerPanelMounted(true)
     window.requestAnimationFrame(() => setIsPlannerOpen(true))
@@ -1140,9 +1232,15 @@ export default function KanbanBoard() {
       clearTimeout(plannerCloseTimerRef.current)
       plannerCloseTimerRef.current = null
     }
+    if (intelligenceCloseTimerRef.current) {
+      clearTimeout(intelligenceCloseTimerRef.current)
+      intelligenceCloseTimerRef.current = null
+    }
     setIsBoardSwitcherOpen(false)
     setIsPlannerOpen(false)
     setIsPlannerPanelMounted(false)
+    setIsIntelligenceOpen(false)
+    setIsIntelligencePanelMounted(false)
     setIsInboxPanelMounted(true)
     window.requestAnimationFrame(() => setIsInboxOpen(true))
   }
@@ -1162,9 +1260,52 @@ export default function KanbanBoard() {
     }, 260)
   }
 
+  const openIntelligence = () => {
+    if (intelligenceCloseTimerRef.current) {
+      clearTimeout(intelligenceCloseTimerRef.current)
+      intelligenceCloseTimerRef.current = null
+    }
+    if (plannerCloseTimerRef.current) {
+      clearTimeout(plannerCloseTimerRef.current)
+      plannerCloseTimerRef.current = null
+    }
+    if (inboxCloseTimerRef.current) {
+      clearTimeout(inboxCloseTimerRef.current)
+      inboxCloseTimerRef.current = null
+    }
+    setIsBoardSwitcherOpen(false)
+    setIsPlannerOpen(false)
+    setIsPlannerPanelMounted(false)
+    setIsPlannerFilterOpen(false)
+    setIsInboxOpen(false)
+    setIsInboxPanelMounted(false)
+    setIsIntelligencePanelMounted(true)
+    setIsIntelligenceOpen(true)
+  }
+
+  const closeIntelligence = () => {
+    setIsIntelligenceOpen(false)
+    if (intelligenceCloseTimerRef.current) {
+      clearTimeout(intelligenceCloseTimerRef.current)
+    }
+    intelligenceCloseTimerRef.current = setTimeout(() => {
+      setIsIntelligencePanelMounted(false)
+      intelligenceCloseTimerRef.current = null
+    }, 260)
+  }
+
+  const toggleIntelligence = () => {
+    if (isIntelligenceOpen) {
+      closeIntelligence()
+      return
+    }
+    openIntelligence()
+  }
+
   const closeFloatingPanel = () => {
     closeInbox()
     closePlanner()
+    closeIntelligence()
   }
 
   const showBoardView = () => {
@@ -1815,6 +1956,12 @@ export default function KanbanBoard() {
     <SidebarAccountMenu styles={styles} collapsed={collapsed} />
   )
 
+  const intelligencePanelStyle = {
+    left: toolbarMetrics.left ? `${toolbarMetrics.left}px` : undefined,
+    width: toolbarMetrics.width ? `${toolbarMetrics.width}px` : undefined,
+    bottom: `${toolbarMetrics.bottom + toolbarMetrics.height + 14}px`,
+  }
+
   const renderInboxPanel = () => (
     <aside
       id="board-inbox-panel"
@@ -2373,6 +2520,91 @@ export default function KanbanBoard() {
           </div>
         )}
 
+        {isIntelligencePanelMounted ? (
+          <section
+            id="board-intelligence-panel"
+            ref={intelligencePanelRef}
+            className={`${styles.intelligencePanel} ${isIntelligenceOpen ? '' : styles.intelligencePanelClosing}`}
+            style={intelligencePanelStyle}
+            aria-label="Chat de IA"
+          >
+            <div className={styles.intelligencePanelBody}>
+              <div className={styles.intelligencePanelOrbWrap} aria-hidden="true">
+                <div className={styles.intelligencePanelOrb} />
+              </div>
+
+              <div className={styles.intelligencePanelIntro}>
+                <span className={styles.intelligencePanelEyebrow}>Intelligence</span>
+                <h2 className={styles.intelligencePanelTitle}>Peça ideias para destravar este quadro.</h2>
+                <p className={styles.intelligencePanelText}>
+                  Resumos, sugestões e próximos passos sem sair do board.
+                </p>
+              </div>
+
+              <form
+                className={styles.intelligenceComposer}
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (!intelligenceDraft.trim()) return
+                  showNotification('Integração da IA em breve.')
+                }}
+              >
+                <textarea
+                  className={styles.intelligenceComposerInput}
+                  rows={1}
+                  value={intelligenceDraft}
+                  onChange={(event) => setIntelligenceDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault()
+                      event.currentTarget.form?.requestSubmit()
+                    }
+                  }}
+                  placeholder="Escreva sua pergunta..."
+                />
+
+                <div className={styles.intelligenceComposerFooter}>
+                  <div className={styles.intelligenceComposerTools}>
+                    <button
+                      type="button"
+                      className={styles.intelligenceComposerIconButton}
+                      aria-label="Adicionar contexto"
+                    >
+                      <Icon.Plus />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.intelligenceComposerGhostButton}
+                      aria-label="Pesquisar"
+                    >
+                      <Icon.Globe />
+                      <span>Search</span>
+                    </button>
+                  </div>
+
+                  <div className={styles.intelligenceComposerActions}>
+                    <button
+                      type="button"
+                      className={styles.intelligenceComposerIconButton}
+                      aria-label="Usar voz"
+                    >
+                      <Icon.Mic />
+                    </button>
+                    <button
+                      type="submit"
+                      className={styles.intelligenceComposerSubmit}
+                      aria-label="Enviar mensagem"
+                      disabled={!intelligenceDraft.trim()}
+                    >
+                      <Icon.ArrowUp />
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </section>
+        ) : null}
+
         <div ref={boardViewToolbarRef} className={styles.boardViewToolbar} aria-label="Atalhos do quadro">
           <button
             type="button"
@@ -2400,8 +2632,8 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-current={boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen ? 'page' : undefined}
+            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-current={boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? 'page' : undefined}
             title="Quadro"
             onClick={showBoardView}
           >
@@ -2411,8 +2643,11 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={styles.boardViewToolbarItem}
+            className={`${styles.boardViewToolbarItem} ${isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-expanded={isIntelligenceOpen}
+            aria-controls="board-intelligence-panel"
             title="Intelligence"
+            onClick={toggleIntelligence}
           >
             <Icon.Bolt />
             <span>Intelligence</span>
