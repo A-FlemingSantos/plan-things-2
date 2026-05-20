@@ -1456,8 +1456,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--text-1);
-  color: var(--text-inverse);
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-inverse));
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16);
 }
 
