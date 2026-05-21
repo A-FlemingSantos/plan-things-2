@@ -655,15 +655,19 @@
 }
 
 .intelligenceSection {
+  --kanban-neutral-accent: var(--text-1);
+  --kanban-neutral-accent-foreground: var(--text-inverse);
+  --intelligence-accent: var(--intelligence-theme-accent, var(--text-1));
+  --intelligence-accent-foreground: var(--intelligence-theme-accent-foreground, var(--text-inverse));
   --intelligence-text: var(--text-1);
   --intelligence-muted: var(--text-2);
   --intelligence-faint: var(--text-3);
   --intelligence-panel-bg: color-mix(in srgb, var(--surface-2) 96%, transparent);
   --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 98%, transparent);
   --intelligence-border: var(--border-1);
-  --intelligence-user-bg: color-mix(in srgb, var(--text-1) 9%, var(--surface-1));
+  --intelligence-user-bg: var(--intelligence-accent);
   --intelligence-assistant-bg: color-mix(in srgb, var(--surface-3) 78%, var(--surface-1));
-  --intelligence-button-bg: color-mix(in srgb, var(--text-1) 10%, transparent);
+  --intelligence-button-bg: var(--intelligence-accent);
   --intelligence-shadow: 0 18px 42px color-mix(in srgb, var(--text-1) 10%, transparent);
   position: relative;
   width: min(100%, 720px);
@@ -683,9 +687,7 @@
   --intelligence-panel-bg: color-mix(in srgb, var(--surface-3) 82%, transparent);
   --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 94%, transparent);
   --intelligence-border: rgba(255, 255, 255, 0.08);
-  --intelligence-user-bg: rgba(255, 255, 255, 0.14);
   --intelligence-assistant-bg: rgba(255, 255, 255, 0.08);
-  --intelligence-button-bg: rgba(255, 255, 255, 0.12);
   --intelligence-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
 }
 
@@ -734,7 +736,7 @@
   align-self: flex-end;
   border-bottom-right-radius: 5px;
   background: var(--intelligence-user-bg);
-  color: var(--intelligence-text);
+  color: var(--intelligence-accent-foreground);
 }
 
 .intelligenceMessageAssistant {
@@ -824,12 +826,12 @@
   height: 30px;
   border-radius: 9px;
   background: var(--intelligence-button-bg);
-  color: var(--intelligence-text);
+  color: var(--intelligence-accent-foreground);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-1) 65%, transparent);
 }
 
 .intelligenceSendButton:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--text-1) 16%, transparent);
+  background: color-mix(in srgb, var(--intelligence-accent) 88%, var(--surface-1));
 }
 
 .intelligenceSendButton:disabled {

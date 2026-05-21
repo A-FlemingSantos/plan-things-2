@@ -11,6 +11,10 @@ import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveVie
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
+import {
+  resolveKanbanAccentColor,
+  resolveKanbanAccentForeground,
+} from '../../data/kanbanColorPalette.js'
 import { usePlans } from '../../context/PlansContext.jsx'
 import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
 import styles from './Workspace.module.css'
@@ -1028,7 +1032,7 @@ function WorkspaceLoadingState({ view }) {
   )
 }
 
-function WorkspaceIntelligenceSection({ firstName }) {
+function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState([])
   const [isThinking, setIsThinking] = useState(false)
@@ -1126,7 +1130,7 @@ function WorkspaceIntelligenceSection({ firstName }) {
   }
 
   return (
-    <section className={styles.intelligenceSection} aria-label="Seção do Intelligence">
+    <section className={styles.intelligenceSection} style={accentStyle} aria-label="Seção do Intelligence">
       <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
       <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
       {messages.length || isThinking ? (
@@ -1218,6 +1222,10 @@ export default function Workspace() {
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
   const showIntelligenceSection = localPreferences.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection
+  const intelligenceAccentStyle = {
+    '--intelligence-theme-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
+    '--intelligence-theme-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
+  }
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
 
   const filtered = plans.filter(p =>
@@ -1496,7 +1504,7 @@ export default function Workspace() {
             ) : (
               <>
                 {showIntelligenceSection ? (
-                  <WorkspaceIntelligenceSection firstName={userFirstName} />
+                  <WorkspaceIntelligenceSection firstName={userFirstName} accentStyle={intelligenceAccentStyle} />
                 ) : null}
 
                 <div className={styles.sectionHeader}>
