@@ -655,22 +655,45 @@
 }
 
 .intelligenceSection {
+  --intelligence-text: var(--text-1);
+  --intelligence-muted: var(--text-2);
+  --intelligence-faint: var(--text-3);
+  --intelligence-panel-bg: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 98%, transparent);
+  --intelligence-border: var(--border-1);
+  --intelligence-user-bg: color-mix(in srgb, var(--text-1) 9%, var(--surface-1));
+  --intelligence-assistant-bg: color-mix(in srgb, var(--surface-3) 78%, var(--surface-1));
+  --intelligence-button-bg: color-mix(in srgb, var(--text-1) 10%, transparent);
+  --intelligence-shadow: 0 18px 42px color-mix(in srgb, var(--text-1) 10%, transparent);
   position: relative;
   width: min(100%, 720px);
   align-self: center;
   display: flex;
   flex-direction: column;
   padding: 18px 0 8px;
-  color: #f8f7f3;
+  color: var(--intelligence-text);
   overflow: visible;
   animation: fadeUp 0.34s ease both;
+}
+
+[data-theme='dark'] .intelligenceSection {
+  --intelligence-text: var(--text-1);
+  --intelligence-muted: var(--text-2);
+  --intelligence-faint: var(--text-3);
+  --intelligence-panel-bg: color-mix(in srgb, var(--surface-3) 82%, transparent);
+  --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 94%, transparent);
+  --intelligence-border: rgba(255, 255, 255, 0.08);
+  --intelligence-user-bg: rgba(255, 255, 255, 0.14);
+  --intelligence-assistant-bg: rgba(255, 255, 255, 0.08);
+  --intelligence-button-bg: rgba(255, 255, 255, 0.12);
+  --intelligence-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
 }
 
 .intelligenceGreeting {
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: var(--font-weight-light);
-  color: rgba(248, 247, 243, 0.72);
+  color: var(--intelligence-muted);
   letter-spacing: -.01em;
 }
 
@@ -680,7 +703,7 @@
   font-weight: var(--font-weight-regular);
   line-height: 1.08;
   letter-spacing: -.045em;
-  color: #fff;
+  color: var(--intelligence-text);
 }
 
 .intelligenceChatLog {
@@ -704,20 +727,20 @@
   border-radius: 15px;
   font-size: 13px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--intelligence-muted);
 }
 
 .intelligenceMessageUser {
   align-self: flex-end;
   border-bottom-right-radius: 5px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: var(--intelligence-user-bg);
+  color: var(--intelligence-text);
 }
 
 .intelligenceMessageAssistant {
   align-self: flex-start;
   border-bottom-left-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--intelligence-assistant-bg);
 }
 
 .intelligencePromptCard {
@@ -725,12 +748,12 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--intelligence-border);
   border-radius: 20px;
-  background: rgba(28, 28, 28, 0.96);
+  background: var(--intelligence-panel-bg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 18px 42px rgba(0, 0, 0, 0.26);
+    inset 0 1px 0 color-mix(in srgb, var(--surface-1) 70%, transparent),
+    var(--intelligence-shadow);
   overflow: hidden;
 }
 
@@ -741,8 +764,8 @@
   border: 0;
   outline: 0;
   resize: none;
-  background: rgba(14, 14, 14, 0.96);
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--intelligence-input-bg);
+  color: var(--intelligence-text);
   font-family: var(--font-family);
   font-size: 13px;
   line-height: 1.5;
@@ -750,7 +773,7 @@
 }
 
 .intelligencePrompt::placeholder {
-  color: rgba(255, 255, 255, 0.34);
+  color: var(--intelligence-faint);
 }
 
 .intelligencePromptControls {
@@ -758,7 +781,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 18px 14px;
-  background: rgba(14, 14, 14, 0.96);
+  background: var(--intelligence-input-bg);
 }
 
 .intelligenceGhostAction,
@@ -776,7 +799,7 @@
 .intelligenceGhostAction {
   width: 26px;
   height: 26px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--intelligence-text);
 }
 
 .intelligencePromptActions {
@@ -788,25 +811,25 @@
 .intelligenceIconButton {
   width: 28px;
   height: 28px;
-  color: rgba(255, 255, 255, 0.48);
+  color: var(--intelligence-faint);
 }
 
 .intelligenceIconButton:hover,
 .intelligenceGhostAction:hover {
-  color: #fff;
+  color: var(--intelligence-text);
 }
 
 .intelligenceSendButton {
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--intelligence-button-bg);
+  color: var(--intelligence-text);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-1) 65%, transparent);
 }
 
 .intelligenceSendButton:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--text-1) 16%, transparent);
 }
 
 .intelligenceSendButton:disabled {
@@ -821,7 +844,7 @@
   min-height: 44px;
   padding: 0 22px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.48);
+  color: var(--intelligence-faint);
   font-size: 11px;
   font-weight: var(--font-weight-light);
   white-space: nowrap;
@@ -844,7 +867,7 @@
 }
 
 .intelligenceSuggestionButton:hover:not(:disabled) {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--intelligence-text);
 }
 
 .intelligenceSuggestionButton:disabled {
@@ -854,7 +877,7 @@
 
 .intelligenceFeedback {
   margin: 8px 0 0;
-  color: rgba(255, 255, 255, 0.48);
+  color: var(--intelligence-faint);
   font-size: 11px;
   line-height: 1.4;
 }
