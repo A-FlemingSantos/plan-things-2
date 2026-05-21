@@ -998,7 +998,6 @@ function WorkspaceLoadingState({ view }) {
 function WorkspaceIntelligenceSection({ firstName }) {
   return (
     <section className={styles.intelligenceSection} aria-label="Seção do Intelligence">
-      <div className={styles.intelligenceAura} aria-hidden="true" />
       <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
       <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
       <div className={styles.intelligencePromptCard}>
