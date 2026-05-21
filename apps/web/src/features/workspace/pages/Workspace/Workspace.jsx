@@ -124,6 +124,12 @@ const VOICE_INPUT_ERROR_MESSAGES = {
   'service-not-allowed': 'O navegador bloqueou o serviço de reconhecimento de voz.',
 }
 
+const MAX_VOICE_RESTART_ATTEMPTS = 3
+const VOICE_RESTART_BASE_DELAY_MS = 350
+const VOICE_RESTART_STEP_DELAY_MS = 250
+const VOICE_RESTART_MAX_DELAY_MS = 1000
+const VOICE_STOP_FINALIZE_DELAY_MS = 600
+
 function getVoiceInputErrorMessage(error) {
   const code = error?.error || error?.name
 
@@ -1088,12 +1094,16 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const chatLogRef = useRef(null)
   const responseTimerRef = useRef(null)
   const recognitionRef = useRef(null)
+  const voiceEndingRecognitionRef = useRef(null)
   const recognitionRestartTimerRef = useRef(null)
+  const voiceStopFinalizeTimerRef = useRef(null)
   const voiceListeningRequestedRef = useRef(false)
   const voiceRestartAttemptsRef = useRef(0)
   const stopRequestedRef = useRef(false)
-  const terminalVoiceErrorRef = useRef(false)
-  const voiceTranscriptRef = useRef([])
+  const voiceCaptureFinalizedRef = useRef(false)
+  const lastVoiceRecognitionErrorRef = useRef('')
+  const voiceTranscriptEntriesRef = useRef(new Map())
+  const voiceRecognitionSequenceRef = useRef(0)
 
   useEffect(() => () => {
     if (responseTimerRef.current) {
@@ -1102,9 +1112,15 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
     if (recognitionRestartTimerRef.current) {
       clearTimeout(recognitionRestartTimerRef.current)
     }
+    if (voiceStopFinalizeTimerRef.current) {
+      clearTimeout(voiceStopFinalizeTimerRef.current)
+    }
     voiceListeningRequestedRef.current = false
     stopRequestedRef.current = true
+    voiceCaptureFinalizedRef.current = true
     recognitionRef.current?.abort?.()
+    recognitionRef.current = null
+    voiceEndingRecognitionRef.current = null
   }, [])
 
   useEffect(() => {
@@ -1158,9 +1174,40 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
     setVoiceFeedback('Contexto do workspace adicionado ao prompt.')
   }
 
+  const clearRecognitionRestartTimer = () => {
+    if (!recognitionRestartTimerRef.current) return
+    clearTimeout(recognitionRestartTimerRef.current)
+    recognitionRestartTimerRef.current = null
+  }
+
+  const clearVoiceStopFinalizeTimer = () => {
+    if (!voiceStopFinalizeTimerRef.current) return
+    clearTimeout(voiceStopFinalizeTimerRef.current)
+    voiceStopFinalizeTimerRef.current = null
+  }
+
+  const scheduleVoiceStopFinalization = (emptyFeedback = 'Captura de voz interrompida.') => {
+    if (voiceStopFinalizeTimerRef.current || voiceCaptureFinalizedRef.current) return
+
+    voiceStopFinalizeTimerRef.current = setTimeout(() => {
+      voiceStopFinalizeTimerRef.current = null
+      if (!stopRequestedRef.current && !voiceEndingRecognitionRef.current) return
+      finishVoiceCapture(emptyFeedback)
+    }, VOICE_STOP_FINALIZE_DELAY_MS)
+  }
+
   const appendVoiceTranscriptToPrompt = () => {
-    const transcript = voiceTranscriptRef.current.join(' ').replace(/\s+/g, ' ').trim()
-    voiceTranscriptRef.current = []
+    const transcript = [...voiceTranscriptEntriesRef.current.values()]
+      .sort((leftEntry, rightEntry) => (
+        leftEntry.recognitionSequence - rightEntry.recognitionSequence
+        || leftEntry.resultIndex - rightEntry.resultIndex
+      ))
+      .map(({ transcript: partialTranscript }) => partialTranscript)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    voiceTranscriptEntriesRef.current.clear()
+    voiceRecognitionSequenceRef.current = 0
 
     if (!transcript) return false
 
@@ -1168,33 +1215,71 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
     return true
   }
 
+  const finishVoiceCapture = (emptyFeedback = 'Captura de voz interrompida.') => {
+    if (voiceCaptureFinalizedRef.current) return false
+
+    voiceCaptureFinalizedRef.current = true
+    clearRecognitionRestartTimer()
+    clearVoiceStopFinalizeTimer()
+    voiceListeningRequestedRef.current = false
+    stopRequestedRef.current = false
+    lastVoiceRecognitionErrorRef.current = ''
+    recognitionRef.current = null
+    voiceEndingRecognitionRef.current = null
+    voiceRestartAttemptsRef.current = 0
+    setIsListening(false)
+
+    const didCommitTranscript = appendVoiceTranscriptToPrompt()
+    setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : emptyFeedback)
+    return didCommitTranscript
+  }
+
+  const failVoiceCapture = (feedback) => {
+    if (voiceCaptureFinalizedRef.current) return
+
+    voiceCaptureFinalizedRef.current = true
+    clearRecognitionRestartTimer()
+    clearVoiceStopFinalizeTimer()
+    voiceListeningRequestedRef.current = false
+    stopRequestedRef.current = false
+    lastVoiceRecognitionErrorRef.current = ''
+    recognitionRef.current = null
+    voiceEndingRecognitionRef.current = null
+    voiceRestartAttemptsRef.current = 0
+    voiceTranscriptEntriesRef.current.clear()
+    voiceRecognitionSequenceRef.current = 0
+    setIsListening(false)
+    setVoiceFeedback(feedback)
+  }
+
   const handleVoiceInput = () => {
     if (typeof window === 'undefined') return
 
-    if (voiceListeningRequestedRef.current || recognitionRef.current) {
+    if (voiceListeningRequestedRef.current || recognitionRef.current || recognitionRestartTimerRef.current) {
       const activeRecognition = recognitionRef.current
       voiceListeningRequestedRef.current = false
       stopRequestedRef.current = true
-      recognitionRef.current = null
       voiceRestartAttemptsRef.current = 0
-      if (recognitionRestartTimerRef.current) {
-        clearTimeout(recognitionRestartTimerRef.current)
-        recognitionRestartTimerRef.current = null
-      }
+      lastVoiceRecognitionErrorRef.current = ''
+      clearRecognitionRestartTimer()
       setIsListening(false)
+      setVoiceFeedback('Finalizando captura de voz...')
 
       if (!activeRecognition) {
-        const didCommitTranscript = appendVoiceTranscriptToPrompt()
-        setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : 'Captura de voz interrompida.')
+        finishVoiceCapture()
         return
       }
 
       try {
         activeRecognition.stop?.()
+        scheduleVoiceStopFinalization()
       } catch {
-        activeRecognition.abort?.()
-        const didCommitTranscript = appendVoiceTranscriptToPrompt()
-        setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : 'Captura de voz interrompida.')
+        try {
+          activeRecognition.abort?.()
+        } catch {
+          // Ignore abort failures; the fallback finalization below keeps the UI consistent.
+        }
+        finishVoiceCapture()
       }
       return
     }
@@ -1211,14 +1296,23 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       return
     }
 
-    const scheduleRecognitionRestart = () => {
+    const scheduleRecognitionRestart = (reason = '') => {
       if (!voiceListeningRequestedRef.current || stopRequestedRef.current) return
       if (recognitionRestartTimerRef.current) return
 
-      const delay = Math.min(450 + voiceRestartAttemptsRef.current * 250, 1200)
-      voiceRestartAttemptsRef.current += 1
+      const isErrorRestart = reason === 'network' || reason === 'invalid-state'
+      if (isErrorRestart && voiceRestartAttemptsRef.current >= MAX_VOICE_RESTART_ATTEMPTS) {
+        finishVoiceCapture(getVoiceInputErrorMessage(reason === 'network' ? { error: 'network' } : { name: 'InvalidStateError' }))
+        return
+      }
+
+      const delay = Math.min(
+        VOICE_RESTART_BASE_DELAY_MS + voiceRestartAttemptsRef.current * VOICE_RESTART_STEP_DELAY_MS,
+        VOICE_RESTART_MAX_DELAY_MS,
+      )
+      voiceRestartAttemptsRef.current = isErrorRestart ? voiceRestartAttemptsRef.current + 1 : 0
       setIsListening(true)
-      setVoiceFeedback(voiceRestartAttemptsRef.current > 1 ? 'Reconectando captura de voz...' : 'Ouvindo... clique no microfone para parar.')
+      setVoiceFeedback(isErrorRestart && voiceRestartAttemptsRef.current > 1 ? 'Reconectando captura de voz...' : 'Ouvindo... clique no microfone para parar.')
 
       recognitionRestartTimerRef.current = setTimeout(() => {
         recognitionRestartTimerRef.current = null
@@ -1230,68 +1324,84 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       if (!voiceListeningRequestedRef.current || stopRequestedRef.current) return
 
       const recognition = new SpeechRecognition()
+      const recognitionSequence = voiceRecognitionSequenceRef.current
+      voiceRecognitionSequenceRef.current += 1
       recognition.lang = 'pt-BR'
       recognition.continuous = true
-      recognition.interimResults = false
+      recognition.interimResults = true
       recognition.maxAlternatives = 1
       recognition.onstart = () => {
-        voiceRestartAttemptsRef.current = 0
-        terminalVoiceErrorRef.current = false
+        if (recognitionRef.current !== recognition) return
+
+        lastVoiceRecognitionErrorRef.current = ''
         setIsListening(true)
         setVoiceFeedback('Ouvindo... clique no microfone para parar.')
       }
       recognition.onerror = (event) => {
+        if (recognitionRef.current !== recognition && !stopRequestedRef.current) return
         if (event?.error === 'aborted' || stopRequestedRef.current) return
 
-        if (event?.error === 'network' || event?.error === 'no-speech') {
+        if (event?.error === 'network') {
+          lastVoiceRecognitionErrorRef.current = 'network'
           setIsListening(true)
           setVoiceFeedback('Ouvindo... clique no microfone para parar.')
           return
         }
 
-        voiceListeningRequestedRef.current = false
-        terminalVoiceErrorRef.current = true
-        if (recognitionRestartTimerRef.current) {
-          clearTimeout(recognitionRestartTimerRef.current)
-          recognitionRestartTimerRef.current = null
-        }
-        if (recognitionRef.current === recognition) {
-          recognitionRef.current = null
-        }
-        setIsListening(false)
-        setVoiceFeedback(getVoiceInputErrorMessage(event))
-      }
-      recognition.onend = () => {
-        if (recognitionRef.current === recognition) {
-          recognitionRef.current = null
-        }
-
-        if (stopRequestedRef.current || !voiceListeningRequestedRef.current) {
-          voiceRestartAttemptsRef.current = 0
-          setIsListening(false)
-          if (terminalVoiceErrorRef.current) {
-            terminalVoiceErrorRef.current = false
-            stopRequestedRef.current = false
-            return
-          }
-          const didCommitTranscript = appendVoiceTranscriptToPrompt()
-          setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : 'Captura de voz interrompida.')
-          stopRequestedRef.current = false
+        if (event?.error === 'no-speech') {
+          finishVoiceCapture(getVoiceInputErrorMessage(event))
           return
         }
 
-        scheduleRecognitionRestart()
+        failVoiceCapture(getVoiceInputErrorMessage(event))
+      }
+      recognition.onend = () => {
+        if (voiceCaptureFinalizedRef.current) return
+
+        const wasCurrentRecognition = recognitionRef.current === recognition
+        if (recognitionRef.current === recognition) {
+          recognitionRef.current = null
+          voiceEndingRecognitionRef.current = recognition
+        }
+
+        if (!wasCurrentRecognition && voiceEndingRecognitionRef.current !== recognition) return
+
+        if (stopRequestedRef.current || !voiceListeningRequestedRef.current) {
+          voiceEndingRecognitionRef.current = recognition
+          scheduleVoiceStopFinalization()
+          return
+        }
+
+        voiceEndingRecognitionRef.current = recognition
+        const restartReason = lastVoiceRecognitionErrorRef.current
+        lastVoiceRecognitionErrorRef.current = ''
+        scheduleRecognitionRestart(restartReason)
       }
       recognition.onresult = (event) => {
+        const isActiveRecognition = recognitionRef.current === recognition
+        const isEndingRecognition = voiceEndingRecognitionRef.current === recognition
+        if (voiceCaptureFinalizedRef.current || (!isActiveRecognition && !isEndingRecognition)) return
+
         const results = event.results || []
         const startIndex = Number.isInteger(event.resultIndex) ? event.resultIndex : 0
 
         for (let index = startIndex; index < results.length; index += 1) {
           const result = results[index]
           const transcript = result?.[0]?.transcript?.trim()
-          if (!transcript || result.isFinal === false) continue
+          if (!transcript) continue
 
-          voiceTranscriptRef.current.push(transcript)
+          const entryKey = `${recognitionSequence}:${index}`
+          const existingEntry = voiceTranscriptEntriesRef.current.get(entryKey)
+          const isFinal = result.isFinal !== false
+          if (existingEntry?.transcript === transcript && existingEntry?.isFinal === isFinal) continue
+
+          voiceTranscriptEntriesRef.current.set(entryKey, {
+            recognitionSequence,
+            resultIndex: index,
+            transcript,
+            isFinal,
+          })
+          voiceRestartAttemptsRef.current = 0
         }
       }
 
@@ -1301,24 +1411,23 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       } catch (error) {
         recognitionRef.current = null
         if (voiceListeningRequestedRef.current && (error?.name === 'InvalidStateError' || error?.error === 'network')) {
-          scheduleRecognitionRestart()
+          scheduleRecognitionRestart(error?.error === 'network' ? 'network' : 'invalid-state')
           return
         }
-        voiceListeningRequestedRef.current = false
-        setIsListening(false)
-        setVoiceFeedback(getVoiceInputErrorMessage(error))
+        failVoiceCapture(getVoiceInputErrorMessage(error))
       }
     }
 
     voiceListeningRequestedRef.current = true
     stopRequestedRef.current = false
-    terminalVoiceErrorRef.current = false
+    voiceCaptureFinalizedRef.current = false
+    lastVoiceRecognitionErrorRef.current = ''
     voiceRestartAttemptsRef.current = 0
-    voiceTranscriptRef.current = []
-    if (recognitionRestartTimerRef.current) {
-      clearTimeout(recognitionRestartTimerRef.current)
-      recognitionRestartTimerRef.current = null
-    }
+    voiceEndingRecognitionRef.current = null
+    voiceTranscriptEntriesRef.current.clear()
+    voiceRecognitionSequenceRef.current = 0
+    clearRecognitionRestartTimer()
+    clearVoiceStopFinalizeTimer()
     setIsListening(true)
     setVoiceFeedback('Ouvindo... clique no microfone para parar.')
     startRecognition()
