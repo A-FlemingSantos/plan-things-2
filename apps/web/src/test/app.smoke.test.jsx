@@ -28,6 +28,12 @@ function formatCalendarHeading(monthOffset = 0) {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 
+function getDateMenu() {
+  const dateMenu = screen.getByRole('heading', { name: 'Datas' }).closest('[role="dialog"]')
+  expect(dateMenu).not.toBeNull()
+  return dateMenu
+}
+
 async function loginFromProtectedRedirect(user) {
   await user.type(await screen.findByLabelText('E-mail'), 'arthur@example.com')
   await user.type(screen.getByLabelText('Senha'), '12345678')
@@ -161,7 +167,9 @@ describe('App smoke flows', () => {
     await loginFromProtectedRedirect(user)
 
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
+    })
   })
 
   it('redirects anonymous invite access to login with the invite notice', async () => {
@@ -219,7 +227,7 @@ describe('App smoke flows', () => {
     expect(screen.queryByText('Recorrente')).not.toBeInTheDocument()
     expect(screen.queryByText('Definir lembrete')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    await user.click(within(getDateMenu()).getByRole('button', { name: 'Salvar' }))
 
     expect(await screen.findByText('Data salva.')).toBeInTheDocument()
     expect(screen.getAllByText('Pesquisa de concorrentes')).not.toHaveLength(0)
@@ -236,7 +244,7 @@ describe('App smoke flows', () => {
     await user.click(screen.getByRole('button', { name: formatTodayAsScheduleDateValue() }))
     expect(screen.getByLabelText('Data de entrega')).toHaveValue(formatTodayAsScheduleDateValue())
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    await user.click(within(getDateMenu()).getByRole('button', { name: 'Salvar' }))
 
     expect(await screen.findByText('Data salva.')).toBeInTheDocument()
     expect(screen.getAllByText('Copy da campanha de lançamento')).not.toHaveLength(0)
@@ -555,7 +563,7 @@ describe('App smoke flows', () => {
 
     await user.dblClick(await screen.findByText('Design do Produto'))
 
-    expect(await screen.findByRole('button', { name: 'Design do Produto' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Design do Produto' })).toBeInTheDocument()
     expect(screen.getByText('Componentes')).toBeInTheDocument()
     expect(screen.getByText('Ícones')).toBeInTheDocument()
     expect(screen.getByText('6 itens')).toBeInTheDocument()
