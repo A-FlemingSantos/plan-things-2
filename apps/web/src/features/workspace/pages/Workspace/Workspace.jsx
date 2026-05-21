@@ -9,7 +9,7 @@ import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
-import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
@@ -31,6 +31,8 @@ function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12"
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function CollapseIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+function MicIcon()      { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
+function ArrowUpIcon()  { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
 function LogoMark() {
   return (
@@ -993,6 +995,43 @@ function WorkspaceLoadingState({ view }) {
   )
 }
 
+function WorkspaceIntelligenceSection({ firstName }) {
+  return (
+    <section className={styles.intelligenceSection} aria-label="Seção do Intelligence">
+      <div className={styles.intelligenceAura} aria-hidden="true" />
+      <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
+      <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
+      <div className={styles.intelligencePromptCard}>
+        <textarea
+          className={styles.intelligencePrompt}
+          placeholder="Descreva seu produto, fluxo ou ideia..."
+          aria-label="Prompt do Intelligence"
+          readOnly
+          rows={3}
+        />
+        <div className={styles.intelligencePromptControls}>
+          <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence">
+            <PlusIcon />
+          </button>
+          <div className={styles.intelligencePromptActions}>
+            <button type="button" className={styles.intelligenceIconButton} aria-label="Gravar áudio para o Intelligence">
+              <MicIcon />
+            </button>
+            <button type="button" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence">
+              <ArrowUpIcon />
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className={styles.intelligenceSuggestions} aria-label="Sugestões do Intelligence">
+        <span>Sincronizar calendário</span>
+        <span>Criar pitch deck</span>
+        <span>Inicializar UI system</span>
+      </div>
+    </section>
+  )
+}
+
 /* ═══════════════════════════════════════════
    WORKSPACE
 ═══════════════════════════════════════════ */
@@ -1015,6 +1054,8 @@ export default function Workspace() {
   const { localPreferences } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
+  const showIntelligenceSection = localPreferences.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection
+  const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
 
   const filtered = plans.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -1250,7 +1291,7 @@ export default function Workspace() {
       >
           <PlanPageHeader
             title="Início"
-            meta={`Bom dia, ${currentUser?.fullName?.split(' ')[0] ?? 'Arthur'}.`}
+            meta={`Bom dia, ${userFirstName}.`}
             tone="solid"
             titleSize="medium"
             actions={(
@@ -1291,24 +1332,28 @@ export default function Workspace() {
               <WorkspaceLoadingState view={view} />
             ) : (
               <>
-            <div className={styles.sectionHeader}>
-              <div className={styles.sectionLeft}>
-                <h2 className={styles.sectionTitle}>Todos os planos</h2>
-                <span className={styles.planCount}>{filtered.length}</span>
-              </div>
-              <div className={styles.viewToggle}>
-                <button
-                  className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
-                  onClick={() => setView('grid')}
-                  aria-label="Visualização em grade"
-                ><GridIcon /></button>
-                <button
-                  className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
-                  onClick={() => setView('list')}
-                  aria-label="Visualização em lista"
-                ><ListIcon /></button>
-              </div>
-            </div>
+                {showIntelligenceSection ? (
+                  <WorkspaceIntelligenceSection firstName={userFirstName} />
+                ) : null}
+
+                <div className={styles.sectionHeader}>
+                  <div className={styles.sectionLeft}>
+                    <h2 className={styles.sectionTitle}>Todos os planos</h2>
+                    <span className={styles.planCount}>{filtered.length}</span>
+                  </div>
+                  <div className={styles.viewToggle}>
+                    <button
+                      className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
+                      onClick={() => setView('grid')}
+                      aria-label="Visualização em grade"
+                    ><GridIcon /></button>
+                    <button
+                      className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
+                      onClick={() => setView('list')}
+                      aria-label="Visualização em lista"
+                    ><ListIcon /></button>
+                  </div>
+                </div>
 
             {filtered.length === 0 ? (
               <div className={styles.emptyState}>
