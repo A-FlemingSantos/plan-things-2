@@ -1082,16 +1082,28 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState([])
   const [isThinking, setIsThinking] = useState(false)
+  const [isListening, setIsListening] = useState(false)
   const [voiceFeedback, setVoiceFeedback] = useState('')
   const [suggestionsHidden, setSuggestionsHidden] = useState(false)
   const chatLogRef = useRef(null)
   const responseTimerRef = useRef(null)
   const recognitionRef = useRef(null)
+  const recognitionRestartTimerRef = useRef(null)
+  const voiceListeningRequestedRef = useRef(false)
+  const voiceRestartAttemptsRef = useRef(0)
+  const stopRequestedRef = useRef(false)
+  const terminalVoiceErrorRef = useRef(false)
+  const voiceTranscriptRef = useRef([])
 
   useEffect(() => () => {
     if (responseTimerRef.current) {
       clearTimeout(responseTimerRef.current)
     }
+    if (recognitionRestartTimerRef.current) {
+      clearTimeout(recognitionRestartTimerRef.current)
+    }
+    voiceListeningRequestedRef.current = false
+    stopRequestedRef.current = true
     recognitionRef.current?.abort?.()
   }, [])
 
@@ -1146,8 +1158,47 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
     setVoiceFeedback('Contexto do workspace adicionado ao prompt.')
   }
 
+  const appendVoiceTranscriptToPrompt = () => {
+    const transcript = voiceTranscriptRef.current.join(' ').replace(/\s+/g, ' ').trim()
+    voiceTranscriptRef.current = []
+
+    if (!transcript) return false
+
+    setDraft((current) => (current.trim() ? `${current.trim()} ${transcript}` : transcript))
+    return true
+  }
+
   const handleVoiceInput = () => {
     if (typeof window === 'undefined') return
+
+    if (voiceListeningRequestedRef.current || recognitionRef.current) {
+      const activeRecognition = recognitionRef.current
+      voiceListeningRequestedRef.current = false
+      stopRequestedRef.current = true
+      recognitionRef.current = null
+      voiceRestartAttemptsRef.current = 0
+      if (recognitionRestartTimerRef.current) {
+        clearTimeout(recognitionRestartTimerRef.current)
+        recognitionRestartTimerRef.current = null
+      }
+      setIsListening(false)
+
+      if (!activeRecognition) {
+        const didCommitTranscript = appendVoiceTranscriptToPrompt()
+        setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : 'Captura de voz interrompida.')
+        return
+      }
+
+      try {
+        activeRecognition.stop?.()
+      } catch {
+        activeRecognition.abort?.()
+        const didCommitTranscript = appendVoiceTranscriptToPrompt()
+        setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : 'Captura de voz interrompida.')
+      }
+      return
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
 
     if (!SpeechRecognition) {
@@ -1160,35 +1211,117 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       return
     }
 
-    const recognition = new SpeechRecognition()
-    recognition.lang = 'pt-BR'
-    recognition.interimResults = false
-    recognition.maxAlternatives = 1
-    recognition.onstart = () => setVoiceFeedback('Ouvindo...')
-    recognition.onerror = (event) => {
-      if (event?.error === 'aborted') return
-      setVoiceFeedback(getVoiceInputErrorMessage(event))
-    }
-    recognition.onend = () => {
-      if (recognitionRef.current === recognition) {
-        recognitionRef.current = null
-      }
-    }
-    recognition.onresult = (event) => {
-      const transcript = event.results?.[0]?.[0]?.transcript?.trim()
-      if (!transcript) return
-      setDraft((current) => (current.trim() ? `${current.trim()} ${transcript}` : transcript))
-      setVoiceFeedback('Texto de voz adicionado ao prompt.')
+    const scheduleRecognitionRestart = () => {
+      if (!voiceListeningRequestedRef.current || stopRequestedRef.current) return
+      if (recognitionRestartTimerRef.current) return
+
+      const delay = Math.min(450 + voiceRestartAttemptsRef.current * 250, 1200)
+      voiceRestartAttemptsRef.current += 1
+      setIsListening(true)
+      setVoiceFeedback(voiceRestartAttemptsRef.current > 1 ? 'Reconectando captura de voz...' : 'Ouvindo... clique no microfone para parar.')
+
+      recognitionRestartTimerRef.current = setTimeout(() => {
+        recognitionRestartTimerRef.current = null
+        startRecognition()
+      }, delay)
     }
 
-    recognitionRef.current?.abort?.()
-    recognitionRef.current = recognition
-    try {
-      recognition.start()
-    } catch (error) {
-      recognitionRef.current = null
-      setVoiceFeedback(getVoiceInputErrorMessage(error))
+    const startRecognition = () => {
+      if (!voiceListeningRequestedRef.current || stopRequestedRef.current) return
+
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'pt-BR'
+      recognition.continuous = true
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+      recognition.onstart = () => {
+        voiceRestartAttemptsRef.current = 0
+        terminalVoiceErrorRef.current = false
+        setIsListening(true)
+        setVoiceFeedback('Ouvindo... clique no microfone para parar.')
+      }
+      recognition.onerror = (event) => {
+        if (event?.error === 'aborted' || stopRequestedRef.current) return
+
+        if (event?.error === 'network' || event?.error === 'no-speech') {
+          setIsListening(true)
+          setVoiceFeedback('Ouvindo... clique no microfone para parar.')
+          return
+        }
+
+        voiceListeningRequestedRef.current = false
+        terminalVoiceErrorRef.current = true
+        if (recognitionRestartTimerRef.current) {
+          clearTimeout(recognitionRestartTimerRef.current)
+          recognitionRestartTimerRef.current = null
+        }
+        if (recognitionRef.current === recognition) {
+          recognitionRef.current = null
+        }
+        setIsListening(false)
+        setVoiceFeedback(getVoiceInputErrorMessage(event))
+      }
+      recognition.onend = () => {
+        if (recognitionRef.current === recognition) {
+          recognitionRef.current = null
+        }
+
+        if (stopRequestedRef.current || !voiceListeningRequestedRef.current) {
+          voiceRestartAttemptsRef.current = 0
+          setIsListening(false)
+          if (terminalVoiceErrorRef.current) {
+            terminalVoiceErrorRef.current = false
+            stopRequestedRef.current = false
+            return
+          }
+          const didCommitTranscript = appendVoiceTranscriptToPrompt()
+          setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : 'Captura de voz interrompida.')
+          stopRequestedRef.current = false
+          return
+        }
+
+        scheduleRecognitionRestart()
+      }
+      recognition.onresult = (event) => {
+        const results = event.results || []
+        const startIndex = Number.isInteger(event.resultIndex) ? event.resultIndex : 0
+
+        for (let index = startIndex; index < results.length; index += 1) {
+          const result = results[index]
+          const transcript = result?.[0]?.transcript?.trim()
+          if (!transcript || result.isFinal === false) continue
+
+          voiceTranscriptRef.current.push(transcript)
+        }
+      }
+
+      recognitionRef.current = recognition
+      try {
+        recognition.start()
+      } catch (error) {
+        recognitionRef.current = null
+        if (voiceListeningRequestedRef.current && (error?.name === 'InvalidStateError' || error?.error === 'network')) {
+          scheduleRecognitionRestart()
+          return
+        }
+        voiceListeningRequestedRef.current = false
+        setIsListening(false)
+        setVoiceFeedback(getVoiceInputErrorMessage(error))
+      }
     }
+
+    voiceListeningRequestedRef.current = true
+    stopRequestedRef.current = false
+    terminalVoiceErrorRef.current = false
+    voiceRestartAttemptsRef.current = 0
+    voiceTranscriptRef.current = []
+    if (recognitionRestartTimerRef.current) {
+      clearTimeout(recognitionRestartTimerRef.current)
+      recognitionRestartTimerRef.current = null
+    }
+    setIsListening(true)
+    setVoiceFeedback('Ouvindo... clique no microfone para parar.')
+    startRecognition()
   }
 
   return (
@@ -1232,7 +1365,13 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
             <PlusIcon />
           </button>
           <div className={styles.intelligencePromptActions}>
-            <button type="button" className={styles.intelligenceIconButton} aria-label="Gravar áudio para o Intelligence" onClick={handleVoiceInput}>
+            <button
+              type="button"
+              className={`${styles.intelligenceIconButton} ${isListening ? styles.intelligenceIconButtonActive : ''}`}
+              aria-label={isListening ? 'Parar gravação de áudio para o Intelligence' : 'Gravar áudio para o Intelligence'}
+              aria-pressed={isListening}
+              onClick={handleVoiceInput}
+            >
               <MicIcon />
             </button>
             <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim() || isThinking}>

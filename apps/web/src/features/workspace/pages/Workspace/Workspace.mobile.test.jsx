@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -140,13 +140,56 @@ describe('Workspace mobile layout', () => {
     expect(await screen.findByText(/problema, público, insight/i)).toBeInTheDocument()
   })
 
-  it('adds recognized voice input to the workspace intelligence prompt', async () => {
+  it('adds recognized voice input to the prompt only after stopping capture', async () => {
     const user = userEvent.setup()
 
     class MockSpeechRecognition {
       start() {
         this.onstart?.()
-        this.onresult?.({ results: [[{ transcript: 'Planejar lançamento por voz' }]] })
+        const result = [{ transcript: 'Planejar lançamento por voz' }]
+        result.isFinal = true
+        this.onresult?.({ resultIndex: 0, results: [result] })
+      }
+
+      stop() {
+        this.onend?.()
+      }
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: MockSpeechRecognition,
+    })
+
+    renderWorkspace()
+
+    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+
+    expect(screen.queryByDisplayValue('Planejar lançamento por voz')).not.toBeInTheDocument()
+
+    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
+
+    expect(await screen.findByDisplayValue('Planejar lançamento por voz')).toBeInTheDocument()
+    expect(screen.getByText('Texto de voz adicionado ao prompt.')).toBeInTheDocument()
+  })
+
+  it('allows repeated voice input attempts after a successful capture', async () => {
+    const user = userEvent.setup()
+    const transcripts = ['Primeira tentativa', 'Segunda tentativa']
+    let startCount = 0
+
+    class MockSpeechRecognition {
+      start() {
+        const transcript = transcripts[startCount]
+        startCount += 1
+        this.onstart?.()
+        const result = [{ transcript }]
+        result.isFinal = true
+        this.onresult?.({ resultIndex: 0, results: [result] })
+      }
+
+      stop() {
         this.onend?.()
       }
 
@@ -161,9 +204,88 @@ describe('Workspace mobile layout', () => {
     renderWorkspace()
 
     await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
+    expect(await screen.findByDisplayValue('Primeira tentativa')).toBeInTheDocument()
 
-    expect(await screen.findByDisplayValue('Planejar lançamento por voz')).toBeInTheDocument()
-    expect(screen.getByText('Texto de voz adicionado ao prompt.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
+
+    expect(await screen.findByDisplayValue('Primeira tentativa Segunda tentativa')).toBeInTheDocument()
+    expect(startCount).toBe(2)
+  })
+
+  it('uses speech resultIndex so repeated result events do not duplicate old transcript', async () => {
+    const user = userEvent.setup()
+
+    class MockSpeechRecognition {
+      start() {
+        this.onstart?.()
+
+        const firstResult = [{ transcript: 'Primeiro trecho' }]
+        firstResult.isFinal = true
+        this.onresult?.({ resultIndex: 0, results: [firstResult] })
+
+        const repeatedFirstResult = [{ transcript: 'Primeiro trecho' }]
+        repeatedFirstResult.isFinal = true
+        const secondResult = [{ transcript: 'Segundo trecho' }]
+        secondResult.isFinal = true
+        this.onresult?.({ resultIndex: 1, results: [repeatedFirstResult, secondResult] })
+      }
+
+      stop() {
+        this.onend?.()
+      }
+
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: MockSpeechRecognition,
+    })
+
+    renderWorkspace()
+
+    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
+
+    expect(await screen.findByDisplayValue('Primeiro trecho Segundo trecho')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('Primeiro trecho Primeiro trecho Segundo trecho')).not.toBeInTheDocument()
+  })
+
+  it('toggles the microphone selected state while voice capture is active', async () => {
+    const user = userEvent.setup()
+    const stop = vi.fn(function stop() {
+      this.onend?.()
+    })
+
+    class MockSpeechRecognition {
+      start() {
+        this.onstart?.()
+      }
+
+      stop = stop
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: MockSpeechRecognition,
+    })
+
+    renderWorkspace()
+
+    const startButton = screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' })
+    await user.click(startButton)
+
+    const stopButton = await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' })
+    expect(stopButton).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(stopButton)
+
+    expect(stop).toHaveBeenCalled()
+    expect(await screen.findByRole('button', { name: 'Gravar áudio para o Intelligence' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('Captura de voz interrompida.')).toBeInTheDocument()
   })
 
   it('shows a microphone permission message when voice access is blocked', async () => {
@@ -190,13 +312,13 @@ describe('Workspace mobile layout', () => {
     expect(await screen.findByText('Permissão do microfone negada. Libere o acesso ao microfone no navegador.')).toBeInTheDocument()
   })
 
-  it('explains when browser speech recognition is unavailable', async () => {
+  it('keeps browser network errors from interrupting the active microphone state', async () => {
     const user = userEvent.setup()
 
     class MockSpeechRecognition {
       start() {
+        this.onstart?.()
         this.onerror?.({ error: 'network' })
-        this.onend?.()
       }
 
       abort() {}
@@ -211,6 +333,39 @@ describe('Workspace mobile layout', () => {
 
     await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
 
-    expect(await screen.findByText('O reconhecimento de voz do navegador está indisponível. Tente Chrome/Edge com internet ou digite o prompt.')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Ouvindo... clique no microfone para parar.')).toBeInTheDocument()
+    expect(screen.queryByText('O reconhecimento de voz do navegador está indisponível. Tente Chrome/Edge com internet ou digite o prompt.')).not.toBeInTheDocument()
+  })
+
+  it('restarts browser voice capture when the browser ends after a network interruption', async () => {
+    const user = userEvent.setup()
+    let startCount = 0
+
+    class MockSpeechRecognition {
+      start() {
+        startCount += 1
+        this.onstart?.()
+        if (startCount === 1) {
+          this.onerror?.({ error: 'network' })
+          this.onend?.()
+        }
+      }
+
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: MockSpeechRecognition,
+    })
+
+    renderWorkspace()
+
+    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+
+    expect(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' })).toHaveAttribute('aria-pressed', 'true')
+    expect(await screen.findByText('Ouvindo... clique no microfone para parar.')).toBeInTheDocument()
+    await waitFor(() => expect(startCount).toBeGreaterThanOrEqual(2))
   })
 })
