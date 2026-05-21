@@ -683,14 +683,51 @@
   color: #fff;
 }
 
+.intelligenceChatLog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 220px;
+  margin: 0 0 14px;
+  padding: 2px 2px 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.intelligenceChatLog::-webkit-scrollbar {
+  display: none;
+}
+
+.intelligenceMessage {
+  max-width: min(86%, 560px);
+  padding: 10px 13px;
+  border-radius: 15px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.intelligenceMessageUser {
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.intelligenceMessageAssistant {
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .intelligencePromptCard {
-  min-height: 112px;
+  min-height: 156px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px 20px 14px 14px;
-  background: rgba(14, 14, 14, 0.96);
+  border-radius: 20px;
+  background: rgba(28, 28, 28, 0.96);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 18px 42px rgba(0, 0, 0, 0.26);
@@ -704,12 +741,12 @@
   border: 0;
   outline: 0;
   resize: none;
-  background: transparent;
+  background: rgba(14, 14, 14, 0.96);
   color: rgba(255, 255, 255, 0.9);
   font-family: var(--font-family);
   font-size: 13px;
   line-height: 1.5;
-  cursor: default;
+  cursor: text;
 }
 
 .intelligencePrompt::placeholder {
@@ -721,6 +758,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 18px 14px;
+  background: rgba(14, 14, 14, 0.96);
 }
 
 .intelligenceGhostAction,
@@ -731,7 +769,8 @@
   justify-content: center;
   border: 0;
   font-family: var(--font-family);
-  cursor: default;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .intelligenceGhostAction {
@@ -752,6 +791,11 @@
   color: rgba(255, 255, 255, 0.48);
 }
 
+.intelligenceIconButton:hover,
+.intelligenceGhostAction:hover {
+  color: #fff;
+}
+
 .intelligenceSendButton {
   width: 30px;
   height: 30px;
@@ -761,14 +805,22 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+.intelligenceSendButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.intelligenceSendButton:disabled {
+  cursor: not-allowed;
+  opacity: .38;
+}
+
 .intelligenceSuggestions {
   display: flex;
   align-items: center;
   gap: 28px;
   min-height: 44px;
   padding: 0 22px;
-  border-radius: 0 0 20px 20px;
-  background: rgba(28, 28, 28, 0.96);
+  background: transparent;
   color: rgba(255, 255, 255, 0.48);
   font-size: 11px;
   font-weight: var(--font-weight-light);
@@ -779,6 +831,32 @@
 
 .intelligenceSuggestions::-webkit-scrollbar {
   display: none;
+}
+
+.intelligenceSuggestionButton {
+  flex: 0 0 auto;
+  color: inherit;
+  font-family: var(--font-family);
+  font-size: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.intelligenceSuggestionButton:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.intelligenceSuggestionButton:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.intelligenceFeedback {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .sectionHeader {

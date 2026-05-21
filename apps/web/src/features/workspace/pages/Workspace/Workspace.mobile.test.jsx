@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Workspace from './Workspace.jsx'
@@ -112,5 +113,22 @@ describe('Workspace mobile layout', () => {
 
     expect(screen.queryByRole('region', { name: 'Seção do Intelligence' })).not.toBeInTheDocument()
     expect(screen.getByText('Todos os planos')).toBeInTheDocument()
+  })
+
+  it('sends workspace intelligence messages from typed prompts and suggestions', async () => {
+    const user = userEvent.setup()
+
+    renderWorkspace()
+
+    await user.type(screen.getByLabelText('Prompt do Intelligence'), 'Preciso planejar um produto novo')
+    await user.click(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' }))
+
+    expect(screen.getByText('Preciso planejar um produto novo')).toBeInTheDocument()
+    expect(await screen.findByText(/Eu começaria separando a ideia/i)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Criar pitch deck' }))
+
+    expect(await screen.findByText('Crie uma estrutura de pitch deck para apresentar esta ideia.')).toBeInTheDocument()
+    expect(await screen.findByText(/problema, público, insight/i)).toBeInTheDocument()
   })
 })

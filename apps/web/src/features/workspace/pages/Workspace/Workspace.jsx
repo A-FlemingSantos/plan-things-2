@@ -73,6 +73,39 @@ const COVER_THEMES = [
   { id: 'frost', label: 'Frost', cardCover: '#dde8f8' },
 ]
 
+const WORKSPACE_INTELLIGENCE_SUGGESTIONS = [
+  {
+    label: 'Sincronizar calendário',
+    prompt: 'Sincronize meu calendário e sugira os próximos blocos de trabalho.',
+  },
+  {
+    label: 'Criar pitch deck',
+    prompt: 'Crie uma estrutura de pitch deck para apresentar esta ideia.',
+  },
+  {
+    label: 'Inicializar UI system',
+    prompt: 'Inicialize um UI system com componentes e tokens essenciais.',
+  },
+]
+
+function buildWorkspaceIntelligenceReply(prompt) {
+  const normalized = prompt.toLowerCase()
+
+  if (normalized.includes('calend')) {
+    return 'Posso organizar isso em blocos de foco. Comece mapeando reuniões fixas, separe 2 janelas para execução profunda e reserve um checkpoint curto no fim do dia.'
+  }
+
+  if (normalized.includes('pitch')) {
+    return 'Uma boa base: problema, público, insight, solução, diferenciais, plano de execução e próximos passos. Se quiser, posso transformar isso em um roteiro slide a slide.'
+  }
+
+  if (normalized.includes('ui')) {
+    return 'Vamos começar pelo essencial: tokens de cor e espaçamento, tipografia, botões, inputs, cards de conteúdo e estados de feedback. Depois conectamos isso aos fluxos principais.'
+  }
+
+  return 'Entendi. Eu começaria separando a ideia em objetivo, usuários, fluxo principal, riscos e primeiro entregável. Me diga qual parte você quer aprofundar e eu continuo a partir dela.'
+}
+
 function resolveCoverThemeClass(styles, coverThemeId) {
   if (!coverThemeId) return ''
   const key = `theme${coverThemeId}`
@@ -996,37 +1029,168 @@ function WorkspaceLoadingState({ view }) {
 }
 
 function WorkspaceIntelligenceSection({ firstName }) {
+  const [draft, setDraft] = useState('')
+  const [messages, setMessages] = useState([])
+  const [isThinking, setIsThinking] = useState(false)
+  const [voiceFeedback, setVoiceFeedback] = useState('')
+  const chatLogRef = useRef(null)
+  const responseTimerRef = useRef(null)
+  const recognitionRef = useRef(null)
+
+  useEffect(() => () => {
+    if (responseTimerRef.current) {
+      clearTimeout(responseTimerRef.current)
+    }
+    recognitionRef.current?.abort?.()
+  }, [])
+
+  useEffect(() => {
+    if (!chatLogRef.current) return
+    chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight
+  }, [messages, isThinking])
+
+  const submitPrompt = (value = draft) => {
+    const text = value.trim()
+    if (!text || isThinking) return
+
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text,
+    }
+
+    setMessages((current) => [...current, userMessage])
+    setDraft('')
+    setVoiceFeedback('')
+    setIsThinking(true)
+
+    if (responseTimerRef.current) {
+      clearTimeout(responseTimerRef.current)
+    }
+
+    responseTimerRef.current = setTimeout(() => {
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          text: buildWorkspaceIntelligenceReply(text),
+        },
+      ])
+      setIsThinking(false)
+      responseTimerRef.current = null
+    }, 550)
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    submitPrompt()
+  }
+
+  const handleAddContext = () => {
+    setDraft((current) => {
+      const context = 'Considere meus planos, calendário e arquivos do workspace como contexto.'
+      return current.trim() ? `${current.trim()} ${context}` : context
+    })
+    setVoiceFeedback('Contexto do workspace adicionado ao prompt.')
+  }
+
+  const handleVoiceInput = () => {
+    if (typeof window === 'undefined') return
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+
+    if (!SpeechRecognition) {
+      setVoiceFeedback('Ditado por voz não está disponível neste navegador.')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'pt-BR'
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+    recognition.onstart = () => setVoiceFeedback('Ouvindo...')
+    recognition.onerror = () => setVoiceFeedback('Não foi possível capturar o áudio agora.')
+    recognition.onend = () => {
+      recognitionRef.current = null
+    }
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim()
+      if (!transcript) return
+      setDraft((current) => (current.trim() ? `${current.trim()} ${transcript}` : transcript))
+      setVoiceFeedback('Texto de voz adicionado ao prompt.')
+    }
+
+    recognitionRef.current?.abort?.()
+    recognitionRef.current = recognition
+    recognition.start()
+  }
+
   return (
     <section className={styles.intelligenceSection} aria-label="Seção do Intelligence">
       <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
       <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
-      <div className={styles.intelligencePromptCard}>
+      {messages.length || isThinking ? (
+        <div ref={chatLogRef} className={styles.intelligenceChatLog} role="log" aria-label="Conversa com o Intelligence" aria-live="polite">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`${styles.intelligenceMessage} ${message.role === 'user' ? styles.intelligenceMessageUser : styles.intelligenceMessageAssistant}`}
+            >
+              {message.text}
+            </div>
+          ))}
+          {isThinking ? (
+            <div className={`${styles.intelligenceMessage} ${styles.intelligenceMessageAssistant}`}>
+              Pensando...
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <form className={styles.intelligencePromptCard} onSubmit={handleSubmit}>
         <textarea
           className={styles.intelligencePrompt}
           placeholder="Descreva seu produto, fluxo ou ideia..."
           aria-label="Prompt do Intelligence"
-          readOnly
           rows={3}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              event.currentTarget.form?.requestSubmit()
+            }
+          }}
         />
         <div className={styles.intelligencePromptControls}>
-          <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence">
+          <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence" onClick={handleAddContext}>
             <PlusIcon />
           </button>
           <div className={styles.intelligencePromptActions}>
-            <button type="button" className={styles.intelligenceIconButton} aria-label="Gravar áudio para o Intelligence">
+            <button type="button" className={styles.intelligenceIconButton} aria-label="Gravar áudio para o Intelligence" onClick={handleVoiceInput}>
               <MicIcon />
             </button>
-            <button type="button" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence">
+            <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim() || isThinking}>
               <ArrowUpIcon />
             </button>
           </div>
         </div>
-      </div>
-      <div className={styles.intelligenceSuggestions} aria-label="Sugestões do Intelligence">
-        <span>Sincronizar calendário</span>
-        <span>Criar pitch deck</span>
-        <span>Inicializar UI system</span>
-      </div>
+        <div className={styles.intelligenceSuggestions} aria-label="Sugestões do Intelligence">
+          {WORKSPACE_INTELLIGENCE_SUGGESTIONS.map((suggestion) => (
+            <button
+              key={suggestion.label}
+              type="button"
+              className={styles.intelligenceSuggestionButton}
+              onClick={() => submitPrompt(suggestion.prompt)}
+              disabled={isThinking}
+            >
+              {suggestion.label}
+            </button>
+          ))}
+        </div>
+      </form>
+      {voiceFeedback ? (
+        <p className={styles.intelligenceFeedback} role="status">{voiceFeedback}</p>
+      ) : null}
     </section>
   )
 }
