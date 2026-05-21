@@ -115,6 +115,29 @@ const WORKSPACE_INTELLIGENCE_PROMPT_SUGGESTIONS = [
   },
 ]
 
+const VOICE_INPUT_ERROR_MESSAGES = {
+  'audio-capture': 'Nenhum microfone disponível foi encontrado.',
+  'language-not-supported': 'Reconhecimento de voz em português não está disponível neste navegador.',
+  network: 'O reconhecimento de voz do navegador está indisponível. Tente Chrome/Edge com internet ou digite o prompt.',
+  'no-speech': 'Não detectei fala. Tente novamente falando mais perto do microfone.',
+  'not-allowed': 'Permissão do microfone negada. Libere o acesso ao microfone no navegador.',
+  'service-not-allowed': 'O navegador bloqueou o serviço de reconhecimento de voz.',
+}
+
+function getVoiceInputErrorMessage(error) {
+  const code = error?.error || error?.name
+
+  if (code === 'NotAllowedError' || code === 'PermissionDeniedError') {
+    return VOICE_INPUT_ERROR_MESSAGES['not-allowed']
+  }
+
+  if (code === 'NotFoundError' || code === 'DevicesNotFoundError') {
+    return VOICE_INPUT_ERROR_MESSAGES['audio-capture']
+  }
+
+  return VOICE_INPUT_ERROR_MESSAGES[code] || 'Não foi possível capturar o áudio agora.'
+}
+
 function buildWorkspaceIntelligenceReply(prompt) {
   const normalized = prompt.toLowerCase()
 
@@ -1132,14 +1155,24 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       return
     }
 
+    if (window.isSecureContext === false) {
+      setVoiceFeedback('O microfone só pode ser usado em HTTPS ou localhost.')
+      return
+    }
+
     const recognition = new SpeechRecognition()
     recognition.lang = 'pt-BR'
     recognition.interimResults = false
     recognition.maxAlternatives = 1
     recognition.onstart = () => setVoiceFeedback('Ouvindo...')
-    recognition.onerror = () => setVoiceFeedback('Não foi possível capturar o áudio agora.')
+    recognition.onerror = (event) => {
+      if (event?.error === 'aborted') return
+      setVoiceFeedback(getVoiceInputErrorMessage(event))
+    }
     recognition.onend = () => {
-      recognitionRef.current = null
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null
+      }
     }
     recognition.onresult = (event) => {
       const transcript = event.results?.[0]?.[0]?.transcript?.trim()
@@ -1150,7 +1183,12 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
 
     recognitionRef.current?.abort?.()
     recognitionRef.current = recognition
-    recognition.start()
+    try {
+      recognition.start()
+    } catch (error) {
+      recognitionRef.current = null
+      setVoiceFeedback(getVoiceInputErrorMessage(error))
+    }
   }
 
   return (

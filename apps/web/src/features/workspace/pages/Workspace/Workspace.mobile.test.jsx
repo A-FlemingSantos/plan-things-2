@@ -90,6 +90,14 @@ function renderWorkspace() {
 describe('Workspace mobile layout', () => {
   beforeEach(() => {
     preferencesMock.localPreferences.showIntelligenceSection = true
+    Object.defineProperty(window, 'SpeechRecognition', {
+      configurable: true,
+      value: undefined,
+    })
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: undefined,
+    })
   })
 
   it('keeps the mobile workspace controls available without hiding the primary actions', () => {
@@ -130,5 +138,79 @@ describe('Workspace mobile layout', () => {
 
     expect(await screen.findByText('Crie uma estrutura de pitch deck para apresentar esta ideia.')).toBeInTheDocument()
     expect(await screen.findByText(/problema, público, insight/i)).toBeInTheDocument()
+  })
+
+  it('adds recognized voice input to the workspace intelligence prompt', async () => {
+    const user = userEvent.setup()
+
+    class MockSpeechRecognition {
+      start() {
+        this.onstart?.()
+        this.onresult?.({ results: [[{ transcript: 'Planejar lançamento por voz' }]] })
+        this.onend?.()
+      }
+
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: MockSpeechRecognition,
+    })
+
+    renderWorkspace()
+
+    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+
+    expect(await screen.findByDisplayValue('Planejar lançamento por voz')).toBeInTheDocument()
+    expect(screen.getByText('Texto de voz adicionado ao prompt.')).toBeInTheDocument()
+  })
+
+  it('shows a microphone permission message when voice access is blocked', async () => {
+    const user = userEvent.setup()
+
+    class MockSpeechRecognition {
+      start() {
+        this.onerror?.({ error: 'not-allowed' })
+        this.onend?.()
+      }
+
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: MockSpeechRecognition,
+    })
+
+    renderWorkspace()
+
+    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+
+    expect(await screen.findByText('Permissão do microfone negada. Libere o acesso ao microfone no navegador.')).toBeInTheDocument()
+  })
+
+  it('explains when browser speech recognition is unavailable', async () => {
+    const user = userEvent.setup()
+
+    class MockSpeechRecognition {
+      start() {
+        this.onerror?.({ error: 'network' })
+        this.onend?.()
+      }
+
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      configurable: true,
+      value: MockSpeechRecognition,
+    })
+
+    renderWorkspace()
+
+    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
+
+    expect(await screen.findByText('O reconhecimento de voz do navegador está indisponível. Tente Chrome/Edge com internet ou digite o prompt.')).toBeInTheDocument()
   })
 })
