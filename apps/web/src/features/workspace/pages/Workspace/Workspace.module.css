@@ -671,6 +671,7 @@
   --intelligence-shadow: 0 18px 42px color-mix(in srgb, var(--text-1) 10%, transparent);
   position: relative;
   width: min(100%, 720px);
+  min-height: clamp(500px, 58vh, 680px);
   align-self: center;
   display: flex;
   flex-direction: column;
@@ -888,6 +889,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.intelligenceSection + .sectionHeader {
+  padding-top: 22px;
+  border-top: 1px solid color-mix(in srgb, var(--border-1) 72%, transparent);
 }
 
 .sectionLeft {
@@ -2231,6 +2237,7 @@
   .content { padding: 20px 20px 40px; }
   .intelligenceSection {
     width: 100%;
+    min-height: clamp(440px, 52vh, 560px);
     padding-top: 18px;
   }
   .intelligencePromptCard {
@@ -2290,6 +2297,7 @@
     gap: 20px;
   }
   .intelligenceSection {
+    min-height: clamp(380px, 48vh, 460px);
     padding-top: 12px;
   }
   .intelligenceTitle {
