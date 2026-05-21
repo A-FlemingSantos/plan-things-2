@@ -616,7 +616,6 @@ export default function KanbanBoard() {
   const dateFormat = generalPreferences.dateFormat
   const boardAccentColor = resolveKanbanAccentColor(localPreferences?.kanbanAccentColor)
   const boardAccentForeground = resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor)
-  const showIntelligenceSection = localPreferences?.showIntelligenceSection ?? true
   const boardAccentStyle = useMemo(() => ({
     '--kanban-accent-color': boardAccentColor,
     '--kanban-accent-foreground': boardAccentForeground,
@@ -782,15 +781,6 @@ export default function KanbanBoard() {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isIntelligencePanelMounted])
-
-  useEffect(() => {
-    if (showIntelligenceSection) return
-
-    setIsIntelligenceOpen(false)
-    setIsIntelligencePanelMounted(false)
-    setIsIntelligenceInsertMenuOpen(false)
-    setIsIntelligencePluginsMenuOpen(false)
-  }, [showIntelligenceSection])
 
   useLayoutEffect(() => {
     if (!intelligenceComposerInputRef.current) return
@@ -1366,8 +1356,6 @@ export default function KanbanBoard() {
   }
 
   const openIntelligence = () => {
-    if (!showIntelligenceSection) return
-
     if (intelligenceCloseTimerRef.current) {
       clearTimeout(intelligenceCloseTimerRef.current)
       intelligenceCloseTimerRef.current = null
@@ -1406,8 +1394,6 @@ export default function KanbanBoard() {
   }
 
   const toggleIntelligence = () => {
-    if (!showIntelligenceSection) return
-
     if (isIntelligenceOpen) {
       closeIntelligence()
       return
@@ -2633,7 +2619,7 @@ export default function KanbanBoard() {
           </div>
         )}
 
-        {showIntelligenceSection && isIntelligencePanelMounted ? (
+        {isIntelligencePanelMounted ? (
           <section
             id="board-intelligence-panel"
             ref={intelligencePanelRef}
@@ -2878,19 +2864,17 @@ export default function KanbanBoard() {
             <span>Quadro</span>
           </button>
 
-          {showIntelligenceSection ? (
-            <button
-              type="button"
-              className={`${styles.boardViewToolbarItem} ${isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
-              aria-expanded={isIntelligenceOpen}
-              aria-controls="board-intelligence-panel"
-              title="Intelligence"
-              onClick={toggleIntelligence}
-            >
-              <Icon.Bolt />
-              <span>Intelligence</span>
-            </button>
-          ) : null}
+          <button
+            type="button"
+            className={`${styles.boardViewToolbarItem} ${isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-expanded={isIntelligenceOpen}
+            aria-controls="board-intelligence-panel"
+            title="Intelligence"
+            onClick={toggleIntelligence}
+          >
+            <Icon.Bolt />
+            <span>Intelligence</span>
+          </button>
         </div>
         </div>
 
