@@ -1806,7 +1806,7 @@ export default function Workspace() {
         contentTag="main"
       >
         <div ref={workspaceScrollbar.viewportRef} className={styles.mainScrollViewport}>
-          <WorkspaceHeader title="Início" compact sticky />
+          <WorkspaceHeader title="Início" compact sticky className={styles.workspaceTopHeaderGlass} />
 
           {/* Content */}
           <div className={`${styles.content} ${showIntelligenceSection ? styles.contentFramed : ''}`}>
