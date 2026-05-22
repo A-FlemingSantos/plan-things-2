@@ -79,8 +79,8 @@
 }
 
 .boardPlanHeader {
-  background: rgba(10, 14, 20, 0.18) !important;
-  border-bottom-color: rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(10, 14, 20, 0.2) 0%, rgba(10, 14, 20, 0.14) 100%) !important;
+  border-bottom-color: transparent !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
