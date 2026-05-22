@@ -58,6 +58,12 @@
   text-overflow: ellipsis;
 }
 
+.titleCustom {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .titleMedium {
   font-size: 20px;
   letter-spacing: -0.03em;

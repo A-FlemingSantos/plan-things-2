@@ -2,6 +2,7 @@ import styles from './PlanPageHeader.module.css'
 
 export default function PlanPageHeader({
   title,
+  titleContent = null,
   meta = null,
   icon = null,
   titleAccessory = null,
@@ -23,6 +24,7 @@ export default function PlanPageHeader({
   const titleClassName = [
     styles.title,
     titleSize === 'large' ? styles.titleLarge : styles.titleMedium,
+    titleContent ? styles.titleCustom : '',
   ].join(' ')
 
   const titleRowClassName = [
@@ -34,8 +36,14 @@ export default function PlanPageHeader({
     <header className={headerClassName}>
       <div className={styles.left}>
         <div className={titleRowClassName}>
-          {icon ? <span className={styles.icon}>{icon}</span> : null}
-          <h1 className={titleClassName}>{title}</h1>
+          {titleContent ? (
+            <h1 className={titleClassName}>{titleContent}</h1>
+          ) : (
+            <>
+              {icon ? <span className={styles.icon}>{icon}</span> : null}
+              <h1 className={titleClassName}>{title}</h1>
+            </>
+          )}
           {titleAccessory}
           {meta ? <span className={styles.meta}>{meta}</span> : null}
         </div>

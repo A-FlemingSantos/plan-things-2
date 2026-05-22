@@ -12,6 +12,322 @@
   flex-shrink: 0;
 }
 
+.workspaceHeaderTitleMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: min(100%, 360px);
+}
+
+.workspaceHeaderTitleButton {
+  min-height: 34px;
+  max-width: 100%;
+  padding: 0 10px 0 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.workspaceHeaderTitleButton:hover {
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  border-color: color-mix(in srgb, var(--border-1) 88%, transparent);
+}
+
+.workspaceHeaderTitleButton[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+  border-color: color-mix(in srgb, var(--workspace-header-accent, var(--focus-ring)) 18%, var(--border-1));
+}
+
+.workspaceHeaderTitleButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--workspace-header-accent, var(--focus-ring)) 18%, transparent);
+}
+
+.workspaceHeaderTitleButtonIcon,
+.workspaceHeaderTitleButtonChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.workspaceHeaderTitleButtonIcon {
+  color: var(--text-2);
+}
+
+.workspaceHeaderTitleButtonLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceHeaderTitleButtonChevron {
+  color: var(--text-3);
+  transition: transform 180ms ease, color var(--transition-fast);
+}
+
+.workspaceHeaderTitleButtonChevronOpen {
+  transform: rotate(180deg);
+  color: var(--text-2);
+}
+
+.workspaceHeaderMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(318px, calc(100vw - 24px));
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-1) 90%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--menu-bg) 96%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text-1) 10%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: calc(var(--z-app-page-sticky) + 1);
+  animation: workspaceHeaderMenuIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.workspaceHeaderMenuPrimaryList,
+.workspaceHeaderMenuSubList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workspaceHeaderMenuPrimaryItem,
+.workspaceHeaderMenuSubItem,
+.workspaceHeaderMenuWorkspaceCard,
+.workspaceHeaderMenuPromoAction {
+  font-family: var(--font-family);
+}
+
+.workspaceHeaderMenuPrimaryItem,
+.workspaceHeaderMenuSubItem {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: var(--text-2);
+  text-align: left;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.workspaceHeaderMenuPrimaryItem:hover,
+.workspaceHeaderMenuSubItem:hover,
+.workspaceHeaderMenuWorkspaceCard:hover,
+.workspaceHeaderMenuPromoAction:hover {
+  transform: translateY(-1px);
+}
+
+.workspaceHeaderMenuPrimaryItem:hover,
+.workspaceHeaderMenuSubItem:hover {
+  background: color-mix(in srgb, var(--surface-3) 88%, transparent);
+  color: var(--text-1);
+}
+
+.workspaceHeaderMenuPrimaryItemActive {
+  background: color-mix(in srgb, var(--workspace-header-accent, var(--focus-ring)) 18%, transparent);
+  color: color-mix(in srgb, var(--workspace-header-accent, var(--focus-ring)) 82%, var(--text-1));
+}
+
+.workspaceHeaderMenuItemIcon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.workspaceHeaderMenuDivider {
+  height: 1px;
+  background: color-mix(in srgb, var(--border-1) 92%, transparent);
+}
+
+.workspaceHeaderMenuSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspaceHeaderMenuSectionLabel {
+  padding: 0 4px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.workspaceHeaderMenuWorkspaceCard {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 10px;
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  color: var(--text-1);
+  text-align: left;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.workspaceHeaderMenuWorkspaceCard:hover {
+  background: color-mix(in srgb, var(--surface-3) 92%, transparent);
+}
+
+.workspaceHeaderMenuWorkspaceBadge {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--workspace-header-accent, var(--focus-ring)) 82%, white), color-mix(in srgb, var(--workspace-header-accent, var(--focus-ring)) 92%, var(--surface-1)));
+  color: var(--workspace-header-accent-foreground, var(--text-on-accent));
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.workspaceHeaderMenuWorkspaceMeta {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.workspaceHeaderMenuWorkspaceName {
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1.2;
+}
+
+.workspaceHeaderMenuWorkspaceType {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.workspaceHeaderMenuWorkspaceChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transform: rotate(180deg);
+}
+
+.workspaceHeaderMenuSubItemLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.workspaceHeaderMenuTrailing {
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.workspaceHeaderMenuPromo {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 14px 13px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--border-1) 85%, transparent);
+}
+
+.workspaceHeaderMenuPromo::after {
+  content: '';
+  position: absolute;
+  right: -14px;
+  bottom: -18px;
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface-3) 90%, transparent);
+  opacity: .28;
+  pointer-events: none;
+}
+
+.workspaceHeaderMenuPromoBody {
+  position: relative;
+  z-index: 1;
+  max-width: 224px;
+}
+
+.workspaceHeaderMenuPromoTitle {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.workspaceHeaderMenuPromoText {
+  margin: 8px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.workspaceHeaderMenuPromoAction {
+  margin-top: 10px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-1);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.workspaceHeaderMenuPromoAction:hover {
+  color: var(--workspace-header-accent, var(--focus-ring));
+}
+
+.workspaceHeaderMenuPromoMark {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--workspace-header-accent, var(--focus-ring)) 58%, var(--surface-3));
+  color: var(--workspace-header-accent-foreground, var(--text-on-accent));
+  z-index: 1;
+}
+
 .workspaceHeaderActions {
   display: flex;
   align-items: center;
@@ -102,7 +418,38 @@
   color: var(--text-1);
 }
 
+@keyframes workspaceHeaderMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 520px) {
+  .workspaceHeaderTitleMenuWrap {
+    max-width: min(100%, 100vw - 88px);
+  }
+
+  .workspaceHeaderTitleButton {
+    min-height: 32px;
+    padding-inline: 8px;
+    gap: 7px;
+  }
+
+  .workspaceHeaderMenu {
+    width: min(304px, calc(100vw - 20px));
+    left: 0;
+  }
+
+  .workspaceHeaderMenuPromoBody {
+    max-width: 100%;
+  }
+
   .workspaceHeaderActions {
     width: 100%;
     justify-content: flex-start;
