@@ -671,11 +671,12 @@
   --intelligence-shadow: 0 18px 42px color-mix(in srgb, var(--text-1) 10%, transparent);
   position: relative;
   box-sizing: border-box;
-  width: min(100%, 720px);
+  width: 100%;
   min-height: var(--workspace-intelligence-height, 100dvh);
-  align-self: center;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   padding: 18px 0 8px;
   color: var(--intelligence-text);
   overflow: visible;
@@ -694,7 +695,9 @@
 }
 
 .intelligenceGreeting {
+  width: min(100%, 720px);
   margin: 0 0 8px;
+  margin-inline: auto;
   font-size: 13px;
   font-weight: var(--font-weight-light);
   color: var(--intelligence-muted);
@@ -702,7 +705,9 @@
 }
 
 .intelligenceTitle {
+  width: min(100%, 720px);
   margin: 0 0 28px;
+  margin-inline: auto;
   font-size: clamp(22px, 3vw, 30px);
   font-weight: var(--font-weight-regular);
   line-height: 1.08;
@@ -711,11 +716,13 @@
 }
 
 .intelligenceChatLog {
+  width: min(100%, 720px);
   display: flex;
   flex-direction: column;
   gap: 10px;
   max-height: 220px;
   margin: 0 0 14px;
+  margin-inline: auto;
   padding: 2px 2px 0;
   overflow-y: auto;
   scrollbar-width: none;
@@ -748,10 +755,12 @@
 }
 
 .intelligencePromptCard {
+  width: min(100%, 720px);
   min-height: 156px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  margin-inline: auto;
   border: 1px solid var(--intelligence-border);
   border-radius: 20px;
   background: var(--intelligence-panel-bg);
@@ -887,7 +896,9 @@
 }
 
 .intelligenceFeedback {
+  width: min(100%, 720px);
   margin: 8px 0 0;
+  margin-inline: auto;
   color: var(--intelligence-faint);
   font-size: 11px;
   line-height: 1.4;
