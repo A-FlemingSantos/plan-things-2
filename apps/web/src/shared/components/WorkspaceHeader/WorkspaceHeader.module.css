@@ -91,7 +91,7 @@
   width: min(318px, calc(100vw - 24px));
   padding: 10px;
   border: 1px solid color-mix(in srgb, var(--border-1) 90%, transparent);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--menu-bg) 96%, transparent);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--text-1) 10%, transparent);
   backdrop-filter: blur(10px);
