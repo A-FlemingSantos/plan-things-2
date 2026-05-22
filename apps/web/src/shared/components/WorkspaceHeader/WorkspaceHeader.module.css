@@ -120,9 +120,9 @@
 .workspaceHeaderMenuPrimaryItem,
 .workspaceHeaderMenuSubItem {
   width: 100%;
-  min-height: 38px;
-  padding: 0 10px;
-  border-radius: 10px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -154,8 +154,8 @@
 }
 
 .workspaceHeaderMenuItemIcon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -245,6 +245,7 @@
 .workspaceHeaderMenuSubItemLabel {
   flex: 1;
   min-width: 0;
+  line-height: 1.2;
 }
 
 .workspaceHeaderMenuTrailing {
