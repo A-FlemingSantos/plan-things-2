@@ -1688,7 +1688,9 @@ export default function Workspace() {
           {/* Content */}
           <div className={styles.content}>
             {isBackendDriven && isLoading ? (
-              <WorkspaceLoadingState view={view} />
+              <section className={styles.plansGalleryPanel} aria-label="Carregando planos do workspace">
+                <WorkspaceLoadingState view={view} />
+              </section>
             ) : (
               <>
                 {showIntelligenceSection ? (
@@ -1698,122 +1700,126 @@ export default function Workspace() {
                   />
                 ) : null}
 
-                <div className={styles.sectionHeader}>
-                  <div className={styles.sectionLeft}>
-                    <h2 className={styles.sectionTitle}>Todos os planos</h2>
-                    <span className={styles.planCount}>{filtered.length}</span>
-                  </div>
-                  <div className={styles.sectionControls}>
-                    <label className={styles.searchWrap}>
-                      <span className={styles.searchIcon} aria-hidden="true"><SearchIcon /></span>
-                      <input
-                        className={styles.searchInput}
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Buscar planos..."
-                      />
-                      {search ? (
+                <section className={styles.plansGalleryPanel} aria-labelledby="workspace-plans-title">
+                  <div className={styles.sectionHeader}>
+                    <div className={styles.sectionLeft}>
+                      <h2 id="workspace-plans-title" className={styles.sectionTitle}>Todos os planos</h2>
+                      <span className={styles.planCount}>{filtered.length}</span>
+                    </div>
+                    <div className={styles.sectionControls}>
+                      <label className={styles.searchWrap}>
+                        <span className={styles.searchIcon} aria-hidden="true"><SearchIcon /></span>
+                        <input
+                          className={styles.searchInput}
+                          value={search}
+                          onChange={(event) => setSearch(event.target.value)}
+                          placeholder="Buscar planos..."
+                        />
+                        {search ? (
+                          <button
+                            type="button"
+                            className={styles.searchClear}
+                            onClick={() => setSearch('')}
+                            aria-label="Limpar busca de planos"
+                          >
+                            <XIcon />
+                          </button>
+                        ) : null}
+                      </label>
+                      <div className={styles.viewToggle}>
                         <button
-                          type="button"
-                          className={styles.searchClear}
-                          onClick={() => setSearch('')}
-                          aria-label="Limpar busca de planos"
-                        >
-                          <XIcon />
-                        </button>
-                      ) : null}
-                    </label>
-                    <div className={styles.viewToggle}>
-                      <button
-                        className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
-                        onClick={() => setView('grid')}
-                        aria-label="Visualização em grade"
-                      ><GridIcon /></button>
-                      <button
-                        className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
-                        onClick={() => setView('list')}
-                        aria-label="Visualização em lista"
-                      ><ListIcon /></button>
+                          className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
+                          onClick={() => setView('grid')}
+                          aria-label="Visualização em grade"
+                        ><GridIcon /></button>
+                        <button
+                          className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
+                          onClick={() => setView('list')}
+                          aria-label="Visualização em lista"
+                        ><ListIcon /></button>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-            {filtered.length === 0 ? (
-              <div className={styles.emptyState}>
-                <span className={styles.emptyStateIcon}><SearchIcon /></span>
-                <p className={styles.emptyStateTitle}>Nenhum plano encontrado</p>
-                <p className={styles.emptyStateHint}>
-                  {search
-                    ? `Tente outro termo ou limpe "${search}" para ver tudo.`
-                    : 'Crie seu primeiro plano para organizar o trabalho no quadro.'}
-                </p>
-                <div className={styles.emptyStateActions}>
-                  {search && (
-                    <button type="button" className={styles.emptyStateBtn} onClick={() => setSearch('')}>
-                      Limpar busca
-                    </button>
-                  )}
-                  <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
-                    <PlusIcon />
-                    Novo plano
-                  </button>
-                </div>
-              </div>
-            ) : view === 'grid' ? (
-              <div className={styles.grid}>
-                {filtered.map(plan => (
-                  <PlanCard
-                    key={plan.id}
-                    plan={plan}
-                    view="grid"
-                    onOpen={() => openBoard(plan.id)}
-                    onMore={(anchorRect) => {
-                      setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
-                      setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
-                    }}
-                    menuOpen={openPlanMenuId === plan.id}
-                    menuAnchorRect={planMenuAnchorRect}
-                    onMenuAction={(action) => handlePlanMenuAction(plan, action)}
-                    isRenaming={renamingPlan?.id === plan.id}
-                    renameDraft={renameDraft}
-                    renameBusy={renameBusy}
-                    onRenameDraftChange={setRenameDraft}
-                    onRenameCommit={commitInlineRename}
-                    onRenameCancel={cancelRename}
-                    isActive={plan.id === activePlan?.id}
-                  />
-                ))}
-                <button className={styles.newPlanCard} onClick={openNewPlan}>
-                  <span className={styles.newPlanIcon}><PlusIcon /></span>
-                  <span className={styles.newPlanLabel}>Novo plano</span>
-                </button>
-              </div>
-            ) : (
-              <div className={styles.listView}>
-                {filtered.map(plan => (
-                  <PlanCard
-                    key={plan.id}
-                    plan={plan}
-                    view="list"
-                    onOpen={() => openBoard(plan.id)}
-                    onMore={(anchorRect) => {
-                      setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
-                      setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
-                    }}
-                    menuOpen={openPlanMenuId === plan.id}
-                    menuAnchorRect={planMenuAnchorRect}
-                    onMenuAction={(action) => handlePlanMenuAction(plan, action)}
-                    isRenaming={renamingPlan?.id === plan.id}
-                    renameDraft={renameDraft}
-                    renameBusy={renameBusy}
-                    onRenameDraftChange={setRenameDraft}
-                    onRenameCommit={commitInlineRename}
-                    onRenameCancel={cancelRename}
-                    isActive={plan.id === activePlan?.id}
-                  />
-                ))}
-              </div>
-            )}
+                  <div className={styles.plansGalleryBody}>
+                    {filtered.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <span className={styles.emptyStateIcon}><SearchIcon /></span>
+                        <p className={styles.emptyStateTitle}>Nenhum plano encontrado</p>
+                        <p className={styles.emptyStateHint}>
+                          {search
+                            ? `Tente outro termo ou limpe "${search}" para ver tudo.`
+                            : 'Crie seu primeiro plano para organizar o trabalho no quadro.'}
+                        </p>
+                        <div className={styles.emptyStateActions}>
+                          {search && (
+                            <button type="button" className={styles.emptyStateBtn} onClick={() => setSearch('')}>
+                              Limpar busca
+                            </button>
+                          )}
+                          <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
+                            <PlusIcon />
+                            Novo plano
+                          </button>
+                        </div>
+                      </div>
+                    ) : view === 'grid' ? (
+                      <div className={styles.grid}>
+                        {filtered.map(plan => (
+                          <PlanCard
+                            key={plan.id}
+                            plan={plan}
+                            view="grid"
+                            onOpen={() => openBoard(plan.id)}
+                            onMore={(anchorRect) => {
+                              setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
+                              setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
+                            }}
+                            menuOpen={openPlanMenuId === plan.id}
+                            menuAnchorRect={planMenuAnchorRect}
+                            onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+                            isRenaming={renamingPlan?.id === plan.id}
+                            renameDraft={renameDraft}
+                            renameBusy={renameBusy}
+                            onRenameDraftChange={setRenameDraft}
+                            onRenameCommit={commitInlineRename}
+                            onRenameCancel={cancelRename}
+                            isActive={plan.id === activePlan?.id}
+                          />
+                        ))}
+                        <button className={styles.newPlanCard} onClick={openNewPlan}>
+                          <span className={styles.newPlanIcon}><PlusIcon /></span>
+                          <span className={styles.newPlanLabel}>Novo plano</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={styles.listView}>
+                        {filtered.map(plan => (
+                          <PlanCard
+                            key={plan.id}
+                            plan={plan}
+                            view="list"
+                            onOpen={() => openBoard(plan.id)}
+                            onMore={(anchorRect) => {
+                              setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
+                              setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
+                            }}
+                            menuOpen={openPlanMenuId === plan.id}
+                            menuAnchorRect={planMenuAnchorRect}
+                            onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+                            isRenaming={renamingPlan?.id === plan.id}
+                            renameDraft={renameDraft}
+                            renameBusy={renameBusy}
+                            onRenameDraftChange={setRenameDraft}
+                            onRenameCommit={commitInlineRename}
+                            onRenameCancel={cancelRename}
+                            isActive={plan.id === activePlan?.id}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </section>
               </>
             )}
           </div>
