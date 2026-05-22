@@ -1705,8 +1705,8 @@ export default function Workspace() {
       const sectionElement = intelligenceSectionRef.current
       if (!sectionElement) return
 
-      const { top } = sectionElement.getBoundingClientRect()
-      const nextHeight = Math.max(320, Math.floor(window.innerHeight - top))
+      const sectionTopInDocument = sectionElement.getBoundingClientRect().top + window.scrollY
+      const nextHeight = Math.max(320, Math.floor(window.innerHeight - sectionTopInDocument))
       setIntelligenceSectionMinHeight((current) => (
         current === nextHeight ? current : nextHeight
       ))
@@ -1727,20 +1727,11 @@ export default function Workspace() {
     }
 
     const parentElement = intelligenceSectionRef.current?.parentElement ?? null
-    const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => {
-          scheduleMeasure()
-        })
-      : null
 
     scheduleMeasure()
     window.addEventListener('resize', scheduleMeasure)
     window.addEventListener('load', scheduleMeasure)
     parentElement?.addEventListener?.('transitionend', scheduleMeasure)
-    resizeObserver?.observe(document.documentElement)
-    if (parentElement) {
-      resizeObserver?.observe(parentElement)
-    }
 
     if (document.fonts?.ready) {
       document.fonts.ready.then(() => {
@@ -1754,7 +1745,6 @@ export default function Workspace() {
       window.removeEventListener('resize', scheduleMeasure)
       window.removeEventListener('load', scheduleMeasure)
       parentElement?.removeEventListener?.('transitionend', scheduleMeasure)
-      resizeObserver?.disconnect()
     }
   }, [showIntelligenceSection, isMobile])
 
