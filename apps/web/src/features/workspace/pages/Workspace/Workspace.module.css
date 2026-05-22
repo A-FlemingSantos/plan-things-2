@@ -292,10 +292,14 @@
 /* Content */
 .content {
   flex: 1;
-  padding: 28px 48px 0;
+  padding: 28px 48px 60px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.contentFramed {
+  padding-bottom: 0;
 }
 
 .plansGalleryPanel {
@@ -2029,7 +2033,8 @@
     --workspace-content-top-padding: 24px;
   }
   .topbar  { padding: 24px 32px 22px; }
-  .content { padding: 24px 32px 0; }
+  .content { padding: 24px 32px 48px; }
+  .contentFramed { padding-bottom: 0; }
   .topbarRight {
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -2089,7 +2094,8 @@
     font-size: 20px;
     line-height: 1.1;
   }
-  .content { padding: 18px 20px 0; }
+  .content { padding: 18px 20px 40px; }
+  .contentFramed { padding-bottom: 0; }
   .plansGalleryPanel {
     padding: 18px;
     border-radius: 22px 22px 0 0;
@@ -2168,9 +2174,10 @@
     padding: 18px 16px 16px;
   }
   .content {
-    padding: 14px 16px 0;
+    padding: 14px 16px 32px;
     gap: 20px;
   }
+  .contentFramed { padding-bottom: 0; }
   .plansGalleryPanel {
     width: 100%;
     gap: 16px;
