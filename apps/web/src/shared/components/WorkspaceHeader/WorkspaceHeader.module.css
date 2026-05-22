@@ -3,6 +3,11 @@
   border-bottom-color: transparent;
 }
 
+.workspaceHeaderCompact {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
 .workspaceHeader svg {
   flex-shrink: 0;
 }
@@ -12,6 +17,10 @@
   align-items: center;
   justify-content: flex-end;
   gap: 20px;
+}
+
+.workspaceHeaderCompact .workspaceHeaderActions {
+  gap: 14px;
 }
 
 .workspaceHeaderNotificationWrap {
@@ -75,6 +84,11 @@
   background: var(--surface-3);
 }
 
+.workspaceHeaderCompact .workspaceHeaderAvatar {
+  width: 24px;
+  height: 24px;
+}
+
 .workspaceHeaderAvatarImage {
   width: 100%;
   height: 100%;
@@ -93,6 +107,11 @@
     width: 100%;
     justify-content: flex-start;
     gap: 16px;
+  }
+
+  .workspaceHeaderCompact {
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
   }
 
   .workspaceHeaderIconButton,

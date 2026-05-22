@@ -35,6 +35,7 @@ export default function WorkspaceHeader({
   title = 'Workspace',
   icon = <WorkspaceTitleIcon />,
   sticky = false,
+  compact = false,
   className = '',
 }) {
   const navigate = useNavigate()
@@ -47,6 +48,7 @@ export default function WorkspaceHeader({
 
   const headerClassName = [
     styles.workspaceHeader,
+    compact ? styles.workspaceHeaderCompact : '',
     className,
   ].filter(Boolean).join(' ')
 

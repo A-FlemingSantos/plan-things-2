@@ -2362,7 +2362,7 @@ export default function KanbanBoard() {
         contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
       >
         <div className={boardMainClassName} style={boardCoverStyle}>
-        <WorkspaceHeader />
+        <WorkspaceHeader compact />
         <PlanPageHeader
           title={boardHeaderTitle}
           meta={boardHeaderMeta}
