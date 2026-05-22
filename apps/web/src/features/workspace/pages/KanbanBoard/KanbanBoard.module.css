@@ -78,6 +78,13 @@
   padding: 12px;
 }
 
+.boardPlanHeader {
+  background: rgba(10, 14, 20, 0.18) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
 /* ── Board header ── */
 .boardHeader {
   display: flex;

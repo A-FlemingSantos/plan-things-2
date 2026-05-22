@@ -2368,8 +2368,9 @@ export default function KanbanBoard() {
           meta={boardHeaderMeta}
           titleAccessory={boardHeaderTitleAccessory}
           sticky
-          tone="solid"
+          tone="frosted"
           titleSize="medium"
+          className={styles.boardPlanHeader}
           actions={(
             <BoardHeaderActions
               members={planMembers}
