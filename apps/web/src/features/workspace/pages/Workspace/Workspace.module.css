@@ -525,6 +525,9 @@
    MAIN
 ════════════════════════════════════════ */
 .main {
+  --workspace-shell-header-height: 0px;
+  --workspace-page-header-height: 57px;
+  --workspace-content-top-padding: 28px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -761,10 +764,20 @@
   --intelligence-button-bg: var(--intelligence-accent);
   --intelligence-shadow: 0 18px 42px color-mix(in srgb, var(--text-1) 10%, transparent);
   --intelligence-stage-shift: clamp(64px, 10vh, 120px);
+  --workspace-plan-peek: clamp(156px, 18vh, 204px);
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  min-height: var(--workspace-intelligence-height, 100dvh);
+  min-height: max(
+    320px,
+    calc(
+      100dvh
+      - var(--workspace-shell-header-height)
+      - var(--workspace-page-header-height)
+      - var(--workspace-content-top-padding)
+      - var(--workspace-plan-peek)
+    )
+  );
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -2422,6 +2435,10 @@
    RESPONSIVE
 ════════════════════════════════════════ */
 @media (max-width: 1024px) {
+  .main {
+    --workspace-page-header-height: 55px;
+    --workspace-content-top-padding: 24px;
+  }
   .topbar  { padding: 24px 32px 22px; }
   .content { padding: 24px 32px 48px; }
   .topbarRight {
@@ -2431,6 +2448,11 @@
 }
 
 @media (max-width: 768px) {
+  .main {
+    --workspace-shell-header-height: var(--mobile-app-header-offset);
+    --workspace-page-header-height: 52px;
+    --workspace-content-top-padding: 18px;
+  }
   .shell { grid-template-columns: 1fr; }
   .shellCollapsed { grid-template-columns: 1fr; }
   .sidebar { display: none; }
@@ -2482,6 +2504,7 @@
   .content { padding: 18px 20px 40px; }
   .intelligenceSection {
     --intelligence-stage-shift: clamp(44px, 7vh, 84px);
+    --workspace-plan-peek: clamp(136px, 16vh, 176px);
     width: 100%;
     padding-top: 18px;
   }
@@ -2545,6 +2568,10 @@
 }
 
 @media (max-width: 560px) {
+  .main {
+    --workspace-page-header-height: 48px;
+    --workspace-content-top-padding: 14px;
+  }
   .topbar {
     padding: 18px 16px 16px;
   }
@@ -2554,6 +2581,7 @@
   }
   .intelligenceSection {
     --intelligence-stage-shift: clamp(28px, 5vh, 52px);
+    --workspace-plan-peek: clamp(112px, 14vh, 148px);
     padding-top: 12px;
   }
   .intelligenceTitle {

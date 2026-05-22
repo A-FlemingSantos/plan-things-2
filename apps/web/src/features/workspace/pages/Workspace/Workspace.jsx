@@ -8,7 +8,6 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
-import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -1073,7 +1072,7 @@ function WorkspaceLoadingState({ view }) {
   )
 }
 
-function WorkspaceIntelligenceSection({ firstName, accentStyle, sectionRef, sectionStyle }) {
+function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState([])
   const [isThinking, setIsThinking] = useState(false)
@@ -1423,9 +1422,8 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle, sectionRef, sect
 
   return (
     <section
-      ref={sectionRef}
       className={styles.intelligenceSection}
-      style={{ ...accentStyle, ...sectionStyle }}
+      style={accentStyle}
       aria-label="Seção do Intelligence"
     >
       <div className={styles.intelligenceStage}>
@@ -1509,7 +1507,6 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle, sectionRef, sect
 ═══════════════════════════════════════════ */
 export default function Workspace() {
   const navigate = useNavigate()
-  const { isMobile } = useResponsiveViewport()
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
@@ -1522,8 +1519,6 @@ export default function Workspace() {
   const [backgroundPicker, setBackgroundPicker] = useState(null)
   const [backgroundBusy, setBackgroundBusy] = useState(false)
   const notificationTimerRef = useRef(null)
-  const intelligenceSectionRef = useRef(null)
-  const [intelligenceSectionMinHeight, setIntelligenceSectionMinHeight] = useState(null)
   const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
@@ -1533,9 +1528,6 @@ export default function Workspace() {
     '--intelligence-theme-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
     '--intelligence-theme-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
   }
-  const intelligenceSectionStyle = intelligenceSectionMinHeight
-    ? { '--workspace-intelligence-height': `${intelligenceSectionMinHeight}px` }
-    : undefined
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
   const userInitials = currentUser?.fullName
     ? currentUser.fullName
@@ -1695,59 +1687,6 @@ export default function Workspace() {
     }
   }, [])
 
-  useLayoutEffect(() => {
-    if (!showIntelligenceSection || typeof window === 'undefined') {
-      setIntelligenceSectionMinHeight(null)
-      return undefined
-    }
-
-    const measureIntelligenceSection = () => {
-      const sectionElement = intelligenceSectionRef.current
-      if (!sectionElement) return
-
-      const sectionTopInDocument = sectionElement.getBoundingClientRect().top + window.scrollY
-      const nextHeight = Math.max(320, Math.floor(window.innerHeight - sectionTopInDocument))
-      setIntelligenceSectionMinHeight((current) => (
-        current === nextHeight ? current : nextHeight
-      ))
-    }
-
-    let frameId = 0
-    let secondFrameId = 0
-
-    const scheduleMeasure = () => {
-      if (frameId) cancelAnimationFrame(frameId)
-      if (secondFrameId) cancelAnimationFrame(secondFrameId)
-
-      frameId = requestAnimationFrame(() => {
-        secondFrameId = requestAnimationFrame(() => {
-          measureIntelligenceSection()
-        })
-      })
-    }
-
-    const parentElement = intelligenceSectionRef.current?.parentElement ?? null
-
-    scheduleMeasure()
-    window.addEventListener('resize', scheduleMeasure)
-    window.addEventListener('load', scheduleMeasure)
-    parentElement?.addEventListener?.('transitionend', scheduleMeasure)
-
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(() => {
-        scheduleMeasure()
-      }).catch(() => {})
-    }
-
-    return () => {
-      if (frameId) cancelAnimationFrame(frameId)
-      if (secondFrameId) cancelAnimationFrame(secondFrameId)
-      window.removeEventListener('resize', scheduleMeasure)
-      window.removeEventListener('load', scheduleMeasure)
-      parentElement?.removeEventListener?.('transitionend', scheduleMeasure)
-    }
-  }, [showIntelligenceSection, isMobile])
-
   useEffect(() => {
     if (!openPlanMenuId) return undefined
     const handlePointerDown = () => {
@@ -1888,8 +1827,6 @@ export default function Workspace() {
                   <WorkspaceIntelligenceSection
                     firstName={userFirstName}
                     accentStyle={intelligenceAccentStyle}
-                    sectionRef={intelligenceSectionRef}
-                    sectionStyle={intelligenceSectionStyle}
                   />
                 ) : null}
 
