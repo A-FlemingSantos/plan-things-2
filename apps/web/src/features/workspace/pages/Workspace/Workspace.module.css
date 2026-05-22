@@ -451,7 +451,7 @@
 
 .intelligencePromptCard {
   width: min(100%, 720px);
-  min-height: 156px;
+  min-height: 96px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -467,8 +467,8 @@
 
 .intelligencePrompt {
   width: 100%;
-  min-height: 58px;
-  padding: 20px 22px 8px;
+  min-height: 28px;
+  padding: 12px 22px 4px;
   border: 0;
   outline: 0;
   resize: none;
@@ -488,7 +488,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px 14px;
+  padding: 0 18px 10px;
   background: var(--intelligence-input-bg);
 }
 
@@ -555,9 +555,9 @@
 .intelligenceSuggestions {
   display: flex;
   align-items: center;
-  gap: 28px;
-  min-height: 44px;
-  padding: 0 22px;
+  gap: 22px;
+  min-height: 36px;
+  padding: 0 22px 2px;
   background: transparent;
   color: var(--intelligence-faint);
   font-size: 11px;

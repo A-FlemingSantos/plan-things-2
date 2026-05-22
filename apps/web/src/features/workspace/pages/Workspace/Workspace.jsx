@@ -1414,7 +1414,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
             className={styles.intelligencePrompt}
             placeholder="Descreva seu produto, fluxo ou ideia..."
             aria-label="Prompt do Intelligence"
-            rows={3}
+            rows={2}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
