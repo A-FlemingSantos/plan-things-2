@@ -3848,7 +3848,7 @@
   flex-direction: column;
   border: 1px solid var(--border-1);
   border-radius: 6px;
-  background: #242529;
+  background: var(--surface-2);
   overflow: hidden;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -3868,7 +3868,7 @@
   min-height: 0;
   max-height: 0;
   border-bottom: 1px solid var(--border-1);
-  background: #1f2024;
+  background: var(--surface-3);
   opacity: 0;
   overflow: hidden;
   transform: translateY(-6px);
