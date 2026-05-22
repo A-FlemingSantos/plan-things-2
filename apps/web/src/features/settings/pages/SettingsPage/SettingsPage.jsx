@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js'
@@ -10,6 +10,7 @@ import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClien
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
+import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { ROUTES, toRouteString } from '../../../../shared/config/routes.js'
@@ -303,152 +304,6 @@ function DeleteAccountDialog({
   )
 }
 
-function usePanelScrollbar(enabled, refreshKey) {
-  const viewportRef = useRef(null)
-  const [thumbState, setThumbState] = useState({ visible: false, height: 0, top: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const dragStateRef = useRef(null)
-
-  const stopDragging = useCallback(() => {
-    dragStateRef.current = null
-    setIsDragging(false)
-  }, [])
-
-  const handleThumbPointerDown = useCallback((event) => {
-    if (!enabled || !thumbState.visible) return
-
-    const viewport = viewportRef.current
-    if (!viewport) return
-
-    const trackHeight = Math.max(0, viewport.clientHeight - PANEL_SCROLLBAR_INSET_PX * 2)
-    const maxThumbTravel = Math.max(0, trackHeight - thumbState.height)
-    const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
-
-    if (!maxThumbTravel || !maxScrollTop) return
-
-    event.preventDefault()
-    event.stopPropagation()
-
-    dragStateRef.current = {
-      startY: event.clientY,
-      startScrollTop: viewport.scrollTop,
-      maxScrollTop,
-      maxThumbTravel,
-    }
-    setIsDragging(true)
-  }, [enabled, thumbState.height, thumbState.visible])
-
-  useEffect(() => {
-    if (!enabled) {
-      setThumbState((current) => (
-        current.visible || current.height || current.top
-          ? { visible: false, height: 0, top: 0 }
-          : current
-      ))
-      stopDragging()
-      return undefined
-    }
-
-    const viewport = viewportRef.current
-    if (!viewport) return undefined
-
-    let frameId = null
-    let dragFrameId = null
-    const resizeObserver = typeof ResizeObserver === 'function'
-      ? new ResizeObserver(() => scheduleUpdate())
-      : null
-
-    function handlePointerMove(event) {
-      const dragState = dragStateRef.current
-      if (!dragState) return
-
-      event.preventDefault()
-
-      if (dragFrameId !== null) {
-        cancelAnimationFrame(dragFrameId)
-      }
-
-      dragFrameId = requestAnimationFrame(() => {
-        dragFrameId = null
-        const deltaY = event.clientY - dragState.startY
-        const nextScrollTop = dragState.startScrollTop + (deltaY / dragState.maxThumbTravel) * dragState.maxScrollTop
-        viewport.scrollTop = Math.min(dragState.maxScrollTop, Math.max(0, nextScrollTop))
-      })
-    }
-
-    function handlePointerUp() {
-      stopDragging()
-    }
-
-    function updateThumb() {
-      const { clientHeight, scrollHeight, scrollTop } = viewport
-
-      if (!clientHeight || scrollHeight <= clientHeight + 1) {
-        setThumbState((current) => (
-          current.visible || current.height || current.top
-            ? { visible: false, height: 0, top: 0 }
-            : current
-        ))
-        return
-      }
-
-      const trackHeight = Math.max(0, clientHeight - PANEL_SCROLLBAR_INSET_PX * 2)
-      const height = Math.max(
-        PANEL_SCROLLBAR_MIN_THUMB_PX,
-        Math.round((clientHeight / scrollHeight) * trackHeight),
-      )
-      const maxTop = Math.max(0, trackHeight - height)
-      const top = PANEL_SCROLLBAR_INSET_PX + Math.round((scrollTop / (scrollHeight - clientHeight)) * maxTop)
-
-      setThumbState((current) => (
-        current.visible === true && current.height === height && current.top === top
-          ? current
-          : { visible: true, height, top }
-      ))
-    }
-
-    function scheduleUpdate() {
-      if (frameId !== null) {
-        cancelAnimationFrame(frameId)
-      }
-      frameId = requestAnimationFrame(() => {
-        frameId = null
-        updateThumb()
-      })
-    }
-
-    scheduleUpdate()
-    viewport.addEventListener('scroll', scheduleUpdate, { passive: true })
-    window.addEventListener('resize', scheduleUpdate)
-    window.addEventListener('pointermove', handlePointerMove, { passive: false })
-    window.addEventListener('pointerup', handlePointerUp)
-    window.addEventListener('pointercancel', handlePointerUp)
-
-    if (resizeObserver) {
-      resizeObserver.observe(viewport)
-      Array.from(viewport.children).forEach((child) => resizeObserver.observe(child))
-    }
-
-    return () => {
-      viewport.removeEventListener('scroll', scheduleUpdate)
-      window.removeEventListener('resize', scheduleUpdate)
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerUp)
-      window.removeEventListener('pointercancel', handlePointerUp)
-      resizeObserver?.disconnect()
-      if (frameId !== null) {
-        cancelAnimationFrame(frameId)
-      }
-      if (dragFrameId !== null) {
-        cancelAnimationFrame(dragFrameId)
-      }
-      stopDragging()
-    }
-  }, [enabled, refreshKey, stopDragging])
-
-  return { viewportRef, thumbState, isDragging, handleThumbPointerDown }
-}
-
 /* ═══════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════ */
@@ -547,11 +402,18 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const [deleteState, setDeleteState] = useState('idle')
   const [deleteFeedback, setDeleteFeedback] = useState('')
   const sectionButtonRefs = useRef(new Map())
-  const navScrollbar = usePanelScrollbar(modal, `nav:${activeSection}:${isMobile ? 'mobile' : 'desktop'}`)
-  const contentScrollbar = usePanelScrollbar(
-    modal,
-    `content:${activeSection}:${deleteDialogOpen ? 'dialog-open' : 'dialog-closed'}:${isMobile ? 'mobile' : 'desktop'}`,
-  )
+  const navScrollbar = useCustomScrollbar({
+    enabled: modal,
+    refreshKey: `nav:${activeSection}:${isMobile ? 'mobile' : 'desktop'}`,
+    insetPx: PANEL_SCROLLBAR_INSET_PX,
+    minThumbPx: PANEL_SCROLLBAR_MIN_THUMB_PX,
+  })
+  const contentScrollbar = useCustomScrollbar({
+    enabled: modal,
+    refreshKey: `content:${activeSection}:${deleteDialogOpen ? 'dialog-open' : 'dialog-closed'}:${isMobile ? 'mobile' : 'desktop'}`,
+    insetPx: PANEL_SCROLLBAR_INSET_PX,
+    minThumbPx: PANEL_SCROLLBAR_MIN_THUMB_PX,
+  })
 
   const workspaceRequestRef = useRef(0)
   const language = generalPreferences.language

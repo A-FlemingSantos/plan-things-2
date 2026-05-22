@@ -8,6 +8,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
 import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
+import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
 import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -129,6 +130,8 @@ const VOICE_RESTART_BASE_DELAY_MS = 350
 const VOICE_RESTART_STEP_DELAY_MS = 250
 const VOICE_RESTART_MAX_DELAY_MS = 1000
 const VOICE_STOP_FINALIZE_DELAY_MS = 600
+const WORKSPACE_SCROLLBAR_INSET_PX = 0
+const WORKSPACE_SCROLLBAR_MIN_THUMB_PX = 18
 
 function getVoiceInputErrorMessage(error) {
   const code = error?.error || error?.name
@@ -1546,6 +1549,11 @@ export default function Workspace() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.tag.toLowerCase().includes(search.toLowerCase())
   )
+  const workspaceScrollbar = useCustomScrollbar({
+    refreshKey: `workspace:${view}:${search}:${filtered.length}:${showIntelligenceSection ? 'intelligence' : 'plans'}:${isLoading ? 'loading' : 'ready'}`,
+    insetPx: WORKSPACE_SCROLLBAR_INSET_PX,
+    minThumbPx: WORKSPACE_SCROLLBAR_MIN_THUMB_PX,
+  })
   const backgroundPickerPlan = backgroundPicker?.planId
     ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
     : null
@@ -1780,6 +1788,7 @@ export default function Workspace() {
         contentTag="main"
         mobileTitle="Workspace"
       >
+        <div ref={workspaceScrollbar.viewportRef} className={styles.mainScrollViewport}>
           <PlanPageHeader
             title="Workspace"
             icon={<WorkspaceTitleIcon />}
@@ -1942,6 +1951,19 @@ export default function Workspace() {
               </>
             )}
           </div>
+        </div>
+        {workspaceScrollbar.thumbState.visible ? (
+          <span className={styles.workspacePanelScrollbar} aria-hidden="true">
+            <span
+              className={`${styles.workspacePanelScrollbarThumb} ${workspaceScrollbar.isDragging ? styles.workspacePanelScrollbarThumbDragging : ''}`}
+              onPointerDown={workspaceScrollbar.handleThumbPointerDown}
+              style={{
+                height: `${workspaceScrollbar.thumbState.height}px`,
+                transform: `translateY(${workspaceScrollbar.thumbState.top}px)`,
+              }}
+            />
+          </span>
+        ) : null}
       </ProductAppShell>
 
       {/* ════════════ NEW PLAN POPOVER ════════════ */}

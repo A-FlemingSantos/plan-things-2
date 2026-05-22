@@ -525,6 +525,8 @@
    MAIN
 ════════════════════════════════════════ */
 .main {
+  --workspace-panel-scrollbar-size: 2px;
+  --workspace-panel-scrollbar-thumb: #000000;
   --workspace-shell-header-height: 0px;
   --workspace-page-header-height: 57px;
   --workspace-content-top-padding: 28px;
@@ -533,6 +535,59 @@
   min-height: 100vh;
   min-width: 0;
   background: var(--app-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme='dark'] .main {
+  --workspace-panel-scrollbar-thumb: #ffffff;
+}
+
+.mainScrollViewport {
+  height: calc(100dvh - var(--workspace-shell-header-height));
+  min-height: calc(100dvh - var(--workspace-shell-header-height));
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mainScrollViewport::-webkit-scrollbar {
+  display: none;
+}
+
+.workspacePanelScrollbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.workspacePanelScrollbarThumb {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--workspace-panel-scrollbar-size);
+  min-height: 18px;
+  background: var(--workspace-panel-scrollbar-thumb);
+  border-radius: 0;
+  opacity: 1;
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transition: width 140ms ease;
+  will-change: transform;
+}
+
+.workspacePanelScrollbar:hover .workspacePanelScrollbarThumb,
+.workspacePanelScrollbarThumb:hover,
+.workspacePanelScrollbarThumbDragging {
+  width: 6px;
 }
 
 .workspaceHeader {
