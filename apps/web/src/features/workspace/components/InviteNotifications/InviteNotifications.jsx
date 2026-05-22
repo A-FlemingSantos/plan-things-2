@@ -24,7 +24,12 @@ function formatInviteStatus(status) {
   return 'Pendente'
 }
 
-export default function InviteNotifications() {
+export default function InviteNotifications({
+  wrapClassName = '',
+  triggerClassName = '',
+  badgeClassName = '',
+  panelClassName = '',
+}) {
   const navigate = useNavigate()
   const auth = useAuth()
   const { accessToken } = auth
@@ -133,20 +138,28 @@ export default function InviteNotifications() {
   }
 
   return (
-    <div className={styles.wrap} ref={wrapRef}>
+    <div className={[styles.wrap, wrapClassName].filter(Boolean).join(' ')} ref={wrapRef}>
       <button
         type="button"
-        className={styles.trigger}
+        className={[styles.trigger, triggerClassName].filter(Boolean).join(' ')}
         onClick={toggleOpen}
         aria-label={invites.length ? `${invites.length} convites pendentes` : 'Notificações'}
         aria-expanded={open ? 'true' : 'false'}
       >
         <BellIcon />
-        {invites.length ? <span className={styles.badge}>{invites.length}</span> : null}
+        {invites.length ? (
+          <span className={[styles.badge, badgeClassName].filter(Boolean).join(' ')}>
+            {invites.length}
+          </span>
+        ) : null}
       </button>
 
       {open ? (
-        <div className={styles.panel} role="dialog" aria-label="Notificações">
+        <div
+          className={[styles.panel, panelClassName].filter(Boolean).join(' ')}
+          role="dialog"
+          aria-label="Notificações"
+        >
           <div className={styles.header}>
             <div>
               <p className={styles.kicker}>Notificações</p>

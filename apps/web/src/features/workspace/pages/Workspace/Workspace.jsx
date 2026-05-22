@@ -1,8 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
+import { ROUTES, buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
+import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
@@ -37,6 +38,17 @@ function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14"
 function CollapseIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function MicIcon()      { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ArrowUpIcon()  { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+function SettingsIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.3"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
+function WorkspaceTitleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="5.1" cy="4.9" r="1.75" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="10.9" cy="4.9" r="1.75" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="5.1" cy="10.7" r="1.75" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="10.9" cy="10.7" r="1.75" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  )
+}
 
 function LogoMark() {
   return (
@@ -1523,6 +1535,15 @@ export default function Workspace() {
     ? { '--workspace-intelligence-height': `${intelligenceSectionMinHeight}px` }
     : undefined
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
+  const userInitials = currentUser?.fullName
+    ? currentUser.fullName
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase()
+    : userFirstName.slice(0, 2).toUpperCase()
 
   const filtered = plans.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -1727,6 +1748,12 @@ export default function Workspace() {
     setNewPlanAnchor(event.currentTarget)
   }
 
+  const openSettingsSection = (section = null) => {
+    const params = new URLSearchParams()
+    if (section) params.set('section', section)
+    navigate(`${ROUTES.settings}${params.toString() ? `?${params.toString()}` : ''}`)
+  }
+
   const renderSidebarSecondaryContent = ({ collapsed }) => (
     <>
       {!collapsed && (
@@ -1779,41 +1806,43 @@ export default function Workspace() {
         bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         contentTag="main"
-        mobileTitle="Início"
+        mobileTitle="Workspace"
       >
           <PlanPageHeader
-            title="Início"
-            meta={`Bom dia, ${userFirstName}.`}
+            title="Workspace"
+            icon={<WorkspaceTitleIcon />}
             tone="solid"
             titleSize="medium"
             className={styles.workspaceHeader}
             actions={(
-              <div className={styles.topbarRight}>
-                <div className={styles.topbarUtility}>
-                  <div className={styles.searchWrap}>
-                    <span className={styles.searchIcon}><SearchIcon /></span>
-                    <input
-                      className={styles.searchInput}
-                      placeholder="Buscar planos..."
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                    />
-                    {search && (
-                      <button
-                        type="button"
-                        className={styles.searchClear}
-                        onClick={() => setSearch('')}
-                        aria-label="Limpar busca de planos"
-                      >
-                        <XIcon />
-                      </button>
-                    )}
-                  </div>
-                  <InviteNotifications />
-                </div>
-                <button type="button" className={styles.newPlanBtn} onClick={openNewPlan}>
-                  <PlusIcon />
-                  Novo plano
+              <div className={styles.workspaceHeaderActions}>
+                <InviteNotifications
+                  wrapClassName={styles.workspaceHeaderNotificationWrap}
+                  triggerClassName={styles.workspaceHeaderIconButton}
+                  badgeClassName={styles.workspaceHeaderNotificationBadge}
+                  panelClassName={styles.workspaceHeaderNotificationsPanel}
+                />
+                <button
+                  type="button"
+                  className={styles.workspaceHeaderIconButton}
+                  aria-label="Abrir configurações da Workspace"
+                  onClick={() => openSettingsSection('workspace')}
+                >
+                  <SettingsIcon />
+                </button>
+                <button
+                  type="button"
+                  className={styles.workspaceHeaderProfileButton}
+                  aria-label="Abrir perfil do usuário"
+                  onClick={() => openSettingsSection('account')}
+                >
+                  <AuthenticatedAvatar
+                    avatarUrl={currentUser?.avatarUrl ?? null}
+                    className={styles.workspaceHeaderAvatar}
+                    imageClassName={styles.workspaceHeaderAvatarImage}
+                    alt=""
+                    fallback={<span className={styles.workspaceHeaderAvatarFallback}>{userInitials}</span>}
+                  />
                 </button>
               </div>
             )}
