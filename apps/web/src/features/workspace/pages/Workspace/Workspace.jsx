@@ -92,29 +92,6 @@ const WORKSPACE_INTELLIGENCE_SUGGESTIONS = [
   },
 ]
 
-const WORKSPACE_INTELLIGENCE_PROMPT_SUGGESTIONS = [
-  {
-    label: 'Transforme meus planos em prioridades para esta semana',
-    prompt: 'Analise meus planos e transforme tudo em uma lista de prioridades para esta semana.',
-  },
-  {
-    label: 'Monte um cronograma para o próximo sprint',
-    prompt: 'Monte um cronograma de sprint com etapas, entregáveis e checkpoints para meus projetos.',
-  },
-  {
-    label: 'Crie tarefas iniciais para lançar uma nova ideia',
-    prompt: 'Crie as primeiras tarefas para tirar uma nova ideia do zero dentro do Plan Things.',
-  },
-  {
-    label: 'Revise riscos e dependências dos meus projetos',
-    prompt: 'Revise riscos, bloqueios e dependências dos meus projetos e sugira próximos passos.',
-  },
-  {
-    label: 'Sugira próximos passos para destravar o workspace',
-    prompt: 'Olhe para o contexto do workspace e sugira próximos passos práticos para destravar o trabalho.',
-  },
-]
-
 const VOICE_INPUT_ERROR_MESSAGES = {
   'audio-capture': 'Nenhum microfone disponível foi encontrado.',
   'language-not-supported': 'Reconhecimento de voz em português não está disponível neste navegador.',
@@ -1090,7 +1067,6 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const [isThinking, setIsThinking] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [voiceFeedback, setVoiceFeedback] = useState('')
-  const [suggestionsHidden, setSuggestionsHidden] = useState(false)
   const chatLogRef = useRef(null)
   const responseTimerRef = useRef(null)
   const recognitionRef = useRef(null)
@@ -1505,51 +1481,6 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       {voiceFeedback ? (
         <p className={styles.intelligenceFeedback} role="status">{voiceFeedback}</p>
       ) : null}
-      <div
-        className={`${styles.intelligenceSuggestionPanel} ${suggestionsHidden ? styles.intelligenceSuggestionPanelCollapsed : ''}`}
-        aria-label="Sugestões para o Intelligence"
-      >
-        <div className={styles.intelligenceSuggestionHeader}>
-          <h3 className={styles.intelligenceSuggestionTitle}>Sugestões</h3>
-          <button
-            type="button"
-            className={styles.intelligenceSuggestionToggle}
-            onClick={() => setSuggestionsHidden((current) => !current)}
-            aria-expanded={!suggestionsHidden}
-            aria-controls="workspace-intelligence-suggestions"
-          >
-            {suggestionsHidden ? 'Mostrar' : 'Ocultar'}
-          </button>
-        </div>
-        <div
-          id="workspace-intelligence-suggestions"
-          className={`${styles.intelligenceSuggestionListShell} ${suggestionsHidden ? styles.intelligenceSuggestionListShellCollapsed : ''}`}
-          aria-hidden={suggestionsHidden}
-        >
-          <div className={styles.intelligenceSuggestionList}>
-            {WORKSPACE_INTELLIGENCE_PROMPT_SUGGESTIONS.map((suggestion) => (
-              <button
-                key={suggestion.label}
-                type="button"
-                className={styles.intelligenceSuggestionRow}
-                onClick={() => submitPrompt(suggestion.prompt)}
-                disabled={isThinking}
-              >
-                <span className={styles.intelligenceSuggestionPlus} aria-hidden="true">
-                  <PlusIcon />
-                </span>
-                <span className={styles.intelligenceSuggestionText}>{suggestion.label}</span>
-                {suggestion.integration ? (
-                  <span className={styles.intelligenceSuggestionContext} aria-hidden="true">
-                    <GridIcon />
-                    {suggestion.integration}
-                  </span>
-                ) : null}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
     </section>
   )
 }
