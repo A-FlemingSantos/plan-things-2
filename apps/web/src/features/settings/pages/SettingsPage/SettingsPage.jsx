@@ -355,6 +355,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const [workspaceError, setWorkspaceError] = useState('')
   const [workspaceIconState, setWorkspaceIconState] = useState('idle')
   const [workspaceIconFeedback, setWorkspaceIconFeedback] = useState('')
+  const [isWorkspaceIntelligenceSectionOpen, setIsWorkspaceIntelligenceSectionOpen] = useState(true)
   const kanbanAccentPickerRef = useRef(null)
   const workspaceIconPickerRef = useRef(null)
   const [workspacePlan, setWorkspacePlan] = useState(() => workspace?.subscriptionPlan ?? 'BASIC')
@@ -1828,16 +1829,55 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           />
         </Field>
 
-        <Field
-          label="Seção do Intelligence"
-          hint="Mostra o painel da IA do Plan Things"
-          inlineControl
-        >
-          <Toggle
-            checked={showIntelligenceSection}
-            onChange={(value) => handleLocalGeneralFieldChange('showIntelligenceSection', value)}
-          />
-        </Field>
+        <div className={styles.settingsDisclosure}>
+          <button
+            type="button"
+            className={styles.settingsDisclosureTrigger}
+            aria-expanded={isWorkspaceIntelligenceSectionOpen}
+            aria-controls="workspace-intelligence-settings"
+            onClick={() => setIsWorkspaceIntelligenceSectionOpen((value) => !value)}
+          >
+            <span className={styles.settingsDisclosureCopy}>
+              <span className={styles.settingsDisclosureLabel}>Seção do Intelligence</span>
+              <span className={styles.settingsDisclosureHint}>Configura a exibição e os efeitos visuais do painel de Intelligence.</span>
+            </span>
+            <span
+              className={`${styles.settingsDisclosureChevron} ${isWorkspaceIntelligenceSectionOpen ? styles.settingsDisclosureChevronOpen : ''}`}
+              aria-hidden="true"
+            >
+              <Ic.Chevron />
+            </span>
+          </button>
+
+          <div
+            className={`${styles.settingsDisclosurePanelShell} ${isWorkspaceIntelligenceSectionOpen ? styles.settingsDisclosurePanelShellOpen : ''}`}
+          >
+            <div
+              id="workspace-intelligence-settings"
+              className={styles.settingsDisclosurePanel}
+              aria-hidden={!isWorkspaceIntelligenceSectionOpen}
+            >
+              <Field
+                label="Exibir seção do Intelligence"
+                hint="Mostra o painel da IA do Plan Things"
+                inlineControl
+              >
+                <Toggle
+                  checked={showIntelligenceSection}
+                  onChange={(value) => handleLocalGeneralFieldChange('showIntelligenceSection', value)}
+                />
+              </Field>
+
+              <Field
+                label="Efeito aurora"
+                hint="Placeholder visual para uma ambientação expandida do painel. Em breve."
+                inlineControl
+              >
+                <span className={styles.settingsPlaceholderBadge}>Em breve</span>
+              </Field>
+            </div>
+          </div>
+        </div>
 
         <div className={styles.rowActions}>
           <AutoSaveStatus state={workspaceSaveState} errorMessage={workspaceError} />

@@ -397,6 +397,102 @@
   padding-top: 6px;
 }
 
+.settingsDisclosure {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settingsDisclosureTrigger {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  color: var(--text-1);
+  cursor: pointer;
+  padding: 0;
+}
+
+.settingsDisclosureCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settingsDisclosureLabel {
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.005em;
+}
+
+.settingsDisclosureHint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+  font-weight: var(--font-weight-light);
+}
+
+.settingsDisclosureChevron {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--text-3);
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.settingsDisclosureTrigger:hover .settingsDisclosureChevron {
+  color: var(--text-1);
+}
+
+.settingsDisclosureChevronOpen {
+  transform: rotate(90deg);
+}
+
+.settingsDisclosurePanelShell {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    grid-template-rows 220ms ease,
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+.settingsDisclosurePanelShellOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.settingsDisclosurePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding-top: 2px;
+  padding-left: 18px;
+  border-left: 1px solid color-mix(in srgb, var(--border-1) 92%, transparent);
+  overflow: hidden;
+}
+
+.settingsPlaceholderBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+}
+
 /* ════════════════════════════════════════
    FORM INPUTS
 ════════════════════════════════════════ */

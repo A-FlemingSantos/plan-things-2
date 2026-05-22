@@ -132,9 +132,10 @@ describe('SettingsPage mobile layout', () => {
 
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
     expect(screen.getByText('Seção do Intelligence')).toBeInTheDocument()
-    expect(screen.getByText('Mostra o painel da IA do Plan Things')).toBeInTheDocument()
+    expect(screen.getByText('Exibir seção do Intelligence')).toBeInTheDocument()
+    expect(screen.getByText('Efeito aurora')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('switch'))
+    await user.click(screen.getAllByRole('switch')[0])
 
     expect(preferencesMock.updateLocal).toHaveBeenCalledWith(expect.objectContaining({
       showIntelligenceSection: false,
