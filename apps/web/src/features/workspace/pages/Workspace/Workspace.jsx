@@ -37,7 +37,19 @@ function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14"
 function CollapseIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function MicIcon()      { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ArrowUpIcon()  { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function SettingsIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.3"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
+function SettingsIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path
+        d="M5.9 1.6h2.2l.4 1.2c.2.1.5.2.7.3l1.1-.5 1.5 1.5-.5 1.1c.1.2.2.5.3.7l1.2.4v2.2l-1.2.4c-.1.2-.2.5-.3.7l.5 1.1-1.5 1.5-1.1-.5c-.2.1-.5.2-.7.3l-.4 1.2H5.9l-.4-1.2a4 4 0 0 1-.7-.3l-1.1.5-1.5-1.5.5-1.1a4 4 0 0 1-.3-.7l-1.2-.4V5.9l1.2-.4c.1-.2.2-.5.3-.7l-.5-1.1 1.5-1.5 1.1.5c.2-.1.5-.2.7-.3z"
+        stroke="currentColor"
+        strokeWidth="1.15"
+        strokeLinejoin="round"
+      />
+      <circle cx="7" cy="7" r="1.75" stroke="currentColor" strokeWidth="1.15" />
+    </svg>
+  )
+}
 function WorkspaceTitleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
