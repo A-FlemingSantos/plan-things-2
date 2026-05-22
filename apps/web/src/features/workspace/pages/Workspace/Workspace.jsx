@@ -1061,7 +1061,7 @@ function WorkspaceLoadingState({ view }) {
   )
 }
 
-function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
+function WorkspaceIntelligenceSection({ firstName, accentStyle, sectionRef, sectionStyle }) {
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState([])
   const [isThinking, setIsThinking] = useState(false)
@@ -1410,7 +1410,12 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   }
 
   return (
-    <section className={styles.intelligenceSection} style={accentStyle} aria-label="Seção do Intelligence">
+    <section
+      ref={sectionRef}
+      className={styles.intelligenceSection}
+      style={{ ...accentStyle, ...sectionStyle }}
+      aria-label="Seção do Intelligence"
+    >
       <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
       <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
       {messages.length || isThinking ? (
@@ -1503,6 +1508,8 @@ export default function Workspace() {
   const [backgroundPicker, setBackgroundPicker] = useState(null)
   const [backgroundBusy, setBackgroundBusy] = useState(false)
   const notificationTimerRef = useRef(null)
+  const intelligenceSectionRef = useRef(null)
+  const [intelligenceSectionMinHeight, setIntelligenceSectionMinHeight] = useState(null)
   const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
@@ -1512,6 +1519,9 @@ export default function Workspace() {
     '--intelligence-theme-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
     '--intelligence-theme-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
   }
+  const intelligenceSectionStyle = intelligenceSectionMinHeight
+    ? { '--workspace-intelligence-height': `${intelligenceSectionMinHeight}px` }
+    : undefined
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
 
   const filtered = plans.filter(p =>
@@ -1662,6 +1672,31 @@ export default function Workspace() {
     }
   }, [])
 
+  useLayoutEffect(() => {
+    if (!showIntelligenceSection || typeof window === 'undefined') {
+      setIntelligenceSectionMinHeight(null)
+      return undefined
+    }
+
+    const measureIntelligenceSection = () => {
+      const sectionElement = intelligenceSectionRef.current
+      if (!sectionElement) return
+
+      const { top } = sectionElement.getBoundingClientRect()
+      const nextHeight = Math.max(320, Math.floor(window.innerHeight - top))
+      setIntelligenceSectionMinHeight((current) => (
+        current === nextHeight ? current : nextHeight
+      ))
+    }
+
+    measureIntelligenceSection()
+    window.addEventListener('resize', measureIntelligenceSection)
+
+    return () => {
+      window.removeEventListener('resize', measureIntelligenceSection)
+    }
+  }, [showIntelligenceSection, isMobile])
+
   useEffect(() => {
     if (!openPlanMenuId) return undefined
     const handlePointerDown = () => {
@@ -1790,7 +1825,12 @@ export default function Workspace() {
             ) : (
               <>
                 {showIntelligenceSection ? (
-                  <WorkspaceIntelligenceSection firstName={userFirstName} accentStyle={intelligenceAccentStyle} />
+                  <WorkspaceIntelligenceSection
+                    firstName={userFirstName}
+                    accentStyle={intelligenceAccentStyle}
+                    sectionRef={intelligenceSectionRef}
+                    sectionStyle={intelligenceSectionStyle}
+                  />
                 ) : null}
 
                 <div className={styles.sectionHeader}>
