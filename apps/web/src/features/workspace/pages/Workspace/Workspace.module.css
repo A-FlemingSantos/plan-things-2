@@ -760,6 +760,7 @@
   --intelligence-assistant-bg: color-mix(in srgb, var(--surface-3) 78%, var(--surface-1));
   --intelligence-button-bg: var(--intelligence-accent);
   --intelligence-shadow: 0 18px 42px color-mix(in srgb, var(--text-1) 10%, transparent);
+  --intelligence-stage-shift: clamp(64px, 10vh, 120px);
   position: relative;
   box-sizing: border-box;
   width: 100%;
@@ -772,6 +773,11 @@
   color: var(--intelligence-text);
   overflow: visible;
   animation: fadeUp 0.34s ease both;
+}
+
+.intelligenceStage {
+  width: 100%;
+  transform: translateY(calc(var(--intelligence-stage-shift) * -1));
 }
 
 [data-theme='dark'] .intelligenceSection {
@@ -2475,6 +2481,7 @@
   }
   .content { padding: 18px 20px 40px; }
   .intelligenceSection {
+    --intelligence-stage-shift: clamp(44px, 7vh, 84px);
     width: 100%;
     padding-top: 18px;
   }
@@ -2546,6 +2553,7 @@
     gap: 20px;
   }
   .intelligenceSection {
+    --intelligence-stage-shift: clamp(28px, 5vh, 52px);
     padding-top: 12px;
   }
   .intelligenceTitle {

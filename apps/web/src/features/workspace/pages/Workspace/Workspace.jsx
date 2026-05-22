@@ -1428,76 +1428,78 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle, sectionRef, sect
       style={{ ...accentStyle, ...sectionStyle }}
       aria-label="Seção do Intelligence"
     >
-      <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
-      <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
-      {messages.length || isThinking ? (
-        <div ref={chatLogRef} className={styles.intelligenceChatLog} role="log" aria-label="Conversa com o Intelligence" aria-live="polite">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`${styles.intelligenceMessage} ${message.role === 'user' ? styles.intelligenceMessageUser : styles.intelligenceMessageAssistant}`}
-            >
-              {message.text}
-            </div>
-          ))}
-          {isThinking ? (
-            <div className={`${styles.intelligenceMessage} ${styles.intelligenceMessageAssistant}`}>
-              Pensando...
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      <form className={styles.intelligencePromptCard} onSubmit={handleSubmit}>
-        <textarea
-          className={styles.intelligencePrompt}
-          placeholder="Descreva seu produto, fluxo ou ideia..."
-          aria-label="Prompt do Intelligence"
-          rows={3}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault()
-              event.currentTarget.form?.requestSubmit()
-            }
-          }}
-        />
-        <div className={styles.intelligencePromptControls}>
-          <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence" onClick={handleAddContext}>
-            <PlusIcon />
-          </button>
-          <div className={styles.intelligencePromptActions}>
-            <button
-              type="button"
-              className={`${styles.intelligenceIconButton} ${isListening ? styles.intelligenceIconButtonActive : ''}`}
-              aria-label={isListening ? 'Parar gravação de áudio para o Intelligence' : 'Gravar áudio para o Intelligence'}
-              aria-pressed={isListening}
-              onClick={handleVoiceInput}
-            >
-              <MicIcon />
-            </button>
-            <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim() || isThinking}>
-              <ArrowUpIcon />
-            </button>
+      <div className={styles.intelligenceStage}>
+        <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
+        <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
+        {messages.length || isThinking ? (
+          <div ref={chatLogRef} className={styles.intelligenceChatLog} role="log" aria-label="Conversa com o Intelligence" aria-live="polite">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`${styles.intelligenceMessage} ${message.role === 'user' ? styles.intelligenceMessageUser : styles.intelligenceMessageAssistant}`}
+              >
+                {message.text}
+              </div>
+            ))}
+            {isThinking ? (
+              <div className={`${styles.intelligenceMessage} ${styles.intelligenceMessageAssistant}`}>
+                Pensando...
+              </div>
+            ) : null}
           </div>
-        </div>
-        <div className={styles.intelligenceSuggestions} aria-label="Sugestões do Intelligence">
-          {WORKSPACE_INTELLIGENCE_SUGGESTIONS.map((suggestion) => (
-            <button
-              key={suggestion.label}
-              type="button"
-              className={styles.intelligenceSuggestionButton}
-              onClick={() => submitPrompt(suggestion.prompt)}
-              disabled={isThinking}
-            >
-              {suggestion.label}
+        ) : null}
+        <form className={styles.intelligencePromptCard} onSubmit={handleSubmit}>
+          <textarea
+            className={styles.intelligencePrompt}
+            placeholder="Descreva seu produto, fluxo ou ideia..."
+            aria-label="Prompt do Intelligence"
+            rows={3}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault()
+                event.currentTarget.form?.requestSubmit()
+              }
+            }}
+          />
+          <div className={styles.intelligencePromptControls}>
+            <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence" onClick={handleAddContext}>
+              <PlusIcon />
             </button>
-          ))}
-        </div>
-      </form>
-      {voiceFeedback ? (
-        <p className={styles.intelligenceFeedback} role="status">{voiceFeedback}</p>
-      ) : null}
+            <div className={styles.intelligencePromptActions}>
+              <button
+                type="button"
+                className={`${styles.intelligenceIconButton} ${isListening ? styles.intelligenceIconButtonActive : ''}`}
+                aria-label={isListening ? 'Parar gravação de áudio para o Intelligence' : 'Gravar áudio para o Intelligence'}
+                aria-pressed={isListening}
+                onClick={handleVoiceInput}
+              >
+                <MicIcon />
+              </button>
+              <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim() || isThinking}>
+                <ArrowUpIcon />
+              </button>
+            </div>
+          </div>
+          <div className={styles.intelligenceSuggestions} aria-label="Sugestões do Intelligence">
+            {WORKSPACE_INTELLIGENCE_SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion.label}
+                type="button"
+                className={styles.intelligenceSuggestionButton}
+                onClick={() => submitPrompt(suggestion.prompt)}
+                disabled={isThinking}
+              >
+                {suggestion.label}
+              </button>
+            ))}
+          </div>
+        </form>
+        {voiceFeedback ? (
+          <p className={styles.intelligenceFeedback} role="status">{voiceFeedback}</p>
+        ) : null}
+      </div>
     </section>
   )
 }
@@ -1710,11 +1712,49 @@ export default function Workspace() {
       ))
     }
 
-    measureIntelligenceSection()
-    window.addEventListener('resize', measureIntelligenceSection)
+    let frameId = 0
+    let secondFrameId = 0
+
+    const scheduleMeasure = () => {
+      if (frameId) cancelAnimationFrame(frameId)
+      if (secondFrameId) cancelAnimationFrame(secondFrameId)
+
+      frameId = requestAnimationFrame(() => {
+        secondFrameId = requestAnimationFrame(() => {
+          measureIntelligenceSection()
+        })
+      })
+    }
+
+    const parentElement = intelligenceSectionRef.current?.parentElement ?? null
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => {
+          scheduleMeasure()
+        })
+      : null
+
+    scheduleMeasure()
+    window.addEventListener('resize', scheduleMeasure)
+    window.addEventListener('load', scheduleMeasure)
+    parentElement?.addEventListener?.('transitionend', scheduleMeasure)
+    resizeObserver?.observe(document.documentElement)
+    if (parentElement) {
+      resizeObserver?.observe(parentElement)
+    }
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        scheduleMeasure()
+      }).catch(() => {})
+    }
 
     return () => {
-      window.removeEventListener('resize', measureIntelligenceSection)
+      if (frameId) cancelAnimationFrame(frameId)
+      if (secondFrameId) cancelAnimationFrame(secondFrameId)
+      window.removeEventListener('resize', scheduleMeasure)
+      window.removeEventListener('load', scheduleMeasure)
+      parentElement?.removeEventListener?.('transitionend', scheduleMeasure)
+      resizeObserver?.disconnect()
     }
   }, [showIntelligenceSection, isMobile])
 
