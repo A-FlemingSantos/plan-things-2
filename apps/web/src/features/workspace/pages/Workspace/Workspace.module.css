@@ -529,6 +529,12 @@
   flex-direction: column;
   min-height: 100vh;
   min-width: 0;
+  background: var(--app-bg);
+}
+
+.workspaceHeader {
+  background: var(--app-bg) !important;
+  border-bottom-color: transparent;
 }
 
 /* Topbar */
@@ -648,7 +654,7 @@
 /* Content */
 .content {
   flex: 1;
-  padding: 36px 48px 60px;
+  padding: 28px 48px 60px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -2326,7 +2332,7 @@
 ════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .topbar  { padding: 24px 32px 22px; }
-  .content { padding: 28px 32px 48px; }
+  .content { padding: 24px 32px 48px; }
   .topbarRight {
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -2378,7 +2384,7 @@
     font-size: 20px;
     line-height: 1.1;
   }
-  .content { padding: 20px 20px 40px; }
+  .content { padding: 18px 20px 40px; }
   .intelligenceSection {
     width: 100%;
     padding-top: 18px;
@@ -2447,7 +2453,7 @@
     padding: 18px 16px 16px;
   }
   .content {
-    padding: 16px 16px 32px;
+    padding: 14px 16px 32px;
     gap: 20px;
   }
   .intelligenceSection {

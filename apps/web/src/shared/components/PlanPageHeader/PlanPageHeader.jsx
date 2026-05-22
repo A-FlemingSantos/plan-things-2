@@ -10,12 +10,14 @@ export default function PlanPageHeader({
   tone = 'solid',
   titleSize = 'medium',
   hideOnMobile = false,
+  className = '',
 }) {
   const headerClassName = [
     styles.header,
     sticky ? styles.sticky : '',
     tone === 'frosted' ? styles.toneFrosted : styles.toneSolid,
     hideOnMobile ? styles.hideOnMobile : '',
+    className,
   ].filter(Boolean).join(' ')
 
   const titleClassName = [

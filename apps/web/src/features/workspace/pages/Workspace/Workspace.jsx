@@ -1786,6 +1786,7 @@ export default function Workspace() {
             meta={`Bom dia, ${userFirstName}.`}
             tone="solid"
             titleSize="medium"
+            className={styles.workspaceHeader}
             actions={(
               <div className={styles.topbarRight}>
                 <div className={styles.topbarUtility}>
