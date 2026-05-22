@@ -188,6 +188,46 @@ describe('SidebarAccountMenu', () => {
     expect(menu.style.width).toBe('240px')
   })
 
+  it('reuses the same account menu with a custom avatar trigger', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <SidebarAccountMenu
+          styles={styles}
+          collapsed
+          renderTrigger={({ resolvedInitials, triggerProps }) => (
+            <button {...triggerProps} aria-label="Abrir menu da conta">
+              <span>{resolvedInitials}</span>
+            </button>
+          )}
+        />
+      </MemoryRouter>,
+    )
+
+    const trigger = screen.getByRole('button', { name: 'Abrir menu da conta' })
+    trigger.getBoundingClientRect = () => ({
+      x: 24,
+      y: 640,
+      left: 24,
+      top: 640,
+      right: 52,
+      bottom: 668,
+      width: 28,
+      height: 28,
+      toJSON: () => ({}),
+    })
+
+    await user.click(trigger)
+
+    const menu = await screen.findByRole('menu')
+
+    expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
+    expect(menu.style.left).toBe('24px')
+    expect(menu.style.width).toBe('220px')
+  })
+
   it('opens the secondary accounts menu from the active account header', async () => {
     const user = userEvent.setup()
 

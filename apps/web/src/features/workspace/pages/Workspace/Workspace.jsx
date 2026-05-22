@@ -1529,15 +1529,6 @@ export default function Workspace() {
     '--intelligence-theme-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
   }
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
-  const userInitials = currentUser?.fullName
-    ? currentUser.fullName
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase()
-    : userFirstName.slice(0, 2).toUpperCase()
 
   const filtered = plans.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -1799,20 +1790,30 @@ export default function Workspace() {
                 >
                   <SettingsIcon />
                 </button>
-                <button
-                  type="button"
-                  className={styles.workspaceHeaderProfileButton}
-                  aria-label="Abrir perfil do usuário"
-                  onClick={() => openSettingsSection('account')}
-                >
-                  <AuthenticatedAvatar
-                    avatarUrl={currentUser?.avatarUrl ?? null}
-                    className={styles.workspaceHeaderAvatar}
-                    imageClassName={styles.workspaceHeaderAvatarImage}
-                    alt=""
-                    fallback={<span className={styles.workspaceHeaderAvatarFallback}>{userInitials}</span>}
-                  />
-                </button>
+                <SidebarAccountMenu
+                  styles={styles}
+                  collapsed
+                  renderTrigger={({ resolvedName, resolvedAvatarUrl, resolvedInitials, triggerProps }) => (
+                    <button
+                      {...triggerProps}
+                      className={styles.workspaceHeaderProfileButton}
+                      aria-label="Abrir menu da conta"
+                    >
+                      <AuthenticatedAvatar
+                        avatarUrl={resolvedAvatarUrl}
+                        className={styles.workspaceHeaderAvatar}
+                        imageClassName={styles.workspaceHeaderAvatarImage}
+                        alt=""
+                        title={resolvedName}
+                        fallback={(
+                          <span className={styles.workspaceHeaderAvatarFallback}>
+                            {resolvedInitials}
+                          </span>
+                        )}
+                      />
+                    </button>
+                  )}
+                />
               </div>
             )}
           />

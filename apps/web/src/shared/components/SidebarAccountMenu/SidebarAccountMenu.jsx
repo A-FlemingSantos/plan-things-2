@@ -61,6 +61,7 @@ export default function SidebarAccountMenu({
   email = 'arthur@planthings.com',
   plan = 'Professional',
   initials = 'AS',
+  renderTrigger = null,
 }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -381,21 +382,39 @@ export default function SidebarAccountMenu({
     }
   }
 
+  const triggerProps = {
+    type: 'button',
+    onClick: handleToggle,
+    'data-sidebar-user-button': true,
+    'aria-expanded': open,
+    'aria-haspopup': 'menu',
+    'aria-controls': menuIdRef.current,
+  }
+
   return (
     <div ref={containerRef} className={menuStyles.container}>
-      <SidebarUserCard
-        styles={styles}
-        collapsed={collapsed}
-        name={resolvedName}
-        plan={resolvedPlanLabel}
-        initials={resolvedInitials}
-        avatarUrl={resolvedAvatarUrl}
-        active={open}
-        onClick={handleToggle}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-controls={menuIdRef.current}
-      />
+      {typeof renderTrigger === 'function'
+        ? renderTrigger({
+            open,
+            resolvedName,
+            resolvedEmail,
+            resolvedPlanLabel,
+            resolvedAvatarUrl,
+            resolvedInitials,
+            triggerProps,
+          })
+        : (
+          <SidebarUserCard
+            styles={styles}
+            collapsed={collapsed}
+            name={resolvedName}
+            plan={resolvedPlanLabel}
+            initials={resolvedInitials}
+            avatarUrl={resolvedAvatarUrl}
+            active={open}
+            {...triggerProps}
+          />
+        )}
 
       {open && typeof document !== 'undefined'
         ? createPortal(
