@@ -120,7 +120,9 @@ export default function WorkspaceHeader({
   const { currentUser, workspace } = useAuth()
   const { localPreferences } = usePreferences()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isWorkspaceSectionExpanded, setIsWorkspaceSectionExpanded] = useState(true)
   const titleMenuId = useId()
+  const workspaceSectionContentId = useId()
   const titleMenuWrapRef = useRef(null)
 
   const openSettingsSection = (section = null) => {
@@ -255,7 +257,9 @@ export default function WorkspaceHeader({
             <button
               type="button"
               className={styles.workspaceHeaderMenuWorkspaceCard}
-              onClick={handlePlaceholderMenuAction}
+              aria-expanded={isWorkspaceSectionExpanded}
+              aria-controls={workspaceSectionContentId}
+              onClick={() => setIsWorkspaceSectionExpanded((expanded) => !expanded)}
             >
               <span className={styles.workspaceHeaderMenuWorkspaceBadge} aria-hidden="true">
                 {workspaceBadgeLabel}
@@ -269,25 +273,30 @@ export default function WorkspaceHeader({
               </span>
             </button>
 
-            <div className={styles.workspaceHeaderMenuSubList}>
-              {workspaceMenuItems.map(({ id, label, Icon, trailing = null }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={styles.workspaceHeaderMenuSubItem}
-                  onClick={handlePlaceholderMenuAction}
-                >
-                  <span className={styles.workspaceHeaderMenuItemIcon} aria-hidden="true">
-                    <Icon />
-                  </span>
-                  <span className={styles.workspaceHeaderMenuSubItemLabel}>{label}</span>
-                  {trailing ? (
-                    <span className={styles.workspaceHeaderMenuTrailing} aria-hidden="true">
-                      {trailing}
+            <div
+              id={workspaceSectionContentId}
+              className={`${styles.workspaceHeaderMenuSubListShell} ${isWorkspaceSectionExpanded ? '' : styles.workspaceHeaderMenuSubListShellCollapsed}`}
+            >
+              <div className={styles.workspaceHeaderMenuSubList}>
+                {workspaceMenuItems.map(({ id, label, Icon, trailing = null }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={styles.workspaceHeaderMenuSubItem}
+                    onClick={handlePlaceholderMenuAction}
+                  >
+                    <span className={styles.workspaceHeaderMenuItemIcon} aria-hidden="true">
+                      <Icon />
                     </span>
-                  ) : null}
-                </button>
-              ))}
+                    <span className={styles.workspaceHeaderMenuSubItemLabel}>{label}</span>
+                    {trailing ? (
+                      <span className={styles.workspaceHeaderMenuTrailing} aria-hidden="true">
+                        {trailing}
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 

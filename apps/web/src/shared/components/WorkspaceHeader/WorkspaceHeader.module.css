@@ -110,6 +110,44 @@
   gap: 4px;
 }
 
+.workspaceHeaderMenuSubList {
+  position: relative;
+  gap: 2px;
+  padding-left: 14px;
+}
+
+.workspaceHeaderMenuSubListShell {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    grid-template-rows 220ms ease,
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+.workspaceHeaderMenuSubListShellCollapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.workspaceHeaderMenuSubListShell > .workspaceHeaderMenuSubList {
+  min-height: 0;
+}
+
+.workspaceHeaderMenuSubList::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: color-mix(in srgb, var(--border-1) 92%, transparent);
+}
+
 .workspaceHeaderMenuPrimaryItem,
 .workspaceHeaderMenuSubItem,
 .workspaceHeaderMenuWorkspaceCard,
@@ -240,12 +278,28 @@
   justify-content: center;
   color: var(--text-3);
   transform: rotate(180deg);
+  transition: transform 180ms ease, color var(--transition-fast);
+}
+
+.workspaceHeaderMenuWorkspaceCard[aria-expanded='false'] .workspaceHeaderMenuWorkspaceChevron {
+  transform: rotate(0deg);
 }
 
 .workspaceHeaderMenuSubItemLabel {
   flex: 1;
   min-width: 0;
   line-height: 1.2;
+}
+
+.workspaceHeaderMenuSubItem {
+  width: calc(100% - 14px);
+  min-height: 34px;
+  padding: 0 10px 0 12px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  justify-items: start;
+  column-gap: 10px;
+  margin-left: auto;
 }
 
 .workspaceHeaderMenuTrailing {
