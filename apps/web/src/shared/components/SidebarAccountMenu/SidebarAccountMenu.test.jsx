@@ -196,6 +196,7 @@ describe('SidebarAccountMenu', () => {
         <SidebarAccountMenu
           styles={styles}
           collapsed
+          menuPlacement="below"
           renderTrigger={({ resolvedInitials, triggerProps }) => (
             <button {...triggerProps} aria-label="Abrir menu da conta">
               <span>{resolvedInitials}</span>
@@ -208,11 +209,11 @@ describe('SidebarAccountMenu', () => {
     const trigger = screen.getByRole('button', { name: 'Abrir menu da conta' })
     trigger.getBoundingClientRect = () => ({
       x: 24,
-      y: 640,
+      y: 120,
       left: 24,
-      top: 640,
+      top: 120,
       right: 52,
-      bottom: 668,
+      bottom: 148,
       width: 28,
       height: 28,
       toJSON: () => ({}),
@@ -225,6 +226,7 @@ describe('SidebarAccountMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
     expect(menu.style.left).toBe('24px')
+    expect(menu.style.top).toBe('154px')
     expect(menu.style.width).toBe('220px')
   })
 

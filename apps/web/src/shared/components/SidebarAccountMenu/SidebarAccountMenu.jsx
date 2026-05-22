@@ -61,6 +61,7 @@ export default function SidebarAccountMenu({
   email = 'arthur@planthings.com',
   plan = 'Professional',
   initials = 'AS',
+  menuPlacement = 'above',
   renderTrigger = null,
 }) {
   const location = useLocation()
@@ -130,7 +131,9 @@ export default function SidebarAccountMenu({
       Math.max(preferredLeft, minimumLeft),
       viewportWidth - menuWidth - MENU_MARGIN,
     )
-    const preferredTop = anchorRect.top - menuHeight - MENU_VERTICAL_OFFSET
+    const preferredTop = menuPlacement === 'below'
+      ? anchorRect.bottom + MENU_VERTICAL_OFFSET
+      : anchorRect.top - menuHeight - MENU_VERTICAL_OFFSET
     const maxTop = Math.max(MENU_MARGIN, viewportHeight - menuHeight - MENU_MARGIN)
     const nextTop = Math.min(
       Math.max(preferredTop, MENU_MARGIN),
@@ -143,7 +146,7 @@ export default function SidebarAccountMenu({
       top: nextTop,
       width: menuWidth,
     })
-  }, [collapsed])
+  }, [collapsed, menuPlacement])
 
   const updateAccountsMenuPosition = useCallback((anchorRectOverride = null) => {
     const anchorRect = anchorRectOverride

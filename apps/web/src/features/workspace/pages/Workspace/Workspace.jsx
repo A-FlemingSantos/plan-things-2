@@ -1793,6 +1793,7 @@ export default function Workspace() {
                 <SidebarAccountMenu
                   styles={styles}
                   collapsed
+                  menuPlacement="below"
                   renderTrigger={({ resolvedName, resolvedAvatarUrl, resolvedInitials, triggerProps }) => (
                     <button
                       {...triggerProps}
