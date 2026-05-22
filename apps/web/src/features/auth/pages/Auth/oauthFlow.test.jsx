@@ -37,7 +37,7 @@ describe('OAuth auth flow', () => {
       ]),
     })
 
-    await screen.findByRole('button', { name: /workspace atual: workspace de google demo/i })
+    await screen.findByRole('heading', { name: 'Início' })
     expect(window.location.pathname).toBe('/workspace')
 
     const sessionStore = readStoredSessionValue()

@@ -20,8 +20,8 @@ export const ROUTE_ALIASES = [
   { from: '/kanban', to: ROUTES.workspaceBoard },
   { from: '/workspace/calendar', to: ROUTES.calendar },
   { from: '/app/calendar', to: ROUTES.calendar },
-  { from: '/workspace/files', to: ROUTES.files },
-  { from: '/app/files', to: ROUTES.files },
+  { from: '/workspace/files', to: ROUTES.workspace },
+  { from: '/app/files', to: ROUTES.workspace },
 ]
 
 export const LEGACY_PLAN_ROUTE_ALIASES = {
@@ -30,6 +30,22 @@ export const LEGACY_PLAN_ROUTE_ALIASES = {
 
 export function normalizePathname(pathname = '') {
   return pathname.replace(/\/+$/, '') || '/'
+}
+
+export function isLegacyFilesPath(pathname) {
+  const normalized = normalizePathname(pathname ?? '')
+  return (
+    normalized === ROUTES.files
+    || normalized.startsWith(`${ROUTES.files}/`)
+    || normalized === '/workspace/files'
+    || normalized.startsWith('/workspace/files/')
+    || normalized === '/app/files'
+    || normalized.startsWith('/app/files/')
+  )
+}
+
+export function normalizeLegacyFilesPath(pathname) {
+  return isLegacyFilesPath(pathname) ? ROUTES.workspace : normalizePathname(pathname ?? '')
 }
 
 export function isInternalAppPath(pathname) {
@@ -43,7 +59,6 @@ export function isInternalAppPath(pathname) {
     ROUTES.workspace,
     ROUTES.workspaceBoard,
     ROUTES.calendar,
-    ROUTES.files,
     ROUTES.settings,
   ]
 
@@ -79,9 +94,14 @@ export function sanitizeInternalAppRedirect(value) {
 
   try {
     const url = new URL(text, 'https://planthings.local')
-    const pathname = normalizePathname(url.pathname)
+    const rawPathname = normalizePathname(url.pathname)
+    const pathname = normalizeLegacyFilesPath(rawPathname)
     if (!isInternalAppPath(pathname)) {
       return null
+    }
+
+    if (pathname !== rawPathname) {
+      return pathname
     }
 
     return `${pathname}${url.search}${url.hash}`

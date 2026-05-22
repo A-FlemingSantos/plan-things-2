@@ -7,41 +7,43 @@ vi.mock('../../../../shared/components/MemberAvatarStack/MemberAvatarStack.jsx',
 }))
 
 const icons = {
-  Plus: () => <svg aria-hidden="true" />,
+  Bolt: () => <svg aria-hidden="true" />,
+  Star: () => <svg aria-hidden="true" />,
   Users: () => <svg aria-hidden="true" />,
-  Filter: () => <svg aria-hidden="true" />,
-  Share: () => <svg aria-hidden="true" />,
+  UserPlus: () => <svg aria-hidden="true" />,
+  More: () => <svg aria-hidden="true" />,
 }
 
 const styles = {
   boardHeaderActions: 'boardHeaderActions',
-  boardHeaderIdentityRow: 'boardHeaderIdentityRow',
-  boardHeaderUtilityGroup: 'boardHeaderUtilityGroup',
-  boardHeaderUtilitySlot: 'boardHeaderUtilitySlot',
-  boardHeaderIconBtn: 'boardHeaderIconBtn',
-  boardHeaderCommandRow: 'boardHeaderCommandRow',
-  boardHeaderBtn: 'boardHeaderBtn',
-  boardHeaderBtnPrimary: 'boardHeaderBtnPrimary',
+  boardHeaderMembersStack: 'boardHeaderMembersStack',
+  boardHeaderActionCluster: 'boardHeaderActionCluster',
+  boardHeaderCompactIconButton: 'boardHeaderCompactIconButton',
+  boardHeaderShareButton: 'boardHeaderShareButton',
+  boardHeaderShareIcon: 'boardHeaderShareIcon',
+  boardHeaderShareLabel: 'boardHeaderShareLabel',
 }
 
 describe('BoardHeaderActions', () => {
-  it('renders compact icon actions alongside notifications and keeps desktop text actions', () => {
+  it('renders compact icon actions and keeps the desktop share action', () => {
     render(
       <BoardHeaderActions
         members={[]}
         icons={icons}
         styles={styles}
-        onAddMember={vi.fn()}
         onOpenMembers={vi.fn()}
         membersButtonRef={{ current: null }}
+        onAutomate={vi.fn()}
+        onFavorite={vi.fn()}
         onFilter={vi.fn()}
         onShare={vi.fn()}
-        notifications={<button type="button">Notificações</button>}
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Notificações' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Filtrar' })).toHaveLength(2)
-    expect(screen.getAllByRole('button', { name: 'Compartilhar' })).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Integrações' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Favoritar plano' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Membros do plano' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Compartilhar' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Configurações do quadro' })).toBeInTheDocument()
   })
 })

@@ -37,7 +37,6 @@ const TRACKABLE_CONTEXT_PREFIXES = [
   ROUTES.workspaceBoard,
   ROUTES.workspace,
   ROUTES.calendar,
-  ROUTES.files,
 ]
 
 const PreferencesContext = createContext(null)
@@ -203,12 +202,11 @@ function writeStoredLastContext(userId, pathname) {
 }
 
 function normalizeHomePagePreference(value) {
-  return value === 'calendar' || value === 'files' ? value : DEFAULT_LOCAL_PREFERENCES.homePage
+  return value === 'calendar' ? value : DEFAULT_LOCAL_PREFERENCES.homePage
 }
 
 function mapHomePageToRoute(homePage) {
   if (homePage === 'calendar') return ROUTES.calendar
-  if (homePage === 'files') return ROUTES.files
   return ROUTES.workspace
 }
 

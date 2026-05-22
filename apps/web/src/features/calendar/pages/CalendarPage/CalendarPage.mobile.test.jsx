@@ -42,24 +42,8 @@ vi.mock('../../hooks/useCalendarEvents.js', () => ({
   useCalendarEvents: () => calendarEventsMock,
 }))
 
-vi.mock('../../../../shared/hooks/useWorkspaceNavigation.js', () => ({
-  useWorkspaceNavigation: () => ({
-    activeNav: 'calendar',
-    handleNavItemClick: vi.fn(),
-  }),
-}))
-
 vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () => ({
-  default: ({ children, mobileTitle }) => (
-    <div>
-      <h1>{mobileTitle}</h1>
-      {children}
-    </div>
-  ),
-}))
-
-vi.mock('../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx', () => ({
-  default: () => null,
+  default: ({ children }) => <div>{children}</div>,
 }))
 
 vi.mock('../../../workspace/components/InviteNotifications/InviteNotifications.jsx', () => ({

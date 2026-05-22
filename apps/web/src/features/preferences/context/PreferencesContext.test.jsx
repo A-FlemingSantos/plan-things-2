@@ -39,7 +39,7 @@ describe('PreferencesContext helpers', () => {
       lastContext: '/calendar',
     })
 
-    expect(withInvalidContext).toBe('/files')
+    expect(withInvalidContext).toBe('/workspace')
     expect(withDisabledLastContext).toBe('/workspace')
   })
 

@@ -9,10 +9,8 @@ import {
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
-import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
 import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
-import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { ROUTES, toRouteString } from '../../../../shared/config/routes.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
 import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
@@ -66,13 +64,6 @@ function SidebarCollapseIcon() {
     </svg>
   )
 }
-
-const NAV = [
-  { id: 'home',     Icon: Ic.Home     },
-  { id: 'calendar', Icon: Ic.Calendar },
-  { id: 'files',    Icon: Ic.Files    },
-]
-const NAV_LABELS = { home: 'Início', calendar: 'Calendário', files: 'Arquivos' }
 
 const SECTIONS = [
   { id: 'account',       label: 'Conta',                   Icon: Ic.User     },
@@ -320,7 +311,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     restoreLocalDefaults,
     updateNotifications,
   } = usePreferences()
-  const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { isMobile } = useResponsiveViewport()
   const location = useLocation()
   const navigate = useNavigate()
@@ -2204,10 +2194,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     })
   }
 
-  const renderSidebarBottomContent = ({ collapsed }) => (
-    <SidebarAccountMenu styles={styles} collapsed={collapsed} />
-  )
-
   const settingsHeader = modal ? (
     <PlanPageHeader
       title="Configurações"
@@ -2279,11 +2265,9 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           ref={modal ? contentScrollbar.viewportRef : null}
           className={`${styles.settingsContent} ${modal ? styles.settingsContentModal : ''}`}
         >
-          {!isMobile ? (
-            <div className={styles.settingsContentHeader}>
-              <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
-            </div>
-          ) : null}
+          <div className={styles.settingsContentHeader}>
+            <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
+          </div>
           <div className={styles.settingsContentBody}>
             {renderContent()}
           </div>
@@ -2352,16 +2336,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     <AppThemeScope>
       <ProductAppShell
         styles={styles}
-        activeNav={activeNav}
-        onNavItemClick={handleNavItemClick}
-        navItems={NAV.map(({ id, Icon }) => ({ id, label: NAV_LABELS[id], Icon }))}
-        LogoIcon={Ic.Logo}
-        CollapseIcon={SidebarCollapseIcon}
-        ChevronIcon={Ic.Chevron}
-        HintIcon={Ic.Popover}
-        bottomContent={renderSidebarBottomContent}
         contentClassName={styles.settingsWrapper}
-        mobileTitle={activeLabel}
       >
         <div style={settingsThemeStyle}>
           {settingsHeader}

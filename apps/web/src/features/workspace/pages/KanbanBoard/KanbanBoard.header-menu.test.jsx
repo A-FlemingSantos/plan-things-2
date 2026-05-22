@@ -109,13 +109,6 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   }),
 }))
 
-vi.mock('../../../../shared/hooks/useWorkspaceNavigation.js', () => ({
-  useWorkspaceNavigation: () => ({
-    activeNav: 'board',
-    handleNavItemClick: vi.fn(),
-  }),
-}))
-
 vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () => ({
   default: ({ children }) => <div>{children}</div>,
 }))

@@ -71,13 +71,6 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
 
 vi.mock('../../../../shared/api/apiClient.js', () => apiMock)
 
-vi.mock('../../../../shared/hooks/useWorkspaceNavigation.js', () => ({
-  useWorkspaceNavigation: () => ({
-    activeNav: 'home',
-    handleNavItemClick: vi.fn(),
-  }),
-}))
-
 vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () => ({
   default: ({ children }) => <div>{children}</div>,
 }))
@@ -178,7 +171,7 @@ describe('SettingsPage Gmail integration', () => {
         token: 'test-token',
         body: {
           client: 'web',
-          redirectTo: '/files?view=shared#recent',
+          redirectTo: '/workspace',
         },
       })
     })

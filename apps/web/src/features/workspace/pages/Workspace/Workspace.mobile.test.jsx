@@ -47,24 +47,8 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   usePreferences: () => preferencesMock,
 }))
 
-vi.mock('../../../../shared/hooks/useWorkspaceNavigation.js', () => ({
-  useWorkspaceNavigation: () => ({
-    activeNav: 'home',
-    handleNavItemClick: vi.fn(),
-  }),
-}))
-
 vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () => ({
-  default: ({ children, mobileTitle }) => (
-    <div>
-      <h1>{mobileTitle}</h1>
-      {children}
-    </div>
-  ),
-}))
-
-vi.mock('../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx', () => ({
-  default: () => null,
+  default: ({ children }) => <div>{children}</div>,
 }))
 
 vi.mock('../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx', () => ({

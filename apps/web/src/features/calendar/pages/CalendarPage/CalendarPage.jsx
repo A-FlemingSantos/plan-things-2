@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
-import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
-import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
-import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import InviteNotifications from '../../../workspace/components/InviteNotifications/InviteNotifications.jsx'
@@ -35,13 +32,6 @@ const Icon = {
   X: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   Popover: () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
 }
-
-const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
-  ...item,
-  Icon:
-    item.id === 'home' ? Icon.Home :
-    item.id === 'calendar' ? Icon.Calendar : Icon.Files,
-}))
 
 function createCalendarDate(year, month, day) {
   return new Date(Date.UTC(year, month, day, 12, 0, 0, 0))
@@ -276,44 +266,6 @@ function sortCalendarItemsForDay(events) {
   })
 }
 
-function MiniCalendar({
-  monthDate,
-  selectedDate,
-  onSelectDate,
-  onShiftMonth,
-  miniWeekdays,
-  monthLabel,
-}) {
-  return (
-    <div className={styles.miniCalendar}>
-      <div className={styles.miniCalendarHeader}>
-        <button type="button" className={styles.sidebarToggle} aria-label="Expandir mês"><Icon.ChevDown /></button>
-        <span>{monthLabel}</span>
-        <div className={styles.miniCalendarNav}>
-          <button type="button" aria-label="Mês anterior" onClick={() => onShiftMonth(-1)}><Icon.ChevLeft /></button>
-          <button type="button" aria-label="Próximo mês" onClick={() => onShiftMonth(1)}><Icon.ChevRight /></button>
-        </div>
-      </div>
-
-      <div className={styles.miniCalendarGrid}>
-        {miniWeekdays.map((weekday, index) => (
-          <span key={`${weekday}-${index}`} className={styles.miniWeekday}>{weekday}</span>
-        ))}
-        {buildMonthCells(monthDate).map(({ date, key, muted }) => (
-          <button
-            key={key}
-            type="button"
-            className={`${styles.miniDay} ${muted ? styles.miniDayMuted : ''} ${isSameDate(date, selectedDate) ? styles.miniDaySelected : ''}`}
-            onClick={() => onSelectDate(date)}
-          >
-            {dayOfMonth(date)}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function EventDialog({
   selectedDate,
   initialEvent = null,
@@ -481,7 +433,7 @@ function CalendarLoadingState({ styles }) {
 }
 
 export function CalendarWorkspaceView({ embedded = false }) {
-  const { generalPreferences, formatIntl, formatClockTime, formatMonthLabel } = usePreferences()
+  const { generalPreferences, formatIntl, formatClockTime } = usePreferences()
   const locale = generalPreferences.language
   const timeZone = generalPreferences.timezone
   const initialToday = useMemo(() => currentDateInTimeZone(timeZone), [timeZone])
@@ -496,10 +448,8 @@ export function CalendarWorkspaceView({ embedded = false }) {
   const [deleteError, setDeleteError] = useState(null)
   const notificationTimerRef = useRef(null)
   const today = useMemo(() => currentDateInTimeZone(timeZone), [timeZone])
-  const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
-  const { calendarSources, filteredEvents, isLoading, loadError, createEvent, updateEvent, deleteEvent } = useCalendarEvents({ search })
+  const { filteredEvents, isLoading, loadError, createEvent, updateEvent, deleteEvent } = useCalendarEvents({ search })
   const weekdayLabels = useMemo(() => buildWeekdayLabels(locale, timeZone, 'long'), [locale, timeZone])
-  const miniWeekdays = useMemo(() => buildWeekdayLabels(locale, timeZone, 'narrow'), [locale, timeZone])
   const formatLongDateLabel = (date) => formatLongDate(date, locale, timeZone)
   const formatShortDateLabel = (date) => formatShortDate(date, locale, timeZone)
   const formatShortMonthLabel = (date) => capitalizeFirst(
@@ -530,7 +480,6 @@ export function CalendarWorkspaceView({ embedded = false }) {
     () => formatRangeLabel(view, selectedDate, visibleMonth, locale, timeZone),
     [locale, selectedDate, timeZone, view, visibleMonth],
   )
-  const visibleMonthLabel = useMemo(() => formatMonthLabel(visibleMonth), [formatMonthLabel, visibleMonth])
   const rangeDays = useMemo(() => {
     if (view === 'day') return buildRangeDays(selectedDate, 1)
     if (view === 'work') return buildRangeDays(startOfWorkWeek(selectedDate), 5)
@@ -735,38 +684,6 @@ export function CalendarWorkspaceView({ embedded = false }) {
     </section>
   )
 
-  const renderSidebarSecondaryContent = ({ collapsed }) => collapsed ? null : (
-    <div className={styles.calendarSidebarContent}>
-      <MiniCalendar
-        monthDate={visibleMonth}
-        selectedDate={selectedDate}
-        onSelectDate={selectDate}
-        onShiftMonth={shiftMonth}
-        miniWeekdays={miniWeekdays}
-        monthLabel={visibleMonthLabel}
-      />
-
-      <button type="button" className={styles.addCalendarButton} onClick={() => showNotification('Conexão de calendário em breve')}>
-        <Icon.Plus />
-        Adicionar calendário
-      </button>
-
-      <div className={styles.calendarSources}>
-        {calendarSources.map((source) => (
-          <button type="button" key={source.id} className={styles.calendarSource} onClick={() => showNotification(`Fonte ativa: ${source.name}`)}>
-            <span className={styles.sourceChevron}><Icon.ChevRight /></span>
-            <span className={styles.sourceDot} style={{ background: source.color }} />
-            <span>{source.name}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-
-  const renderSidebarBottomContent = ({ collapsed }) => (
-    <SidebarAccountMenu styles={styles} collapsed={collapsed} />
-  )
-
   const commandHeaderActions = (
     <div className={styles.commandHeaderActions}>
       <div className={styles.commandLeft}>
@@ -906,18 +823,8 @@ export function CalendarWorkspaceView({ embedded = false }) {
     <AppThemeScope>
       <ProductAppShell
         styles={styles}
-        activeNav={activeNav}
-        onNavItemClick={handleNavItemClick}
-        navItems={NAV_ITEMS}
-        LogoIcon={Icon.Logo}
-        CollapseIcon={Icon.Collapse}
-        ChevronIcon={Icon.Chevron}
-        HintIcon={Icon.Popover}
-        secondaryContent={renderSidebarSecondaryContent}
-        bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         contentTag="main"
-        mobileTitle="Calendário"
       >
         <PlanPageHeader
           title="Calendário"

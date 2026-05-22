@@ -1,15 +1,10 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { ROUTES, buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
-import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
-import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
-import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
-import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
+import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
-import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import {
@@ -17,16 +12,11 @@ import {
   resolveKanbanAccentForeground,
 } from '../../data/kanbanColorPalette.js'
 import { usePlans } from '../../context/PlansContext.jsx'
-import InviteNotifications from '../../components/InviteNotifications/InviteNotifications.jsx'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
    ICONS
 ═══════════════════════════════════════════ */
-function HomeIcon()     { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
-function PopoverIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function CalendarIcon() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.8v2.8M11 1.8v2.8M2.5 6.5h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
-function FilesIcon()    { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
 function PlusIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function ImagePlusIcon(){ return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M4 8l1.7-1.8a.8.8 0 0 1 1.2 0L9 8.5l1-1a.8.8 0 0 1 1.1 0L12.5 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M10.5 1.5v3M9 3h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function SearchIcon()   { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M9.5 9.5L12.5 12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
@@ -35,54 +25,12 @@ function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function CollapseIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function MicIcon()      { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ArrowUpIcon()  { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function SettingsIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <path
-        d="M5.9 1.6h2.2l.4 1.2c.2.1.5.2.7.3l1.1-.5 1.5 1.5-.5 1.1c.1.2.2.5.3.7l1.2.4v2.2l-1.2.4c-.1.2-.2.5-.3.7l.5 1.1-1.5 1.5-1.1-.5c-.2.1-.5.2-.7.3l-.4 1.2H5.9l-.4-1.2a4 4 0 0 1-.7-.3l-1.1.5-1.5-1.5.5-1.1a4 4 0 0 1-.3-.7l-1.2-.4V5.9l1.2-.4c.1-.2.2-.5.3-.7l-.5-1.1 1.5-1.5 1.1.5c.2-.1.5-.2.7-.3z"
-        stroke="currentColor"
-        strokeWidth="1.15"
-        strokeLinejoin="round"
-      />
-      <circle cx="7" cy="7" r="1.75" stroke="currentColor" strokeWidth="1.15" />
-    </svg>
-  )
-}
-function WorkspaceTitleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="5.1" cy="4.9" r="1.75" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="10.9" cy="4.9" r="1.75" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="5.1" cy="10.7" r="1.75" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="10.9" cy="10.7" r="1.75" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  )
-}
-
-function LogoMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-      <rect x="2"  y="2"  width="7" height="7" rx="2" fill="currentColor"/>
-      <rect x="11" y="2"  width="7" height="7" rx="2" fill="currentColor" opacity=".35"/>
-      <rect x="2"  y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".55"/>
-      <rect x="11" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".75"/>
-    </svg>
-  )
-}
 
 /* ═══════════════════════════════════════════
    DATA
 ═══════════════════════════════════════════ */
-const NAV_ITEMS = WORKSPACE_NAV_ITEMS.map((item) => ({
-  ...item,
-  Icon:
-    item.id === 'home' ? HomeIcon :
-    item.id === 'calendar' ? CalendarIcon : FilesIcon,
-}))
-
 const PLAN_TAGS = [
   { label: 'Engenharia',  color: 'var(--color-green)'  },
   { label: 'Design',      color: '#d4aef1'             },
@@ -1536,7 +1484,6 @@ export default function Workspace() {
   const notificationTimerRef = useRef(null)
   const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
-  const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
   const showIntelligenceSection = localPreferences.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection
   const intelligenceAccentStyle = {
@@ -1728,117 +1675,15 @@ export default function Workspace() {
     setNewPlanAnchor(event.currentTarget)
   }
 
-  const openSettingsSection = (section = null) => {
-    const params = new URLSearchParams()
-    if (section) params.set('section', section)
-    navigate(`${ROUTES.settings}${params.toString() ? `?${params.toString()}` : ''}`)
-  }
-
-  const renderSidebarSecondaryContent = ({ collapsed }) => (
-    <>
-      {!collapsed && (
-        <PlanSidebarSection
-          plans={plans.slice(0, 5)}
-          activePlanId={activePlan?.id}
-          onSelectPlan={openBoard}
-          footer={(
-            <button className={styles.sidebarNewPlan} onClick={openNewPlan}>
-              <PlusIcon />
-              <span>Novo plano</span>
-            </button>
-          )}
-        />
-      )}
-
-      {collapsed && (
-        <div className={styles.collapsedActions}>
-          <button
-            type="button"
-            className={styles.navItem}
-            onClick={openNewPlan}
-            title="Novo plano"
-            data-sidebar-nav-item
-          >
-            <span className={styles.navIcon} data-sidebar-nav-icon><PlusIcon /></span>
-            <span className={styles.navLabel} data-sidebar-nav-label>Novo</span>
-          </button>
-        </div>
-      )}
-    </>
-  )
-
-  const renderSidebarBottomContent = ({ collapsed }) => (
-    <SidebarAccountMenu styles={styles} collapsed={collapsed} />
-  )
-
   return (
     <AppThemeScope>
       <ProductAppShell
         styles={styles}
-        activeNav={activeNav}
-        onNavItemClick={handleNavItemClick}
-        navItems={NAV_ITEMS}
-        LogoIcon={LogoMark}
-        CollapseIcon={CollapseIcon}
-        ChevronIcon={ChevronIcon}
-        HintIcon={PopoverIcon}
-        secondaryContent={renderSidebarSecondaryContent}
-        bottomContent={renderSidebarBottomContent}
         contentClassName={styles.main}
         contentTag="main"
-        mobileTitle="Workspace"
       >
         <div ref={workspaceScrollbar.viewportRef} className={styles.mainScrollViewport}>
-          <PlanPageHeader
-            title="Workspace"
-            icon={<WorkspaceTitleIcon />}
-            tone="solid"
-            titleSize="medium"
-            className={styles.workspaceHeader}
-            actions={(
-              <div className={styles.workspaceHeaderActions}>
-                <InviteNotifications
-                  wrapClassName={styles.workspaceHeaderNotificationWrap}
-                  triggerClassName={styles.workspaceHeaderIconButton}
-                  badgeClassName={styles.workspaceHeaderNotificationBadge}
-                  panelClassName={styles.workspaceHeaderNotificationsPanel}
-                />
-                <button
-                  type="button"
-                  className={styles.workspaceHeaderIconButton}
-                  aria-label="Abrir configurações da Workspace"
-                  onClick={() => openSettingsSection('workspace')}
-                >
-                  <SettingsIcon />
-                </button>
-                <SidebarAccountMenu
-                  styles={styles}
-                  collapsed
-                  menuPlacement="below"
-                  renderTrigger={({ resolvedName, resolvedAvatarUrl, resolvedInitials, triggerProps }) => (
-                    <button
-                      {...triggerProps}
-                      className={styles.workspaceHeaderProfileButton}
-                      aria-label="Abrir menu da conta"
-                    >
-                      <AuthenticatedAvatar
-                        avatarUrl={resolvedAvatarUrl}
-                        className={styles.workspaceHeaderAvatar}
-                        imageClassName={styles.workspaceHeaderAvatarImage}
-                        alt=""
-                        title={resolvedName}
-                        fallback={(
-                          <span className={styles.workspaceHeaderAvatarFallback}>
-                            {resolvedInitials}
-                          </span>
-                        )}
-                      />
-                    </button>
-                  )}
-                />
-              </div>
-            )}
-          />
+          <WorkspaceHeader title="Início" />
 
           {/* Content */}
           <div className={styles.content}>
@@ -1858,17 +1703,38 @@ export default function Workspace() {
                     <h2 className={styles.sectionTitle}>Todos os planos</h2>
                     <span className={styles.planCount}>{filtered.length}</span>
                   </div>
-                  <div className={styles.viewToggle}>
-                    <button
-                      className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
-                      onClick={() => setView('grid')}
-                      aria-label="Visualização em grade"
-                    ><GridIcon /></button>
-                    <button
-                      className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
-                      onClick={() => setView('list')}
-                      aria-label="Visualização em lista"
-                    ><ListIcon /></button>
+                  <div className={styles.sectionControls}>
+                    <label className={styles.searchWrap}>
+                      <span className={styles.searchIcon} aria-hidden="true"><SearchIcon /></span>
+                      <input
+                        className={styles.searchInput}
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Buscar planos..."
+                      />
+                      {search ? (
+                        <button
+                          type="button"
+                          className={styles.searchClear}
+                          onClick={() => setSearch('')}
+                          aria-label="Limpar busca de planos"
+                        >
+                          <XIcon />
+                        </button>
+                      ) : null}
+                    </label>
+                    <div className={styles.viewToggle}>
+                      <button
+                        className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
+                        onClick={() => setView('grid')}
+                        aria-label="Visualização em grade"
+                      ><GridIcon /></button>
+                      <button
+                        className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
+                        onClick={() => setView('list')}
+                        aria-label="Visualização em lista"
+                      ><ListIcon /></button>
+                    </div>
                   </div>
                 </div>
 

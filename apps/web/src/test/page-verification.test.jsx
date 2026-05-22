@@ -120,17 +120,12 @@ describe('Page verification flows', () => {
     expect(screen.queryByRole('button', { name: 'Tarefas' })).not.toBeInTheDocument()
   })
 
-  it('verifies files filters and detail inspector opening', async () => {
-    const user = userEvent.setup()
-
+  it('verifies legacy files route lands in the workspace', async () => {
     renderApp('/files', { session: createDemoSession() })
 
-    await user.click(await screen.findByRole('button', { name: /^favoritos$/i }))
-    expect(screen.getByText('plano-lancamento-q3.pdf')).toBeInTheDocument()
-
-    await user.click(screen.getByText('plano-lancamento-q3.pdf'))
-    expect(await screen.findByText('Info do arquivo')).toBeInTheDocument()
-    expect(screen.getByText('Atividade recente')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/workspace')
+    expect(screen.queryByPlaceholderText('Buscar arquivos...')).not.toBeInTheDocument()
   })
 
   it('verifies auth submit reaches the workspace shell after the loading state', async () => {

@@ -70,20 +70,8 @@ vi.mock('../../../../shared/api/apiClient.js', () => ({
   triggerBlobDownload: vi.fn(),
 }))
 
-vi.mock('../../../../shared/hooks/useWorkspaceNavigation.js', () => ({
-  useWorkspaceNavigation: () => ({
-    activeNav: 'home',
-    handleNavItemClick: vi.fn(),
-  }),
-}))
-
 vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () => ({
-  default: ({ children, mobileTitle }) => (
-    <div>
-      <h1>{mobileTitle}</h1>
-      {children}
-    </div>
-  ),
+  default: ({ children }) => <div>{children}</div>,
 }))
 
 vi.mock('../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx', () => ({

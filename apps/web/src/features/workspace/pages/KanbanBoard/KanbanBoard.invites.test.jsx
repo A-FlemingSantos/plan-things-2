@@ -108,13 +108,6 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   }),
 }))
 
-vi.mock('../../../../shared/hooks/useWorkspaceNavigation.js', () => ({
-  useWorkspaceNavigation: () => ({
-    activeNav: 'board',
-    handleNavItemClick: vi.fn(),
-  }),
-}))
-
 vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () => ({
   default: ({ children }) => <div>{children}</div>,
 }))
@@ -137,8 +130,8 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 }))
 
 vi.mock('../../components/BoardHeaderActions/BoardHeaderActions.jsx', () => ({
-  default: ({ onAddMember }) => (
-    <button type="button" onClick={onAddMember}>
+  default: ({ onShare }) => (
+    <button type="button" onClick={onShare}>
       Convidar membro
     </button>
   ),

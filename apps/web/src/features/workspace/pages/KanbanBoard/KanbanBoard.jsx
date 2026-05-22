@@ -3,17 +3,14 @@ import { useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
-import { WORKSPACE_NAV_ITEMS } from '../../../../shared/config/workspaceNavigation.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
-import PlanSidebarSection from '../../../../shared/components/PlanSidebarSection/PlanSidebarSection.jsx'
-import SidebarAccountMenu from '../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx'
+import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeaderActions from '../../components/BoardHeaderActions/BoardHeaderActions.jsx'
 import KanbanColumn from '../../components/KanbanColumn/KanbanColumn.jsx'
-import { useWorkspaceNavigation } from '../../../../shared/hooks/useWorkspaceNavigation.js'
 import { usePlans } from '../../context/PlansContext.jsx'
 import { useBoardColumns } from '../../hooks/useBoardColumns.js'
 import { useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
@@ -497,13 +494,6 @@ function addDaysToDateKey(dateKeyValue, days) {
   return dateKey(date)
 }
 
-const NAV = WORKSPACE_NAV_ITEMS.map((item) => ({
-  ...item,
-  Icon:
-    item.id === 'home' ? Icon.Home :
-    item.id === 'calendar' ? Icon.Calendar : Icon.Files,
-}))
-
 function formatInviteStatus(status) {
   if (status === 'ACCEPTED') return 'Aceito'
   if (status === 'DECLINED') return 'Recusado'
@@ -634,7 +624,6 @@ export default function KanbanBoard() {
   const intelligenceComposerInputRef = useRef(null)
   const intelligenceInsertButtonRef = useRef(null)
   const intelligenceInsertMenuRef = useRef(null)
-  const { activeNav, handleNavItemClick } = useWorkspaceNavigation()
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
     enabled: isPlannerPanelMounted,
     includeGeneratedFromCard: false,
@@ -1419,15 +1408,6 @@ export default function KanbanBoard() {
     closeFloatingPanel()
   }
 
-  const handleBoardNavItemClick = (id) => {
-    if (id === 'calendar') {
-      showCalendarView()
-      return
-    }
-
-    handleNavItemClick(id)
-  }
-
   useEffect(() => {
     if (!isInboxPanelMounted) return
     if (!isBackendDriven) return
@@ -2041,20 +2021,6 @@ export default function KanbanBoard() {
     )
   }
 
-  const renderSidebarSecondaryContent = ({ collapsed }) => (
-    collapsed ? null : (
-      <PlanSidebarSection
-        plans={plans}
-        activePlanId={activePlan?.id}
-        onSelectPlan={openPlan}
-      />
-    )
-  )
-
-  const renderSidebarBottomContent = ({ collapsed }) => (
-    <SidebarAccountMenu styles={styles} collapsed={collapsed} />
-  )
-
   const intelligencePanelStyle = {
     left: toolbarMetrics.left ? `${toolbarMetrics.left}px` : undefined,
     width: toolbarMetrics.width ? `${toolbarMetrics.width}px` : undefined,
@@ -2393,20 +2359,10 @@ export default function KanbanBoard() {
       <div className={styles.boardAccentScope} style={boardAccentStyle}>
       <ProductAppShell
         styles={styles}
-        activeNav={boardViewMode === 'calendar' ? 'calendar' : activeNav}
-        onNavItemClick={handleBoardNavItemClick}
-        navItems={NAV}
-        LogoIcon={Icon.Logo}
-        CollapseIcon={Icon.Collapse}
-        ChevronIcon={Icon.Chevron}
-        HintIcon={Icon.Popover}
-        secondaryContent={renderSidebarSecondaryContent}
-        bottomContent={renderSidebarBottomContent}
         contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
-        mobileTitle={boardHeaderTitle}
-        mobileTitleMeta={boardHeaderMeta}
       >
         <div className={boardMainClassName} style={boardCoverStyle}>
+        <WorkspaceHeader />
         <PlanPageHeader
           title={boardHeaderTitle}
           meta={boardHeaderMeta}
