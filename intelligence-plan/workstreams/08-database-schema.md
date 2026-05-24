@@ -1,20 +1,37 @@
 # Frente 08: Schema de banco de dados
 
-Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
+## Missao do agente
 
-## Objetivo
+Implemente as migrations e estruturas de persistencia do Intelligence. O banco local deve ser a fonte de verdade para UI, auditoria, propostas, snapshots, tool calls e historico.
 
-Adicionar persistencia para conversas, mensagens, blocos, propostas, tool calls, snapshots, metadados de compaction, memoria e links de integracoes do Intelligence.
+OpenAI, File Search e GitHub sao provedores/runtime. Nao dependa deles para renderizar historico ou provar o que foi aplicado.
 
-A intencao desta frente e dar ao produto uma fonte local de verdade. OpenAI, File Search e GitHub sao runtimes/provedores; a UI, auditoria, permissoes, propostas e historico precisam sobreviver no banco do Plan Things.
+## Entidades principais
 
-O schema deve permitir tres coisas ao mesmo tempo:
+Crie tabelas para:
 
-- renderizar conversas antigas sem reexecutar o modelo;
-- provar o que foi proposto, aprovado e aplicado;
-- rastrear qual contexto/tools foram usados em cada resposta.
+```txt
+ai_conversations
+ai_messages
+ai_message_blocks
+ai_action_proposals
+ai_tool_calls
+ai_context_snapshots
+ai_compaction_items
+ai_memories
+ai_tool_settings
+ai_integration_settings
+ai_audit_events
+ai_file_index
+github_installations
+github_repositories
+github_webhook_events
+external_entity_links
+```
 
-## Tabelas principais
+Se a entrega for incremental, priorize conversas, mensagens, blocos, propostas, tool calls, snapshots e auditoria.
+
+## Conversas e mensagens
 
 ```txt
 ai_conversations
@@ -41,7 +58,11 @@ ai_messages
 - token_usage_json nvarchar(max) nullable
 - error_code varchar nullable
 - created_at datetimeoffset
+```
 
+## Blocos
+
+```txt
 ai_message_blocks
 - id uuid pk
 - message_id uuid not null
@@ -60,7 +81,7 @@ ai_message_blocks
 - created_at datetimeoffset
 ```
 
-`ai_messages.content_text` guarda narrativa quando existir, mas `ai_message_blocks` e o contrato principal da UI rica. Um assistant turn pode ter markdown, proposta, tool status e entity references na mesma mensagem.
+`ai_message_blocks` e o contrato da UI rica. Nao dependa de markdown para recuperar objetos.
 
 ## Propostas e tool calls
 
@@ -99,11 +120,9 @@ ai_tool_calls
 - created_at datetimeoffset
 ```
 
-`ai_action_proposals` representa uma intencao ainda nao aplicada. Enquanto status estiver pendente, nenhuma entidade real deve ser considerada alterada. O apply precisa preencher `approved_by_user_id`, `approved_at`, `applied_at`, `result_json` e referencias de entidade quando houver.
+Enquanto `ai_action_proposals.status` estiver pendente, nenhuma entidade real deve ser considerada alterada.
 
-`ai_tool_calls` deve registrar a tool que o modelo viu e as capabilities internas roteadas. Isso e necessario porque o modelo chama `action.propose`, mas o backend pode executar `board.card.batch_create_proposal` internamente.
-
-## Contexto e memoria
+## Contexto, compaction e memoria
 
 ```txt
 ai_context_snapshots
@@ -141,7 +160,7 @@ ai_memories
 - updated_at datetimeoffset
 ```
 
-`ai_context_snapshots` e auditavel e legivel pelo time. `ai_compaction_items` guarda apenas metadados ou payload opaco de runtime, conforme politica de retencao. Uma coisa nao substitui a outra.
+Snapshot e auditavel. Compaction e runtime opaco. Nao misture os papeis.
 
 ## Configuracoes e auditoria
 
@@ -176,35 +195,26 @@ ai_audit_events
 - created_at datetimeoffset
 ```
 
-`ai_tool_settings.tool_id` pode apontar para model-facing tools ou capabilities internas, desde que o backend diferencie o tipo. Isso permite bloquear `github.search` inteiro ou apenas uma capability especifica no futuro.
+## Regras de migration
 
-## Tabelas de integracao
+- Use Flyway conforme padrao do servico API.
+- Adicione indices para workspace, conversa, mensagem, status e entity references.
+- Use `nvarchar(max)` para JSON, salvo convencao existente diferente.
+- Evite mudancas destrutivas em tabelas existentes.
+- Defina enums/status no codigo mesmo que o banco use varchar.
+- Planeje retencao para payloads sensiveis.
 
-A frente de schema deve reservar migrations para tabelas especificas de provedores:
+## Limites desta frente
 
-```txt
-ai_file_index
-github_installations
-github_repositories
-github_webhook_events
-external_entity_links
-```
+- Nao implemente logica OpenAI.
+- Nao implemente UI.
+- Nao implemente handlers de tools.
+- Nao crie schema que exija reexecutar modelo para renderizar historico.
 
-Se a implementacao inicial nao criar todas as tabelas de provedores, pelo menos evitar escolhas que dificultem adiciona-las depois. `external_entity_links` e compartilhada por GitHub e outros conectores futuros.
-
-## Requisitos
-
-- Usar Flyway migrations consistentes com o servico API existente.
-- Adicionar indices para workspace, conversa, mensagem, entity references e status.
-- Armazenar JSON como `nvarchar(max)`, salvo se o projeto ja tiver outra convencao.
-- Evitar mudancas destrutivas em tabelas existentes de board/workspace.
-- Definir enums/status de forma explicita no codigo mesmo que o banco use varchar.
-- Planejar retencao para payloads com dados sensiveis.
-
-## Definition of Done
+## Aceite
 
 - Migrations criam tabelas principais.
-- Constraints e indices suportam leituras comuns.
-- Propostas e blocos de entity reference podem ser relacionados.
-- Context snapshots e metadados de compaction podem coexistir.
-- Audit events conseguem rastrear acoes aplicadas.
+- Constraints/indices suportam leituras comuns.
+- Propostas e blocos podem ser relacionados.
+- Snapshots e compaction coexistem sem confusao de papel.
+- Audit events rastreiam tool calls e acoes aplicadas.

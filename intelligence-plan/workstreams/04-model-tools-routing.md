@@ -1,29 +1,25 @@
 # Frente 04: Tools do modelo e roteamento
 
-Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
+## Missao do agente
 
-## Objetivo
+Implemente a camada de tools do Intelligence com duas superficies: poucas `model-facing tools` para o modelo e varias capabilities internas granulares no backend.
 
-Implementar uma paleta pequena e robusta de model-facing tools, apoiada por capabilities internas granulares.
+O objetivo e reduzir erro de escolha do `gpt-5.4-mini` sem limitar o backend. O modelo escolhe tools agregadoras; o backend valida, roteia, persiste e audita.
 
-A intencao desta frente e reduzir a carga cognitiva do `gpt-5.4-mini` sem empobrecer o backend. O modelo deve escolher entre poucas tools agregadoras. O backend traduz essa intencao para capabilities internas especificas, valida tudo e decide se o resultado e leitura direta, proposta pendente ou erro recuperavel.
+## Decisao obrigatoria
 
-## Decisao central
-
-Usar dois niveis:
+Use dois niveis:
 
 ```txt
-AiCapabilityRegistry = operacoes internas granulares.
-AiModelToolRegistry = pequeno conjunto de tools expostas ao modelo.
+AiCapabilityRegistry = catalogo interno granular.
+AiModelToolRegistry = tools enviadas ao modelo.
 ```
 
-Nao expor muitas tools especificas diretamente ao `gpt-5.4-mini`. O modelo deve ver uma paleta pequena e dinamica.
+Nao exponha capabilities granulares diretamente ao modelo no MVP.
 
-Essa divisao evita sobreposicao como `card.create`, `card.batch_create`, `card.move`, `card.assign` competindo no mesmo prompt. Internamente essas operacoes continuam separadas; externamente o modelo aprende uma regra simples: buscar contexto, buscar entidade, propor acao, buscar arquivo ou buscar GitHub.
+## Model-facing tools do MVP
 
-## Model-facing tools
-
-Tools do MVP:
+Exponha dinamicamente no maximo:
 
 ```txt
 context.search
@@ -33,30 +29,27 @@ file.search
 github.search
 ```
 
-Exposicao dinamica:
+Regras de montagem:
 
 - Workspace geral: `context.search`, `entity.get`, `action.propose`.
-- Kanban com arquivos: adicionar `file.search`.
+- Kanban com arquivos habilitados: adicionar `file.search`.
 - Kanban com GitHub conectado: adicionar `github.search`.
-- Se um provedor esta desconectado ou desabilitado, nao enviar sua tool.
+- Provider desconectado ou desabilitado: nao envie a tool.
+- Usuario sem permissao: nao envie a tool.
 
-Meta: no maximo 5 model-facing tools por request no MVP.
+## Intencao de cada tool
 
-Papel de cada tool:
+| Tool | Quando usar | Resultado |
+| ---- | ----------- | --------- |
+| `context.search` | Buscar contexto operacional por escopo/intencao. | Resultados categorizados de planos, cards, membros, Inbox e board. |
+| `entity.get` | Detalhar entidade ja identificada. | Snapshot permissionado da entidade. |
+| `action.propose` | Preparar mudanca revisavel. | `ai_action_proposals` pendente e `ActionProposalBlock`. |
+| `file.search` | Buscar arquivos autorizados. | `FileReferenceBlock` e citacoes/metadados. |
+| `github.search` | Buscar repos, commits e PRs autorizados. | Blocos GitHub ou insumos para proposta. |
 
-| Tool | Intencao | Resultado esperado |
-| ---- | -------- | ------------------ |
-| `context.search` | Encontrar contexto operacional por escopo e intencao do usuario. | Lista categorizada de planos, cards, membros, Inbox e estado do board. |
-| `entity.get` | Carregar detalhes de uma entidade ja identificada. | Snapshot detalhado e permissionado da entidade. |
-| `action.propose` | Preparar mudanca revisavel pelo usuario. | Registro pendente e `ActionProposalBlock`. |
-| `file.search` | Buscar metadados/conteudo de arquivos autorizados. | Resultados de arquivo e possiveis citacoes. |
-| `github.search` | Buscar repos, commits e PRs autorizados. | Referencias externas ou insumos para proposta. |
+`context.search.query` e frase de busca/ranking. Nao use essa query para liberar ferramentas por palavra-chave. Tools sao liberadas antes, por escopo, permissoes, configuracoes e integracoes.
 
-`context.search.query` nao deve ser quebrado palavra por palavra para mapear tools. Ele e uma frase de intencao usada por busca local/semantica/ranking. A selecao de tools acontece antes, por contexto, permissoes e prompt do modelo; o backend pode usar a query para buscar entidades relevantes, nao para liberar capacidade sensivel.
-
-## Capabilities internas
-
-Capabilities internas iniciais:
+## Capabilities internas iniciais
 
 ```txt
 workspace.get_summary
@@ -105,24 +98,24 @@ inbox.apply_convert_to_card
 github.apply_attach_to_card
 ```
 
-## action.propose
+## `action.propose`
 
 O modelo pode propor mudancas, mas nao pode aplica-las.
 
-Fluxo:
+Fluxo obrigatorio:
 
 ```txt
 modelo chama action.propose
 backend valida schema e permissoes
-backend cria registro pendente em ai_action_proposals
+backend cria ai_action_proposals pendente
 frontend renderiza ActionProposalBlock
 usuario aprova/rejeita/edita
 frontend chama endpoint de apply
 backend revalida e aplica usando servicos existentes
-conversa recebe blocos de referencia a entidades reais
+conversa recebe entity references reais
 ```
 
-Action types:
+`actionType` iniciais:
 
 ```txt
 PLAN_CREATE
@@ -137,9 +130,9 @@ INBOX_CONVERT_TO_CARD
 GITHUB_ATTACH_TO_CARD
 ```
 
-Cada `actionType` deve mapear para uma capability interna de proposta. Exemplo: `CARD_BATCH_CREATE` roteia para `board.card.batch_create_proposal`. O endpoint de apply depois roteia a proposta persistida para a capability interna de aplicacao correspondente, como `board.card.apply_create`.
+Mapeie cada `actionType` para uma capability interna de proposta. Exemplo: `CARD_BATCH_CREATE` -> `board.card.batch_create_proposal`.
 
-O backend deve segurar a proposta em `ai_action_proposals` enquanto o usuario nao aprovar. Nesse periodo, nada foi alterado na entidade real. A proposta pode expirar, ser editada, rejeitada ou falhar no apply se permissao/estado mudarem.
+O endpoint de apply usa a proposta persistida para chamar a capability interna de aplicacao correspondente. Enquanto o usuario nao aprovar, nada muda nas entidades reais.
 
 ## Schemas estritos
 
@@ -147,17 +140,24 @@ Todas as model-facing tools devem usar JSON Schema com `strict: true`.
 
 Regras:
 
-- `additionalProperties: false` para objetos;
-- todas as propriedades declaradas ficam em `required`;
-- valores opcionais usam `type: ["string", "null"]` ou equivalente;
-- payloads genericos ainda precisam usar campos fechados;
-- backend faz validacao mais estrita por action type depois da chamada do modelo.
+- `additionalProperties: false` em objetos.
+- Todas as propriedades declaradas entram em `required`.
+- Campos opcionais usam union com `null`.
+- Nao use `payload` livre.
+- Valide novamente no backend por `actionType`.
 
-Para `action.propose`, evitar `payload` livre. Use campos fechados como `plan`, `cards`, `memberInvites` e `attachments`; campos nao usados ficam `null` ou array vazio. Isso mantem compatibilidade com Structured Outputs e reduz argumentos incompletos.
+Para `action.propose`, use payload fechado com campos como:
 
-## Routers e handlers
+```txt
+plan
+cards
+memberInvites
+attachments
+```
 
-Classes sugeridas:
+Campos nao usados ficam `null` ou array vazio.
+
+## Classes alvo
 
 ```txt
 AiCapabilityRegistry
@@ -169,7 +169,7 @@ ActionProposalRouter
 ActionProposalHandler
 ```
 
-Handlers:
+Handlers sugeridos:
 
 ```txt
 PlanCreateProposalHandler
@@ -184,25 +184,18 @@ InboxConvertToCardProposalHandler
 GithubAttachToCardProposalHandler
 ```
 
-Responsabilidades:
+## Limites desta frente
 
-- `AiModelToolRegistry` monta as tools que serao enviadas ao modelo naquela request.
-- `AiToolPermissionService` filtra por usuario, workspace, provider e escopo.
-- `AiModelToolRouter` recebe uma chamada model-facing e chama capabilities internas.
-- `ActionProposalRouter` valida `actionType`, target e payload, depois cria preview/proposta.
-- `AiCapabilityExecutor` executa capabilities read-only ou handlers internos com auditoria.
+- Nao exponha apply ao modelo.
+- Nao exponha granular write tools ao modelo.
+- Nao implemente escrita no GitHub.
+- Nao confie em ids vindos do modelo sem revalidar.
 
-## Fora do escopo
+## Aceite
 
-- Aplicar propostas diretamente a partir de output do modelo.
-- Expor granular write tools ao modelo.
-- Operacoes de escrita no GitHub.
-
-## Definition of Done
-
-- Model-facing tools sao montadas dinamicamente por conversa.
-- Tools desabilitadas ou nao autorizadas nao sao enviadas para OpenAI.
-- `context.search` e `entity.get` roteiam para capabilities internas de leitura.
-- `action.propose` cria apenas propostas pendentes.
-- Endpoint de apply e acionado pelo frontend/usuario, nao pelo modelo.
-- Tool calls registram capabilities roteadas para auditoria.
+- Tools sao montadas dinamicamente por conversa.
+- Tools desabilitadas/nao autorizadas nao sao enviadas para OpenAI.
+- `context.search` e `entity.get` roteiam para leitura.
+- `action.propose` cria apenas proposta pendente.
+- Apply e acionado pelo frontend/usuario.
+- `ai_tool_calls` registra tool model-facing e capabilities roteadas.

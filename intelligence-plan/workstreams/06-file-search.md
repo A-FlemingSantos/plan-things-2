@@ -1,35 +1,36 @@
 # Frente 06: File Search
 
-Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
+## Missao do agente
 
-## Objetivo
+Implemente suporte a busca de arquivos para o Intelligence, combinando metadados locais do Plan Things com OpenAI File Search quando conteudo semantico estiver disponivel.
 
-Permitir que Intelligence busque metadados e conteudo de arquivos respeitando permissoes do Plan Things.
+Arquivos entram como contexto permissionado. Nao envie arquivo, vector store ou resultado ao modelo sem validar workspace, entidade e permissao do usuario.
 
-A intencao desta frente e fazer arquivos entrarem no assistente como contexto permissionado, nao como upload solto para o modelo. O backend deve saber quais arquivos existem, quem pode ve-los, qual conteudo foi indexado e como transformar resultados em blocos navegaveis.
+## Estrategia
 
-## Busca em duas camadas
-
-Usar duas camadas:
+Use duas camadas:
 
 ```txt
 Busca local de metadados = nome, tipo, dono, relacoes, permissoes.
 OpenAI File Search = busca semantica/conteudo via vector stores.
 ```
 
-File Search nao substitui controle local de acesso.
+Ordem obrigatoria:
 
-A busca local responde "quais arquivos o usuario pode consultar?". File Search responde "o que dentro desses arquivos parece relevante?". A ordem importa: primeiro filtra acesso local, depois usa busca semantica/conteudo somente sobre fontes permitidas.
+1. Filtrar arquivos localmente por acesso.
+2. Decidir quais fontes podem entrar na request.
+3. Usar File Search apenas sobre fontes permitidas.
+4. Retornar blocos estruturados, nao links markdown soltos.
 
-## Model-facing tool
+## Tool e capabilities
 
-Expor apenas:
+Model-facing tool:
 
 ```txt
 file.search
 ```
 
-quando arquivos estiverem habilitados e o usuario tiver acesso.
+Enviar `file.search` ao modelo somente quando arquivos estiverem habilitados e o usuario tiver acesso.
 
 Capabilities internas:
 
@@ -41,21 +42,17 @@ file.attach_to_card_proposal
 file.apply_attach_to_card
 ```
 
-`file.apply_attach_to_card` e interna e roda apenas depois da aprovacao do usuario.
+`file.apply_attach_to_card` e interna e roda somente apos aprovacao do usuario.
 
-`file.search` deve poder combinar metadados e conteudo. Exemplo: buscar "contrato do cliente X" pode primeiro restringir por nome/projeto e depois usar File Search para trechos relevantes. O modelo nao deve receber ids internos de vector store como se fossem permissao.
+## Vector stores
 
-## Estrategia de vector store
-
-Recomendacao:
+Recomendacao inicial:
 
 - vector store por workspace para arquivos compartilhados pesquisaveis;
-- vector store por conversa para uploads temporarios no chat;
-- vector store por plano apenas depois, se isolamento/performance exigirem.
+- vector store por conversa para uploads temporarios;
+- vector store por plano apenas se isolamento/performance exigir depois.
 
-Antes de incluir vector store ou arquivo em uma request ao modelo, o backend deve filtrar por workspace, plano, permissoes de arquivo e acesso do usuario.
-
-Para o MVP, comece com metadados locais e indexacao dos tipos mais seguros/suportados. Se um arquivo nao estiver indexado, `file.search` ainda pode retornar metadado e indicar que conteudo nao esta disponivel para busca semantica.
+Para MVP, comece com tipos de arquivo seguros/suportados. Se arquivo nao estiver indexado, `file.search` ainda pode retornar metadados e informar que conteudo nao esta pesquisavel.
 
 ## Tabela
 
@@ -73,51 +70,68 @@ ai_file_index
 - created_at
 ```
 
-`content_hash` evita reindexar arquivo sem mudanca. `index_status` precisa distinguir pendente, indexando, indexado, falhou, removido e nao suportado.
+`index_status` deve distinguir:
+
+```txt
+pending
+indexing
+indexed
+failed
+removed
+unsupported
+```
+
+`content_hash` evita reindexar arquivo sem mudanca.
 
 ## Eventos de indexacao
 
 Quando arquivo for criado, atualizado, removido, anexado, desanexado ou tiver permissao alterada:
 
-1. atualizar metadados locais;
-2. enfileirar indexacao/remocao;
-3. atualizar arquivo/vector store na OpenAI se necessario;
-4. registrar falha e estado de retry.
+1. Atualize metadados locais.
+2. Enfileire indexacao/remocao.
+3. Atualize OpenAI file/vector store se necessario.
+4. Registre falha e estado de retry.
 
-Mudanca de permissao e tao importante quanto mudanca de conteudo: um resultado antigo nao pode continuar disponivel para usuario que perdeu acesso.
+Mudanca de permissao deve invalidar acesso a resultados antigos.
 
 ## Blocos de resultado
 
-Resultados de arquivo devem virar:
+Resultados viram:
 
 ```txt
 FileReferenceBlock
 ```
 
-com:
+Campos minimos:
 
-- id do arquivo;
+- id do arquivo local;
 - titulo/nome;
 - mime type;
 - tamanho;
 - dono/estado de compartilhamento;
 - href;
-- metadados opcionais de citacao/fonte.
+- citacoes/metadados de fonte quando houver.
 
-Quando houver citacoes de conteudo, elas devem aparecer como metadados do bloco ou subitens controlados, nao como links markdown soltos. O clique principal deve abrir o arquivo real no Plan Things.
+Citacoes devem ser metadados/subitens controlados do bloco, nao links markdown soltos.
 
 ## Seguranca
 
-- Nunca buscar arquivos fora do escopo autorizado do workspace.
-- Nunca confiar em ids de arquivo vindos do modelo sem validar acesso.
-- Nao expor ids de arquivo da OpenAI ao frontend, salvo se necessario.
-- Evitar indexar arquivos sensiveis ou nao suportados ate existir politica clara.
-- Tratar conteudo de arquivo como contexto nao confiavel para reduzir prompt injection.
+- Nunca buscar arquivo fora do workspace autorizado.
+- Nunca confiar em ids vindos do modelo sem validar acesso.
+- Nao expor ids OpenAI ao frontend, salvo necessidade tecnica clara.
+- Nao indexar conteudo sensivel sem politica definida.
+- Tratar conteudo de arquivo como contexto nao confiavel contra prompt injection.
 
-## Definition of Done
+## Limites desta frente
 
-- `file.search` roteia para capabilities locais de metadados e conteudo.
-- Tabela de indexacao de arquivos existe.
+- Nao implemente UI completa de anexos.
+- Nao implemente propostas gerais fora de arquivos.
+- Nao use File Search para contornar permissao local.
+
+## Aceite
+
+- `file.search` roteia para busca de metadados e conteudo.
+- Tabela de indexacao existe.
 - Busca respeita permissoes.
-- Resultados de arquivo renderizam como blocos estruturados, nao apenas links markdown.
-- Propostas de anexar arquivo exigem aprovacao do usuario.
+- Resultado renderizavel como `FileReferenceBlock`.
+- Anexar arquivo a card exige proposta e aprovacao.

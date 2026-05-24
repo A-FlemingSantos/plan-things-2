@@ -1,16 +1,14 @@
 # Frente 07: Integracao GitHub
 
-Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
+## Missao do agente
 
-## Objetivo
+Implemente GitHub como conector opcional e read-only para o Plan Things Intelligence. O sistema deve ler repositorios, commits e pull requests autorizados, relaciona-los a cards e criar links locais auditaveis.
 
-Integrar GitHub como conector opcional do Plan Things Intelligence para ler repositorios, commits e pull requests, depois relaciona-los a cartoes do Plan Things.
-
-A intencao desta frente e transformar atividade de desenvolvimento em contexto operacional do Kanban, sem dar poder de escrita no GitHub ao assistente. O Plan Things pode ler commits/PRs autorizados, sugerir cartoes, anexar referencias a cards e manter links locais auditaveis.
+Nao implemente escrita no GitHub no MVP.
 
 ## Tipo de integracao
 
-Usar GitHub App, nao OAuth App amplo.
+Use GitHub App, nao OAuth App amplo.
 
 Motivos:
 
@@ -19,13 +17,13 @@ Motivos:
 - selecao de repositorios;
 - webhooks;
 - installation tokens de curta duracao;
-- melhor isolamento por workspace.
+- isolamento por workspace.
 
-O workspace deve controlar quais repositorios instalados ficam habilitados para Intelligence. Instalacao no GitHub nao significa exposicao automatica ao modelo.
+Instalacao no GitHub nao significa exposicao automatica ao modelo. O workspace deve habilitar repositorios para Intelligence.
 
 ## Permissoes iniciais
 
-Solicitar permissoes read-only primeiro:
+Solicite read-only:
 
 ```txt
 Metadata: read
@@ -36,9 +34,7 @@ Checks: read opcional
 Issues: read opcional
 ```
 
-Nao solicitar permissoes de escrita no GitHub no MVP.
-
-Permissoes de escrita futuras devem ser avaliadas separadamente e nao fazem parte do contrato inicial. O MVP escreve apenas no banco do Plan Things, por exemplo criando `external_entity_links`.
+Nao solicite write permissions no MVP.
 
 ## Tabelas
 
@@ -81,17 +77,17 @@ external_entity_links
 - created_at
 ```
 
-`external_entity_links` e a ponte principal entre GitHub e entidades locais. Ela permite mostrar commits/PRs no card mesmo depois da conversa terminar, e evita depender de buscar tudo novamente no GitHub para renderizar historico basico.
+`external_entity_links` e a ponte entre GitHub e entidades locais.
 
-## Model-facing tool
+## Tool e capabilities
 
-Expor apenas:
+Model-facing tool:
 
 ```txt
 github.search
 ```
 
-quando GitHub estiver conectado, habilitado e autorizado.
+Enviar somente quando GitHub estiver conectado, habilitado e autorizado.
 
 Capabilities internas:
 
@@ -107,9 +103,7 @@ github.suggest_cards_from_commits
 github.apply_attach_to_card
 ```
 
-Apply e apenas interno.
-
-`github.search` deve aceitar intencao do usuario, tipos de entidade, repos autorizados e filtros de data quando existirem. O backend decide internamente se lista commits, busca PRs, consulta cache local ou chama detalhes especificos.
+Apply e interno e altera apenas o Plan Things, criando links locais.
 
 ## Webhooks
 
@@ -131,7 +125,8 @@ Regras:
 - usar webhook secret;
 - rejeitar payload invalido;
 - garantir idempotencia por delivery id;
-- enfileirar processamento e responder rapidamente.
+- enfileirar processamento;
+- responder rapido ao GitHub.
 
 Tabela:
 
@@ -149,50 +144,60 @@ github_webhook_events
 - created_at
 ```
 
-Webhooks devem manter cache e links atualizados, mas nao devem disparar acoes de IA sozinhos no MVP. Eles alimentam dados para buscas futuras e reduzem dependencia de polling/rate limit.
+Webhooks alimentam cache/busca. Nao dispare acoes de IA sozinho no MVP.
 
 ## Blocos
 
-Commits e PRs renderizam como:
+Renderize GitHub como:
 
 ```txt
 GitHubCommitBlock
 GitHubPullRequestBlock
 ```
 
-Eles podem ser anexados a cartoes usando `external_entity_links`.
+Campos esperados:
 
-Blocos GitHub devem mostrar origem, repo, autor, data, mensagem/titulo e status basico quando disponivel. O clique pode abrir GitHub em nova aba ou uma visao de detalhes local, mas a conversa deve preservar snapshot suficiente para continuar compreensivel.
+- provider;
+- repo;
+- autor;
+- data;
+- SHA ou numero do PR;
+- mensagem/titulo;
+- status basico quando disponivel;
+- external URL;
+- snapshot suficiente para historico.
 
-## Fluxos esperados
+## Fluxos obrigatorios
 
 ### Buscar commits recentes
 
-1. Usuario pede commits relacionados a um tema.
-2. Backend verifica GitHub conectado, repos habilitados e permissoes.
+1. Usuario pede commits relacionados a tema.
+2. Backend verifica integracao, repos habilitados e permissoes.
 3. `github.search` retorna commits/PRs autorizados.
-4. Assistente responde com narrativa curta e blocos GitHub.
+4. Assistente responde com narrativa e blocos GitHub.
 
-### Anexar commit a card
+### Anexar commit ou PR a card
 
-1. Usuario pede para anexar commit/PR a um card.
+1. Usuario pede anexacao.
 2. Assistente usa `github.search` e/ou `entity.get`.
 3. Assistente cria proposta via `action.propose`.
 4. Usuario aprova.
-5. Backend cria `external_entity_links` e conversa mostra card/commit relacionados.
+5. Backend cria `external_entity_links`.
+6. Conversa mostra card e commit/PR relacionados.
 
-## Fora do escopo
+## Limites desta frente
 
-- Escrever comentarios no GitHub.
-- Criar issues no GitHub.
-- Abrir pull requests.
-- Fazer push de branches.
+- Nao escrever comentarios no GitHub.
+- Nao criar issues.
+- Nao abrir PRs.
+- Nao fazer push.
+- Nao expor repos nao habilitados pelo workspace.
 
-## Definition of Done
+## Aceite
 
-- GitHub App pode ser instalado para um workspace.
-- Repositorios autorizados podem ser listados/habilitados.
-- Validacao de assinatura de webhook existe.
+- GitHub App pode ser instalado para workspace.
+- Repos autorizados podem ser listados/habilitados.
+- Webhook valida assinatura e idempotencia.
 - `github.search` retorna commits/PRs autorizados.
-- Commits/PRs podem ser propostos como anexos de cartoes.
-- Anexos aplicados criam `external_entity_links` locais.
+- Commits/PRs podem virar proposta de anexo.
+- Apply cria `external_entity_links` locais.

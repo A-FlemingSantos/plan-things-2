@@ -1,14 +1,14 @@
 # Frente 02: Contrato de UI no frontend
 
-Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
+## Missao do agente
 
-## Objetivo
+Implemente ou remodele a UI mockada de Intelligence para virar o contrato visual da integracao real. Esta frente deve produzir componentes, estados e dados fake com o mesmo formato que o backend enviara depois.
 
-Remodelar a UI incompleta de Intelligence no app web em um contrato visual e interativo que a integracao real com backend podera alimentar depois.
+Nao implemente OpenAI, banco, GitHub OAuth ou File Search aqui. O objetivo e deixar Workspace e Kanban prontos para receber streaming, blocos estruturados, propostas e entity references sem redesenho posterior.
 
-A intencao desta frente nao e apenas "embelezar o mock". Ela deve transformar a UI atual do Workspace e do Kanban em um contrato de experiencia: os mesmos blocos, estados e interacoes usados com dados fake devem receber eventos reais do backend depois. Isso evita reconstruir a interface quando streaming, propostas e entity references chegarem.
+## Arquivos de entrada
 
-Arquivos atuais relevantes:
+Inspecione primeiro:
 
 ```txt
 apps/web/src/features/workspace/pages/Workspace/Workspace.jsx
@@ -17,30 +17,37 @@ apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx
 apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css
 ```
 
-Area compartilhada futura:
+Crie ou prepare a area compartilhada:
 
 ```txt
 apps/web/src/features/intelligence
 ```
 
-## Decisao arquitetural
+## Entregas
 
-Markdown e apenas um tipo de bloco. Objetos reais e propostas devem ser blocos estruturados fora do markdown.
+- `AiComposer` compartilhado.
+- `AiConversation` compartilhado.
+- `AiBlockRenderer` compartilhado.
+- Blocos visuais para markdown, propostas, entidades e status de tool.
+- Dados fake com o contrato esperado do backend.
+- Workspace e Kanban usando a mesma arquitetura visual.
+- Estados de streaming, erro, proposta e entidade real representados.
+
+## Arquitetura de blocos
+
+Implemente a UI considerando esta separacao:
 
 ```txt
 MarkdownBlock = narrativa, listas, tabelas, codigo, links, citacoes, diagramas.
 EntityReferenceBlock = objetos reais clicaveis do app ou externos.
 ActionProposalBlock = propostas aprovaveis pelo usuario.
+QuestionBlock = perguntas objetivas.
 ToolRunStatusBlock = estado de execucao de tools.
 ```
 
-Nao embutir planos, cartoes, arquivos, membros, itens de Inbox, commits ou propostas como markdown customizado.
+Nao renderize plano, card, arquivo, membro, Inbox, commit, PR ou proposta como markdown customizado. Esses objetos precisam de componente proprio porque possuem href, status, snapshot, permissoes e acoes.
 
-Essa separacao e essencial porque objetos do app possuem estado, permissoes, href, snapshots e acoes. Markdown deve ser renderizado com seguranca para narrativa; blocos estruturados devem carregar comportamento.
-
-## Componentes
-
-Estrutura recomendada:
+## Componentes sugeridos
 
 ```txt
 apps/web/src/features/intelligence/api/intelligenceApi.js
@@ -62,11 +69,27 @@ apps/web/src/features/intelligence/components/blocks/QuestionBlock.jsx
 apps/web/src/features/intelligence/components/blocks/ToolRunStatusBlock.jsx
 ```
 
-`WorkspaceIntelligenceSection` e o painel de Intelligence do Kanban devem se tornar consumidores desse conjunto compartilhado, nao implementacoes paralelas. A diferenca entre Workspace e Kanban deve entrar por props de escopo, contexto inicial e capacidades habilitadas.
+Use os nomes como guia, mas siga os padroes reais do projeto se houver convencao diferente.
 
-## Contrato de dados fake
+## Contrato fake obrigatorio
 
-Use dados fake com o mesmo formato esperado dos blocos reais do backend:
+Crie fixtures/mock data que cubram pelo menos:
+
+```txt
+markdown
+plan_reference
+card_reference
+file_reference
+member_reference
+inbox_reference
+github_commit_reference
+github_pull_request_reference
+action_proposal
+question
+tool_run_status
+```
+
+Exemplo de plan reference:
 
 ```js
 {
@@ -84,7 +107,7 @@ Use dados fake com o mesmo formato esperado dos blocos reais do backend:
 }
 ```
 
-Referencia de cartao:
+Exemplo de card reference:
 
 ```js
 {
@@ -104,7 +127,7 @@ Referencia de cartao:
 }
 ```
 
-Blocos de proposta devem incluir:
+Exemplo de proposta:
 
 ```js
 {
@@ -118,52 +141,58 @@ Blocos de proposta devem incluir:
 }
 ```
 
-O mock deve representar a transicao completa: proposta pendente, proposta aprovada, aplicacao em andamento, proposta aplicada e entity reference resultante. A aprovacao nao deve trocar apenas texto; deve produzir visualmente um objeto real clicavel.
+## Estados obrigatorios da UI
 
-## Renderizacao de markdown
+Renderize e teste visualmente:
 
-Use renderer markdown seguro para blocos narrativos. Open WebUI e uma referencia util: markdown e parseado/tokenizado e renderizado por componentes controlados, em vez de ser inserido como HTML cru.
+```txt
+empty
+drafting
+streaming
+tool_running
+proposal_pending
+proposal_approved
+proposal_rejected
+proposal_failed
+entity_created
+entity_updated
+entity_unavailable
+error_retryable
+error_permission
+```
 
-Requisitos:
+O estado aprovado deve mostrar a transicao: proposta aprovada, aplicacao em andamento e entity reference resultante. Nao troque apenas o texto do bloco.
 
-- sanitizar markdown vindo do usuario/modelo;
-- suportar tabelas/listas/code blocks GFM;
-- evitar reparse caro de markdown a cada chunk de streaming;
-- usar throttle/debounce durante streaming;
-- renderizar blocos estruturados separadamente do markdown.
-
-Durante streaming, o texto parcial pode aparecer em um `MarkdownBlock` temporario. Blocos estruturados so devem entrar quando houver evento explicito do backend, como `block.created`, `proposal.created`, `entity.created` ou `entity.updated`. Isso evita que o frontend tente interpretar markdown incompleto como estrutura de produto.
-
-## Requisitos do composer
+## Composer
 
 O composer deve suportar:
 
 - prompt digitado;
 - chips de contexto anexado;
-- indicadores de ferramentas/integracoes habilitadas;
-- botao de voz;
-- botao de envio;
+- indicadores de tools/integracoes habilitadas;
+- botao de voz se ja existir no app;
+- envio;
 - parar geracao;
 - estados disabled/loading;
-- menu para inserir contexto de arquivos, itens Kanban, Inbox e plugins.
+- menu para anexar arquivos, itens Kanban, Inbox e plugins.
 
-Chips de contexto anexado devem mostrar objetos reais selecionados pelo usuario. Eles nao sao prompt decorativo: devem virar attached context na mensagem enviada ao backend.
+Chips de contexto representam objetos reais selecionados pelo usuario. Eles devem ter ids/tipos suficientes para virar attached context no backend.
 
-## Requisitos de navegacao
+## Markdown
 
-- Bloco de plano abre o plano.
-- Bloco de cartao abre o plano e o card/modal selecionado.
-- Bloco de arquivo abre preview/download.
-- Bloco de Inbox abre painel Inbox com item selecionado.
-- Commit/PR do GitHub abre link externo ou bloco de detalhes.
+Use renderer markdown seguro para narrativa:
 
-Se rotas atuais nao suportarem abertura direta de card, adicionar rota ou padrao por query param.
+- sanitizar conteudo;
+- suportar GFM basico;
+- renderizar code blocks;
+- evitar reparse caro a cada delta de streaming;
+- manter blocos estruturados fora do markdown.
 
-Cada bloco deve lidar com `entity_unavailable`: manter o snapshot historico, bloquear a acao principal quando necessario e mostrar que o objeto nao esta mais disponivel.
+Durante streaming, mostre texto parcial como `MarkdownBlock` temporario. Crie blocos estruturados apenas a partir de eventos explicitos simulados, como `proposal.created` ou `block.created`.
 
-## Eventos esperados do backend
+## Eventos simulados
 
-O frontend deve estar pronto para reconciliar estes eventos:
+Prepare a UI para estes eventos:
 
 ```txt
 message.created
@@ -179,20 +208,31 @@ assistant.completed
 assistant.failed
 ```
 
-Ids estaveis sao obrigatorios para evitar duplicacao durante reconexao/retry de SSE.
+Ids estaveis sao obrigatorios para evitar duplicacao em retry/reconexao.
 
-## Fora do escopo
+## Navegacao
 
-- Chamada real para OpenAI.
-- Persistencia backend.
-- OAuth do GitHub.
-- Indexacao de arquivos.
+- Plano abre o plano.
+- Cartao abre o plano e seleciona o card/modal.
+- Arquivo abre preview/download.
+- Inbox abre item selecionado.
+- Commit/PR abre GitHub em nova aba ou detalhe local.
+- Entidade indisponivel mantem snapshot historico e bloqueia acao principal.
 
-## Definition of Done
+Se nao existir rota direta para card, implemente rota ou query param compativel com o padrao do app.
 
-- Workspace e Kanban usam o mesmo conceito de block renderer.
-- UI mockada cobre todos os estados obrigatorios.
-- Blocos fake podem ser trocados por blocos do backend sem redesenho.
-- Markdown e objetos estruturados sao visualmente distintos.
-- Blocos de proposta mostram claramente estados pendente/aplicando/aplicado/rejeitado/falho.
-- Chips de contexto e eventos simulados exercitam o mesmo fluxo esperado do backend.
+## Limites desta frente
+
+- Nao chame OpenAI.
+- Nao implemente persistencia real.
+- Nao implemente OAuth GitHub.
+- Nao implemente indexacao de arquivos.
+- Nao mude regras de negocio de board/workspace fora do necessario para navegacao visual.
+
+## Aceite
+
+- Workspace e Kanban usam a mesma base de Intelligence.
+- Fixtures cobrem todos os tipos de bloco do MVP.
+- Estados obrigatorios aparecem na UI mockada.
+- Proposta e entity reference sao visualmente e semanticamente diferentes.
+- O contrato fake pode ser trocado por resposta backend sem redesenho.

@@ -1,38 +1,43 @@
-# Plan Things Intelligence: frentes de trabalho
+# Plan Things Intelligence: briefings para agentes
 
-Esta pasta divide a implementacao de Intelligence em frentes pequenas, autossuficientes e executaveis por agentes separados.
+Use esta pasta para delegar a implementacao de Intelligence por partes. Cada arquivo em `workstreams/` e um briefing operacional para um agente especifico.
 
-Cada arquivo deve conter contexto suficiente para implementar aquela parte sem abrir outro documento de planejamento. A intencao e reduzir janela de contexto, evitar mistura de responsabilidades e manter cada agente concentrado no contrato que precisa entregar.
+## Instrucao obrigatoria para o agente
 
-## Como usar
-
-- Escolha apenas uma frente por agente.
-- Trate o arquivo escolhido como o briefing completo da tarefa.
-- Nao amplie escopo sem pedido explicito do usuario.
-- Preserve os limites definidos no arquivo: UI nao deve inventar contrato backend, backend nao deve chamar OpenAI pelo frontend, tools nao devem aplicar mudancas sem aprovacao.
-- Prefira padroes, servicos e rotas existentes no projeto.
+- Leia apenas o arquivo da frente atribuida.
+- Nao abra outros documentos de planejamento, a menos que o usuario mande explicitamente.
+- Implemente somente o escopo da frente atribuida.
+- Respeite os contratos citados no arquivo mesmo quando outra camada ainda nao existir.
 - Antes de editar codigo, rode impact analysis do GitNexus para os simbolos afetados.
-- Mantenha a implementacao incremental, testavel e facil de reverter.
+- Antes de commit, rode `gitnexus_detect_changes()`.
 
-## Frentes
+## Mapa de frentes
 
-1. `workstreams/01-product-experience.md`: comportamento do produto, fluxos e limites de UX.
-2. `workstreams/02-frontend-ui-contract.md`: contrato visual, blocos interativos e composer.
-3. `workstreams/03-backend-conversation-streaming.md`: conversas, mensagens, Responses API e SSE.
-4. `workstreams/04-model-tools-routing.md`: tools expostas ao modelo, capabilities internas, propostas e apply.
-5. `workstreams/05-context-memory-compaction.md`: snapshots, contexto, memoria e Compaction.
-6. `workstreams/06-file-search.md`: arquivos, metadados, vector stores e blocos de arquivo.
-7. `workstreams/07-github-integration.md`: GitHub App, commits, PRs, webhooks e links externos.
-8. `workstreams/08-database-schema.md`: migrations e persistencia das entidades de Intelligence.
-9. `workstreams/09-security-permissions-audit.md`: permissoes, governanca, segredos e auditoria.
-10. `workstreams/10-testing-evals.md`: testes automatizados, evals e QA manual.
+1. `workstreams/01-product-experience.md`: transformar os fluxos de produto em regras implementaveis para UI, backend e tools.
+2. `workstreams/02-frontend-ui-contract.md`: criar o contrato visual/mockado da UI de Intelligence.
+3. `workstreams/03-backend-conversation-streaming.md`: implementar conversa, mensagens, Responses API e SSE.
+4. `workstreams/04-model-tools-routing.md`: implementar model-facing tools, capabilities internas, propostas e apply.
+5. `workstreams/05-context-memory-compaction.md`: implementar contexto, snapshots, memoria e Compaction.
+6. `workstreams/06-file-search.md`: implementar busca de arquivos, indexacao e blocos de arquivo.
+7. `workstreams/07-github-integration.md`: implementar GitHub App, busca de commits/PRs e links externos.
+8. `workstreams/08-database-schema.md`: implementar migrations e persistencia de Intelligence.
+9. `workstreams/09-security-permissions-audit.md`: implementar permissoes, governanca, segredos e auditoria.
+10. `workstreams/10-testing-evals.md`: implementar testes, evals e smoke checks.
 
-## Regra de alinhamento
+## Linguagem comum
 
-As frentes devem falar a mesma linguagem:
+- `proposal`: mudanca pendente, revisavel e ainda nao aplicada.
+- `entity reference`: objeto real persistido e navegavel.
+- `model-facing tool`: tool enviada ao modelo.
+- `capability interna`: operacao granular do backend.
+- `apply`: acao disparada pelo frontend apos aprovacao do usuario e revalidada no backend.
+- `snapshot`: contexto local auditavel do Plan Things.
+- `compaction`: estado opaco da OpenAI para continuidade de runtime, nao auditoria.
 
-- `proposal` significa algo pendente, revisavel e ainda nao aplicado.
-- `entity reference` significa objeto real persistido e navegavel.
-- `model-facing tool` significa tool enviada ao modelo.
-- `capability interna` significa operacao granular do backend.
-- `apply` sempre acontece por acao do usuario no frontend e revalidacao do backend.
+## Limites globais
+
+- Frontend nunca chama OpenAI diretamente.
+- Modelo nunca recebe tools de apply no MVP.
+- Toda escrita real passa por proposta, aprovacao humana e revalidacao no backend.
+- Markdown renderiza narrativa; objetos reais e propostas usam blocos estruturados.
+- File Search, GitHub e outros provedores nunca substituem permissoes locais.
