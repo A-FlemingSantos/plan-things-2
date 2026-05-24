@@ -22,3 +22,8 @@ pnpm-debug.log*
 .gitnexus
 .mvn-home/
 scripts/powershell/local.secrets.ps1
+
+# Local debug/scratch output
+gitnexus-debug.txt
+stdout.txt
+stderr.txt

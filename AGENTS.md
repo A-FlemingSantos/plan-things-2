@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **plan-things-2** (6835 symbols, 15475 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **plan-things-2** (7403 symbols, 16515 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -39,5 +39,25 @@ This project is indexed by GitNexus as **plan-things-2** (6835 symbols, 15475 re
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Work in the Files area (227 symbols) | `.claude/skills/generated/files/SKILL.md` |
+| Work in the Auth area (172 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the Settings area (155 symbols) | `.claude/skills/generated/settings/SKILL.md` |
+| Work in the Board area (150 symbols) | `.claude/skills/generated/board/SKILL.md` |
+| Work in the Api area (130 symbols) | `.claude/skills/generated/api/SKILL.md` |
+| Work in the Context area (115 symbols) | `.claude/skills/generated/context/SKILL.md` |
+| Work in the Screens area (103 symbols) | `.claude/skills/generated/screens/SKILL.md` |
+| Work in the KanbanBoard area (91 symbols) | `.claude/skills/generated/kanbanboard/SKILL.md` |
+| Work in the Providers area (85 symbols) | `.claude/skills/generated/providers/SKILL.md` |
+| Work in the Plans area (68 symbols) | `.claude/skills/generated/plans/SKILL.md` |
+| Work in the SettingsPage area (64 symbols) | `.claude/skills/generated/settingspage/SKILL.md` |
+| Work in the Workspace area (64 symbols) | `.claude/skills/generated/workspace/SKILL.md` |
+| Work in the CalendarPage area (62 symbols) | `.claude/skills/generated/calendarpage/SKILL.md` |
+| Work in the Contracts area (55 symbols) | `.claude/skills/generated/contracts/SKILL.md` |
+| Work in the CardModal area (50 symbols) | `.claude/skills/generated/cardmodal/SKILL.md` |
+| Work in the Hooks area (46 symbols) | `.claude/skills/generated/hooks/SKILL.md` |
+| Work in the Calendar area (37 symbols) | `.claude/skills/generated/calendar/SKILL.md` |
+| Work in the Data area (33 symbols) | `.claude/skills/generated/data/SKILL.md` |
+| Work in the Components area (22 symbols) | `.claude/skills/generated/components/SKILL.md` |
+| Work in the Avatar area (20 symbols) | `.claude/skills/generated/avatar/SKILL.md` |
 
 <!-- gitnexus:end -->
