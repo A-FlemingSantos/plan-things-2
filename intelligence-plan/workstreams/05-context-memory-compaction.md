@@ -1,25 +1,25 @@
-# Workstream 05: Context, Memory, And Compaction
+# Frente 05: Contexto, memoria e Compaction
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Manage conversation context, local audit snapshots, long-term memory, and OpenAI Responses API Compaction without confusing their responsibilities.
+Gerenciar contexto de conversa, snapshots locais auditaveis, long-term memory e Compaction da OpenAI Responses API sem misturar responsabilidades.
 
-## Context Types
+## Tipos de contexto
 
 ```txt
-Conversation state = messages and tool calls in the current conversation.
-Working context = snapshot of workspace/plan/card at the time of a user message.
-Attached context = objects explicitly attached by the user.
-Long-term memory = approved stable preferences/facts.
-External context = GitHub, indexed files, other connectors.
-Runtime compaction = opaque OpenAI items for efficient long conversations.
+Conversation state = mensagens e tool calls da conversa atual.
+Working context = snapshot do workspace/plano/card no momento da mensagem do usuario.
+Attached context = objetos explicitamente anexados pelo usuario.
+Long-term memory = preferencias/fatos estaveis aprovados.
+External context = GitHub, arquivos indexados e outros conectores.
+Runtime compaction = itens opacos da OpenAI para conversas longas eficientes.
 ```
 
-## Local Snapshots
+## Snapshots locais
 
-Every user message should create an audit snapshot:
+Cada mensagem do usuario deve criar um snapshot auditavel:
 
 ```txt
 ai_context_snapshots
@@ -33,36 +33,36 @@ ai_context_snapshots
 - created_at
 ```
 
-Snapshot content:
+Conteudo do snapshot:
 
-- user;
+- usuario;
 - workspace;
-- active plan;
-- relevant board columns;
-- relevant cards, not all cards when many exist;
-- members;
-- preferences;
-- attached context;
-- read capability results;
-- enabled GitHub repositories when relevant.
+- plano ativo;
+- colunas relevantes do board;
+- cartoes relevantes, nao todos quando houver muitos;
+- membros;
+- preferencias;
+- contexto anexado;
+- resultados de capabilities de leitura;
+- repositorios GitHub habilitados quando relevante.
 
-Snapshots are for audit, debug, replay, multi-tenant control, and explainability. They are not replaced by OpenAI compaction.
+Snapshots servem para auditoria, debug, replay, controle multi-tenant e explicabilidade. Eles nao sao substituidos por Compaction da OpenAI.
 
-## OpenAI Compaction
+## Compaction da OpenAI
 
-Use OpenAI Responses API Compaction for runtime efficiency in long conversations.
+Usar Compaction da OpenAI Responses API para eficiencia de runtime em conversas longas.
 
-Modes:
+Modos:
 
 ```txt
 Server-side compaction:
-send context_management with compact_threshold in /responses.
+enviar context_management com compact_threshold em /responses.
 
 Standalone compaction:
-call /responses/compact with a full context window and pass the compacted output forward.
+chamar /responses/compact com uma janela completa de contexto e seguir usando a saida compactada.
 ```
 
-Example:
+Exemplo:
 
 ```json
 {
@@ -78,21 +78,21 @@ Example:
 }
 ```
 
-## Policy
+## Politica
 
-1. Keep local snapshots as the source of audit truth.
-2. Use compaction for long conversations or many tool calls.
-3. Define `compact_threshold` by model, workspace plan, and environment.
-4. Treat OpenAI compaction output as opaque runtime state.
-5. Do not use compaction for permissions, audit, product history, or UI rendering.
-6. Maintain human-readable summaries where useful for support/debug.
-7. If using `previous_response_id`, do not manually prune history.
-8. If using stateless input arrays, prune only items before the latest compaction item.
-9. If using `/responses/compact`, pass compacted output forward as returned.
+1. Manter snapshots locais como fonte auditavel.
+2. Usar compaction em conversas longas ou com muitas tool calls.
+3. Definir `compact_threshold` por modelo, plano do workspace e ambiente.
+4. Tratar output de compaction da OpenAI como estado opaco de runtime.
+5. Nao usar compaction para permissoes, auditoria, historico de produto ou renderizacao de UI.
+6. Manter resumos legiveis por humanos quando forem uteis para suporte/debug.
+7. Se usar `previous_response_id`, nao podar historico manualmente.
+8. Se usar arrays de input stateless, podar apenas itens anteriores ao item de compaction mais recente.
+9. Se usar `/responses/compact`, passar a saida compactada adiante como retornada.
 
-## Storage
+## Armazenamento
 
-Optional table:
+Tabela opcional:
 
 ```txt
 ai_compaction_items
@@ -108,7 +108,7 @@ ai_compaction_items
 - created_at datetimeoffset
 ```
 
-Long-term memory table:
+Tabela de long-term memory:
 
 ```txt
 ai_memories
@@ -124,9 +124,9 @@ ai_memories
 - updated_at
 ```
 
-Sensitive memories or memories that change write behavior require explicit user confirmation.
+Memorias sensiveis ou que alterem comportamento de escrita exigem confirmacao explicita do usuario.
 
-## Suggested Classes
+## Classes sugeridas
 
 ```txt
 AiContextBuilder
@@ -136,18 +136,18 @@ AiConversationSummaryService
 AiMemoryService
 ```
 
-## Out Of Scope
+## Fora do escopo
 
-- Treating compaction output as human-readable.
-- Using compaction to bypass local permission checks.
-- Sending entire boards/files when a targeted context search is enough.
+- Tratar output de compaction como legivel por humanos.
+- Usar compaction para contornar checagens locais de permissao.
+- Enviar boards/arquivos inteiros quando uma busca contextual direcionada for suficiente.
 
-## Definition Of Done
+## Definition of Done
 
-- Context snapshots are persisted per user message.
-- Token estimates are recorded.
-- Compaction threshold policy exists.
-- OpenAI compaction metadata can be stored.
-- Local snapshots remain audit source of truth.
-- Long-term memory requires clear status and source message.
+- Context snapshots sao persistidos por mensagem do usuario.
+- Estimativas de token sao registradas.
+- Politica de threshold de compaction existe.
+- Metadados de compaction da OpenAI podem ser armazenados.
+- Snapshots locais continuam sendo fonte auditavel.
+- Long-term memory tem status e mensagem de origem claros.
 

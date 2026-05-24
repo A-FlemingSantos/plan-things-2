@@ -1,12 +1,12 @@
-# Workstream 02: Frontend UI Contract
+# Frente 02: Contrato de UI no frontend
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Remodel the incomplete Intelligence UI in the web app into a visual and interactive contract that the real backend integration can later feed.
+Remodelar a UI incompleta de Intelligence no app web em um contrato visual e interativo que a integracao real com backend podera alimentar depois.
 
-Current relevant files:
+Arquivos atuais relevantes:
 
 ```txt
 apps/web/src/features/workspace/pages/Workspace/Workspace.jsx
@@ -15,28 +15,28 @@ apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx
 apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css
 ```
 
-Future shared feature area:
+Area compartilhada futura:
 
 ```txt
 apps/web/src/features/intelligence
 ```
 
-## Architectural Decision
+## Decisao arquitetural
 
-Markdown is only one block type. Real objects and proposals must be structured blocks outside markdown.
+Markdown e apenas um tipo de bloco. Objetos reais e propostas devem ser blocos estruturados fora do markdown.
 
 ```txt
-MarkdownBlock = narrative text, lists, tables, code, links, citations, diagrams.
-EntityReferenceBlock = real clickable app/external objects.
-ActionProposalBlock = user-approvable proposals.
-ToolRunStatusBlock = tool execution state.
+MarkdownBlock = narrativa, listas, tabelas, codigo, links, citacoes, diagramas.
+EntityReferenceBlock = objetos reais clicaveis do app ou externos.
+ActionProposalBlock = propostas aprovaveis pelo usuario.
+ToolRunStatusBlock = estado de execucao de tools.
 ```
 
-Do not embed plans, cards, files, members, Inbox items, commits, or proposals as custom markdown.
+Nao embutir planos, cartoes, arquivos, membros, itens de Inbox, commits ou propostas como markdown customizado.
 
-## Components
+## Componentes
 
-Recommended structure:
+Estrutura recomendada:
 
 ```txt
 apps/web/src/features/intelligence/api/intelligenceApi.js
@@ -58,9 +58,9 @@ apps/web/src/features/intelligence/components/blocks/QuestionBlock.jsx
 apps/web/src/features/intelligence/components/blocks/ToolRunStatusBlock.jsx
 ```
 
-## Mock Data Contract
+## Contrato de dados fake
 
-Use fake data shaped like real backend blocks:
+Use dados fake com o mesmo formato esperado dos blocos reais do backend:
 
 ```js
 {
@@ -78,7 +78,7 @@ Use fake data shaped like real backend blocks:
 }
 ```
 
-Proposal blocks should include:
+Blocos de proposta devem incluir:
 
 ```js
 {
@@ -86,59 +86,59 @@ Proposal blocks should include:
   type: 'action_proposal',
   status: 'pending',
   actionType: 'CARD_BATCH_CREATE',
-  title: 'Create 5 cards',
+  title: 'Criar 5 cartoes',
   preview: {},
   actions: ['apply', 'edit', 'reject']
 }
 ```
 
-## Markdown Rendering
+## Renderizacao de markdown
 
-Use a safe markdown renderer for narrative blocks. Open WebUI is a useful reference pattern: markdown is parsed/tokenized and rendered through controlled components rather than dumped as raw HTML.
+Use renderer markdown seguro para blocos narrativos. Open WebUI e uma referencia util: markdown e parseado/tokenizado e renderizado por componentes controlados, em vez de ser inserido como HTML cru.
 
-Implementation requirements:
+Requisitos:
 
-- sanitize user/model markdown output;
-- support GFM tables/lists/code blocks;
-- avoid expensive full markdown reparse on every streaming chunk;
-- throttle/debounce markdown parsing during streaming;
-- render structured blocks separately from markdown.
+- sanitizar markdown vindo do usuario/modelo;
+- suportar tabelas/listas/code blocks GFM;
+- evitar reparse caro de markdown a cada chunk de streaming;
+- usar throttle/debounce durante streaming;
+- renderizar blocos estruturados separadamente do markdown.
 
-## Composer Requirements
+## Requisitos do composer
 
-Composer should support:
+O composer deve suportar:
 
-- typed prompt;
-- attached context chips;
-- enabled integration/tool indicators;
-- voice button;
-- send button;
-- stop generation;
-- disabled/loading states;
-- insert context menu for files, Kanban items, Inbox, and plugins.
+- prompt digitado;
+- chips de contexto anexado;
+- indicadores de ferramentas/integracoes habilitadas;
+- botao de voz;
+- botao de envio;
+- parar geracao;
+- estados disabled/loading;
+- menu para inserir contexto de arquivos, itens Kanban, Inbox e plugins.
 
-## Navigation Requirements
+## Requisitos de navegacao
 
-- Plan block opens the plan.
-- Card block opens plan and selected card/modal.
-- File block opens preview/download route.
-- Inbox block opens Inbox panel with item selected.
-- GitHub commit/PR opens external link or details block.
+- Bloco de plano abre o plano.
+- Bloco de cartao abre o plano e o card/modal selecionado.
+- Bloco de arquivo abre preview/download.
+- Bloco de Inbox abre painel Inbox com item selecionado.
+- Commit/PR do GitHub abre link externo ou bloco de detalhes.
 
-If current routes do not support direct card opening, add a route or query param pattern.
+Se rotas atuais nao suportarem abertura direta de card, adicionar rota ou padrao por query param.
 
-## Out Of Scope
+## Fora do escopo
 
-- Real OpenAI call implementation.
-- Backend persistence.
-- GitHub OAuth.
-- File indexing.
+- Chamada real para OpenAI.
+- Persistencia backend.
+- OAuth do GitHub.
+- Indexacao de arquivos.
 
-## Definition Of Done
+## Definition of Done
 
-- Workspace and Kanban use the same conceptual block renderer.
-- Mock UI covers all required states.
-- Fake blocks can be swapped for backend blocks without redesign.
-- Markdown and structured object rendering are visually distinct.
-- Proposal blocks clearly show pending/applied/rejected/failed states.
+- Workspace e Kanban usam o mesmo conceito de block renderer.
+- UI mockada cobre todos os estados obrigatorios.
+- Blocos fake podem ser trocados por blocos do backend sem redesenho.
+- Markdown e objetos estruturados sao visualmente distintos.
+- Blocos de proposta mostram claramente estados pendente/aplicando/aplicado/rejeitado/falho.
 

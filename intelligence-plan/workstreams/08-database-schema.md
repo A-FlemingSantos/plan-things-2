@@ -1,12 +1,12 @@
-# Workstream 08: Database Schema
+# Frente 08: Schema de banco de dados
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Add persistence for Intelligence conversations, messages, blocks, proposals, tool calls, snapshots, compaction metadata, memory, and integration links.
+Adicionar persistencia para conversas, mensagens, blocos, propostas, tool calls, snapshots, metadados de compaction, memoria e links de integracoes do Intelligence.
 
-## Core Tables
+## Tabelas principais
 
 ```txt
 ai_conversations
@@ -52,7 +52,7 @@ ai_message_blocks
 - created_at datetimeoffset
 ```
 
-## Proposals And Tool Calls
+## Propostas e tool calls
 
 ```txt
 ai_action_proposals
@@ -89,7 +89,7 @@ ai_tool_calls
 - created_at datetimeoffset
 ```
 
-## Context And Memory
+## Contexto e memoria
 
 ```txt
 ai_context_snapshots
@@ -127,7 +127,7 @@ ai_memories
 - updated_at datetimeoffset
 ```
 
-## Settings And Audit
+## Configuracoes e auditoria
 
 ```txt
 ai_tool_settings
@@ -160,9 +160,9 @@ ai_audit_events
 - created_at datetimeoffset
 ```
 
-## Integration Tables
+## Tabelas de integracao
 
-See GitHub and File Search workstreams for provider-specific tables, but schema work should reserve migrations for:
+A frente de schema deve reservar migrations para tabelas especificas de provedores:
 
 ```txt
 ai_file_index
@@ -172,18 +172,18 @@ github_webhook_events
 external_entity_links
 ```
 
-## Requirements
+## Requisitos
 
-- Use Flyway migrations consistent with existing API service.
-- Add indexes for workspace, conversation, message, entity references, and status.
-- Store JSON as `nvarchar(max)` unless existing project has a JSON convention.
-- Avoid destructive changes to existing board/workspace tables.
+- Usar Flyway migrations consistentes com o servico API existente.
+- Adicionar indices para workspace, conversa, mensagem, entity references e status.
+- Armazenar JSON como `nvarchar(max)`, salvo se o projeto ja tiver outra convencao.
+- Evitar mudancas destrutivas em tabelas existentes de board/workspace.
 
-## Definition Of Done
+## Definition of Done
 
-- Migrations create core tables.
-- Constraints and indexes support common reads.
-- Proposals and entity reference blocks can be linked.
-- Context snapshots and compaction metadata can coexist.
-- Audit events can trace applied actions.
+- Migrations criam tabelas principais.
+- Constraints e indices suportam leituras comuns.
+- Propostas e blocos de entity reference podem ser relacionados.
+- Context snapshots e metadados de compaction podem coexistir.
+- Audit events conseguem rastrear acoes aplicadas.
 

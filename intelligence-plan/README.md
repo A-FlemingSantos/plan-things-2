@@ -1,10 +1,10 @@
-# Plan Things Intelligence Workstreams
+# Plan Things Intelligence: frentes de trabalho
 
-Esta pasta divide a implementacao de Intelligence em workstreams pequenos e autossuficientes.
+Esta pasta divide a implementacao de Intelligence em frentes de trabalho pequenas e autossuficientes.
 
-Use um arquivo por agente. Cada arquivo contem objetivo, escopo, decisoes, tarefas e Definition of Done. Nao e necessario abrir outros documentos de planejamento para executar um workstream especifico.
+Use um arquivo por agente. Cada arquivo contem objetivo, escopo, decisoes, tarefas e Definition of Done. Nao e necessario abrir outros documentos de planejamento para executar uma frente especifica.
 
-## Workstreams
+## Frentes
 
 1. `workstreams/01-product-experience.md`
 2. `workstreams/02-frontend-ui-contract.md`
@@ -17,11 +17,11 @@ Use um arquivo por agente. Cada arquivo contem objetivo, escopo, decisoes, taref
 9. `workstreams/09-security-permissions-audit.md`
 10. `workstreams/10-testing-evals.md`
 
-## Agent Guidance
+## Orientacao para agentes
 
-- Treat the selected workstream file as the complete brief for that task.
-- Do not broaden scope unless the user explicitly asks.
-- Prefer existing project patterns and services.
-- For code changes, run GitNexus impact analysis before editing symbols.
-- Keep implementation incremental and testable.
+- Trate o arquivo selecionado como o briefing completo da tarefa.
+- Nao amplie o escopo sem pedido explicito do usuario.
+- Prefira padroes e servicos existentes no projeto.
+- Antes de editar codigo, rode impact analysis do GitNexus para os simbolos afetados.
+- Mantenha a implementacao incremental e testavel.
 

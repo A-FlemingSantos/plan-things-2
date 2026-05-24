@@ -1,33 +1,33 @@
-# Workstream 06: File Search
+# Frente 06: File Search
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Enable Intelligence to search file metadata and file content while respecting Plan Things permissions.
+Permitir que Intelligence busque metadados e conteudo de arquivos respeitando permissoes do Plan Things.
 
-## Two-Layer Search
+## Busca em duas camadas
 
-Use two layers:
+Usar duas camadas:
 
 ```txt
-Local metadata search = file name, type, owner, relationships, permissions.
-OpenAI File Search = semantic/content search through vector stores.
+Busca local de metadados = nome, tipo, dono, relacoes, permissoes.
+OpenAI File Search = busca semantica/conteudo via vector stores.
 ```
 
-File Search must not replace local access control.
+File Search nao substitui controle local de acesso.
 
-## Model-Facing Tool
+## Model-facing tool
 
-Expose only:
+Expor apenas:
 
 ```txt
 file.search
 ```
 
-when files are enabled and the user has access.
+quando arquivos estiverem habilitados e o usuario tiver acesso.
 
-Internal capabilities:
+Capabilities internas:
 
 ```txt
 file.search_metadata
@@ -37,19 +37,19 @@ file.attach_to_card_proposal
 file.apply_attach_to_card
 ```
 
-`file.apply_attach_to_card` is internal only and runs after user approval.
+`file.apply_attach_to_card` e interna e roda apenas depois da aprovacao do usuario.
 
-## Vector Store Strategy
+## Estrategia de vector store
 
-Recommended:
+Recomendacao:
 
-- workspace vector store for shared searchable files;
-- conversation vector store for temporary uploaded chat context;
-- optional plan-level vector store later if isolation/performance needs it.
+- vector store por workspace para arquivos compartilhados pesquisaveis;
+- vector store por conversa para uploads temporarios no chat;
+- vector store por plano apenas depois, se isolamento/performance exigirem.
 
-Before a vector store or file is included in a model request, backend must filter by workspace, plan, file permissions, and user access.
+Antes de incluir vector store ou arquivo em uma request ao modelo, o backend deve filtrar por workspace, plano, permissoes de arquivo e acesso do usuario.
 
-## Table
+## Tabela
 
 ```txt
 ai_file_index
@@ -65,45 +65,45 @@ ai_file_index
 - created_at
 ```
 
-## Indexing Events
+## Eventos de indexacao
 
-When a file is created, updated, deleted, attached, detached, or permission changes:
+Quando arquivo for criado, atualizado, removido, anexado, desanexado ou tiver permissao alterada:
 
-1. update local metadata;
-2. enqueue indexing/removal;
-3. update OpenAI file/vector store if needed;
-4. record failure and retry state.
+1. atualizar metadados locais;
+2. enfileirar indexacao/remocao;
+3. atualizar arquivo/vector store na OpenAI se necessario;
+4. registrar falha e estado de retry.
 
-## Result Blocks
+## Blocos de resultado
 
-File results should become:
+Resultados de arquivo devem virar:
 
 ```txt
 FileReferenceBlock
 ```
 
-with:
+com:
 
-- file id;
-- title/name;
+- id do arquivo;
+- titulo/nome;
 - mime type;
-- size;
-- owner/shared state;
+- tamanho;
+- dono/estado de compartilhamento;
 - href;
-- optional citation/source metadata.
+- metadados opcionais de citacao/fonte.
 
-## Security
+## Seguranca
 
-- Never search files outside authorized workspace scope.
-- Never trust file ids from model without validating access.
-- Do not expose raw OpenAI file ids to frontend unless needed.
-- Avoid indexing unsupported or sensitive files until policy exists.
+- Nunca buscar arquivos fora do escopo autorizado do workspace.
+- Nunca confiar em ids de arquivo vindos do modelo sem validar acesso.
+- Nao expor ids de arquivo da OpenAI ao frontend, salvo se necessario.
+- Evitar indexar arquivos sensiveis ou nao suportados ate existir politica clara.
 
-## Definition Of Done
+## Definition of Done
 
-- `file.search` routes to local metadata and content capabilities.
-- File indexing table exists.
-- Search respects permissions.
-- File results render as structured blocks, not markdown links only.
-- Attach-file proposals require user approval.
+- `file.search` roteia para capabilities locais de metadados e conteudo.
+- Tabela de indexacao de arquivos existe.
+- Busca respeita permissoes.
+- Resultados de arquivo renderizam como blocos estruturados, nao apenas links markdown.
+- Propostas de anexar arquivo exigem aprovacao do usuario.
 

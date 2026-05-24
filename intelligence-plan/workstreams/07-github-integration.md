@@ -1,40 +1,40 @@
-# Workstream 07: GitHub Integration
+# Frente 07: Integracao GitHub
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Integrate GitHub as an optional Plan Things Intelligence connector for reading repositories, commits, and pull requests, then linking them to Plan Things cards.
+Integrar GitHub como conector opcional do Plan Things Intelligence para ler repositorios, commits e pull requests, depois relaciona-los a cartoes do Plan Things.
 
-## Integration Type
+## Tipo de integracao
 
-Use a GitHub App, not a broad OAuth App.
+Usar GitHub App, nao OAuth App amplo.
 
-Reasons:
+Motivos:
 
-- granular permissions;
-- installation per user/org;
-- repository selection;
+- permissoes granulares;
+- instalacao por usuario/organizacao;
+- selecao de repositorios;
 - webhooks;
-- short-lived installation tokens;
-- better workspace isolation.
+- installation tokens de curta duracao;
+- melhor isolamento por workspace.
 
-## Initial Permissions
+## Permissoes iniciais
 
-Request read-only permissions first:
+Solicitar permissoes read-only primeiro:
 
 ```txt
 Metadata: read
 Contents: read
 Pull requests: read
-Commit statuses: read optional
-Checks: read optional
-Issues: read optional
+Commit statuses: read opcional
+Checks: read opcional
+Issues: read opcional
 ```
 
-Do not request GitHub write permissions in the MVP.
+Nao solicitar permissoes de escrita no GitHub no MVP.
 
-## Tables
+## Tabelas
 
 ```txt
 github_installations
@@ -75,17 +75,17 @@ external_entity_links
 - created_at
 ```
 
-## Model-Facing Tool
+## Model-facing tool
 
-Expose only:
+Expor apenas:
 
 ```txt
 github.search
 ```
 
-when GitHub is connected, enabled, and authorized.
+quando GitHub estiver conectado, habilitado e autorizado.
 
-Internal capabilities:
+Capabilities internas:
 
 ```txt
 github.repo.search
@@ -99,11 +99,11 @@ github.suggest_cards_from_commits
 github.apply_attach_to_card
 ```
 
-Apply is internal only.
+Apply e apenas interno.
 
 ## Webhooks
 
-Initial events:
+Eventos iniciais:
 
 ```txt
 installation
@@ -111,19 +111,19 @@ installation_repositories
 push
 pull_request
 pull_request_review
-check_suite optional
-check_run optional
+check_suite opcional
+check_run opcional
 ```
 
-Rules:
+Regras:
 
-- validate `X-Hub-Signature-256`;
-- use webhook secret;
-- reject invalid payloads;
-- idempotency by delivery id;
-- enqueue processing and respond quickly.
+- validar `X-Hub-Signature-256`;
+- usar webhook secret;
+- rejeitar payload invalido;
+- garantir idempotencia por delivery id;
+- enfileirar processamento e responder rapidamente.
 
-Table:
+Tabela:
 
 ```txt
 github_webhook_events
@@ -139,30 +139,30 @@ github_webhook_events
 - created_at
 ```
 
-## Blocks
+## Blocos
 
-Commits and PRs render as:
+Commits e PRs renderizam como:
 
 ```txt
 GitHubCommitBlock
 GitHubPullRequestBlock
 ```
 
-They can be attached to cards using `external_entity_links`.
+Eles podem ser anexados a cartoes usando `external_entity_links`.
 
-## Out Of Scope
+## Fora do escopo
 
-- Writing comments to GitHub.
-- Creating GitHub issues.
-- Opening pull requests.
-- Pushing branches.
+- Escrever comentarios no GitHub.
+- Criar issues no GitHub.
+- Abrir pull requests.
+- Fazer push de branches.
 
-## Definition Of Done
+## Definition of Done
 
-- GitHub App can be installed for a workspace.
-- Authorized repositories can be listed/enabled.
-- Webhook signature validation exists.
-- `github.search` returns authorized commits/PRs.
-- Commits/PRs can be proposed as card attachments.
-- Applied attachments create local `external_entity_links`.
+- GitHub App pode ser instalado para um workspace.
+- Repositorios autorizados podem ser listados/habilitados.
+- Validacao de assinatura de webhook existe.
+- `github.search` retorna commits/PRs autorizados.
+- Commits/PRs podem ser propostos como anexos de cartoes.
+- Anexos aplicados criam `external_entity_links` locais.
 

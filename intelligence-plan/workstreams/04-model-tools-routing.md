@@ -1,25 +1,25 @@
-# Workstream 04: Model Tools And Routing
+# Frente 04: Tools do modelo e roteamento
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Implement a small, robust model-facing tool palette backed by granular internal capabilities.
+Implementar uma paleta pequena e robusta de model-facing tools, apoiada por capabilities internas granulares.
 
-## Core Decision
+## Decisao central
 
-Use two levels:
+Usar dois niveis:
 
 ```txt
-AiCapabilityRegistry = internal granular operations.
-AiModelToolRegistry = small set of tools exposed to the model.
+AiCapabilityRegistry = operacoes internas granulares.
+AiModelToolRegistry = pequeno conjunto de tools expostas ao modelo.
 ```
 
-Do not expose many specific tools directly to `gpt-5.4-mini`. The model should see a small dynamic palette.
+Nao expor muitas tools especificas diretamente ao `gpt-5.4-mini`. O modelo deve ver uma paleta pequena e dinamica.
 
-## Model-Facing Tools
+## Model-facing tools
 
-MVP tools:
+Tools do MVP:
 
 ```txt
 context.search
@@ -29,18 +29,18 @@ file.search
 github.search
 ```
 
-Dynamic exposure:
+Exposicao dinamica:
 
-- Workspace general: `context.search`, `entity.get`, `action.propose`.
-- Kanban with files: add `file.search`.
-- Kanban with GitHub connected: add `github.search`.
-- If a provider is disconnected or disabled, do not send its tool.
+- Workspace geral: `context.search`, `entity.get`, `action.propose`.
+- Kanban com arquivos: adicionar `file.search`.
+- Kanban com GitHub conectado: adicionar `github.search`.
+- Se um provedor esta desconectado ou desabilitado, nao enviar sua tool.
 
-Target: no more than 5 model-facing tools per request in MVP.
+Meta: no maximo 5 model-facing tools por request no MVP.
 
-## Internal Capabilities
+## Capabilities internas
 
-Initial internal capabilities:
+Capabilities internas iniciais:
 
 ```txt
 workspace.get_summary
@@ -75,7 +75,7 @@ github.pull_request.attach_to_card_proposal
 github.suggest_cards_from_commits
 ```
 
-Apply capabilities are internal only:
+Capabilities de apply sao internas:
 
 ```txt
 plan.apply_create
@@ -91,19 +91,19 @@ github.apply_attach_to_card
 
 ## action.propose
 
-The model can propose changes but cannot apply them.
+O modelo pode propor mudancas, mas nao pode aplica-las.
 
-Flow:
+Fluxo:
 
 ```txt
-model calls action.propose
-backend validates schema and permissions
-backend creates pending ai_action_proposals row
-frontend renders ActionProposalBlock
-user approves/rejects/edits
-frontend calls apply endpoint
-backend revalidates and applies through existing services
-conversation receives real entity reference blocks
+modelo chama action.propose
+backend valida schema e permissoes
+backend cria registro pendente em ai_action_proposals
+frontend renderiza ActionProposalBlock
+usuario aprova/rejeita/edita
+frontend chama endpoint de apply
+backend revalida e aplica usando servicos existentes
+conversa recebe blocos de referencia a entidades reais
 ```
 
 Action types:
@@ -121,21 +121,21 @@ INBOX_CONVERT_TO_CARD
 GITHUB_ATTACH_TO_CARD
 ```
 
-## Strict Schemas
+## Schemas estritos
 
-All model-facing tools should use JSON Schema with `strict: true`.
+Todas as model-facing tools devem usar JSON Schema com `strict: true`.
 
-Rules:
+Regras:
 
-- `additionalProperties: false` for objects;
-- all declared properties are required;
-- optional values use `type: ["string", "null"]` or equivalent;
-- generic payloads must still use closed fields;
-- backend performs stricter per-action validation after the model call.
+- `additionalProperties: false` para objetos;
+- todas as propriedades declaradas ficam em `required`;
+- valores opcionais usam `type: ["string", "null"]` ou equivalente;
+- payloads genericos ainda precisam usar campos fechados;
+- backend faz validacao mais estrita por action type depois da chamada do modelo.
 
-## Routers And Handlers
+## Routers e handlers
 
-Suggested classes:
+Classes sugeridas:
 
 ```txt
 AiCapabilityRegistry
@@ -162,18 +162,18 @@ InboxConvertToCardProposalHandler
 GithubAttachToCardProposalHandler
 ```
 
-## Out Of Scope
+## Fora do escopo
 
-- Applying proposals directly from model output.
-- Exposing granular write tools to the model.
-- GitHub write operations.
+- Aplicar propostas diretamente a partir de output do modelo.
+- Expor granular write tools ao modelo.
+- Operacoes de escrita no GitHub.
 
-## Definition Of Done
+## Definition of Done
 
-- Model-facing tools are built dynamically per conversation.
-- Disabled or unauthorized tools are not sent to OpenAI.
-- `context.search` and `entity.get` route to internal read capabilities.
-- `action.propose` creates pending proposals only.
-- Apply endpoint is frontend/user driven, not model driven.
-- Tool calls record routed capabilities for audit.
+- Model-facing tools sao montadas dinamicamente por conversa.
+- Tools desabilitadas ou nao autorizadas nao sao enviadas para OpenAI.
+- `context.search` e `entity.get` roteiam para capabilities internas de leitura.
+- `action.propose` cria apenas propostas pendentes.
+- Endpoint de apply e acionado pelo frontend/usuario, nao pelo modelo.
+- Tool calls registram capabilities roteadas para auditoria.
 

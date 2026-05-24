@@ -1,60 +1,60 @@
-# Workstream 01: Product Experience
+# Frente 01: Experiencia de produto
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Define the product behavior for Plan Things Intelligence: an operational assistant for workspaces and Kanban plans, not just a text chatbot.
+Definir o comportamento de produto do Plan Things Intelligence: um assistente operacional para workspaces e planos Kanban, nao apenas um chatbot de texto.
 
-The assistant should:
+O assistente deve:
 
-- answer conversationally;
-- inspect relevant workspace/plan context;
-- propose actions;
-- wait for user approval before changing data;
-- return real clickable objects after approved actions execute.
+- responder de forma conversacional;
+- inspecionar contexto relevante do workspace/plano;
+- propor acoes;
+- aguardar aprovacao do usuario antes de alterar dados;
+- retornar objetos reais clicaveis depois que acoes aprovadas forem executadas.
 
-## Core Interaction Model
+## Modelo de interacao principal
 
-Expected flow:
+Fluxo esperado:
 
-1. User asks for help.
-2. Assistant searches context or asks clarifying questions.
-3. Assistant proposes an action when data would change.
-4. User approves, edits, or rejects the proposal.
-5. Backend applies approved actions.
-6. Conversation receives entity reference blocks for created/updated objects.
-7. User clicks those objects to open the real plan, card, file, Inbox item, or external GitHub object.
+1. Usuario pede ajuda.
+2. Assistente busca contexto ou faz perguntas de esclarecimento.
+3. Assistente propoe uma acao quando algo alteraria dados.
+4. Usuario aprova, edita ou rejeita a proposta.
+5. Backend aplica as acoes aprovadas.
+6. Conversa recebe entity reference blocks para objetos criados/atualizados.
+7. Usuario clica nesses objetos para abrir o plano, cartao, arquivo, item de Inbox ou objeto externo do GitHub.
 
-## Object Categories
+## Categorias de objetos
 
-The assistant experience must support these object categories:
+A experiencia do assistente deve suportar:
 
 - workspace;
-- plan;
-- board column;
-- card;
-- member;
-- invite;
-- file;
-- Inbox item;
-- GitHub commit;
-- GitHub pull request;
-- action proposal;
-- question/answer prompt.
+- plano;
+- coluna do board;
+- cartao;
+- membro;
+- convite;
+- arquivo;
+- item de Inbox;
+- commit do GitHub;
+- pull request do GitHub;
+- proposta de acao;
+- pergunta/resposta.
 
-## UX Principles
+## Principios de UX
 
-- A proposal is not an applied change.
-- A real entity reference must feel clickable and persistent.
-- A conversation is an operational timeline, not a plain transcript.
-- The assistant should not claim that data was changed before the backend confirms it.
-- After approval, the conversation should show actual created/updated entities.
-- If a referenced entity was deleted later, the block should remain in history and show an unavailable state.
+- Uma proposta nao e uma alteracao aplicada.
+- Uma referencia a entidade real deve parecer clicavel e persistente.
+- A conversa e uma linha do tempo operacional, nao apenas uma transcricao.
+- O assistente nao deve afirmar que dados foram alterados antes da confirmacao do backend.
+- Depois da aprovacao, a conversa deve mostrar entidades reais criadas/atualizadas.
+- Se uma entidade referenciada for removida depois, o bloco deve permanecer no historico e mostrar estado indisponivel.
 
-## Required States
+## Estados obrigatorios
 
-The mock and implementation must represent:
+O mock e a implementacao devem representar:
 
 ```txt
 empty
@@ -72,47 +72,47 @@ error_retryable
 error_permission
 ```
 
-## Primary User Flows
+## Fluxos principais
 
-### Create a Plan
+### Criar um plano
 
-1. User asks to create a plan.
-2. Assistant proposes plan metadata and initial cards.
-3. User approves.
-4. Backend creates the plan.
-5. Conversation renders a `PlanReferenceBlock`.
-6. Clicking the block opens the plan.
+1. Usuario pede para criar um plano.
+2. Assistente propoe metadados do plano e cartoes iniciais.
+3. Usuario aprova.
+4. Backend cria o plano.
+5. Conversa renderiza um `PlanReferenceBlock`.
+6. Clique no bloco abre o plano.
 
-### Create Cards from Context
+### Criar cartoes a partir de contexto
 
-1. User asks to break work into tasks.
-2. Assistant calls context search.
-3. Assistant proposes card batch creation.
-4. User approves.
-5. Backend creates cards.
-6. Conversation renders clickable card references.
+1. Usuario pede para quebrar trabalho em tarefas.
+2. Assistente chama busca de contexto.
+3. Assistente propoe criacao em lote de cartoes.
+4. Usuario aprova.
+5. Backend cria os cartoes.
+6. Conversa renderiza referencias clicaveis para os cartoes.
 
-### Attach GitHub Commits
+### Anexar commits do GitHub
 
-1. User asks for recent commits related to a topic.
-2. Assistant searches GitHub.
-3. Assistant proposes attaching commits to a card or creating cards from commits.
-4. User approves.
-5. Backend creates links inside Plan Things.
-6. Conversation renders GitHub commit references and card references.
+1. Usuario pede commits recentes relacionados a um tema.
+2. Assistente busca no GitHub.
+3. Assistente propoe anexar commits a um cartao ou criar cartoes a partir de commits.
+4. Usuario aprova.
+5. Backend cria links dentro do Plan Things.
+6. Conversa renderiza referencias de commits e cartoes.
 
-## Out Of Scope
+## Fora do escopo
 
-- Autonomous data mutation without user approval.
-- Direct model access from frontend.
-- Writing to GitHub in the MVP.
-- Treating markdown as the container for real app objects.
+- Mutacao autonoma de dados sem aprovacao do usuario.
+- Acesso direto do frontend ao modelo.
+- Escrita no GitHub no MVP.
+- Tratar markdown como container para objetos reais do app.
 
-## Definition Of Done
+## Definition of Done
 
-- Product flows distinguish narrative, proposal, and real entity reference.
-- Approval/rejection/editing behavior is specified for proposals.
-- Click behavior is specified for plans, cards, files, Inbox, commits, and PRs.
-- Error/unavailable states are specified.
-- MVP scope is clear enough for frontend and backend implementation.
+- Fluxos de produto distinguem narrativa, proposta e referencia a entidade real.
+- Comportamento de aprovar/rejeitar/editar esta especificado para propostas.
+- Comportamento de clique esta especificado para planos, cartoes, arquivos, Inbox, commits e PRs.
+- Estados de erro/indisponibilidade estao especificados.
+- Escopo do MVP esta claro para implementacao de frontend e backend.
 

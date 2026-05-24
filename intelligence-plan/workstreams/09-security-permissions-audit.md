@@ -1,102 +1,102 @@
-# Workstream 09: Security, Permissions, And Audit
+# Frente 09: Seguranca, permissoes e auditoria
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Ensure Intelligence can only see and do what the current user is allowed to see and do.
+Garantir que Intelligence veja e faca apenas aquilo que o usuario atual tem permissao para ver e fazer.
 
-## Permission Layers
+## Camadas de permissao
 
-Every model-facing tool/capability must pass:
-
-```txt
-1. User permission in Plan Things.
-2. Workspace/user AI tool setting.
-3. Provider permission if external integration is involved.
-4. Entity-level access validation.
-```
-
-Do not send unauthorized tools to OpenAI.
-
-## Tool Settings
-
-Workspace sets defaults. User can restrict further. User cannot enable a tool blocked by workspace.
-
-Distinguish:
+Toda model-facing tool/capability deve passar por:
 
 ```txt
-model-facing tool setting
-internal capability setting
-proposal permission
-apply permission
+1. Permissao do usuario no Plan Things.
+2. Configuracao de AI tool no workspace/usuario.
+3. Permissao do provedor, se houver integracao externa.
+4. Validacao de acesso no nivel da entidade.
 ```
 
-Write/apply capability should be separately governable from propose capability.
+Nao enviar tools nao autorizadas para OpenAI.
 
-## Confirmation Rules
+## Configuracoes de tools
 
-Require explicit user confirmation for anything that:
+Workspace define padroes. Usuario pode restringir mais. Usuario nao pode habilitar uma tool bloqueada pelo workspace.
 
-- creates data;
-- edits data;
-- removes data;
-- invites people;
-- assigns people;
-- sends email;
-- attaches files;
-- links external entities;
-- changes workspace/plan/member state.
+Distinguir:
 
-The model must not apply changes directly in the MVP.
+```txt
+configuracao de model-facing tool
+configuracao de capability interna
+permissao de proposta
+permissao de apply
+```
 
-## Audit Events
+Capability de escrita/apply deve ser governavel separadamente da capability de proposta.
 
-Audit should record:
+## Regras de confirmacao
 
-- requesting user;
+Exigir confirmacao explicita do usuario para qualquer coisa que:
+
+- cria dados;
+- edita dados;
+- remove dados;
+- convida pessoas;
+- atribui pessoas;
+- envia e-mail;
+- anexa arquivos;
+- vincula entidades externas;
+- altera estado de workspace/plano/membro.
+
+O modelo nao deve aplicar mudancas diretamente no MVP.
+
+## Audit events
+
+Auditoria deve registrar:
+
+- usuario solicitante;
 - workspace;
-- conversation/message;
-- model-facing tools enabled;
-- tool called;
-- routed capabilities;
+- conversa/mensagem;
+- model-facing tools habilitadas;
+- tool chamada;
+- capabilities roteadas;
 - proposal id;
-- approved by;
-- entities affected;
-- provider calls;
-- result/failure;
+- aprovado por;
+- entidades afetadas;
+- chamadas a provedores;
+- resultado/falha;
 - timestamps.
 
-## Secrets
+## Segredos
 
-- OpenAI keys remain backend-only.
-- GitHub private key/webhook secret remain backend-only.
-- Do not log provider tokens.
-- Do not return OpenAI or GitHub secret identifiers to frontend.
+- Chaves OpenAI ficam apenas no backend.
+- Private key/webhook secret do GitHub ficam apenas no backend.
+- Nao registrar provider tokens em log.
+- Nao retornar identificadores secretos de OpenAI ou GitHub ao frontend.
 
-## Multi-Tenant Safety
+## Seguranca multi-tenant
 
-- Always filter by `workspace_id`.
-- Validate plan/card/file/member ids belong to the workspace.
-- Revalidate permission when applying a proposal, not only when creating it.
-- File Search vector stores must be selected only after permission filtering.
-- GitHub repositories must be workspace-enabled and installation-authorized.
+- Sempre filtrar por `workspace_id`.
+- Validar se ids de plano/cartao/arquivo/membro pertencem ao workspace.
+- Revalidar permissao ao aplicar uma proposta, nao apenas ao cria-la.
+- Vector stores de File Search devem ser selecionados apenas depois do filtro de permissao.
+- Repositorios GitHub precisam estar habilitados no workspace e autorizados pela installation.
 
-## Risk Controls
+## Controles de risco
 
 ```txt
-Model invents object -> validate ids and use context/entity tools.
-Unauthorized action -> do not expose tool; revalidate on apply.
-Data leak -> build context server-side and filter by workspace.
-Prompt injection from files/GitHub -> treat external content as untrusted context.
-Stale proposal -> expire proposals and revalidate entity state on apply.
+Modelo inventa objeto -> validar ids e usar context/entity tools.
+Acao nao autorizada -> nao expor tool; revalidar no apply.
+Vazamento de dados -> montar contexto server-side e filtrar por workspace.
+Prompt injection de arquivos/GitHub -> tratar conteudo externo como contexto nao confiavel.
+Proposta obsoleta -> expirar propostas e revalidar estado da entidade no apply.
 ```
 
-## Definition Of Done
+## Definition of Done
 
-- Tool availability is permission-filtered.
-- Proposal application revalidates all access.
-- Audit events are written for tool calls and applied actions.
-- External provider secrets are not exposed.
-- Tests cover unauthorized context and unauthorized apply.
+- Disponibilidade de tools e filtrada por permissao.
+- Aplicacao de proposta revalida todos os acessos.
+- Audit events sao gravados para tool calls e acoes aplicadas.
+- Segredos de provedores externos nao sao expostos.
+- Testes cobrem contexto nao autorizado e apply nao autorizado.
 

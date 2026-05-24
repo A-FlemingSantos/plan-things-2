@@ -1,20 +1,20 @@
-# Workstream 03: Backend Conversation And Streaming
+# Frente 03: Conversa e streaming no backend
 
-This file is self-contained for this workstream. Do not read other planning files unless the user explicitly asks.
+Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros documentos de planejamento, a menos que o usuario peca explicitamente.
 
-## Goal
+## Objetivo
 
-Create the backend foundation for Intelligence conversations, message persistence, OpenAI Responses API calls, and server-sent event streaming to the web app.
+Criar a base backend para conversas do Intelligence, persistencia de mensagens, chamadas para OpenAI Responses API e streaming por Server-Sent Events para o app web.
 
-## Package
+## Pacote
 
-Suggested package:
+Pacote sugerido:
 
 ```txt
 services/api/src/main/java/com/planthings/api/intelligence
 ```
 
-Suggested classes:
+Classes sugeridas:
 
 ```txt
 AiConversationController
@@ -26,9 +26,9 @@ AiBlockFactory
 AiAuditService
 ```
 
-## API Endpoints
+## Endpoints de API
 
-Initial endpoints:
+Endpoints iniciais:
 
 ```txt
 POST /api/intelligence/conversations
@@ -38,18 +38,18 @@ POST /api/intelligence/conversations/{conversationId}/messages
 GET  /api/intelligence/conversations/{conversationId}/stream
 ```
 
-Action endpoints belong to the tool/proposal workstream but must be compatible:
+Endpoints de acao pertencem a frente de tools/propostas, mas precisam ser compativeis:
 
 ```txt
 POST /api/intelligence/actions/{proposalId}/apply
 POST /api/intelligence/actions/{proposalId}/reject
 ```
 
-## OpenAI Runtime
+## Runtime OpenAI
 
-Use `gpt-5.4-mini` via Responses API. Frontend must never call OpenAI directly.
+Usar `gpt-5.4-mini` via Responses API. O frontend nunca deve chamar OpenAI diretamente.
 
-Configuration:
+Configuracao:
 
 ```yaml
 planthings:
@@ -61,11 +61,11 @@ planthings:
     store-openai-responses: false
 ```
 
-## Streaming Events
+## Eventos de streaming
 
-Use SSE between backend and frontend.
+Usar SSE entre backend e frontend.
 
-Event names:
+Nomes de eventos:
 
 ```txt
 message.created
@@ -81,54 +81,54 @@ assistant.completed
 assistant.failed
 ```
 
-Rules:
+Regras:
 
-- Deltas are for narrative streaming.
-- Structured blocks should be emitted as explicit block/proposal/entity events.
-- Persist before broadcasting when possible.
-- Include enough ids for the frontend to reconcile optimistic UI.
+- deltas sao para streaming narrativo;
+- blocos estruturados devem ser emitidos como eventos explicitos de bloco/proposta/entidade;
+- persistir antes de transmitir quando possivel;
+- incluir ids suficientes para o frontend reconciliar UI otimista.
 
-## Persistence Requirements
+## Requisitos de persistencia
 
-Persist:
+Persistir:
 
-- conversations;
-- user messages;
-- assistant messages;
-- message blocks;
+- conversas;
+- mensagens do usuario;
+- mensagens do assistente;
+- blocos de mensagem;
 - OpenAI response id;
-- token usage;
-- errors;
-- stream status.
+- uso de tokens;
+- erros;
+- status de streaming.
 
-## Error Handling
+## Tratamento de erros
 
-Handle:
+Tratar:
 
-- OpenAI timeout;
-- OpenAI rate limit;
-- invalid model response;
-- SSE disconnect;
-- user lacks permission;
-- conversation not found;
-- feature disabled.
+- timeout da OpenAI;
+- rate limit da OpenAI;
+- resposta invalida do modelo;
+- desconexao SSE;
+- usuario sem permissao;
+- conversa nao encontrada;
+- feature desabilitada.
 
-Retry should not duplicate user messages or applied actions.
+Retry nao deve duplicar mensagens do usuario nem acoes aplicadas.
 
-## Out Of Scope
+## Fora do escopo
 
-- File Search indexing.
-- GitHub App integration.
-- Full action routing.
+- Indexacao de File Search.
+- Integracao GitHub App.
+- Roteamento completo de acoes.
 - Long-term memory.
 
-## Definition Of Done
+## Definition of Done
 
-- A conversation can be created and loaded.
-- User message can be posted.
-- Backend calls OpenAI through server-side client.
-- Assistant response streams to frontend via SSE.
-- Messages and blocks persist.
-- Retry/error states are represented.
-- No API key reaches the browser.
+- Conversa pode ser criada e carregada.
+- Mensagem do usuario pode ser enviada.
+- Backend chama OpenAI via cliente server-side.
+- Resposta do assistente chega ao frontend via SSE.
+- Mensagens e blocos sao persistidos.
+- Estados de retry/erro sao representados.
+- Nenhuma API key chega ao browser.
 
