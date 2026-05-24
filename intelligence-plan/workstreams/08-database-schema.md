@@ -6,6 +6,14 @@ Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros doc
 
 Adicionar persistencia para conversas, mensagens, blocos, propostas, tool calls, snapshots, metadados de compaction, memoria e links de integracoes do Intelligence.
 
+A intencao desta frente e dar ao produto uma fonte local de verdade. OpenAI, File Search e GitHub sao runtimes/provedores; a UI, auditoria, permissoes, propostas e historico precisam sobreviver no banco do Plan Things.
+
+O schema deve permitir tres coisas ao mesmo tempo:
+
+- renderizar conversas antigas sem reexecutar o modelo;
+- provar o que foi proposto, aprovado e aplicado;
+- rastrear qual contexto/tools foram usados em cada resposta.
+
 ## Tabelas principais
 
 ```txt
@@ -52,6 +60,8 @@ ai_message_blocks
 - created_at datetimeoffset
 ```
 
+`ai_messages.content_text` guarda narrativa quando existir, mas `ai_message_blocks` e o contrato principal da UI rica. Um assistant turn pode ter markdown, proposta, tool status e entity references na mesma mensagem.
+
 ## Propostas e tool calls
 
 ```txt
@@ -88,6 +98,10 @@ ai_tool_calls
 - duration_ms int nullable
 - created_at datetimeoffset
 ```
+
+`ai_action_proposals` representa uma intencao ainda nao aplicada. Enquanto status estiver pendente, nenhuma entidade real deve ser considerada alterada. O apply precisa preencher `approved_by_user_id`, `approved_at`, `applied_at`, `result_json` e referencias de entidade quando houver.
+
+`ai_tool_calls` deve registrar a tool que o modelo viu e as capabilities internas roteadas. Isso e necessario porque o modelo chama `action.propose`, mas o backend pode executar `board.card.batch_create_proposal` internamente.
 
 ## Contexto e memoria
 
@@ -127,6 +141,8 @@ ai_memories
 - updated_at datetimeoffset
 ```
 
+`ai_context_snapshots` e auditavel e legivel pelo time. `ai_compaction_items` guarda apenas metadados ou payload opaco de runtime, conforme politica de retencao. Uma coisa nao substitui a outra.
+
 ## Configuracoes e auditoria
 
 ```txt
@@ -160,6 +176,8 @@ ai_audit_events
 - created_at datetimeoffset
 ```
 
+`ai_tool_settings.tool_id` pode apontar para model-facing tools ou capabilities internas, desde que o backend diferencie o tipo. Isso permite bloquear `github.search` inteiro ou apenas uma capability especifica no futuro.
+
 ## Tabelas de integracao
 
 A frente de schema deve reservar migrations para tabelas especificas de provedores:
@@ -172,12 +190,16 @@ github_webhook_events
 external_entity_links
 ```
 
+Se a implementacao inicial nao criar todas as tabelas de provedores, pelo menos evitar escolhas que dificultem adiciona-las depois. `external_entity_links` e compartilhada por GitHub e outros conectores futuros.
+
 ## Requisitos
 
 - Usar Flyway migrations consistentes com o servico API existente.
 - Adicionar indices para workspace, conversa, mensagem, entity references e status.
 - Armazenar JSON como `nvarchar(max)`, salvo se o projeto ja tiver outra convencao.
 - Evitar mudancas destrutivas em tabelas existentes de board/workspace.
+- Definir enums/status de forma explicita no codigo mesmo que o banco use varchar.
+- Planejar retencao para payloads com dados sensiveis.
 
 ## Definition of Done
 
@@ -186,4 +208,3 @@ external_entity_links
 - Propostas e blocos de entity reference podem ser relacionados.
 - Context snapshots e metadados de compaction podem coexistir.
 - Audit events conseguem rastrear acoes aplicadas.
-

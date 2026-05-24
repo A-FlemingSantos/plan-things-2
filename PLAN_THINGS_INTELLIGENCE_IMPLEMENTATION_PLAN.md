@@ -93,7 +93,7 @@ POST /api/intelligence/actions/{proposalId}/apply
 POST /api/intelligence/actions/{proposalId}/reject
 ```
 
-Para o primeiro MVP, `POST /messages` pode retornar o `messageId` e iniciar a execucao assíncrona; o front abre/escuta o stream da conversa.
+Para o primeiro MVP, `POST /messages` pode retornar o `messageId` e iniciar a execucao assincrona; o front abre/escuta o stream da conversa.
 
 Eventos SSE sugeridos:
 
@@ -403,15 +403,15 @@ Fluxo:
 
 ```txt
 Modelo chama action.propose
-↓
+|
 ActionProposalRouter valida actionType, target e payload
-↓
+|
 Handler especifico cria preview/proposta
-↓
+|
 Usuario aprova no frontend
-↓
+|
 POST /api/intelligence/actions/{proposalId}/apply
-↓
+|
 Backend revalida permissoes e executa servico interno real
 ```
 
@@ -590,6 +590,8 @@ Exemplo conceitual de `context.search`:
 }
 ```
 
+`query` e uma frase de intencao para busca e ranking, nao um mecanismo de permissao nem um parser palavra por palavra. O backend nao deve liberar tools por detectar termos como "arquivo", "commit" ou "card" dentro da query. A paleta de tools ja deve ter sido montada antes, com base em escopo, permissoes, integracoes habilitadas e configuracoes do usuario/workspace. Depois disso, `context.search` usa a query para encontrar entidades relevantes dentro do universo autorizado.
+
 Resposta deve ser categorizada, nao texto solto:
 
 ```json
@@ -627,6 +629,8 @@ O backend valida novamente usando DTOs Java, schemas internos e permissoes reais
 ### 5.6 Aplicacao de propostas
 
 Ferramentas de apply nao devem ser expostas ao modelo no MVP.
+
+Quando o modelo chama `action.propose`, o backend valida os argumentos e persiste uma proposta em `ai_action_proposals`. A proposta fica "segura" enquanto o usuario nao aprovar: nada foi alterado na entidade real. Nesse estado, ela pode expirar, ser editada, rejeitada ou falhar depois se permissao/estado mudarem.
 
 Aplicacao e sempre acionada pelo frontend:
 
@@ -903,7 +907,7 @@ Quando arquivo for criado, atualizado, removido ou permissao mudar:
 3. atualizar/remover no vector store;
 4. registrar falha se houver erro.
 
-## 9. GitHub integration
+## 9. Integracao GitHub
 
 ### 9.1 Usar GitHub App
 
@@ -1485,11 +1489,11 @@ Depois que o usuario aprovar e o backend aplicar a acao, retorne bloco de refere
 - Implementar `ai_action_proposals`.
 - Implementar `ActionProposalRouter`.
 - Expor ao modelo `action.propose`.
-- Implementar action types iniciais:
-  - `plan.create_proposal`
-  - `board.card.batch_create_proposal`
-  - `board.card.update_proposal`
-  - `member.invite_proposal`
+- Implementar `actionType` iniciais e mapear cada um para capability interna:
+  - `PLAN_CREATE` -> `plan.create_proposal`
+  - `CARD_BATCH_CREATE` -> `board.card.batch_create_proposal`
+  - `CARD_UPDATE` -> `board.card.update_proposal`
+  - `MEMBER_INVITE` -> `member.invite_proposal`
 - UI:
   - `ActionProposalBlock`
   - revisar detalhes;

@@ -6,6 +6,8 @@ Este arquivo e autossuficiente para esta frente de trabalho. Nao leia outros doc
 
 Implementar uma paleta pequena e robusta de model-facing tools, apoiada por capabilities internas granulares.
 
+A intencao desta frente e reduzir a carga cognitiva do `gpt-5.4-mini` sem empobrecer o backend. O modelo deve escolher entre poucas tools agregadoras. O backend traduz essa intencao para capabilities internas especificas, valida tudo e decide se o resultado e leitura direta, proposta pendente ou erro recuperavel.
+
 ## Decisao central
 
 Usar dois niveis:
@@ -16,6 +18,8 @@ AiModelToolRegistry = pequeno conjunto de tools expostas ao modelo.
 ```
 
 Nao expor muitas tools especificas diretamente ao `gpt-5.4-mini`. O modelo deve ver uma paleta pequena e dinamica.
+
+Essa divisao evita sobreposicao como `card.create`, `card.batch_create`, `card.move`, `card.assign` competindo no mesmo prompt. Internamente essas operacoes continuam separadas; externamente o modelo aprende uma regra simples: buscar contexto, buscar entidade, propor acao, buscar arquivo ou buscar GitHub.
 
 ## Model-facing tools
 
@@ -37,6 +41,18 @@ Exposicao dinamica:
 - Se um provedor esta desconectado ou desabilitado, nao enviar sua tool.
 
 Meta: no maximo 5 model-facing tools por request no MVP.
+
+Papel de cada tool:
+
+| Tool | Intencao | Resultado esperado |
+| ---- | -------- | ------------------ |
+| `context.search` | Encontrar contexto operacional por escopo e intencao do usuario. | Lista categorizada de planos, cards, membros, Inbox e estado do board. |
+| `entity.get` | Carregar detalhes de uma entidade ja identificada. | Snapshot detalhado e permissionado da entidade. |
+| `action.propose` | Preparar mudanca revisavel pelo usuario. | Registro pendente e `ActionProposalBlock`. |
+| `file.search` | Buscar metadados/conteudo de arquivos autorizados. | Resultados de arquivo e possiveis citacoes. |
+| `github.search` | Buscar repos, commits e PRs autorizados. | Referencias externas ou insumos para proposta. |
+
+`context.search.query` nao deve ser quebrado palavra por palavra para mapear tools. Ele e uma frase de intencao usada por busca local/semantica/ranking. A selecao de tools acontece antes, por contexto, permissoes e prompt do modelo; o backend pode usar a query para buscar entidades relevantes, nao para liberar capacidade sensivel.
 
 ## Capabilities internas
 
@@ -121,6 +137,10 @@ INBOX_CONVERT_TO_CARD
 GITHUB_ATTACH_TO_CARD
 ```
 
+Cada `actionType` deve mapear para uma capability interna de proposta. Exemplo: `CARD_BATCH_CREATE` roteia para `board.card.batch_create_proposal`. O endpoint de apply depois roteia a proposta persistida para a capability interna de aplicacao correspondente, como `board.card.apply_create`.
+
+O backend deve segurar a proposta em `ai_action_proposals` enquanto o usuario nao aprovar. Nesse periodo, nada foi alterado na entidade real. A proposta pode expirar, ser editada, rejeitada ou falhar no apply se permissao/estado mudarem.
+
 ## Schemas estritos
 
 Todas as model-facing tools devem usar JSON Schema com `strict: true`.
@@ -132,6 +152,8 @@ Regras:
 - valores opcionais usam `type: ["string", "null"]` ou equivalente;
 - payloads genericos ainda precisam usar campos fechados;
 - backend faz validacao mais estrita por action type depois da chamada do modelo.
+
+Para `action.propose`, evitar `payload` livre. Use campos fechados como `plan`, `cards`, `memberInvites` e `attachments`; campos nao usados ficam `null` ou array vazio. Isso mantem compatibilidade com Structured Outputs e reduz argumentos incompletos.
 
 ## Routers e handlers
 
@@ -162,6 +184,14 @@ InboxConvertToCardProposalHandler
 GithubAttachToCardProposalHandler
 ```
 
+Responsabilidades:
+
+- `AiModelToolRegistry` monta as tools que serao enviadas ao modelo naquela request.
+- `AiToolPermissionService` filtra por usuario, workspace, provider e escopo.
+- `AiModelToolRouter` recebe uma chamada model-facing e chama capabilities internas.
+- `ActionProposalRouter` valida `actionType`, target e payload, depois cria preview/proposta.
+- `AiCapabilityExecutor` executa capabilities read-only ou handlers internos com auditoria.
+
 ## Fora do escopo
 
 - Aplicar propostas diretamente a partir de output do modelo.
@@ -176,4 +206,3 @@ GithubAttachToCardProposalHandler
 - `action.propose` cria apenas propostas pendentes.
 - Endpoint de apply e acionado pelo frontend/usuario, nao pelo modelo.
 - Tool calls registram capabilities roteadas para auditoria.
-
