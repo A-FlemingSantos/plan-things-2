@@ -589,6 +589,10 @@
   scrollbar-width: none;
 }
 
+.intelligenceGitHubBar {
+  gap: 4px;
+}
+
 .intelligenceSuggestions::-webkit-scrollbar {
   display: none;
 }

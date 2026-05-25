@@ -1083,7 +1083,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
             </div>
           </div>
           {activeConnectors.includes('github') ? (
-            <GitHubContextBar className={styles.intelligenceSuggestions} />
+            <GitHubContextBar className={`${styles.intelligenceSuggestions} ${styles.intelligenceGitHubBar}`} />
           ) : null}
         </motion.form>
       </div>
