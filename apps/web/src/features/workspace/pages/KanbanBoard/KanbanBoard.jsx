@@ -2562,56 +2562,58 @@ export default function KanbanBoard() {
                 </p>
               </div>
 
-              <form
-                className={styles.intelligenceComposer}
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (!intelligenceDraft.trim()) return
-                  showNotification('Integração da IA em breve.')
-                }}
-              >
-                <textarea
-                  ref={intelligenceComposerInputRef}
-                  className={styles.intelligenceComposerInput}
-                  rows={1}
-                  value={intelligenceDraft}
-                  onChange={(event) => setIntelligenceDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault()
-                      event.currentTarget.form?.requestSubmit()
-                    }
+              <div className={styles.intelligenceComposerWrap}>
+                <form
+                  className={styles.intelligenceComposer}
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    if (!intelligenceDraft.trim()) return
+                    showNotification('Integração da IA em breve.')
                   }}
-                  placeholder="Escreva sua pergunta..."
-                />
+                >
+                  <textarea
+                    ref={intelligenceComposerInputRef}
+                    className={styles.intelligenceComposerInput}
+                    rows={1}
+                    value={intelligenceDraft}
+                    onChange={(event) => setIntelligenceDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault()
+                        event.currentTarget.form?.requestSubmit()
+                      }
+                    }}
+                    placeholder="Escreva sua pergunta..."
+                  />
 
-                <div className={styles.intelligenceComposerFooter}>
-                  <div className={styles.intelligenceComposerTools}>
-                    <AiComposerContextMenu onConnectorsChange={setIntelligenceActiveConnectors} />
-                  </div>
+                  <div className={styles.intelligenceComposerFooter}>
+                    <div className={styles.intelligenceComposerTools}>
+                      <AiComposerContextMenu onConnectorsChange={setIntelligenceActiveConnectors} />
+                    </div>
 
-                  <div className={styles.intelligenceComposerActions}>
-                    <button
-                      type="button"
-                      className={styles.intelligenceComposerIconButton}
-                      aria-label="Usar voz"
-                    >
-                      <Icon.Mic />
-                    </button>
-                    <button
-                      type="submit"
-                      className={styles.intelligenceComposerSubmit}
-                      aria-label="Enviar mensagem"
-                      disabled={!intelligenceDraft.trim()}
-                    >
-                      <Icon.ArrowUp />
-                    </button>
+                    <div className={styles.intelligenceComposerActions}>
+                      <button
+                        type="button"
+                        className={styles.intelligenceComposerIconButton}
+                        aria-label="Usar voz"
+                      >
+                        <Icon.Mic />
+                      </button>
+                      <button
+                        type="submit"
+                        className={styles.intelligenceComposerSubmit}
+                        aria-label="Enviar mensagem"
+                        disabled={!intelligenceDraft.trim()}
+                      >
+                        <Icon.ArrowUp />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </form>
-              {intelligenceActiveConnectors.includes('github') ? (
-                <GitHubContextBar className={styles.intelligenceGitHubBar} />
-              ) : null}
+                </form>
+                {intelligenceActiveConnectors.includes('github') ? (
+                  <GitHubContextBar className={styles.intelligenceGitHubBar} />
+                ) : null}
+              </div>
             </div>
           </section>
         ) : null}
