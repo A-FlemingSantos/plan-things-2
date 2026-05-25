@@ -546,8 +546,6 @@ export default function KanbanBoard() {
     ensurePlanDetails,
     refreshPlanDetails,
     isLoading,
-    aiChips = [],
-    setAiChips = () => {},
   } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,
@@ -592,7 +590,8 @@ export default function KanbanBoard() {
   const [isIntelligenceOpen, setIsIntelligenceOpen] = useState(false)
   const [isIntelligencePanelMounted, setIsIntelligencePanelMounted] = useState(false)
   const [intelligenceDraft, setIntelligenceDraft] = useState('')
-  const intelligenceActiveConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
+  const [kanbanAiChips, setKanbanAiChips] = useState([])
+  const intelligenceActiveConnectors = kanbanAiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
   const [libraryFiles, setLibraryFiles] = useState([])
@@ -2590,7 +2589,7 @@ export default function KanbanBoard() {
 
                   <div className={styles.intelligenceComposerFooter}>
                     <div className={styles.intelligenceComposerTools}>
-                      <AiComposerContextMenu onChipsChange={setAiChips} initialChips={aiChips} />
+                      <AiComposerContextMenu onChipsChange={setKanbanAiChips} initialChips={kanbanAiChips} />
                     </div>
 
                     <div className={styles.intelligenceComposerActions}>
