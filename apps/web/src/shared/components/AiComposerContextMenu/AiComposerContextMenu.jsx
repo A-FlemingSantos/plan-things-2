@@ -62,11 +62,16 @@ const makePlanChipDot = (color) => function PlanChipDot() {
 export default function AiComposerContextMenu({ onChipsChange, initialChips } = {}) {
   const [isMenuOpen, setIsMenuOpen]   = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState(null)
-  const [chips, setChips]             = useState(() => initialChips ?? [])
+  const [chips, setChips]             = useState(() => (Array.isArray(initialChips) ? initialChips : []))
 
   const menuRef       = useRef(null)
   const buttonRef     = useRef(null)
   const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    if (initialChips === undefined) return
+    setChips(Array.isArray(initialChips) ? initialChips : [])
+  }, [initialChips])
 
   const toggleChip = (type, label, ChipIcon, kind) => {
     setChips((prev) => {

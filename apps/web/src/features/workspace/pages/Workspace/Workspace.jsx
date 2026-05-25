@@ -979,7 +979,7 @@ function WorkspaceLoadingState({ view }) {
 
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const navigate = useNavigate()
-  const { aiChips, setAiChips } = usePlans()
+  const { aiChips = [], setAiChips = () => {} } = usePlans()
   const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const [draft, setDraft] = useState('')
   const [isListening, setIsListening] = useState(false)

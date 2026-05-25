@@ -3,6 +3,48 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
+vi.mock('framer-motion', async () => {
+  const React = await import('react')
+
+  const stripMotionProps = ({
+    animate,
+    children,
+    drag,
+    dragConstraints,
+    dragElastic,
+    exit,
+    initial,
+    layout,
+    layoutId,
+    transition,
+    variants,
+    whileFocus,
+    whileHover,
+    whileInView,
+    whileTap,
+    ...props
+  }) => ({ children, props })
+
+  const createMotionComponent = (tag) => React.forwardRef((componentProps, ref) => {
+    const { children, props } = stripMotionProps(componentProps)
+    return React.createElement(tag, { ...props, ref }, children)
+  })
+  const motionComponents = new Map()
+
+  return {
+    AnimatePresence: ({ children }) => React.createElement(React.Fragment, null, children),
+    LayoutGroup: ({ children }) => React.createElement(React.Fragment, null, children),
+    motion: new Proxy({}, {
+      get: (_, tag) => {
+        if (!motionComponents.has(tag)) {
+          motionComponents.set(tag, createMotionComponent(tag))
+        }
+        return motionComponents.get(tag)
+      },
+    }),
+  }
+})
+
 function installDefaultMatchMedia() {
   Object.defineProperty(window, 'innerWidth', {
     configurable: true,

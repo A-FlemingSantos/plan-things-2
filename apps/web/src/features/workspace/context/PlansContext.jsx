@@ -67,6 +67,8 @@ export function PlansProvider({ children }) {
   }, [backendEnabled, demoEnabled])
 
   useLayoutEffect(() => {
+    setAiChips([])
+
     if (sessionMode === 'boot') {
       setPlans([])
       setActivePlanId(null)

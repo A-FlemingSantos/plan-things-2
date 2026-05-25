@@ -1,9 +1,10 @@
 import { useCallback, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { usePlans } from '../context/PlansContext.jsx'
 
 export function useResolvedPlanRoute({ planId, buildPath }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { plans, activePlanId, getPlanById, selectPlan } = usePlans()
   const fallbackPlan = plans[0] ?? null
   const routePlan = planId ? getPlanById(planId) : null
@@ -14,13 +15,13 @@ export function useResolvedPlanRoute({ planId, buildPath }) {
     if (!plans.length) return
 
     if (!planId) {
-      navigate(buildPath(activePlan?.id ?? fallbackPlan?.id), { replace: true })
+      navigate(buildPath(activePlan?.id ?? fallbackPlan?.id), { replace: true, state: location.state })
       return
     }
 
     if (!routePlan) {
       const replacementPlan = selectedPlan ?? fallbackPlan
-      navigate(buildPath(replacementPlan?.id), { replace: true })
+      navigate(buildPath(replacementPlan?.id), { replace: true, state: location.state })
       if (replacementPlan && activePlanId !== replacementPlan.id) {
         selectPlan(replacementPlan.id)
       }
@@ -30,7 +31,7 @@ export function useResolvedPlanRoute({ planId, buildPath }) {
     if (activePlanId !== routePlan.id) {
       selectPlan(routePlan.id)
     }
-  }, [activePlan, activePlanId, buildPath, fallbackPlan, navigate, planId, plans.length, routePlan, selectPlan, selectedPlan])
+  }, [activePlan, activePlanId, buildPath, fallbackPlan, location.state, navigate, planId, plans.length, routePlan, selectPlan, selectedPlan])
 
   const openPlan = useCallback((nextPlanId) => {
     selectPlan(nextPlanId)

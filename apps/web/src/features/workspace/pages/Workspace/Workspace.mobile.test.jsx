@@ -27,6 +27,8 @@ const plansMock = vi.hoisted(() => ({
   currentUser: { fullName: 'Arthur Fleming' },
   isBackendDriven: false,
   isLoading: false,
+  aiChips: [],
+  setAiChips: vi.fn(),
 }))
 
 const preferencesMock = vi.hoisted(() => ({
@@ -81,6 +83,8 @@ function renderWorkspace() {
 describe('Workspace mobile layout', () => {
   beforeEach(() => {
     preferencesMock.localPreferences.showIntelligenceSection = true
+    plansMock.aiChips = []
+    plansMock.setAiChips.mockClear()
   })
 
   it('keeps the mobile workspace controls available without hiding the primary actions', () => {
@@ -113,12 +117,11 @@ describe('Workspace mobile layout', () => {
     expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeInTheDocument()
   })
 
-  it('renders suggestion buttons in the intelligence section', () => {
+  it('renders composer context and voice controls in the intelligence section', () => {
     renderWorkspace()
 
-    expect(screen.getByRole('button', { name: 'Sincronizar calendário' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Criar pitch deck' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Inicializar UI system' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Adicionar contexto ao chat' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' })).toBeInTheDocument()
   })
 
   it('disables the send button when the prompt is empty', () => {

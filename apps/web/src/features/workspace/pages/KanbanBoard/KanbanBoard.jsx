@@ -546,8 +546,8 @@ export default function KanbanBoard() {
     ensurePlanDetails,
     refreshPlanDetails,
     isLoading,
-    aiChips,
-    setAiChips,
+    aiChips = [],
+    setAiChips = () => {},
   } = usePlans()
   const { plans, activePlan, openPlan } = useResolvedPlanRoute({
     planId,

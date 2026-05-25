@@ -68,7 +68,7 @@ export default function IntelligenceChat() {
   const location = useLocation()
   const { currentUser } = useAuth()
   const { localPreferences } = usePreferences()
-  const { aiChips, setAiChips } = usePlans()
+  const { aiChips = [], setAiChips = () => {} } = usePlans()
   const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
 
