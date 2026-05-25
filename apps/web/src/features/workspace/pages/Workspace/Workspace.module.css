@@ -382,7 +382,6 @@
   padding: 18px 0 8px;
   color: var(--intelligence-text);
   overflow: visible;
-  animation: fadeUp 0.34s ease both;
 }
 
 .intelligenceStage {

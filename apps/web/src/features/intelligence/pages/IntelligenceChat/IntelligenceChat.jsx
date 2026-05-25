@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -379,7 +380,7 @@ export default function IntelligenceChat() {
         </div>
 
         <div className={styles.composerArea} style={accentStyle}>
-          <form className={styles.composerCard} onSubmit={handleSubmit}>
+          <motion.form className={styles.composerCard} onSubmit={handleSubmit} layoutId="ai-composer" layout>
             <textarea
               className={styles.composerInput}
               placeholder="Descreva seu produto, fluxo ou ideia..."
@@ -413,7 +414,7 @@ export default function IntelligenceChat() {
                 </button>
               </div>
             </div>
-          </form>
+          </motion.form>
           {voiceFeedback ? <p className={styles.voiceFeedback} role="status">{voiceFeedback}</p> : null}
         </div>
       </ProductAppShell>

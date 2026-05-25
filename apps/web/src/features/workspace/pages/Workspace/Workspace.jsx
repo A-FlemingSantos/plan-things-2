@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
@@ -1012,7 +1013,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       <div className={styles.intelligenceStage}>
         <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
         <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
-        <form className={styles.intelligencePromptCard} onSubmit={handleSubmit}>
+        <motion.form className={styles.intelligencePromptCard} onSubmit={handleSubmit} layoutId="ai-composer" layout>
           <textarea
             className={styles.intelligencePrompt}
             placeholder="Descreva seu produto, fluxo ou ideia..."
@@ -1054,7 +1055,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
               </button>
             ))}
           </div>
-        </form>
+        </motion.form>
       </div>
     </section>
   )

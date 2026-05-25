@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
 import { useAuth } from './features/auth/context/AuthContext.jsx'
 import { buildAuthRedirectState, resolveAccountHomeRoute } from './features/auth/utils/authRedirect.js'
 import { readSessionModeFromAuthState } from './features/auth/utils/sessionMode.js'
@@ -170,105 +171,115 @@ export default function App() {
 
   return (
     <>
-      <Routes location={renderedLocation}>
-        <Route
-          path={ROUTES.home}
-          element={(
-            <AppThemeScope preference="system">
-              <LandingPage />
-            </AppThemeScope>
-          )}
-        />
-        <Route
-          path={ROUTES.login}
-          element={(
-            <AppThemeScope preference="system">
-              <Auth initialMode="login" />
-            </AppThemeScope>
-          )}
-        />
-        <Route
-          path={ROUTES.register}
-          element={(
-            <AppThemeScope preference="system">
-              <Auth initialMode="register" />
-            </AppThemeScope>
-          )}
-        />
-        <Route
-          path={ROUTES.oauthCallback}
-          element={(
-            <AppThemeScope preference="system">
-              <OAuthCallback />
-            </AppThemeScope>
-          )}
-        />
-        <Route
-          path={ROUTES.forgot}
-          element={(
-            <AppThemeScope preference="system">
-              <PasswordRecovery mode="forgot" />
-            </AppThemeScope>
-          )}
-        />
-        <Route
-          path={ROUTES.reset}
-          element={(
-            <AppThemeScope preference="system">
-              <PasswordRecovery mode="reset" />
-            </AppThemeScope>
-          )}
-        />
-        <Route
-          path="/plans/invites/:token"
-          element={(
-            <RequireSession notice="Faça login para aceitar o convite.">
-              <AppThemeScope preference="system">
-                <InviteAccept />
-              </AppThemeScope>
-            </RequireSession>
-          )}
-        />
-        <Route path="/app" element={<RequireSession><PreferredAppEntryRedirect /></RequireSession>} />
-        <Route path={ROUTES.workspace} element={<RequireSession><Workspace /></RequireSession>} />
-        <Route path={ROUTES.workspaceChat} element={<RequireSession><IntelligenceChat /></RequireSession>} />
-        <Route path={ROUTES.workspaceBoard} element={<RequireSession><KanbanBoard /></RequireSession>} />
-        <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<RequireSession><KanbanBoard /></RequireSession>} />
-        <Route
-          path={ROUTES.calendar}
-          element={(
-            <RequireSession>
-              <Navigate to={ROUTES.workspaceBoard} replace state={{ boardViewMode: 'calendar' }} />
-            </RequireSession>
-          )}
-        />
-        <Route path={`${ROUTES.files}/*`} element={<RequireSession><Navigate to={ROUTES.workspace} replace /></RequireSession>} />
-        {Object.entries(INFO_PAGES).map(([path, page]) => (
-          <Route
-            key={path}
-            path={path}
-            element={(
-              <AppThemeScope preference="system">
-                <InfoPage {...page} />
-              </AppThemeScope>
-            )}
-          />
-        ))}
+      <LayoutGroup>
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={renderedLocation.pathname}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Routes location={renderedLocation}>
+              <Route
+                path={ROUTES.home}
+                element={(
+                  <AppThemeScope preference="system">
+                    <LandingPage />
+                  </AppThemeScope>
+                )}
+              />
+              <Route
+                path={ROUTES.login}
+                element={(
+                  <AppThemeScope preference="system">
+                    <Auth initialMode="login" />
+                  </AppThemeScope>
+                )}
+              />
+              <Route
+                path={ROUTES.register}
+                element={(
+                  <AppThemeScope preference="system">
+                    <Auth initialMode="register" />
+                  </AppThemeScope>
+                )}
+              />
+              <Route
+                path={ROUTES.oauthCallback}
+                element={(
+                  <AppThemeScope preference="system">
+                    <OAuthCallback />
+                  </AppThemeScope>
+                )}
+              />
+              <Route
+                path={ROUTES.forgot}
+                element={(
+                  <AppThemeScope preference="system">
+                    <PasswordRecovery mode="forgot" />
+                  </AppThemeScope>
+                )}
+              />
+              <Route
+                path={ROUTES.reset}
+                element={(
+                  <AppThemeScope preference="system">
+                    <PasswordRecovery mode="reset" />
+                  </AppThemeScope>
+                )}
+              />
+              <Route
+                path="/plans/invites/:token"
+                element={(
+                  <RequireSession notice="Faça login para aceitar o convite.">
+                    <AppThemeScope preference="system">
+                      <InviteAccept />
+                    </AppThemeScope>
+                  </RequireSession>
+                )}
+              />
+              <Route path="/app" element={<RequireSession><PreferredAppEntryRedirect /></RequireSession>} />
+              <Route path={ROUTES.workspace} element={<RequireSession><Workspace /></RequireSession>} />
+              <Route path={ROUTES.workspaceChat} element={<RequireSession><IntelligenceChat /></RequireSession>} />
+              <Route path={ROUTES.workspaceBoard} element={<RequireSession><KanbanBoard /></RequireSession>} />
+              <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<RequireSession><KanbanBoard /></RequireSession>} />
+              <Route
+                path={ROUTES.calendar}
+                element={(
+                  <RequireSession>
+                    <Navigate to={ROUTES.workspaceBoard} replace state={{ boardViewMode: 'calendar' }} />
+                  </RequireSession>
+                )}
+              />
+              <Route path={`${ROUTES.files}/*`} element={<RequireSession><Navigate to={ROUTES.workspace} replace /></RequireSession>} />
+              {Object.entries(INFO_PAGES).map(([path, page]) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={(
+                    <AppThemeScope preference="system">
+                      <InfoPage {...page} />
+                    </AppThemeScope>
+                  )}
+                />
+              ))}
 
-        {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (
-          <Route
-            key={path}
-            path={path}
-            element={<LegacyPlanRedirect buildPath={buildWorkspaceBoardPath} />}
-          />
-        ))}
+              {LEGACY_PLAN_ROUTE_ALIASES.board.map((path) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={<LegacyPlanRedirect buildPath={buildWorkspaceBoardPath} />}
+                />
+              ))}
 
-        {ROUTE_ALIASES.map(({ from, to }) => (
-          <Route key={from} path={from} element={<Navigate to={to} replace />} />
-        ))}
+              {ROUTE_ALIASES.map(({ from, to }) => (
+                <Route key={from} path={from} element={<Navigate to={to} replace />} />
+              ))}
 
-        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
-      </Routes>
+              <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      </LayoutGroup>
 
       {normalizePathname(location.pathname) === ROUTES.settings ? (
         <Routes>
