@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './GitHubContextBar.module.css'
 
@@ -51,33 +51,56 @@ function CheckIcon() {
   )
 }
 
+const GAP = 6
+
 /**
  * Dropdown rendered into document.body via a portal so it is never clipped
  * by overflow:hidden / overflow:auto on any ancestor.
- * We stamp data-theme on the portaled element so dark-mode CSS works even
- * though the portal lives outside the AppThemeScope wrapper div.
+ *
+ * Opens downward by default; flips upward when there is not enough space
+ * below the anchor button. useLayoutEffect measures before paint to avoid
+ * any visible jump.
+ *
+ * data-theme is stamped on the element so dark-mode CSS tokens resolve
+ * correctly even though the portal lives outside the AppThemeScope div.
  */
 function PortalDropdown({ anchorRef, children }) {
-  const [style, setStyle] = useState({ position: 'fixed', top: 0, left: 0, visibility: 'hidden' })
+  const dropdownRef = useRef(null)
+  const [style, setStyle] = useState({ position: 'fixed', top: 0, left: 0, visibility: 'hidden', transformOrigin: 'top left' })
 
   const theme =
     typeof document !== 'undefined'
       ? (document.documentElement.dataset.appColorScheme ?? 'light')
       : 'light'
 
-  useEffect(() => {
-    if (!anchorRef.current) return
-    const rect = anchorRef.current.getBoundingClientRect()
+  useLayoutEffect(() => {
+    const anchor   = anchorRef.current
+    const dropdown = dropdownRef.current
+    if (!anchor || !dropdown) return
+
+    const anchorRect     = anchor.getBoundingClientRect()
+    const dropdownHeight = dropdown.offsetHeight
+    const spaceBelow     = window.innerHeight - anchorRect.bottom - GAP
+    const spaceAbove     = anchorRect.top - GAP
+
+    const opensDown = spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove
+    const top = opensDown
+      ? anchorRect.bottom + GAP
+      : anchorRect.top - GAP - dropdownHeight
+
     setStyle({
       position: 'fixed',
-      top: rect.bottom + 6,
-      left: rect.left,
+      top,
+      left: anchorRect.left,
       visibility: 'visible',
+      transformOrigin: opensDown ? 'top left' : 'bottom left',
     })
-  }, [anchorRef])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return createPortal(
     <div
+      ref={dropdownRef}
       className={styles.dropdown}
       data-theme={theme}
       style={{ ...style, colorScheme: theme }}
