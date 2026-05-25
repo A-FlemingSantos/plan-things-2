@@ -1,3 +1,6 @@
+DELETE FROM ai_message_blocks;
+DELETE FROM ai_messages;
+DELETE FROM ai_conversations;
 DELETE FROM card_attachments;
 DELETE FROM file_plan_shares;
 DELETE FROM file_blobs;

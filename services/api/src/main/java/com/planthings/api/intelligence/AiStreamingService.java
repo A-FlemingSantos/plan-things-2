@@ -34,11 +34,15 @@ public class AiStreamingService {
     AiConversationEntity conversation = conversationService.requireOwnedConversation(conversationId);
 
     SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+    SseEmitter previousEmitter = activeEmitters.remove(conversation.getId());
+    if (previousEmitter != null) {
+      previousEmitter.complete();
+    }
     activeEmitters.put(conversation.getId(), emitter);
 
-    emitter.onCompletion(() -> activeEmitters.remove(conversation.getId()));
-    emitter.onTimeout(() -> activeEmitters.remove(conversation.getId()));
-    emitter.onError(error -> activeEmitters.remove(conversation.getId()));
+    emitter.onCompletion(() -> activeEmitters.remove(conversation.getId(), emitter));
+    emitter.onTimeout(() -> activeEmitters.remove(conversation.getId(), emitter));
+    emitter.onError(error -> activeEmitters.remove(conversation.getId(), emitter));
 
     try {
       emitter.send(SseEmitter.event()

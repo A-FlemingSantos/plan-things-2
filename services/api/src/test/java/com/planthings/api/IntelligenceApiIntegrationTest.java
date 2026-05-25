@@ -71,4 +71,55 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data[1].role").value("ASSISTANT"))
         .andExpect(jsonPath("$.data[1].status").value("PENDING"));
   }
+
+  @Test
+  void shouldValidateCardScopeWhenCreatingConversation() throws Exception {
+    String token = registerAndGetToken("Arthur Card Intelligence", "arthur-card-intelligence@example.com", "12345678");
+    String planId = createPlan(token, "Plano da conversa").path("plan").path("id").asText();
+    String otherPlanId = createPlan(token, "Plano do cartao").path("plan").path("id").asText();
+    String cardId = createCard(token, otherPlanId, "Cartao de outro plano");
+
+    mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "planId": "%s",
+                  "cardId": "%s",
+                  "scopeType": "CARD",
+                  "title": "Escopo invalido"
+                }
+                """.formatted(planId, cardId)))
+        .andExpect(status().isNotFound());
+
+    mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "cardId": "%s",
+                  "title": "Escopo do cartao"
+                }
+                """.formatted(cardId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.planId").value(otherPlanId))
+        .andExpect(jsonPath("$.data.cardId").value(cardId))
+        .andExpect(jsonPath("$.data.scopeType").value("CARD"));
+  }
+
+  private String createCard(String token, String planId, String title) throws Exception {
+    String columnId = createBoardColumn(token, planId, "Tarefas");
+    return readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "%s",
+                  "description": "Card de teste"
+                }
+                """.formatted(columnId, title)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+  }
 }

@@ -1,6 +1,8 @@
 package com.planthings.api.intelligence;
 
 import com.planthings.api.auth.UserEntity;
+import com.planthings.api.board.BoardCardEntity;
+import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.error.ForbiddenException;
@@ -39,6 +41,7 @@ public class AiConversationService {
   private final AuthenticatedUserService authenticatedUserService;
   private final PersonalWorkspaceService personalWorkspaceService;
   private final PlanAccessService planAccessService;
+  private final BoardCardRepository boardCardRepository;
   private final AiConversationRepository conversationRepository;
   private final AiMessageRepository messageRepository;
   private final AiMessageBlockRepository messageBlockRepository;
@@ -49,6 +52,7 @@ public class AiConversationService {
       AuthenticatedUserService authenticatedUserService,
       PersonalWorkspaceService personalWorkspaceService,
       PlanAccessService planAccessService,
+      BoardCardRepository boardCardRepository,
       AiConversationRepository conversationRepository,
       AiMessageRepository messageRepository,
       AiMessageBlockRepository messageBlockRepository,
@@ -58,6 +62,7 @@ public class AiConversationService {
     this.authenticatedUserService = authenticatedUserService;
     this.personalWorkspaceService = personalWorkspaceService;
     this.planAccessService = planAccessService;
+    this.boardCardRepository = boardCardRepository;
     this.conversationRepository = conversationRepository;
     this.messageRepository = messageRepository;
     this.messageBlockRepository = messageBlockRepository;
@@ -71,9 +76,24 @@ public class AiConversationService {
     UserEntity currentUser = authenticatedUserService.requireUser();
     WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
     UUID planId = command.planId();
+    UUID cardId = command.cardId();
     AiConversationScopeType scopeType = command.scopeType() == null ? AiConversationScopeType.WORKSPACE : command.scopeType();
 
-    if (planId != null) {
+    if (cardId != null) {
+      BoardCardEntity card = boardCardRepository.findById(cardId)
+          .orElseThrow(() -> new NotFoundException("CARTAO_NAO_ENCONTRADO", "Nao encontramos o cartao informado."));
+      if (planId != null && !planId.equals(card.getPlanId())) {
+        throw new NotFoundException("CARTAO_NAO_ENCONTRADO", "Nao encontramos o cartao informado neste plano.");
+      }
+      planId = card.getPlanId();
+      PlanEntity plan = planAccessService.requirePlanMember(planId, currentUser.getId());
+      if (!plan.getWorkspaceId().equals(workspace.getId())) {
+        throw new ForbiddenException("PLANO_FORA_DO_WORKSPACE", "Este plano nao pertence ao workspace atual.");
+      }
+      if (scopeType == AiConversationScopeType.WORKSPACE || scopeType == AiConversationScopeType.PLAN) {
+        scopeType = AiConversationScopeType.CARD;
+      }
+    } else if (planId != null) {
       PlanEntity plan = planAccessService.requirePlanMember(planId, currentUser.getId());
       if (!plan.getWorkspaceId().equals(workspace.getId())) {
         throw new ForbiddenException("PLANO_FORA_DO_WORKSPACE", "Este plano nao pertence ao workspace atual.");
@@ -86,7 +106,7 @@ public class AiConversationService {
     AiConversationEntity conversation = new AiConversationEntity();
     conversation.setWorkspaceId(workspace.getId());
     conversation.setPlanId(planId);
-    conversation.setCardId(command.cardId());
+    conversation.setCardId(cardId);
     conversation.setCreatedByUserId(currentUser.getId());
     conversation.setTitle(normalizeTitle(command.title()));
     conversation.setScopeType(scopeType);
