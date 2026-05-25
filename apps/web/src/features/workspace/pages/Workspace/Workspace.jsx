@@ -26,6 +26,7 @@ function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+function MicIcon()      { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ArrowUpIcon()  { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
 /* ═══════════════════════════════════════════
@@ -992,6 +993,13 @@ function WorkspaceLoadingState({ view }) {
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const navigate = useNavigate()
   const [draft, setDraft] = useState('')
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef(null)
+
+  useEffect(() => () => {
+    recognitionRef.current?.abort?.()
+    recognitionRef.current = null
+  }, [])
 
   const navigateToChat = (value = draft) => {
     const text = value.trim()
@@ -1002,6 +1010,43 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const handleSubmit = (event) => {
     event.preventDefault()
     navigateToChat()
+  }
+
+  const handleVoiceInput = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      return
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) return
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'pt-BR'
+    recognition.continuous = true
+    recognition.interimResults = false
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((r) => r[0]?.transcript?.trim())
+        .filter(Boolean)
+        .join(' ')
+      if (transcript) {
+        setDraft((current) => (current.trim() ? `${current.trim()} ${transcript}` : transcript))
+      }
+    }
+    recognition.onerror = () => {
+      recognitionRef.current = null
+      setIsListening(false)
+    }
+    recognition.onend = () => {
+      recognitionRef.current = null
+      setIsListening(false)
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
   }
 
   return (
@@ -1029,15 +1074,19 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
             }}
           />
           <div className={styles.intelligencePromptControls}>
-            <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence" onClick={() => {
-              setDraft((current) => {
-                const context = 'Considere meus planos, calendário e arquivos do workspace como contexto.'
-                return current.trim() ? `${current.trim()} ${context}` : context
-              })
-            }}>
+            <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence">
               <PlusIcon />
             </button>
             <div className={styles.intelligencePromptActions}>
+              <button
+                type="button"
+                className={`${styles.intelligenceIconButton} ${isListening ? styles.intelligenceIconButtonActive : ''}`}
+                aria-label={isListening ? 'Parar gravação de áudio' : 'Gravar áudio para o Intelligence'}
+                aria-pressed={isListening}
+                onClick={handleVoiceInput}
+              >
+                <MicIcon />
+              </button>
               <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim()}>
                 <ArrowUpIcon />
               </button>

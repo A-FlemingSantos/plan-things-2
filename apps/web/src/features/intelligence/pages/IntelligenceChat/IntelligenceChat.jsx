@@ -144,14 +144,6 @@ export default function IntelligenceChat() {
     submitPrompt()
   }
 
-  const handleAddContext = () => {
-    setDraft((current) => {
-      const context = 'Considere meus planos, calendário e arquivos do workspace como contexto.'
-      return current.trim() ? `${current.trim()} ${context}` : context
-    })
-    setVoiceFeedback('Contexto do workspace adicionado ao prompt.')
-  }
-
   const clearRecognitionRestartTimer = () => {
     if (!recognitionRestartTimerRef.current) return
     clearTimeout(recognitionRestartTimerRef.current)
@@ -396,7 +388,7 @@ export default function IntelligenceChat() {
               }}
             />
             <div className={styles.composerControls}>
-              <button type="button" className={styles.ghostAction} aria-label="Adicionar contexto ao Intelligence" onClick={handleAddContext}>
+              <button type="button" className={styles.ghostAction} aria-label="Adicionar contexto ao Intelligence">
                 <PlusIcon />
               </button>
               <div className={styles.actions}>
