@@ -319,29 +319,6 @@
   animation: messageIn 0.16s ease both;
 }
 
-.githubContextItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--intelligence-faint);
-  font-family: var(--font-family);
-  font-size: 11px;
-  line-height: 1;
-  letter-spacing: -0.01em;
-}
-
-.githubContextRepo {
-  font-weight: var(--font-weight-medium, 500);
-  color: var(--intelligence-muted);
-}
-
-.githubContextSep {
-  width: 1px;
-  height: 10px;
-  border-radius: 1px;
-  background: color-mix(in srgb, var(--intelligence-border) 70%, transparent);
-  flex-shrink: 0;
-}
 
 /* ── Voice feedback ── */
 .voiceFeedback {
