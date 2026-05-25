@@ -979,9 +979,10 @@ function WorkspaceLoadingState({ view }) {
 
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const navigate = useNavigate()
+  const { aiChips, setAiChips } = usePlans()
+  const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const [draft, setDraft] = useState('')
   const [isListening, setIsListening] = useState(false)
-  const [activeConnectors, setActiveConnectors] = useState([])
   const recognitionRef = useRef(null)
 
   useEffect(() => () => {
@@ -1064,7 +1065,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
           />
           <div className={styles.intelligencePromptControls}>
             <div className={styles.intelligenceContextLeft}>
-              <AiComposerContextMenu onConnectorsChange={setActiveConnectors} />
+              <AiComposerContextMenu onChipsChange={setAiChips} initialChips={aiChips} />
             </div>
 
             <div className={styles.intelligencePromptActions}>

@@ -59,13 +59,14 @@ const makePlanChipDot = (color) => function PlanChipDot() {
 }
 
 /* ── Component ─────────────────────────────────────────────────── */
-export default function AiComposerContextMenu({ onConnectorsChange } = {}) {
+export default function AiComposerContextMenu({ onChipsChange, initialChips } = {}) {
   const [isMenuOpen, setIsMenuOpen]   = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState(null)
-  const [chips, setChips]             = useState([])
+  const [chips, setChips]             = useState(() => initialChips ?? [])
 
-  const menuRef   = useRef(null)
-  const buttonRef = useRef(null)
+  const menuRef       = useRef(null)
+  const buttonRef     = useRef(null)
+  const isFirstRender = useRef(true)
 
   const toggleChip = (type, label, ChipIcon, kind) => {
     setChips((prev) => {
@@ -75,7 +76,11 @@ export default function AiComposerContextMenu({ onConnectorsChange } = {}) {
   }
 
   useEffect(() => {
-    onConnectorsChange?.(chips.filter((c) => c.kind === 'connector').map((c) => c.type))
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    onChipsChange?.(chips)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chips])
 

@@ -6,6 +6,7 @@ import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/Works
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { usePlans } from '../../../workspace/context/PlansContext.jsx'
 import {
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
@@ -67,6 +68,8 @@ export default function IntelligenceChat() {
   const location = useLocation()
   const { currentUser } = useAuth()
   const { localPreferences } = usePreferences()
+  const { aiChips, setAiChips } = usePlans()
+  const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
 
   const [draft, setDraft] = useState('')
@@ -74,7 +77,6 @@ export default function IntelligenceChat() {
   const [isThinking, setIsThinking] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [voiceFeedback, setVoiceFeedback] = useState('')
-  const [activeConnectors, setActiveConnectors] = useState([])
 
   const chatEndRef = useRef(null)
   const responseTimerRef = useRef(null)
@@ -394,7 +396,7 @@ export default function IntelligenceChat() {
             />
             <div className={styles.composerControls}>
               <div className={styles.composerLeft}>
-                <AiComposerContextMenu onConnectorsChange={setActiveConnectors} />
+                <AiComposerContextMenu onChipsChange={setAiChips} initialChips={aiChips} />
               </div>
 
               <div className={styles.actions}>
