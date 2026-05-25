@@ -1,0 +1,309 @@
+/* ============================================================
+   IntelligenceChat.module.css — Plan Things
+   Dedicated chat page: messages from top, composer pinned to bottom.
+   ============================================================ */
+
+/* ── Shell ── */
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--app-bg);
+  color: var(--text-1);
+}
+
+/* ── Layout ── */
+.main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Chat area (scrollable) ── */
+.chatArea {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-1) 12%, transparent) transparent;
+}
+
+.chatArea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chatArea::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-1) 12%, transparent);
+  border-radius: 3px;
+}
+
+/* ── Messages container ── */
+.messages {
+  --intelligence-accent: var(--intelligence-theme-accent, var(--text-1));
+  --intelligence-accent-foreground: var(--intelligence-theme-accent-foreground, var(--text-inverse));
+  --intelligence-text: var(--text-1);
+  --intelligence-muted: var(--text-2);
+  --intelligence-faint: var(--text-3);
+  --intelligence-user-bg: var(--intelligence-accent);
+  --intelligence-assistant-bg: color-mix(in srgb, var(--surface-3) 78%, var(--surface-1));
+
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-theme='dark'] .messages {
+  --intelligence-assistant-bg: rgba(255, 255, 255, 0.08);
+}
+
+.message {
+  max-width: min(86%, 560px);
+  padding: 10px 13px;
+  border-radius: 15px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--intelligence-muted);
+  animation: messageIn 0.22s ease both;
+}
+
+@keyframes messageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.messageUser {
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+  background: var(--intelligence-user-bg);
+  color: var(--intelligence-accent-foreground);
+}
+
+.messageAssistant {
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+  background: var(--intelligence-assistant-bg);
+}
+
+.thinking {
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+  background: var(--intelligence-assistant-bg);
+  max-width: min(86%, 560px);
+  padding: 10px 13px;
+  border-radius: 15px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--intelligence-faint);
+  animation: messageIn 0.22s ease both;
+}
+
+/* ── Empty state ── */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  gap: 12px;
+}
+
+.emptyGreeting {
+  margin: 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  color: var(--text-2);
+  letter-spacing: -0.01em;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  color: var(--text-1);
+}
+
+.emptySuggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.emptySuggestionButton {
+  padding: 8px 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.emptySuggestionButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-1) 4%, transparent);
+  color: var(--text-1);
+  border-color: color-mix(in srgb, var(--text-1) 18%, transparent);
+}
+
+.emptySuggestionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── Composer (pinned to bottom) ── */
+.composerArea {
+  --intelligence-accent: var(--intelligence-theme-accent, var(--text-1));
+  --intelligence-accent-foreground: var(--intelligence-theme-accent-foreground, var(--text-inverse));
+  --intelligence-text: var(--text-1);
+  --intelligence-muted: var(--text-2);
+  --intelligence-faint: var(--text-3);
+  --intelligence-panel-bg: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 98%, transparent);
+  --intelligence-border: var(--border-1);
+  --intelligence-button-bg: var(--intelligence-accent);
+  --intelligence-shadow: 0 -4px 24px color-mix(in srgb, var(--text-1) 5%, transparent);
+
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 8px 20px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+[data-theme='dark'] .composerArea {
+  --intelligence-panel-bg: color-mix(in srgb, var(--surface-3) 82%, transparent);
+  --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 94%, transparent);
+  --intelligence-border: rgba(255, 255, 255, 0.08);
+  --intelligence-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+}
+
+.composerCard {
+  width: 100%;
+  max-width: 720px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--intelligence-border);
+  border-radius: 20px;
+  background: var(--intelligence-panel-bg);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--surface-1) 70%, transparent),
+    var(--intelligence-shadow);
+  overflow: hidden;
+}
+
+.composerInput {
+  width: 100%;
+  min-height: 28px;
+  padding: 12px 22px 4px;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: var(--intelligence-input-bg);
+  color: var(--intelligence-text);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: text;
+}
+
+.composerInput::placeholder {
+  color: var(--intelligence-faint);
+}
+
+.composerControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px 10px;
+  background: var(--intelligence-input-bg);
+}
+
+.ghostAction,
+.iconButton,
+.sendButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.ghostAction {
+  width: 26px;
+  height: 26px;
+  color: var(--intelligence-text);
+  background: transparent;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconButton {
+  width: 28px;
+  height: 28px;
+  color: var(--intelligence-faint);
+  background: transparent;
+}
+
+.iconButton:hover,
+.ghostAction:hover {
+  color: var(--intelligence-text);
+}
+
+.iconButtonActive {
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--intelligence-accent) 16%, transparent);
+  color: var(--intelligence-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--intelligence-accent) 38%, transparent);
+}
+
+.sendButton {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--intelligence-button-bg);
+  color: var(--intelligence-accent-foreground);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-1) 65%, transparent);
+}
+
+.sendButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--intelligence-accent) 88%, var(--surface-1));
+}
+
+.sendButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+/* ── Voice feedback ── */
+.voiceFeedback {
+  width: 100%;
+  max-width: 720px;
+  margin: 6px auto 0;
+  padding: 0 20px;
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}

@@ -12,6 +12,7 @@ import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
 import AppThemeScope from './features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import SettingsPage from './features/settings/pages/SettingsPage/SettingsPage.jsx'
+import IntelligenceChat from './features/intelligence/pages/IntelligenceChat/IntelligenceChat.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
@@ -230,6 +231,7 @@ export default function App() {
         />
         <Route path="/app" element={<RequireSession><PreferredAppEntryRedirect /></RequireSession>} />
         <Route path={ROUTES.workspace} element={<RequireSession><Workspace /></RequireSession>} />
+        <Route path={ROUTES.workspaceChat} element={<RequireSession><IntelligenceChat /></RequireSession>} />
         <Route path={ROUTES.workspaceBoard} element={<RequireSession><KanbanBoard /></RequireSession>} />
         <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<RequireSession><KanbanBoard /></RequireSession>} />
         <Route

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,6 +34,13 @@ const preferencesMock = vi.hoisted(() => ({
     confirmDestructiveActions: true,
     showIntelligenceSection: true,
   },
+}))
+
+vi.mock('../../../auth/context/AuthContext.jsx', () => ({
+  useAuth: () => ({
+    currentUser: { fullName: 'Arthur Fleming' },
+    workspace: { name: 'Área de trabalho pessoal' },
+  }),
 }))
 
 vi.mock('../../context/PlansContext.jsx', () => ({
@@ -74,14 +81,6 @@ function renderWorkspace() {
 describe('Workspace mobile layout', () => {
   beforeEach(() => {
     preferencesMock.localPreferences.showIntelligenceSection = true
-    Object.defineProperty(window, 'SpeechRecognition', {
-      configurable: true,
-      value: undefined,
-    })
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: undefined,
-    })
   })
 
   it('keeps the mobile workspace controls available without hiding the primary actions', () => {
@@ -107,444 +106,34 @@ describe('Workspace mobile layout', () => {
     expect(screen.getByText('Todos os planos')).toBeInTheDocument()
   })
 
-  it('sends workspace intelligence messages from typed prompts and suggestions', async () => {
-    const user = userEvent.setup()
-
+  it('has a prompt input and send button in the intelligence section', () => {
     renderWorkspace()
 
-    await user.type(screen.getByLabelText('Prompt do Intelligence'), 'Preciso planejar um produto novo')
-    await user.click(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' }))
-
-    expect(screen.getByText('Preciso planejar um produto novo')).toBeInTheDocument()
-    expect(await screen.findByText(/Eu começaria separando a ideia/i)).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Criar pitch deck' }))
-
-    expect(await screen.findByText('Crie uma estrutura de pitch deck para apresentar esta ideia.')).toBeInTheDocument()
-    expect(await screen.findByText(/problema, público, insight/i)).toBeInTheDocument()
+    expect(screen.getByLabelText('Prompt do Intelligence')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeInTheDocument()
   })
 
-  it('adds recognized voice input to the prompt only after stopping capture', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-        const result = [{ transcript: 'Planejar lançamento por voz' }]
-        result.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [result] })
-      }
-
-      stop() {
-        this.onend?.()
-      }
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
+  it('renders suggestion buttons in the intelligence section', () => {
     renderWorkspace()
 
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-
-    expect(screen.queryByDisplayValue('Planejar lançamento por voz')).not.toBeInTheDocument()
-
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-
-    expect(await screen.findByDisplayValue('Planejar lançamento por voz')).toBeInTheDocument()
-    expect(screen.getByText('Texto de voz adicionado ao prompt.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sincronizar calendário' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Criar pitch deck' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Inicializar UI system' })).toBeInTheDocument()
   })
 
-  it('commits recognized voice input even when the browser stop event never ends', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-        const result = [{ transcript: 'Texto preservado sem onend' }]
-        result.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [result] })
-      }
-
-      stop() {}
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
+  it('disables the send button when the prompt is empty', () => {
     renderWorkspace()
 
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-
-    expect(await screen.findByDisplayValue('Texto preservado sem onend')).toBeInTheDocument()
-    expect(screen.getByText('Texto de voz adicionado ao prompt.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeDisabled()
   })
 
-  it('commits interim voice input when the browser does not provide a final result', async () => {
+  it('enables the send button when the prompt has text', async () => {
     const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-        const result = [{ transcript: 'Texto parcial reconhecido' }]
-        result.isFinal = false
-        this.onresult?.({ resultIndex: 0, results: [result] })
-      }
-
-      stop() {
-        this.onend?.()
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
 
     renderWorkspace()
 
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
+    await user.type(screen.getByLabelText('Prompt do Intelligence'), 'Planejar algo')
 
-    expect(await screen.findByDisplayValue('Texto parcial reconhecido')).toBeInTheDocument()
-    expect(screen.getByText('Texto de voz adicionado ao prompt.')).toBeInTheDocument()
-  })
-
-  it('commits voice input when the browser ends before delivering the last result', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-      }
-
-      stop() {
-        this.onend?.()
-        const result = [{ transcript: 'Resultado depois do fim' }]
-        result.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [result] })
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-
-    expect(await screen.findByDisplayValue('Resultado depois do fim')).toBeInTheDocument()
-    expect(screen.getByText('Texto de voz adicionado ao prompt.')).toBeInTheDocument()
-  })
-
-  it('replaces interim voice text with the final transcript instead of duplicating it', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-
-        const interimResult = [{ transcript: 'Texto parcial' }]
-        interimResult.isFinal = false
-        this.onresult?.({ resultIndex: 0, results: [interimResult] })
-
-        const finalResult = [{ transcript: 'Texto parcial final' }]
-        finalResult.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [finalResult] })
-      }
-
-      stop() {
-        this.onend?.()
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-
-    expect(await screen.findByDisplayValue('Texto parcial final')).toBeInTheDocument()
-    expect(screen.queryByDisplayValue('Texto parcial Texto parcial final')).not.toBeInTheDocument()
-  })
-
-  it('allows repeated voice input attempts after a successful capture', async () => {
-    const user = userEvent.setup()
-    const transcripts = ['Primeira tentativa', 'Segunda tentativa']
-    let startCount = 0
-
-    class MockSpeechRecognition {
-      start() {
-        const transcript = transcripts[startCount]
-        startCount += 1
-        this.onstart?.()
-        const result = [{ transcript }]
-        result.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [result] })
-      }
-
-      stop() {
-        this.onend?.()
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-    expect(await screen.findByDisplayValue('Primeira tentativa')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-
-    expect(await screen.findByDisplayValue('Primeira tentativa Segunda tentativa')).toBeInTheDocument()
-    expect(startCount).toBe(2)
-  })
-
-  it('uses speech resultIndex so repeated result events do not duplicate old transcript', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-
-        const firstResult = [{ transcript: 'Primeiro trecho' }]
-        firstResult.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [firstResult] })
-
-        const repeatedFirstResult = [{ transcript: 'Primeiro trecho' }]
-        repeatedFirstResult.isFinal = true
-        const secondResult = [{ transcript: 'Segundo trecho' }]
-        secondResult.isFinal = true
-        this.onresult?.({ resultIndex: 1, results: [repeatedFirstResult, secondResult] })
-      }
-
-      stop() {
-        this.onend?.()
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-
-    expect(await screen.findByDisplayValue('Primeiro trecho Segundo trecho')).toBeInTheDocument()
-    expect(screen.queryByDisplayValue('Primeiro trecho Primeiro trecho Segundo trecho')).not.toBeInTheDocument()
-  })
-
-  it('does not duplicate final transcript snapshots when resultIndex resets to zero', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-
-        const firstResult = [{ transcript: 'Primeiro trecho' }]
-        firstResult.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [firstResult] })
-
-        const repeatedFirstResult = [{ transcript: 'Primeiro trecho' }]
-        repeatedFirstResult.isFinal = true
-        const secondResult = [{ transcript: 'Segundo trecho' }]
-        secondResult.isFinal = true
-        this.onresult?.({ resultIndex: 0, results: [repeatedFirstResult, secondResult] })
-      }
-
-      stop() {
-        this.onend?.()
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-    await user.click(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' }))
-
-    expect(await screen.findByDisplayValue('Primeiro trecho Segundo trecho')).toBeInTheDocument()
-    expect(screen.queryByDisplayValue('Primeiro trecho Primeiro trecho Segundo trecho')).not.toBeInTheDocument()
-  })
-
-  it('toggles the microphone selected state while voice capture is active', async () => {
-    const user = userEvent.setup()
-    const stop = vi.fn(function stop() {
-      this.onend?.()
-    })
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-      }
-
-      stop = stop
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    const startButton = screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' })
-    await user.click(startButton)
-
-    const stopButton = await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' })
-    expect(stopButton).toHaveAttribute('aria-pressed', 'true')
-
-    await user.click(stopButton)
-
-    expect(stop).toHaveBeenCalled()
-    expect(await screen.findByRole('button', { name: 'Gravar áudio para o Intelligence' })).toHaveAttribute('aria-pressed', 'false')
-    expect(await screen.findByText('Captura de voz interrompida.')).toBeInTheDocument()
-  })
-
-  it('shows a microphone permission message when voice access is blocked', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onerror?.({ error: 'not-allowed' })
-        this.onend?.()
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-
-    expect(await screen.findByText('Permissão do microfone negada. Libere o acesso ao microfone no navegador.')).toBeInTheDocument()
-  })
-
-  it('shows a no-speech message instead of leaving capture active forever', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-        this.onerror?.({ error: 'no-speech' })
-        this.onend?.()
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-
-    expect(await screen.findByText('Não detectei fala. Tente novamente falando mais perto do microfone.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' })).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('keeps browser network errors from interrupting the active microphone state', async () => {
-    const user = userEvent.setup()
-
-    class MockSpeechRecognition {
-      start() {
-        this.onstart?.()
-        this.onerror?.({ error: 'network' })
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-
-    expect(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('Ouvindo... clique no microfone para parar.')).toBeInTheDocument()
-    expect(screen.queryByText('O reconhecimento de voz do navegador está indisponível. Tente Chrome/Edge com internet ou digite o prompt.')).not.toBeInTheDocument()
-  })
-
-  it('restarts browser voice capture when the browser ends after a network interruption', async () => {
-    const user = userEvent.setup()
-    let startCount = 0
-
-    class MockSpeechRecognition {
-      start() {
-        startCount += 1
-        this.onstart?.()
-        if (startCount === 1) {
-          this.onerror?.({ error: 'network' })
-          this.onend?.()
-        }
-      }
-
-      abort() {}
-    }
-
-    Object.defineProperty(window, 'webkitSpeechRecognition', {
-      configurable: true,
-      value: MockSpeechRecognition,
-    })
-
-    renderWorkspace()
-
-    await user.click(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' }))
-
-    expect(await screen.findByRole('button', { name: 'Parar gravação de áudio para o Intelligence' })).toHaveAttribute('aria-pressed', 'true')
-    expect(await screen.findByText('Ouvindo... clique no microfone para parar.')).toBeInTheDocument()
-    await waitFor(() => expect(startCount).toBeGreaterThanOrEqual(2))
+    expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeEnabled()
   })
 })

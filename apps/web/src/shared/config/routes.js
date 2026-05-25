@@ -5,6 +5,7 @@ export const ROUTES = {
   oauthCallback: '/oauth/callback',
   workspace: '/workspace',
   workspaceBoard: '/workspace/board',
+  workspaceChat: '/workspace/chat',
   calendar: '/calendar',
   files: '/files',
   settings: '/settings',

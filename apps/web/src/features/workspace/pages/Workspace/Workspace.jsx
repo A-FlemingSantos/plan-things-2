@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
+import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
@@ -25,7 +25,6 @@ function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function MicIcon()      { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ArrowUpIcon()  { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
 /* ═══════════════════════════════════════════
@@ -64,54 +63,8 @@ const WORKSPACE_INTELLIGENCE_SUGGESTIONS = [
   },
 ]
 
-const VOICE_INPUT_ERROR_MESSAGES = {
-  'audio-capture': 'Nenhum microfone disponível foi encontrado.',
-  'language-not-supported': 'Reconhecimento de voz em português não está disponível neste navegador.',
-  network: 'O reconhecimento de voz do navegador está indisponível. Tente Chrome/Edge com internet ou digite o prompt.',
-  'no-speech': 'Não detectei fala. Tente novamente falando mais perto do microfone.',
-  'not-allowed': 'Permissão do microfone negada. Libere o acesso ao microfone no navegador.',
-  'service-not-allowed': 'O navegador bloqueou o serviço de reconhecimento de voz.',
-}
-
-const MAX_VOICE_RESTART_ATTEMPTS = 3
-const VOICE_RESTART_BASE_DELAY_MS = 350
-const VOICE_RESTART_STEP_DELAY_MS = 250
-const VOICE_RESTART_MAX_DELAY_MS = 1000
-const VOICE_STOP_FINALIZE_DELAY_MS = 600
 const WORKSPACE_SCROLLBAR_INSET_PX = 0
 const WORKSPACE_SCROLLBAR_MIN_THUMB_PX = 18
-
-function getVoiceInputErrorMessage(error) {
-  const code = error?.error || error?.name
-
-  if (code === 'NotAllowedError' || code === 'PermissionDeniedError') {
-    return VOICE_INPUT_ERROR_MESSAGES['not-allowed']
-  }
-
-  if (code === 'NotFoundError' || code === 'DevicesNotFoundError') {
-    return VOICE_INPUT_ERROR_MESSAGES['audio-capture']
-  }
-
-  return VOICE_INPUT_ERROR_MESSAGES[code] || 'Não foi possível capturar o áudio agora.'
-}
-
-function buildWorkspaceIntelligenceReply(prompt) {
-  const normalized = prompt.toLowerCase()
-
-  if (normalized.includes('calend')) {
-    return 'Posso organizar isso em blocos de foco. Comece mapeando reuniões fixas, separe 2 janelas para execução profunda e reserve um checkpoint curto no fim do dia.'
-  }
-
-  if (normalized.includes('pitch')) {
-    return 'Uma boa base: problema, público, insight, solução, diferenciais, plano de execução e próximos passos. Se quiser, posso transformar isso em um roteiro slide a slide.'
-  }
-
-  if (normalized.includes('ui')) {
-    return 'Vamos começar pelo essencial: tokens de cor e espaçamento, tipografia, botões, inputs, cards de conteúdo e estados de feedback. Depois conectamos isso aos fluxos principais.'
-  }
-
-  return 'Entendi. Eu começaria separando a ideia em objetivo, usuários, fluxo principal, riscos e primeiro entregável. Me diga qual parte você quer aprofundar e eu continuo a partir dela.'
-}
 
 function resolveCoverThemeClass(styles, coverThemeId) {
   if (!coverThemeId) return ''
@@ -1036,351 +989,18 @@ function WorkspaceLoadingState({ view }) {
 }
 
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
+  const navigate = useNavigate()
   const [draft, setDraft] = useState('')
-  const [messages, setMessages] = useState([])
-  const [isThinking, setIsThinking] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [voiceFeedback, setVoiceFeedback] = useState('')
-  const chatLogRef = useRef(null)
-  const responseTimerRef = useRef(null)
-  const recognitionRef = useRef(null)
-  const voiceEndingRecognitionRef = useRef(null)
-  const recognitionRestartTimerRef = useRef(null)
-  const voiceStopFinalizeTimerRef = useRef(null)
-  const voiceListeningRequestedRef = useRef(false)
-  const voiceRestartAttemptsRef = useRef(0)
-  const stopRequestedRef = useRef(false)
-  const voiceCaptureFinalizedRef = useRef(false)
-  const lastVoiceRecognitionErrorRef = useRef('')
-  const voiceTranscriptEntriesRef = useRef(new Map())
-  const voiceRecognitionSequenceRef = useRef(0)
 
-  useEffect(() => () => {
-    if (responseTimerRef.current) {
-      clearTimeout(responseTimerRef.current)
-    }
-    if (recognitionRestartTimerRef.current) {
-      clearTimeout(recognitionRestartTimerRef.current)
-    }
-    if (voiceStopFinalizeTimerRef.current) {
-      clearTimeout(voiceStopFinalizeTimerRef.current)
-    }
-    voiceListeningRequestedRef.current = false
-    stopRequestedRef.current = true
-    voiceCaptureFinalizedRef.current = true
-    recognitionRef.current?.abort?.()
-    recognitionRef.current = null
-    voiceEndingRecognitionRef.current = null
-  }, [])
-
-  useEffect(() => {
-    if (!chatLogRef.current) return
-    chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight
-  }, [messages, isThinking])
-
-  const submitPrompt = (value = draft) => {
+  const navigateToChat = (value = draft) => {
     const text = value.trim()
-    if (!text || isThinking) return
-
-    const userMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      text,
-    }
-
-    setMessages((current) => [...current, userMessage])
-    setDraft('')
-    setVoiceFeedback('')
-    setIsThinking(true)
-
-    if (responseTimerRef.current) {
-      clearTimeout(responseTimerRef.current)
-    }
-
-    responseTimerRef.current = setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          text: buildWorkspaceIntelligenceReply(text),
-        },
-      ])
-      setIsThinking(false)
-      responseTimerRef.current = null
-    }, 550)
+    if (!text) return
+    navigate(ROUTES.workspaceChat, { state: { initialPrompt: text } })
   }
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    submitPrompt()
-  }
-
-  const handleAddContext = () => {
-    setDraft((current) => {
-      const context = 'Considere meus planos, calendário e arquivos do workspace como contexto.'
-      return current.trim() ? `${current.trim()} ${context}` : context
-    })
-    setVoiceFeedback('Contexto do workspace adicionado ao prompt.')
-  }
-
-  const clearRecognitionRestartTimer = () => {
-    if (!recognitionRestartTimerRef.current) return
-    clearTimeout(recognitionRestartTimerRef.current)
-    recognitionRestartTimerRef.current = null
-  }
-
-  const clearVoiceStopFinalizeTimer = () => {
-    if (!voiceStopFinalizeTimerRef.current) return
-    clearTimeout(voiceStopFinalizeTimerRef.current)
-    voiceStopFinalizeTimerRef.current = null
-  }
-
-  const scheduleVoiceStopFinalization = (emptyFeedback = 'Captura de voz interrompida.') => {
-    if (voiceStopFinalizeTimerRef.current || voiceCaptureFinalizedRef.current) return
-
-    voiceStopFinalizeTimerRef.current = setTimeout(() => {
-      voiceStopFinalizeTimerRef.current = null
-      if (!stopRequestedRef.current && !voiceEndingRecognitionRef.current) return
-      finishVoiceCapture(emptyFeedback)
-    }, VOICE_STOP_FINALIZE_DELAY_MS)
-  }
-
-  const appendVoiceTranscriptToPrompt = () => {
-    const transcript = [...voiceTranscriptEntriesRef.current.values()]
-      .sort((leftEntry, rightEntry) => (
-        leftEntry.recognitionSequence - rightEntry.recognitionSequence
-        || leftEntry.resultIndex - rightEntry.resultIndex
-      ))
-      .map(({ transcript: partialTranscript }) => partialTranscript)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-    voiceTranscriptEntriesRef.current.clear()
-    voiceRecognitionSequenceRef.current = 0
-
-    if (!transcript) return false
-
-    setDraft((current) => (current.trim() ? `${current.trim()} ${transcript}` : transcript))
-    return true
-  }
-
-  const finishVoiceCapture = (emptyFeedback = 'Captura de voz interrompida.') => {
-    if (voiceCaptureFinalizedRef.current) return false
-
-    voiceCaptureFinalizedRef.current = true
-    clearRecognitionRestartTimer()
-    clearVoiceStopFinalizeTimer()
-    voiceListeningRequestedRef.current = false
-    stopRequestedRef.current = false
-    lastVoiceRecognitionErrorRef.current = ''
-    recognitionRef.current = null
-    voiceEndingRecognitionRef.current = null
-    voiceRestartAttemptsRef.current = 0
-    setIsListening(false)
-
-    const didCommitTranscript = appendVoiceTranscriptToPrompt()
-    setVoiceFeedback(didCommitTranscript ? 'Texto de voz adicionado ao prompt.' : emptyFeedback)
-    return didCommitTranscript
-  }
-
-  const failVoiceCapture = (feedback) => {
-    if (voiceCaptureFinalizedRef.current) return
-
-    voiceCaptureFinalizedRef.current = true
-    clearRecognitionRestartTimer()
-    clearVoiceStopFinalizeTimer()
-    voiceListeningRequestedRef.current = false
-    stopRequestedRef.current = false
-    lastVoiceRecognitionErrorRef.current = ''
-    recognitionRef.current = null
-    voiceEndingRecognitionRef.current = null
-    voiceRestartAttemptsRef.current = 0
-    voiceTranscriptEntriesRef.current.clear()
-    voiceRecognitionSequenceRef.current = 0
-    setIsListening(false)
-    setVoiceFeedback(feedback)
-  }
-
-  const handleVoiceInput = () => {
-    if (typeof window === 'undefined') return
-
-    if (voiceListeningRequestedRef.current || recognitionRef.current || recognitionRestartTimerRef.current) {
-      const activeRecognition = recognitionRef.current
-      voiceListeningRequestedRef.current = false
-      stopRequestedRef.current = true
-      voiceRestartAttemptsRef.current = 0
-      lastVoiceRecognitionErrorRef.current = ''
-      clearRecognitionRestartTimer()
-      setIsListening(false)
-      setVoiceFeedback('Finalizando captura de voz...')
-
-      if (!activeRecognition) {
-        finishVoiceCapture()
-        return
-      }
-
-      try {
-        activeRecognition.stop?.()
-        scheduleVoiceStopFinalization()
-      } catch {
-        try {
-          activeRecognition.abort?.()
-        } catch {
-          // Ignore abort failures; the fallback finalization below keeps the UI consistent.
-        }
-        finishVoiceCapture()
-      }
-      return
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-
-    if (!SpeechRecognition) {
-      setVoiceFeedback('Ditado por voz não está disponível neste navegador.')
-      return
-    }
-
-    if (window.isSecureContext === false) {
-      setVoiceFeedback('O microfone só pode ser usado em HTTPS ou localhost.')
-      return
-    }
-
-    const scheduleRecognitionRestart = (reason = '') => {
-      if (!voiceListeningRequestedRef.current || stopRequestedRef.current) return
-      if (recognitionRestartTimerRef.current) return
-
-      const isErrorRestart = reason === 'network' || reason === 'invalid-state'
-      if (isErrorRestart && voiceRestartAttemptsRef.current >= MAX_VOICE_RESTART_ATTEMPTS) {
-        finishVoiceCapture(getVoiceInputErrorMessage(reason === 'network' ? { error: 'network' } : { name: 'InvalidStateError' }))
-        return
-      }
-
-      const delay = Math.min(
-        VOICE_RESTART_BASE_DELAY_MS + voiceRestartAttemptsRef.current * VOICE_RESTART_STEP_DELAY_MS,
-        VOICE_RESTART_MAX_DELAY_MS,
-      )
-      voiceRestartAttemptsRef.current = isErrorRestart ? voiceRestartAttemptsRef.current + 1 : 0
-      setIsListening(true)
-      setVoiceFeedback(isErrorRestart && voiceRestartAttemptsRef.current > 1 ? 'Reconectando captura de voz...' : 'Ouvindo... clique no microfone para parar.')
-
-      recognitionRestartTimerRef.current = setTimeout(() => {
-        recognitionRestartTimerRef.current = null
-        startRecognition()
-      }, delay)
-    }
-
-    const startRecognition = () => {
-      if (!voiceListeningRequestedRef.current || stopRequestedRef.current) return
-
-      const recognition = new SpeechRecognition()
-      const recognitionSequence = voiceRecognitionSequenceRef.current
-      voiceRecognitionSequenceRef.current += 1
-      recognition.lang = 'pt-BR'
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.maxAlternatives = 1
-      recognition.onstart = () => {
-        if (recognitionRef.current !== recognition) return
-
-        lastVoiceRecognitionErrorRef.current = ''
-        setIsListening(true)
-        setVoiceFeedback('Ouvindo... clique no microfone para parar.')
-      }
-      recognition.onerror = (event) => {
-        if (recognitionRef.current !== recognition && !stopRequestedRef.current) return
-        if (event?.error === 'aborted' || stopRequestedRef.current) return
-
-        if (event?.error === 'network') {
-          lastVoiceRecognitionErrorRef.current = 'network'
-          setIsListening(true)
-          setVoiceFeedback('Ouvindo... clique no microfone para parar.')
-          return
-        }
-
-        if (event?.error === 'no-speech') {
-          finishVoiceCapture(getVoiceInputErrorMessage(event))
-          return
-        }
-
-        failVoiceCapture(getVoiceInputErrorMessage(event))
-      }
-      recognition.onend = () => {
-        if (voiceCaptureFinalizedRef.current) return
-
-        const wasCurrentRecognition = recognitionRef.current === recognition
-        if (recognitionRef.current === recognition) {
-          recognitionRef.current = null
-          voiceEndingRecognitionRef.current = recognition
-        }
-
-        if (!wasCurrentRecognition && voiceEndingRecognitionRef.current !== recognition) return
-
-        if (stopRequestedRef.current || !voiceListeningRequestedRef.current) {
-          voiceEndingRecognitionRef.current = recognition
-          scheduleVoiceStopFinalization()
-          return
-        }
-
-        voiceEndingRecognitionRef.current = recognition
-        const restartReason = lastVoiceRecognitionErrorRef.current
-        lastVoiceRecognitionErrorRef.current = ''
-        scheduleRecognitionRestart(restartReason)
-      }
-      recognition.onresult = (event) => {
-        const isActiveRecognition = recognitionRef.current === recognition
-        const isEndingRecognition = voiceEndingRecognitionRef.current === recognition
-        if (voiceCaptureFinalizedRef.current || (!isActiveRecognition && !isEndingRecognition)) return
-
-        const results = event.results || []
-        const startIndex = Number.isInteger(event.resultIndex) ? event.resultIndex : 0
-
-        for (let index = startIndex; index < results.length; index += 1) {
-          const result = results[index]
-          const transcript = result?.[0]?.transcript?.trim()
-          if (!transcript) continue
-
-          const entryKey = `${recognitionSequence}:${index}`
-          const existingEntry = voiceTranscriptEntriesRef.current.get(entryKey)
-          const isFinal = result.isFinal !== false
-          if (existingEntry?.transcript === transcript && existingEntry?.isFinal === isFinal) continue
-
-          voiceTranscriptEntriesRef.current.set(entryKey, {
-            recognitionSequence,
-            resultIndex: index,
-            transcript,
-            isFinal,
-          })
-          voiceRestartAttemptsRef.current = 0
-        }
-      }
-
-      recognitionRef.current = recognition
-      try {
-        recognition.start()
-      } catch (error) {
-        recognitionRef.current = null
-        if (voiceListeningRequestedRef.current && (error?.name === 'InvalidStateError' || error?.error === 'network')) {
-          scheduleRecognitionRestart(error?.error === 'network' ? 'network' : 'invalid-state')
-          return
-        }
-        failVoiceCapture(getVoiceInputErrorMessage(error))
-      }
-    }
-
-    voiceListeningRequestedRef.current = true
-    stopRequestedRef.current = false
-    voiceCaptureFinalizedRef.current = false
-    lastVoiceRecognitionErrorRef.current = ''
-    voiceRestartAttemptsRef.current = 0
-    voiceEndingRecognitionRef.current = null
-    voiceTranscriptEntriesRef.current.clear()
-    voiceRecognitionSequenceRef.current = 0
-    clearRecognitionRestartTimer()
-    clearVoiceStopFinalizeTimer()
-    setIsListening(true)
-    setVoiceFeedback('Ouvindo... clique no microfone para parar.')
-    startRecognition()
+    navigateToChat()
   }
 
   return (
@@ -1392,23 +1012,6 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       <div className={styles.intelligenceStage}>
         <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
         <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
-        {messages.length || isThinking ? (
-          <div ref={chatLogRef} className={styles.intelligenceChatLog} role="log" aria-label="Conversa com o Intelligence" aria-live="polite">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`${styles.intelligenceMessage} ${message.role === 'user' ? styles.intelligenceMessageUser : styles.intelligenceMessageAssistant}`}
-              >
-                {message.text}
-              </div>
-            ))}
-            {isThinking ? (
-              <div className={`${styles.intelligenceMessage} ${styles.intelligenceMessageAssistant}`}>
-                Pensando...
-              </div>
-            ) : null}
-          </div>
-        ) : null}
         <form className={styles.intelligencePromptCard} onSubmit={handleSubmit}>
           <textarea
             className={styles.intelligencePrompt}
@@ -1425,20 +1028,16 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
             }}
           />
           <div className={styles.intelligencePromptControls}>
-            <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence" onClick={handleAddContext}>
+            <button type="button" className={styles.intelligenceGhostAction} aria-label="Adicionar contexto ao Intelligence" onClick={() => {
+              setDraft((current) => {
+                const context = 'Considere meus planos, calendário e arquivos do workspace como contexto.'
+                return current.trim() ? `${current.trim()} ${context}` : context
+              })
+            }}>
               <PlusIcon />
             </button>
             <div className={styles.intelligencePromptActions}>
-              <button
-                type="button"
-                className={`${styles.intelligenceIconButton} ${isListening ? styles.intelligenceIconButtonActive : ''}`}
-                aria-label={isListening ? 'Parar gravação de áudio para o Intelligence' : 'Gravar áudio para o Intelligence'}
-                aria-pressed={isListening}
-                onClick={handleVoiceInput}
-              >
-                <MicIcon />
-              </button>
-              <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim() || isThinking}>
+              <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim()}>
                 <ArrowUpIcon />
               </button>
             </div>
@@ -1449,17 +1048,13 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
                 key={suggestion.label}
                 type="button"
                 className={styles.intelligenceSuggestionButton}
-                onClick={() => submitPrompt(suggestion.prompt)}
-                disabled={isThinking}
+                onClick={() => navigateToChat(suggestion.prompt)}
               >
                 {suggestion.label}
               </button>
             ))}
           </div>
         </form>
-        {voiceFeedback ? (
-          <p className={styles.intelligenceFeedback} role="status">{voiceFeedback}</p>
-        ) : null}
       </div>
     </section>
   )
