@@ -84,6 +84,7 @@ Usar Server-Sent Events entre backend e frontend.
 Endpoints sugeridos:
 
 ```txt
+GET  /api/intelligence/conversations/status
 POST /api/intelligence/conversations
 GET  /api/intelligence/conversations/{conversationId}
 GET  /api/intelligence/conversations/{conversationId}/messages
@@ -95,9 +96,17 @@ POST /api/intelligence/actions/{proposalId}/reject
 
 Para o primeiro MVP, `POST /messages` pode retornar o `messageId` e iniciar a execucao assincrona; o front abre/escuta o stream da conversa.
 
+Status da Fase 0:
+
+- `GET /status`, criacao/busca de conversa, criacao de mensagem e listagem de mensagens ja existem no backend.
+- `POST /messages` ja persiste uma mensagem do usuario e cria uma mensagem do assistente em `PENDING`, mas ainda nao executa o modelo.
+- `GET /stream` ja abre um canal SSE validado por usuario e conversa; por enquanto envia apenas `stream.ready`. O streaming real de deltas, blocos e erro continua na Fase 1.
+- O backend fecha qualquer stream anterior da mesma conversa antes de registrar um novo emissor.
+
 Eventos SSE sugeridos:
 
 ```txt
+stream.ready
 message.created
 assistant.delta
 tool.started
@@ -1165,6 +1174,15 @@ ai_memories
 ai_audit_events
 ```
 
+Status da Fase 0:
+
+- A migration `V21__ai_intelligence_core.sql` ja criou `ai_conversations`, `ai_messages` e `ai_message_blocks`.
+- `ai_conversations` ja guarda `workspace_id`, `plan_id`, `card_id`, usuario criador, `scope_type`, status e ids de continuidade da OpenAI.
+- `ai_messages` ja guarda role, status, texto, `openai_response_id`, uso de tokens e erro.
+- `ai_message_blocks` ja esta preparado para blocos narrativos, propostas, referencias internas e externas, com `payload_json` e `snapshot_json`.
+- `ai_action_proposals`, `ai_tool_calls`, settings, snapshots, compaction items, memories e audit events continuam planejados para fases posteriores.
+- O cleanup dos testes de integracao ja limpa as tabelas de IA antes das entidades de board/plano para respeitar as FKs novas.
+
 `ai_audit_events` deve registrar:
 
 - quem pediu;
@@ -1190,6 +1208,9 @@ AiConversationController
 AiConversationService
 AiStreamingService
 AiOpenAiClient
+DefaultAiOpenAiClient
+IntelligenceFeatureService
+IntelligenceProperties
 AiPromptBuilder
 AiContextBuilder
 AiContextCompactionService
@@ -1216,6 +1237,14 @@ intelligence.github
 intelligence.files
 intelligence.persistence
 ```
+
+Status da Fase 0:
+
+- `AiConversationController`, `AiConversationService`, `AiStreamingService`, `AiOpenAiClient`, `DefaultAiOpenAiClient`, `IntelligenceFeatureService`, `IntelligenceProperties`, modelos enum e repositories JPA ja existem.
+- `DefaultAiOpenAiClient` ja monta chamadas para a Responses API, extrai `output_text` e captura `usage`, mas ainda nao esta conectado ao fluxo de resposta do chat.
+- `IntelligenceProperties` ja cobre feature flag, `OPENAI_API_KEY`, modelo, reasoning effort, limite de output, opcao de store, opcao de conversations e `compact_threshold`.
+- A criacao de conversa ja valida workspace/plano/card: quando `cardId` vem no request, o backend deriva o `planId`, valida acesso ao plano do card e rejeita combinacoes `planId`/`cardId` inconsistentes.
+- `AiConversationService` ainda nao deve duplicar regra de negocio; nas proximas fases, tools e propostas devem continuar chamando servicos existentes como `BoardService`, `PlanService`, `FileService` e servicos de convites.
 
 Observacao importante: as ferramentas devem chamar os servicos existentes (`WorkspaceService`, `BoardService`, servicos de arquivos, convites etc.) em vez de duplicar regra de negocio.
 
@@ -1436,11 +1465,14 @@ Depois que o usuario aprovar e o backend aplicar a acao, retorne bloco de refere
 
 ### Fase 0: preparacao
 
-- Adicionar configuracoes `OPENAI_API_KEY`, modelo, limites e feature flag.
-- Criar pacote backend `intelligence`.
-- Criar migrations das tabelas principais.
-- Criar `AiOpenAiClient`.
-- Criar `AiConversationController`.
+- Concluido: configuracoes `OPENAI_API_KEY`, modelo, reasoning effort, limite de output, store, conversations, `compact_threshold` e feature flag foram adicionadas.
+- Concluido: pacote backend `intelligence` foi criado com controller, service, streaming service, propriedades, feature service, client OpenAI, modelos, entidades e repositories.
+- Concluido: migration das tabelas principais `ai_conversations`, `ai_messages` e `ai_message_blocks` foi criada.
+- Concluido: `AiOpenAiClient` e `DefaultAiOpenAiClient` foram criados para Responses API.
+- Concluido: `AiConversationController` foi criado com status, criacao/busca de conversa, criacao/listagem de mensagens e stream SSE inicial.
+- Concluido: `cardId` em conversa passou a ser validado contra plano, workspace e permissao do usuario.
+- Concluido: testes de integracao cobrem status, criacao de conversa, aceite de mensagem e validacao de escopo de card.
+- Preparado para Fase 1: mensagem do assistente ja nasce `PENDING`, e o canal SSE ja existe, mas a execucao real do modelo ainda nao esta ligada ao envio de mensagem.
 
 ### Fase 0.5: contrato visual da UI
 
