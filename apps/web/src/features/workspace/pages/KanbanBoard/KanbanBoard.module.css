@@ -1243,6 +1243,37 @@
   transform: none;
 }
 
+.intelligenceGitHubBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px 2px;
+}
+
+.intelligenceGitHubItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-3);
+  font-family: var(--font-family);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.intelligenceGitHubRepo {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-2);
+}
+
+.intelligenceGitHubSep {
+  width: 1px;
+  height: 10px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--border-1) 70%, transparent);
+  flex-shrink: 0;
+}
+
 .boardViewToolbarItem {
   display: inline-flex;
   align-items: center;

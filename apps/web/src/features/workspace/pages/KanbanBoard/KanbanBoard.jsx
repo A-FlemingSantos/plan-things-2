@@ -589,6 +589,7 @@ export default function KanbanBoard() {
   const [isIntelligenceOpen, setIsIntelligenceOpen] = useState(false)
   const [isIntelligencePanelMounted, setIsIntelligencePanelMounted] = useState(false)
   const [intelligenceDraft, setIntelligenceDraft] = useState('')
+  const [intelligenceActiveConnectors, setIntelligenceActiveConnectors] = useState([])
   const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
   const [libraryFiles, setLibraryFiles] = useState([])
@@ -2585,7 +2586,7 @@ export default function KanbanBoard() {
 
                 <div className={styles.intelligenceComposerFooter}>
                   <div className={styles.intelligenceComposerTools}>
-                    <AiComposerContextMenu />
+                    <AiComposerContextMenu onConnectorsChange={setIntelligenceActiveConnectors} />
                   </div>
 
                   <div className={styles.intelligenceComposerActions}>
@@ -2607,6 +2608,19 @@ export default function KanbanBoard() {
                   </div>
                 </div>
               </form>
+              {intelligenceActiveConnectors.includes('github') ? (
+                <div className={styles.intelligenceGitHubBar}>
+                  <span className={styles.intelligenceGitHubItem}>
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.4a6.6 6.6 0 0 0-2.1 12.85c.33.06.45-.14.45-.32v-1.2c-1.82.4-2.2-.77-2.2-.77-.3-.74-.73-.94-.73-.94-.6-.41.05-.4.05-.4.66.05 1 .67 1 .67.6 1 .15.52 1.5.4.05-.43.23-.73.42-.89-1.45-.16-2.98-.72-2.98-3.22 0-.71.25-1.3.67-1.75-.07-.16-.29-.82.06-1.7 0 0 .55-.18 1.8.67a6.26 6.26 0 0 1 3.28 0c1.24-.85 1.79-.67 1.79-.67.35.88.13 1.54.06 1.7.42.45.67 1.04.67 1.75 0 2.5-1.53 3.06-2.99 3.22.24.2.45.61.45 1.24v1.84c0 .18.12.38.46.31A6.6 6.6 0 0 0 8 1.4Z" fill="currentColor" /></svg>
+                    <span className={styles.intelligenceGitHubRepo}>plan-things/web</span>
+                  </span>
+                  <span className={styles.intelligenceGitHubSep} aria-hidden="true" />
+                  <span className={styles.intelligenceGitHubItem}>
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="5" cy="4" r="1.8" stroke="currentColor" strokeWidth="1.3" /><circle cx="5" cy="12" r="1.8" stroke="currentColor" strokeWidth="1.3" /><circle cx="11" cy="6" r="1.8" stroke="currentColor" strokeWidth="1.3" /><path d="M5 5.8v4.4M5 5.8C5 8 7 8.2 11 7.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
+                    <span>main</span>
+                  </span>
+                </div>
+              ) : null}
             </div>
           </section>
         ) : null}

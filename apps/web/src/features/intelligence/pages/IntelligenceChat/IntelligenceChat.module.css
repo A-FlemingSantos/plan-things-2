@@ -181,7 +181,9 @@
   width: 100%;
   padding: 8px 20px 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 [data-theme='dark'] .composerArea {
@@ -306,12 +308,47 @@
   flex: 1 1 0;
 }
 
+/* ── GitHub context bar ── */
+.githubContextBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 720px;
+  padding: 0 6px;
+  animation: messageIn 0.16s ease both;
+}
+
+.githubContextItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--intelligence-faint);
+  font-family: var(--font-family);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.githubContextRepo {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--intelligence-muted);
+}
+
+.githubContextSep {
+  width: 1px;
+  height: 10px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--intelligence-border) 70%, transparent);
+  flex-shrink: 0;
+}
+
 /* ── Voice feedback ── */
 .voiceFeedback {
   width: 100%;
   max-width: 720px;
-  margin: 6px auto 0;
-  padding: 0 20px;
+  margin: 0;
+  padding: 0 6px;
   color: var(--text-3);
   font-size: 11px;
   line-height: 1.4;

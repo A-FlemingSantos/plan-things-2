@@ -59,7 +59,7 @@ const makePlanChipDot = (color) => function PlanChipDot() {
 }
 
 /* ── Component ─────────────────────────────────────────────────── */
-export default function AiComposerContextMenu() {
+export default function AiComposerContextMenu({ onConnectorsChange } = {}) {
   const [isMenuOpen, setIsMenuOpen]   = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState(null)
   const [chips, setChips]             = useState([])
@@ -73,6 +73,11 @@ export default function AiComposerContextMenu() {
       return [...prev, { id: `ctx-${type}`, type, label, ChipIcon, kind }]
     })
   }
+
+  useEffect(() => {
+    onConnectorsChange?.(chips.filter((c) => c.kind === 'connector').map((c) => c.type))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chips])
 
   const closeAll = () => { setIsMenuOpen(false); setOpenSubmenu(null) }
 
