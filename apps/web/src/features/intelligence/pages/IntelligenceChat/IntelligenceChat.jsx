@@ -10,6 +10,7 @@ import {
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
 } from '../../../workspace/data/kanbanColorPalette.js'
+import AiComposerContextMenu from '../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.jsx'
 import styles from './IntelligenceChat.module.css'
 
 function PlusIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
@@ -23,45 +24,6 @@ function SparkleIcon() {
     </svg>
   )
 }
-function PlansIcon()   { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="3.2" rx="1.2" stroke="currentColor" strokeWidth="1.3"/><rect x="2" y="6.6" width="12" height="3.2" rx="1.2" stroke="currentColor" strokeWidth="1.3"/><rect x="2" y="11" width="7.5" height="3" rx="1.2" stroke="currentColor" strokeWidth="1.3"/></svg> }
-function FilesIcon()   { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg> }
-function InboxIcon()   { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 3h10v10H3V3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M3 9h3l1.2 2h1.6L10 9h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function PlugIcon()    { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 2.5v3M10 2.5v3M5.2 5.5h5.6v1.8a2.8 2.8 0 0 1-2.8 2.8h-.2a2.8 2.8 0 0 1-2.8-2.8V5.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 10.1v3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg> }
-function ChevronIcon() { return <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function CheckIcon()   { return <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l2.5 2.5 5.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function XSmallIcon()  { return <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg> }
-
-const GitHubLogo = () => (
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M8 1.4a6.6 6.6 0 0 0-2.1 12.85c.33.06.45-.14.45-.32v-1.2c-1.82.4-2.2-.77-2.2-.77-.3-.74-.73-.94-.73-.94-.6-.41.05-.4.05-.4.66.05 1 .67 1 .67.6 1 .15.52 1.5.4.05-.43.23-.73.42-.89-1.45-.16-2.98-.72-2.98-3.22 0-.71.25-1.3.67-1.75-.07-.16-.29-.82.06-1.7 0 0 .55-.18 1.8.67a6.26 6.26 0 0 1 3.28 0c1.24-.85 1.79-.67 1.79-.67.35.88.13 1.54.06 1.7.42.45.67 1.04.67 1.75 0 2.5-1.53 3.06-2.99 3.22.24.2.45.61.45 1.24v1.84c0 .18.12.38.46.31A6.6 6.6 0 0 0 8 1.4Z" fill="currentColor" />
-  </svg>
-)
-const TeamsLogo = () => (
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <rect x="1.5" y="4" width="6.5" height="8" rx="1.6" fill="#4F52D9" />
-    <rect x="8.3" y="5.1" width="5.7" height="7.4" rx="1.8" fill="#7B83EB" />
-    <circle cx="11.15" cy="3.95" r="1.95" fill="#6264F5" />
-    <circle cx="13.1" cy="6" r="1.4" fill="#8B8CC7" />
-    <path d="M3.25 6.1h3.2v1.1H5.45v4.1h-1.2V7.2H3.25V6.1Z" fill="white" />
-  </svg>
-)
-const SlackLogo = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
-  </svg>
-)
-
-const CONTEXT_MENU_ITEMS = [
-  { id: 'plan',  label: 'Plano',   Icon: PlansIcon },
-  { id: 'file',  label: 'Arquivo', Icon: FilesIcon },
-  { id: 'inbox', label: 'Inbox',   Icon: InboxIcon },
-]
-
-const CONTEXT_PLUGIN_OPTIONS = [
-  { id: 'github', label: 'GitHub', Logo: GitHubLogo },
-  { id: 'teams',  label: 'Teams',  Logo: TeamsLogo  },
-  { id: 'slack',  label: 'Slack',  Logo: SlackLogo  },
-]
 
 const VOICE_INPUT_ERROR_MESSAGES = {
   'audio-capture': 'Nenhum microfone disponível foi encontrado.',
@@ -110,9 +72,6 @@ export default function IntelligenceChat() {
   const [isThinking, setIsThinking] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [voiceFeedback, setVoiceFeedback] = useState('')
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false)
-  const [isPluginsMenuOpen, setIsPluginsMenuOpen] = useState(false)
-  const [contextChips, setContextChips] = useState([])
 
   const chatEndRef = useRef(null)
   const responseTimerRef = useRef(null)
@@ -128,8 +87,6 @@ export default function IntelligenceChat() {
   const voiceTranscriptEntriesRef = useRef(new Map())
   const voiceRecognitionSequenceRef = useRef(0)
   const initialMessageProcessedRef = useRef(false)
-  const contextMenuRef = useRef(null)
-  const contextMenuButtonRef = useRef(null)
 
   const accentStyle = {
     '--intelligence-theme-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
@@ -188,33 +145,6 @@ export default function IntelligenceChat() {
     submitPrompt()
   }
 
-  const toggleContextChip = (type, label, ChipIcon, kind) => {
-    setContextChips((prev) => {
-      if (prev.some((c) => c.type === type)) return prev.filter((c) => c.type !== type)
-      return [...prev, { id: `ctx-${type}`, type, label, ChipIcon, kind }]
-    })
-  }
-
-  useEffect(() => {
-    if (!isContextMenuOpen) return undefined
-    const handleMouseDown = (e) => {
-      if (contextMenuButtonRef.current?.contains(e.target)) return
-      if (contextMenuRef.current?.contains(e.target)) return
-      setIsContextMenuOpen(false)
-      setIsPluginsMenuOpen(false)
-    }
-    const handleKeyDown = (e) => {
-      if (e.key !== 'Escape') return
-      setIsContextMenuOpen(false)
-      setIsPluginsMenuOpen(false)
-    }
-    document.addEventListener('mousedown', handleMouseDown)
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown)
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isContextMenuOpen])
 
   const clearRecognitionRestartTimer = () => {
     if (!recognitionRestartTimerRef.current) return
@@ -461,119 +391,7 @@ export default function IntelligenceChat() {
             />
             <div className={styles.composerControls}>
               <div className={styles.composerLeft}>
-                <div className={styles.contextMenuWrap}>
-                  <button
-                    ref={contextMenuButtonRef}
-                    type="button"
-                    className={`${styles.ghostAction} ${isContextMenuOpen ? styles.ghostActionActive : ''}`}
-                    aria-label="Adicionar contexto ao Intelligence"
-                    aria-haspopup="menu"
-                    aria-expanded={isContextMenuOpen}
-                    onClick={() => {
-                      setIsContextMenuOpen((v) => !v)
-                      setIsPluginsMenuOpen(false)
-                    }}
-                  >
-                    <PlusIcon />
-                  </button>
-
-                  {isContextMenuOpen ? (
-                    <div
-                      ref={contextMenuRef}
-                      className={styles.contextMenu}
-                      role="menu"
-                      aria-label="Adicionar contexto ao chat"
-                    >
-                      {CONTEXT_MENU_ITEMS.map(({ id, label, Icon }) => {
-                        const active = contextChips.some((c) => c.type === id)
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            className={`${styles.contextMenuItem} ${active ? styles.contextMenuItemActive : ''}`}
-                            role="menuitem"
-                            onClick={() => {
-                              toggleContextChip(id, label, Icon, 'context')
-                              setIsContextMenuOpen(false)
-                              setIsPluginsMenuOpen(false)
-                            }}
-                          >
-                            <span className={styles.contextMenuItemIcon} aria-hidden="true"><Icon /></span>
-                            <span className={styles.contextMenuItemLabel}>{label}</span>
-                            {active ? <span className={styles.contextMenuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
-                          </button>
-                        )
-                      })}
-
-                      <div className={styles.contextMenuDivider} role="separator" />
-
-                      <div className={styles.contextSubmenuWrap}>
-                        <button
-                          type="button"
-                          className={styles.contextMenuItem}
-                          role="menuitem"
-                          aria-haspopup="menu"
-                          aria-expanded={isPluginsMenuOpen}
-                          onClick={() => setIsPluginsMenuOpen((v) => !v)}
-                        >
-                          <span className={styles.contextMenuItemIcon} aria-hidden="true"><PlugIcon /></span>
-                          <span className={styles.contextMenuItemLabel}>Integrações</span>
-                          <span className={`${styles.contextMenuItemChevron} ${isPluginsMenuOpen ? styles.contextMenuItemChevronOpen : ''}`} aria-hidden="true">
-                            <ChevronIcon />
-                          </span>
-                        </button>
-
-                        {isPluginsMenuOpen ? (
-                          <div
-                            className={styles.contextSubmenu}
-                            role="menu"
-                            aria-label="Integrações disponíveis"
-                          >
-                            {CONTEXT_PLUGIN_OPTIONS.map(({ id, label, Logo }) => {
-                              const active = contextChips.some((c) => c.type === id)
-                              return (
-                                <button
-                                  key={id}
-                                  type="button"
-                                  className={`${styles.contextSubmenuItem} ${active ? styles.contextMenuItemActive : ''}`}
-                                  role="menuitem"
-                                  onClick={() => {
-                                    toggleContextChip(id, label, Logo, 'plugin')
-                                    setIsContextMenuOpen(false)
-                                    setIsPluginsMenuOpen(false)
-                                  }}
-                                >
-                                  <span className={styles.contextPluginLogo} aria-hidden="true"><Logo /></span>
-                                  <span>{label}</span>
-                                  {active ? <span className={styles.contextMenuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-
-                {contextChips.length > 0 ? (
-                  <div className={styles.contextChips} role="group" aria-label="Contexto adicionado">
-                    {contextChips.map((chip) => (
-                      <div key={chip.id} className={styles.contextChip} data-kind={chip.kind}>
-                        <span className={styles.contextChipIcon} aria-hidden="true"><chip.ChipIcon /></span>
-                        <span className={styles.contextChipLabel}>{chip.label}</span>
-                        <button
-                          type="button"
-                          className={styles.contextChipRemove}
-                          aria-label={`Remover ${chip.label} do contexto`}
-                          onClick={() => setContextChips((prev) => prev.filter((c) => c.type !== chip.type))}
-                        >
-                          <XSmallIcon />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
+                <AiComposerContextMenu />
               </div>
 
               <div className={styles.actions}>

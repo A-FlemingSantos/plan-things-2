@@ -26,6 +26,7 @@ import {
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
 } from '../../data/kanbanColorPalette.js'
+import AiComposerContextMenu from '../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.jsx'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -587,9 +588,6 @@ export default function KanbanBoard() {
   const [isPlannerPanelMounted, setIsPlannerPanelMounted] = useState(false)
   const [isIntelligenceOpen, setIsIntelligenceOpen] = useState(false)
   const [isIntelligencePanelMounted, setIsIntelligencePanelMounted] = useState(false)
-  const [isIntelligenceInsertMenuOpen, setIsIntelligenceInsertMenuOpen] = useState(false)
-  const [isIntelligencePluginsMenuOpen, setIsIntelligencePluginsMenuOpen] = useState(false)
-  const [selectedIntelligencePluginId, setSelectedIntelligencePluginId] = useState('')
   const [intelligenceDraft, setIntelligenceDraft] = useState('')
   const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
@@ -610,10 +608,6 @@ export default function KanbanBoard() {
     '--kanban-accent-color': boardAccentColor,
     '--kanban-accent-foreground': boardAccentForeground,
   }), [boardAccentColor, boardAccentForeground])
-  const selectedIntelligencePlugin = useMemo(
-    () => INTELLIGENCE_PLUGIN_OPTIONS.find(({ id }) => id === selectedIntelligencePluginId) ?? null,
-    [selectedIntelligencePluginId],
-  )
   const today = useMemo(() => new Date(), [timeZone])
   const notificationTimerRef = useRef(null)
   const inboxCloseTimerRef = useRef(null)
@@ -622,8 +616,6 @@ export default function KanbanBoard() {
   const boardViewToolbarRef = useRef(null)
   const intelligencePanelRef = useRef(null)
   const intelligenceComposerInputRef = useRef(null)
-  const intelligenceInsertButtonRef = useRef(null)
-  const intelligenceInsertMenuRef = useRef(null)
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
     enabled: isPlannerPanelMounted,
     includeGeneratedFromCard: false,
@@ -787,29 +779,6 @@ export default function KanbanBoard() {
     textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
   }, [intelligenceDraft, isIntelligencePanelMounted])
 
-  useEffect(() => {
-    if (!isIntelligenceInsertMenuOpen) return undefined
-
-    const handleMouseDown = (event) => {
-      const button = intelligenceInsertButtonRef.current
-      const menu = intelligenceInsertMenuRef.current
-      if (button?.contains(event.target) || menu?.contains(event.target)) return
-      setIsIntelligenceInsertMenuOpen(false)
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key !== 'Escape') return
-      setIsIntelligenceInsertMenuOpen(false)
-    }
-
-    document.addEventListener('mousedown', handleMouseDown)
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown)
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isIntelligenceInsertMenuOpen])
 
   useEffect(() => {
     if (!isMembersOpen) return
@@ -1323,8 +1292,6 @@ export default function KanbanBoard() {
     setIsPlannerPanelMounted(false)
     setIsIntelligenceOpen(false)
     setIsIntelligencePanelMounted(false)
-    setIsIntelligenceInsertMenuOpen(false)
-    setIsIntelligencePluginsMenuOpen(false)
     setIsInboxPanelMounted(true)
     window.requestAnimationFrame(() => setIsInboxOpen(true))
   }
@@ -1363,16 +1330,12 @@ export default function KanbanBoard() {
     setIsPlannerFilterOpen(false)
     setIsInboxOpen(false)
     setIsInboxPanelMounted(false)
-    setIsIntelligenceInsertMenuOpen(false)
-    setIsIntelligencePluginsMenuOpen(false)
     setIsIntelligencePanelMounted(true)
     setIsIntelligenceOpen(true)
   }
 
   const closeIntelligence = () => {
     setIsIntelligenceOpen(false)
-    setIsIntelligenceInsertMenuOpen(false)
-    setIsIntelligencePluginsMenuOpen(false)
     if (intelligenceCloseTimerRef.current) {
       clearTimeout(intelligenceCloseTimerRef.current)
     }
@@ -2622,144 +2585,7 @@ export default function KanbanBoard() {
 
                 <div className={styles.intelligenceComposerFooter}>
                   <div className={styles.intelligenceComposerTools}>
-                    <div className={styles.intelligenceComposerMenuWrap}>
-                      <button
-                        ref={intelligenceInsertButtonRef}
-                        type="button"
-                        className={styles.intelligenceComposerIconButton}
-                        aria-label="Adicionar contexto"
-                        aria-haspopup="menu"
-                        aria-controls="intelligence-composer-insert-menu"
-                        aria-expanded={isIntelligenceInsertMenuOpen}
-                        onClick={() => {
-                          setIsIntelligenceInsertMenuOpen((open) => !open)
-                          setIsIntelligencePluginsMenuOpen(false)
-                        }}
-                      >
-                        <Icon.Plus />
-                      </button>
-
-                      {isIntelligenceInsertMenuOpen ? (
-                        <div
-                          id="intelligence-composer-insert-menu"
-                          ref={intelligenceInsertMenuRef}
-                          className={styles.intelligenceComposerMenu}
-                          role="menu"
-                          aria-label="Adicionar ao chat"
-                        >
-                          <button
-                            type="button"
-                            className={styles.intelligenceComposerMenuItem}
-                            role="menuitem"
-                            onClick={() => {
-                              setIsIntelligenceInsertMenuOpen(false)
-                              setIsIntelligencePluginsMenuOpen(false)
-                              showNotification('Adição de arquivos ao chat em breve.')
-                            }}
-                          >
-                            <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
-                              <Icon.Files />
-                            </span>
-                            <span>Adicionar arquivos</span>
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.intelligenceComposerMenuItem}
-                            role="menuitem"
-                            onClick={() => {
-                              setIsIntelligenceInsertMenuOpen(false)
-                              setIsIntelligencePluginsMenuOpen(false)
-                              showNotification('Vinculação de item do Kanban ao chat em breve.')
-                            }}
-                          >
-                            <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
-                              <Icon.Board />
-                            </span>
-                            <span>Item do Kanban</span>
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.intelligenceComposerMenuItem}
-                            role="menuitem"
-                            onClick={() => {
-                              setIsIntelligenceInsertMenuOpen(false)
-                              setIsIntelligencePluginsMenuOpen(false)
-                              openInbox()
-                            }}
-                          >
-                            <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
-                              <Icon.Inbox />
-                            </span>
-                            <span>Inbox</span>
-                          </button>
-                          <div className={styles.intelligenceComposerSubmenuWrap}>
-                            <button
-                              type="button"
-                              className={`${styles.intelligenceComposerMenuItem} ${styles.intelligenceComposerMenuItemSubmenu}`}
-                              role="menuitem"
-                              aria-haspopup="menu"
-                              aria-controls="intelligence-composer-plugins-menu"
-                              aria-expanded={isIntelligencePluginsMenuOpen}
-                              onClick={() => setIsIntelligencePluginsMenuOpen((open) => !open)}
-                            >
-                              <span className={styles.intelligenceComposerMenuItemIcon} aria-hidden="true">
-                                <Icon.Plug />
-                              </span>
-                              <span className={styles.intelligenceComposerMenuItemLabel}>Plugins</span>
-                              <span className={styles.intelligenceComposerMenuItemChevron} aria-hidden="true">
-                                <Icon.Chevron />
-                              </span>
-                            </button>
-
-                            {isIntelligencePluginsMenuOpen ? (
-                              <div
-                                id="intelligence-composer-plugins-menu"
-                                className={styles.intelligenceComposerSubmenu}
-                                role="menu"
-                                aria-label="Plugins do chat"
-                              >
-                                {INTELLIGENCE_PLUGIN_OPTIONS.map(({ id, label, Logo }) => (
-                                  <button
-                                    key={id}
-                                    type="button"
-                                    className={styles.intelligenceComposerSubmenuItem}
-                                    role="menuitem"
-                                    onClick={() => {
-                                      setSelectedIntelligencePluginId(id)
-                                      setIsIntelligencePluginsMenuOpen(false)
-                                      setIsIntelligenceInsertMenuOpen(false)
-                                    }}
-                                  >
-                                    <span className={styles.intelligenceComposerPluginLogo} aria-hidden="true">
-                                      <Logo />
-                                    </span>
-                                    <span>{label}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                    {selectedIntelligencePlugin ? (
-                      <div className={styles.intelligenceComposerPluginChip}>
-                        <button
-                          type="button"
-                          className={`${styles.intelligenceComposerPluginLogo} ${styles.intelligenceComposerPluginLogoSwap} ${styles.intelligenceComposerPluginRemoveButton}`}
-                          aria-label={`Remover plugin ${selectedIntelligencePlugin.label}`}
-                          onClick={() => setSelectedIntelligencePluginId('')}
-                        >
-                          <span className={styles.intelligenceComposerPluginLogoPrimary}>
-                            <selectedIntelligencePlugin.Logo />
-                          </span>
-                          <span className={`${styles.intelligenceComposerPluginLogoRemove} ${styles.intelligenceComposerPluginLogoRemoveIcon}`}>
-                            <Icon.X />
-                          </span>
-                        </button>
-                        <span className={styles.intelligenceComposerPluginChipLabel}>{selectedIntelligencePlugin.label}</span>
-                      </div>
-                    ) : null}
+                    <AiComposerContextMenu />
                   </div>
 
                   <div className={styles.intelligenceComposerActions}>
