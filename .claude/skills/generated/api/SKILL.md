@@ -1,11 +1,11 @@
 ---
 name: api
-description: "Skill for the Api area of plan-things-2. 130 symbols across 24 files."
+description: "Skill for the Api area of plan-things-2. 133 symbols across 23 files."
 ---
 
 # Api
 
-130 symbols | 24 files | Cohesion: 77%
+133 symbols | 23 files | Cohesion: 77%
 
 ## When to Use
 
@@ -17,7 +17,7 @@ description: "Skill for the Api area of plan-things-2. 130 symbols across 24 fil
 
 | File | Symbols |
 |------|---------|
-| `services/api/src/test/java/com/planthings/api/OAuthApiIntegrationTest.java` | shouldRejectMicrosoftEmailAutoLinkWithoutStrongEmailProof, shouldRejectMissingOrUnverifiedOAuthEmail, shouldRejectInvalidOrExpiredState, shouldRejectStateReplay, shouldPreserveMobileCallbackWhenFailureHappensAfterStateConsumption (+14) |
+| `services/api/src/test/java/com/planthings/api/OAuthApiIntegrationTest.java` | OAuthApiIntegrationTest, shouldRejectMicrosoftEmailAutoLinkWithoutStrongEmailProof, shouldRejectMissingOrUnverifiedOAuthEmail, shouldRejectInvalidOrExpiredState, shouldRejectStateReplay (+14) |
 | `services/api/src/test/java/com/planthings/api/BoardInboxGmailIntegrationTest.java` | BoardInboxGmailIntegrationTest, shouldSendCardToNewManualMembersWithConnectedGmail, shouldSendCardToManualRecipientsWhenCardHasNoAssignees, shouldClearPersistedInboxDeliveries, shouldOnlySendCardToManualRecipientsNotAlreadyAssigned (+11) |
 | `services/api/src/test/java/com/planthings/api/SettingsApiIntegrationTest.java` | shouldLoadAndUpdateSettingsSnapshot, shouldRejectPasswordSetupForPasswordOnlyAccount, shouldUpdateAccountWorkspaceAndPassword, shouldUploadServeAndRemoveAccountAvatar, shouldRejectInvalidAvatarPayloads (+8) |
 | `services/api/src/test/java/com/planthings/api/GmailIntegrationApiIntegrationTest.java` | GmailIntegrationApiIntegrationTest, shouldStartGmailAuthorizationWithSendScopeAndOfflineAccess, shouldPreserveWebBackgroundRouteAcrossGmailCallback, shouldPreserveMobileReturnUrlWhenGmailAddressDiffers, shouldPreserveMobileReturnUrlWhenRefreshTokenIsMissing (+8) |
@@ -25,8 +25,8 @@ description: "Skill for the Api area of plan-things-2. 130 symbols across 24 fil
 | `services/api/src/test/java/com/planthings/api/FileApiIntegrationTest.java` | shouldFavoriteAndUnfavoriteFiles, shouldDeleteAndRestoreFolderTreeRecursively, shouldPermanentlyDeleteTrashedFolderTreeRecursively, shouldUploadShareTrashAndRestoreFiles, shouldApplyPlanFileAttachmentPermissions (+6) |
 | `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java` | registerAndGetToken, createPlan, createBoardColumn, readJson, ApiIntegrationTestSupport (+4) |
 | `services/api/src/test/java/com/planthings/api/DatasourceSafetyGuardTest.java` | shouldAllowOfficialApplicationDatabaseOutsideTestProfile, shouldAllowOfficialApplicationDatabaseFromContainerHostOutsideTestProfile, shouldBlockInvalidDatabaseOutsideTestProfile, shouldBlockWhenDatabaseNameIsMissingOutsideTestProfile, shouldAllowAnyDatabaseDuringTestProfile (+1) |
-| `services/api/src/test/java/com/planthings/api/PlanApiIntegrationTest.java` | shouldCreatePlansWithAnEmptyBoard, shouldAllowManagersToListAndRevokeInvitesAndAllowInviteAcceptanceToJoinPlans, shouldExposeTaskCountInPlanSummaryList, PlanApiIntegrationTest |
-| `services/api/src/test/java/com/planthings/api/BoardAssigneeIntegrationTest.java` | shouldAllowAssigningMembersAndUpdatingDueDates, shouldPersistCompletedStateWithoutMovingCardToDoneColumn, shouldPersistStarredStateAcrossBoardReads, BoardAssigneeIntegrationTest |
+| `services/api/src/test/java/com/planthings/api/PlanApiIntegrationTest.java` | shouldCreatePlansWithAnEmptyBoard, shouldAllowManagersToListAndRevokeInvitesAndAllowInviteAcceptanceToJoinPlans, shouldCreatePlanEvenWhenPersonalWorkspaceIsMissing, shouldExposeTaskCountInPlanSummaryList, PlanApiIntegrationTest |
+| `services/api/src/test/java/com/planthings/api/IntelligenceApiIntegrationTest.java` | shouldCreateConversationAndAcceptMessage, shouldValidateCardScopeWhenCreatingConversation, createCard, IntelligenceApiIntegrationTest |
 
 ## Entry Points
 
@@ -56,33 +56,21 @@ Start here when exploring this area:
 | `validate` | Method | `services/api/src/main/java/com/planthings/api/config/DatasourceSafetyGuard.java` | 16 |
 | `extractDatabaseName` | Method | `services/api/src/main/java/com/planthings/api/config/DatasourceSafetyGuard.java` | 44 |
 | `isTestProfile` | Method | `services/api/src/main/java/com/planthings/api/config/DatasourceSafetyGuard.java` | 57 |
-| `listInvites` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 77 |
 | `findByPlanIdOrderByCreatedAtDesc` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java` | 9 |
-| `listInvites` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | 251 |
 | `registerTestDatabaseProperties` | Method | `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java` | 39 |
 | `ensureTestDatabaseExists` | Method | `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java` | 56 |
 | `envOrDefault` | Method | `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java` | 95 |
-
-## Execution Flows
-
-| Flow | Type | Steps |
-|------|------|-------|
-| `ListInvites → FindByPlanIdAndUserId` | cross_community | 6 |
-| `ListInvites → ForbiddenException` | cross_community | 6 |
-| `ListInvites → UnauthorizedException` | cross_community | 5 |
-| `ListInvites → NotFoundException` | cross_community | 5 |
-| `ListInvites → ExistsByPlanIdAndUserId` | cross_community | 5 |
-| `ListInvites → GetRole` | cross_community | 5 |
+| `requiredEnv` | Method | `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java` | 100 |
+| `AuthApiIntegrationTest` | Class | `services/api/src/test/java/com/planthings/api/AuthApiIntegrationTest.java` | 13 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
-| Settings | 11 calls |
-| Plans | 6 calls |
-| Auth | 5 calls |
-| Files | 4 calls |
-| InviteAccept | 1 calls |
+| Settings | 10 calls |
+| Auth | 6 calls |
+| Plans | 5 calls |
+| Files | 2 calls |
 
 ## How to Explore
 

@@ -1,54 +1,41 @@
 ---
 name: kanbanboard
-description: "Skill for the KanbanBoard area of plan-things-2. 91 symbols across 4 files."
+description: "Skill for the KanbanBoard area of plan-things-2. 95 symbols across 4 files."
 ---
 
 # KanbanBoard
 
-91 symbols | 4 files | Cohesion: 76%
+95 symbols | 4 files | Cohesion: 76%
 
 ## When to Use
 
 - Working with code in `apps/`
-- Understanding how deleteColumn, deleteCard, handleDrop work
+- Understanding how useBoardColumns, useBoardDragAndDrop, KanbanBoard work
 - Modifying kanbanboard-related functionality
 
 ## Key Files
 
 | File | Symbols |
 |------|---------|
-| `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | onMoveError, handleCardDelete, showNotification, handleColumnDelete, openInviteModal (+71) |
+| `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | describeInviteError, formatInviteStatus, KanbanBoard, refreshMembersMenuPosition, handleResize (+75) |
 | `apps/web/src/features/workspace/pages/KanbanBoard/plannerFilters.js` | compareNullableStrings, diffDaysFromDateKeys, filterPlannerItems, sortPlannerItems, plannedBucketForDiffDays (+1) |
-| `apps/web/src/features/workspace/hooks/useBoardColumns.js` | removeCardFromColumns, removeColumnFromColumns, deleteColumn, deleteCard, useBoardColumns |
-| `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js` | moveCardInColumns, handleDrop, handleDragEnd, useBoardDragAndDrop |
+| `apps/web/src/features/workspace/hooks/useBoardColumns.js` | useBoardColumns, removeCardFromColumns, removeColumnFromColumns, deleteColumn, deleteCard |
+| `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js` | useBoardDragAndDrop, moveCardInColumns, handleDrop, handleDragEnd |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`deleteColumn`** (Function) — `apps/web/src/features/workspace/hooks/useBoardColumns.js:591`
-- **`deleteCard`** (Function) — `apps/web/src/features/workspace/hooks/useBoardColumns.js:876`
-- **`handleDrop`** (Function) — `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js:60`
-- **`handleDragEnd`** (Function) — `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js:97`
-- **`onMoveError`** (Function) — `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx:899`
+- **`useBoardColumns`** (Function) — `apps/web/src/features/workspace/hooks/useBoardColumns.js:509`
+- **`useBoardDragAndDrop`** (Function) — `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js:41`
+- **`KanbanBoard`** (Function) — `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx:534`
+- **`refreshMembersMenuPosition`** (Function) — `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx:646`
+- **`handleResize`** (Function) — `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx:687`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `deleteColumn` | Function | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | 591 |
-| `deleteCard` | Function | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | 876 |
-| `handleDrop` | Function | `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js` | 60 |
-| `handleDragEnd` | Function | `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js` | 97 |
-| `onMoveError` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 899 |
-| `handleCardDelete` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 965 |
-| `showNotification` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1002 |
-| `handleColumnDelete` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1013 |
-| `openInviteModal` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1047 |
-| `reloadFileLists` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1148 |
-| `findBoardCard` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1859 |
-| `clearInboxDeliveries` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1894 |
-| `handleInboxDrop` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1957 |
 | `useBoardColumns` | Function | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | 509 |
 | `useBoardDragAndDrop` | Function | `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js` | 41 |
 | `KanbanBoard` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 534 |
@@ -56,12 +43,25 @@ Start here when exploring this area:
 | `handleResize` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 687 |
 | `updateToolbarMetrics` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 700 |
 | `resizeHandler` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 722 |
+| `loadPlanInvites` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 831 |
+| `toggleMembersPanel` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1027 |
+| `submitInvite` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1085 |
+| `revokePlanInvite` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1113 |
+| `openInbox` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1307 |
+| `toggleInboxRecipient` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1983 |
+| `renderInboxPanel` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 2029 |
+| `renderPlannerPanel` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 2159 |
+| `deleteColumn` | Function | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | 591 |
+| `deleteCard` | Function | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | 876 |
+| `handleDrop` | Function | `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js` | 60 |
+| `handleDragEnd` | Function | `apps/web/src/features/workspace/hooks/useBoardDragAndDrop.js` | 97 |
+| `onMoveError` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 899 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
-| SettingsPage | 11 calls |
+| SettingsPage | 12 calls |
 | Hooks | 9 calls |
 | Context | 5 calls |
 | Data | 4 calls |
@@ -71,6 +71,6 @@ Start here when exploring this area:
 
 ## How to Explore
 
-1. `gitnexus_context({name: "deleteColumn"})` — see callers and callees
+1. `gitnexus_context({name: "useBoardColumns"})` — see callers and callees
 2. `gitnexus_query({query: "kanbanboard"})` — find related execution flows
 3. Read key files listed above for implementation details

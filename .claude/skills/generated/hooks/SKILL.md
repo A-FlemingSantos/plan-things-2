@@ -1,11 +1,11 @@
 ---
 name: hooks
-description: "Skill for the Hooks area of plan-things-2. 46 symbols across 10 files."
+description: "Skill for the Hooks area of plan-things-2. 58 symbols across 12 files."
 ---
 
 # Hooks
 
-46 symbols | 10 files | Cohesion: 67%
+58 symbols | 12 files | Cohesion: 72%
 
 ## When to Use
 
@@ -18,15 +18,15 @@ description: "Skill for the Hooks area of plan-things-2. 46 symbols across 10 fi
 | File | Symbols |
 |------|---------|
 | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | uid, insertCardIntoColumn, addChecklistToCard, replaceChecklistByIdInColumns, replaceCardByIdInColumns (+24) |
+| `hooks/gitnexus-hook.cjs` | readInput, parseRgGrepPattern, pickLongestStringValue, extractPattern, resolveCliPath (+6) |
 | `apps/web/src/features/calendar/hooks/useCalendarEvents.js` | rawEventsFromSnapshot, mergeRawEvent, assertValidEventPayload, createEvent, updateEvent (+2) |
 | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | addColumn, handleColumnColorChange, handlePlanSwitch |
 | `apps/web/src/features/workspace/components/AddColumnComposer/AddColumnComposer.jsx` | AddColumnComposer |
+| `hooks/hook-lock.cjs` | acquireHookSlot |
 | `apps/web/src/features/calendar/data/calendarRepository.js` | insertCalendarEvent |
 | `apps/web/src/shared/contracts/backendAdapters.js` | buildCalendarEventPayload |
 | `apps/web/src/App.jsx` | LegacyPlanRedirect |
 | `apps/web/src/features/workspace/context/PlansContext.jsx` | selectPlan |
-| `apps/web/src/features/workspace/hooks/useResolvedPlanRoute.js` | openPlan |
-| `apps/web/src/features/workspace/hooks/useResolvedPlanRoute.test.jsx` | buildPath |
 
 ## Entry Points
 

@@ -71,9 +71,8 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Files | 22 calls |
-| Settings | 4 calls |
-| Board | 3 calls |
+| Files | 25 calls |
+| Board | 4 calls |
 
 ## How to Explore
 

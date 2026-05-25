@@ -63,10 +63,6 @@ Start here when exploring this area:
 | `CalendarWorkspaceView → CreateClientId` | cross_community | 6 |
 | `CalendarWorkspaceView → NormalizeText` | cross_community | 6 |
 | `CalendarWorkspaceView → PadDateNumber` | cross_community | 5 |
-| `RenderRangeView → YearOf` | intra_community | 4 |
-| `RenderRangeView → MonthOf` | intra_community | 4 |
-| `RenderRangeView → DayOfMonth` | intra_community | 4 |
-| `RenderRangeView → CreateCalendarDate` | intra_community | 4 |
 
 ## Connected Areas
 

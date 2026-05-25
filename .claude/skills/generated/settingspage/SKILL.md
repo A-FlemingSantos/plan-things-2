@@ -1,11 +1,11 @@
 ---
 name: settingspage
-description: "Skill for the SettingsPage area of plan-things-2. 64 symbols across 15 files."
+description: "Skill for the SettingsPage area of plan-things-2. 64 symbols across 17 files."
 ---
 
 # SettingsPage
 
-64 symbols | 15 files | Cohesion: 59%
+64 symbols | 17 files | Cohesion: 59%
 
 ## When to Use
 
@@ -18,15 +18,15 @@ description: "Skill for the SettingsPage area of plan-things-2. 64 symbols acros
 | File | Symbols |
 |------|---------|
 | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx` | normalizeGmailIntegration, isDeletePhraseValid, DeleteAccountDialog, loadIntegrations, handleDisconnectGmail (+35) |
-| `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | describeInviteError, loadPlanInvites, submitInvite, revokePlanInvite, removeMemberFromPlan (+1) |
 | `apps/web/src/shared/components/WorkspaceIconBadge/WorkspaceIconBadge.jsx` | normalizeWorkspaceIconKey, getWorkspaceIconOption, WorkspaceIconGlyph |
+| `apps/web/src/features/workspace/context/PlansContext.jsx` | refreshPlanDetails, refreshPlans |
+| `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | removeMemberFromPlan, downloadFile |
 | `apps/web/src/shared/api/apiClient.js` | apiRequest, triggerBlobDownload |
+| `apps/web/src/shared/config/routes.js` | buildWorkspaceBoardPath, toRouteString |
 | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | updateLocal, restoreLocalDefaults |
 | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.gmail.test.jsx` | mockSettingsSnapshot, settingsSnapshot |
-| `apps/web/src/features/workspace/context/PlansContext.jsx` | refreshPlanDetails |
+| `apps/web/src/features/workspace/components/InviteNotifications/InviteNotifications.jsx` | acceptInvite |
 | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | moveCard |
-| `apps/web/src/features/auth/context/AuthContext.jsx` | patchSession |
-| `apps/web/src/shared/utils/formatBytes.js` | formatBytes |
 
 ## Entry Points
 
@@ -50,18 +50,18 @@ Start here when exploring this area:
 | `handleExportData` | Function | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx` | 1223 |
 | `handleDeleteAccount` | Function | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx` | 1325 |
 | `renderSecurity` | Function | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx` | 2078 |
+| `acceptInvite` | Function | `apps/web/src/features/workspace/components/InviteNotifications/InviteNotifications.jsx` | 89 |
 | `refreshPlanDetails` | Function | `apps/web/src/features/workspace/context/PlansContext.jsx` | 335 |
+| `refreshPlans` | Function | `apps/web/src/features/workspace/context/PlansContext.jsx` | 360 |
 | `moveCard` | Function | `apps/web/src/features/workspace/hooks/useBoardColumns.js` | 915 |
-| `loadPlanInvites` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 831 |
-| `submitInvite` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1085 |
-| `revokePlanInvite` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1113 |
+| `acceptInvite` | Function | `apps/web/src/features/workspace/pages/InviteAccept/InviteAccept.jsx` | 84 |
 | `removeMemberFromPlan` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1132 |
 | `downloadFile` | Function | `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx` | 1258 |
 | `apiRequest` | Function | `apps/web/src/shared/api/apiClient.js` | 6 |
 | `triggerBlobDownload` | Function | `apps/web/src/shared/api/apiClient.js` | 14 |
+| `buildWorkspaceBoardPath` | Function | `apps/web/src/shared/config/routes.js` | 132 |
 | `patchSession` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 479 |
 | `loadWorkspaceDashboard` | Function | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx` | 614 |
-| `persistWorkspaceName` | Function | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx` | 697 |
 
 ## Execution Flows
 
@@ -77,11 +77,11 @@ Start here when exploring this area:
 | Context | 13 calls |
 | Auth | 7 calls |
 | Workspace | 3 calls |
-| KanbanBoard | 3 calls |
+| KanbanBoard | 2 calls |
 | OAuthCallback | 1 calls |
 | AppThemeScope | 1 calls |
 | Data | 1 calls |
-| Contracts | 1 calls |
+| InviteNotifications | 1 calls |
 
 ## How to Explore
 
