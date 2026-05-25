@@ -21,5 +21,14 @@ app:
     issuer: plan-things-api-test
     access-token-minutes: 180
     password-reset-minutes: 30
+  intelligence:
+    enabled: false
+    api-key: test-openai-key
+    model: gpt-5.4-mini
+    reasoning-effort: low
+    max-output-tokens: 6000
+    use-openai-conversations: false
+    store-openai-responses: false
+    compact-threshold: 120000
   integrations:
     token-key-base64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
