@@ -73,10 +73,10 @@ describe('ConversationToolbar', () => {
     it('shows mock participant avatars in the toolbar', () => {
       renderToolbar()
 
-      expect(screen.getByTitle('AS')).toBeInTheDocument()
-      expect(screen.getByTitle('MK')).toBeInTheDocument()
-      expect(screen.getByTitle('TK')).toBeInTheDocument()
-      expect(screen.getByTitle('SR')).toBeInTheDocument()
+      expect(screen.getByTitle('Ana Silva')).toBeInTheDocument()
+      expect(screen.getByTitle('Maria Klink')).toBeInTheDocument()
+      expect(screen.getByTitle('Tom Kobayashi')).toBeInTheDocument()
+      expect(screen.getByTitle('Sara Ribeiro')).toBeInTheDocument()
     })
   })
 
@@ -265,22 +265,26 @@ describe('ConversationToolbar', () => {
   })
 
   describe('Activity section', () => {
-    it('shows changes with status badges', async () => {
+    it('shows participant and agent activity history', async () => {
       const user = userEvent.setup()
       renderToolbar()
 
       await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
       await user.click(screen.getByRole('button', { name: /^Atividade$/i }))
 
-      expect(screen.getByText('Criar plano "Sprint 3"')).toBeInTheDocument()
-      expect(screen.getByText('Pendente')).toBeInTheDocument()
-      expect(screen.getByText('Aplicado')).toBeInTheDocument()
-      expect(screen.getByText('Criado')).toBeInTheDocument()
-      expect(screen.getByText('Rejeitado')).toBeInTheDocument()
-      expect(screen.getByText('Falha')).toBeInTheDocument()
+      expect(screen.getByText('Anexou requisitos.pdf')).toBeInTheDocument()
+      expect(screen.getByText('Compartilhou repositório do GitHub')).toBeInTheDocument()
+      expect(screen.getByText('Referenciou plano Design System')).toBeInTheDocument()
+      expect(screen.getByText('Criou plano Lançamento v1.0')).toBeInTheDocument()
+      expect(screen.getByText('Editou arquivo requisitos.pdf')).toBeInTheDocument()
+      expect(screen.getAllByText('Ana Silva')).toHaveLength(2)
+      expect(screen.getByText('Maria Klink')).toBeInTheDocument()
+      expect(screen.getAllByText('Intelligence')).toHaveLength(2)
+      expect(screen.getByText('26 mai, 14:32')).toBeInTheDocument()
+      expect(screen.getByText('25 mai, 15:02')).toBeInTheDocument()
     })
 
-    it('filters changes by search input', async () => {
+    it('filters activity by member name or action description', async () => {
       const user = userEvent.setup()
       renderToolbar()
 
@@ -288,10 +292,10 @@ describe('ConversationToolbar', () => {
       await user.click(screen.getByRole('button', { name: /^Atividade$/i }))
 
       const filterInput = screen.getByLabelText('Filtrar atividade')
-      await user.type(filterInput, 'Login')
+      await user.type(filterInput, 'GitHub')
 
-      expect(screen.getByText('Adicionar card "Login UI"')).toBeInTheDocument()
-      expect(screen.queryByText('Criar plano "Sprint 3"')).not.toBeInTheDocument()
+      expect(screen.getByText('Compartilhou repositório do GitHub')).toBeInTheDocument()
+      expect(screen.queryByText('Anexou requisitos.pdf')).not.toBeInTheDocument()
     })
   })
 

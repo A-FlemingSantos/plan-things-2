@@ -352,46 +352,101 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 
-.changeRow {
+.activityList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activityItem {
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
-  min-width: 0;
-  flex: 1 1 auto;
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background var(--transition-fast);
 }
 
-.statusBadge {
-  padding: 2px 6px;
-  border-radius: 999px;
-  font-size: 10px;
-  line-height: 1.2;
-  white-space: nowrap;
+.activityItem:hover {
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+
+.activityAvatar,
+.activityAgentAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 1px;
 }
 
-.statusPending {
-  background: color-mix(in srgb, #d4a017 16%, transparent);
-  color: #9a7200;
+.activityAvatar {
+  border: 1.5px solid var(--surface-1);
+  box-shadow: var(--shadow-xs);
+  display: grid;
+  place-items: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-on-accent);
+  overflow: hidden;
 }
 
-.statusApplied {
-  background: color-mix(in srgb, #1f8f4e 16%, transparent);
-  color: #16703c;
+.activityAvatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.statusCreated {
-  background: color-mix(in srgb, var(--focus-ring) 14%, transparent);
+.activityAgentAvatar {
+  display: grid;
+  place-items: center;
+  border: 1.5px solid color-mix(in srgb, var(--focus-ring) 28%, var(--border-1));
+  background: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-1));
   color: var(--text-1);
 }
 
-.statusRejected {
-  background: color-mix(in srgb, var(--text-1) 8%, transparent);
-  color: var(--text-2);
+.activityContent {
+  display: flex;
+  align-items: baseline;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
-.statusFailed {
-  background: color-mix(in srgb, #c0392b 14%, transparent);
-  color: #9f2f24;
+.activityMemberName {
+  color: var(--text-1);
+  font-weight: var(--font-weight-regular);
+  flex-shrink: 0;
+}
+
+.activityDescription {
+  color: var(--text-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityMeta {
+  display: inline-flex;
+  align-items: baseline;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 8px;
+}
+
+.activityTimestamp {
+  color: var(--text-3);
+  font-size: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .visuallyHidden {

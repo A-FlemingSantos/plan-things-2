@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import MemberAvatarStack from '../../../../shared/components/MemberAvatarStack/MemberAvatarStack.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
@@ -17,13 +18,65 @@ const MOCK_LOADED_ITEMS = [
   { id: 'file-3', name: 'spec-auth.md', type: 'file' },
 ]
 
-const MOCK_CHANGES = [
-  { id: 'change-1', title: 'Criar plano "Sprint 3"', status: 'pending', statusLabel: 'Pendente' },
-  { id: 'change-2', title: 'Atualizar labels do board', status: 'applied', statusLabel: 'Aplicado' },
-  { id: 'change-3', title: 'Criar card "Backlog"', status: 'created', statusLabel: 'Criado' },
-  { id: 'change-4', title: 'Convidar membro', status: 'rejected', statusLabel: 'Rejeitado' },
-  { id: 'change-5', title: 'Adicionar card "Login UI"', status: 'failed', statusLabel: 'Falha' },
+const MOCK_ACTIVITY = [
+  {
+    id: 'act-1',
+    actorId: 'm1',
+    description: 'Anexou requisitos.pdf',
+    timestampLabel: '26 mai, 14:32',
+    occurredAt: '2026-05-26T14:32:00',
+  },
+  {
+    id: 'act-2',
+    actorId: 'm2',
+    description: 'Compartilhou repositório do GitHub',
+    timestampLabel: '26 mai, 13:18',
+    occurredAt: '2026-05-26T13:18:00',
+  },
+  {
+    id: 'act-3',
+    actorId: 'm3',
+    description: 'Referenciou plano Design System',
+    timestampLabel: '26 mai, 11:05',
+    occurredAt: '2026-05-26T11:05:00',
+  },
+  {
+    id: 'act-4',
+    actorId: 'm4',
+    description: 'Adicionou wireframes.fig',
+    timestampLabel: '25 mai, 17:44',
+    occurredAt: '2026-05-25T17:44:00',
+  },
+  {
+    id: 'act-5',
+    actorId: 'intelligence',
+    description: 'Criou plano Lançamento v1.0',
+    timestampLabel: '25 mai, 16:20',
+    occurredAt: '2026-05-25T16:20:00',
+  },
+  {
+    id: 'act-6',
+    actorId: 'intelligence',
+    description: 'Editou arquivo requisitos.pdf',
+    timestampLabel: '25 mai, 15:02',
+    occurredAt: '2026-05-25T15:02:00',
+  },
+  {
+    id: 'act-7',
+    actorId: 'm1',
+    description: 'Conectou Slack ao chat',
+    timestampLabel: '25 mai, 10:11',
+    occurredAt: '2026-05-25T10:11:00',
+  },
 ]
+
+const MOCK_PARTICIPANTS = {
+  m1: { id: 'm1', name: 'Ana Silva', initials: 'AS', color: '#000' },
+  m2: { id: 'm2', name: 'Maria Klink', initials: 'MK', color: '#d4aef1' },
+  m3: { id: 'm3', name: 'Tom Kobayashi', initials: 'TK', color: '#4290da' },
+  m4: { id: 'm4', name: 'Sara Ribeiro', initials: 'SR', color: '#0f703a' },
+  intelligence: { id: 'intelligence', name: 'Intelligence', type: 'agent' },
+}
 
 const MOCK_CONNECTORS = [
   { id: 'github', name: 'GitHub' },
@@ -32,10 +85,10 @@ const MOCK_CONNECTORS = [
 ]
 
 const MOCK_CONVERSATION_MEMBERS = [
-  { id: 'm1', initials: 'AS', color: '#000' },
-  { id: 'm2', initials: 'MK', color: '#d4aef1' },
-  { id: 'm3', initials: 'TK', color: '#4290da' },
-  { id: 'm4', initials: 'SR', color: '#0f703a' },
+  { id: 'm1', initials: 'AS', color: '#000', name: 'Ana Silva' },
+  { id: 'm2', initials: 'MK', color: '#d4aef1', name: 'Maria Klink' },
+  { id: 'm3', initials: 'TK', color: '#4290da', name: 'Tom Kobayashi' },
+  { id: 'm4', initials: 'SR', color: '#0f703a', name: 'Sara Ribeiro' },
 ]
 
 function ChevronIcon({ open = false }) {
@@ -95,6 +148,35 @@ function PlusIcon() {
   )
 }
 
+function SparkleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8.7 1.8 4.9 7.3h2.5l-.7 6.1 4-5.6H8.2l.5-6z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ActivityActorAvatar({ actor }) {
+  if (actor.type === 'agent') {
+    return (
+      <span className={styles.activityAgentAvatar} title={actor.name} aria-hidden="true">
+        <SparkleIcon />
+      </span>
+    )
+  }
+
+  return (
+    <AuthenticatedAvatar
+      className={styles.activityAvatar}
+      style={{ background: actor.color }}
+      avatarUrl={actor.avatarUrl}
+      fallback={actor.initials}
+      title={actor.name}
+      imageClassName={styles.activityAvatarImage}
+    />
+  )
+}
+
 function resolveScopeLabel({ planId, planName, cardId, cardTitle }) {
   if (cardId && cardTitle) return cardTitle
   if (planId && planName) return planName
@@ -132,10 +214,20 @@ export default function ConversationToolbar({
     return MOCK_LOADED_ITEMS.filter((item) => item.name.toLowerCase().includes(query))
   }, [filesFilter])
 
-  const filteredChanges = useMemo(() => {
+  const filteredActivity = useMemo(() => {
     const query = historyFilter.trim().toLowerCase()
-    if (!query) return MOCK_CHANGES
-    return MOCK_CHANGES.filter((change) => change.title.toLowerCase().includes(query))
+    if (!query) return MOCK_ACTIVITY
+
+    return MOCK_ACTIVITY.filter((entry) => {
+      const actor = MOCK_PARTICIPANTS[entry.actorId]
+      const searchable = [
+        actor?.name,
+        entry.description,
+        entry.timestampLabel,
+      ].filter(Boolean).join(' ').toLowerCase()
+
+      return searchable.includes(query)
+    })
   }, [historyFilter])
 
   const panelViewportProps = useMemo(() => ({ id: panelId }), [panelId])
@@ -373,24 +465,24 @@ export default function ConversationToolbar({
                     aria-label="Filtrar atividade"
                   />
                 </label>
-                <ul className={styles.list}>
-                  {filteredChanges.map((change) => (
-                    <li key={change.id} className={styles.listItem}>
-                      <div className={styles.changeRow}>
-                        <span className={styles.listItemLabel}>{change.title}</span>
-                        <span className={`${styles.statusBadge} ${styles[`status${change.status.charAt(0).toUpperCase()}${change.status.slice(1)}`]}`}>
-                          {change.statusLabel}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.listItemAction}
-                        aria-label={`Abrir alteração "${change.title}"`}
-                      >
-                        Abrir
-                      </button>
-                    </li>
-                  ))}
+                <ul className={styles.activityList}>
+                  {filteredActivity.map((entry) => {
+                    const actor = MOCK_PARTICIPANTS[entry.actorId]
+                    return (
+                      <li key={entry.id} className={styles.activityItem}>
+                        <ActivityActorAvatar actor={actor} />
+                        <div className={styles.activityContent}>
+                          <span className={styles.activityMemberName}>{actor.name}</span>
+                          <span className={styles.activityDescription}>{entry.description}</span>
+                          <span className={styles.activityMeta}>
+                            <time className={styles.activityTimestamp} dateTime={entry.occurredAt}>
+                              {entry.timestampLabel}
+                            </time>
+                          </span>
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             ) : null}
