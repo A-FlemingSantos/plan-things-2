@@ -22,49 +22,63 @@ const MOCK_ACTIVITY = [
   {
     id: 'act-1',
     actorId: 'm1',
-    description: 'Anexou requisitos.pdf',
+    actionType: 'Anexo',
+    targetIcon: 'file',
+    targetLabel: 'requisitos.pdf',
     timestampLabel: '26 mai, 14:32',
     occurredAt: '2026-05-26T14:32:00',
   },
   {
     id: 'act-2',
     actorId: 'm2',
-    description: 'Compartilhou repositório do GitHub',
+    actionType: 'Compartilhamento',
+    targetIcon: 'github',
+    targetLabel: 'GitHub',
     timestampLabel: '26 mai, 13:18',
     occurredAt: '2026-05-26T13:18:00',
   },
   {
     id: 'act-3',
     actorId: 'm3',
-    description: 'Referenciou plano Design System',
+    actionType: 'Referência',
+    targetIcon: 'plan',
+    targetLabel: 'Design System',
     timestampLabel: '26 mai, 11:05',
     occurredAt: '2026-05-26T11:05:00',
   },
   {
     id: 'act-4',
     actorId: 'm4',
-    description: 'Adicionou wireframes.fig',
+    actionType: 'Adição',
+    targetIcon: 'file',
+    targetLabel: 'wireframes.fig',
     timestampLabel: '25 mai, 17:44',
     occurredAt: '2026-05-25T17:44:00',
   },
   {
     id: 'act-5',
     actorId: 'intelligence',
-    description: 'Criou plano Lançamento v1.0',
+    actionType: 'Criação',
+    targetIcon: 'plan',
+    targetLabel: 'Lançamento v1.0',
     timestampLabel: '25 mai, 16:20',
     occurredAt: '2026-05-25T16:20:00',
   },
   {
     id: 'act-6',
     actorId: 'intelligence',
-    description: 'Editou arquivo requisitos.pdf',
+    actionType: 'Edição',
+    targetIcon: 'file',
+    targetLabel: 'requisitos.pdf',
     timestampLabel: '25 mai, 15:02',
     occurredAt: '2026-05-25T15:02:00',
   },
   {
     id: 'act-7',
     actorId: 'm1',
-    description: 'Conectou Slack ao chat',
+    actionType: 'Conexão',
+    targetIcon: 'slack',
+    targetLabel: 'Slack',
     timestampLabel: '25 mai, 10:11',
     occurredAt: '2026-05-25T10:11:00',
   },
@@ -156,6 +170,73 @@ function SparkleIcon() {
   )
 }
 
+function ActivityTargetFileIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M5.2 2.5h3.3l3.5 3.5v7.5H5.2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M8.5 2.5v3.5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ActivityTargetGitHubIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1.4a6.6 6.6 0 0 0-2.1 12.85c.33.06.45-.14.45-.32v-1.2c-1.82.4-2.2-.77-2.2-.77-.3-.74-.73-.94-.73-.94-.6-.41.05-.4.05-.4.66.05 1 .67 1 .67.6 1 .15.52 1.5.4.05-.43.23-.73.42-.89-1.45-.16-2.98-.72-2.98-3.22 0-.71.25-1.3.67-1.75-.07-.16-.29-.82.06-1.7 0 0 .55-.18 1.8.67a6.26 6.26 0 0 1 3.28 0c1.24-.85 1.79-.67 1.79-.67.35.88.13 1.54.06 1.7.42.45.67 1.04.67 1.75 0 2.5-1.53 3.06-2.99 3.22.24.2.45.61.45 1.24v1.84c0 .18.12.38.46.31A6.6 6.6 0 0 0 8 1.4Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function ActivityTargetPlanIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="2.5" y="3.5" width="11" height="9" rx="1.2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5.5 7h5M5.5 9.5h3.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ActivityTargetSlackIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M6.6 2.5a1.1 1.1 0 0 0-1.1 1.1v1.1H4.4a1.1 1.1 0 1 0 0 2.2h2.1V5.6a1.1 1.1 0 0 0-1.1-1.1Z" fill="currentColor" />
+      <path d="M9.4 13.5a1.1 1.1 0 0 0 1.1-1.1v-1.1h1.1a1.1 1.1 0 1 0 0-2.2H9.4v2.1a1.1 1.1 0 0 0 1.1 1.1Z" fill="currentColor" />
+      <path d="M13.5 6.6a1.1 1.1 0 0 0-1.1-1.1h-1.1V4.4a1.1 1.1 0 1 0-2.2 0v2.1h2.1a1.1 1.1 0 0 0 1.1-1.1Z" fill="currentColor" />
+      <path d="M2.5 9.4a1.1 1.1 0 0 0 1.1 1.1h1.1v1.1a1.1 1.1 0 1 0 2.2 0V9.4H4.6a1.1 1.1 0 0 0-1.1 1.1Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+const ACTIVITY_TARGET_ICONS = {
+  file: ActivityTargetFileIcon,
+  github: ActivityTargetGitHubIcon,
+  plan: ActivityTargetPlanIcon,
+  slack: ActivityTargetSlackIcon,
+}
+
+function ActivityTargetIcon({ type }) {
+  const Icon = ACTIVITY_TARGET_ICONS[type]
+  if (!Icon) return null
+
+  return (
+    <span className={styles.activityTargetIcon} data-testid={`activity-target-icon-${type}`}>
+      <Icon />
+    </span>
+  )
+}
+
+function ActivityDescription({ entry }) {
+  return (
+    <span className={styles.activityDescription}>
+      <span className={styles.activityActionType}>{entry.actionType}</span>
+      <span className={styles.activityTarget}>
+        <ActivityTargetIcon type={entry.targetIcon} />
+        <span className={styles.activityTargetLabel}>{entry.targetLabel}</span>
+      </span>
+    </span>
+  )
+}
+
 function ActivityActorAvatar({ actor }) {
   if (actor.type === 'agent') {
     return (
@@ -222,7 +303,8 @@ export default function ConversationToolbar({
       const actor = MOCK_PARTICIPANTS[entry.actorId]
       const searchable = [
         actor?.name,
-        entry.description,
+        entry.actionType,
+        entry.targetLabel,
         entry.timestampLabel,
       ].filter(Boolean).join(' ').toLowerCase()
 
@@ -473,7 +555,7 @@ export default function ConversationToolbar({
                         <ActivityActorAvatar actor={actor} />
                         <div className={styles.activityContent}>
                           <span className={styles.activityMemberName}>{actor.name}</span>
-                          <span className={styles.activityDescription}>{entry.description}</span>
+                          <ActivityDescription entry={entry} />
                           <span className={styles.activityMeta}>
                             <time className={styles.activityTimestamp} dateTime={entry.occurredAt}>
                               {entry.timestampLabel}

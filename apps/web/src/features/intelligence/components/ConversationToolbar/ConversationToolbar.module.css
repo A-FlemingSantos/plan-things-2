@@ -427,11 +427,46 @@
 }
 
 .activityDescription {
-  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.activityActionType {
+  flex-shrink: 0;
+  color: var(--text-3);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+.activityTarget {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.activityTargetIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--text-3) 88%, transparent);
+  opacity: 0.72;
+  filter: saturate(0.82);
+}
+
+.activityTargetLabel {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--text-2);
 }
 
 .activityMeta {
