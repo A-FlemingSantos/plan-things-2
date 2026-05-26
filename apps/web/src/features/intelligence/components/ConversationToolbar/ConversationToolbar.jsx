@@ -1,7 +1,11 @@
 import { useId, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
+import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
 import styles from './ConversationToolbar.module.css'
+
+const PANEL_SCROLLBAR_INSET_PX = 0
+const PANEL_SCROLLBAR_MIN_THUMB_PX = 18
 
 const MOCK_RECENT_CONVERSATIONS = [
   { id: 'conv-1', title: 'Estrutura do pitch deck' },
@@ -138,6 +142,12 @@ export default function ConversationToolbar({
     return MOCK_CHANGES.filter((change) => change.title.toLowerCase().includes(query))
   }, [historyFilter])
 
+  const panelScrollbar = useCustomScrollbar({
+    enabled: isExpanded,
+    insetPx: PANEL_SCROLLBAR_INSET_PX,
+    minThumbPx: PANEL_SCROLLBAR_MIN_THUMB_PX,
+  })
+
   const toggleToolbar = () => {
     setIsExpanded((current) => !current)
   }
@@ -217,7 +227,12 @@ export default function ConversationToolbar({
       </button>
 
       {isExpanded ? (
-        <div id={panelId} className={styles.toolbarPanel}>
+        <div className={styles.toolbarPanelShell}>
+          <div
+            id={panelId}
+            ref={panelScrollbar.viewportRef}
+            className={styles.toolbarPanel}
+          >
           {planId ? (
             <div className={styles.contextualActionRow}>
               <button
@@ -424,6 +439,16 @@ export default function ConversationToolbar({
               </div>
             ) : null}
           </section>
+          </div>
+          {panelScrollbar.thumbState.visible ? (
+            <span className={styles.toolbarPanelScrollbar} aria-hidden="true">
+              <span
+                ref={panelScrollbar.thumbRef}
+                className={`${styles.toolbarPanelScrollbarThumb} ${panelScrollbar.isDragging ? styles.toolbarPanelScrollbarThumbDragging : ''}`}
+                onPointerDown={panelScrollbar.handleThumbPointerDown}
+              />
+            </span>
+          ) : null}
         </div>
       ) : null}
     </div>

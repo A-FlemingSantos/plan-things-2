@@ -1468,12 +1468,9 @@ export default function Workspace() {
         {workspaceScrollbar.thumbState.visible ? (
           <span className={styles.workspacePanelScrollbar} aria-hidden="true">
             <span
+              ref={workspaceScrollbar.thumbRef}
               className={`${styles.workspacePanelScrollbarThumb} ${workspaceScrollbar.isDragging ? styles.workspacePanelScrollbarThumbDragging : ''}`}
               onPointerDown={workspaceScrollbar.handleThumbPointerDown}
-              style={{
-                height: `${workspaceScrollbar.thumbState.height}px`,
-                transform: `translateY(${workspaceScrollbar.thumbState.top}px)`,
-              }}
             />
           </span>
         ) : null}

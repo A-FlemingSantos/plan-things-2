@@ -2289,12 +2289,9 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
         {modal && navScrollbar.thumbState.visible ? (
           <span className={styles.settingsPanelScrollbar} aria-hidden="true">
             <span
+              ref={navScrollbar.thumbRef}
               className={`${styles.settingsPanelScrollbarThumb} ${navScrollbar.isDragging ? styles.settingsPanelScrollbarThumbDragging : ''}`}
               onPointerDown={navScrollbar.handleThumbPointerDown}
-              style={{
-                height: `${navScrollbar.thumbState.height}px`,
-                transform: `translateY(${navScrollbar.thumbState.top}px)`,
-              }}
             />
           </span>
         ) : null}
@@ -2315,12 +2312,9 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
         {modal && contentScrollbar.thumbState.visible ? (
           <span className={styles.settingsPanelScrollbar} aria-hidden="true">
             <span
+              ref={contentScrollbar.thumbRef}
               className={`${styles.settingsPanelScrollbarThumb} ${contentScrollbar.isDragging ? styles.settingsPanelScrollbarThumbDragging : ''}`}
               onPointerDown={contentScrollbar.handleThumbPointerDown}
-              style={{
-                height: `${contentScrollbar.thumbState.height}px`,
-                transform: `translateY(${contentScrollbar.thumbState.top}px)`,
-              }}
             />
           </span>
         ) : null}

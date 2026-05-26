@@ -2,6 +2,12 @@
   position: relative;
   width: 100%;
   max-width: 720px;
+  --toolbar-panel-scrollbar-size: 2px;
+  --toolbar-panel-scrollbar-thumb: #000000;
+}
+
+[data-theme='dark'] .toolbar {
+  --toolbar-panel-scrollbar-thumb: #ffffff;
 }
 
 .toolbarExpanded {
@@ -120,18 +126,64 @@
   transform: rotate(180deg);
 }
 
-.toolbarPanel {
+.toolbarPanelShell {
   position: absolute;
   top: calc(100% - 1px);
   left: 0;
   right: 0;
   max-height: min(60vh, 420px);
-  overflow: auto;
   border: 1px solid var(--border-1);
   border-top: 0;
   border-radius: 0 0 10px 10px;
   background: var(--surface-1);
-  scrollbar-width: thin;
+  overflow: hidden;
+}
+
+.toolbarPanel {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-anchor: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.toolbarPanel::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbarPanelScrollbar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.toolbarPanelScrollbarThumb {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--toolbar-panel-scrollbar-size);
+  min-height: 18px;
+  background: var(--toolbar-panel-scrollbar-thumb);
+  border-radius: 0;
+  opacity: 1;
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transition: width 140ms ease;
+  will-change: transform;
+}
+
+.toolbarPanelScrollbar:hover .toolbarPanelScrollbarThumb,
+.toolbarPanelScrollbarThumb:hover,
+.toolbarPanelScrollbarThumbDragging {
+  width: 6px;
 }
 
 .contextualActionRow {
@@ -457,11 +509,15 @@
     margin-left: auto;
   }
 
-  .toolbarPanel {
+  .toolbarPanelShell {
     position: static;
     max-height: none;
     border-top: 1px solid var(--border-1);
     border-radius: 0 0 8px 8px;
     box-shadow: none;
+  }
+
+  .toolbarPanel {
+    max-height: none;
   }
 }
