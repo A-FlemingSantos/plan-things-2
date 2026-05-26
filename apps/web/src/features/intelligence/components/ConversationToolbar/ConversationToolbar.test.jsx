@@ -120,23 +120,23 @@ describe('ConversationToolbar', () => {
       return user
     }
 
-    it('renders all five section headers', async () => {
+    it('renders the available section headers', async () => {
       await expandToolbar()
 
       expect(screen.getByRole('button', { name: /Conversas/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /Contexto/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Permissões/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Arquivos e itens/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /Alterações/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^Atividade$/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Contexto/i })).not.toBeInTheDocument()
     })
 
     it('each section header has icon and name', async () => {
       await expandToolbar()
 
       const sectionHeaders = screen.getAllByRole('button').filter(
-        (btn) => btn.getAttribute('aria-controls') && btn.textContent.match(/Conversas|Contexto|Permissões|Arquivos e itens|Alterações/i),
+        (btn) => btn.getAttribute('aria-controls') && btn.textContent.match(/Conversas|Permissões|Arquivos e itens|Atividade/i),
       )
-      expect(sectionHeaders.length).toBe(5)
+      expect(sectionHeaders.length).toBe(4)
     })
 
     it('toggles individual sections open and closed', async () => {
@@ -166,36 +166,15 @@ describe('ConversationToolbar', () => {
     })
   })
 
-  describe('Context section', () => {
-    it('shows workspace, plan, and card when all provided', async () => {
-      const user = userEvent.setup()
-      renderToolbar({
-        planId: 'plan-1',
-        planName: 'Sprint 3',
-        cardId: 'card-1',
-        cardTitle: 'Login UI',
-      })
-
-      await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
-      await user.click(screen.getByRole('button', { name: /Contexto/i }))
-
-      const contextGroup = screen.getByRole('group', { name: 'Contexto' })
-      expect(within(contextGroup).getByText('Workspace')).toBeInTheDocument()
-      expect(within(contextGroup).getByText('Sprint 3')).toBeInTheDocument()
-      expect(within(contextGroup).getByText('Login UI')).toBeInTheDocument()
-    })
-
-    it('does not show files or attachments in context section', async () => {
+  describe('removed Context section', () => {
+    it('does not render a dedicated Context section', async () => {
       const user = userEvent.setup()
       renderToolbar({ planId: 'plan-1', planName: 'Sprint 3' })
 
       await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
-      await user.click(screen.getByRole('button', { name: /Contexto/i }))
 
-      const contextGroup = screen.getByRole('group', { name: 'Contexto' })
-      expect(within(contextGroup).queryByText(/\.pdf/i)).not.toBeInTheDocument()
-      expect(within(contextGroup).queryByText(/\.fig/i)).not.toBeInTheDocument()
-      expect(within(contextGroup).queryByText(/\.md/i)).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Contexto/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: 'Contexto' })).not.toBeInTheDocument()
     })
   })
 
@@ -272,13 +251,13 @@ describe('ConversationToolbar', () => {
     })
   })
 
-  describe('History section', () => {
+  describe('Activity section', () => {
     it('shows changes with status badges', async () => {
       const user = userEvent.setup()
       renderToolbar()
 
       await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
-      await user.click(screen.getByRole('button', { name: /Alterações/i }))
+      await user.click(screen.getByRole('button', { name: /^Atividade$/i }))
 
       expect(screen.getByText('Criar plano "Sprint 3"')).toBeInTheDocument()
       expect(screen.getByText('Pendente')).toBeInTheDocument()
@@ -293,9 +272,9 @@ describe('ConversationToolbar', () => {
       renderToolbar()
 
       await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
-      await user.click(screen.getByRole('button', { name: /Alterações/i }))
+      await user.click(screen.getByRole('button', { name: /^Atividade$/i }))
 
-      const filterInput = screen.getByLabelText('Filtrar histórico de alterações')
+      const filterInput = screen.getByLabelText('Filtrar atividade')
       await user.type(filterInput, 'Login')
 
       expect(screen.getByText('Adicionar card "Login UI"')).toBeInTheDocument()

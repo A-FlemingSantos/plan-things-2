@@ -53,15 +53,6 @@ function ConversationsIcon() {
   )
 }
 
-function ContextIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="5.2" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="8" cy="8" r="1.6" fill="currentColor" />
-    </svg>
-  )
-}
-
 function PermissionsIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -159,7 +150,6 @@ export default function ConversationToolbar({
 
   const sectionIds = {
     conversations: `${panelId}-conversations`,
-    context: `${panelId}-context`,
     permissions: `${panelId}-permissions`,
     files: `${panelId}-files`,
     history: `${panelId}-history`,
@@ -274,46 +264,6 @@ export default function ConversationToolbar({
           </section>
 
           <section className={styles.section}>
-            {renderSectionHeader('context', 'Contexto', ContextIcon, (
-              <>
-                <button type="button" className={styles.sectionAction} aria-label="Abrir escopo">
-                  Abrir
-                </button>
-                <button type="button" className={styles.sectionAction} aria-label="Trocar escopo">
-                  Trocar
-                </button>
-              </>
-            ))}
-            {openSections.context ? (
-              <div
-                id={sectionIds.context}
-                className={styles.sectionBody}
-                role="group"
-                aria-label="Contexto"
-              >
-                <div className={styles.contextRows}>
-                  <div className={styles.contextRow}>
-                    <span className={styles.contextRowKind}>Workspace</span>
-                    <span className={styles.contextRowValue}>Área de trabalho</span>
-                  </div>
-                  {planId ? (
-                    <div className={styles.contextRow}>
-                      <span className={styles.contextRowKind}>Plano</span>
-                      <span className={styles.contextRowValue}>{planName || planId}</span>
-                    </div>
-                  ) : null}
-                  {cardId ? (
-                    <div className={styles.contextRow}>
-                      <span className={styles.contextRowKind}>Card</span>
-                      <span className={styles.contextRowValue}>{cardTitle || cardId}</span>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className={styles.section}>
             {renderSectionHeader('permissions', 'Permissões e conectores', PermissionsIcon, (
               <button type="button" className={styles.sectionAction} aria-label="Configurar conectores">
                 Configurar
@@ -392,22 +342,22 @@ export default function ConversationToolbar({
           </section>
 
           <section className={styles.section}>
-            {renderSectionHeader('history', 'Alterações recentes', HistoryIcon, (
-              <button type="button" className={styles.sectionAction} aria-label="Filtrar histórico">
+            {renderSectionHeader('history', 'Atividade', HistoryIcon, (
+              <button type="button" className={styles.sectionAction} aria-label="Abrir filtros de atividade">
                 Filtrar
               </button>
             ))}
             {openSections.history ? (
               <div id={sectionIds.history} className={styles.sectionBody}>
                 <label className={styles.filterField}>
-                  <span className={styles.visuallyHidden}>Filtrar histórico de alterações</span>
+                  <span className={styles.visuallyHidden}>Filtrar atividade</span>
                   <input
                     type="search"
                     className={styles.filterInput}
                     value={historyFilter}
                     onChange={(event) => setHistoryFilter(event.target.value)}
-                    placeholder="Filtrar alterações..."
-                    aria-label="Filtrar histórico de alterações"
+                    placeholder="Filtrar atividade..."
+                    aria-label="Filtrar atividade"
                   />
                 </label>
                 <ul className={styles.list}>

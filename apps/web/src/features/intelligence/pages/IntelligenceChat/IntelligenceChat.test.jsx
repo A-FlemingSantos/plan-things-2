@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -113,7 +113,8 @@ describe('IntelligenceChat', () => {
 
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: /Conversas/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Contexto/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Atividade$/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Contexto/i })).not.toBeInTheDocument()
   })
 
   it('shows GitHub active in connectors when github chip is present', async () => {
@@ -144,7 +145,7 @@ describe('IntelligenceChat', () => {
     expect(screen.getByRole('button', { name: /Continuar no Kanban/i })).toBeInTheDocument()
   })
 
-  it('keeps context section free of files and attachments', async () => {
+  it('does not render a dedicated context section', async () => {
     const user = userEvent.setup()
 
     renderChat({
@@ -153,11 +154,9 @@ describe('IntelligenceChat', () => {
     })
 
     await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
-    await user.click(screen.getByRole('button', { name: /Contexto/i }))
 
-    const contextGroup = screen.getByRole('group', { name: 'Contexto' })
-    expect(within(contextGroup).queryByText(/\.pdf/i)).not.toBeInTheDocument()
-    expect(within(contextGroup).queryByText(/\.fig/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Contexto/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Contexto' })).not.toBeInTheDocument()
   })
 
   it('shows loaded files in the files section', async () => {
