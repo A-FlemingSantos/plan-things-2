@@ -18,6 +18,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   overflow-anchor: none;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

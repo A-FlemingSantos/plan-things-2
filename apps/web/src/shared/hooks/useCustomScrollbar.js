@@ -156,6 +156,12 @@ export default function useCustomScrollbar({
 
     function markScrolling() {
       isScrollingRef.current = true
+
+      if (layoutTimeoutRef.current !== null) {
+        window.clearTimeout(layoutTimeoutRef.current)
+        layoutTimeoutRef.current = null
+      }
+
       scheduleFrameUpdate(updateThumbPositionFromScroll)
 
       if (scrollIdleTimeoutRef.current !== null) {
