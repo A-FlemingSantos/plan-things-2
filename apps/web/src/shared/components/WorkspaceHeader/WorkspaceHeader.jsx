@@ -111,6 +111,7 @@ function SparkIcon() {
 export default function WorkspaceHeader({
   title = 'Workspace',
   icon = <WorkspaceTitleIcon />,
+  centerContent = null,
   sticky = false,
   compact = false,
   className = '',
@@ -333,6 +334,7 @@ export default function WorkspaceHeader({
     <PlanPageHeader
       title={title}
       titleContent={titleContent}
+      centerContent={centerContent}
       sticky={sticky}
       tone="solid"
       titleSize="medium"

@@ -13,6 +13,7 @@ import {
 } from '../../../workspace/data/kanbanColorPalette.js'
 import AiComposerContextMenu from '../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.jsx'
 import GitHubContextBar from '../../../../shared/components/GitHubContextBar/GitHubContextBar.jsx'
+import ConversationToolbar from '../../components/ConversationToolbar/ConversationToolbar.jsx'
 import styles from './IntelligenceChat.module.css'
 
 function PlusIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
@@ -71,6 +72,12 @@ export default function IntelligenceChat() {
   const { aiChips = [], setAiChips = () => {} } = usePlans()
   const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
+  const chatScope = {
+    planId: location.state?.planId ?? null,
+    planName: location.state?.planName ?? null,
+    cardId: location.state?.cardId ?? null,
+    cardTitle: location.state?.cardTitle ?? null,
+  }
 
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState([])
@@ -341,7 +348,22 @@ export default function IntelligenceChat() {
   return (
     <AppThemeScope>
       <ProductAppShell styles={styles} contentClassName={styles.main} contentTag="main">
-        <WorkspaceHeader title="Intelligence" icon={<SparkleIcon />} compact sticky />
+        <WorkspaceHeader
+          title="Intelligence"
+          icon={<SparkleIcon />}
+          compact
+          sticky
+          centerContent={(
+            <ConversationToolbar
+              conversationTitle="Nova conversa"
+              planId={chatScope.planId}
+              planName={chatScope.planName}
+              cardId={chatScope.cardId}
+              cardTitle={chatScope.cardTitle}
+              activeConnectors={activeConnectors}
+            />
+          )}
+        />
 
         <div className={styles.chatArea}>
           {hasMessages ? (

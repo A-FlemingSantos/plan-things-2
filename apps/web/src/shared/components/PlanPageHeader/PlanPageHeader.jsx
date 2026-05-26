@@ -3,6 +3,7 @@ import styles from './PlanPageHeader.module.css'
 export default function PlanPageHeader({
   title,
   titleContent = null,
+  centerContent = null,
   meta = null,
   icon = null,
   titleAccessory = null,
@@ -15,6 +16,7 @@ export default function PlanPageHeader({
 }) {
   const headerClassName = [
     styles.header,
+    centerContent ? styles.headerWithCenter : '',
     sticky ? styles.sticky : '',
     tone === 'frosted' ? styles.toneFrosted : styles.toneSolid,
     hideOnMobile ? styles.hideOnMobile : '',
@@ -48,6 +50,8 @@ export default function PlanPageHeader({
           {meta ? <span className={styles.meta}>{meta}</span> : null}
         </div>
       </div>
+
+      {centerContent ? <div className={styles.center}>{centerContent}</div> : null}
 
       {actions ? <div className={styles.actions}>{actions}</div> : null}
     </header>

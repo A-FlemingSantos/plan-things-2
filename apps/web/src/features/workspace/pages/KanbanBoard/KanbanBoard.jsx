@@ -1356,6 +1356,12 @@ export default function KanbanBoard() {
     openIntelligence()
   }
 
+  useEffect(() => {
+    if (!location.state?.openIntelligence) return
+    openIntelligence()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.openIntelligence])
+
   const closeFloatingPanel = () => {
     closeInbox()
     closePlanner()

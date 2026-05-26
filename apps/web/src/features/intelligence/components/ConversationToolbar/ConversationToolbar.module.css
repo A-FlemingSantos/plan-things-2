@@ -1,0 +1,450 @@
+.toolbar {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+}
+
+.toolbarExpanded {
+  z-index: 2;
+}
+
+.toolbarTrigger {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.toolbarTrigger:hover {
+  background: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  border-color: color-mix(in srgb, var(--text-1) 14%, var(--border-1));
+}
+
+.toolbarTrigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.toolbarTrigger[aria-expanded='true'] {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+  background: var(--surface-1);
+}
+
+.toolbarTitle {
+  min-width: 0;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-regular);
+  flex-shrink: 1;
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-1);
+  flex-shrink: 0;
+}
+
+.toolbarScope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-shrink: 1;
+}
+
+.toolbarScopeKind {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-1) 6%, transparent);
+  color: var(--text-3);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.toolbarScopeLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+
+.toolbarIndicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.indicator {
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-1) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  color: var(--text-3);
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.chevron,
+.chevronOpen {
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: transform 180ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.toolbarPanel {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  right: 0;
+  max-height: min(60vh, 420px);
+  overflow: auto;
+  border: 1px solid var(--border-1);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  background: var(--surface-1);
+  scrollbar-width: thin;
+}
+
+.contextualActionRow {
+  padding: 8px 10px 0;
+}
+
+.contextualAction {
+  width: 100%;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--focus-ring) 24%, var(--border-1));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--focus-ring) 8%, transparent);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.contextualAction:hover {
+  background: color-mix(in srgb, var(--focus-ring) 12%, transparent);
+}
+
+.section {
+  border-top: 1px solid color-mix(in srgb, var(--border-1) 88%, transparent);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 4px;
+}
+
+.sectionToggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.sectionToggle:hover {
+  background: color-mix(in srgb, var(--text-1) 4%, transparent);
+}
+
+.sectionToggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.sectionToggleIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+
+.sectionToggleLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sectionChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.sectionChevron:hover {
+  background: color-mix(in srgb, var(--text-1) 4%, transparent);
+  color: var(--text-2);
+}
+
+.sectionChevron:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.sectionAction,
+.listItemAction {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.sectionAction:hover,
+.listItemAction:hover {
+  background: color-mix(in srgb, var(--text-1) 5%, transparent);
+  color: var(--text-1);
+  border-color: color-mix(in srgb, var(--border-1) 88%, transparent);
+}
+
+.sectionBody {
+  padding: 0 10px 10px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+
+.listItemLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-1);
+}
+
+.listItemActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.contextRows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contextRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+
+.contextRowKind {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.contextRowValue {
+  font-size: 12px;
+  color: var(--text-1);
+  text-align: right;
+}
+
+.filterField {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.filterInput {
+  width: 100%;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 12px;
+}
+
+.filterInput:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.changeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.statusBadge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.statusPending {
+  background: color-mix(in srgb, #d4a017 16%, transparent);
+  color: #9a7200;
+}
+
+.statusApplied {
+  background: color-mix(in srgb, #1f8f4e 16%, transparent);
+  color: #16703c;
+}
+
+.statusCreated {
+  background: color-mix(in srgb, var(--focus-ring) 14%, transparent);
+  color: var(--text-1);
+}
+
+.statusRejected {
+  background: color-mix(in srgb, var(--text-1) 8%, transparent);
+  color: var(--text-2);
+}
+
+.statusFailed {
+  background: color-mix(in srgb, #c0392b 14%, transparent);
+  color: #9f2f24;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    width: 100%;
+  }
+
+  .toolbarTrigger {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .toolbarTitle {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .toolbarDivider {
+    display: none;
+  }
+
+  .toolbarScope {
+    flex: 1 1 auto;
+  }
+
+  .toolbarIndicators {
+    margin-left: auto;
+  }
+
+  .toolbarPanel {
+    position: static;
+    max-height: none;
+    border-top: 1px solid var(--border-1);
+    border-radius: 0 0 8px 8px;
+    box-shadow: none;
+  }
+}
