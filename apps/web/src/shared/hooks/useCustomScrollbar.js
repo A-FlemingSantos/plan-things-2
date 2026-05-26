@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 
 const HIDDEN_THUMB_STATE = { visible: false, height: 0, top: 0 }
 const SCROLL_IDLE_MS = 120
@@ -82,7 +82,7 @@ export default function useCustomScrollbar({
     setIsDragging(true)
   }, [enabled, insetPx])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!enabled) {
       thumbMetricsRef.current = HIDDEN_THUMB_STATE
       setThumbVisible(false)
@@ -112,25 +112,35 @@ export default function useCustomScrollbar({
     }
 
     function updateThumbPositionFromScroll() {
-      const metrics = thumbMetricsRef.current
       const thumb = thumbRef.current
-      if (!metrics.visible || !thumb) return
+      if (!thumb) return
 
-      const { clientHeight, scrollHeight, scrollTop } = viewport
-      const scrollRange = scrollHeight - clientHeight
-      if (scrollRange <= 1) return
+      const nextMetrics = computeThumbMetrics(viewport, { insetPx, minThumbPx })
+      const metrics = thumbMetricsRef.current
 
-      const trackHeight = Math.max(0, clientHeight - insetPx * 2)
-      const maxTop = Math.max(0, trackHeight - metrics.height)
-      const top = insetPx + (scrollTop / scrollRange) * maxTop
+      if (
+        metrics.visible !== nextMetrics.visible
+        || metrics.height !== nextMetrics.height
+      ) {
+        commitMetrics(nextMetrics)
+        return
+      }
 
-      thumbMetricsRef.current = { ...metrics, top }
-      thumb.style.transform = `translate3d(0, ${top}px, 0)`
+      thumbMetricsRef.current = { ...metrics, top: nextMetrics.top }
+      thumb.style.transform = `translate3d(0, ${nextMetrics.top}px, 0)`
     }
 
     function updateThumbLayout() {
-      if (isScrollingRef.current) return
       commitMetrics(computeThumbMetrics(viewport, { insetPx, minThumbPx }))
+    }
+
+    function scheduleFrameUpdate(updateFn) {
+      if (frameId !== null) return
+
+      frameId = requestAnimationFrame(() => {
+        frameId = null
+        updateFn()
+      })
     }
 
     function scheduleLayoutUpdate() {
@@ -140,22 +150,13 @@ export default function useCustomScrollbar({
 
       layoutTimeoutRef.current = window.setTimeout(() => {
         layoutTimeoutRef.current = null
-        if (isScrollingRef.current) return
-
-        if (frameId !== null) {
-          cancelAnimationFrame(frameId)
-        }
-
-        frameId = requestAnimationFrame(() => {
-          frameId = null
-          updateThumbLayout()
-        })
+        scheduleFrameUpdate(updateThumbLayout)
       }, LAYOUT_DEBOUNCE_MS)
     }
 
     function markScrolling() {
       isScrollingRef.current = true
-      updateThumbPositionFromScroll()
+      scheduleFrameUpdate(updateThumbPositionFromScroll)
 
       if (scrollIdleTimeoutRef.current !== null) {
         window.clearTimeout(scrollIdleTimeoutRef.current)
