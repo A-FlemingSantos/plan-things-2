@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
-import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import {
@@ -52,8 +52,6 @@ const COVER_THEMES = [
 ]
 
 
-const WORKSPACE_SCROLLBAR_INSET_PX = 0
-const WORKSPACE_SCROLLBAR_MIN_THUMB_PX = 18
 
 function resolveCoverThemeClass(styles, coverThemeId) {
   if (!coverThemeId) return ''
@@ -1123,11 +1121,6 @@ export default function Workspace() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.tag.toLowerCase().includes(search.toLowerCase())
   )
-  const workspaceScrollbar = useCustomScrollbar({
-    refreshKey: `workspace:${view}:${search}:${filtered.length}:${showIntelligenceSection ? 'intelligence' : 'plans'}:${isLoading ? 'loading' : 'ready'}`,
-    insetPx: WORKSPACE_SCROLLBAR_INSET_PX,
-    minThumbPx: WORKSPACE_SCROLLBAR_MIN_THUMB_PX,
-  })
   const backgroundPickerPlan = backgroundPicker?.planId
     ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
     : null
@@ -1432,7 +1425,11 @@ export default function Workspace() {
         contentClassName={styles.main}
         contentTag="main"
       >
-        <div ref={workspaceScrollbar.viewportRef} className={styles.mainScrollViewport}>
+        <CustomScrollArea
+          className={styles.mainScrollArea}
+          viewportClassName={styles.mainScrollViewport}
+          refreshKey={`workspace:${view}:${search}:${filtered.length}:${showIntelligenceSection ? 'intelligence' : 'plans'}:${isLoading ? 'loading' : 'ready'}`}
+        >
           <WorkspaceHeader title="Início" compact sticky className={styles.workspaceTopHeaderGlass} />
 
           {/* Content */}
@@ -1464,16 +1461,7 @@ export default function Workspace() {
               </>
             )}
           </div>
-        </div>
-        {workspaceScrollbar.thumbState.visible ? (
-          <span className={styles.workspacePanelScrollbar} aria-hidden="true">
-            <span
-              ref={workspaceScrollbar.thumbRef}
-              className={`${styles.workspacePanelScrollbarThumb} ${workspaceScrollbar.isDragging ? styles.workspacePanelScrollbarThumbDragging : ''}`}
-              onPointerDown={workspaceScrollbar.handleThumbPointerDown}
-            />
-          </span>
-        ) : null}
+        </CustomScrollArea>
       </ProductAppShell>
 
       {/* ════════════ NEW PLAN POPOVER ════════════ */}

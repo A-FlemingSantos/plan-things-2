@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const HIDDEN_THUMB_STATE = { visible: false, height: 0, top: 0 }
+const SCROLL_IDLE_MS = 120
+const LAYOUT_DEBOUNCE_MS = 32
 
 function computeThumbMetrics(viewport, { insetPx, minThumbPx }) {
   const { clientHeight, scrollHeight, scrollTop } = viewport
@@ -21,6 +23,19 @@ function computeThumbMetrics(viewport, { insetPx, minThumbPx }) {
   return { visible: true, height, top }
 }
 
+function applyThumbStyles(thumb, metrics) {
+  if (!thumb) return
+
+  if (!metrics.visible) {
+    thumb.style.height = '0px'
+    thumb.style.transform = 'translate3d(0, 0, 0)'
+    return
+  }
+
+  thumb.style.height = `${metrics.height}px`
+  thumb.style.transform = `translate3d(0, ${metrics.top}px, 0)`
+}
+
 export default function useCustomScrollbar({
   enabled = true,
   refreshKey = 'default',
@@ -30,17 +45,12 @@ export default function useCustomScrollbar({
   const viewportRef = useRef(null)
   const thumbRef = useRef(null)
   const thumbMetricsRef = useRef(HIDDEN_THUMB_STATE)
-  const [thumbState, setThumbState] = useState(HIDDEN_THUMB_STATE)
+  const isScrollingRef = useRef(false)
+  const scrollIdleTimeoutRef = useRef(null)
+  const layoutTimeoutRef = useRef(null)
+  const [thumbVisible, setThumbVisible] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const dragStateRef = useRef(null)
-
-  const applyThumbStyles = useCallback((metrics) => {
-    const thumb = thumbRef.current
-    if (!thumb || !metrics.visible) return
-
-    thumb.style.height = `${metrics.height}px`
-    thumb.style.transform = `translate3d(0, ${metrics.top}px, 0)`
-  }, [])
 
   const stopDragging = useCallback(() => {
     dragStateRef.current = null
@@ -72,19 +82,11 @@ export default function useCustomScrollbar({
     setIsDragging(true)
   }, [enabled, insetPx])
 
-  useLayoutEffect(() => {
-    if (!thumbState.visible) return
-    applyThumbStyles(thumbMetricsRef.current)
-  }, [applyThumbStyles, thumbState.height, thumbState.visible])
-
   useEffect(() => {
     if (!enabled) {
       thumbMetricsRef.current = HIDDEN_THUMB_STATE
-      setThumbState((current) => (
-        current.visible || current.height || current.top
-          ? HIDDEN_THUMB_STATE
-          : current
-      ))
+      setThumbVisible(false)
+      applyThumbStyles(thumbRef.current, HIDDEN_THUMB_STATE)
       stopDragging()
       return undefined
     }
@@ -94,20 +96,18 @@ export default function useCustomScrollbar({
 
     let frameId = null
     let dragFrameId = null
-    const resizeObserver = typeof ResizeObserver === 'function'
-      ? new ResizeObserver(() => scheduleFullUpdate())
-      : null
+
+    function setVisible(nextVisible) {
+      setThumbVisible((current) => (current === nextVisible ? current : nextVisible))
+    }
 
     function commitMetrics(nextMetrics) {
       const previous = thumbMetricsRef.current
       thumbMetricsRef.current = nextMetrics
-      applyThumbStyles(nextMetrics)
+      applyThumbStyles(thumbRef.current, nextMetrics)
 
-      if (
-        previous.visible !== nextMetrics.visible
-        || previous.height !== nextMetrics.height
-      ) {
-        setThumbState(nextMetrics)
+      if (previous.visible !== nextMetrics.visible) {
+        setVisible(nextMetrics.visible)
       }
     }
 
@@ -118,10 +118,7 @@ export default function useCustomScrollbar({
 
       const { clientHeight, scrollHeight, scrollTop } = viewport
       const scrollRange = scrollHeight - clientHeight
-      if (scrollRange <= 0) {
-        scheduleFullUpdate()
-        return
-      }
+      if (scrollRange <= 1) return
 
       const trackHeight = Math.max(0, clientHeight - insetPx * 2)
       const maxTop = Math.max(0, trackHeight - metrics.height)
@@ -131,19 +128,48 @@ export default function useCustomScrollbar({
       thumb.style.transform = `translate3d(0, ${top}px, 0)`
     }
 
-    function updateThumb() {
+    function updateThumbLayout() {
+      if (isScrollingRef.current) return
       commitMetrics(computeThumbMetrics(viewport, { insetPx, minThumbPx }))
     }
 
-    function scheduleFullUpdate() {
-      if (frameId !== null) {
-        cancelAnimationFrame(frameId)
+    function scheduleLayoutUpdate() {
+      if (layoutTimeoutRef.current !== null) {
+        window.clearTimeout(layoutTimeoutRef.current)
       }
 
-      frameId = requestAnimationFrame(() => {
-        frameId = null
-        updateThumb()
-      })
+      layoutTimeoutRef.current = window.setTimeout(() => {
+        layoutTimeoutRef.current = null
+        if (isScrollingRef.current) return
+
+        if (frameId !== null) {
+          cancelAnimationFrame(frameId)
+        }
+
+        frameId = requestAnimationFrame(() => {
+          frameId = null
+          updateThumbLayout()
+        })
+      }, LAYOUT_DEBOUNCE_MS)
+    }
+
+    function markScrolling() {
+      isScrollingRef.current = true
+      updateThumbPositionFromScroll()
+
+      if (scrollIdleTimeoutRef.current !== null) {
+        window.clearTimeout(scrollIdleTimeoutRef.current)
+      }
+
+      scrollIdleTimeoutRef.current = window.setTimeout(() => {
+        scrollIdleTimeoutRef.current = null
+        isScrollingRef.current = false
+        updateThumbLayout()
+      }, SCROLL_IDLE_MS)
+    }
+
+    function handleScroll() {
+      markScrolling()
     }
 
     function handlePointerMove(event) {
@@ -168,34 +194,61 @@ export default function useCustomScrollbar({
       stopDragging()
     }
 
-    scheduleFullUpdate()
-    viewport.addEventListener('scroll', updateThumbPositionFromScroll, { passive: true })
-    window.addEventListener('resize', scheduleFullUpdate)
+    const resizeObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => scheduleLayoutUpdate())
+      : null
+
+    const mutationObserver = typeof MutationObserver === 'function'
+      ? new MutationObserver(() => scheduleLayoutUpdate())
+      : null
+
+    updateThumbLayout()
+    viewport.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', scheduleLayoutUpdate)
     window.addEventListener('pointermove', handlePointerMove, { passive: false })
     window.addEventListener('pointerup', handlePointerUp)
     window.addEventListener('pointercancel', handlePointerUp)
 
-    if (resizeObserver) {
-      resizeObserver.observe(viewport)
-      Array.from(viewport.children).forEach((child) => resizeObserver.observe(child))
-    }
+    resizeObserver?.observe(viewport)
+    mutationObserver?.observe(viewport, {
+      childList: true,
+      subtree: true,
+    })
 
     return () => {
-      viewport.removeEventListener('scroll', updateThumbPositionFromScroll)
-      window.removeEventListener('resize', scheduleFullUpdate)
+      viewport.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', scheduleLayoutUpdate)
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
       window.removeEventListener('pointercancel', handlePointerUp)
       resizeObserver?.disconnect()
+      mutationObserver?.disconnect()
+
       if (frameId !== null) {
         cancelAnimationFrame(frameId)
       }
       if (dragFrameId !== null) {
         cancelAnimationFrame(dragFrameId)
       }
+      if (scrollIdleTimeoutRef.current !== null) {
+        window.clearTimeout(scrollIdleTimeoutRef.current)
+        scrollIdleTimeoutRef.current = null
+      }
+      if (layoutTimeoutRef.current !== null) {
+        window.clearTimeout(layoutTimeoutRef.current)
+        layoutTimeoutRef.current = null
+      }
+
+      isScrollingRef.current = false
       stopDragging()
     }
-  }, [applyThumbStyles, enabled, insetPx, minThumbPx, refreshKey, stopDragging])
+  }, [enabled, insetPx, minThumbPx, refreshKey, stopDragging])
 
-  return { viewportRef, thumbRef, thumbState, isDragging, handleThumbPointerDown }
+  return {
+    viewportRef,
+    thumbRef,
+    thumbVisible,
+    isDragging,
+    handleThumbPointerDown,
+  }
 }

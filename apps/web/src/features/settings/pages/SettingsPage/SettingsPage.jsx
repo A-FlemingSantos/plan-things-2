@@ -9,7 +9,7 @@ import {
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
-import useCustomScrollbar from '../../../../shared/hooks/useCustomScrollbar.js'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { ROUTES, toRouteString } from '../../../../shared/config/routes.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
@@ -86,8 +86,6 @@ const AVATAR_ACCEPT = 'image/png,image/jpeg,image/webp'
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 const DELETE_CONFIRMATION_PHRASE = 'EXCLUIR MINHA CONTA'
 const MODAL_CLOSE_DURATION_MS = 220
-const PANEL_SCROLLBAR_INSET_PX = 0
-const PANEL_SCROLLBAR_MIN_THUMB_PX = 18
 
 function validateAvatarFile(file) {
   if (!file) return 'Selecione uma imagem.'
@@ -393,18 +391,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const [deleteState, setDeleteState] = useState('idle')
   const [deleteFeedback, setDeleteFeedback] = useState('')
   const sectionButtonRefs = useRef(new Map())
-  const navScrollbar = useCustomScrollbar({
-    enabled: modal,
-    refreshKey: `nav:${activeSection}:${isMobile ? 'mobile' : 'desktop'}`,
-    insetPx: PANEL_SCROLLBAR_INSET_PX,
-    minThumbPx: PANEL_SCROLLBAR_MIN_THUMB_PX,
-  })
-  const contentScrollbar = useCustomScrollbar({
-    enabled: modal,
-    refreshKey: `content:${activeSection}:${deleteDialogOpen ? 'dialog-open' : 'dialog-closed'}:${isMobile ? 'mobile' : 'desktop'}`,
-    insetPx: PANEL_SCROLLBAR_INSET_PX,
-    minThumbPx: PANEL_SCROLLBAR_MIN_THUMB_PX,
-  })
 
   const workspaceRequestRef = useRef(0)
   const language = generalPreferences.language
@@ -2258,66 +2244,74 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     />
   ) : null
 
+  const settingsNavButtons = SECTIONS.map(({ id, label, Icon }) => (
+    <button
+      key={id}
+      type="button"
+      ref={(node) => {
+        if (node) {
+          sectionButtonRefs.current.set(id, node)
+        } else {
+          sectionButtonRefs.current.delete(id)
+        }
+      }}
+      className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
+      onClick={() => handleSectionChange(id)}
+      aria-current={activeSection === id ? 'page' : undefined}
+    >
+      <span className={styles.settingsNavIcon}><Icon /></span>
+      <span className={styles.settingsNavLabel}>{label}</span>
+    </button>
+  ))
+
+  const settingsContent = (
+    <>
+      <div className={styles.settingsContentHeader}>
+        <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
+      </div>
+      <div className={styles.settingsContentBody}>
+        {renderContent()}
+      </div>
+    </>
+  )
+
   const settingsLayout = (
     <div className={`${styles.settingsLayout} ${modal ? styles.settingsLayoutModal : ''}`}>
       <div className={modal ? styles.settingsNavPane : undefined}>
-        <nav
-          ref={modal ? navScrollbar.viewportRef : null}
-          className={`${styles.settingsNav} ${modal ? styles.settingsNavModal : ''}`}
-          aria-label="Seções de configurações"
-        >
-          {SECTIONS.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              ref={(node) => {
-                if (node) {
-                  sectionButtonRefs.current.set(id, node)
-                } else {
-                  sectionButtonRefs.current.delete(id)
-                }
-              }}
-              className={`${styles.settingsNavItem} ${activeSection === id ? styles.settingsNavItemActive : ''}`}
-              onClick={() => handleSectionChange(id)}
-              aria-current={activeSection === id ? 'page' : undefined}
-            >
-              <span className={styles.settingsNavIcon}><Icon /></span>
-              <span className={styles.settingsNavLabel}>{label}</span>
-            </button>
-          ))}
-        </nav>
-        {modal && navScrollbar.thumbState.visible ? (
-          <span className={styles.settingsPanelScrollbar} aria-hidden="true">
-            <span
-              ref={navScrollbar.thumbRef}
-              className={`${styles.settingsPanelScrollbarThumb} ${navScrollbar.isDragging ? styles.settingsPanelScrollbarThumbDragging : ''}`}
-              onPointerDown={navScrollbar.handleThumbPointerDown}
-            />
-          </span>
-        ) : null}
+        {modal ? (
+          <CustomScrollArea
+            className={styles.settingsNavScrollArea}
+            viewportTag="nav"
+            viewportClassName={`${styles.settingsNav} ${styles.settingsNavModal}`}
+            viewportProps={{ 'aria-label': 'Seções de configurações' }}
+            enabled
+            refreshKey={`nav:${activeSection}:${isMobile ? 'mobile' : 'desktop'}`}
+          >
+            {settingsNavButtons}
+          </CustomScrollArea>
+        ) : (
+          <nav className={styles.settingsNav} aria-label="Seções de configurações">
+            {settingsNavButtons}
+          </nav>
+        )}
       </div>
 
       <div className={modal ? styles.settingsContentPane : undefined}>
-        <main
-          ref={modal ? contentScrollbar.viewportRef : null}
-          className={`${styles.settingsContent} ${modal ? styles.settingsContentModal : ''}`}
-        >
-          <div className={styles.settingsContentHeader}>
-            <h2 className={styles.settingsContentTitle}>{activeLabel}</h2>
-          </div>
-          <div className={styles.settingsContentBody}>
-            {renderContent()}
-          </div>
-        </main>
-        {modal && contentScrollbar.thumbState.visible ? (
-          <span className={styles.settingsPanelScrollbar} aria-hidden="true">
-            <span
-              ref={contentScrollbar.thumbRef}
-              className={`${styles.settingsPanelScrollbarThumb} ${contentScrollbar.isDragging ? styles.settingsPanelScrollbarThumbDragging : ''}`}
-              onPointerDown={contentScrollbar.handleThumbPointerDown}
-            />
-          </span>
-        ) : null}
+        {modal ? (
+          <CustomScrollArea
+            className={styles.settingsContentScrollArea}
+            viewportTag="main"
+            viewportClassName={`${styles.settingsContent} ${styles.settingsContentModal}`}
+            enabled
+            refreshKey={`content:${activeSection}:${deleteDialogOpen ? 'dialog-open' : 'dialog-closed'}:${isMobile ? 'mobile' : 'desktop'}`}
+          >
+            {settingsContent}
+          </CustomScrollArea>
+        ) : (
+          <main className={styles.settingsContent}>
+            {settingsContent}
+          </main>
+        )}
       </div>
     </div>
   )

@@ -47,9 +47,6 @@
 
 .settingsModalCard {
   --settings-neutral-accent: var(--color-black);
-  --settings-panel-scrollbar-size: 2px;
-  --settings-panel-scrollbar-thumb: #000000;
-  --settings-panel-scrollbar-thumb-hover: #000000;
   width: min(1120px, calc(100vw - 56px));
   height: min(780px, calc(100vh - 56px));
   border-radius: var(--radius-md);
@@ -65,8 +62,6 @@
 
 [data-theme='dark'] .settingsModalCard {
   --settings-neutral-accent: var(--color-white);
-  --settings-panel-scrollbar-thumb: #ffffff;
-  --settings-panel-scrollbar-thumb-hover: #ffffff;
 }
 
 .settingsOverlayOut {
@@ -168,6 +163,11 @@
   overflow: hidden;
 }
 
+.settingsNavScrollArea,
+.settingsContentScrollArea {
+  height: 100%;
+}
+
 /* ── Left nav ── */
 .settingsNav {
   border-right: 1px solid var(--border-1);
@@ -189,14 +189,10 @@
   top: auto;
   height: 100%;
   max-height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
-.settingsNavModal::-webkit-scrollbar,
-.settingsContentModal::-webkit-scrollbar {
-  display: none;
+.settingsContentModal {
+  height: 100%;
 }
 
 .settingsNavItem {
@@ -241,47 +237,6 @@
 .settingsContent {
   padding: 28px 40px 48px;
   min-width: 0;
-}
-
-.settingsContentModal {
-  height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.settingsPanelScrollbar {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 12px;
-  display: flex;
-  justify-content: flex-end;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.settingsPanelScrollbarThumb {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: var(--settings-panel-scrollbar-size);
-  min-height: 18px;
-  background: var(--settings-panel-scrollbar-thumb);
-  border-radius: 0;
-  opacity: 1;
-  cursor: ns-resize;
-  pointer-events: auto;
-  touch-action: none;
-  transition: width 140ms ease;
-  will-change: transform;
-}
-
-.settingsPanelScrollbar:hover .settingsPanelScrollbarThumb,
-.settingsPanelScrollbarThumb:hover,
-.settingsPanelScrollbarThumbDragging {
-  width: 6px;
 }
 
 .settingsContentHeader {
