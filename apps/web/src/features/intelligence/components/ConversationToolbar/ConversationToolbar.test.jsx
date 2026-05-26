@@ -38,6 +38,7 @@ describe('ConversationToolbar', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
       expect(screen.getByText('Setup UI system')).toBeInTheDocument()
       expect(screen.getByText('Sprint 3')).toBeInTheDocument()
+      expect(screen.getByText('3 itens')).toBeInTheDocument()
     })
 
     it('shows workspace scope when no plan or card is provided', () => {
@@ -58,10 +59,11 @@ describe('ConversationToolbar', () => {
       expect(screen.getByText('Login UI')).toBeInTheDocument()
     })
 
-    it('shows active connector count in indicators', () => {
-      renderToolbar({ activeConnectors: ['github', 'slack'] })
+    it('shows loaded item count in indicators', () => {
+      renderToolbar()
 
-      expect(screen.getByText('2')).toBeInTheDocument()
+      expect(screen.getByText('3 itens')).toBeInTheDocument()
+      expect(screen.queryByText('5')).not.toBeInTheDocument()
     })
   })
 

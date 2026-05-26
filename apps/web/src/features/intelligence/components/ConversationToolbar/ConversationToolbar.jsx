@@ -124,9 +124,7 @@ export default function ConversationToolbar({
 
   const scopeLabel = resolveScopeLabel({ planId, planName, cardId, cardTitle })
   const scopeKind = resolveScopeKind({ planId, cardId })
-  const connectorCount = activeConnectors.length
   const loadedItemCount = MOCK_LOADED_ITEMS.length
-  const changeCount = MOCK_CHANGES.length
 
   const filteredItems = useMemo(() => {
     const query = filesFilter.trim().toLowerCase()
@@ -213,11 +211,7 @@ export default function ConversationToolbar({
           <span className={styles.toolbarScopeLabel}>{scopeLabel}</span>
         </span>
         <span className={styles.toolbarIndicators} aria-label="Indicadores da conversa">
-          {connectorCount > 0 ? (
-            <span className={styles.indicator} title="Conectores ativos">{connectorCount}</span>
-          ) : null}
           <span className={styles.indicator} title="Itens carregados">{loadedItemCount} itens</span>
-          <span className={styles.indicator} title="Alterações recentes">{changeCount}</span>
         </span>
         <ChevronIcon open={isExpanded} />
       </button>
