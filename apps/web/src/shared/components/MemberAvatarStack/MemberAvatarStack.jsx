@@ -11,10 +11,15 @@ export default function MemberAvatarStack({
   membersTitle = 'Ver membros',
   MembersIcon = null,
   className = '',
+  size = 'default',
   isLoading = false,
   placeholderCount = 0,
 }) {
-  const wrapperClassName = [styles.stack, className].filter(Boolean).join(' ')
+  const wrapperClassName = [
+    styles.stack,
+    size === 'compact' ? styles.stackCompact : '',
+    className,
+  ].filter(Boolean).join(' ')
   const visibleMembers = Array.isArray(members) ? members : []
   const normalizedPlaceholderCount = Math.max(0, Math.min(
     Number.isFinite(placeholderCount) ? placeholderCount : 0,

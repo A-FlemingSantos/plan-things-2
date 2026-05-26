@@ -6,6 +6,10 @@ import ConversationToolbar from './ConversationToolbar.jsx'
 
 const navigateMock = vi.hoisted(() => vi.fn())
 
+vi.mock('../../../../features/auth/context/AuthContext.jsx', () => ({
+  useAuth: () => ({ accessToken: null }),
+}))
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
@@ -64,6 +68,15 @@ describe('ConversationToolbar', () => {
 
       expect(screen.getByText('3 itens')).toBeInTheDocument()
       expect(screen.queryByText('5')).not.toBeInTheDocument()
+    })
+
+    it('shows mock participant avatars in the toolbar', () => {
+      renderToolbar()
+
+      expect(screen.getByTitle('AS')).toBeInTheDocument()
+      expect(screen.getByTitle('MK')).toBeInTheDocument()
+      expect(screen.getByTitle('TK')).toBeInTheDocument()
+      expect(screen.getByTitle('SR')).toBeInTheDocument()
     })
   })
 

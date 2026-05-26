@@ -91,6 +91,31 @@
   background: var(--hover);
 }
 
+.stackCompact .avatar,
+.stackCompact .addButton,
+.stackCompact .membersButton {
+  width: 22px;
+  height: 22px;
+}
+
+.stackCompact .avatar {
+  border-width: 1.5px;
+  font-size: 0.55rem;
+}
+
+.stackCompact .avatar:not(:first-child) {
+  margin-left: -5px;
+}
+
+.stackCompact .avatar:hover {
+  transform: translateY(-1px);
+}
+
+.stackCompact .addButton,
+.stackCompact .membersButton {
+  margin-left: 6px;
+}
+
 @media (max-width: 768px) {
   .avatar,
   .addButton,
@@ -106,5 +131,21 @@
   .addButton,
   .membersButton {
     margin-left: 6px;
+  }
+
+  .stackCompact .avatar,
+  .stackCompact .addButton,
+  .stackCompact .membersButton {
+    width: 20px;
+    height: 20px;
+  }
+
+  .stackCompact .avatar:not(:first-child) {
+    margin-left: -4px;
+  }
+
+  .stackCompact .addButton,
+  .stackCompact .membersButton {
+    margin-left: 5px;
   }
 }
