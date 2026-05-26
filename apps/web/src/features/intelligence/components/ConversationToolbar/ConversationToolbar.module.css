@@ -161,13 +161,30 @@
 }
 
 .sectionHeader {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 6px 4px 4px;
+  padding: 4px 10px;
+  isolation: isolate;
+}
+
+.sectionHeader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background var(--transition-fast);
+  z-index: 0;
+}
+
+.sectionHeader:hover::before {
+  background: color-mix(in srgb, var(--text-1) 5%, transparent);
 }
 
 .sectionToggle {
+  position: relative;
+  z-index: 1;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 30px;
@@ -183,11 +200,6 @@
   font-size: 12px;
   text-align: left;
   cursor: pointer;
-  transition: background var(--transition-fast);
-}
-
-.sectionToggle:hover {
-  background: color-mix(in srgb, var(--text-1) 4%, transparent);
 }
 
 .sectionToggle:focus-visible {
@@ -211,6 +223,8 @@
 }
 
 .sectionActions {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -218,6 +232,8 @@
 }
 
 .sectionChevron {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -230,11 +246,10 @@
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
-.sectionChevron:hover {
-  background: color-mix(in srgb, var(--text-1) 4%, transparent);
+.sectionHeader:hover .sectionChevron {
   color: var(--text-2);
 }
 
@@ -245,6 +260,8 @@
 
 .sectionAction,
 .listItemAction {
+  position: relative;
+  z-index: 1;
   min-height: 26px;
   padding: 0 8px;
   border: 1px solid transparent;
@@ -262,7 +279,7 @@
 
 .sectionAction:hover,
 .listItemAction:hover {
-  background: color-mix(in srgb, var(--text-1) 5%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
   color: var(--text-1);
   border-color: color-mix(in srgb, var(--border-1) 88%, transparent);
 }
