@@ -52,7 +52,24 @@ vi.mock('../../../../shared/components/GitHubContextBar/GitHubContextBar.jsx', (
 
 vi.mock('framer-motion', () => ({
   motion: {
-    form: ({ children, ...props }) => <form {...props}>{children}</form>,
+    form: ({
+      animate,
+      children,
+      drag,
+      dragConstraints,
+      dragElastic,
+      exit,
+      initial,
+      layout,
+      layoutId,
+      transition,
+      variants,
+      whileFocus,
+      whileHover,
+      whileInView,
+      whileTap,
+      ...props
+    }) => <form {...props}>{children}</form>,
   },
 }))
 

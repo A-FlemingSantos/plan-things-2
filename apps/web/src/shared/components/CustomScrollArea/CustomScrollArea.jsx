@@ -35,9 +35,9 @@ function CustomScrollArea({
   return (
     <div className={rootClassName}>
       <ViewportTag
+        {...viewportRest}
         ref={scrollbar.viewportRef}
         className={viewportCombinedClassName}
-        {...viewportRest}
       >
         {children}
       </ViewportTag>
