@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SidebarAccountMenu from './SidebarAccountMenu.jsx'
 
@@ -68,9 +68,9 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} collapsed />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     const trigger = screen.getByRole('button', { name: /arthur santos/i })
@@ -103,9 +103,9 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} collapsed />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     const trigger = screen.getByRole('button', { name: /arthur santos/i })
@@ -141,9 +141,9 @@ describe('SidebarAccountMenu', () => {
 
     const { container } = render(
       <div data-app-theme-scope data-theme="dark">
-        <MemoryRouter>
+        <TestMemoryRouter>
           <SidebarAccountMenu styles={styles} />
-        </MemoryRouter>
+        </TestMemoryRouter>
       </div>,
     )
 
@@ -192,7 +192,7 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu
           styles={styles}
           collapsed
@@ -203,7 +203,7 @@ describe('SidebarAccountMenu', () => {
             </button>
           )}
         />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     const trigger = screen.getByRole('button', { name: 'Abrir menu da conta' })
@@ -234,9 +234,9 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
@@ -253,9 +253,9 @@ describe('SidebarAccountMenu', () => {
 
     const { container } = render(
       <div data-app-theme-scope data-theme="dark">
-        <MemoryRouter>
+        <TestMemoryRouter>
           <SidebarAccountMenu styles={styles} />
-        </MemoryRouter>
+        </TestMemoryRouter>
       </div>,
     )
 
@@ -292,9 +292,9 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
@@ -345,9 +345,9 @@ describe('SidebarAccountMenu', () => {
     })
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
@@ -363,9 +363,9 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
@@ -382,9 +382,9 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
@@ -397,9 +397,9 @@ describe('SidebarAccountMenu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter>
+      <TestMemoryRouter>
         <SidebarAccountMenu styles={styles} />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))

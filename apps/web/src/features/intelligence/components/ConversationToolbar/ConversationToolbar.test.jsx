@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ConversationToolbar from './ConversationToolbar.jsx'
 
@@ -20,9 +20,9 @@ vi.mock('react-router-dom', async () => {
 
 const renderToolbar = (props = {}) =>
   render(
-    <MemoryRouter>
+    <TestMemoryRouter>
       <ConversationToolbar {...props} />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 
 describe('ConversationToolbar', () => {

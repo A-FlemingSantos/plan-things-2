@@ -1,7 +1,8 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDeferred } from '../../../../test/deferred.js'
 import SettingsPage from './SettingsPage.jsx'
 
 const authMock = vi.hoisted(() => ({
@@ -125,9 +126,10 @@ describe('SettingsPage Gmail integration', () => {
 
   it('starts Gmail authorization from the Gmail card', async () => {
     mockSettingsSnapshot({ connected: false })
+    const gmailStart = createDeferred()
     apiMock.apiRequest.mockImplementation((path, options = {}) => {
       if (path === '/api/settings/integrations/gmail/start' && options.method === 'POST') {
-        return new Promise(() => {})
+        return gmailStart.promise
       }
       return Promise.resolve(settingsSnapshot({ connected: false }))
     })
@@ -145,13 +147,19 @@ describe('SettingsPage Gmail integration', () => {
       })
     })
     expect(within(gmailCard).getByRole('button', { name: 'Aguarde' })).toBeDisabled()
+
+    gmailStart.reject(new Error('Test cancelled pending Gmail start'))
+    await waitFor(() => {
+      expect(within(gmailCard).getByRole('button', { name: 'Conectar' })).toBeEnabled()
+    })
   })
 
   it('includes the original background route when starting Gmail from the settings modal', async () => {
     mockSettingsSnapshot({ connected: false })
+    const gmailStart = createDeferred()
     apiMock.apiRequest.mockImplementation((path, options = {}) => {
       if (path === '/api/settings/integrations/gmail/start' && options.method === 'POST') {
-        return new Promise(() => {})
+        return gmailStart.promise
       }
       return Promise.resolve(settingsSnapshot({ connected: false }))
     })
@@ -174,6 +182,11 @@ describe('SettingsPage Gmail integration', () => {
           redirectTo: '/workspace',
         },
       })
+    })
+
+    gmailStart.reject(new Error('Test cancelled pending Gmail start'))
+    await waitFor(() => {
+      expect(within(gmailCard).getByRole('button', { name: 'Conectar' })).toBeEnabled()
     })
   })
 
@@ -477,15 +490,15 @@ async function findIntegrationCard(name) {
 
 function renderSettings(path) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <TestMemoryRouter initialEntries={[path]}>
       <SettingsPage />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }
 
 function renderModalSettings(path, backgroundLocation) {
   return render(
-    <MemoryRouter
+    <TestMemoryRouter
       initialEntries={[
         {
           pathname: '/settings',
@@ -497,6 +510,6 @@ function renderModalSettings(path, backgroundLocation) {
       ]}
     >
       <SettingsPage modal backgroundLocation={backgroundLocation} />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }

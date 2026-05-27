@@ -4,6 +4,7 @@ import App from '../App.jsx'
 import { AuthProvider } from '../features/auth/context/AuthContext.jsx'
 import { PreferencesProvider } from '../features/preferences/context/PreferencesContext.jsx'
 import { PlansProvider } from '../features/workspace/context/PlansContext.jsx'
+import { TEST_ROUTER_FUTURE_FLAGS } from './testRouter.jsx'
 
 function buildDemoKey(value = '') {
   const normalized = String(value)
@@ -35,8 +36,6 @@ export function createDemoSession(overrides = {}) {
   return {
     accessToken: overrides.accessToken ?? `demo-login-token-${demoKey}`,
     demo: true,
-    user,
-    workspace,
     ...overrides,
     user,
     workspace,
@@ -69,8 +68,6 @@ export function createAuthenticatedSession(overrides = {}) {
   return {
     accessToken: overrides.accessToken ?? 'real-access-token',
     demo: false,
-    user,
-    workspace,
     ...overrides,
     user,
     workspace,
@@ -104,7 +101,7 @@ export function renderApp(route = '/', { session = null } = {}) {
   seedSession(session)
 
   return render(
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter future={TEST_ROUTER_FUTURE_FLAGS}>
       <AuthProvider>
         <PreferencesProvider>
           <PlansProvider>

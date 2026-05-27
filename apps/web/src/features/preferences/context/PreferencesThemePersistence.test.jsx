@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../test/testRouter.jsx'
 import { describe, expect, it, vi } from 'vitest'
 import { PreferencesProvider, usePreferences } from './PreferencesContext.jsx'
 
@@ -74,11 +74,11 @@ describe('PreferencesProvider theme persistence', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter initialEntries={['/workspace']}>
+      <TestMemoryRouter initialEntries={['/workspace']}>
         <PreferencesProvider>
           <Harness />
         </PreferencesProvider>
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     expect(screen.getByTestId('theme')).toHaveTextContent('system')

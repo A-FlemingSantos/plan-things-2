@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import IntelligenceChat from './IntelligenceChat.jsx'
 
@@ -75,9 +75,9 @@ vi.mock('framer-motion', () => ({
 
 function renderChat(route = { pathname: '/workspace/chat' }) {
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <TestMemoryRouter initialEntries={[route]}>
       <IntelligenceChat />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }
 

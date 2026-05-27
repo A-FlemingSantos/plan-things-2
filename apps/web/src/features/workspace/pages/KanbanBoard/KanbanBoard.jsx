@@ -1804,6 +1804,9 @@ export default function KanbanBoard() {
     if (plannerCloseTimerRef.current) {
       clearTimeout(plannerCloseTimerRef.current)
     }
+    if (intelligenceCloseTimerRef.current) {
+      clearTimeout(intelligenceCloseTimerRef.current)
+    }
   }, [])
 
   useEffect(() => {

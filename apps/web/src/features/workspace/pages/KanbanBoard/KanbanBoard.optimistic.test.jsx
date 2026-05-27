@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KanbanBoard from './KanbanBoard.jsx'
 
@@ -375,8 +375,8 @@ describe('KanbanBoard optimistic feedback', () => {
 
 function renderBoard() {
   return render(
-    <MemoryRouter initialEntries={['/workspace/plan-1/board']}>
+    <TestMemoryRouter initialEntries={['/workspace/plan-1/board']}>
       <KanbanBoard />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }

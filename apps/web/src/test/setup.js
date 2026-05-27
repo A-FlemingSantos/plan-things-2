@@ -1,7 +1,9 @@
-import '@testing-library/jest-dom/vitest'
+import * as matchers from '@testing-library/jest-dom/matchers'
 
-import { afterEach, beforeAll, vi } from 'vitest'
+import { afterEach, beforeAll, expect, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
+
+expect.extend(matchers)
 
 vi.mock('framer-motion', async () => {
   const React = await import('react')
@@ -68,12 +70,19 @@ function installDefaultMatchMedia() {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
+
+  if (typeof window === 'undefined') return
+
   cleanup()
   window.localStorage.clear()
+  window.sessionStorage.clear()
   installDefaultMatchMedia()
 })
 
 beforeAll(() => {
+  if (typeof window === 'undefined') return
+
   installDefaultMatchMedia()
 
   if (!window.ResizeObserver) {

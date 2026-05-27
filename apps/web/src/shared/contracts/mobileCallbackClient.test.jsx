@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
 const { MOBILE_NATIVE_CLIENT, MOBILE_WEB_CLIENT, resolveMobileCallbackClient } = await import('../../../../mobile/src/services/mobileClient.js')

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
 const { resolveExpoApiBaseUrl, resolveMobileApiBaseUrl } = await import('../../../../mobile/src/services/apiBaseUrl.js')

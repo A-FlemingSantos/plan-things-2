@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KanbanBoard from './KanbanBoard.jsx'
 
@@ -171,9 +171,9 @@ describe('KanbanBoard header view menu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter initialEntries={['/workspace/board/plan-1']}>
+      <TestMemoryRouter initialEntries={['/workspace/board/plan-1']}>
         <KanbanBoard />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: 'Visualizações do plano' }))
@@ -187,9 +187,9 @@ describe('KanbanBoard header view menu', () => {
     const user = userEvent.setup()
 
     render(
-      <MemoryRouter initialEntries={['/workspace/board/plan-1']}>
+      <TestMemoryRouter initialEntries={['/workspace/board/plan-1']}>
         <KanbanBoard />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await user.click(screen.getByRole('button', { name: 'Visualizações do plano' }))

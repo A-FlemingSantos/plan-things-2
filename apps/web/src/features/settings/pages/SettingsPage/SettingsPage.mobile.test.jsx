@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SettingsPage from './SettingsPage.jsx'
 import { installMatchMediaController } from '../../../../test/matchMedia.js'
@@ -93,7 +94,7 @@ function LocationProbe() {
 
 function renderSettings(initialEntry = '/settings?section=integrations') {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+    <TestMemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route
           path="/settings"
@@ -105,7 +106,7 @@ function renderSettings(initialEntry = '/settings?section=integrations') {
           )}
         />
       </Routes>
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }
 

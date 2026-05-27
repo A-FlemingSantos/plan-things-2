@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { describe, expect, it, vi } from 'vitest'
 import CalendarPage from './CalendarPage.jsx'
 import { installMatchMediaController } from '../../../../test/matchMedia.js'
@@ -56,9 +56,9 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 
 function renderCalendar() {
   return render(
-    <MemoryRouter>
+    <TestMemoryRouter>
       <CalendarPage />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }
 

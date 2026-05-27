@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiClientError } from '../../../../shared/api/apiClient.js'
 import KanbanBoard from './KanbanBoard.jsx'
@@ -386,8 +386,8 @@ async function openInboxAndDropCard(cardName) {
 
 function renderBoard() {
   return render(
-    <MemoryRouter initialEntries={['/workspace/board/plan-1']}>
+    <TestMemoryRouter initialEntries={['/workspace/board/plan-1']}>
       <KanbanBoard />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }

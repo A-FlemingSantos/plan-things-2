@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useResolvedPlanRoute } from './useResolvedPlanRoute.js'
 
@@ -45,11 +46,11 @@ describe('useResolvedPlanRoute', () => {
 
   it('replaces legacy demo plan ids with a valid backend plan id', async () => {
     render(
-      <MemoryRouter initialEntries={['/workspace/board/product-launch-q3']}>
+      <TestMemoryRouter initialEntries={['/workspace/board/product-launch-q3']}>
         <Routes>
           <Route path="/workspace/board/:planId" element={<RouteProbe />} />
         </Routes>
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await waitFor(() => {

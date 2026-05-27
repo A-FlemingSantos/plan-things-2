@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
 const { isMobileSettingsReturnUrl, parseMobileOAuthCallback } = await import('../../../../mobile/src/services/mobileLinking.js')

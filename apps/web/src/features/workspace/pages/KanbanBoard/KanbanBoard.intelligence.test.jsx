@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KanbanBoard from './KanbanBoard.jsx'
 
@@ -122,9 +122,9 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 
 function renderBoard(route = { pathname: '/workspace/board/plan-1' }) {
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <TestMemoryRouter initialEntries={[route]}>
       <KanbanBoard />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }
 

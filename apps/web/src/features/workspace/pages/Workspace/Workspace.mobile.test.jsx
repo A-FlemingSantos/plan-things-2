@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Workspace from './Workspace.jsx'
 import { installMatchMediaController } from '../../../../test/matchMedia.js'
@@ -74,9 +74,9 @@ vi.mock('../../components/InviteNotifications/InviteNotifications.jsx', () => ({
 
 function renderWorkspace() {
   return render(
-    <MemoryRouter>
+    <TestMemoryRouter>
       <Workspace />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }
 

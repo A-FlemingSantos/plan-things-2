@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from './testRouter.jsx'
 import { describe, expect, it, vi } from 'vitest'
 import App from '../App.jsx'
 import { PreferencesProvider } from '../features/preferences/context/PreferencesContext.jsx'
@@ -50,11 +50,11 @@ describe('Public routes theme policy', () => {
     window.matchMedia = matchMedia
 
     render(
-      <MemoryRouter initialEntries={['/login']}>
+      <TestMemoryRouter initialEntries={['/login']}>
         <PreferencesProvider>
           <App />
         </PreferencesProvider>
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     const scope = document.querySelector('[data-app-theme-scope]')

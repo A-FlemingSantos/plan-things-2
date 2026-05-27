@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import { apiRequest } from '@plan-things/shared-client/api'
 import { mapBoardCard } from '@plan-things/shared-client/board'

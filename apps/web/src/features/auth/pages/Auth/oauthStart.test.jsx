@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDeferred } from '../../../../test/deferred.js'
 import Auth from './Auth.jsx'
 
 const authMocks = vi.hoisted(() => ({
@@ -50,7 +51,8 @@ describe('OAuth start buttons', () => {
   })
 
   it('starts Google OAuth with the pending internal redirect', async () => {
-    authMocks.startOAuthLogin.mockReturnValue(new Promise(() => {}))
+    const oauthStart = createDeferred()
+    authMocks.startOAuthLogin.mockReturnValue(oauthStart.promise)
 
     renderAuth('/login', { redirectTo: '/settings' })
 
@@ -63,10 +65,16 @@ describe('OAuth start buttons', () => {
       })
     })
     expect(screen.getByRole('button', { name: /google/i })).toBeDisabled()
+
+    oauthStart.reject(new Error('Test cancelled pending OAuth start'))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /google/i })).toBeEnabled()
+    })
   })
 
   it('starts OAuth in add-account mode without preserving the current redirect target', async () => {
-    authMocks.startOAuthLogin.mockReturnValue(new Promise(() => {}))
+    const oauthStart = createDeferred()
+    authMocks.startOAuthLogin.mockReturnValue(oauthStart.promise)
 
     renderAuth('/login', {
       redirectTo: '/files',
@@ -79,6 +87,11 @@ describe('OAuth start buttons', () => {
       expect(authMocks.startOAuthLogin).toHaveBeenCalledWith('google', {
         mode: 'add-account',
       })
+    })
+
+    oauthStart.reject(new Error('Test cancelled pending OAuth start'))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /google/i })).toBeEnabled()
     })
   })
 
@@ -113,7 +126,7 @@ describe('OAuth start buttons', () => {
     })
 
     render(
-      <MemoryRouter initialEntries={[{
+      <TestMemoryRouter initialEntries={[{
         pathname: '/cadastro',
         state: {
           redirectTo: '/calendar',
@@ -121,7 +134,7 @@ describe('OAuth start buttons', () => {
         },
       }]}>
         <Auth initialMode="register" />
-      </MemoryRouter>,
+      </TestMemoryRouter>,
     )
 
     await userEvent.type(screen.getByLabelText('Nome completo'), 'Carlos Lima')
@@ -156,8 +169,8 @@ describe('OAuth start buttons', () => {
 
 function renderAuth(pathname, state) {
   return render(
-    <MemoryRouter initialEntries={[{ pathname, state }]}>
+    <TestMemoryRouter initialEntries={[{ pathname, state }]}>
       <Auth initialMode="login" />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }

@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDeferred } from '../../../../test/deferred.js'
 import { ApiClientError } from '../../../../shared/api/apiClient.js'
 import KanbanBoard from './KanbanBoard.jsx'
 
@@ -241,9 +242,10 @@ describe('KanbanBoard Gmail invite flow', () => {
   })
 
   it('uses the sending state while the invite request is pending', async () => {
+    const inviteRequest = createDeferred()
     apiMock.apiRequest.mockImplementation((path, options = {}) => {
       if (path === '/api/plans/plan-1/invites' && options.method === 'POST') {
-        return new Promise(() => {})
+        return inviteRequest.promise
       }
       return Promise.resolve([])
     })
@@ -257,13 +259,24 @@ describe('KanbanBoard Gmail invite flow', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Enviando...' })).toBeDisabled()
     })
+
+    inviteRequest.resolve({
+      inviteId: 'invite-1',
+      invitedEmail: 'membro@example.com',
+      status: 'PENDING',
+      delivery: {
+        emailSent: true,
+        sentTo: 'membro@example.com',
+      },
+    })
+    expect(await screen.findByText('Convite enviado')).toBeInTheDocument()
   })
 })
 
 function renderBoard() {
   return render(
-    <MemoryRouter initialEntries={['/workspace/board/plan-1']}>
+    <TestMemoryRouter initialEntries={['/workspace/board/plan-1']}>
       <KanbanBoard />
-    </MemoryRouter>,
+    </TestMemoryRouter>,
   )
 }
