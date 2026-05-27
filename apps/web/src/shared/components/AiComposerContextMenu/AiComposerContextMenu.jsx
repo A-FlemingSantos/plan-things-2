@@ -168,6 +168,8 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
               ) : null}
             </div>
 
+            <div className={styles.menuDivider} role="separator" />
+
             {/* Adicionar arquivos */}
             <button
               type="button"
@@ -222,6 +224,8 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
                 </div>
               ) : null}
             </div>
+
+            <div className={styles.menuDivider} role="separator" />
 
             {/* Inbox */}
             <button

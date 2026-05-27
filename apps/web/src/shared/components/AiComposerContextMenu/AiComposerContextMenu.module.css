@@ -145,8 +145,13 @@
 
 .menuDivider {
   height: 1px;
-  margin: 3px 6px;
-  background: color-mix(in srgb, var(--border-1) 55%, transparent);
+  margin: 4px 8px;
+  border: 0;
+  background: color-mix(in srgb, var(--border-1) 92%, var(--text-3));
+}
+
+[data-theme='dark'] .menuDivider {
+  background: color-mix(in srgb, var(--border-1) 80%, rgba(255, 255, 255, 0.16));
 }
 
 /* ── Submenus ── */
