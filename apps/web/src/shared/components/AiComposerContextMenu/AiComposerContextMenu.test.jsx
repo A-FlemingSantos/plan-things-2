@@ -54,6 +54,21 @@ describe('AiComposerContextMenu', () => {
     expect(handleChipsChange).not.toHaveBeenCalled()
   })
 
+  it('renders the multicolor Slack logo in the connectors submenu', async () => {
+    const user = userEvent.setup()
+    render(<AiComposerContextMenu onChipsChange={vi.fn()} initialChips={[]} />)
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+    await user.click(screen.getByRole('menuitem', { name: /Conectores/i }))
+
+    const slackRow = screen.getByRole('menuitem', { name: 'Slack' })
+    const slackPaths = slackRow.querySelectorAll('svg path')
+    expect(slackPaths).toHaveLength(4)
+    expect(new Set([...slackPaths].map((path) => path.getAttribute('fill')))).toEqual(
+      new Set(['#E01E5A', '#36C5F0', '#2EB67D', '#ECB22E']),
+    )
+  })
+
   it('notifies the parent once when a connector is toggled by the user', async () => {
     const user = userEvent.setup()
     const handleChipsChange = vi.fn()
