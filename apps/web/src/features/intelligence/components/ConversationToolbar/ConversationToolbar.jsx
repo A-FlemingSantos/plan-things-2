@@ -93,6 +93,43 @@ const MOCK_PARTICIPANTS = {
   intelligence: { id: 'intelligence', name: 'Intelligence', type: 'agent' },
 }
 
+function ConnectorGitHubIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1.4a6.6 6.6 0 0 0-2.1 12.85c.33.06.45-.14.45-.32v-1.2c-1.82.4-2.2-.77-2.2-.77-.3-.74-.73-.94-.73-.94-.6-.41.05-.4.05-.4.66.05 1 .67 1 .67.6 1 .15.52 1.5.4.05-.43.23-.73.42-.89-1.45-.16-2.98-.72-2.98-3.22 0-.71.25-1.3.67-1.75-.07-.16-.29-.82.06-1.7 0 0 .55-.18 1.8.67a6.26 6.26 0 0 1 3.28 0c1.24-.85 1.79-.67 1.79-.67.35.88.13 1.54.06 1.7.42.45.67 1.04.67 1.75 0 2.5-1.53 3.06-2.99 3.22.24.2.45.61.45 1.24v1.84c0 .18.12.38.46.31A6.6 6.6 0 0 0 8 1.4Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function ConnectorTeamsIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1.5" y="4" width="6.5" height="8" rx="1.6" fill="#4F52D9" />
+      <rect x="8.3" y="5.1" width="5.7" height="7.4" rx="1.8" fill="#7B83EB" />
+      <circle cx="11.15" cy="3.95" r="1.95" fill="#6264F5" />
+      <circle cx="13.1" cy="6" r="1.4" fill="#8B8CC7" />
+      <path d="M3.25 6.1h3.2v1.1H5.45v4.1h-1.2V7.2H3.25V6.1Z" fill="white" />
+    </svg>
+  )
+}
+
+function ConnectorSlackIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#E01E5A" d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" />
+      <path fill="#36C5F0" d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm1.271 0a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" />
+      <path fill="#2EB67D" d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.269 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312z" />
+      <path fill="#ECB22E" d="M15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm-1.269 0a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
+    </svg>
+  )
+}
+
+const CONNECTOR_ICONS = {
+  github: ConnectorGitHubIcon,
+  slack: ConnectorSlackIcon,
+  teams: ConnectorTeamsIcon,
+}
+
 const MOCK_CONNECTORS = [
   { id: 'github', name: 'GitHub' },
   { id: 'slack', name: 'Slack' },
@@ -481,9 +518,15 @@ export default function ConversationToolbar({
                 <ul className={styles.list}>
                   {MOCK_CONNECTORS.map((connector) => {
                     const isActive = resolveConnectorState(activeConnectorIdSet, connectorOverrides, connector.id)
+                    const ConnectorIcon = CONNECTOR_ICONS[connector.id]
                     return (
                       <li key={connector.id} className={styles.listItem}>
                         <div className={styles.changeRow}>
+                          {ConnectorIcon ? (
+                            <span className={styles.listItemIcon} data-connector={connector.id} aria-hidden="true">
+                              <ConnectorIcon />
+                            </span>
+                          ) : null}
                           <span className={styles.listItemLabel}>{connector.name}</span>
                           <span
                             className={`${styles.statusBadge} ${isActive ? styles.statusApplied : styles.statusRejected}`}

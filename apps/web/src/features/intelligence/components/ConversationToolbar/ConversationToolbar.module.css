@@ -312,7 +312,30 @@
   min-height: 32px;
   padding: 4px 8px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  background: transparent;
+  transition: background var(--transition-fast);
+}
+
+.listItem:hover {
+  background: color-mix(in srgb, var(--text-1) 5%, transparent);
+}
+
+.listItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.listItemIcon[data-connector='github'] {
+  color: var(--text-1);
+}
+
+.listItemIcon[data-connector='slack'] {
+  color: unset;
 }
 
 .listItemLabel {
@@ -369,7 +392,7 @@
   padding: 0 10px;
   border: 1px solid var(--border-1);
   border-radius: 8px;
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: var(--text-1);
   font-family: var(--font-family);
   font-size: 12px;
@@ -400,7 +423,7 @@
 }
 
 .activityItem:hover {
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  background: color-mix(in srgb, var(--text-1) 5%, transparent);
 }
 
 .activityAvatar,

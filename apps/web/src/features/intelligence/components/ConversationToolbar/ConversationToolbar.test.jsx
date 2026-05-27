@@ -243,6 +243,22 @@ describe('ConversationToolbar', () => {
       expect(within(githubRow).getByText('Ativo')).toBeInTheDocument()
     })
 
+    it('shows brand icons for each connector', async () => {
+      const user = userEvent.setup()
+      renderToolbar()
+
+      await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
+      await user.click(screen.getByRole('button', { name: /Permissões/i }))
+
+      expect(screen.getByText('GitHub').closest('li').querySelector('[data-connector="github"]')).toBeInTheDocument()
+      expect(screen.getByText('Slack').closest('li').querySelector('[data-connector="slack"]')).toBeInTheDocument()
+      expect(screen.getByText('Teams').closest('li').querySelector('[data-connector="teams"]')).toBeInTheDocument()
+
+      const slackPaths = screen.getByText('Slack').closest('li').querySelectorAll('[data-connector="slack"] path')
+      expect(slackPaths).toHaveLength(4)
+      expect(new Set([...slackPaths].map((path) => path.getAttribute('fill')))).toEqual(new Set(['#E01E5A', '#36C5F0', '#2EB67D', '#ECB22E']))
+    })
+
     it('shows disconnect action for active connectors', async () => {
       const user = userEvent.setup()
       renderToolbar({ activeConnectors: ['github'] })
