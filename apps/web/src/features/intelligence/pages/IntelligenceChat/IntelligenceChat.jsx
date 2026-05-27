@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -11,15 +10,11 @@ import {
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
 } from '../../../workspace/data/kanbanColorPalette.js'
-import AiComposerContextMenu from '../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.jsx'
-import GitHubContextBar from '../../../../shared/components/GitHubContextBar/GitHubContextBar.jsx'
+import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import ConversationToolbar from '../../components/ConversationToolbar/ConversationToolbar.jsx'
 import styles from './IntelligenceChat.module.css'
 
 function PlusIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
-function MicIcon()     { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
-function ArrowUpIcon() { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-
 function SparkleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -404,46 +399,33 @@ export default function IntelligenceChat() {
         </div>
 
         <div className={styles.composerArea} style={accentStyle}>
-          <motion.form className={styles.composerCard} onSubmit={handleSubmit} layoutId="ai-composer" layout>
-            <textarea
-              className={styles.composerInput}
-              placeholder="Descreva seu produto, fluxo ou ideia..."
-              aria-label="Prompt do Intelligence"
-              rows={2}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  e.currentTarget.form?.requestSubmit()
-                }
-              }}
-            />
-            <div className={styles.composerControls}>
-              <div className={styles.composerLeft}>
-                <AiComposerContextMenu onChipsChange={setAiChips} initialChips={aiChips} />
-              </div>
-
-              <div className={styles.actions}>
-                <button
-                  type="button"
-                  className={`${styles.iconButton} ${isListening ? styles.iconButtonActive : ''}`}
-                  aria-label={isListening ? 'Parar gravação de áudio para o Intelligence' : 'Gravar áudio para o Intelligence'}
-                  aria-pressed={isListening}
-                  onClick={handleVoiceInput}
-                >
-                  <MicIcon />
-                </button>
-                <button type="submit" className={styles.sendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim() || isThinking}>
-                  <ArrowUpIcon />
-                </button>
-              </div>
-            </div>
-          </motion.form>
-          {activeConnectors.includes('github') ? (
-            <GitHubContextBar className={styles.githubContextBar} />
-          ) : null}
-          {voiceFeedback ? <p className={styles.voiceFeedback} role="status">{voiceFeedback}</p> : null}
+          <IntelligenceComposer
+            value={draft}
+            onChange={setDraft}
+            onSubmit={handleSubmit}
+            motionLayoutId="ai-composer"
+            inputDisabled={isThinking}
+            submitDisabled={!draft.trim() || isThinking}
+            isListening={isListening}
+            onVoiceClick={handleVoiceInput}
+            aiChips={aiChips}
+            onChipsChange={setAiChips}
+            showGitHubBar={activeConnectors.includes('github')}
+            githubBarClassName={styles.githubContextBar}
+            classes={{
+              form: styles.composerCard,
+              input: styles.composerInput,
+              controls: styles.composerControls,
+              contextSlot: styles.composerLeft,
+              actions: styles.actions,
+              iconButton: styles.iconButton,
+              iconButtonActive: styles.iconButtonActive,
+              sendButton: styles.sendButton,
+            }}
+            afterForm={voiceFeedback ? (
+              <p className={styles.voiceFeedback} role="status">{voiceFeedback}</p>
+            ) : null}
+          />
         </div>
       </ProductAppShell>
     </AppThemeScope>

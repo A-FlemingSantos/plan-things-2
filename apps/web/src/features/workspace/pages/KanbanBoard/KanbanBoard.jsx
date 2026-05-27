@@ -26,8 +26,7 @@ import {
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
 } from '../../data/kanbanColorPalette.js'
-import AiComposerContextMenu from '../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.jsx'
-import GitHubContextBar from '../../../../shared/components/GitHubContextBar/GitHubContextBar.jsx'
+import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2573,56 +2572,34 @@ export default function KanbanBoard() {
               </div>
 
               <div className={styles.intelligenceComposerWrap}>
-                <form
-                  className={styles.intelligenceComposer}
+                <IntelligenceComposer
+                  value={intelligenceDraft}
+                  onChange={setIntelligenceDraft}
+                  inputRef={intelligenceComposerInputRef}
+                  rows={1}
+                  placeholder="Escreva sua pergunta..."
+                  submitAriaLabel="Enviar mensagem"
+                  voiceAriaLabelIdle="Usar voz"
+                  voiceAriaLabelListening="Usar voz"
                   onSubmit={(event) => {
                     event.preventDefault()
                     if (!intelligenceDraft.trim()) return
                     showNotification('Integração da IA em breve.')
                   }}
-                >
-                  <textarea
-                    ref={intelligenceComposerInputRef}
-                    className={styles.intelligenceComposerInput}
-                    rows={1}
-                    value={intelligenceDraft}
-                    onChange={(event) => setIntelligenceDraft(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault()
-                        event.currentTarget.form?.requestSubmit()
-                      }
-                    }}
-                    placeholder="Escreva sua pergunta..."
-                  />
-
-                  <div className={styles.intelligenceComposerFooter}>
-                    <div className={styles.intelligenceComposerTools}>
-                      <AiComposerContextMenu onChipsChange={setKanbanAiChips} initialChips={kanbanAiChips} />
-                    </div>
-
-                    <div className={styles.intelligenceComposerActions}>
-                      <button
-                        type="button"
-                        className={styles.intelligenceComposerIconButton}
-                        aria-label="Usar voz"
-                      >
-                        <Icon.Mic />
-                      </button>
-                      <button
-                        type="submit"
-                        className={styles.intelligenceComposerSubmit}
-                        aria-label="Enviar mensagem"
-                        disabled={!intelligenceDraft.trim()}
-                      >
-                        <Icon.ArrowUp />
-                      </button>
-                    </div>
-                  </div>
-                </form>
-                {intelligenceActiveConnectors.includes('github') ? (
-                  <GitHubContextBar className={styles.intelligenceGitHubBar} />
-                ) : null}
+                  aiChips={kanbanAiChips}
+                  onChipsChange={setKanbanAiChips}
+                  showGitHubBar={intelligenceActiveConnectors.includes('github')}
+                  githubBarClassName={styles.intelligenceGitHubBar}
+                  classes={{
+                    form: styles.intelligenceComposer,
+                    input: styles.intelligenceComposerInput,
+                    controls: styles.intelligenceComposerFooter,
+                    contextSlot: styles.intelligenceComposerTools,
+                    actions: styles.intelligenceComposerActions,
+                    iconButton: styles.intelligenceComposerIconButton,
+                    sendButton: styles.intelligenceComposerSubmit,
+                  }}
+                />
               </div>
             </div>
           </section>

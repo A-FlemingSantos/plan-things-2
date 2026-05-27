@@ -1,7 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
@@ -13,8 +12,7 @@ import {
   resolveKanbanAccentForeground,
 } from '../../data/kanbanColorPalette.js'
 import { usePlans } from '../../context/PlansContext.jsx'
-import AiComposerContextMenu from '../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.jsx'
-import GitHubContextBar from '../../../../shared/components/GitHubContextBar/GitHubContextBar.jsx'
+import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
@@ -28,8 +26,6 @@ function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
-function MicIcon()      { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 8.8a2.2 2.2 0 0 0 2.2-2.2V3.7a2.2 2.2 0 1 0-4.4 0v2.9A2.2 2.2 0 0 0 7 8.8z" stroke="currentColor" strokeWidth="1.2"/><path d="M2.8 6.7a4.2 4.2 0 0 0 8.4 0M7 10.9v1.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
-function ArrowUpIcon()  { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 11.5v-9M3.5 6 7 2.5 10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 /* ═══════════════════════════════════════════
    DATA
 ═══════════════════════════════════════════ */
@@ -1046,45 +1042,30 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       <div className={styles.intelligenceStage}>
         <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
         <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
-        <motion.form className={styles.intelligencePromptCard} onSubmit={handleSubmit} layoutId="ai-composer" layout>
-          <textarea
-            className={styles.intelligencePrompt}
-            placeholder="Descreva seu produto, fluxo ou ideia..."
-            aria-label="Prompt do Intelligence"
-            rows={2}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault()
-                event.currentTarget.form?.requestSubmit()
-              }
-            }}
-          />
-          <div className={styles.intelligencePromptControls}>
-            <div className={styles.intelligenceContextLeft}>
-              <AiComposerContextMenu onChipsChange={setAiChips} initialChips={aiChips} />
-            </div>
-
-            <div className={styles.intelligencePromptActions}>
-              <button
-                type="button"
-                className={`${styles.intelligenceIconButton} ${isListening ? styles.intelligenceIconButtonActive : ''}`}
-                aria-label={isListening ? 'Parar gravação de áudio' : 'Gravar áudio para o Intelligence'}
-                aria-pressed={isListening}
-                onClick={handleVoiceInput}
-              >
-                <MicIcon />
-              </button>
-              <button type="submit" className={styles.intelligenceSendButton} aria-label="Enviar prompt ao Intelligence" disabled={!draft.trim()}>
-                <ArrowUpIcon />
-              </button>
-            </div>
-          </div>
-          {activeConnectors.includes('github') ? (
-            <GitHubContextBar className={`${styles.intelligenceSuggestions} ${styles.intelligenceGitHubBar}`} />
-          ) : null}
-        </motion.form>
+        <IntelligenceComposer
+          value={draft}
+          onChange={setDraft}
+          onSubmit={handleSubmit}
+          motionLayoutId="ai-composer"
+          isListening={isListening}
+          onVoiceClick={handleVoiceInput}
+          voiceAriaLabelListening="Parar gravação de áudio"
+          aiChips={aiChips}
+          onChipsChange={setAiChips}
+          showGitHubBar={activeConnectors.includes('github')}
+          githubBarPlacement="insideForm"
+          githubBarClassName={`${styles.intelligenceSuggestions} ${styles.intelligenceGitHubBar}`}
+          classes={{
+            form: styles.intelligencePromptCard,
+            input: styles.intelligencePrompt,
+            controls: styles.intelligencePromptControls,
+            contextSlot: styles.intelligenceContextLeft,
+            actions: styles.intelligencePromptActions,
+            iconButton: styles.intelligenceIconButton,
+            iconButtonActive: styles.intelligenceIconButtonActive,
+            sendButton: styles.intelligenceSendButton,
+          }}
+        />
       </div>
     </section>
   )
