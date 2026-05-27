@@ -58,36 +58,35 @@ const makePlanChipDot = (color) => function PlanChipDot() {
   return <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill={color} /></svg>
 }
 
+function normalizeChips(chips) {
+  return Array.isArray(chips) ? chips : []
+}
+
 /* ── Component ─────────────────────────────────────────────────── */
 export default function AiComposerContextMenu({ onChipsChange, initialChips } = {}) {
   const [isMenuOpen, setIsMenuOpen]   = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState(null)
-  const [chips, setChips]             = useState(() => (Array.isArray(initialChips) ? initialChips : []))
+  const [localChips, setLocalChips]   = useState(() => normalizeChips(initialChips))
+  const isControlled                  = initialChips !== undefined && typeof onChipsChange === 'function'
+  const chips                         = isControlled ? normalizeChips(initialChips) : localChips
 
   const menuRef       = useRef(null)
   const buttonRef     = useRef(null)
-  const isFirstRender = useRef(true)
 
-  useEffect(() => {
-    if (initialChips === undefined) return
-    setChips(Array.isArray(initialChips) ? initialChips : [])
-  }, [initialChips])
-
-  const toggleChip = (type, label, ChipIcon, kind) => {
-    setChips((prev) => {
-      if (prev.some((c) => c.type === type)) return prev.filter((c) => c.type !== type)
-      return [...prev, { id: `ctx-${type}`, type, label, ChipIcon, kind }]
-    })
+  const commitChips = (nextChips) => {
+    if (!isControlled) {
+      setLocalChips(nextChips)
+    }
+    onChipsChange?.(nextChips)
   }
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
-    onChipsChange?.(chips)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chips])
+  const toggleChip = (type, label, ChipIcon, kind) => {
+    const nextChips = chips.some((c) => c.type === type)
+      ? chips.filter((c) => c.type !== type)
+      : [...chips, { id: `ctx-${type}`, type, label, ChipIcon, kind }]
+
+    commitChips(nextChips)
+  }
 
   const closeAll = () => { setIsMenuOpen(false); setOpenSubmenu(null) }
 
@@ -289,7 +288,10 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
                 type="button"
                 className={styles.chipRemove}
                 aria-label={`Remover ${chip.label} do contexto`}
-                onClick={() => setChips((prev) => prev.filter((c) => c.type !== chip.type))}
+                onClick={() => {
+                  const nextChips = chips.filter((c) => c.type !== chip.type)
+                  commitChips(nextChips)
+                }}
               >
                 <XSmallIcon />
               </button>

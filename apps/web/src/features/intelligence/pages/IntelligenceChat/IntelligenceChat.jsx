@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
@@ -70,7 +70,10 @@ export default function IntelligenceChat() {
   const { currentUser } = useAuth()
   const { localPreferences } = usePreferences()
   const { aiChips = [], setAiChips = () => {} } = usePlans()
-  const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
+  const activeConnectors = useMemo(
+    () => aiChips.filter((c) => c.kind === 'connector').map((c) => c.type),
+    [aiChips],
+  )
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
   const chatScope = {
     planId: location.state?.planId ?? null,

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
@@ -273,6 +273,18 @@ function resolveScopeKind({ planId, cardId }) {
   return 'Workspace'
 }
 
+function normalizeConnectorIds(connectorIds = []) {
+  return Array.from(new Set(connectorIds.filter(Boolean)))
+}
+
+function resolveConnectorState(activeConnectorIdSet, connectorOverrides, connectorId) {
+  if (Object.prototype.hasOwnProperty.call(connectorOverrides, connectorId)) {
+    return connectorOverrides[connectorId]
+  }
+
+  return activeConnectorIdSet.has(connectorId)
+}
+
 export default function ConversationToolbar({
   conversationTitle = 'Nova conversa',
   planId = null,
@@ -283,15 +295,15 @@ export default function ConversationToolbar({
 }) {
   const navigate = useNavigate()
   const panelId = useId()
+  const activeConnectorIdSet = useMemo(
+    () => new Set(normalizeConnectorIds(activeConnectors)),
+    [activeConnectors],
+  )
   const [isExpanded, setIsExpanded] = useState(false)
   const [openSections, setOpenSections] = useState({})
   const [filesFilter, setFilesFilter] = useState('')
   const [historyFilter, setHistoryFilter] = useState('')
-  const [connectedConnectorIds, setConnectedConnectorIds] = useState(activeConnectors)
-
-  useEffect(() => {
-    setConnectedConnectorIds(activeConnectors)
-  }, [activeConnectors])
+  const [connectorOverrides, setConnectorOverrides] = useState({})
 
   const scopeLabel = resolveScopeLabel({ planId, planName, cardId, cardTitle })
   const scopeKind = resolveScopeKind({ planId, cardId })
@@ -468,7 +480,7 @@ export default function ConversationToolbar({
               <div id={sectionIds.permissions} className={styles.sectionBody}>
                 <ul className={styles.list}>
                   {MOCK_CONNECTORS.map((connector) => {
-                    const isActive = connectedConnectorIds.includes(connector.id)
+                    const isActive = resolveConnectorState(activeConnectorIdSet, connectorOverrides, connector.id)
                     return (
                       <li key={connector.id} className={styles.listItem}>
                         <div className={styles.changeRow}>
@@ -483,11 +495,10 @@ export default function ConversationToolbar({
                           size="compact"
                           checked={isActive}
                           onChange={(nextValue) => {
-                            setConnectedConnectorIds((current) => (
-                              nextValue
-                                ? (current.includes(connector.id) ? current : [...current, connector.id])
-                                : current.filter((id) => id !== connector.id)
-                            ))
+                            setConnectorOverrides((current) => ({
+                              ...current,
+                              [connector.id]: nextValue,
+                            }))
                           }}
                           aria-label={isActive ? `Desconectar ${connector.name}` : `Conectar ${connector.name}`}
                         />
