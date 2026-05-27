@@ -1,8 +1,9 @@
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import MemberAvatarStack from '../../../../shared/components/MemberAvatarStack/MemberAvatarStack.jsx'
+import Toggle from '../../../../shared/components/Toggle/Toggle.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import styles from './ConversationToolbar.module.css'
 
@@ -97,6 +98,8 @@ const MOCK_CONNECTORS = [
   { id: 'slack', name: 'Slack' },
   { id: 'teams', name: 'Teams' },
 ]
+
+const DEFAULT_ACTIVE_CONNECTORS = []
 
 const MOCK_CONVERSATION_MEMBERS = [
   { id: 'm1', initials: 'AS', color: '#000', name: 'Ana Silva' },
@@ -276,7 +279,7 @@ export default function ConversationToolbar({
   planName = null,
   cardId = null,
   cardTitle = null,
-  activeConnectors = [],
+  activeConnectors = DEFAULT_ACTIVE_CONNECTORS,
 }) {
   const navigate = useNavigate()
   const panelId = useId()
@@ -284,6 +287,11 @@ export default function ConversationToolbar({
   const [openSections, setOpenSections] = useState({})
   const [filesFilter, setFilesFilter] = useState('')
   const [historyFilter, setHistoryFilter] = useState('')
+  const [connectedConnectorIds, setConnectedConnectorIds] = useState(activeConnectors)
+
+  useEffect(() => {
+    setConnectedConnectorIds(activeConnectors)
+  }, [activeConnectors])
 
   const scopeLabel = resolveScopeLabel({ planId, planName, cardId, cardTitle })
   const scopeKind = resolveScopeKind({ planId, cardId })
@@ -460,7 +468,7 @@ export default function ConversationToolbar({
               <div id={sectionIds.permissions} className={styles.sectionBody}>
                 <ul className={styles.list}>
                   {MOCK_CONNECTORS.map((connector) => {
-                    const isActive = activeConnectors.includes(connector.id)
+                    const isActive = connectedConnectorIds.includes(connector.id)
                     return (
                       <li key={connector.id} className={styles.listItem}>
                         <div className={styles.changeRow}>
@@ -471,13 +479,18 @@ export default function ConversationToolbar({
                             {isActive ? 'Ativo' : 'Inativo'}
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          className={styles.listItemAction}
+                        <Toggle
+                          size="compact"
+                          checked={isActive}
+                          onChange={(nextValue) => {
+                            setConnectedConnectorIds((current) => (
+                              nextValue
+                                ? (current.includes(connector.id) ? current : [...current, connector.id])
+                                : current.filter((id) => id !== connector.id)
+                            ))
+                          }}
                           aria-label={isActive ? `Desconectar ${connector.name}` : `Conectar ${connector.name}`}
-                        >
-                          {isActive ? 'Desconectar' : 'Conectar'}
-                        </button>
+                        />
                       </li>
                     )
                   })}

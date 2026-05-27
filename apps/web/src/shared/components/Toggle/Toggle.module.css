@@ -1,0 +1,58 @@
+.toggle {
+  width: 40px;
+  height: 22px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background var(--transition-normal);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface-1);
+  transition: transform var(--transition-normal);
+  box-shadow: var(--shadow-xs);
+}
+
+.toggleOn {
+  background: var(--settings-toggle-accent, var(--focus-ring));
+}
+
+.toggleOn::after {
+  transform: translateX(18px);
+}
+
+.toggleDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.toggleDisabled::after {
+  box-shadow: none;
+}
+
+.toggleCompact {
+  width: 32px;
+  height: 18px;
+}
+
+.toggleCompact::after {
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+}
+
+.toggleCompact.toggleOn::after {
+  transform: translateX(14px);
+}

@@ -250,7 +250,7 @@ describe('ConversationToolbar', () => {
       await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
       await user.click(screen.getByRole('button', { name: /Permissões/i }))
 
-      expect(screen.getByLabelText('Desconectar GitHub')).toBeInTheDocument()
+      expect(screen.getByRole('switch', { name: 'Desconectar GitHub' })).toHaveAttribute('aria-checked', 'true')
     })
 
     it('shows connect action for inactive connectors', async () => {
@@ -260,7 +260,22 @@ describe('ConversationToolbar', () => {
       await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
       await user.click(screen.getByRole('button', { name: /Permissões/i }))
 
-      expect(screen.getByLabelText('Conectar GitHub')).toBeInTheDocument()
+      expect(screen.getByRole('switch', { name: 'Conectar GitHub' })).toHaveAttribute('aria-checked', 'false')
+    })
+
+    it('toggles connector state in the permissions section', async () => {
+      const user = userEvent.setup()
+      renderToolbar({ activeConnectors: [] })
+
+      await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
+      await user.click(screen.getByRole('button', { name: /Permissões/i }))
+
+      const githubToggle = screen.getByRole('switch', { name: 'Conectar GitHub' })
+      await user.click(githubToggle)
+
+      expect(githubToggle).toHaveAttribute('aria-checked', 'true')
+      expect(screen.getByRole('switch', { name: 'Desconectar GitHub' })).toBeInTheDocument()
+      expect(within(screen.getByText('GitHub').closest('li')).getByText('Ativo')).toBeInTheDocument()
     })
   })
 

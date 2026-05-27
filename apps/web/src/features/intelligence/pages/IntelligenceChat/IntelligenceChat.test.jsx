@@ -128,7 +128,7 @@ describe('IntelligenceChat', () => {
     await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
     await user.click(screen.getByRole('button', { name: /Permissões/i }))
 
-    expect(screen.getByLabelText('Desconectar GitHub')).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Desconectar GitHub' })).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByLabelText('Repositório: plan-things/web')).toBeInTheDocument()
   })
 
