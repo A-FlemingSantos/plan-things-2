@@ -124,7 +124,6 @@ export default function IntelligenceComposer({
           className={form}
           onSubmit={onSubmit}
           layoutId={motionLayoutId}
-          layout
         >
           {formBody}
         </motion.form>

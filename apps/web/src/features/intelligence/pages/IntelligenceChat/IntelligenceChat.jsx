@@ -404,7 +404,6 @@ export default function IntelligenceChat() {
             onChange={setDraft}
             onSubmit={handleSubmit}
             motionLayoutId="ai-composer"
-            inputDisabled={isThinking}
             submitDisabled={!draft.trim() || isThinking}
             isListening={isListening}
             onVoiceClick={handleVoiceInput}

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -168,5 +168,22 @@ describe('IntelligenceChat', () => {
 
     expect(screen.getByText('pitch-deck-v2.pdf')).toBeInTheDocument()
     expect(screen.getByText('wireframes.fig')).toBeInTheDocument()
+  })
+
+  it('allows typing a follow-up message after the assistant responds', async () => {
+    const user = userEvent.setup()
+    renderChat()
+
+    const prompt = screen.getByLabelText('Prompt do Intelligence')
+    await user.type(prompt, 'Primeira mensagem')
+    await user.click(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Entendi\. Eu começaria/)).toBeInTheDocument()
+    })
+
+    expect(prompt).not.toBeDisabled()
+    await user.type(prompt, 'Segunda mensagem')
+    expect(prompt).toHaveValue('Segunda mensagem')
   })
 })
