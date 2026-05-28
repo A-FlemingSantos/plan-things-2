@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import AiComposerContextMenu from '../AiComposerContextMenu/AiComposerContextMenu.jsx'
 import ComposerAttachmentStrip from '../ComposerAttachmentStrip/ComposerAttachmentStrip.jsx'
 import {
+  appendClipboardImagesAsAttachments,
   partitionComposerChips,
   removeAttachmentChip,
 } from '../ComposerAttachmentStrip/composerAttachmentUtils.js'
@@ -81,6 +82,20 @@ export default function IntelligenceComposer({
     }
   }
 
+  const handlePaste = async (event) => {
+    if (inputDisabled || !onChipsChange) return
+
+    const { chips: nextChips, handled } = await appendClipboardImagesAsAttachments(
+      aiChips,
+      event.clipboardData,
+    )
+
+    if (!handled) return
+
+    event.preventDefault()
+    onChipsChange(nextChips)
+  }
+
   const handleRemoveAttachment = (attachment) => {
     if (!onChipsChange) return
     onChipsChange(removeAttachmentChip(aiChips, attachment.type))
@@ -106,6 +121,7 @@ export default function IntelligenceComposer({
         data-has-attachments={hasAttachments ? 'true' : undefined}
         onChange={(event) => onChange?.(event.target.value, event)}
         onKeyDown={handleInputKeyDown}
+        onPaste={handlePaste}
       />
       <div className={controls}>
         <div className={contextSlot}>

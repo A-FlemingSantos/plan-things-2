@@ -1,9 +1,11 @@
 import { describe, beforeEach, expect, it, vi } from 'vitest'
 import {
   MAX_COMPOSER_ATTACHMENTS,
+  appendClipboardImagesAsAttachments,
   appendFilesAsAttachments,
   countAttachmentChips,
   createMockRecentAttachment,
+  getImageFilesFromClipboard,
   isAttachmentChip,
   partitionComposerChips,
   removeAttachmentChip,
@@ -14,6 +16,21 @@ describe('composerAttachmentUtils', () => {
   beforeEach(() => {
     window.URL.createObjectURL = vi.fn(() => 'blob:preview')
     window.URL.revokeObjectURL = vi.fn()
+
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    })
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+      callback(new Blob(['preview'], { type: 'image/png' }))
+    })
+
+    global.Image = class MockImage {
+      set src(_value) {
+        queueMicrotask(() => {
+          this.onload?.()
+        })
+      }
+    }
   })
   it('partitions attachment chips from inline context chips', () => {
     const chips = [
@@ -76,5 +93,56 @@ describe('composerAttachmentUtils', () => {
     expect(isAttachmentChip(attachment)).toBe(true)
     expect(attachment.isImage).toBe(true)
     expect(attachment.type).toBe('file-rf3')
+  })
+
+  it('extracts image files from clipboard data', () => {
+    const imageFile = new File(['img'], 'shot.png', { type: 'image/png' })
+
+    const files = getImageFilesFromClipboard({
+      items: [
+        { kind: 'string', type: 'text/plain', getAsFile: () => null },
+        { kind: 'file', type: 'image/png', getAsFile: () => imageFile },
+      ],
+    })
+
+    expect(files).toHaveLength(1)
+    expect(files[0].name).toBe('shot.png')
+    expect(files[0].type).toBe('image/png')
+  })
+
+  it('assigns clipboard filenames when pasted blobs have no name', () => {
+    const blob = new Blob(['img'], { type: 'image/png' })
+
+    const files = getImageFilesFromClipboard({
+      items: [{ kind: 'file', type: 'image/png', getAsFile: () => blob }],
+    })
+
+    expect(files).toHaveLength(1)
+    expect(files[0].name).toMatch(/^clipboard-\d+-1\.png$/)
+  })
+
+  it('appends clipboard images through the attachment pipeline', async () => {
+    const imageFile = new File(['img'], 'shot.png', { type: 'image/png' })
+
+    const result = await appendClipboardImagesAsAttachments([], {
+      items: [{ kind: 'file', type: 'image/png', getAsFile: () => imageFile }],
+    })
+
+    expect(result.handled).toBe(true)
+    expect(result.chips).toEqual([
+      expect.objectContaining({
+        kind: 'file',
+        label: 'shot.png',
+        isImage: true,
+      }),
+    ])
+  })
+
+  it('ignores non-image clipboard payloads', async () => {
+    const result = await appendClipboardImagesAsAttachments([], {
+      items: [{ kind: 'string', type: 'text/plain', getAsFile: () => null }],
+    })
+
+    expect(result).toEqual({ chips: [], handled: false })
   })
 })

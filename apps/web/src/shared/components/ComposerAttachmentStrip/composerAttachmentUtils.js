@@ -129,3 +129,51 @@ export async function appendFilesAsAttachments(chips, files) {
 
   return nextChips
 }
+
+function clipboardImageExtension(mimeType) {
+  const subtype = mimeType?.split('/')?.[1] ?? 'png'
+  if (subtype === 'jpeg') return 'jpg'
+  return subtype
+}
+
+export function getImageFilesFromClipboard(clipboardData) {
+  if (!clipboardData) return []
+
+  const files = []
+  const seen = new Set()
+
+  for (const item of Array.from(clipboardData.items ?? [])) {
+    if (item.kind !== 'file') continue
+    if (!item.type.startsWith('image/')) continue
+
+    const blob = item.getAsFile()
+    if (!blob) continue
+
+    const dedupeKey = `${blob.type}:${blob.size}:${blob.lastModified ?? 0}`
+    if (seen.has(dedupeKey)) continue
+    seen.add(dedupeKey)
+
+    const hasUsableName = typeof blob.name === 'string' && blob.name.trim().length > 0
+    const name = hasUsableName
+      ? blob.name.trim()
+      : `clipboard-${Date.now()}-${files.length + 1}.${clipboardImageExtension(blob.type)}`
+
+    files.push(
+      blob instanceof File && blob.name === name
+        ? blob
+        : new File([blob], name, { type: blob.type || 'image/png' }),
+    )
+  }
+
+  return files
+}
+
+export async function appendClipboardImagesAsAttachments(chips, clipboardData) {
+  const imageFiles = getImageFilesFromClipboard(clipboardData)
+  if (imageFiles.length === 0) {
+    return { chips, handled: false }
+  }
+
+  const nextChips = await appendFilesAsAttachments(chips, imageFiles)
+  return { chips: nextChips, handled: true }
+}

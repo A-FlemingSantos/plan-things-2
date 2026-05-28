@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import IntelligenceComposer from './IntelligenceComposer.jsx'
@@ -32,6 +32,21 @@ describe('IntelligenceComposer', () => {
   beforeEach(() => {
     window.URL.createObjectURL = vi.fn(() => 'blob:preview')
     window.URL.revokeObjectURL = vi.fn()
+
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    })
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+      callback(new Blob(['preview'], { type: 'image/png' }))
+    })
+
+    global.Image = class MockImage {
+      set src(_value) {
+        queueMicrotask(() => {
+          this.onload?.()
+        })
+      }
+    }
   })
 
   it('renders prompt input and disables submit when empty', () => {
@@ -135,5 +150,58 @@ describe('IntelligenceComposer', () => {
 
     expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview-a')
     expect(handleChipsChange).toHaveBeenCalledWith([])
+  })
+
+  it('adds pasted clipboard images as attachments', async () => {
+    const handleChipsChange = vi.fn()
+    const imageFile = new File(['img'], 'shot.png', { type: 'image/png' })
+
+    render(
+      <IntelligenceComposer
+        value=""
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+        classes={baseClasses}
+        onChipsChange={handleChipsChange}
+      />,
+    )
+
+    fireEvent.paste(screen.getByLabelText('Prompt do Intelligence'), {
+      clipboardData: {
+        items: [{ kind: 'file', type: 'image/png', getAsFile: () => imageFile }],
+      },
+    })
+
+    await waitFor(() => {
+      expect(handleChipsChange).toHaveBeenCalledWith([
+        expect.objectContaining({
+          kind: 'file',
+          label: 'shot.png',
+          isImage: true,
+        }),
+      ])
+    })
+  })
+
+  it('does not intercept plain-text paste', () => {
+    const handleChipsChange = vi.fn()
+
+    render(
+      <IntelligenceComposer
+        value=""
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+        classes={baseClasses}
+        onChipsChange={handleChipsChange}
+      />,
+    )
+
+    fireEvent.paste(screen.getByLabelText('Prompt do Intelligence'), {
+      clipboardData: {
+        items: [{ kind: 'string', type: 'text/plain', getAsFile: () => null }],
+      },
+    })
+
+    expect(handleChipsChange).not.toHaveBeenCalled()
   })
 })
