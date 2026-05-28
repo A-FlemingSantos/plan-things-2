@@ -26,16 +26,10 @@ describe('ComposerAttachmentStrip', () => {
       this.observe = vi.fn()
       this.disconnect = vi.fn()
     })
-
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      callback(0)
-      return 1
-    })
-    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
   })
 
   it('renders image and file attachments in separate layouts', async () => {
-    vi.spyOn(composerAttachmentUtils, 'countAttachmentRows').mockReturnValue(1)
+    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(false)
 
     render(
       <ComposerAttachmentStrip
@@ -67,7 +61,7 @@ describe('ComposerAttachmentStrip', () => {
   })
 
   it('notifies parent when an attachment is removed', async () => {
-    vi.spyOn(composerAttachmentUtils, 'countAttachmentRows').mockReturnValue(1)
+    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(false)
 
     const user = userEvent.setup()
     const handleRemove = vi.fn()
@@ -91,7 +85,7 @@ describe('ComposerAttachmentStrip', () => {
   })
 
   it('uses compact layout when full-size attachments wrap to multiple rows', async () => {
-    vi.spyOn(composerAttachmentUtils, 'countAttachmentRows').mockReturnValue(2)
+    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(true)
 
     render(
       <ComposerAttachmentStrip
@@ -110,7 +104,7 @@ describe('ComposerAttachmentStrip', () => {
   })
 
   it('keeps full-size layout when attachments stay on one row', async () => {
-    vi.spyOn(composerAttachmentUtils, 'countAttachmentRows').mockReturnValue(1)
+    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(false)
 
     render(
       <ComposerAttachmentStrip
@@ -123,6 +117,42 @@ describe('ComposerAttachmentStrip', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('group', { name: 'Anexos adicionados' })).toHaveAttribute('data-compact', 'false')
+    })
+  })
+
+  it('survives rapid attach and detach cycles without throwing', async () => {
+    const resolveLayout = vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout')
+      .mockReturnValue(false)
+
+    const { rerender } = render(
+      <ComposerAttachmentStrip
+        attachments={[createAttachment(1, { isImage: true, label: 'photo-1.png' })]}
+        onRemove={vi.fn()}
+      />,
+    )
+
+    rerender(
+      <ComposerAttachmentStrip
+        attachments={[
+          createAttachment(1, { isImage: true, label: 'photo-1.png' }),
+          createAttachment(2, { isImage: false, label: 'brief.pdf' }),
+        ]}
+        onRemove={vi.fn()}
+      />,
+    )
+
+    resolveLayout.mockReturnValue(true)
+    resizeObserverCallback?.([], { observe: vi.fn(), disconnect: vi.fn() })
+
+    rerender(
+      <ComposerAttachmentStrip
+        attachments={[]}
+        onRemove={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.queryByRole('group', { name: 'Anexos adicionados' })).not.toBeInTheDocument()
     })
   })
 })

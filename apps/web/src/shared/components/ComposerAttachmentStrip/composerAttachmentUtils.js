@@ -219,6 +219,17 @@ export function countAttachmentRows(container) {
   return tops.size
 }
 
-export function shouldUseCompactAttachmentLayout(rowsAtFullSize) {
-  return rowsAtFullSize > 1
+export function resolveCompactAttachmentLayout(strip) {
+  if (!strip?.isConnected || !strip.children?.length) {
+    return false
+  }
+
+  strip.dataset.measuring = 'true'
+  strip.getBoundingClientRect()
+
+  try {
+    return countAttachmentRows(strip) > 1
+  } finally {
+    delete strip.dataset.measuring
+  }
 }

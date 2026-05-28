@@ -1,8 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import {
-  countAttachmentRows,
-  shouldUseCompactAttachmentLayout,
-} from './composerAttachmentUtils.js'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { resolveCompactAttachmentLayout } from './composerAttachmentUtils.js'
 import styles from './ComposerAttachmentStrip.module.css'
 
 function FileDocIcon() {
@@ -47,49 +44,53 @@ function MockImagePlaceholder({ label }) {
   )
 }
 
-function measureFullSizeRows(strip) {
-  strip.dataset.measuring = 'true'
-  strip.getBoundingClientRect()
-
-  const rowsAtFullSize = countAttachmentRows(strip)
-
-  delete strip.dataset.measuring
-
-  return rowsAtFullSize
-}
-
 export default function ComposerAttachmentStrip({ attachments = [], onRemove, className }) {
   const stripRef = useRef(null)
+  const isMountedRef = useRef(true)
   const [isCompact, setIsCompact] = useState(false)
 
-  useLayoutEffect(() => {
+  const syncLayoutMode = useCallback(() => {
+    if (!isMountedRef.current) return
+
     const strip = stripRef.current
-    if (!strip || attachments.length === 0) {
+    if (!strip) {
       setIsCompact(false)
-      return undefined
+      return
     }
 
-    let frameId = 0
+    const nextCompact = resolveCompactAttachmentLayout(strip)
+    setIsCompact((current) => (current === nextCompact ? current : nextCompact))
+  }, [])
 
-    const scheduleMeasure = () => {
-      cancelAnimationFrame(frameId)
-      frameId = requestAnimationFrame(() => {
-        if (!stripRef.current) return
-        const rowsAtFullSize = measureFullSizeRows(stripRef.current)
-        setIsCompact(shouldUseCompactAttachmentLayout(rowsAtFullSize))
-      })
+  useLayoutEffect(() => {
+    isMountedRef.current = true
+
+    if (attachments.length === 0) {
+      setIsCompact(false)
+      return () => {
+        isMountedRef.current = false
+      }
     }
 
-    scheduleMeasure()
+    syncLayoutMode()
 
-    const observer = new ResizeObserver(scheduleMeasure)
+    const strip = stripRef.current
+    if (!strip) {
+      return () => {
+        isMountedRef.current = false
+      }
+    }
+
+    const observer = new ResizeObserver(() => {
+      syncLayoutMode()
+    })
     observer.observe(strip)
 
     return () => {
-      cancelAnimationFrame(frameId)
+      isMountedRef.current = false
       observer.disconnect()
     }
-  }, [attachments])
+  }, [attachments, syncLayoutMode])
 
   if (attachments.length === 0) return null
 
@@ -114,6 +115,7 @@ export default function ComposerAttachmentStrip({ attachments = [], onRemove, cl
                   src={attachment.previewUrl}
                   alt={attachment.label}
                   className={styles.imagePreview}
+                  onLoad={syncLayoutMode}
                 />
               ) : (
                 <MockImagePlaceholder label={attachment.label} />

@@ -13,7 +13,7 @@ import {
   partitionComposerChips,
   removeAttachmentChip,
   revokeAttachmentPreview,
-  shouldUseCompactAttachmentLayout,
+  resolveCompactAttachmentLayout,
 } from './composerAttachmentUtils.js'
 
 describe('composerAttachmentUtils', () => {
@@ -175,9 +175,37 @@ describe('composerAttachmentUtils', () => {
     expect(countAttachmentRows(container)).toBe(2)
   })
 
-  it('enables compact layout only when full-size attachments wrap', () => {
-    expect(shouldUseCompactAttachmentLayout(1)).toBe(false)
-    expect(shouldUseCompactAttachmentLayout(2)).toBe(true)
-    expect(shouldUseCompactAttachmentLayout(3)).toBe(true)
+  it('resolves compact layout only when full-size attachments wrap', () => {
+    const container = document.createElement('div')
+    const first = document.createElement('div')
+    const second = document.createElement('div')
+
+    first.getBoundingClientRect = () => ({ top: 0 })
+    second.getBoundingClientRect = () => ({ top: 64 })
+
+    container.append(first, second)
+    document.body.appendChild(container)
+
+    expect(resolveCompactAttachmentLayout(container)).toBe(true)
+
+    container.removeChild(second)
+    expect(resolveCompactAttachmentLayout(container)).toBe(false)
+
+    container.remove()
+  })
+
+  it('always clears the measuring flag even when row counting fails', () => {
+    const container = document.createElement('div')
+    const child = document.createElement('div')
+    child.getBoundingClientRect = () => {
+      throw new Error('layout unavailable')
+    }
+    container.append(child)
+    document.body.appendChild(container)
+
+    expect(() => resolveCompactAttachmentLayout(container)).toThrow('layout unavailable')
+    expect(container.dataset.measuring).toBeUndefined()
+
+    container.remove()
   })
 })
