@@ -84,7 +84,7 @@ describe('ComposerAttachmentStrip', () => {
     expect(handleRemove).toHaveBeenCalledWith(attachment)
   })
 
-  it('uses compact layout when full-size attachments wrap to multiple rows', async () => {
+  it('uses compact layout when both full-size and compact previews wrap', async () => {
     vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(true)
 
     render(

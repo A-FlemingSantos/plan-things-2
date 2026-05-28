@@ -211,25 +211,69 @@ export function estimateAttachmentsRowWidth(attachments, compact = false) {
 export function countAttachmentRows(container) {
   if (!container?.children?.length) return 0
 
-  const tops = new Set()
+  const rowTops = []
   for (const child of container.children) {
-    tops.add(Math.round(child.getBoundingClientRect().top))
+    const top = Math.round(child.getBoundingClientRect().top)
+    const matchesExistingRow = rowTops.some(
+      (existingTop) => Math.abs(existingTop - top) <= 2,
+    )
+
+    if (!matchesExistingRow) {
+      rowTops.push(top)
+    }
   }
 
-  return tops.size
+  return rowTops.length
 }
 
-export function resolveCompactAttachmentLayout(strip) {
-  if (!strip?.isConnected || !strip.children?.length) {
-    return false
-  }
-
+function measureRowsWithCompactVars(strip) {
   strip.dataset.measuring = 'true'
   strip.getBoundingClientRect()
 
   try {
-    return countAttachmentRows(strip) > 1
+    return countAttachmentRows(strip)
   } finally {
     delete strip.dataset.measuring
   }
+}
+
+export function shouldUseCompactAttachmentLayout(
+  rowsAtFullSize,
+  rowsAtCompactSize,
+  isCurrentlyCompact = false,
+) {
+  if (isCurrentlyCompact) {
+    return rowsAtCompactSize > 1
+  }
+
+  if (rowsAtFullSize <= 1) {
+    return false
+  }
+
+  return rowsAtCompactSize > 1
+}
+
+export function resolveCompactAttachmentLayout(strip, isCurrentlyCompact = false) {
+  if (!strip?.isConnected || !strip.children?.length) {
+    return false
+  }
+
+  if (isCurrentlyCompact) {
+    return shouldUseCompactAttachmentLayout(
+      countAttachmentRows(strip),
+      countAttachmentRows(strip),
+      true,
+    )
+  }
+
+  const rowsAtFullSize = countAttachmentRows(strip)
+  const rowsAtCompactSize = rowsAtFullSize <= 1
+    ? rowsAtFullSize
+    : measureRowsWithCompactVars(strip)
+
+  return shouldUseCompactAttachmentLayout(
+    rowsAtFullSize,
+    rowsAtCompactSize,
+    false,
+  )
 }

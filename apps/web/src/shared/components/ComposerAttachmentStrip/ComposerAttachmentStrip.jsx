@@ -47,7 +47,10 @@ function MockImagePlaceholder({ label }) {
 export default function ComposerAttachmentStrip({ attachments = [], onRemove, className }) {
   const stripRef = useRef(null)
   const isMountedRef = useRef(true)
+  const isCompactRef = useRef(false)
   const [isCompact, setIsCompact] = useState(false)
+
+  isCompactRef.current = isCompact
 
   const syncLayoutMode = useCallback(() => {
     if (!isMountedRef.current) return
@@ -58,7 +61,7 @@ export default function ComposerAttachmentStrip({ attachments = [], onRemove, cl
       return
     }
 
-    const nextCompact = resolveCompactAttachmentLayout(strip)
+    const nextCompact = resolveCompactAttachmentLayout(strip, isCompactRef.current)
     setIsCompact((current) => (current === nextCompact ? current : nextCompact))
   }, [])
 

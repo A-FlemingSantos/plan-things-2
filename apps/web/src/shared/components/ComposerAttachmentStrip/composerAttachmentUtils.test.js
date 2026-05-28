@@ -14,6 +14,7 @@ import {
   removeAttachmentChip,
   revokeAttachmentPreview,
   resolveCompactAttachmentLayout,
+  shouldUseCompactAttachmentLayout,
 } from './composerAttachmentUtils.js'
 
 describe('composerAttachmentUtils', () => {
@@ -167,7 +168,7 @@ describe('composerAttachmentUtils', () => {
     const third = document.createElement('div')
 
     first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 0 })
+    second.getBoundingClientRect = () => ({ top: 1 })
     third.getBoundingClientRect = () => ({ top: 64 })
 
     container.append(first, second, third)
@@ -175,21 +176,51 @@ describe('composerAttachmentUtils', () => {
     expect(countAttachmentRows(container)).toBe(2)
   })
 
-  it('resolves compact layout only when full-size attachments wrap', () => {
+  it('does not compact when full-size previews still fit on one row', () => {
+    expect(shouldUseCompactAttachmentLayout(1, 1, false)).toBe(false)
+    expect(shouldUseCompactAttachmentLayout(1, 2, false)).toBe(false)
+  })
+
+  it('does not compact when only the simulated full-size layout would wrap', () => {
+    expect(shouldUseCompactAttachmentLayout(2, 1, false)).toBe(false)
+  })
+
+  it('compacts only when both full-size and compact layouts wrap', () => {
+    expect(shouldUseCompactAttachmentLayout(2, 2, false)).toBe(true)
+    expect(shouldUseCompactAttachmentLayout(3, 2, false)).toBe(true)
+  })
+
+  it('resolves compact layout from the currently rendered full-size rows', () => {
     const container = document.createElement('div')
     const first = document.createElement('div')
     const second = document.createElement('div')
 
     first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 64 })
+    second.getBoundingClientRect = () => ({ top: 0 })
 
     container.append(first, second)
     document.body.appendChild(container)
 
-    expect(resolveCompactAttachmentLayout(container)).toBe(true)
+    expect(resolveCompactAttachmentLayout(container, false)).toBe(false)
 
-    container.removeChild(second)
-    expect(resolveCompactAttachmentLayout(container)).toBe(false)
+    container.remove()
+  })
+
+  it('drops compact layout when compact previews fit on one row', () => {
+    const container = document.createElement('div')
+    const first = document.createElement('div')
+    const second = document.createElement('div')
+
+    first.getBoundingClientRect = () => ({ top: 0 })
+    second.getBoundingClientRect = () => ({ top: 0 })
+
+    container.append(first, second)
+    document.body.appendChild(container)
+
+    expect(resolveCompactAttachmentLayout(container, true)).toBe(false)
+
+    second.getBoundingClientRect = () => ({ top: 48 })
+    expect(resolveCompactAttachmentLayout(container, true)).toBe(true)
 
     container.remove()
   })
