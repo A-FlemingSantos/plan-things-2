@@ -954,6 +954,10 @@
   outline: none;
 }
 
+.intelligenceComposerInput[data-has-attachments='true'] {
+  margin-top: 2px;
+}
+
 .intelligenceComposerInput::placeholder {
   color: var(--text-3);
 }

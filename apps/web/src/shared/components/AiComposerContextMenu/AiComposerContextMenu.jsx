@@ -1,4 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import {
+  MAX_COMPOSER_ATTACHMENTS,
+  appendFilesAsAttachments,
+  countAttachmentChips,
+  createMockRecentAttachment,
+  isAttachmentChip,
+  partitionComposerChips,
+  removeAttachmentChip,
+} from '../ComposerAttachmentStrip/composerAttachmentUtils.js'
 import styles from './AiComposerContextMenu.module.css'
 
 /* ── Icons ─────────────────────────────────────────────────────── */
@@ -57,6 +66,8 @@ const MOCK_RECENT_FILES = [
   { id: 'rf4', name: 'sprint-notes.md',       date: '23 de mai., 12:00', type: 'doc'   },
 ]
 
+const FILE_INPUT_ACCEPT = 'image/*,.pdf,.doc,.docx,.md,.fig,.txt,.csv,.xls,.xlsx,.ppt,.pptx'
+
 const makePlanChipDot = (color) => function PlanChipDot() {
   return <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill={color} /></svg>
 }
@@ -72,9 +83,13 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
   const [localChips, setLocalChips]   = useState(() => normalizeChips(initialChips))
   const isControlled                  = initialChips !== undefined && typeof onChipsChange === 'function'
   const chips                         = isControlled ? normalizeChips(initialChips) : localChips
+  const { inlineChips }               = partitionComposerChips(chips)
+  const attachmentCount               = countAttachmentChips(chips)
+  const attachmentsFull               = attachmentCount >= MAX_COMPOSER_ATTACHMENTS
 
   const menuRef       = useRef(null)
   const buttonRef     = useRef(null)
+  const fileInputRef  = useRef(null)
 
   const commitChips = (nextChips) => {
     if (!isControlled) {
@@ -89,6 +104,36 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
       : [...chips, { id: `ctx-${type}`, type, label, ChipIcon, kind }]
 
     commitChips(nextChips)
+  }
+
+  const toggleRecentAttachment = (fileMeta) => {
+    const attachment = createMockRecentAttachment(fileMeta)
+    const isActive = chips.some((chip) => chip.type === attachment.type)
+
+    if (isActive) {
+      commitChips(removeAttachmentChip(chips, attachment.type))
+      return
+    }
+
+    if (attachmentsFull) return
+
+    commitChips([...chips, attachment])
+  }
+
+  const handleUploadClick = () => {
+    if (attachmentsFull) return
+    fileInputRef.current?.click()
+  }
+
+  const handleFileInputChange = async (event) => {
+    const files = Array.from(event.target.files ?? [])
+    event.target.value = ''
+
+    if (files.length === 0) return
+
+    const nextChips = await appendFilesAsAttachments(chips, files)
+    commitChips(nextChips)
+    closeAll()
   }
 
   const closeAll = () => { setIsMenuOpen(false); setOpenSubmenu(null) }
@@ -112,6 +157,17 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
 
   return (
     <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept={FILE_INPUT_ACCEPT}
+        className={styles.hiddenFileInput}
+        aria-hidden="true"
+        tabIndex={-1}
+        onChange={handleFileInputChange}
+      />
+
       {/* ── Trigger button + menu ── */}
       <div className={styles.menuWrap}>
         <button
@@ -176,13 +232,14 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
             {/* Adicionar arquivos */}
             <button
               type="button"
-              className={`${styles.menuItem} ${chips.some((c) => c.type === 'file') ? styles.menuItemActive : ''}`}
+              className={`${styles.menuItem} ${attachmentsFull ? styles.menuItemDisabled : ''}`}
               role="menuitem"
-              onClick={() => { toggleChip('file', 'Arquivo', ClipIcon, 'context'); closeAll() }}
+              disabled={attachmentsFull}
+              title={attachmentsFull ? `Limite de ${MAX_COMPOSER_ATTACHMENTS} arquivos atingido` : undefined}
+              onClick={handleUploadClick}
             >
               <span className={styles.menuItemIcon} aria-hidden="true"><ClipIcon /></span>
               <span className={styles.menuItemLabel}>Adicionar arquivos</span>
-              {chips.some((c) => c.type === 'file') ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
             </button>
 
             {/* Arquivos recentes */}
@@ -203,17 +260,21 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
                 <div className={`${styles.submenu} ${styles.submenuWide}`} role="menu" aria-label="Arquivos recentes">
                   <div className={styles.submenuHeader}>Arquivos recentes</div>
                   <div className={styles.submenuSection}>Recentes</div>
-                  {MOCK_RECENT_FILES.map(({ id, name, date, type }) => {
+                  {MOCK_RECENT_FILES.map((fileMeta) => {
+                    const { id, name, date, type } = fileMeta
                     const chipType    = `file-${id}`
                     const active      = chips.some((c) => c.type === chipType)
                     const FileTypeIcon = type === 'image' ? FileImageIcon : FileDocIcon
+                    const disabled    = !active && attachmentsFull
                     return (
                       <button
                         key={id}
                         type="button"
-                        className={`${styles.fileItem} ${active ? styles.menuItemActive : ''}`}
+                        className={`${styles.fileItem} ${active ? styles.menuItemActive : ''} ${disabled ? styles.menuItemDisabled : ''}`}
                         role="menuitem"
-                        onClick={() => { toggleChip(chipType, name, FileTypeIcon, 'file'); closeAll() }}
+                        disabled={disabled}
+                        title={disabled ? `Limite de ${MAX_COMPOSER_ATTACHMENTS} arquivos atingido` : undefined}
+                        onClick={() => { toggleRecentAttachment(fileMeta); closeAll() }}
                       >
                         <span className={styles.fileIconWrap} aria-hidden="true"><FileTypeIcon /></span>
                         <span className={styles.fileInfo}>
@@ -284,10 +345,10 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
         ) : null}
       </div>
 
-      {/* ── Chips ── */}
-      {chips.length > 0 ? (
+      {/* ── Inline context chips (non-attachments) ── */}
+      {inlineChips.length > 0 ? (
         <div className={styles.chips} role="group" aria-label="Contexto adicionado">
-          {chips.map((chip) => (
+          {inlineChips.map((chip) => (
             <div key={chip.id} className={styles.chip} data-kind={chip.kind}>
               <span className={styles.chipIcon} aria-hidden="true"><chip.ChipIcon /></span>
               <span className={styles.chipLabel}>{chip.label}</span>

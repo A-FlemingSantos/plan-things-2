@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AiComposerContextMenu from './AiComposerContextMenu.jsx'
 
 const ChipIcon = () => null
@@ -16,7 +16,22 @@ function createGithubChip(overrides = {}) {
   }
 }
 
+function createFileChip(overrides = {}) {
+  return {
+    id: 'ctx-file-rf2',
+    type: 'file-rf2',
+    label: 'requisitos.pdf',
+    kind: 'file',
+    isImage: false,
+    ...overrides,
+  }
+}
+
 describe('AiComposerContextMenu', () => {
+  beforeEach(() => {
+    window.URL.createObjectURL = vi.fn(() => 'blob:preview')
+    window.URL.revokeObjectURL = vi.fn()
+  })
   it('syncs externally provided chips without echoing the update back to the parent', () => {
     const handleChipsChange = vi.fn()
     const { rerender } = render(
@@ -85,6 +100,64 @@ describe('AiComposerContextMenu', () => {
         type: 'github',
         label: 'GitHub',
         kind: 'connector',
+      }),
+    ])
+  })
+
+  it('does not render file attachments as inline chips', () => {
+    render(
+      <AiComposerContextMenu
+        onChipsChange={vi.fn()}
+        initialChips={[createFileChip(), createGithubChip()]}
+      />,
+    )
+
+    expect(screen.getByText('GitHub')).toBeInTheDocument()
+    expect(screen.queryByText('requisitos.pdf')).not.toBeInTheDocument()
+  })
+
+  it('adds uploaded files as attachment chips up to the limit', async () => {
+    const user = userEvent.setup()
+    const handleChipsChange = vi.fn()
+
+    render(<AiComposerContextMenu onChipsChange={handleChipsChange} initialChips={[]} />)
+
+    const input = document.querySelector('input[type="file"]')
+    const file = new File(['hello'], 'notes.md', { type: 'text/markdown' })
+
+    await user.upload(input, file)
+
+    await waitFor(() => {
+      expect(handleChipsChange).toHaveBeenCalled()
+    })
+
+    const lastCall = handleChipsChange.mock.calls.at(-1)?.[0]
+    expect(lastCall).toEqual([
+      expect.objectContaining({
+        kind: 'file',
+        label: 'notes.md',
+        isImage: false,
+      }),
+    ])
+  })
+
+  it('adds mock recent files as attachment chips', async () => {
+    const user = userEvent.setup()
+    const handleChipsChange = vi.fn()
+
+    render(<AiComposerContextMenu onChipsChange={handleChipsChange} initialChips={[]} />)
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+    await user.click(screen.getByRole('menuitem', { name: /Arquivos recentes/i }))
+    await user.click(screen.getByRole('menuitem', { name: /wireframes\.png/i }))
+
+    expect(handleChipsChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        kind: 'file',
+        type: 'file-rf3',
+        label: 'wireframes.png',
+        isImage: true,
+        isMock: true,
       }),
     ])
   })

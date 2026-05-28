@@ -1,5 +1,10 @@
 import { motion } from 'framer-motion'
 import AiComposerContextMenu from '../AiComposerContextMenu/AiComposerContextMenu.jsx'
+import ComposerAttachmentStrip from '../ComposerAttachmentStrip/ComposerAttachmentStrip.jsx'
+import {
+  partitionComposerChips,
+  removeAttachmentChip,
+} from '../ComposerAttachmentStrip/composerAttachmentUtils.js'
 import GitHubContextBar from '../GitHubContextBar/GitHubContextBar.jsx'
 
 function MicIcon() {
@@ -55,6 +60,8 @@ export default function IntelligenceComposer({
   const {
     form,
     input,
+    inputWithAttachments,
+    attachmentStrip,
     controls,
     contextSlot,
     actions,
@@ -63,6 +70,8 @@ export default function IntelligenceComposer({
     sendButton,
   } = classes
 
+  const { attachments } = partitionComposerChips(aiChips)
+  const hasAttachments = attachments.length > 0
   const isSubmitDisabled = submitDisabled ?? !String(value ?? '').trim()
 
   const handleInputKeyDown = (event) => {
@@ -72,18 +81,29 @@ export default function IntelligenceComposer({
     }
   }
 
+  const handleRemoveAttachment = (attachment) => {
+    if (!onChipsChange) return
+    onChipsChange(removeAttachmentChip(aiChips, attachment.type))
+  }
+
   const githubBar = showGitHubBar ? <GitHubContextBar className={githubBarClassName} /> : null
 
   const formBody = (
     <>
+      <ComposerAttachmentStrip
+        attachments={attachments}
+        onRemove={handleRemoveAttachment}
+        className={attachmentStrip}
+      />
       <textarea
         ref={inputRef}
-        className={input}
+        className={joinClasses(input, hasAttachments && inputWithAttachments)}
         placeholder={placeholder}
         aria-label={inputAriaLabel}
         rows={rows}
         value={value}
         disabled={inputDisabled}
+        data-has-attachments={hasAttachments ? 'true' : undefined}
         onChange={(event) => onChange?.(event.target.value, event)}
         onKeyDown={handleInputKeyDown}
       />

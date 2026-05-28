@@ -1,0 +1,139 @@
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--intelligence-input-bg, var(--surface-1));
+  border-radius: 19px 19px 0 0;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.imageAttachment {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-1, rgba(0, 0, 0, 0.08));
+  background: color-mix(in srgb, var(--surface-3, #f5f5f7) 80%, transparent);
+}
+
+.imagePreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.mockImagePlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  color: var(--text-2, #666);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--intelligence-accent, #5b8af5) 18%, transparent),
+      color-mix(in srgb, var(--surface-3, #f5f5f7) 90%, transparent)
+    );
+}
+
+.mockImageInitials {
+  font-family: var(--font-family);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.imageRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.58);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 120ms ease);
+}
+
+.imageAttachment:hover .imageRemove,
+.imageAttachment:focus-within .imageRemove {
+  opacity: 1;
+}
+
+.fileAttachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 220px;
+  height: 40px;
+  padding: 0 8px 0 10px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-1, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-3, #f5f5f7) 70%, transparent);
+  color: var(--text-1);
+}
+
+.fileIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-2, #666);
+}
+
+.fileLabel {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-family: var(--font-family);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.55;
+  flex-shrink: 0;
+  transition: opacity var(--transition-fast, 120ms ease);
+}
+
+.fileRemove:hover {
+  opacity: 1;
+}

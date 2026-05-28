@@ -448,6 +448,11 @@
   border-radius: 19px 19px 0 0;
 }
 
+.intelligencePrompt[data-has-attachments='true'] {
+  border-radius: 0;
+  padding-top: 8px;
+}
+
 .intelligencePrompt::placeholder {
   color: var(--intelligence-faint);
 }
