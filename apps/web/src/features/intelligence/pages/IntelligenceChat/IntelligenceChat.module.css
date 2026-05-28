@@ -47,7 +47,6 @@
   --intelligence-muted: var(--text-2);
   --intelligence-faint: var(--text-3);
   --intelligence-user-bg: var(--intelligence-accent);
-  --intelligence-assistant-bg: color-mix(in srgb, var(--surface-3) 78%, var(--surface-1));
 
   width: 100%;
   max-width: 720px;
@@ -55,21 +54,7 @@
   padding: 24px 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-[data-theme='dark'] .messages {
-  --intelligence-assistant-bg: rgba(255, 255, 255, 0.08);
-}
-
-.message {
-  max-width: min(86%, 560px);
-  padding: 10px 13px;
-  border-radius: 15px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--intelligence-muted);
-  animation: messageIn 0.22s ease both;
+  gap: 12px;
 }
 
 @keyframes messageIn {
@@ -78,27 +63,36 @@
 }
 
 .messageUser {
-  align-self: flex-end;
-  border-bottom-right-radius: 5px;
-  background: var(--intelligence-user-bg);
-  color: var(--intelligence-accent-foreground);
-}
-
-.messageAssistant {
-  align-self: flex-start;
-  border-bottom-left-radius: 5px;
-  background: var(--intelligence-assistant-bg);
-}
-
-.thinking {
-  align-self: flex-start;
-  border-bottom-left-radius: 5px;
-  background: var(--intelligence-assistant-bg);
   max-width: min(86%, 560px);
   padding: 10px 13px;
   border-radius: 15px;
+  border-bottom-right-radius: 5px;
+  align-self: flex-end;
+  background: var(--intelligence-user-bg);
+  color: var(--intelligence-accent-foreground);
   font-size: 13px;
   line-height: 1.5;
+  animation: messageIn 0.22s ease both;
+}
+
+.messageAssistant {
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  padding: 8px 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--intelligence-text);
+  animation: messageIn 0.22s ease both;
+}
+
+.thinking {
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  padding: 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--intelligence-faint);
   animation: messageIn 0.22s ease both;
 }

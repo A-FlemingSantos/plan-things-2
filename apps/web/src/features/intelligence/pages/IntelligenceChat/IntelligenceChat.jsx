@@ -369,7 +369,7 @@ export default function IntelligenceChat() {
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`${styles.message} ${msg.role === 'user' ? styles.messageUser : styles.messageAssistant}`}
+                  className={msg.role === 'user' ? styles.messageUser : styles.messageAssistant}
                 >
                   {msg.text}
                 </div>
