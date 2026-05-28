@@ -11,6 +11,28 @@ export const ATTACHMENT_LAYOUT = {
 
 const SQUARE_PREVIEW_SIZE = 112
 
+function normalizeAttachmentFileName(file) {
+  const name = typeof file?.name === 'string' ? file.name.trim() : ''
+  return name || 'untitled'
+}
+
+function buildAttachmentFingerprint(file) {
+  const name = normalizeAttachmentFileName(file).toLowerCase()
+  const mimeType = typeof file?.type === 'string' ? file.type.toLowerCase() : ''
+  const size = Number.isFinite(file?.size) ? file.size : 0
+  const lastModified = Number.isFinite(file?.lastModified) ? file.lastModified : 0
+
+  return `${name}::${mimeType}::${size}::${lastModified}`
+}
+
+function buildAttachmentType(file) {
+  const base = buildAttachmentFingerprint(file)
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return `file-upload-${base || 'file'}`
+}
+
 export function isAttachmentChip(chip) {
   return chip?.kind === 'file'
 }
@@ -83,7 +105,7 @@ function createSquareImagePreviewUrl(file) {
 }
 
 export async function createAttachmentFromFile(file) {
-  const id = `file-upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const id = buildAttachmentType(file)
   const isImage = file.type.startsWith('image/')
   let previewUrl = null
 
@@ -99,7 +121,7 @@ export async function createAttachmentFromFile(file) {
     id: `ctx-${id}`,
     type: id,
     kind: 'file',
-    label: file.name,
+    label: normalizeAttachmentFileName(file),
     isImage,
     previewUrl,
     mimeType: file.type,
@@ -120,19 +142,26 @@ export function createMockRecentAttachment({ id, name, type }) {
 }
 
 export async function appendFilesAsAttachments(chips, files) {
-  const currentAttachments = countAttachmentChips(chips)
+  const normalizedChips = Array.isArray(chips) ? chips : []
+  const currentAttachments = countAttachmentChips(normalizedChips)
   let remainingSlots = MAX_COMPOSER_ATTACHMENTS - currentAttachments
-  if (remainingSlots <= 0) return chips
+  if (remainingSlots <= 0) return normalizedChips
 
-  let nextChips = [...chips]
+  const existingTypes = new Set(
+    partitionComposerChips(normalizedChips).attachments.map((attachment) => attachment.type),
+  )
+  let nextChips = normalizedChips
 
   for (const file of files) {
     if (remainingSlots <= 0) break
 
     const attachment = await createAttachmentFromFile(file)
-    if (nextChips.some((chip) => chip.type === attachment.type)) continue
+    if (existingTypes.has(attachment.type)) continue
 
-    nextChips = [...nextChips, attachment]
+    existingTypes.add(attachment.type)
+    nextChips = nextChips === normalizedChips
+      ? [...normalizedChips, attachment]
+      : [...nextChips, attachment]
     remainingSlots -= 1
   }
 
@@ -165,12 +194,15 @@ export function getImageFilesFromClipboard(clipboardData) {
     const hasUsableName = typeof blob.name === 'string' && blob.name.trim().length > 0
     const name = hasUsableName
       ? blob.name.trim()
-      : `clipboard-${Date.now()}-${files.length + 1}.${clipboardImageExtension(blob.type)}`
+      : `clipboard-image-${files.length + 1}.${clipboardImageExtension(blob.type)}`
 
     files.push(
       blob instanceof File && blob.name === name
         ? blob
-        : new File([blob], name, { type: blob.type || 'image/png' }),
+        : new File([blob], name, {
+          type: blob.type || 'image/png',
+          lastModified: Number.isFinite(blob.lastModified) ? blob.lastModified : 0,
+        }),
     )
   }
 
@@ -178,13 +210,17 @@ export function getImageFilesFromClipboard(clipboardData) {
 }
 
 export async function appendClipboardImagesAsAttachments(chips, clipboardData) {
+  const normalizedChips = Array.isArray(chips) ? chips : []
   const imageFiles = getImageFilesFromClipboard(clipboardData)
   if (imageFiles.length === 0) {
-    return { chips, handled: false }
+    return { chips: normalizedChips, handled: false }
   }
 
-  const nextChips = await appendFilesAsAttachments(chips, imageFiles)
-  return { chips: nextChips, handled: true }
+  const nextChips = await appendFilesAsAttachments(normalizedChips, imageFiles)
+  return {
+    chips: nextChips,
+    handled: nextChips !== normalizedChips,
+  }
 }
 
 export function estimateAttachmentItemWidth(attachment, compact = false) {
@@ -208,6 +244,17 @@ export function estimateAttachmentsRowWidth(attachments, compact = false) {
   }, 0)
 }
 
+export function measureAttachmentInlineSize(strip) {
+  if (!strip?.isConnected) return 0
+
+  const computedStyle = window.getComputedStyle(strip)
+  const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0
+  const paddingRight = Number.parseFloat(computedStyle.paddingRight) || 0
+  const rawWidth = strip.clientWidth || strip.getBoundingClientRect().width || 0
+
+  return Math.max(0, Math.round(rawWidth - paddingLeft - paddingRight))
+}
+
 export function countAttachmentRows(container) {
   if (!container?.children?.length) return 0
 
@@ -226,17 +273,6 @@ export function countAttachmentRows(container) {
   return rowTops.length
 }
 
-function measureRowsWithCompactVars(strip) {
-  strip.dataset.measuring = 'true'
-  strip.getBoundingClientRect()
-
-  try {
-    return countAttachmentRows(strip)
-  } finally {
-    delete strip.dataset.measuring
-  }
-}
-
 export function shouldUseCompactAttachmentLayout(
   rowsAtFullSize,
   rowsAtCompactSize,
@@ -253,27 +289,32 @@ export function shouldUseCompactAttachmentLayout(
   return rowsAtCompactSize > 1
 }
 
-export function resolveCompactAttachmentLayout(strip, isCurrentlyCompact = false) {
+export function resolveCompactAttachmentLayout(strip, attachments = [], isCurrentlyCompact = false) {
   if (!strip?.isConnected || !strip.children?.length) {
     return false
   }
 
+  const availableWidth = measureAttachmentInlineSize(strip)
+  if (availableWidth <= 0) {
+    return false
+  }
+
+  const fullWouldWrap = estimateAttachmentsRowWidth(attachments, false) > availableWidth + 1
+  const compactWouldWrap = estimateAttachmentsRowWidth(attachments, true) > availableWidth + 1
+
   if (isCurrentlyCompact) {
     return shouldUseCompactAttachmentLayout(
-      countAttachmentRows(strip),
-      countAttachmentRows(strip),
+      fullWouldWrap ? 2 : 1,
+      compactWouldWrap ? 2 : 1,
       true,
     )
   }
 
   const rowsAtFullSize = countAttachmentRows(strip)
-  const rowsAtCompactSize = rowsAtFullSize <= 1
-    ? rowsAtFullSize
-    : measureRowsWithCompactVars(strip)
 
   return shouldUseCompactAttachmentLayout(
     rowsAtFullSize,
-    rowsAtCompactSize,
+    compactWouldWrap ? 2 : 1,
     false,
   )
 }

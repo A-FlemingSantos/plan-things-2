@@ -88,6 +88,19 @@ describe('composerAttachmentUtils', () => {
     expect(countAttachmentChips(next)).toBe(MAX_COMPOSER_ATTACHMENTS)
   })
 
+  it('deduplicates repeated uploads of the same file', async () => {
+    const file = new File(['a'], 'brief.pdf', { type: 'application/pdf', lastModified: 42 })
+
+    const next = await appendFilesAsAttachments([], [file, file])
+
+    expect(next).toHaveLength(1)
+    expect(next[0]).toEqual(expect.objectContaining({
+      kind: 'file',
+      label: 'brief.pdf',
+      type: expect.stringContaining('file-upload-brief-pdf'),
+    }))
+  })
+
   it('creates mock recent attachments with image flag', () => {
     const attachment = createMockRecentAttachment({
       id: 'rf3',
@@ -123,7 +136,7 @@ describe('composerAttachmentUtils', () => {
     })
 
     expect(files).toHaveLength(1)
-    expect(files[0].name).toMatch(/^clipboard-\d+-1\.png$/)
+    expect(files[0].name).toBe('clipboard-image-1.png')
   })
 
   it('appends clipboard images through the attachment pipeline', async () => {
@@ -149,6 +162,23 @@ describe('composerAttachmentUtils', () => {
     })
 
     expect(result).toEqual({ chips: [], handled: false })
+  })
+
+  it('does not intercept clipboard images when no attachment can be added', async () => {
+    const existing = Array.from({ length: MAX_COMPOSER_ATTACHMENTS }, (_, index) => ({
+      id: `ctx-file-${index}`,
+      kind: 'file',
+      type: `file-${index}`,
+      label: `file-${index}.pdf`,
+    }))
+    const imageFile = new File(['img'], 'shot.png', { type: 'image/png' })
+
+    const result = await appendClipboardImagesAsAttachments(existing, {
+      items: [{ kind: 'file', type: 'image/png', getAsFile: () => imageFile }],
+    })
+
+    expect(result.handled).toBe(false)
+    expect(result.chips).toBe(existing)
   })
 
   it('estimates full-size attachment row width', () => {
@@ -194,48 +224,76 @@ describe('composerAttachmentUtils', () => {
     const container = document.createElement('div')
     const first = document.createElement('div')
     const second = document.createElement('div')
+    const attachments = [
+      { isImage: true, label: 'photo.png' },
+      { isImage: false, label: 'brief.pdf' },
+      { isImage: false, label: 'roadmap-notes.md' },
+    ]
 
     first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 0 })
+    second.getBoundingClientRect = () => ({ top: 64 })
+
+    Object.defineProperty(container, 'clientWidth', {
+      value: 120,
+      configurable: true,
+    })
 
     container.append(first, second)
     document.body.appendChild(container)
 
-    expect(resolveCompactAttachmentLayout(container, false)).toBe(false)
+    expect(resolveCompactAttachmentLayout(container, attachments, false)).toBe(true)
 
     container.remove()
   })
 
-  it('drops compact layout when compact previews fit on one row', () => {
+  it('keeps full-size layout when compact previews would fit back on one row', () => {
     const container = document.createElement('div')
     const first = document.createElement('div')
     const second = document.createElement('div')
+    const attachments = [
+      { isImage: true, label: 'photo.png' },
+      { isImage: false, label: 'brief.pdf' },
+    ]
 
     first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 0 })
+    second.getBoundingClientRect = () => ({ top: 64 })
+
+    Object.defineProperty(container, 'clientWidth', {
+      value: 170,
+      configurable: true,
+    })
 
     container.append(first, second)
     document.body.appendChild(container)
 
-    expect(resolveCompactAttachmentLayout(container, true)).toBe(false)
-
-    second.getBoundingClientRect = () => ({ top: 48 })
-    expect(resolveCompactAttachmentLayout(container, true)).toBe(true)
+    expect(resolveCompactAttachmentLayout(container, attachments, false)).toBe(false)
+    expect(resolveCompactAttachmentLayout(container, attachments, true)).toBe(false)
 
     container.remove()
   })
 
-  it('always clears the measuring flag even when row counting fails', () => {
+  it('preserves compact mode only while compact previews still need multiple rows', () => {
     const container = document.createElement('div')
-    const child = document.createElement('div')
-    child.getBoundingClientRect = () => {
-      throw new Error('layout unavailable')
-    }
-    container.append(child)
+    const first = document.createElement('div')
+    const second = document.createElement('div')
+    const attachments = [
+      { isImage: true, label: 'photo.png' },
+      { isImage: false, label: 'brief.pdf' },
+      { isImage: false, label: 'roadmap-notes.md' },
+    ]
+
+    first.getBoundingClientRect = () => ({ top: 0 })
+    second.getBoundingClientRect = () => ({ top: 48 })
+
+    Object.defineProperty(container, 'clientWidth', {
+      value: 120,
+      configurable: true,
+    })
+
+    container.append(first, second)
     document.body.appendChild(container)
 
-    expect(() => resolveCompactAttachmentLayout(container)).toThrow('layout unavailable')
-    expect(container.dataset.measuring).toBeUndefined()
+    expect(resolveCompactAttachmentLayout(container, attachments, true)).toBe(true)
 
     container.remove()
   })

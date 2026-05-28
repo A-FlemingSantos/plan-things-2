@@ -1,5 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { resolveCompactAttachmentLayout } from './composerAttachmentUtils.js'
+import {
+  measureAttachmentInlineSize,
+  resolveCompactAttachmentLayout,
+} from './composerAttachmentUtils.js'
 import styles from './ComposerAttachmentStrip.module.css'
 
 function FileDocIcon() {
@@ -48,6 +51,7 @@ export default function ComposerAttachmentStrip({ attachments = [], onRemove, cl
   const stripRef = useRef(null)
   const isMountedRef = useRef(true)
   const isCompactRef = useRef(false)
+  const observedInlineSizeRef = useRef(0)
   const [isCompact, setIsCompact] = useState(false)
 
   isCompactRef.current = isCompact
@@ -57,18 +61,25 @@ export default function ComposerAttachmentStrip({ attachments = [], onRemove, cl
 
     const strip = stripRef.current
     if (!strip) {
+      observedInlineSizeRef.current = 0
       setIsCompact(false)
       return
     }
 
-    const nextCompact = resolveCompactAttachmentLayout(strip, isCompactRef.current)
+    observedInlineSizeRef.current = measureAttachmentInlineSize(strip)
+    const nextCompact = resolveCompactAttachmentLayout(
+      strip,
+      attachments,
+      isCompactRef.current,
+    )
     setIsCompact((current) => (current === nextCompact ? current : nextCompact))
-  }, [])
+  }, [attachments])
 
   useLayoutEffect(() => {
     isMountedRef.current = true
 
     if (attachments.length === 0) {
+      observedInlineSizeRef.current = 0
       setIsCompact(false)
       return () => {
         isMountedRef.current = false
@@ -85,6 +96,8 @@ export default function ComposerAttachmentStrip({ attachments = [], onRemove, cl
     }
 
     const observer = new ResizeObserver(() => {
+      const nextInlineSize = measureAttachmentInlineSize(strip)
+      if (nextInlineSize === observedInlineSizeRef.current) return
       syncLayoutMode()
     })
     observer.observe(strip)
