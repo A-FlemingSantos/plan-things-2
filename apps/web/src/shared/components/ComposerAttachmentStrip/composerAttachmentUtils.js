@@ -1,5 +1,14 @@
 export const MAX_COMPOSER_ATTACHMENTS = 5
 
+export const ATTACHMENT_LAYOUT = {
+  fullImageSize: 56,
+  compactImageSize: 40,
+  fileMaxWidth: 220,
+  fileBaseWidth: 54,
+  charWidth: 6.5,
+  gap: 8,
+}
+
 const SQUARE_PREVIEW_SIZE = 112
 
 export function isAttachmentChip(chip) {
@@ -176,4 +185,40 @@ export async function appendClipboardImagesAsAttachments(chips, clipboardData) {
 
   const nextChips = await appendFilesAsAttachments(chips, imageFiles)
   return { chips: nextChips, handled: true }
+}
+
+export function estimateAttachmentItemWidth(attachment, compact = false) {
+  if (attachment?.isImage) {
+    return compact
+      ? ATTACHMENT_LAYOUT.compactImageSize
+      : ATTACHMENT_LAYOUT.fullImageSize
+  }
+
+  const label = String(attachment?.label ?? '')
+  const estimated = ATTACHMENT_LAYOUT.fileBaseWidth + label.length * ATTACHMENT_LAYOUT.charWidth
+  return Math.min(ATTACHMENT_LAYOUT.fileMaxWidth, estimated)
+}
+
+export function estimateAttachmentsRowWidth(attachments, compact = false) {
+  if (!Array.isArray(attachments) || attachments.length === 0) return 0
+
+  return attachments.reduce((total, attachment, index) => {
+    const itemWidth = estimateAttachmentItemWidth(attachment, compact)
+    return total + itemWidth + (index > 0 ? ATTACHMENT_LAYOUT.gap : 0)
+  }, 0)
+}
+
+export function countAttachmentRows(container) {
+  if (!container?.children?.length) return 0
+
+  const tops = new Set()
+  for (const child of container.children) {
+    tops.add(Math.round(child.getBoundingClientRect().top))
+  }
+
+  return tops.size
+}
+
+export function shouldUseCompactAttachmentLayout(rowsAtFullSize) {
+  return rowsAtFullSize > 1
 }

@@ -1,3 +1,8 @@
+import { useLayoutEffect, useRef, useState } from 'react'
+import {
+  countAttachmentRows,
+  shouldUseCompactAttachmentLayout,
+} from './composerAttachmentUtils.js'
 import styles from './ComposerAttachmentStrip.module.css'
 
 function FileDocIcon() {
@@ -42,12 +47,61 @@ function MockImagePlaceholder({ label }) {
   )
 }
 
+function measureFullSizeRows(strip) {
+  strip.dataset.measuring = 'true'
+  strip.getBoundingClientRect()
+
+  const rowsAtFullSize = countAttachmentRows(strip)
+
+  delete strip.dataset.measuring
+
+  return rowsAtFullSize
+}
+
 export default function ComposerAttachmentStrip({ attachments = [], onRemove, className }) {
+  const stripRef = useRef(null)
+  const [isCompact, setIsCompact] = useState(false)
+
+  useLayoutEffect(() => {
+    const strip = stripRef.current
+    if (!strip || attachments.length === 0) {
+      setIsCompact(false)
+      return undefined
+    }
+
+    let frameId = 0
+
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(() => {
+        if (!stripRef.current) return
+        const rowsAtFullSize = measureFullSizeRows(stripRef.current)
+        setIsCompact(shouldUseCompactAttachmentLayout(rowsAtFullSize))
+      })
+    }
+
+    scheduleMeasure()
+
+    const observer = new ResizeObserver(scheduleMeasure)
+    observer.observe(strip)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      observer.disconnect()
+    }
+  }, [attachments])
+
   if (attachments.length === 0) return null
 
   return (
     <div
-      className={[styles.strip, className].filter(Boolean).join(' ')}
+      ref={stripRef}
+      className={[
+        styles.strip,
+        isCompact && styles.stripCompact,
+        className,
+      ].filter(Boolean).join(' ')}
+      data-compact={isCompact ? 'true' : 'false'}
       role="group"
       aria-label="Anexos adicionados"
     >

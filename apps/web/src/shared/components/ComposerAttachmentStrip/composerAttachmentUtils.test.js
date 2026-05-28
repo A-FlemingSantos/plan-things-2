@@ -5,11 +5,15 @@ import {
   appendFilesAsAttachments,
   countAttachmentChips,
   createMockRecentAttachment,
+  estimateAttachmentItemWidth,
+  estimateAttachmentsRowWidth,
+  countAttachmentRows,
   getImageFilesFromClipboard,
   isAttachmentChip,
   partitionComposerChips,
   removeAttachmentChip,
   revokeAttachmentPreview,
+  shouldUseCompactAttachmentLayout,
 } from './composerAttachmentUtils.js'
 
 describe('composerAttachmentUtils', () => {
@@ -144,5 +148,36 @@ describe('composerAttachmentUtils', () => {
     })
 
     expect(result).toEqual({ chips: [], handled: false })
+  })
+
+  it('estimates full-size attachment row width', () => {
+    const attachments = [
+      { isImage: true, label: 'photo.png' },
+      { isImage: false, label: 'brief.pdf' },
+    ]
+
+    expect(estimateAttachmentItemWidth(attachments[0])).toBe(56)
+    expect(estimateAttachmentsRowWidth(attachments)).toBe(56 + 8 + 54 + 9 * 6.5)
+  })
+
+  it('counts distinct attachment rows from child layout positions', () => {
+    const container = document.createElement('div')
+    const first = document.createElement('div')
+    const second = document.createElement('div')
+    const third = document.createElement('div')
+
+    first.getBoundingClientRect = () => ({ top: 0 })
+    second.getBoundingClientRect = () => ({ top: 0 })
+    third.getBoundingClientRect = () => ({ top: 64 })
+
+    container.append(first, second, third)
+
+    expect(countAttachmentRows(container)).toBe(2)
+  })
+
+  it('enables compact layout only when full-size attachments wrap', () => {
+    expect(shouldUseCompactAttachmentLayout(1)).toBe(false)
+    expect(shouldUseCompactAttachmentLayout(2)).toBe(true)
+    expect(shouldUseCompactAttachmentLayout(3)).toBe(true)
   })
 })

@@ -1,30 +1,59 @@
 .strip {
   --attachment-thumb-size: 56px;
+  --attachment-file-height: 56px;
+  --attachment-file-icon-size: 22px;
+  --attachment-file-icon-svg-size: 16px;
+  --attachment-file-gap: 10px;
+  --attachment-file-padding-inline: 12px;
 
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
   gap: 8px;
+  row-gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 10px 14px 6px;
-  overflow-x: auto;
-  overflow-y: visible;
-  scrollbar-width: none;
+  overflow: visible;
   background: var(--intelligence-input-bg, var(--surface-1));
   border-radius: 19px 19px 0 0;
 }
 
-.strip::-webkit-scrollbar {
-  display: none;
+.strip[data-measuring='true'],
+.strip.stripCompact[data-measuring='true'] {
+  --attachment-thumb-size: 56px;
+  --attachment-file-height: 56px;
+  --attachment-file-icon-size: 22px;
+  --attachment-file-icon-svg-size: 16px;
+  --attachment-file-gap: 10px;
+  --attachment-file-padding-inline: 12px;
+}
+
+.stripCompact {
+  --attachment-thumb-size: 40px;
+  --attachment-file-height: 40px;
+  --attachment-file-icon-size: 18px;
+  --attachment-file-icon-svg-size: 14px;
+  --attachment-file-gap: 8px;
+  --attachment-file-padding-inline: 10px;
 }
 
 .imageAttachment {
   position: relative;
   width: var(--attachment-thumb-size);
   height: var(--attachment-thumb-size);
-  flex-shrink: 0;
+  flex: 0 0 var(--attachment-thumb-size);
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border-1, rgba(0, 0, 0, 0.08));
   background: color-mix(in srgb, var(--surface-3, #f5f5f7) 80%, transparent);
+}
+
+.stripCompact .imageAttachment {
+  border-radius: 8px;
 }
 
 .imagePreview {
@@ -60,6 +89,10 @@
   letter-spacing: 0.02em;
 }
 
+.stripCompact .mockImageInitials {
+  font-size: 9px;
+}
+
 .imageRemove {
   position: absolute;
   top: 4px;
@@ -79,6 +112,13 @@
   transition: opacity var(--transition-fast, 120ms ease);
 }
 
+.stripCompact .imageRemove {
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+}
+
 .imageAttachment:hover .imageRemove,
 .imageAttachment:focus-within .imageRemove {
   opacity: 1;
@@ -87,31 +127,35 @@
 .fileAttachment {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--attachment-file-gap);
   min-width: 0;
   max-width: 220px;
-  height: var(--attachment-thumb-size);
-  padding: 0 10px 0 12px;
-  flex-shrink: 0;
+  height: var(--attachment-file-height);
+  padding: 0 var(--attachment-file-padding-inline);
+  flex: 0 1 auto;
   border: 1px solid var(--border-1, rgba(0, 0, 0, 0.08));
   border-radius: 10px;
   background: color-mix(in srgb, var(--surface-3, #f5f5f7) 70%, transparent);
   color: var(--text-1);
 }
 
+.stripCompact .fileAttachment {
+  border-radius: 8px;
+}
+
 .fileIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: var(--attachment-file-icon-size);
+  height: var(--attachment-file-icon-size);
   flex-shrink: 0;
   color: var(--text-2, #666);
 }
 
 .fileIcon svg {
-  width: 16px;
-  height: 16px;
+  width: var(--attachment-file-icon-svg-size);
+  height: var(--attachment-file-icon-svg-size);
 }
 
 .fileLabel {
@@ -124,6 +168,11 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.stripCompact .fileLabel {
+  font-size: 11px;
+  line-height: 14px;
 }
 
 .fileRemove {
@@ -141,6 +190,11 @@
   opacity: 0.55;
   flex-shrink: 0;
   transition: opacity var(--transition-fast, 120ms ease);
+}
+
+.stripCompact .fileRemove {
+  width: 18px;
+  height: 18px;
 }
 
 .fileRemove:hover {
