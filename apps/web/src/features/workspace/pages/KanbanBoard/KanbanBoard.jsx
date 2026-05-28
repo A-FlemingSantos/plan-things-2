@@ -2593,6 +2593,7 @@ export default function KanbanBoard() {
                   classes={{
                     form: styles.intelligenceComposer,
                     input: styles.intelligenceComposerInput,
+                    attachmentStrip: styles.intelligenceComposerAttachmentStrip,
                     controls: styles.intelligenceComposerFooter,
                     contextSlot: styles.intelligenceComposerTools,
                     actions: styles.intelligenceComposerActions,

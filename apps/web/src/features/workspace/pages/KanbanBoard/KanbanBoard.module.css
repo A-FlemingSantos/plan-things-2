@@ -926,6 +926,8 @@
 }
 
 .intelligenceComposer {
+  --intelligence-input-bg: transparent;
+
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -936,6 +938,13 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
     0 14px 36px rgba(15, 23, 42, 0.08);
+}
+
+.intelligenceComposerAttachmentStrip {
+  margin: -10px -14px 0;
+  padding: 10px 14px 6px;
+  border-radius: 21px 21px 0 0;
+  background: transparent;
 }
 
 .intelligenceComposerInput {
@@ -5768,6 +5777,11 @@
   .intelligenceComposer {
     padding: 10px 12px 10px;
     border-radius: 20px;
+  }
+
+  .intelligenceComposerAttachmentStrip {
+    margin: -10px -12px 0;
+    border-radius: 19px 19px 0 0;
   }
   .intelligenceComposerInput {
     min-height: 26px;
