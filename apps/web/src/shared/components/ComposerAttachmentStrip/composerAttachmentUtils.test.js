@@ -5,16 +5,11 @@ import {
   appendFilesAsAttachments,
   countAttachmentChips,
   createMockRecentAttachment,
-  estimateAttachmentItemWidth,
-  estimateAttachmentsRowWidth,
-  countAttachmentRows,
   getImageFilesFromClipboard,
   isAttachmentChip,
   partitionComposerChips,
   removeAttachmentChip,
   revokeAttachmentPreview,
-  resolveCompactAttachmentLayout,
-  shouldUseCompactAttachmentLayout,
 } from './composerAttachmentUtils.js'
 
 describe('composerAttachmentUtils', () => {
@@ -179,122 +174,5 @@ describe('composerAttachmentUtils', () => {
 
     expect(result.handled).toBe(false)
     expect(result.chips).toBe(existing)
-  })
-
-  it('estimates full-size attachment row width', () => {
-    const attachments = [
-      { isImage: true, label: 'photo.png' },
-      { isImage: false, label: 'brief.pdf' },
-    ]
-
-    expect(estimateAttachmentItemWidth(attachments[0])).toBe(56)
-    expect(estimateAttachmentsRowWidth(attachments)).toBe(56 + 8 + 54 + 9 * 6.5)
-  })
-
-  it('counts distinct attachment rows from child layout positions', () => {
-    const container = document.createElement('div')
-    const first = document.createElement('div')
-    const second = document.createElement('div')
-    const third = document.createElement('div')
-
-    first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 1 })
-    third.getBoundingClientRect = () => ({ top: 64 })
-
-    container.append(first, second, third)
-
-    expect(countAttachmentRows(container)).toBe(2)
-  })
-
-  it('does not compact when full-size previews still fit on one row', () => {
-    expect(shouldUseCompactAttachmentLayout(1, 1, false)).toBe(false)
-    expect(shouldUseCompactAttachmentLayout(1, 2, false)).toBe(false)
-  })
-
-  it('does not compact when only the simulated full-size layout would wrap', () => {
-    expect(shouldUseCompactAttachmentLayout(2, 1, false)).toBe(false)
-  })
-
-  it('compacts only when both full-size and compact layouts wrap', () => {
-    expect(shouldUseCompactAttachmentLayout(2, 2, false)).toBe(true)
-    expect(shouldUseCompactAttachmentLayout(3, 2, false)).toBe(true)
-  })
-
-  it('resolves compact layout from the currently rendered full-size rows', () => {
-    const container = document.createElement('div')
-    const first = document.createElement('div')
-    const second = document.createElement('div')
-    const attachments = [
-      { isImage: true, label: 'photo.png' },
-      { isImage: false, label: 'brief.pdf' },
-      { isImage: false, label: 'roadmap-notes.md' },
-    ]
-
-    first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 64 })
-
-    Object.defineProperty(container, 'clientWidth', {
-      value: 120,
-      configurable: true,
-    })
-
-    container.append(first, second)
-    document.body.appendChild(container)
-
-    expect(resolveCompactAttachmentLayout(container, attachments, false)).toBe(true)
-
-    container.remove()
-  })
-
-  it('keeps full-size layout when compact previews would fit back on one row', () => {
-    const container = document.createElement('div')
-    const first = document.createElement('div')
-    const second = document.createElement('div')
-    const attachments = [
-      { isImage: true, label: 'photo.png' },
-      { isImage: false, label: 'brief.pdf' },
-    ]
-
-    first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 64 })
-
-    Object.defineProperty(container, 'clientWidth', {
-      value: 170,
-      configurable: true,
-    })
-
-    container.append(first, second)
-    document.body.appendChild(container)
-
-    expect(resolveCompactAttachmentLayout(container, attachments, false)).toBe(false)
-    expect(resolveCompactAttachmentLayout(container, attachments, true)).toBe(false)
-
-    container.remove()
-  })
-
-  it('preserves compact mode only while compact previews still need multiple rows', () => {
-    const container = document.createElement('div')
-    const first = document.createElement('div')
-    const second = document.createElement('div')
-    const attachments = [
-      { isImage: true, label: 'photo.png' },
-      { isImage: false, label: 'brief.pdf' },
-      { isImage: false, label: 'roadmap-notes.md' },
-    ]
-
-    first.getBoundingClientRect = () => ({ top: 0 })
-    second.getBoundingClientRect = () => ({ top: 48 })
-
-    Object.defineProperty(container, 'clientWidth', {
-      value: 120,
-      configurable: true,
-    })
-
-    container.append(first, second)
-    document.body.appendChild(container)
-
-    expect(resolveCompactAttachmentLayout(container, attachments, true)).toBe(true)
-
-    container.remove()
   })
 })

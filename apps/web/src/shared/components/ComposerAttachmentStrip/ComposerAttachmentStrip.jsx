@@ -1,8 +1,3 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import {
-  measureAttachmentInlineSize,
-  resolveCompactAttachmentLayout,
-} from './composerAttachmentUtils.js'
 import styles from './ComposerAttachmentStrip.module.css'
 
 function FileDocIcon() {
@@ -48,77 +43,15 @@ function MockImagePlaceholder({ label }) {
 }
 
 export default function ComposerAttachmentStrip({ attachments = [], onRemove, className }) {
-  const stripRef = useRef(null)
-  const isMountedRef = useRef(true)
-  const isCompactRef = useRef(false)
-  const observedInlineSizeRef = useRef(0)
-  const [isCompact, setIsCompact] = useState(false)
-
-  isCompactRef.current = isCompact
-
-  const syncLayoutMode = useCallback(() => {
-    if (!isMountedRef.current) return
-
-    const strip = stripRef.current
-    if (!strip) {
-      observedInlineSizeRef.current = 0
-      setIsCompact(false)
-      return
-    }
-
-    observedInlineSizeRef.current = measureAttachmentInlineSize(strip)
-    const nextCompact = resolveCompactAttachmentLayout(
-      strip,
-      attachments,
-      isCompactRef.current,
-    )
-    setIsCompact((current) => (current === nextCompact ? current : nextCompact))
-  }, [attachments])
-
-  useLayoutEffect(() => {
-    isMountedRef.current = true
-
-    if (attachments.length === 0) {
-      observedInlineSizeRef.current = 0
-      setIsCompact(false)
-      return () => {
-        isMountedRef.current = false
-      }
-    }
-
-    syncLayoutMode()
-
-    const strip = stripRef.current
-    if (!strip) {
-      return () => {
-        isMountedRef.current = false
-      }
-    }
-
-    const observer = new ResizeObserver(() => {
-      const nextInlineSize = measureAttachmentInlineSize(strip)
-      if (nextInlineSize === observedInlineSizeRef.current) return
-      syncLayoutMode()
-    })
-    observer.observe(strip)
-
-    return () => {
-      isMountedRef.current = false
-      observer.disconnect()
-    }
-  }, [attachments, syncLayoutMode])
-
   if (attachments.length === 0) return null
 
   return (
     <div
-      ref={stripRef}
       className={[
         styles.strip,
-        isCompact && styles.stripCompact,
         className,
       ].filter(Boolean).join(' ')}
-      data-compact={isCompact ? 'true' : 'false'}
+      data-compact="true"
       role="group"
       aria-label="Anexos adicionados"
     >
@@ -131,7 +64,6 @@ export default function ComposerAttachmentStrip({ attachments = [], onRemove, cl
                   src={attachment.previewUrl}
                   alt={attachment.label}
                   className={styles.imagePreview}
-                  onLoad={syncLayoutMode}
                 />
               ) : (
                 <MockImagePlaceholder label={attachment.label} />

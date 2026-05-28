@@ -1,10 +1,10 @@
 .strip {
-  --attachment-thumb-size: 56px;
-  --attachment-file-height: 56px;
-  --attachment-file-icon-size: 22px;
-  --attachment-file-icon-svg-size: 16px;
-  --attachment-file-gap: 10px;
-  --attachment-file-padding-inline: 12px;
+  --attachment-thumb-size: 40px;
+  --attachment-file-height: 40px;
+  --attachment-file-icon-size: 18px;
+  --attachment-file-icon-svg-size: 14px;
+  --attachment-file-gap: 8px;
+  --attachment-file-padding-inline: 10px;
 
   display: flex;
   flex-wrap: wrap;
@@ -22,38 +22,15 @@
   border-radius: 19px 19px 0 0;
 }
 
-.strip[data-measuring='true'],
-.strip.stripCompact[data-measuring='true'] {
-  --attachment-thumb-size: 56px;
-  --attachment-file-height: 56px;
-  --attachment-file-icon-size: 22px;
-  --attachment-file-icon-svg-size: 16px;
-  --attachment-file-gap: 10px;
-  --attachment-file-padding-inline: 12px;
-}
-
-.stripCompact {
-  --attachment-thumb-size: 40px;
-  --attachment-file-height: 40px;
-  --attachment-file-icon-size: 18px;
-  --attachment-file-icon-svg-size: 14px;
-  --attachment-file-gap: 8px;
-  --attachment-file-padding-inline: 10px;
-}
-
 .imageAttachment {
   position: relative;
   width: var(--attachment-thumb-size);
   height: var(--attachment-thumb-size);
   flex: 0 0 var(--attachment-thumb-size);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border-1, rgba(0, 0, 0, 0.08));
   background: color-mix(in srgb, var(--surface-3, #f5f5f7) 80%, transparent);
-}
-
-.stripCompact .imageAttachment {
-  border-radius: 8px;
 }
 
 .imagePreview {
@@ -83,25 +60,21 @@
 
 .mockImageInitials {
   font-family: var(--font-family);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0.02em;
 }
 
-.stripCompact .mockImageInitials {
-  font-size: 9px;
-}
-
 .imageRemove {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 3px;
+  right: 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -110,13 +83,6 @@
   cursor: pointer;
   opacity: 0;
   transition: opacity var(--transition-fast, 120ms ease);
-}
-
-.stripCompact .imageRemove {
-  top: 3px;
-  right: 3px;
-  width: 16px;
-  height: 16px;
 }
 
 .imageAttachment:hover .imageRemove,
@@ -134,13 +100,9 @@
   padding: 0 var(--attachment-file-padding-inline);
   flex: 0 1 auto;
   border: 1px solid var(--border-1, rgba(0, 0, 0, 0.08));
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--surface-3, #f5f5f7) 70%, transparent);
   color: var(--text-1);
-}
-
-.stripCompact .fileAttachment {
-  border-radius: 8px;
 }
 
 .fileIcon {
@@ -163,24 +125,19 @@
   flex: 1 1 auto;
   display: block;
   font-family: var(--font-family);
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 11px;
+  line-height: 14px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.stripCompact .fileLabel {
-  font-size: 11px;
-  line-height: 14px;
 }
 
 .fileRemove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -190,11 +147,6 @@
   opacity: 0.55;
   flex-shrink: 0;
   transition: opacity var(--transition-fast, 120ms ease);
-}
-
-.stripCompact .fileRemove {
-  width: 18px;
-  height: 18px;
 }
 
 .fileRemove:hover {

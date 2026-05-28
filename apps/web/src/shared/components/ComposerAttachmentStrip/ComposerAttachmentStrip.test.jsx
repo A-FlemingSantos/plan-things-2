@@ -1,7 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as composerAttachmentUtils from './composerAttachmentUtils.js'
+import { describe, expect, it, vi } from 'vitest'
 import ComposerAttachmentStrip from './ComposerAttachmentStrip.jsx'
 
 function createAttachment(index, { isImage = false, label = `file-${index}.pdf` } = {}) {
@@ -15,22 +14,7 @@ function createAttachment(index, { isImage = false, label = `file-${index}.pdf` 
 }
 
 describe('ComposerAttachmentStrip', () => {
-  let resizeObserverCallback
-
-  beforeEach(() => {
-    resizeObserverCallback = null
-    vi.restoreAllMocks()
-
-    global.ResizeObserver = vi.fn(function ResizeObserver(callback) {
-      resizeObserverCallback = callback
-      this.observe = vi.fn()
-      this.disconnect = vi.fn()
-    })
-  })
-
-  it('renders image and file attachments in separate layouts', async () => {
-    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(false)
-
+  it('renders image and file attachments in the default compact layout', () => {
     render(
       <ComposerAttachmentStrip
         attachments={[
@@ -54,15 +38,10 @@ describe('ComposerAttachmentStrip', () => {
 
     expect(screen.getByRole('img', { name: 'photo.png' })).toBeInTheDocument()
     expect(screen.getByText('brief.pdf')).toBeInTheDocument()
-
-    await waitFor(() => {
-      expect(screen.getByRole('group', { name: 'Anexos adicionados' })).toHaveAttribute('data-compact', 'false')
-    })
+    expect(screen.getByRole('group', { name: 'Anexos adicionados' })).toHaveAttribute('data-compact', 'true')
   })
 
   it('notifies parent when an attachment is removed', async () => {
-    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(false)
-
     const user = userEvent.setup()
     const handleRemove = vi.fn()
     const attachment = {
@@ -84,46 +63,7 @@ describe('ComposerAttachmentStrip', () => {
     expect(handleRemove).toHaveBeenCalledWith(attachment)
   })
 
-  it('uses compact layout when both full-size and compact previews wrap', async () => {
-    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(true)
-
-    render(
-      <ComposerAttachmentStrip
-        attachments={Array.from({ length: 5 }, (_, index) => (
-          createAttachment(index + 1, { isImage: true, label: `photo-${index + 1}.png` })
-        ))}
-        onRemove={vi.fn()}
-      />,
-    )
-
-    resizeObserverCallback?.([], { observe: vi.fn(), disconnect: vi.fn() })
-
-    await waitFor(() => {
-      expect(screen.getByRole('group', { name: 'Anexos adicionados' })).toHaveAttribute('data-compact', 'true')
-    })
-  })
-
-  it('keeps full-size layout when attachments stay on one row', async () => {
-    vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout').mockReturnValue(false)
-
-    render(
-      <ComposerAttachmentStrip
-        attachments={[createAttachment(1, { isImage: true, label: 'photo.png' })]}
-        onRemove={vi.fn()}
-      />,
-    )
-
-    resizeObserverCallback?.([], { observe: vi.fn(), disconnect: vi.fn() })
-
-    await waitFor(() => {
-      expect(screen.getByRole('group', { name: 'Anexos adicionados' })).toHaveAttribute('data-compact', 'false')
-    })
-  })
-
-  it('survives rapid attach and detach cycles without throwing', async () => {
-    const resolveLayout = vi.spyOn(composerAttachmentUtils, 'resolveCompactAttachmentLayout')
-      .mockReturnValue(false)
-
+  it('survives rapid attach and detach cycles without throwing', () => {
     const { rerender } = render(
       <ComposerAttachmentStrip
         attachments={[createAttachment(1, { isImage: true, label: 'photo-1.png' })]}
@@ -141,9 +81,6 @@ describe('ComposerAttachmentStrip', () => {
       />,
     )
 
-    resolveLayout.mockReturnValue(true)
-    resizeObserverCallback?.([], { observe: vi.fn(), disconnect: vi.fn() })
-
     rerender(
       <ComposerAttachmentStrip
         attachments={[]}
@@ -151,8 +88,6 @@ describe('ComposerAttachmentStrip', () => {
       />,
     )
 
-    await waitFor(() => {
-      expect(screen.queryByRole('group', { name: 'Anexos adicionados' })).not.toBeInTheDocument()
-    })
+    expect(screen.queryByRole('group', { name: 'Anexos adicionados' })).not.toBeInTheDocument()
   })
 })
