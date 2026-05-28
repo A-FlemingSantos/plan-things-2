@@ -63,6 +63,54 @@ describe('IntelligenceComposer', () => {
     expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeDisabled()
   })
 
+  it('grows the prompt input up to seven lines before scrolling', () => {
+    const originalGetComputedStyle = window.getComputedStyle
+
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element) => {
+      if (element.getAttribute('aria-label') === 'Prompt do Intelligence') {
+        return {
+          ...originalGetComputedStyle(element),
+          lineHeight: '20px',
+          paddingTop: '0px',
+          paddingBottom: '0px',
+          borderTopWidth: '0px',
+          borderBottomWidth: '0px',
+        }
+      }
+
+      return originalGetComputedStyle(element)
+    })
+
+    const { rerender } = render(
+      <IntelligenceComposer
+        value=""
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+        classes={baseClasses}
+        rows={1}
+      />,
+    )
+
+    const textarea = screen.getByLabelText('Prompt do Intelligence')
+    Object.defineProperty(textarea, 'scrollHeight', {
+      configurable: true,
+      value: 220,
+    })
+
+    rerender(
+      <IntelligenceComposer
+        value={'1\n2\n3\n4\n5\n6\n7\n8'}
+        onChange={vi.fn()}
+        onSubmit={vi.fn()}
+        classes={baseClasses}
+        rows={1}
+      />,
+    )
+
+    expect(textarea.style.height).toBe('140px')
+    expect(textarea.style.overflowY).toBe('auto')
+  })
+
   it('submits on Enter without Shift', async () => {
     const user = userEvent.setup()
     const handleSubmit = vi.fn((event) => event.preventDefault())

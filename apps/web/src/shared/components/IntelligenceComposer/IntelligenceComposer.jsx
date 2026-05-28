@@ -1,3 +1,4 @@
+import { useCallback, useLayoutEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import AiComposerContextMenu from '../AiComposerContextMenu/AiComposerContextMenu.jsx'
 import ComposerAttachmentStrip from '../ComposerAttachmentStrip/ComposerAttachmentStrip.jsx'
@@ -29,6 +30,26 @@ function joinClasses(...parts) {
   return parts.filter(Boolean).join(' ')
 }
 
+function syncTextareaHeight(textarea, minRows, maxRows) {
+  if (!textarea) return
+
+  const computedStyle = window.getComputedStyle(textarea)
+  const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 18
+  const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0
+  const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
+  const borderTopWidth = Number.parseFloat(computedStyle.borderTopWidth) || 0
+  const borderBottomWidth = Number.parseFloat(computedStyle.borderBottomWidth) || 0
+  const blockOffset = paddingTop + paddingBottom + borderTopWidth + borderBottomWidth
+  const minimumHeight = Math.round(lineHeight * minRows + blockOffset)
+  const maximumHeight = Math.round(lineHeight * maxRows + blockOffset)
+
+  textarea.style.height = 'auto'
+
+  const nextHeight = Math.min(textarea.scrollHeight, maximumHeight)
+  textarea.style.height = `${Math.max(nextHeight, minimumHeight)}px`
+  textarea.style.overflowY = textarea.scrollHeight > maximumHeight ? 'auto' : 'hidden'
+}
+
 /**
  * Shared Intelligence prompt composer (markup + behavior).
  * Visual styles come from the parent page via `classes`.
@@ -40,6 +61,7 @@ export default function IntelligenceComposer({
   placeholder = 'Descreva seu produto, fluxo ou ideia...',
   inputAriaLabel = 'Prompt do Intelligence',
   rows = 2,
+  maxRows = 7,
   inputRef,
   inputDisabled = false,
   submitDisabled,
@@ -70,10 +92,26 @@ export default function IntelligenceComposer({
     iconButtonActive,
     sendButton,
   } = classes
+  const textareaRef = useRef(null)
 
   const { attachments } = partitionComposerChips(aiChips)
   const hasAttachments = attachments.length > 0
   const isSubmitDisabled = submitDisabled ?? !String(value ?? '').trim()
+
+  const setTextareaRef = useCallback((node) => {
+    textareaRef.current = node
+
+    if (!inputRef) return
+    if (typeof inputRef === 'function') {
+      inputRef(node)
+      return
+    }
+    inputRef.current = node
+  }, [inputRef])
+
+  useLayoutEffect(() => {
+    syncTextareaHeight(textareaRef.current, rows, Math.max(rows, maxRows))
+  }, [maxRows, rows, value, hasAttachments])
 
   const handleInputKeyDown = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -111,7 +149,7 @@ export default function IntelligenceComposer({
         className={attachmentStrip}
       />
       <textarea
-        ref={inputRef}
+        ref={setTextareaRef}
         className={joinClasses(input, hasAttachments && inputWithAttachments)}
         placeholder={placeholder}
         aria-label={inputAriaLabel}

@@ -765,23 +765,6 @@ export default function KanbanBoard() {
     }
   }, [isIntelligencePanelMounted])
 
-  useLayoutEffect(() => {
-    if (!intelligenceComposerInputRef.current) return
-
-    const textarea = intelligenceComposerInputRef.current
-    const computedStyle = window.getComputedStyle(textarea)
-    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 18
-    const minimumHeight = Number.parseFloat(computedStyle.minHeight) || lineHeight
-    const maxHeight = Math.round(lineHeight * 5)
-
-    textarea.style.height = 'auto'
-
-    const nextHeight = Math.min(textarea.scrollHeight, maxHeight)
-    textarea.style.height = `${Math.max(nextHeight, minimumHeight)}px`
-    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
-  }, [intelligenceDraft, isIntelligencePanelMounted])
-
-
   useEffect(() => {
     if (!isMembersOpen) return
     if (!isBackendDriven) return
