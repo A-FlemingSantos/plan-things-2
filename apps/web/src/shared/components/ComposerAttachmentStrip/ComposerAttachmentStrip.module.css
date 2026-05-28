@@ -1,9 +1,12 @@
 .strip {
+  --attachment-thumb-size: 56px;
+
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 14px 6px;
   overflow-x: auto;
+  overflow-y: visible;
   scrollbar-width: none;
   background: var(--intelligence-input-bg, var(--surface-1));
   border-radius: 19px 19px 0 0;
@@ -15,8 +18,8 @@
 
 .imageAttachment {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: var(--attachment-thumb-size);
+  height: var(--attachment-thumb-size);
   flex-shrink: 0;
   border-radius: 10px;
   overflow: hidden;
@@ -84,11 +87,11 @@
 .fileAttachment {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
   max-width: 220px;
-  height: 40px;
-  padding: 0 8px 0 10px;
+  height: var(--attachment-thumb-size);
+  padding: 0 10px 0 12px;
   flex-shrink: 0;
   border: 1px solid var(--border-1, rgba(0, 0, 0, 0.08));
   border-radius: 10px;
@@ -100,18 +103,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
   color: var(--text-2, #666);
+}
+
+.fileIcon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .fileLabel {
   min-width: 0;
   flex: 1 1 auto;
+  display: block;
   font-family: var(--font-family);
   font-size: 12px;
-  line-height: 1.2;
+  line-height: 16px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
