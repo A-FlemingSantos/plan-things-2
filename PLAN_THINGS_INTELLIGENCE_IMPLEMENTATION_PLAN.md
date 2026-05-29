@@ -1476,11 +1476,70 @@ Depois que o usuario aprovar e o backend aplicar a acao, retorne bloco de refere
 
 ### Fase 0.5: contrato visual da UI
 
+A Fase 0.5 foi dividida em tres entregas sequenciais. A primeira ja esta em andamento na pagina dedicada de chat; Workspace e Kanban ainda serao alinhados quando os blocos mock e o contrato formal existirem.
+
+```txt
+0.5.1 — Fluxo de submit mock (mensagem do usuario + contexto anexado)
+0.5.2 — UI/mock dos blocos do assistente (propostas, referencias, ferramentas, markdown)
+0.5.3 — Contratos formais (tipos de bloco, payloads, estados, eventos SSE, modelo de mensagem)
+```
+
+Escopo geral que continua valendo para toda a fase:
+
 - Remodelar a UI mockada de IA no Workspace e no Kanban.
 - Criar dados fake usando os mesmos tipos de bloco do contrato real.
 - Representar estados obrigatorios de streaming, tool running, proposta pendente, entidade criada e erro.
 - Validar navegacao visual de plano, card, arquivo, Inbox e GitHub.
-- Usar o mock como referencia direta para `AiBlockRenderer` e `AiComposer`.
+- Usar o mock como referencia direta para `AiBlockRenderer` e `AiComposer` (`IntelligenceComposer` no codigo atual).
+
+#### 0.5.1 — Fluxo de submit mock (mensagem do usuario + contexto)
+
+**Status: concluido** (pagina dedicada, Workspace e painel do Kanban via base compartilhada).
+
+**Objetivo:** validar o envio mockado com contexto anexado antes de ligar API real ou blocos estruturados do assistente.
+
+**Concluido:**
+
+- Base compartilhada mock:
+  - `useMockAiConversation` (`apps/web/src/features/intelligence/hooks/useMockAiConversation.js`)
+  - `IntelligenceConversationThread` (`apps/web/src/features/intelligence/components/IntelligenceConversationThread/`)
+  - `buildMockIntelligenceReply` (`apps/web/src/features/intelligence/mock/buildMockIntelligenceReply.js`)
+- Consumidores: `IntelligenceChat`, `WorkspaceIntelligenceSection`, painel Intelligence do `KanbanBoard`.
+- No submit, capturar um **snapshot imutavel** dos anexos e chips ativos no composer e associar a mensagem do usuario (`snapshotComposerContext` em `apps/web/src/features/intelligence/utils/snapshotComposerContext.js`).
+- O snapshot **nao muda** se o usuario alterar o composer depois do envio.
+- **Somente anexos de arquivo** saem do composer apos o envio; **chips de contexto** (plano, Inbox, conectores etc.) permanecem no composer e tambem entram no snapshot da mensagem (`keepComposerInlineChips`).
+- Renderizar o contexto enviado **acima do balao de texto**, separado do texto, via `UserChatMessage` (`apps/web/src/features/intelligence/components/UserChatMessage/`).
+- Ordem visual do contexto na mensagem:
+  1. imagens (`128×128`);
+  2. arquivos (lista vertical, um por linha);
+  3. chips (fileira igual ao composer, sem botao remover);
+  4. balao com o texto do usuario.
+- O balao de texto usa `width: fit-content` e **nao acompanha** a largura de imagens, arquivos ou chips.
+- Respostas do assistente na pagina dedicada ja renderizam em **largura total** da coluna do chat, sem balao.
+- Testes em `IntelligenceChat.test.jsx` e `snapshotComposerContext.test.js`.
+
+**Pendente nesta subfase:**
+
+- Diferenciar visualmente chips de **card** no composer (quando existir) e validar contraste em tema escuro.
+
+#### 0.5.2 — UI/mock dos blocos do assistente
+
+**Status: pendente.**
+
+- Criar componentes mock para os tipos de bloco do contrato real (`MarkdownBlock`, `ActionProposalBlock`, referencias de entidade, `ToolRunStatusBlock`, etc.).
+- Representar estados obrigatorios de streaming, tool running, proposta pendente, entidade criada e erro com dados fake.
+- Orquestrar cenarios de demonstracao no mock (ex.: narrativa → ferramenta → proposta → entity reference apos aprovar).
+
+#### 0.5.3 — Contratos formais
+
+**Status: pendente.**
+
+- Formalizar os shapes que a UI mock passou a exigir:
+  - tipos de bloco e payloads;
+  - estados de UI e de proposta;
+  - eventos SSE esperados;
+  - modelo de mensagem com `contextSnapshot` / contexto anexado.
+- Alinhar nomes com `AiMessageBlockType` no backend e com o schema de resposta da secao 13.
 
 ### Fase 1: chat real sem ferramentas mutantes
 
