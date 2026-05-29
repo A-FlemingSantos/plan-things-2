@@ -39,8 +39,10 @@ export function useMockAiConversation({
     responseTimerRef.current = null
   }, [])
 
-  const submitMessage = useCallback((rawText, chips = aiChips) => {
+  const submitMessage = useCallback((rawText, chips = aiChips, options = {}) => {
+    const { allowWhileAwaiting = false } = options
     const text = String(rawText ?? '').trim()
+    if (isAwaitingInitialSubmit && !allowWhileAwaiting) return false
     if (isThinking) return false
     if (!text && !hasComposerContext(chips)) return false
 
@@ -77,7 +79,7 @@ export function useMockAiConversation({
     }, mockReplyDelayMs)
 
     return true
-  }, [aiChips, clearResponseTimer, isThinking, mockReplyDelayMs, setAiChips])
+  }, [aiChips, clearResponseTimer, isAwaitingInitialSubmit, isThinking, mockReplyDelayMs, setAiChips])
 
   useEffect(() => {
     if (initialPromptProcessedRef.current) return
@@ -93,15 +95,22 @@ export function useMockAiConversation({
 
     const timer = setTimeout(() => {
       if (initialPromptProcessedRef.current) return
+      const didSubmit = submitMessage(prompt, aiChips, { allowWhileAwaiting: true })
+      if (didSubmit) {
+        initialPromptProcessedRef.current = true
+        setIsAwaitingInitialSubmit(false)
+        return
+      }
+      // If submit failed only because another reply is pending, keep waiting and retry on next render.
+      if (isThinking) return
       initialPromptProcessedRef.current = true
       setIsAwaitingInitialSubmit(false)
-      submitMessage(prompt)
     }, Math.max(0, initialSubmitDelayMs))
 
     return () => {
       clearTimeout(timer)
     }
-  }, [initialPrompt, initialSubmitComposer, initialSubmitDelayMs, submitMessage])
+  }, [aiChips, initialPrompt, initialSubmitComposer, initialSubmitDelayMs, isThinking, submitMessage])
 
   useEffect(() => () => {
     clearResponseTimer()
@@ -110,9 +119,9 @@ export function useMockAiConversation({
   const hasConversation = messages.length > 0 || isThinking || isAwaitingInitialSubmit
 
   const canSubmitWith = useCallback((draftText, chips = aiChips) => {
-    if (isThinking) return false
+    if (isThinking || isAwaitingInitialSubmit) return false
     return Boolean(String(draftText ?? '').trim()) || hasComposerContext(chips)
-  }, [aiChips, isThinking])
+  }, [aiChips, isAwaitingInitialSubmit, isThinking])
 
   return {
     messages,

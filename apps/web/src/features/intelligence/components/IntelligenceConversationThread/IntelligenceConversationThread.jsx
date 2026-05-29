@@ -49,19 +49,19 @@ export default function IntelligenceConversationThread({
               key={msg.id}
               text={msg.text}
               contextSnapshot={msg.contextSnapshot}
-              bubbleClassName={messageUserClass}
+              bubbleClassName={messageUserClass || defaultStyles.messageUser}
             />
           ) : (
             <div
               key={msg.id}
-              className={messageAssistantClass}
+              className={messageAssistantClass || defaultStyles.messageAssistant}
             >
               {msg.text}
             </div>
           )
         ))}
         {isThinking ? (
-          <div className={thinkingClass}>
+          <div className={thinkingClass || defaultStyles.thinking}>
             Pensando...
           </div>
         ) : null}

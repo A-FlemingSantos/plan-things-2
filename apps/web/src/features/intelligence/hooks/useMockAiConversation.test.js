@@ -85,6 +85,54 @@ describe('useMockAiConversation', () => {
     expect(result.current.messages).toHaveLength(0)
   })
 
+  it('blocks manual submit during pending handoff and preserves initial prompt', () => {
+    vi.useFakeTimers()
+    try {
+      const { result } = renderHook(() => useMockAiConversation({
+        initialPrompt: 'from-workspace',
+        initialSubmitComposer: true,
+        initialSubmitDelayMs: 480,
+        mockReplyDelayMs: 20,
+      }))
+
+      expect(result.current.canSubmitWith('manual')).toBe(false)
+
+      let submitted = true
+      act(() => {
+        submitted = result.current.submitMessage('manual')
+      })
+      expect(submitted).toBe(false)
+
+      act(() => {
+        vi.advanceTimersByTime(500)
+      })
+
+      expect(result.current.messages[0]?.text).toBe('from-workspace')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('clears pending handoff when there is no prompt or composer context to submit', () => {
+    vi.useFakeTimers()
+    try {
+      const { result } = renderHook(() => useMockAiConversation({
+        aiChips: [],
+        initialSubmitComposer: true,
+        initialSubmitDelayMs: 60,
+      }))
+
+      expect(result.current.hasConversation).toBe(true)
+      act(() => {
+        vi.advanceTimersByTime(80)
+      })
+      expect(result.current.hasConversation).toBe(false)
+      expect(result.current.messages).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('processes initialPrompt on mount', async () => {
     const { result } = renderHook(() => useMockAiConversation({
       initialPrompt: 'Primeira mensagem',
