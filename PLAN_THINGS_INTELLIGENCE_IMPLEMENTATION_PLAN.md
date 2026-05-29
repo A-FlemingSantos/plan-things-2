@@ -1528,6 +1528,7 @@ Escopo geral que continua valendo para toda a fase:
 **Status: pendente.**
 
 - Criar componentes mock para os tipos de bloco do contrato real (`MarkdownBlock`, `ActionProposalBlock`, referencias de entidade, `ToolRunStatusBlock`, etc.).
+- Adotar stack de renderizacao markdown ja nesta subfase para o `MarkdownBlock` (mesmo com dados fake): `react-markdown` + `remark-gfm` + `rehype-sanitize` (base), com extensoes opcionais `remark-math` + `rehype-katex` (math), `rehype-highlight`/`highlight.js` (code), e bloco dedicado para `language-mermaid` (diagramas).
 - Representar estados obrigatorios de streaming, tool running, proposta pendente, entidade criada e erro com dados fake.
 - Orquestrar cenarios de demonstracao no mock (ex.: narrativa → ferramenta → proposta → entity reference apos aprovar).
 
