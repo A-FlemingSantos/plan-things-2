@@ -1987,13 +1987,17 @@ export default function KanbanBoard() {
     )
   }
 
+  const intelligenceThemeStyle = {
+    '--intelligence-accent': boardAccentColor,
+    '--intelligence-accent-foreground': boardAccentForeground,
+    '--intelligence-user-bg': boardAccentColor,
+  }
+
   const intelligencePanelStyle = {
     left: toolbarMetrics.left ? `${toolbarMetrics.left}px` : undefined,
     width: toolbarMetrics.width ? `${toolbarMetrics.width}px` : undefined,
     bottom: `${toolbarMetrics.bottom + toolbarMetrics.height + 14}px`,
-    '--intelligence-accent': boardAccentColor,
-    '--intelligence-accent-foreground': boardAccentForeground,
-    '--intelligence-user-bg': boardAccentColor,
+    ...intelligenceThemeStyle,
   }
 
   const renderInboxPanel = () => (
@@ -2572,7 +2576,6 @@ export default function KanbanBoard() {
                 messages={intelligenceMessages}
                 isThinking={isIntelligenceThinking}
                 className={styles.intelligencePanelThread}
-                style={intelligencePanelStyle}
                 classes={{
                   messages: styles.intelligencePanelMessages,
                   messageUser: styles.intelligencePanelMessageUser,

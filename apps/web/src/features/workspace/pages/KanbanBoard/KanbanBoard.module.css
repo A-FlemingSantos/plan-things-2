@@ -930,6 +930,7 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--text-1);
+  animation: intelligenceMessageIn 0.22s ease both;
 }
 
 .intelligencePanelThinking {
@@ -940,6 +941,7 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--text-2);
+  animation: intelligenceMessageIn 0.22s ease both;
 }
 
 .intelligencePanelEyebrow {
@@ -1036,180 +1038,7 @@
   gap: 8px;
 }
 
-.intelligenceComposerMenuWrap {
-  position: relative;
-}
-
-.intelligenceComposerMenu {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 10px);
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 216px;
-  max-width: min(216px, calc(100vw - 48px));
-  padding: 6px;
-  border: 1px solid color-mix(in srgb, var(--border-1) 88%, rgba(255, 255, 255, 0.08));
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--menu-bg) 92%, rgba(22, 22, 24, 0.94));
-  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.28);
-  backdrop-filter: blur(18px) saturate(1.06);
-  -webkit-backdrop-filter: blur(18px) saturate(1.06);
-  animation: menuRise 160ms ease both;
-}
-
-.intelligenceComposerMenuItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 34px;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-1);
-  font-family: var(--font-family);
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), transform 160ms ease;
-}
-
-.intelligenceComposerMenuItem:hover {
-  background: color-mix(in srgb, var(--hover) 82%, transparent);
-  transform: translateY(-1px);
-}
-
-.intelligenceComposerMenuItemIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-  color: var(--text-3);
-}
-
-.intelligenceComposerMenuItemLabel {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.intelligenceComposerMenuItemChevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 12px;
-  height: 12px;
-  flex: 0 0 auto;
-  color: var(--text-3);
-}
-
-.intelligenceComposerSubmenuWrap {
-  position: relative;
-}
-
-.intelligenceComposerMenuItemSubmenu {
-  padding-right: 8px;
-}
-
-.intelligenceComposerSubmenu {
-  position: absolute;
-  bottom: 0;
-  left: calc(100% + 8px);
-  z-index: 31;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 178px;
-  max-width: min(188px, calc(100vw - 40px));
-  padding: 6px;
-  border: 1px solid color-mix(in srgb, var(--border-1) 88%, rgba(255, 255, 255, 0.08));
-  border-radius: 13px;
-  background: color-mix(in srgb, var(--menu-bg) 94%, rgba(22, 22, 24, 0.96));
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.24);
-  backdrop-filter: blur(18px) saturate(1.06);
-  -webkit-backdrop-filter: blur(18px) saturate(1.06);
-  animation: menuRise 160ms ease both;
-}
-
-.intelligenceComposerSubmenuItem {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  min-height: 34px;
-  padding: 7px 9px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-1);
-  font-family: var(--font-family);
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--transition-fast), transform 160ms ease;
-}
-
-.intelligenceComposerSubmenuItem:hover {
-  background: color-mix(in srgb, var(--hover) 82%, transparent);
-  transform: translateY(-1px);
-}
-
-.intelligenceComposerPluginLogo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-}
-
-.intelligenceComposerPluginLogo svg {
-  display: block;
-  width: 16px;
-  height: 16px;
-}
-
-.intelligenceComposerPluginLogoSwap {
-  position: relative;
-}
-
-.intelligenceComposerPluginLogoPrimary,
-.intelligenceComposerPluginLogoRemove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  inset: 0;
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.intelligenceComposerPluginLogoPrimary {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.intelligenceComposerPluginLogoRemove {
-  opacity: 0;
-  transform: scale(0.82);
-}
-
-.intelligenceComposerPluginChip:hover .intelligenceComposerPluginLogoPrimary {
-  opacity: 0;
-  transform: scale(0.82);
-}
-
-.intelligenceComposerPluginChip:hover .intelligenceComposerPluginLogoRemove {
-  opacity: 1;
-  transform: scale(1);
-}
-
 .intelligenceComposerIconButton,
-.intelligenceComposerGhostButton,
 .intelligenceComposerSubmit {
   border: 0;
   font-family: var(--font-family);
@@ -1222,7 +1051,6 @@
 }
 
 .intelligenceComposerIconButton:hover,
-.intelligenceComposerGhostButton:hover,
 .intelligenceComposerSubmit:hover:not(:disabled) {
   transform: translateY(-1px);
 }
@@ -1236,63 +1064,6 @@
   border-radius: 50%;
   background: color-mix(in srgb, var(--surface-2) 74%, rgba(255, 255, 255, 0.88));
   color: var(--text-2);
-}
-
-.intelligenceComposerGhostButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 2px;
-  background: transparent;
-  color: var(--text-3);
-  font-size: 13px;
-}
-
-.intelligenceComposerPluginChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 18%, transparent);
-  color: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 82%, var(--text-1));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  font-family: var(--font-family);
-  font-size: 13px;
-  line-height: 1;
-}
-
-.intelligenceComposerPluginChip:hover {
-  background: var(--kanban-accent-color, var(--focus-ring));
-  color: var(--kanban-accent-foreground, var(--text-inverse));
-}
-
-.intelligenceComposerPluginChipLabel {
-  white-space: nowrap;
-}
-
-.intelligenceComposerPluginRemoveButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-  padding: 0;
-  margin: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.intelligenceComposerPluginLogoRemoveIcon svg {
-  width: 8px;
-  height: 8px;
 }
 
 .intelligenceComposerSubmit {
@@ -1420,6 +1191,11 @@
 @keyframes toolbarEnter {
   from { opacity: 0; transform: translate(-50%, 8px); }
   to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes intelligenceMessageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes intelligencePanelEnter {
@@ -5837,11 +5613,6 @@
   .intelligenceComposerInput {
     min-height: 26px;
     font-size: 13px;
-  }
-  .intelligenceComposerSubmenu {
-    top: auto;
-    bottom: calc(100% + 6px);
-    left: 0;
   }
   .boardViewToolbar::-webkit-scrollbar {
     display: none;
