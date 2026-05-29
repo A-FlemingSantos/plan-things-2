@@ -11,16 +11,11 @@ import {
   resolveKanbanAccentForeground,
 } from '../../../workspace/data/kanbanColorPalette.js'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
-import UserChatMessage from '../../components/UserChatMessage/UserChatMessage.jsx'
+import IntelligenceConversationThread from '../../components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
 import ConversationToolbar from '../../components/ConversationToolbar/ConversationToolbar.jsx'
-import {
-  hasComposerContext,
-  keepComposerInlineChips,
-  snapshotComposerContext,
-} from '../../utils/snapshotComposerContext.js'
+import { useMockAiConversation } from '../../hooks/useMockAiConversation.js'
 import styles from './IntelligenceChat.module.css'
 
-function PlusIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function SparkleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -28,7 +23,6 @@ function SparkleIcon() {
     </svg>
   )
 }
-
 
 const VOICE_INPUT_ERROR_MESSAGES = {
   'audio-capture': 'Nenhum microfone disponível foi encontrado.',
@@ -58,14 +52,6 @@ function getVoiceInputErrorMessage(error) {
   return VOICE_INPUT_ERROR_MESSAGES[code] || 'Não foi possível capturar o áudio agora.'
 }
 
-function buildMockReply(prompt) {
-  const normalized = prompt.toLowerCase()
-  if (normalized.includes('calend')) return 'Posso organizar isso em blocos de foco. Comece mapeando reuniões fixas, separe 2 janelas para execução profunda e reserve um checkpoint curto no fim do dia.'
-  if (normalized.includes('pitch')) return 'Uma boa base: problema, público, insight, solução, diferenciais, plano de execução e próximos passos. Se quiser, posso transformar isso em um roteiro slide a slide.'
-  if (normalized.includes('ui')) return 'Vamos começar pelo essencial: tokens de cor e espaçamento, tipografia, botões, inputs, cards de conteúdo e estados de feedback. Depois conectamos isso aos fluxos principais.'
-  return 'Entendi. Eu começaria separando a ideia em objetivo, usuários, fluxo principal, riscos e primeiro entregável. Me diga qual parte você quer aprofundar e eu continuo a partir dela.'
-}
-
 export default function IntelligenceChat() {
   const location = useLocation()
   const { currentUser } = useAuth()
@@ -84,13 +70,21 @@ export default function IntelligenceChat() {
   }
 
   const [draft, setDraft] = useState('')
-  const [messages, setMessages] = useState([])
-  const [isThinking, setIsThinking] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [voiceFeedback, setVoiceFeedback] = useState('')
 
-  const chatEndRef = useRef(null)
-  const responseTimerRef = useRef(null)
+  const {
+    messages,
+    isThinking,
+    hasConversation,
+    submitMessage,
+    canSubmitWith,
+  } = useMockAiConversation({
+    aiChips,
+    setAiChips,
+    initialPrompt: location.state?.initialPrompt,
+  })
+
   const recognitionRef = useRef(null)
   const voiceEndingRecognitionRef = useRef(null)
   const recognitionRestartTimerRef = useRef(null)
@@ -102,58 +96,15 @@ export default function IntelligenceChat() {
   const lastVoiceRecognitionErrorRef = useRef('')
   const voiceTranscriptEntriesRef = useRef(new Map())
   const voiceRecognitionSequenceRef = useRef(0)
-  const initialMessageProcessedRef = useRef(false)
 
   const accentStyle = {
     '--intelligence-theme-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
     '--intelligence-theme-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
+    '--intelligence-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
+    '--intelligence-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
   }
-
-  const submitPrompt = (value = draft) => {
-    const text = value.trim()
-    if (isThinking) return
-    if (!text && !hasComposerContext(aiChips)) return
-
-    const contextSnapshot = snapshotComposerContext(aiChips)
-
-    setMessages((current) => [
-      ...current,
-      {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        text,
-        contextSnapshot,
-      },
-    ])
-    setDraft('')
-    setAiChips(keepComposerInlineChips(aiChips))
-    setVoiceFeedback('')
-    setIsThinking(true)
-
-    if (responseTimerRef.current) clearTimeout(responseTimerRef.current)
-
-    responseTimerRef.current = setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        { id: `assistant-${Date.now()}`, role: 'assistant', text: buildMockReply(text) },
-      ])
-      setIsThinking(false)
-      responseTimerRef.current = null
-    }, 550)
-  }
-
-  useEffect(() => {
-    if (initialMessageProcessedRef.current) return
-    const initialPrompt = location.state?.initialPrompt
-    if (initialPrompt?.trim()) {
-      initialMessageProcessedRef.current = true
-      submitPrompt(initialPrompt.trim())
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   useEffect(() => () => {
-    if (responseTimerRef.current) clearTimeout(responseTimerRef.current)
     if (recognitionRestartTimerRef.current) clearTimeout(recognitionRestartTimerRef.current)
     if (voiceStopFinalizeTimerRef.current) clearTimeout(voiceStopFinalizeTimerRef.current)
     voiceListeningRequestedRef.current = false
@@ -164,15 +115,13 @@ export default function IntelligenceChat() {
     voiceEndingRecognitionRef.current = null
   }, [])
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isThinking])
-
   const handleSubmit = (event) => {
     event.preventDefault()
-    submitPrompt()
+    if (submitMessage(draft)) {
+      setDraft('')
+      setVoiceFeedback('')
+    }
   }
-
 
   const clearRecognitionRestartTimer = () => {
     if (!recognitionRestartTimerRef.current) return
@@ -359,8 +308,6 @@ export default function IntelligenceChat() {
     startRecognition()
   }
 
-  const hasMessages = messages.length > 0 || isThinking
-
   return (
     <AppThemeScope>
       <ProductAppShell styles={styles} contentClassName={styles.main} contentTag="main">
@@ -382,25 +329,14 @@ export default function IntelligenceChat() {
         />
 
         <div className={styles.chatArea}>
-          {hasMessages ? (
-            <div className={styles.messages} style={accentStyle} role="log" aria-label="Conversa com o Intelligence" aria-live="polite">
-              {messages.map((msg) => (
-                msg.role === 'user' ? (
-                  <UserChatMessage
-                    key={msg.id}
-                    text={msg.text}
-                    contextSnapshot={msg.contextSnapshot}
-                    bubbleClassName={styles.messageUser}
-                  />
-                ) : (
-                  <div key={msg.id} className={styles.messageAssistant}>
-                    {msg.text}
-                  </div>
-                )
-              ))}
-              {isThinking ? <div className={styles.thinking}>Pensando...</div> : null}
-              <div ref={chatEndRef} />
-            </div>
+          {hasConversation ? (
+            <IntelligenceConversationThread
+              messages={messages}
+              isThinking={isThinking}
+              className={styles.chatThreadScroll}
+              classes={{ messages: styles.messages }}
+              style={accentStyle}
+            />
           ) : (
             <div className={styles.emptyState}>
               <p className={styles.emptyGreeting}>Olá, {userFirstName}</p>
@@ -411,7 +347,7 @@ export default function IntelligenceChat() {
                     key={s.label}
                     type="button"
                     className={styles.emptySuggestionButton}
-                    onClick={() => submitPrompt(s.prompt)}
+                    onClick={() => submitMessage(s.prompt)}
                     disabled={isThinking}
                   >
                     {s.label}
@@ -428,7 +364,7 @@ export default function IntelligenceChat() {
             onChange={setDraft}
             onSubmit={handleSubmit}
             motionLayoutId="ai-composer"
-            submitDisabled={isThinking || (!draft.trim() && !hasComposerContext(aiChips))}
+            submitDisabled={!canSubmitWith(draft, aiChips)}
             isListening={isListening}
             onVoiceClick={handleVoiceInput}
             aiChips={aiChips}

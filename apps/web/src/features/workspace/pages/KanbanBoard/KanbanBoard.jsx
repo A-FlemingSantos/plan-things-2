@@ -27,6 +27,8 @@ import {
   resolveKanbanAccentForeground,
 } from '../../data/kanbanColorPalette.js'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
+import IntelligenceConversationThread from '../../../intelligence/components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
+import { useMockAiConversation } from '../../../intelligence/hooks/useMockAiConversation.js'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -591,6 +593,13 @@ export default function KanbanBoard() {
   const [intelligenceDraft, setIntelligenceDraft] = useState('')
   const [kanbanAiChips, setKanbanAiChips] = useState([])
   const intelligenceActiveConnectors = kanbanAiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
+  const {
+    messages: intelligenceMessages,
+    isThinking: isIntelligenceThinking,
+    hasConversation: hasIntelligenceConversation,
+    submitMessage: submitIntelligenceMessage,
+    canSubmitWith: canSubmitIntelligenceMessage,
+  } = useMockAiConversation({ aiChips: kanbanAiChips, setAiChips: setKanbanAiChips })
   const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
   const [libraryFiles, setLibraryFiles] = useState([])
@@ -1982,6 +1991,9 @@ export default function KanbanBoard() {
     left: toolbarMetrics.left ? `${toolbarMetrics.left}px` : undefined,
     width: toolbarMetrics.width ? `${toolbarMetrics.width}px` : undefined,
     bottom: `${toolbarMetrics.bottom + toolbarMetrics.height + 14}px`,
+    '--intelligence-accent': boardAccentColor,
+    '--intelligence-accent-foreground': boardAccentForeground,
+    '--intelligence-user-bg': boardAccentColor,
   }
 
   const renderInboxPanel = () => (
@@ -2546,13 +2558,22 @@ export default function KanbanBoard() {
                 <div className={styles.intelligencePanelOrb} />
               </div>
 
-              <div className={styles.intelligencePanelIntro}>
-                <span className={styles.intelligencePanelEyebrow}>Intelligence</span>
-                <h2 className={styles.intelligencePanelTitle}>Peça ideias para destravar este plano.</h2>
-                <p className={styles.intelligencePanelText}>
-                  Resumos, sugestões e próximos passos sem sair do plano.
-                </p>
-              </div>
+              {!hasIntelligenceConversation ? (
+                <div className={styles.intelligencePanelIntro}>
+                  <span className={styles.intelligencePanelEyebrow}>Intelligence</span>
+                  <h2 className={styles.intelligencePanelTitle}>Peça ideias para destravar este plano.</h2>
+                  <p className={styles.intelligencePanelText}>
+                    Resumos, sugestões e próximos passos sem sair do plano.
+                  </p>
+                </div>
+              ) : null}
+
+              <IntelligenceConversationThread
+                messages={intelligenceMessages}
+                isThinking={isIntelligenceThinking}
+                className={styles.intelligencePanelThread}
+                style={intelligencePanelStyle}
+              />
 
               <div className={styles.intelligenceComposerWrap}>
                 <IntelligenceComposer
@@ -2566,9 +2587,11 @@ export default function KanbanBoard() {
                   voiceAriaLabelListening="Usar voz"
                   onSubmit={(event) => {
                     event.preventDefault()
-                    if (!intelligenceDraft.trim()) return
-                    showNotification('Integração da IA em breve.')
+                    if (submitIntelligenceMessage(intelligenceDraft)) {
+                      setIntelligenceDraft('')
+                    }
                   }}
+                  submitDisabled={!canSubmitIntelligenceMessage(intelligenceDraft, kanbanAiChips)}
                   aiChips={kanbanAiChips}
                   onChipsChange={setKanbanAiChips}
                   showGitHubBar={intelligenceActiveConnectors.includes('github')}

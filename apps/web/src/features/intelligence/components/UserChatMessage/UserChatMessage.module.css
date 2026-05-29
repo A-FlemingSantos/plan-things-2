@@ -125,3 +125,74 @@
   width: 100%;
   min-width: 0;
 }
+
+.chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 0;
+}
+
+.contextChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+  color: var(--text-1);
+  flex-shrink: 0;
+}
+
+.contextChipIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.contextChipLabel {
+  font-family: var(--font-family);
+  font-size: 11.5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.contextChip[data-kind='plan'] {
+  border-color: color-mix(in srgb, var(--intelligence-accent, #5b8af5) 28%, transparent);
+  background: color-mix(in srgb, var(--intelligence-accent, #5b8af5) 12%, transparent);
+  color: color-mix(in srgb, var(--intelligence-accent, #5b8af5) 82%, var(--text-1));
+}
+
+.contextChip[data-kind='context'] {
+  border-color: color-mix(in srgb, #4db88a 30%, transparent);
+  background: color-mix(in srgb, #4db88a 12%, transparent);
+  color: color-mix(in srgb, #2f7a5d 70%, var(--text-1));
+}
+
+.contextChip[data-kind='connector'][data-type='github'] {
+  border-color: color-mix(in srgb, var(--text-1) 16%, transparent);
+  background: color-mix(in srgb, var(--text-1) 6%, transparent);
+}
+
+.contextChip[data-kind='connector'][data-type='teams'] {
+  border-color: color-mix(in srgb, #4f52d9 28%, transparent);
+  background: color-mix(in srgb, #4f52d9 10%, transparent);
+}
+
+.contextChip[data-kind='connector'][data-type='slack'] {
+  border-color: color-mix(in srgb, #611f69 22%, transparent);
+  background: color-mix(in srgb, #611f69 8%, transparent);
+}
+
+.contextChip[data-kind='card'] {
+  border-color: color-mix(in srgb, #e0953a 32%, transparent);
+  background: color-mix(in srgb, #e0953a 12%, transparent);
+  color: color-mix(in srgb, #9a5f14 75%, var(--text-1));
+}

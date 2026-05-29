@@ -13,6 +13,8 @@ import {
 } from '../../data/kanbanColorPalette.js'
 import { usePlans } from '../../context/PlansContext.jsx'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
+import IntelligenceConversationThread from '../../../intelligence/components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
+import { useMockAiConversation } from '../../../intelligence/hooks/useMockAiConversation.js'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
@@ -972,27 +974,30 @@ function WorkspaceLoadingState({ view }) {
 }
 
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
-  const navigate = useNavigate()
   const { aiChips = [], setAiChips = () => {} } = usePlans()
   const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const [draft, setDraft] = useState('')
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef(null)
 
+  const {
+    messages,
+    isThinking,
+    hasConversation,
+    submitMessage,
+    canSubmitWith,
+  } = useMockAiConversation({ aiChips, setAiChips })
+
   useEffect(() => () => {
     recognitionRef.current?.abort?.()
     recognitionRef.current = null
   }, [])
 
-  const navigateToChat = (value = draft) => {
-    const text = value.trim()
-    if (!text) return
-    navigate(ROUTES.workspaceChat, { state: { initialPrompt: text } })
-  }
-
   const handleSubmit = (event) => {
     event.preventDefault()
-    navigateToChat()
+    if (submitMessage(draft)) {
+      setDraft('')
+    }
   }
 
   const handleVoiceInput = () => {
@@ -1040,13 +1045,24 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       aria-label="Seção do Intelligence"
     >
       <div className={styles.intelligenceStage}>
-        <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
-        <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
+        {!hasConversation ? (
+          <>
+            <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
+            <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
+          </>
+        ) : null}
+        <IntelligenceConversationThread
+          messages={messages}
+          isThinking={isThinking}
+          className={styles.intelligenceChatLog}
+          style={accentStyle}
+        />
         <IntelligenceComposer
           value={draft}
           onChange={setDraft}
           onSubmit={handleSubmit}
           motionLayoutId="ai-composer"
+          submitDisabled={!canSubmitWith(draft, aiChips)}
           isListening={isListening}
           onVoiceClick={handleVoiceInput}
           voiceAriaLabelListening="Parar gravação de áudio"

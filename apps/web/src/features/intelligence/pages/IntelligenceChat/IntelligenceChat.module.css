@@ -25,18 +25,13 @@
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--text-1) 12%, transparent) transparent;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.chatArea::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chatArea::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--text-1) 12%, transparent);
-  border-radius: 3px;
+.chatThreadScroll {
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 /* ── Messages container ── */
@@ -60,41 +55,6 @@
 @keyframes messageIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-.messageUser {
-  width: fit-content;
-  max-width: min(86%, 560px);
-  align-self: flex-end;
-  padding: 10px 13px;
-  border-radius: 15px;
-  border-bottom-right-radius: 5px;
-  background: var(--intelligence-user-bg);
-  color: var(--intelligence-accent-foreground);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.messageAssistant {
-  width: 100%;
-  max-width: 100%;
-  align-self: stretch;
-  padding: 8px 0 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--intelligence-text);
-  animation: messageIn 0.22s ease both;
-}
-
-.thinking {
-  width: 100%;
-  max-width: 100%;
-  align-self: stretch;
-  padding: 8px 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--intelligence-faint);
-  animation: messageIn 0.22s ease both;
 }
 
 /* ── Empty state ── */

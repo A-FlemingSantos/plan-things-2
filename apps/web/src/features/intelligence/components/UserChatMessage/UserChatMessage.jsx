@@ -1,4 +1,3 @@
-import chipStyles from '../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.module.css'
 import styles from './UserChatMessage.module.css'
 
 function FileDocIcon() {
@@ -81,17 +80,22 @@ function UserMessageChips({ chips }) {
 
   return (
     <div className={styles.chipRow}>
-      <div className={chipStyles.chips} role="group" aria-label="Contexto enviado">
+      <div className={styles.chips} role="group" aria-label="Contexto enviado">
         {chips.map((chip) => {
           const ChipIcon = chip.ChipIcon
           return (
-            <div key={chip.id} className={chipStyles.chip} data-kind={chip.kind}>
+            <div
+              key={chip.id}
+              className={styles.contextChip}
+              data-kind={chip.kind}
+              data-type={chip.type}
+            >
               {ChipIcon ? (
-                <span className={chipStyles.chipIcon} aria-hidden="true">
+                <span className={styles.contextChipIcon} aria-hidden="true">
                   <ChipIcon />
                 </span>
               ) : null}
-              <span className={chipStyles.chipLabel}>{chip.label}</span>
+              <span className={styles.contextChipLabel}>{chip.label}</span>
             </div>
           )
         })}
