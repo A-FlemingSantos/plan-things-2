@@ -1494,7 +1494,7 @@ Escopo geral que continua valendo para toda a fase:
 
 #### 0.5.1 — Fluxo de submit mock (mensagem do usuario + contexto)
 
-**Status: concluido** (pagina dedicada, Workspace e painel do Kanban via base compartilhada).
+**Status: concluido** (pagina dedicada e painel do Kanban via base compartilhada; Workspace apenas redireciona para o chat).
 
 **Objetivo:** validar o envio mockado com contexto anexado antes de ligar API real ou blocos estruturados do assistente.
 
@@ -1504,7 +1504,8 @@ Escopo geral que continua valendo para toda a fase:
   - `useMockAiConversation` (`apps/web/src/features/intelligence/hooks/useMockAiConversation.js`)
   - `IntelligenceConversationThread` (`apps/web/src/features/intelligence/components/IntelligenceConversationThread/`)
   - `buildMockIntelligenceReply` (`apps/web/src/features/intelligence/mock/buildMockIntelligenceReply.js`)
-- Consumidores: `IntelligenceChat`, `WorkspaceIntelligenceSection`, painel Intelligence do `KanbanBoard`.
+- Consumidores: `IntelligenceChat` e painel Intelligence do `KanbanBoard`.
+- `WorkspaceIntelligenceSection` mantem apenas o composer e redireciona para `/workspace/chat` com `initialPrompt` e `submitComposer` (chips/anexos seguem no `PlansContext`).
 - No submit, capturar um **snapshot imutavel** dos anexos e chips ativos no composer e associar a mensagem do usuario (`snapshotComposerContext` em `apps/web/src/features/intelligence/utils/snapshotComposerContext.js`).
 - O snapshot **nao muda** se o usuario alterar o composer depois do envio.
 - **Somente anexos de arquivo** saem do composer apos o envio; **chips de contexto** (plano, Inbox, conectores etc.) permanecem no composer e tambem entram no snapshot da mensagem (`keepComposerInlineChips`).

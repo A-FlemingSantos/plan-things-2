@@ -19,6 +19,7 @@ export function useMockAiConversation({
   aiChips = [],
   setAiChips,
   initialPrompt = null,
+  initialSubmitComposer = false,
   mockReplyDelayMs = DEFAULT_MOCK_REPLY_DELAY_MS,
 } = {}) {
   const [messages, setMessages] = useState([])
@@ -74,12 +75,14 @@ export function useMockAiConversation({
 
   useEffect(() => {
     if (initialPromptProcessedRef.current) return
+
     const prompt = String(initialPrompt ?? '').trim()
-    if (!prompt) return
+    const shouldSubmitComposer = Boolean(initialSubmitComposer)
+    if (!prompt && !shouldSubmitComposer) return
 
     initialPromptProcessedRef.current = true
     submitMessage(prompt)
-  }, [initialPrompt, submitMessage])
+  }, [initialPrompt, initialSubmitComposer, submitMessage])
 
   useEffect(() => () => {
     clearResponseTimer()

@@ -2573,6 +2573,12 @@ export default function KanbanBoard() {
                 isThinking={isIntelligenceThinking}
                 className={styles.intelligencePanelThread}
                 style={intelligencePanelStyle}
+                classes={{
+                  messages: styles.intelligencePanelMessages,
+                  messageUser: styles.intelligencePanelMessageUser,
+                  messageAssistant: styles.intelligencePanelMessageAssistant,
+                  thinking: styles.intelligencePanelThinking,
+                }}
               />
 
               <div className={styles.intelligenceComposerWrap}>

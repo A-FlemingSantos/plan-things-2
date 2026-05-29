@@ -13,8 +13,7 @@ import {
 } from '../../data/kanbanColorPalette.js'
 import { usePlans } from '../../context/PlansContext.jsx'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
-import IntelligenceConversationThread from '../../../intelligence/components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
-import { useMockAiConversation } from '../../../intelligence/hooks/useMockAiConversation.js'
+import { hasComposerContext } from '../../../intelligence/utils/snapshotComposerContext.js'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
@@ -974,30 +973,34 @@ function WorkspaceLoadingState({ view }) {
 }
 
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
+  const navigate = useNavigate()
   const { aiChips = [], setAiChips = () => {} } = usePlans()
   const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const [draft, setDraft] = useState('')
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef(null)
 
-  const {
-    messages,
-    isThinking,
-    hasConversation,
-    submitMessage,
-    canSubmitWith,
-  } = useMockAiConversation({ aiChips, setAiChips })
-
   useEffect(() => () => {
     recognitionRef.current?.abort?.()
     recognitionRef.current = null
   }, [])
 
+  const navigateToChat = () => {
+    const text = draft.trim()
+    if (!text && !hasComposerContext(aiChips)) return
+
+    navigate(ROUTES.workspaceChat, {
+      state: {
+        initialPrompt: text,
+        submitComposer: true,
+      },
+    })
+    setDraft('')
+  }
+
   const handleSubmit = (event) => {
     event.preventDefault()
-    if (submitMessage(draft)) {
-      setDraft('')
-    }
+    navigateToChat()
   }
 
   const handleVoiceInput = () => {
@@ -1045,24 +1048,14 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
       aria-label="Seção do Intelligence"
     >
       <div className={styles.intelligenceStage}>
-        {!hasConversation ? (
-          <>
-            <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
-            <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
-          </>
-        ) : null}
-        <IntelligenceConversationThread
-          messages={messages}
-          isThinking={isThinking}
-          className={styles.intelligenceChatLog}
-          style={accentStyle}
-        />
+        <p className={styles.intelligenceGreeting}>Olá, {firstName}</p>
+        <h2 className={styles.intelligenceTitle}>O que vamos construir hoje?</h2>
         <IntelligenceComposer
           value={draft}
           onChange={setDraft}
           onSubmit={handleSubmit}
           motionLayoutId="ai-composer"
-          submitDisabled={!canSubmitWith(draft, aiChips)}
+          submitDisabled={!draft.trim() && !hasComposerContext(aiChips)}
           isListening={isListening}
           onVoiceClick={handleVoiceInput}
           voiceAriaLabelListening="Parar gravação de áudio"

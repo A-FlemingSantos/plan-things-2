@@ -83,6 +83,7 @@ export default function IntelligenceChat() {
     aiChips,
     setAiChips,
     initialPrompt: location.state?.initialPrompt,
+    initialSubmitComposer: location.state?.submitComposer,
   })
 
   const recognitionRef = useRef(null)
@@ -334,7 +335,12 @@ export default function IntelligenceChat() {
               messages={messages}
               isThinking={isThinking}
               className={styles.chatThreadScroll}
-              classes={{ messages: styles.messages }}
+              classes={{
+                messages: styles.messages,
+                messageUser: styles.messageUser,
+                messageAssistant: styles.messageAssistant,
+                thinking: styles.thinking,
+              }}
               style={accentStyle}
             />
           ) : (

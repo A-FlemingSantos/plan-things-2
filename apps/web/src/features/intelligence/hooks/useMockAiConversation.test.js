@@ -38,6 +38,24 @@ describe('useMockAiConversation', () => {
     expect(result.current.hasConversation).toBe(true)
   })
 
+  it('submits composer context on mount when initialSubmitComposer is set', async () => {
+    const setAiChips = vi.fn()
+    const chips = [{ id: '1', kind: 'connector', type: 'github', label: 'GitHub' }]
+
+    const { result } = renderHook(() => useMockAiConversation({
+      aiChips: chips,
+      setAiChips,
+      initialSubmitComposer: true,
+      mockReplyDelayMs: 20,
+    }))
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(1)
+    })
+
+    expect(result.current.messages[0].contextSnapshot.contextChips).toHaveLength(1)
+  })
+
   it('processes initialPrompt on mount', async () => {
     const { result } = renderHook(() => useMockAiConversation({
       initialPrompt: 'Primeira mensagem',

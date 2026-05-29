@@ -902,6 +902,46 @@
   padding: 0 2px;
 }
 
+.intelligencePanelMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.intelligencePanelMessageUser {
+  width: fit-content;
+  max-width: min(86%, 560px);
+  align-self: flex-end;
+  padding: 10px 13px;
+  border-radius: 15px;
+  border-bottom-right-radius: 5px;
+  background: var(--intelligence-user-bg, var(--kanban-accent-color, var(--focus-ring)));
+  color: var(--intelligence-accent-foreground, var(--kanban-accent-foreground, var(--text-inverse)));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.intelligencePanelMessageAssistant {
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  padding: 8px 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-1);
+}
+
+.intelligencePanelThinking {
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  padding: 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
 .intelligencePanelEyebrow {
   font-size: 11px;
   font-weight: var(--font-weight-regular);
