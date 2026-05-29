@@ -8,6 +8,7 @@ import {
   removeAttachmentChip,
 } from '../ComposerAttachmentStrip/composerAttachmentUtils.js'
 import GitHubContextBar from '../GitHubContextBar/GitHubContextBar.jsx'
+import styles from './IntelligenceComposer.module.css'
 
 function MicIcon() {
   return (
@@ -97,6 +98,7 @@ export default function IntelligenceComposer({
   const { attachments } = partitionComposerChips(aiChips)
   const hasAttachments = attachments.length > 0
   const isSubmitDisabled = submitDisabled ?? !String(value ?? '').trim()
+  const formClassName = joinClasses(styles.composerVars, form)
 
   const setTextareaRef = useCallback((node) => {
     textareaRef.current = node
@@ -195,7 +197,7 @@ export default function IntelligenceComposer({
     return (
       <>
         <motion.form
-          className={form}
+          className={formClassName}
           onSubmit={onSubmit}
           layoutId={motionLayoutId}
         >
@@ -209,7 +211,7 @@ export default function IntelligenceComposer({
 
   return (
     <>
-      <form className={form} onSubmit={onSubmit}>
+      <form className={formClassName} onSubmit={onSubmit}>
         {formBody}
       </form>
       {githubBarPlacement === 'afterForm' ? githubBar : null}

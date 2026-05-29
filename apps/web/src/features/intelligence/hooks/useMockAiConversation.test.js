@@ -46,14 +46,43 @@ describe('useMockAiConversation', () => {
       aiChips: chips,
       setAiChips,
       initialSubmitComposer: true,
+      initialSubmitDelayMs: 0,
       mockReplyDelayMs: 20,
     }))
 
     await waitFor(() => {
-      expect(result.current.messages).toHaveLength(1)
+      expect(result.current.messages[0]?.contextSnapshot?.contextChips).toHaveLength(1)
     })
+  })
 
-    expect(result.current.messages[0].contextSnapshot.contextChips).toHaveLength(1)
+  it('treats pending workspace handoff as an active conversation', () => {
+    const { result } = renderHook(() => useMockAiConversation({
+      initialPrompt: 'Olá',
+      initialSubmitComposer: true,
+      initialSubmitDelayMs: 500,
+    }))
+
+    expect(result.current.hasConversation).toBe(true)
+    expect(result.current.messages).toHaveLength(0)
+  })
+
+  it('keeps hasConversation during handoff when composer chips update', () => {
+    const { result, rerender } = renderHook(
+      ({ chips }) => useMockAiConversation({
+        aiChips: chips,
+        initialPrompt: 'Olá',
+        initialSubmitComposer: true,
+        initialSubmitDelayMs: 500,
+      }),
+      { initialProps: { chips: [] } },
+    )
+
+    expect(result.current.hasConversation).toBe(true)
+
+    rerender({ chips: [{ id: '1', kind: 'connector', type: 'github', label: 'GitHub' }] })
+
+    expect(result.current.hasConversation).toBe(true)
+    expect(result.current.messages).toHaveLength(0)
   })
 
   it('processes initialPrompt on mount', async () => {

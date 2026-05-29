@@ -995,7 +995,6 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
         submitComposer: true,
       },
     })
-    setDraft('')
   }
 
   const handleSubmit = (event) => {

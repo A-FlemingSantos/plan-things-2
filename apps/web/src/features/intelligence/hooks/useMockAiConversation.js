@@ -7,6 +7,7 @@ import {
 } from '../utils/snapshotComposerContext.js'
 
 const DEFAULT_MOCK_REPLY_DELAY_MS = 550
+const WORKSPACE_LAYOUT_SUBMIT_DELAY_MS = 480
 
 function createMessageId(role) {
   return `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -20,10 +21,15 @@ export function useMockAiConversation({
   setAiChips,
   initialPrompt = null,
   initialSubmitComposer = false,
+  initialSubmitDelayMs = initialSubmitComposer ? WORKSPACE_LAYOUT_SUBMIT_DELAY_MS : 0,
   mockReplyDelayMs = DEFAULT_MOCK_REPLY_DELAY_MS,
 } = {}) {
   const [messages, setMessages] = useState([])
   const [isThinking, setIsThinking] = useState(false)
+  const willSubmitOnMount = Boolean(
+    String(initialPrompt ?? '').trim() || initialSubmitComposer,
+  )
+  const [isAwaitingInitialSubmit, setIsAwaitingInitialSubmit] = useState(willSubmitOnMount)
   const responseTimerRef = useRef(null)
   const initialPromptProcessedRef = useRef(false)
 
@@ -78,17 +84,30 @@ export function useMockAiConversation({
 
     const prompt = String(initialPrompt ?? '').trim()
     const shouldSubmitComposer = Boolean(initialSubmitComposer)
-    if (!prompt && !shouldSubmitComposer) return
+    if (!prompt && !shouldSubmitComposer) {
+      setIsAwaitingInitialSubmit(false)
+      return undefined
+    }
 
-    initialPromptProcessedRef.current = true
-    submitMessage(prompt)
-  }, [initialPrompt, initialSubmitComposer, submitMessage])
+    setIsAwaitingInitialSubmit(true)
+
+    const timer = setTimeout(() => {
+      if (initialPromptProcessedRef.current) return
+      initialPromptProcessedRef.current = true
+      setIsAwaitingInitialSubmit(false)
+      submitMessage(prompt)
+    }, Math.max(0, initialSubmitDelayMs))
+
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [initialPrompt, initialSubmitComposer, initialSubmitDelayMs, submitMessage])
 
   useEffect(() => () => {
     clearResponseTimer()
   }, [clearResponseTimer])
 
-  const hasConversation = messages.length > 0 || isThinking
+  const hasConversation = messages.length > 0 || isThinking || isAwaitingInitialSubmit
 
   const canSubmitWith = useCallback((draftText, chips = aiChips) => {
     if (isThinking) return false
