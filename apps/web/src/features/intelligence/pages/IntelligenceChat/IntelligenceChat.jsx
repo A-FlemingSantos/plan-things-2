@@ -11,7 +11,13 @@ import {
   resolveKanbanAccentForeground,
 } from '../../../workspace/data/kanbanColorPalette.js'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
+import UserChatMessage from '../../components/UserChatMessage/UserChatMessage.jsx'
 import ConversationToolbar from '../../components/ConversationToolbar/ConversationToolbar.jsx'
+import {
+  hasComposerContext,
+  keepComposerInlineChips,
+  snapshotComposerContext,
+} from '../../utils/snapshotComposerContext.js'
 import styles from './IntelligenceChat.module.css'
 
 function PlusIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
@@ -105,10 +111,22 @@ export default function IntelligenceChat() {
 
   const submitPrompt = (value = draft) => {
     const text = value.trim()
-    if (!text || isThinking) return
+    if (isThinking) return
+    if (!text && !hasComposerContext(aiChips)) return
 
-    setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', text }])
+    const contextSnapshot = snapshotComposerContext(aiChips)
+
+    setMessages((current) => [
+      ...current,
+      {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        text,
+        contextSnapshot,
+      },
+    ])
     setDraft('')
+    setAiChips(keepComposerInlineChips(aiChips))
     setVoiceFeedback('')
     setIsThinking(true)
 
@@ -367,12 +385,18 @@ export default function IntelligenceChat() {
           {hasMessages ? (
             <div className={styles.messages} style={accentStyle} role="log" aria-label="Conversa com o Intelligence" aria-live="polite">
               {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={msg.role === 'user' ? styles.messageUser : styles.messageAssistant}
-                >
-                  {msg.text}
-                </div>
+                msg.role === 'user' ? (
+                  <UserChatMessage
+                    key={msg.id}
+                    text={msg.text}
+                    contextSnapshot={msg.contextSnapshot}
+                    bubbleClassName={styles.messageUser}
+                  />
+                ) : (
+                  <div key={msg.id} className={styles.messageAssistant}>
+                    {msg.text}
+                  </div>
+                )
               ))}
               {isThinking ? <div className={styles.thinking}>Pensando...</div> : null}
               <div ref={chatEndRef} />
@@ -404,7 +428,7 @@ export default function IntelligenceChat() {
             onChange={setDraft}
             onSubmit={handleSubmit}
             motionLayoutId="ai-composer"
-            submitDisabled={!draft.trim() || isThinking}
+            submitDisabled={isThinking || (!draft.trim() && !hasComposerContext(aiChips))}
             isListening={isListening}
             onVoiceClick={handleVoiceInput}
             aiChips={aiChips}

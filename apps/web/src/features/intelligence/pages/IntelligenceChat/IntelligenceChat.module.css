@@ -63,16 +63,14 @@
 }
 
 .messageUser {
-  max-width: min(86%, 560px);
+  width: 100%;
   padding: 10px 13px;
   border-radius: 15px;
   border-bottom-right-radius: 5px;
-  align-self: flex-end;
   background: var(--intelligence-user-bg);
   color: var(--intelligence-accent-foreground);
   font-size: 13px;
   line-height: 1.5;
-  animation: messageIn 0.22s ease both;
 }
 
 .messageAssistant {

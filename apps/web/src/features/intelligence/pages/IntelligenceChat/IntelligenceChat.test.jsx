@@ -170,6 +170,59 @@ describe('IntelligenceChat', () => {
     expect(screen.getByText('wireframes.fig')).toBeInTheDocument()
   })
 
+  it('moves attachments into the sent message but keeps context chips in the composer', async () => {
+    const user = userEvent.setup()
+    plansMock.setAiChips.mockImplementation((next) => {
+      plansMock.aiChips = typeof next === 'function' ? next(plansMock.aiChips) : next
+    })
+    plansMock.aiChips = [
+      {
+        id: 'ctx-file-img',
+        kind: 'file',
+        type: 'file-upload-test',
+        label: 'screenshot.png',
+        isImage: true,
+        previewUrl: 'blob:preview-1',
+      },
+      {
+        id: 'ctx-file-doc',
+        kind: 'file',
+        type: 'file-upload-doc',
+        label: 'brief.pdf',
+        isImage: false,
+      },
+      {
+        id: 'ctx-github',
+        kind: 'connector',
+        type: 'github',
+        label: 'GitHub',
+        ChipIcon: () => null,
+      },
+    ]
+
+    renderChat()
+
+    const prompt = screen.getByLabelText('Prompt do Intelligence')
+    await user.type(prompt, 'Analise estes materiais')
+    await user.click(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' }))
+
+    expect(screen.queryByRole('group', { name: 'Anexos adicionados' })).not.toBeInTheDocument()
+    expect(plansMock.setAiChips).toHaveBeenCalledWith([
+      expect.objectContaining({ kind: 'connector', label: 'GitHub' }),
+    ])
+    expect(plansMock.aiChips).toEqual([
+      expect.objectContaining({ kind: 'connector', label: 'GitHub' }),
+    ])
+
+    expect(screen.getByRole('group', { name: 'Imagens enviadas' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'screenshot.png' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Arquivos enviados' })).toBeInTheDocument()
+    expect(screen.getByText('brief.pdf')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Contexto enviado' })).toBeInTheDocument()
+    expect(screen.getByText('GitHub')).toBeInTheDocument()
+    expect(screen.getByText('Analise estes materiais')).toBeInTheDocument()
+  })
+
   it('allows typing a follow-up message after the assistant responds', async () => {
     const user = userEvent.setup()
     renderChat()

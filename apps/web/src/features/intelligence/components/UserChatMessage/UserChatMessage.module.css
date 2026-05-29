@@ -1,0 +1,127 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: min(86%, 560px);
+  align-self: flex-end;
+  animation: userMessageIn 0.22s ease both;
+}
+
+@keyframes userMessageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.context {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.images {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.imageTile {
+  width: 128px;
+  height: 128px;
+  flex: 0 0 128px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+  background: color-mix(in srgb, var(--surface-3) 80%, transparent);
+}
+
+.imagePreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.mockImagePlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  color: var(--text-2);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--intelligence-accent, var(--text-1)) 18%, transparent),
+      color-mix(in srgb, var(--surface-3) 90%, transparent)
+    );
+}
+
+.mockImageInitials {
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
+.fileRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 280px);
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+  color: var(--text-1);
+}
+
+.fileIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.fileIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.fileLabel {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-family: var(--font-family);
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipRow {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 0;
+}
