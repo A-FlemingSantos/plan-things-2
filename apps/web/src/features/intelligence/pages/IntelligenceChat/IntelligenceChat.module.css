@@ -63,7 +63,9 @@
 }
 
 .messageUser {
-  width: 100%;
+  width: fit-content;
+  max-width: min(86%, 560px);
+  align-self: flex-end;
   padding: 10px 13px;
   border-radius: 15px;
   border-bottom-right-radius: 5px;

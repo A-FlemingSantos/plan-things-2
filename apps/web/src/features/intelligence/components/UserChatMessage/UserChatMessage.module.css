@@ -3,7 +3,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  max-width: min(86%, 560px);
+  max-width: 100%;
   align-self: flex-end;
   animation: userMessageIn 0.22s ease both;
 }
