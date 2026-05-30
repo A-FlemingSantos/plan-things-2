@@ -23,11 +23,10 @@ describe('IntelligenceConversationThread', () => {
 
     const userBubble = screen.getByText('Mensagem do usuário')
     const assistantMessage = screen.getByText('Resposta do assistente')
-    const thinkingMessage = screen.getByText('Pensando...')
 
     expect(userBubble).toHaveClass(styles.messageUser)
     expect(assistantMessage).toHaveClass(styles.messageAssistant)
-    expect(thinkingMessage).toHaveClass(styles.thinking)
+    expect(screen.queryByText('Pensando...')).not.toBeInTheDocument()
   })
 
   it('derives assistant content from canonical message shape and renders pending placeholders inline', () => {
@@ -60,7 +59,7 @@ describe('IntelligenceConversationThread', () => {
       />,
     )
 
-    expect(screen.getByText('Pensando...')).toHaveClass(styles.messageAssistant)
+    expect(screen.queryByText('Pensando...')).not.toBeInTheDocument()
     expect(screen.getByTestId('ai-block-renderer')).toBeInTheDocument()
     expect(screen.getByText('Resposta em bloco')).toBeInTheDocument()
   })

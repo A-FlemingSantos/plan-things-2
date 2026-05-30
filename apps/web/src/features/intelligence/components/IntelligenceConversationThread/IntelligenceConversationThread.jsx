@@ -29,7 +29,6 @@ export default function IntelligenceConversationThread({
     messages: messagesClass,
     messageUser: messageUserClass,
     messageAssistant: messageAssistantClass,
-    thinking: thinkingClass,
   } = classes
 
   const scrollRef = useRef(null)
@@ -40,9 +39,7 @@ export default function IntelligenceConversationThread({
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isThinking, scrollIntoView])
 
-  if (messages.length === 0 && !isThinking) return null
-  const hasPendingAssistantMessage = messages.some(isAssistantMessagePending)
-  const shouldRenderLegacyThinking = isThinking && !hasPendingAssistantMessage
+  if (messages.length === 0) return null
 
   const content = (
     <div className={joinClasses(defaultStyles.messages, messagesClass)}>
@@ -69,6 +66,9 @@ export default function IntelligenceConversationThread({
               || primaryBlocks.length > 0
               || inlineArtifacts.length > 0
             )
+            if (pending && !hasStructuredContent && !displayText) {
+              return null
+            }
 
             return (
               <div
@@ -76,26 +76,17 @@ export default function IntelligenceConversationThread({
                 className={messageAssistantClass || defaultStyles.messageAssistant}
                 aria-busy={pending ? 'true' : undefined}
               >
-                {pending && !hasStructuredContent && !displayText ? (
-                  'Pensando...'
-                ) : (
-                  <>
-                    {markdownBlocks.length > 0 ? <AiBlockRenderer blocks={markdownBlocks} /> : null}
-                    {markdownBlocks.length === 0 && displayText ? displayText : null}
-                    {inlineArtifacts.length > 0 ? <InlineArtifactsList items={inlineArtifacts} /> : null}
-                    {primaryBlocks.length > 0 ? <AiBlockRenderer blocks={primaryBlocks} /> : null}
-                  </>
-                )}
+                <>
+                  {markdownBlocks.length > 0 ? <AiBlockRenderer blocks={markdownBlocks} /> : null}
+                  {markdownBlocks.length === 0 && displayText ? displayText : null}
+                  {inlineArtifacts.length > 0 ? <InlineArtifactsList items={inlineArtifacts} /> : null}
+                  {primaryBlocks.length > 0 ? <AiBlockRenderer blocks={primaryBlocks} /> : null}
+                </>
               </div>
             )
           })()
         )
       ))}
-      {shouldRenderLegacyThinking ? (
-        <div className={thinkingClass || defaultStyles.thinking}>
-          Pensando...
-        </div>
-      ) : null}
       <div ref={endRef} />
     </div>
   )
