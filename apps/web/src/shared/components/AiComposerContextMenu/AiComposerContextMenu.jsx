@@ -8,12 +8,18 @@ import {
   partitionComposerChips,
   removeAttachmentChip,
 } from '../ComposerAttachmentStrip/composerAttachmentUtils.js'
-import { resolveComposerChipIcon } from '../ComposerChip/composerChipPresentation.jsx'
+import {
+  CardChipIcon,
+  COMPOSER_CHIP_KIND_CARD,
+  buildCardContextChipType,
+  resolveComposerChipIcon,
+} from '../ComposerChip/composerChipPresentation.jsx'
 import styles from './AiComposerContextMenu.module.css'
 
 /* ── Icons ─────────────────────────────────────────────────────── */
 function PlusIcon()       { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function PlansIcon()      { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="3.2" rx="1.2" stroke="currentColor" strokeWidth="1.3"/><rect x="2" y="6.6" width="12" height="3.2" rx="1.2" stroke="currentColor" strokeWidth="1.3"/><rect x="2" y="11" width="7.5" height="3" rx="1.2" stroke="currentColor" strokeWidth="1.3"/></svg> }
+function CardMenuIcon()   { return <svg width="14" height="14" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="2" width="9" height="8" rx="1.6" stroke="currentColor" strokeWidth="1.2"/><path d="M3.5 5h5M3.5 6.75h3.25" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg> }
 function ClipIcon()       { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M12.8 7.2L7 13a4 4 0 0 1-5.6-5.6L8 1a2.5 2.5 0 0 1 3.5 3.5L5 11a1 1 0 0 1-1.4-1.4L9.5 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function FileDocIcon()    { return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M9.5 2H4a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6L9.5 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9.5 2v4H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M5.5 9.5h5M5.5 11.5h3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg> }
 function FileImageIcon()  { return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><circle cx="5.5" cy="6.5" r="1" stroke="currentColor" strokeWidth="1.1"/><path d="M2 11l3.5-3.5 2.5 2.5 2-2 3 3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg> }
@@ -78,7 +84,10 @@ function normalizeChips(chips) {
 }
 
 /* ── Component ─────────────────────────────────────────────────── */
-export default function AiComposerContextMenu({ onChipsChange, initialChips } = {}) {
+export default function AiComposerContextMenu({ onChipsChange, initialChips, boardCards } = {}) {
+  const showBoardCardsMenu = boardCards !== undefined
+  const boardCardOptions = showBoardCardsMenu ? (Array.isArray(boardCards) ? boardCards : []) : []
+  const entitySubmenuKey = showBoardCardsMenu ? 'cards' : 'plans'
   const [isMenuOpen, setIsMenuOpen]   = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState(null)
   const [localChips, setLocalChips]   = useState(() => normalizeChips(initialChips))
@@ -186,44 +195,84 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
         {isMenuOpen ? (
           <div ref={menuRef} className={styles.menu} role="menu" aria-label="Adicionar contexto ao chat">
 
-            {/* Planos */}
+            {/* Planos (workspace) ou Cartões (Kanban) */}
             <div className={styles.submenuWrap}>
               <button
                 type="button"
-                className={`${styles.menuItem} ${openSubmenu === 'plans' ? styles.menuItemOpen : ''}`}
+                className={`${styles.menuItem} ${openSubmenu === entitySubmenuKey ? styles.menuItemOpen : ''}`}
                 role="menuitem"
                 aria-haspopup="menu"
-                aria-expanded={openSubmenu === 'plans'}
-                onClick={() => setOpenSubmenu((v) => (v === 'plans' ? null : 'plans'))}
+                aria-expanded={openSubmenu === entitySubmenuKey}
+                onClick={() => setOpenSubmenu((v) => (v === entitySubmenuKey ? null : entitySubmenuKey))}
               >
-                <span className={styles.menuItemIcon} aria-hidden="true"><PlansIcon /></span>
-                <span className={styles.menuItemLabel}>Planos</span>
-                <span className={`${styles.menuItemChevron} ${openSubmenu === 'plans' ? styles.menuItemChevronOpen : ''}`} aria-hidden="true"><ChevronIcon /></span>
+                <span className={styles.menuItemIcon} aria-hidden="true">
+                  {showBoardCardsMenu ? <CardMenuIcon /> : <PlansIcon />}
+                </span>
+                <span className={styles.menuItemLabel}>{showBoardCardsMenu ? 'Cartão' : 'Planos'}</span>
+                <span className={`${styles.menuItemChevron} ${openSubmenu === entitySubmenuKey ? styles.menuItemChevronOpen : ''}`} aria-hidden="true"><ChevronIcon /></span>
               </button>
-              {openSubmenu === 'plans' ? (
-                <div className={styles.submenu} role="menu" aria-label="Planos">
-                  <div className={styles.submenuHeader}>Planos</div>
-                  {MOCK_PLANS.map(({ id, name, date, color }) => {
-                    const chipType = `plan-${id}`
-                    const active   = chips.some((c) => c.type === chipType)
-                    const PlanDot  = makePlanChipDot(color)
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
-                        role="menuitem"
-                        onClick={() => { toggleChip(chipType, name, PlanDot, 'plan'); closeAll() }}
-                      >
-                        <span className={styles.planDot} style={{ background: color }} aria-hidden="true" />
-                        <span className={styles.planInfo}>
-                          <span className={styles.planName}>{name}</span>
-                          <span className={styles.planDate}>{date}</span>
-                        </span>
-                        {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
-                      </button>
+              {openSubmenu === entitySubmenuKey ? (
+                <div
+                  className={styles.submenu}
+                  role="menu"
+                  aria-label={showBoardCardsMenu ? 'Cartões do plano' : 'Planos'}
+                >
+                  <div className={styles.submenuHeader}>{showBoardCardsMenu ? 'Cartões' : 'Planos'}</div>
+                  {showBoardCardsMenu ? (
+                    boardCardOptions.length > 0 ? (
+                      boardCardOptions.map(({ id, title, columnTitle }) => {
+                        const chipType = buildCardContextChipType(id)
+                        const active = chips.some((c) => c.type === chipType)
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
+                            role="menuitem"
+                            onClick={() => {
+                              toggleChip(chipType, title, CardChipIcon, COMPOSER_CHIP_KIND_CARD)
+                              closeAll()
+                            }}
+                          >
+                            <span className={styles.cardMenuIcon} aria-hidden="true">
+                              <CardChipIcon />
+                            </span>
+                            <span className={styles.planInfo}>
+                              <span className={styles.planName}>{title}</span>
+                              {columnTitle ? (
+                                <span className={styles.planDate}>{columnTitle}</span>
+                              ) : null}
+                            </span>
+                            {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
+                          </button>
+                        )
+                      })
+                    ) : (
+                      <p className={styles.submenuEmpty}>Nenhum cartão neste plano</p>
                     )
-                  })}
+                  ) : (
+                    MOCK_PLANS.map(({ id, name, date, color }) => {
+                      const chipType = `plan-${id}`
+                      const active   = chips.some((c) => c.type === chipType)
+                      const PlanDot  = makePlanChipDot(color)
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
+                          role="menuitem"
+                          onClick={() => { toggleChip(chipType, name, PlanDot, 'plan'); closeAll() }}
+                        >
+                          <span className={styles.planDot} style={{ background: color }} aria-hidden="true" />
+                          <span className={styles.planInfo}>
+                            <span className={styles.planName}>{name}</span>
+                            <span className={styles.planDate}>{date}</span>
+                          </span>
+                          {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
+                        </button>
+                      )
+                    })
+                  )}
                 </div>
               ) : null}
             </div>

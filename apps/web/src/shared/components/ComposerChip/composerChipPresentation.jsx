@@ -1,5 +1,9 @@
 export const COMPOSER_CHIP_KIND_CARD = 'card'
 
+export function buildCardContextChipType(cardId) {
+  return `card-${cardId}`
+}
+
 /** Kanban card context chip icon (12×12, currentColor). */
 export function CardChipIcon() {
   return (

@@ -105,6 +105,61 @@ describe('AiComposerContextMenu', () => {
     ])
   })
 
+  it('shows Planos in the default workspace menu', async () => {
+    const user = userEvent.setup()
+    render(<AiComposerContextMenu onChipsChange={vi.fn()} initialChips={[]} />)
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+
+    expect(screen.getByRole('menuitem', { name: /Planos/i })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /Cartão/i })).not.toBeInTheDocument()
+  })
+
+  it('shows Cartão instead of Planos when boardCards is provided', async () => {
+    const user = userEvent.setup()
+    render(
+      <AiComposerContextMenu
+        onChipsChange={vi.fn()}
+        initialChips={[]}
+        boardCards={[
+          { id: 'card-1', title: 'Login UI', columnTitle: 'Em progresso' },
+          { id: 'card-2', title: 'API auth', columnTitle: 'Backlog' },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+
+    expect(screen.getByRole('menuitem', { name: /Cartão/i })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /^Planos$/i })).not.toBeInTheDocument()
+  })
+
+  it('adds a card context chip from the Kanban board menu', async () => {
+    const user = userEvent.setup()
+    const handleChipsChange = vi.fn()
+
+    render(
+      <AiComposerContextMenu
+        onChipsChange={handleChipsChange}
+        initialChips={[]}
+        boardCards={[{ id: 'card-1', title: 'Login UI', columnTitle: 'Em progresso' }]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+    await user.click(screen.getByRole('menuitem', { name: /Cartão/i }))
+    await user.click(screen.getByRole('menuitem', { name: /Login UI/i }))
+
+    expect(handleChipsChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'ctx-card-card-1',
+        type: 'card-card-1',
+        label: 'Login UI',
+        kind: COMPOSER_CHIP_KIND_CARD,
+      }),
+    ])
+  })
+
   it('renders card chips with data-kind card and the card icon', () => {
     const { container } = render(
       <AiComposerContextMenu

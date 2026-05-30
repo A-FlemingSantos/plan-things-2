@@ -847,6 +847,16 @@ export default function KanbanBoard() {
     timeZone,
     dateFormat,
   })
+  const intelligenceBoardCards = useMemo(
+    () => columns.flatMap((column) => (
+      column.cards.map((card) => ({
+        id: card.id,
+        title: card.title,
+        columnTitle: column.title,
+      }))
+    )),
+    [columns],
+  )
   const {
     dragState,
     dropTarget,
@@ -2603,6 +2613,7 @@ export default function KanbanBoard() {
                   submitDisabled={!canSubmitIntelligenceMessage(intelligenceDraft, kanbanAiChips)}
                   aiChips={kanbanAiChips}
                   onChipsChange={setKanbanAiChips}
+                  boardCards={intelligenceBoardCards}
                   showGitHubBar={intelligenceActiveConnectors.includes('github')}
                   githubBarClassName={styles.intelligenceGitHubBar}
                   classes={{

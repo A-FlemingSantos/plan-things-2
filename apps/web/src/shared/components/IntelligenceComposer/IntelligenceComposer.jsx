@@ -70,6 +70,7 @@ export default function IntelligenceComposer({
   classes = {},
   aiChips = [],
   onChipsChange,
+  boardCards,
   showGitHubBar = false,
   githubBarClassName,
   githubBarPlacement = 'afterForm',
@@ -165,7 +166,11 @@ export default function IntelligenceComposer({
       />
       <div className={controls}>
         <div className={contextSlot}>
-          <AiComposerContextMenu onChipsChange={onChipsChange} initialChips={aiChips} />
+          <AiComposerContextMenu
+            onChipsChange={onChipsChange}
+            initialChips={aiChips}
+            boardCards={boardCards}
+          />
         </div>
         <div className={actions}>
           {showVoiceButton ? (
