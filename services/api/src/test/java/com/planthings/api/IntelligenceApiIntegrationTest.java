@@ -39,7 +39,7 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
 
   @Test
   void shouldCreateConversationAndAcceptMessage() throws Exception {
-    when(aiOpenAiClient.createResponse(any())).thenReturn(new OpenAiResponseResult(
+    when(aiOpenAiClient.createResponseStream(any(), any())).thenReturn(new OpenAiResponseResult(
         "resp_test_123",
         "Priorize os planos com maior risco e menor folga nesta semana.",
         "{\"total_tokens\":123}"
@@ -102,7 +102,7 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
 
   @Test
   void shouldKeepConversationStateAcrossMultipleMessagesWhenStoreIsDisabled() throws Exception {
-    when(aiOpenAiClient.createResponse(any()))
+    when(aiOpenAiClient.createResponseStream(any(), any()))
         .thenReturn(
             new OpenAiResponseResult("resp_first", "Primeira resposta.", "{\"total_tokens\":100}"),
             new OpenAiResponseResult("resp_second", "Segunda resposta.", "{\"total_tokens\":120}")
@@ -141,7 +141,7 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
     assertEquals("Segunda resposta.", secondAssistant.path("contentText").asText());
 
     ArgumentCaptor<OpenAiResponseRequest> requestCaptor = ArgumentCaptor.forClass(OpenAiResponseRequest.class);
-    verify(aiOpenAiClient, org.mockito.Mockito.times(2)).createResponse(requestCaptor.capture());
+    verify(aiOpenAiClient, org.mockito.Mockito.times(2)).createResponseStream(requestCaptor.capture(), any());
     List<OpenAiResponseRequest> requests = requestCaptor.getAllValues();
 
     assertEquals(2, requests.size());

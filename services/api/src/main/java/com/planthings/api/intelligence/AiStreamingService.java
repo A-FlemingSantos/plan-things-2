@@ -49,7 +49,7 @@ public class AiStreamingService {
           .name("stream.ready")
           .data(Map.of(
               "conversationId", conversation.getId().toString(),
-              "message", "Canal SSE pronto. Streaming completo sera habilitado na Fase 1."
+              "message", "Canal SSE pronto."
           ), MediaType.APPLICATION_JSON));
     } catch (IOException exception) {
       logger.warn("Falha ao enviar evento inicial do stream da conversa {}", conversationId, exception);

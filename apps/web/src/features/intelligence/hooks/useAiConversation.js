@@ -41,6 +41,43 @@ function mergeMessagesWithLocalContext(nextMessages, currentMessages) {
   })
 }
 
+function mergeMessagesPreservingStreaming(nextMessages, currentMessages) {
+  const currentById = new Map(currentMessages.map((message) => [message.id, message]))
+
+  return nextMessages.map((message) => {
+    const localMessage = currentById.get(message.id)
+    if (!localMessage) {
+      return message
+    }
+
+    const localStatus = String(localMessage.status ?? '').toUpperCase()
+    const remoteStatus = String(message.status ?? '').toUpperCase()
+    const remoteHasText = Boolean(String(message.contentText ?? message.text ?? '').trim())
+    const localHasText = Boolean(String(localMessage.contentText ?? localMessage.text ?? '').trim())
+
+    if (localStatus !== 'STREAMING') {
+      return message
+    }
+
+    // During active stream polling, backend may still return empty/pending content.
+    // Keep local delta-rendered text until persisted content becomes available.
+    if (remoteStatus === 'COMPLETED' || remoteHasText) {
+      return message
+    }
+
+    if (!localHasText) {
+      return message
+    }
+
+    return {
+      ...message,
+      status: localStatus,
+      text: localMessage.text,
+      contentText: localMessage.contentText,
+    }
+  })
+}
+
 export function useAiConversation({
   accessToken = null,
   scope = {},
@@ -83,7 +120,10 @@ export function useAiConversation({
     const apiMessages = await listIntelligenceMessages(targetConversationId, { token: accessToken })
     const normalizedMessages = apiMessages.map(mapApiMessageToThreadMessage)
 
-    setMessages((current) => mergeMessagesWithLocalContext(normalizedMessages, current))
+    setMessages((current) => {
+      const withStreamingMerge = mergeMessagesPreservingStreaming(normalizedMessages, current)
+      return mergeMessagesWithLocalContext(withStreamingMerge, current)
+    })
     setIsThinking(isThreadMessageThinking(normalizedMessages))
     return normalizedMessages
   }, [accessToken, conversationId])

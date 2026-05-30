@@ -219,4 +219,67 @@ describe('useAiConversation', () => {
       expect(result.current.messages[0]?.contextSnapshot?.imageAttachments).toHaveLength(1)
     })
   })
+
+  it('keeps streamed delta text during polling until backend persists final content', async () => {
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockResolvedValue({
+      conversationId: 'conv-1',
+      userMessageId: 'user-1',
+      assistantMessageId: 'asst-1',
+      assistantStatus: 'PENDING',
+    })
+    apiMocks.listMessages.mockResolvedValue([
+      {
+        id: 'user-1',
+        conversationId: 'conv-1',
+        role: 'USER',
+        status: 'COMPLETED',
+        contentText: 'Mensagem',
+        blocks: [],
+      },
+      {
+        id: 'asst-1',
+        conversationId: 'conv-1',
+        role: 'ASSISTANT',
+        status: 'STREAMING',
+        contentText: '',
+        blocks: [],
+      },
+    ])
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+    }))
+
+    await waitFor(() => {
+      expect(apiMocks.createConversation).toHaveBeenCalled()
+    })
+
+    await act(async () => {
+      await result.current.submitMessage('Mensagem')
+    })
+
+    await act(async () => {
+      streamState.options.onEvent({
+        event: 'assistant.delta',
+        data: {
+          conversationId: 'conv-1',
+          messageId: 'asst-1',
+          delta: 'Parte parcial',
+        },
+      })
+    })
+
+    await act(async () => {
+      await result.current.refreshMessages('conv-1')
+    })
+
+    expect(result.current.messages[1]).toMatchObject({
+      id: 'asst-1',
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.STREAMING,
+      text: 'Parte parcial',
+    })
+  })
 })

@@ -94,7 +94,10 @@ public class AiResponseOrchestrator {
 
       markAssistantStreaming(assistantMessageId);
 
-      OpenAiResponseResult response = aiOpenAiClient.createResponse(buildRequest(context));
+      OpenAiResponseResult response = aiOpenAiClient.createResponseStream(
+          buildRequest(context),
+          delta -> streamAssistantDelta(conversationId, assistantMessageId, delta)
+      );
       String outputText = normalizeOutputText(response.outputText());
 
       transactionTemplate.executeWithoutResult(status -> completeAssistantMessage(
@@ -104,12 +107,6 @@ public class AiResponseOrchestrator {
           outputText
       ));
 
-      streamingService.sendEvent(conversationId, "assistant.delta", Map.of(
-          "conversationId", conversationId.toString(),
-          "messageId", assistantMessageId.toString(),
-          "status", AiMessageStatus.STREAMING.name(),
-          "delta", outputText
-      ));
       streamingService.sendEvent(conversationId, "assistant.completed", Map.of(
           "conversationId", conversationId.toString(),
           "messageId", assistantMessageId.toString(),
@@ -202,6 +199,18 @@ public class AiResponseOrchestrator {
       assistantMessage.setStatus(AiMessageStatus.STREAMING);
       messageRepository.save(assistantMessage);
     });
+  }
+
+  private void streamAssistantDelta(UUID conversationId, UUID assistantMessageId, String delta) {
+    if (delta == null || delta.isEmpty()) {
+      return;
+    }
+    streamingService.sendEvent(conversationId, "assistant.delta", Map.of(
+        "conversationId", conversationId.toString(),
+        "messageId", assistantMessageId.toString(),
+        "status", AiMessageStatus.STREAMING.name(),
+        "delta", delta
+    ));
   }
 
   private void completeAssistantMessage(
