@@ -15,6 +15,7 @@ import {
   buildCardContextChipType,
   resolveComposerChipIcon,
 } from '../ComposerChip/composerChipPresentation.jsx'
+import CustomScrollArea from '../CustomScrollArea/CustomScrollArea.jsx'
 import styles from './AiComposerContextMenu.module.css'
 
 /* ── Icons ─────────────────────────────────────────────────────── */
@@ -251,61 +252,68 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
       aria-label={showBoardCardsMenu ? 'Cartões do plano' : 'Planos'}
     >
       <div className={styles.submenuHeader}>{showBoardCardsMenu ? 'Cartões' : 'Planos'}</div>
-      {showBoardCardsMenu ? (
-        boardCardOptions.length > 0 ? (
-          boardCardOptions.map(({ id, title, columnTitle }) => {
-            const chipType = buildCardContextChipType(id)
-            const active = chips.some((c) => c.type === chipType)
+      <CustomScrollArea
+        enabled
+        refreshKey={`${entitySubmenuKey}-${showBoardCardsMenu ? boardCardOptions.length : MOCK_PLANS.length}`}
+        className={styles.submenuScrollArea}
+        viewportClassName={styles.submenuScrollViewport}
+      >
+        {showBoardCardsMenu ? (
+          boardCardOptions.length > 0 ? (
+            boardCardOptions.map(({ id, title, columnTitle }) => {
+              const chipType = buildCardContextChipType(id)
+              const active = chips.some((c) => c.type === chipType)
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
+                  role="menuitem"
+                  onClick={() => {
+                    toggleChip(chipType, title, CardChipIcon, COMPOSER_CHIP_KIND_CARD)
+                    closeAll()
+                  }}
+                >
+                  <span className={styles.cardMenuIcon} aria-hidden="true">
+                    <CardChipIcon />
+                  </span>
+                  <span className={styles.planInfo}>
+                    <span className={styles.planName}>{title}</span>
+                    {columnTitle ? (
+                      <span className={styles.planDate}>{columnTitle}</span>
+                    ) : null}
+                  </span>
+                  {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
+                </button>
+              )
+            })
+          ) : (
+            <p className={styles.submenuEmpty}>Nenhum cartão neste plano</p>
+          )
+        ) : (
+          MOCK_PLANS.map(({ id, name, date, color }) => {
+            const chipType = `plan-${id}`
+            const active   = chips.some((c) => c.type === chipType)
+            const PlanDot  = makePlanChipDot(color)
             return (
               <button
                 key={id}
                 type="button"
                 className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
                 role="menuitem"
-                onClick={() => {
-                  toggleChip(chipType, title, CardChipIcon, COMPOSER_CHIP_KIND_CARD)
-                  closeAll()
-                }}
+                onClick={() => { toggleChip(chipType, name, PlanDot, 'plan'); closeAll() }}
               >
-                <span className={styles.cardMenuIcon} aria-hidden="true">
-                  <CardChipIcon />
-                </span>
+                <span className={styles.planDot} style={{ background: color }} aria-hidden="true" />
                 <span className={styles.planInfo}>
-                  <span className={styles.planName}>{title}</span>
-                  {columnTitle ? (
-                    <span className={styles.planDate}>{columnTitle}</span>
-                  ) : null}
+                  <span className={styles.planName}>{name}</span>
+                  <span className={styles.planDate}>{date}</span>
                 </span>
                 {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
               </button>
             )
           })
-        ) : (
-          <p className={styles.submenuEmpty}>Nenhum cartão neste plano</p>
-        )
-      ) : (
-        MOCK_PLANS.map(({ id, name, date, color }) => {
-          const chipType = `plan-${id}`
-          const active   = chips.some((c) => c.type === chipType)
-          const PlanDot  = makePlanChipDot(color)
-          return (
-            <button
-              key={id}
-              type="button"
-              className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
-              role="menuitem"
-              onClick={() => { toggleChip(chipType, name, PlanDot, 'plan'); closeAll() }}
-            >
-              <span className={styles.planDot} style={{ background: color }} aria-hidden="true" />
-              <span className={styles.planInfo}>
-                <span className={styles.planName}>{name}</span>
-                <span className={styles.planDate}>{date}</span>
-              </span>
-              {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
-            </button>
-          )
-        })
-      )}
+        )}
+      </CustomScrollArea>
     </div>
   )
 

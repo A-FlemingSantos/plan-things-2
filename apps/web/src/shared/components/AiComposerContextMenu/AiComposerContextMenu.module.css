@@ -201,7 +201,6 @@
   top: 0;
   z-index: 1400;
   max-height: min(56vh, 360px);
-  overflow-y: auto;
 }
 
 [data-theme='dark'] .submenu {
@@ -220,6 +219,17 @@
   color: var(--text-2);
   border-bottom: 1px solid color-mix(in srgb, var(--border-1) 45%, transparent);
   margin-bottom: 3px;
+}
+
+.submenuScrollArea {
+  min-height: 0;
+}
+
+.submenuScrollViewport {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(56vh, 302px);
 }
 
 .submenuSection {
