@@ -41,6 +41,24 @@ function ChevronIcon({ open = false }) {
   )
 }
 
+function ToolsIcon() {
+  return (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={styles.toolsIcon}
+    >
+      <path d="M3.5 5h1.5v-1.5l-1.75-1.75a3 3 0 0 1 4 4l3 3a1 1 0 0 1-1.5 1.5l-3-3a3 3 0 0 1-4-4l1.75 1.75" />
+    </svg>
+  )
+}
+
 export default function InlineArtifactsList({ items = [] }) {
   const sortedItems = [...items].sort((left, right) => left.position - right.position)
   const [expandedIds, setExpandedIds] = useState(() => new Set())
@@ -78,6 +96,9 @@ export default function InlineArtifactsList({ items = [] }) {
               aria-expanded={expanded ? 'true' : 'false'}
               onClick={() => toggleItem(artifactId)}
             >
+              <span className={styles.toolsIconWrap} aria-hidden="true">
+                <ToolsIcon />
+              </span>
               <span>{typeLabel} | {artifact.label || 'item'} | {statusLabel}</span>
               <span className={styles.chevronWrap} aria-hidden="true">
                 <ChevronIcon open={expanded} />
