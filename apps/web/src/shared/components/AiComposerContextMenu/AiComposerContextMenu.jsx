@@ -86,6 +86,10 @@ function normalizeChips(chips) {
   return Array.isArray(chips) ? chips : []
 }
 
+function stopEventPropagation(event) {
+  event.stopPropagation()
+}
+
 /* ── Component ─────────────────────────────────────────────────── */
 export default function AiComposerContextMenu({ onChipsChange, initialChips, boardCards } = {}) {
   const showBoardCardsMenu = boardCards !== undefined
@@ -248,6 +252,9 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
       style={isFloatingCardsSubmenu
         ? (floatingSubmenuStyle ?? { visibility: 'hidden' })
         : undefined}
+      data-ai-composer-floating-submenu={isFloatingCardsSubmenu ? 'true' : undefined}
+      onMouseDownCapture={isFloatingCardsSubmenu ? stopEventPropagation : undefined}
+      onPointerDownCapture={isFloatingCardsSubmenu ? stopEventPropagation : undefined}
       role="menu"
       aria-label={showBoardCardsMenu ? 'Cartões do plano' : 'Planos'}
     >

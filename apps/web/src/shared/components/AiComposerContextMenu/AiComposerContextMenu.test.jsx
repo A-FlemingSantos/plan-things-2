@@ -229,6 +229,36 @@ describe('AiComposerContextMenu', () => {
     expect(cardsMenu.closest('[data-theme="dark"]')).toBeInTheDocument()
   })
 
+  it('stops mousedown and pointerdown propagation inside floating cards submenu', async () => {
+    const user = userEvent.setup()
+    const documentMouseDownSpy = vi.fn()
+    const documentPointerDownSpy = vi.fn()
+
+    document.addEventListener('mousedown', documentMouseDownSpy)
+    document.addEventListener('pointerdown', documentPointerDownSpy)
+
+    render(
+      <AiComposerContextMenu
+        onChipsChange={vi.fn()}
+        initialChips={[]}
+        boardCards={[{ id: 'card-1', title: 'Login UI', columnTitle: 'Em progresso' }]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+    await user.click(screen.getByRole('menuitem', { name: /Cartão/i }))
+    documentMouseDownSpy.mockClear()
+    documentPointerDownSpy.mockClear()
+
+    await user.click(screen.getByRole('menuitem', { name: /Login UI/i }))
+
+    expect(documentMouseDownSpy).not.toHaveBeenCalled()
+    expect(documentPointerDownSpy).not.toHaveBeenCalled()
+
+    document.removeEventListener('mousedown', documentMouseDownSpy)
+    document.removeEventListener('pointerdown', documentPointerDownSpy)
+  })
+
   it('renders card chips with data-kind card and the card icon', () => {
     const { container } = render(
       <AiComposerContextMenu
