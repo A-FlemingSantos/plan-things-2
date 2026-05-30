@@ -192,6 +192,43 @@ describe('AiComposerContextMenu', () => {
     ])
   })
 
+  it('renders the Kanban card submenu in a floating layer above clipping containers', async () => {
+    const user = userEvent.setup()
+    render(
+      <AiComposerContextMenu
+        onChipsChange={vi.fn()}
+        initialChips={[]}
+        boardCards={[{ id: 'card-1', title: 'Login UI', columnTitle: 'Em progresso' }]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+    await user.click(screen.getByRole('menuitem', { name: /Cartão/i }))
+
+    const cardsMenu = screen.getByRole('menu', { name: 'Cartões do plano' })
+    expect(cardsMenu.className).toMatch(/submenuFloating/)
+    expect(cardsMenu.parentElement?.parentElement).toBe(document.body)
+  })
+
+  it('preserves dark theme scope when rendering floating cards submenu in portal', async () => {
+    const user = userEvent.setup()
+    render(
+      <div data-theme="dark">
+        <AiComposerContextMenu
+          onChipsChange={vi.fn()}
+          initialChips={[]}
+          boardCards={[{ id: 'card-1', title: 'Login UI', columnTitle: 'Em progresso' }]}
+        />
+      </div>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+    await user.click(screen.getByRole('menuitem', { name: /Cartão/i }))
+
+    const cardsMenu = screen.getByRole('menu', { name: 'Cartões do plano' })
+    expect(cardsMenu.closest('[data-theme="dark"]')).toBeInTheDocument()
+  })
+
   it('renders card chips with data-kind card and the card icon', () => {
     const { container } = render(
       <AiComposerContextMenu

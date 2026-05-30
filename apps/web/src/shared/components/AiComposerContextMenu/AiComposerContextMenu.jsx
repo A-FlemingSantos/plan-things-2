@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   MAX_COMPOSER_ATTACHMENTS,
   appendFilesAsAttachments,
@@ -74,6 +75,7 @@ const MOCK_RECENT_FILES = [
 ]
 
 const FILE_INPUT_ACCEPT = 'image/*,.pdf,.doc,.docx,.md,.fig,.txt,.csv,.xls,.xlsx,.ppt,.pptx'
+const SUBMENU_VIEWPORT_GAP_PX = 8
 
 const makePlanChipDot = (color) => function PlanChipDot() {
   return <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill={color} /></svg>
@@ -100,6 +102,11 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
   const menuRef       = useRef(null)
   const buttonRef     = useRef(null)
   const fileInputRef  = useRef(null)
+  const entityMenuItemRef = useRef(null)
+  const floatingSubmenuRef = useRef(null)
+  const [floatingSubmenuStyle, setFloatingSubmenuStyle] = useState(null)
+  const [floatingTheme, setFloatingTheme] = useState(null)
+  const isFloatingCardsSubmenu = showBoardCardsMenu && openSubmenu === entitySubmenuKey
 
   const commitChips = (nextChips) => {
     if (!isControlled) {
@@ -148,11 +155,49 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
 
   const closeAll = () => { setIsMenuOpen(false); setOpenSubmenu(null) }
 
+  const updateFloatingSubmenuPosition = () => {
+    if (!isFloatingCardsSubmenu) {
+      setFloatingSubmenuStyle(null)
+      return
+    }
+
+    const anchorRect = entityMenuItemRef.current?.getBoundingClientRect?.()
+    if (!anchorRect) return
+
+    const floatingEl = floatingSubmenuRef.current
+    const submenuWidth = floatingEl?.offsetWidth ?? 240
+    const submenuHeight = floatingEl?.offsetHeight ?? 240
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    let left = anchorRect.right + SUBMENU_VIEWPORT_GAP_PX
+    const maxLeft = viewportWidth - submenuWidth - SUBMENU_VIEWPORT_GAP_PX
+    if (left > maxLeft) {
+      left = Math.max(
+        SUBMENU_VIEWPORT_GAP_PX,
+        anchorRect.left - submenuWidth - SUBMENU_VIEWPORT_GAP_PX,
+      )
+    }
+
+    const maxTop = viewportHeight - submenuHeight - SUBMENU_VIEWPORT_GAP_PX
+    const preferredTop = anchorRect.bottom - submenuHeight
+    const top = Math.min(
+      Math.max(SUBMENU_VIEWPORT_GAP_PX, preferredTop),
+      Math.max(SUBMENU_VIEWPORT_GAP_PX, maxTop),
+    )
+
+    setFloatingSubmenuStyle({
+      top: `${Math.round(top)}px`,
+      left: `${Math.round(left)}px`,
+    })
+  }
+
   useEffect(() => {
     if (!isMenuOpen) return undefined
     const onMouseDown = (e) => {
       if (buttonRef.current?.contains(e.target)) return
       if (menuRef.current?.contains(e.target)) return
+      if (floatingSubmenuRef.current?.contains(e.target)) return
       closeAll()
     }
     const onKeyDown = (e) => { if (e.key === 'Escape') closeAll() }
@@ -164,6 +209,105 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMenuOpen])
+
+  useLayoutEffect(() => {
+    if (!isFloatingCardsSubmenu) {
+      setFloatingSubmenuStyle(null)
+      setFloatingTheme(null)
+      return undefined
+    }
+
+    const closestTheme = buttonRef.current?.closest?.('[data-theme]')?.getAttribute?.('data-theme')
+      ?? document.documentElement?.getAttribute?.('data-theme')
+      ?? null
+    setFloatingTheme(closestTheme)
+
+    updateFloatingSubmenuPosition()
+    const rafId = window.requestAnimationFrame(updateFloatingSubmenuPosition)
+
+    const handleViewportChange = () => {
+      updateFloatingSubmenuPosition()
+    }
+
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('scroll', handleViewportChange, true)
+
+    return () => {
+      window.cancelAnimationFrame(rafId)
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('scroll', handleViewportChange, true)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFloatingCardsSubmenu, boardCardOptions.length])
+
+  const cardsSubmenuContent = (
+    <div
+      ref={isFloatingCardsSubmenu ? floatingSubmenuRef : null}
+      className={`${styles.submenu} ${isFloatingCardsSubmenu ? styles.submenuFloating : ''}`}
+      style={isFloatingCardsSubmenu
+        ? (floatingSubmenuStyle ?? { visibility: 'hidden' })
+        : undefined}
+      role="menu"
+      aria-label={showBoardCardsMenu ? 'Cartões do plano' : 'Planos'}
+    >
+      <div className={styles.submenuHeader}>{showBoardCardsMenu ? 'Cartões' : 'Planos'}</div>
+      {showBoardCardsMenu ? (
+        boardCardOptions.length > 0 ? (
+          boardCardOptions.map(({ id, title, columnTitle }) => {
+            const chipType = buildCardContextChipType(id)
+            const active = chips.some((c) => c.type === chipType)
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
+                role="menuitem"
+                onClick={() => {
+                  toggleChip(chipType, title, CardChipIcon, COMPOSER_CHIP_KIND_CARD)
+                  closeAll()
+                }}
+              >
+                <span className={styles.cardMenuIcon} aria-hidden="true">
+                  <CardChipIcon />
+                </span>
+                <span className={styles.planInfo}>
+                  <span className={styles.planName}>{title}</span>
+                  {columnTitle ? (
+                    <span className={styles.planDate}>{columnTitle}</span>
+                  ) : null}
+                </span>
+                {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
+              </button>
+            )
+          })
+        ) : (
+          <p className={styles.submenuEmpty}>Nenhum cartão neste plano</p>
+        )
+      ) : (
+        MOCK_PLANS.map(({ id, name, date, color }) => {
+          const chipType = `plan-${id}`
+          const active   = chips.some((c) => c.type === chipType)
+          const PlanDot  = makePlanChipDot(color)
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
+              role="menuitem"
+              onClick={() => { toggleChip(chipType, name, PlanDot, 'plan'); closeAll() }}
+            >
+              <span className={styles.planDot} style={{ background: color }} aria-hidden="true" />
+              <span className={styles.planInfo}>
+                <span className={styles.planName}>{name}</span>
+                <span className={styles.planDate}>{date}</span>
+              </span>
+              {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
+            </button>
+          )
+        })
+      )}
+    </div>
+  )
 
   return (
     <>
@@ -198,6 +342,7 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
             {/* Planos (workspace) ou Cartões (Kanban) */}
             <div className={styles.submenuWrap}>
               <button
+                ref={showBoardCardsMenu ? entityMenuItemRef : null}
                 type="button"
                 className={`${styles.menuItem} ${openSubmenu === entitySubmenuKey ? styles.menuItemOpen : ''}`}
                 role="menuitem"
@@ -212,68 +357,14 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
                 <span className={`${styles.menuItemChevron} ${openSubmenu === entitySubmenuKey ? styles.menuItemChevronOpen : ''}`} aria-hidden="true"><ChevronIcon /></span>
               </button>
               {openSubmenu === entitySubmenuKey ? (
-                <div
-                  className={styles.submenu}
-                  role="menu"
-                  aria-label={showBoardCardsMenu ? 'Cartões do plano' : 'Planos'}
-                >
-                  <div className={styles.submenuHeader}>{showBoardCardsMenu ? 'Cartões' : 'Planos'}</div>
-                  {showBoardCardsMenu ? (
-                    boardCardOptions.length > 0 ? (
-                      boardCardOptions.map(({ id, title, columnTitle }) => {
-                        const chipType = buildCardContextChipType(id)
-                        const active = chips.some((c) => c.type === chipType)
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
-                            role="menuitem"
-                            onClick={() => {
-                              toggleChip(chipType, title, CardChipIcon, COMPOSER_CHIP_KIND_CARD)
-                              closeAll()
-                            }}
-                          >
-                            <span className={styles.cardMenuIcon} aria-hidden="true">
-                              <CardChipIcon />
-                            </span>
-                            <span className={styles.planInfo}>
-                              <span className={styles.planName}>{title}</span>
-                              {columnTitle ? (
-                                <span className={styles.planDate}>{columnTitle}</span>
-                              ) : null}
-                            </span>
-                            {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
-                          </button>
-                        )
-                      })
-                    ) : (
-                      <p className={styles.submenuEmpty}>Nenhum cartão neste plano</p>
-                    )
-                  ) : (
-                    MOCK_PLANS.map(({ id, name, date, color }) => {
-                      const chipType = `plan-${id}`
-                      const active   = chips.some((c) => c.type === chipType)
-                      const PlanDot  = makePlanChipDot(color)
-                      return (
-                        <button
-                          key={id}
-                          type="button"
-                          className={`${styles.planItem} ${active ? styles.menuItemActive : ''}`}
-                          role="menuitem"
-                          onClick={() => { toggleChip(chipType, name, PlanDot, 'plan'); closeAll() }}
-                        >
-                          <span className={styles.planDot} style={{ background: color }} aria-hidden="true" />
-                          <span className={styles.planInfo}>
-                            <span className={styles.planName}>{name}</span>
-                            <span className={styles.planDate}>{date}</span>
-                          </span>
-                          {active ? <span className={styles.menuItemCheck} aria-hidden="true"><CheckIcon /></span> : null}
-                        </button>
-                      )
-                    })
-                  )}
-                </div>
+                isFloatingCardsSubmenu
+                  ? createPortal(
+                    <div data-theme={floatingTheme ?? undefined}>
+                      {cardsSubmenuContent}
+                    </div>,
+                    document.body,
+                  )
+                  : cardsSubmenuContent
               ) : null}
             </div>
 
