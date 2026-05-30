@@ -1,9 +1,22 @@
 package com.planthings.api;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.planthings.api.intelligence.openai.AiOpenAiClient;
+import com.planthings.api.intelligence.openai.OpenAiResponseRequest;
+import com.planthings.api.intelligence.openai.OpenAiResponseResult;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -15,6 +28,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
 
+  @MockBean
+  private AiOpenAiClient aiOpenAiClient;
+
   @Test
   void shouldRejectIntelligenceStatusWithoutAuthentication() throws Exception {
     mockMvc.perform(get("/api/intelligence/conversations/status"))
@@ -23,6 +39,12 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
 
   @Test
   void shouldCreateConversationAndAcceptMessage() throws Exception {
+    when(aiOpenAiClient.createResponse(any())).thenReturn(new OpenAiResponseResult(
+        "resp_test_123",
+        "Priorize os planos com maior risco e menor folga nesta semana.",
+        "{\"total_tokens\":123}"
+    ));
+
     String token = registerAndGetToken("Arthur Intelligence", "arthur-intelligence@example.com", "12345678");
 
     mockMvc.perform(get("/api/intelligence/conversations/status")
@@ -51,25 +73,89 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.title").value("Ideias do workspace"));
 
-    mockMvc.perform(post("/api/intelligence/conversations/" + conversationId + "/messages")
+    JsonNode acceptedMessage = postMessage(token, conversationId, "Quais planos devo priorizar esta semana?");
+
+    JsonNode immediateMessages = readJson(mockMvc.perform(get("/api/intelligence/conversations/" + conversationId + "/messages")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+    assertEquals(2, immediateMessages.size());
+    assertEquals("USER", immediateMessages.path(0).path("role").asText());
+    assertEquals("ASSISTANT", immediateMessages.path(1).path("role").asText());
+    String immediateAssistantStatus = immediateMessages.path(1).path("status").asText();
+    assertTrue(
+        "PENDING".equals(immediateAssistantStatus)
+            || "STREAMING".equals(immediateAssistantStatus)
+            || "COMPLETED".equals(immediateAssistantStatus)
+    );
+
+    JsonNode settledAssistant = waitForMessageToSettle(
+        token,
+        conversationId,
+        acceptedMessage.path("assistantMessageId").asText()
+    );
+    assertEquals("COMPLETED", settledAssistant.path("status").asText());
+    assertEquals("resp_test_123", settledAssistant.path("openaiResponseId").asText());
+    assertEquals(1, settledAssistant.path("blocks").size());
+    assertEquals("MARKDOWN", settledAssistant.path("blocks").path(0).path("blockType").asText());
+  }
+
+  @Test
+  void shouldKeepConversationStateAcrossMultipleMessagesWhenStoreIsDisabled() throws Exception {
+    when(aiOpenAiClient.createResponse(any()))
+        .thenReturn(
+            new OpenAiResponseResult("resp_first", "Primeira resposta.", "{\"total_tokens\":100}"),
+            new OpenAiResponseResult("resp_second", "Segunda resposta.", "{\"total_tokens\":120}")
+        );
+
+    String token = registerAndGetToken("Arthur Conversa", "arthur-conversa@example.com", "12345678");
+    String conversationId = readJson(mockMvc.perform(post("/api/intelligence/conversations")
             .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
                 {
-                  "content": "Quais planos devo priorizar esta semana?"
+                  "scopeType": "WORKSPACE",
+                  "title": "Conversa multi-turno"
                 }
                 """))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.conversationId").value(conversationId))
-        .andExpect(jsonPath("$.data.assistantStatus").value("PENDING"));
+        .andReturn()).path("data").path("id").asText();
 
-    mockMvc.perform(get("/api/intelligence/conversations/" + conversationId + "/messages")
-            .header("Authorization", "Bearer " + token))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.length()").value(2))
-        .andExpect(jsonPath("$.data[0].role").value("USER"))
-        .andExpect(jsonPath("$.data[1].role").value("ASSISTANT"))
-        .andExpect(jsonPath("$.data[1].status").value("PENDING"));
+    JsonNode firstAccepted = postMessage(token, conversationId, "Primeira pergunta?");
+    JsonNode firstAssistant = waitForMessageToSettle(
+        token,
+        conversationId,
+        firstAccepted.path("assistantMessageId").asText()
+    );
+    JsonNode secondAccepted = postMessage(token, conversationId, "Segunda pergunta?");
+
+    JsonNode secondAssistant = waitForMessageToSettle(
+        token,
+        conversationId,
+        secondAccepted.path("assistantMessageId").asText()
+    );
+
+    assertEquals("COMPLETED", firstAssistant.path("status").asText());
+    assertEquals("COMPLETED", secondAssistant.path("status").asText());
+    assertEquals("Primeira resposta.", firstAssistant.path("contentText").asText());
+    assertEquals("Segunda resposta.", secondAssistant.path("contentText").asText());
+
+    ArgumentCaptor<OpenAiResponseRequest> requestCaptor = ArgumentCaptor.forClass(OpenAiResponseRequest.class);
+    verify(aiOpenAiClient, org.mockito.Mockito.times(2)).createResponse(requestCaptor.capture());
+    List<OpenAiResponseRequest> requests = requestCaptor.getAllValues();
+
+    assertEquals(2, requests.size());
+    assertNull(requests.get(0).previousResponseId());
+    assertNull(requests.get(1).previousResponseId());
+    assertTrue(requests.get(1).input().stream().anyMatch(item ->
+        "user".equals(item.role()) && item.content().contains("Primeira pergunta?")
+    ));
+    assertTrue(requests.get(1).input().stream().anyMatch(item ->
+        "assistant".equals(item.role()) && item.content().contains("Primeira resposta.")
+    ));
+    assertTrue(requests.get(1).input().stream().anyMatch(item ->
+        "user".equals(item.role()) && item.content().contains("Segunda pergunta?")
+    ));
   }
 
   @Test
@@ -121,5 +207,45 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
                 """.formatted(columnId, title)))
         .andExpect(status().isOk())
         .andReturn()).path("data").path("id").asText();
+  }
+
+  private JsonNode postMessage(String token, String conversationId, String content) throws Exception {
+    return readJson(mockMvc.perform(post("/api/intelligence/conversations/" + conversationId + "/messages")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "content": "%s"
+                }
+                """.formatted(content)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.conversationId").value(conversationId))
+        .andExpect(jsonPath("$.data.assistantStatus").value("PENDING"))
+        .andReturn()).path("data");
+  }
+
+  private JsonNode waitForMessageToSettle(String token, String conversationId, String messageId) throws Exception {
+    for (int attempt = 0; attempt < 40; attempt += 1) {
+      JsonNode data = readJson(mockMvc.perform(get("/api/intelligence/conversations/" + conversationId + "/messages")
+              .header("Authorization", "Bearer " + token))
+          .andExpect(status().isOk())
+          .andReturn()).path("data");
+
+      if (data.isArray()) {
+        for (JsonNode item : data) {
+          if (!messageId.equals(item.path("id").asText())) {
+            continue;
+          }
+          String status = item.path("status").asText();
+          if ("COMPLETED".equals(status) || "FAILED".equals(status)) {
+            return item;
+          }
+        }
+      }
+
+      Thread.sleep(100);
+    }
+
+    throw new AssertionError("A resposta da mensagem " + messageId + " nao concluiu dentro do tempo esperado.");
   }
 }
