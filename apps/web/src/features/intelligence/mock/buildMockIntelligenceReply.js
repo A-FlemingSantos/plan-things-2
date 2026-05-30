@@ -29,9 +29,17 @@ function markdownBlock(markdown, position) {
 
 function toolRunBlock({ toolId, status, summary, title }, position) {
   return {
-    type: 'TOOL_RUN_SUMMARY',
-    title: title ?? null,
-    payload: { toolId, status, summary },
+    type: 'TOOL_STATUS',
+    label: toolId,
+    status,
+    detail: summary,
+    payload: {
+      toolId,
+      status,
+      summary,
+      title: title ?? null,
+      note: 'Simulação — nenhuma ferramenta foi executada no servidor.',
+    },
     position,
   }
 }
@@ -104,17 +112,19 @@ function buildPlanCreationScenario(prompt, contextSnapshot) {
 
   return {
     summary: `Preparei uma proposta de plano "${planName}" para sua revisão.`,
-    blocks: [
-      markdownBlock(
-        `Analisei seu pedido (${prompt ? '“' + String(prompt).trim().slice(0, 80) + '”' : 'sem texto'}). Segue o fluxo completo em modo **simulação** — nada foi gravado no workspace.`,
-        0,
-      ),
+    inlineArtifacts: [
       toolRunBlock({
         toolId: 'workspace.get_summary',
         status: 'completed',
         summary: 'Resumo do workspace carregado (mock).',
         title: 'Ferramenta: workspace.get_summary',
       }, 1),
+    ],
+    blocks: [
+      markdownBlock(
+        `Analisei seu pedido (${prompt ? '“' + String(prompt).trim().slice(0, 80) + '”' : 'sem texto'}). Segue o fluxo completo em modo **simulação** — nada foi gravado no workspace.`,
+        0,
+      ),
       planProposalBlock({
         title: `Criar plano “${planName}”`,
         description: '3 colunas padrão (A fazer · Em progresso · Concluído) e lista inicial vazia.',
@@ -138,17 +148,19 @@ function buildPlanCreationScenario(prompt, contextSnapshot) {
 function buildCardBatchScenario(prompt) {
   return {
     summary: 'Proposta de lote de cartões pronta para revisão (simulação).',
-    blocks: [
-      markdownBlock(
-        'Organizei os cartões sugeridos em um lote. Revise os detalhes e use **Aprovar** apenas quando quiser simular o fluxo — nenhuma alteração real será aplicada.',
-        0,
-      ),
+    inlineArtifacts: [
       toolRunBlock({
         toolId: 'board.card.search',
         status: 'completed',
         summary: '12 cartões candidatos encontrados no board (mock).',
         title: 'Ferramenta: board.card.search',
       }, 1),
+    ],
+    blocks: [
+      markdownBlock(
+        'Organizei os cartões sugeridos em um lote. Revise os detalhes e use **Aprovar** apenas quando quiser simular o fluxo — nenhuma alteração real será aplicada.',
+        0,
+      ),
       cardBatchProposalBlock({
         title: 'Adicionar 4 cartões em “Em progresso”',
         description: 'Cartões derivados do seu pedido, com títulos e descrições curtas.',
@@ -172,17 +184,19 @@ function buildCardBatchScenario(prompt) {
 function buildGithubScenario() {
   return {
     summary: 'Commits e PR recentes do repositório (simulação).',
-    blocks: [
-      markdownBlock(
-        'Consultei o GitHub conectado (mock) e destaquei o commit mais recente e o PR aberto relacionado ao seu pedido.',
-        0,
-      ),
+    inlineArtifacts: [
       toolRunBlock({
         toolId: 'github.search',
         status: 'completed',
         summary: '2 commits e 1 pull request nos últimos 7 dias (mock).',
         title: 'Ferramenta: github.search',
       }, 1),
+    ],
+    blocks: [
+      markdownBlock(
+        'Consultei o GitHub conectado (mock) e destaquei o commit mais recente e o PR aberto relacionado ao seu pedido.',
+        0,
+      ),
       githubCommitReferenceBlock({
         title: 'feat(intelligence): blocos mock na thread',
         externalId: 'abc1234',
@@ -217,6 +231,7 @@ function buildCalendarScenario() {
         0,
       ),
     ],
+    inlineArtifacts: [],
     memoryCandidates: [],
   }
 }
@@ -230,6 +245,7 @@ function buildPitchScenario() {
         0,
       ),
     ],
+    inlineArtifacts: [],
     memoryCandidates: [],
   }
 }
@@ -243,6 +259,7 @@ function buildUiScenario() {
         0,
       ),
     ],
+    inlineArtifacts: [],
     memoryCandidates: [],
   }
 }
@@ -257,6 +274,7 @@ function buildDefaultScenario(prompt) {
         0,
       ),
     ],
+    inlineArtifacts: [],
     memoryCandidates: prompt ? [] : [],
   }
 }

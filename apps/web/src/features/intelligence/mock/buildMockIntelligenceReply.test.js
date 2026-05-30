@@ -16,9 +16,15 @@ describe('buildMockIntelligenceReply', () => {
 
     expect(reply.blocks.map((block) => block.type)).toEqual([
       'MARKDOWN',
-      'TOOL_RUN_SUMMARY',
       'PLAN_PROPOSAL',
       'PLAN_REFERENCE',
+    ])
+    expect(reply.inlineArtifacts).toEqual([
+      expect.objectContaining({
+        type: 'TOOL_STATUS',
+        label: 'workspace.get_summary',
+        status: 'completed',
+      }),
     ])
     expect(reply.blocks.at(-1)?.payload?.href).toBe('/workspace/board/product-launch-q3')
   })
@@ -28,6 +34,13 @@ describe('buildMockIntelligenceReply', () => {
 
     expect(reply.blocks.some((block) => block.type === 'CARD_BATCH_PROPOSAL')).toBe(true)
     expect(reply.blocks.some((block) => block.type === 'CARD_REFERENCE')).toBe(true)
+    expect(reply.inlineArtifacts).toEqual([
+      expect.objectContaining({
+        type: 'TOOL_STATUS',
+        label: 'board.card.search',
+        status: 'completed',
+      }),
+    ])
     expect(reply.blocks.find((block) => block.type === 'CARD_REFERENCE')?.payload?.href)
       .toBe('/workspace/board/product-launch-q3?card=mock-card-1')
   })

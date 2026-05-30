@@ -1,6 +1,5 @@
 import { isProposalBlockType, isReferenceBlockType } from '../blocks/blockTypes.js'
 import MarkdownBlock from '../blocks/MarkdownBlock/MarkdownBlock.jsx'
-import ToolRunSummaryBlock from '../blocks/ToolRunSummaryBlock/ToolRunSummaryBlock.jsx'
 import ActionProposalBlock from '../blocks/ActionProposalBlock/ActionProposalBlock.jsx'
 import EntityReferenceBlock from '../blocks/EntityReferenceBlock/EntityReferenceBlock.jsx'
 import QuestionBlock from '../blocks/QuestionBlock/QuestionBlock.jsx'
@@ -11,10 +10,6 @@ function renderBlock(block) {
 
   if (type === 'MARKDOWN') {
     return <MarkdownBlock markdown={block?.payload?.markdown} />
-  }
-
-  if (type === 'TOOL_RUN_SUMMARY') {
-    return <ToolRunSummaryBlock block={block} />
   }
 
   if (isProposalBlockType(type)) {

@@ -4,6 +4,7 @@ import {
   createOptimisticAssistantPlaceholder,
   createOptimisticUserMessage,
   createThreadMessageId,
+  structuredResponseToThreadInlineArtifacts,
   structuredResponseToThreadBlocks,
 } from '../../../shared/contracts/intelligenceContracts.js'
 import { buildMockIntelligenceReply } from '../mock/buildMockIntelligenceReply.js'
@@ -75,6 +76,7 @@ export function useMockAiConversation({
     responseTimerRef.current = setTimeout(() => {
       const structuredReply = buildMockIntelligenceReply(text, contextSnapshot)
       const blocks = structuredResponseToThreadBlocks(structuredReply)
+      const inlineArtifacts = structuredResponseToThreadInlineArtifacts(structuredReply)
 
       setMessages((current) => current.map((message) => (
         message.id === assistantMessageId
@@ -82,6 +84,7 @@ export function useMockAiConversation({
             id: assistantMessageId,
             text: structuredReply.summary,
             blocks,
+            inlineArtifacts,
           })
           : message
       )))

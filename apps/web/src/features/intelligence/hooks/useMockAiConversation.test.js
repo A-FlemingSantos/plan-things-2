@@ -164,4 +164,31 @@ describe('useMockAiConversation', () => {
 
     expect(result.current.messages[0].text).toBe('Primeira mensagem')
   })
+
+  it('maps mock tool execution into inline artifacts instead of assistant blocks', async () => {
+    const { result } = renderHook(() => useMockAiConversation({
+      mockReplyDelayMs: 20,
+    }))
+
+    act(() => {
+      result.current.submitMessage('Quero criar um plano de marketing')
+    })
+
+    await waitFor(() => {
+      expect(result.current.isThinking).toBe(false)
+    })
+
+    expect(result.current.messages[1]).toMatchObject({
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.COMPLETED,
+      inlineArtifacts: [
+        expect.objectContaining({
+          type: 'TOOL_STATUS',
+          label: 'workspace.get_summary',
+          status: 'completed',
+        }),
+      ],
+    })
+    expect(result.current.messages[1].blocks.some((block) => block.type === 'TOOL_RUN_SUMMARY')).toBe(false)
+  })
 })

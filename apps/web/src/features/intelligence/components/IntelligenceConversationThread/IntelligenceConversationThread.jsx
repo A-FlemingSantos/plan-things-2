@@ -6,6 +6,7 @@ import {
   isAssistantMessagePending,
 } from '../../../../shared/contracts/intelligenceContracts.js'
 import AiBlockRenderer from '../AiBlockRenderer/AiBlockRenderer.jsx'
+import InlineArtifactsList from '../InlineArtifactsList/InlineArtifactsList.jsx'
 import UserChatMessage from '../UserChatMessage/UserChatMessage.jsx'
 import defaultStyles from './IntelligenceConversationThread.module.css'
 
@@ -59,7 +60,15 @@ export default function IntelligenceConversationThread({
 
             const pending = isAssistantMessagePending(msg)
             const displayText = getThreadMessageDisplayText(msg)
-            const hasBlocks = Array.isArray(msg.blocks) && msg.blocks.length > 0
+            const messageBlocks = Array.isArray(msg.blocks) ? msg.blocks : []
+            const markdownBlocks = messageBlocks.filter((block) => block.type === 'MARKDOWN')
+            const primaryBlocks = messageBlocks.filter((block) => block.type !== 'MARKDOWN')
+            const inlineArtifacts = Array.isArray(msg.inlineArtifacts) ? msg.inlineArtifacts : []
+            const hasStructuredContent = (
+              markdownBlocks.length > 0
+              || primaryBlocks.length > 0
+              || inlineArtifacts.length > 0
+            )
 
             return (
               <div
@@ -67,12 +76,14 @@ export default function IntelligenceConversationThread({
                 className={messageAssistantClass || defaultStyles.messageAssistant}
                 aria-busy={pending ? 'true' : undefined}
               >
-                {pending && !hasBlocks && !displayText ? (
+                {pending && !hasStructuredContent && !displayText ? (
                   'Pensando...'
                 ) : (
                   <>
-                    {hasBlocks ? <AiBlockRenderer blocks={msg.blocks} /> : null}
-                    {!hasBlocks && displayText ? displayText : null}
+                    {markdownBlocks.length > 0 ? <AiBlockRenderer blocks={markdownBlocks} /> : null}
+                    {markdownBlocks.length === 0 && displayText ? displayText : null}
+                    {inlineArtifacts.length > 0 ? <InlineArtifactsList items={inlineArtifacts} /> : null}
+                    {primaryBlocks.length > 0 ? <AiBlockRenderer blocks={primaryBlocks} /> : null}
                   </>
                 )}
               </div>

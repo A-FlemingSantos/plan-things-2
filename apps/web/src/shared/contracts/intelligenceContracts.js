@@ -41,6 +41,17 @@
  */
 
 /**
+ * @typedef {Object} ThreadInlineArtifact
+ * @property {string} id
+ * @property {string} type
+ * @property {number} position
+ * @property {string} label
+ * @property {string} status
+ * @property {string|null} detail
+ * @property {Record<string, unknown>} payload
+ */
+
+/**
  * @typedef {Object} ThreadMessage
  * @property {string} id
  * @property {UiMessageRole} role
@@ -49,6 +60,7 @@
  * @property {string} contentText
  * @property {ContextSnapshot|null} [contextSnapshot]
  * @property {ThreadMessageBlock[]} blocks
+ * @property {ThreadInlineArtifact[]} inlineArtifacts
  * @property {string|null} [errorCode]
  * @property {unknown} [createdAt]
  * @property {string|null} [conversationId]
@@ -59,6 +71,7 @@
  * @typedef {Object} StructuredAssistantResponse
  * @property {string} summary
  * @property {Array<{ type: string, title: string|null, payload: Record<string, unknown> }>} blocks
+ * @property {Array<{ type: string, label: string, status: string, detail?: string|null, payload?: Record<string, unknown> }>} inlineArtifacts
  * @property {string[]} memoryCandidates
  */
 
@@ -79,6 +92,10 @@ export const AI_MESSAGE_STATUSES = Object.freeze({
   FAILED: 'FAILED',
   CANCELLED: 'CANCELLED',
 })
+
+export const AI_INLINE_ARTIFACT_TYPES = Object.freeze([
+  'TOOL_STATUS',
+])
 
 /** Keep in sync with com.planthings.api.intelligence.model.AiMessageBlockType */
 export const AI_BLOCK_TYPES = Object.freeze([
@@ -136,6 +153,14 @@ export const BLOCK_PAYLOAD_HINTS = Object.freeze({
   GITHUB_PULL_REQUEST_REFERENCE: { externalId: 'string', href: 'string', snapshot: 'object' },
   TOOL_RUN_SUMMARY: { toolId: 'string', status: 'string', summary: 'string' },
 })
+
+export const INLINE_ARTIFACT_PAYLOAD_HINTS = Object.freeze({
+  TOOL_STATUS: { toolId: 'string', status: 'string', summary: 'string' },
+})
+
+const INLINE_ONLY_BLOCK_TYPES = new Set([
+  'TOOL_RUN_SUMMARY',
+])
 
 function cloneAttachmentChip(chip = {}) {
   return {
@@ -274,6 +299,54 @@ export function normalizeAiMessageBlock(block = {}) {
   }
 }
 
+export function normalizeThreadInlineArtifact(artifact = {}) {
+  const payload = parseJsonObject(artifact.payloadJson ?? artifact.payload)
+  const type = String(artifact.type ?? artifact.inlineType ?? '').trim().toUpperCase()
+  const label = String(
+    artifact.label
+      ?? payload.toolId
+      ?? payload.name
+      ?? artifact.title
+      ?? 'item',
+  ).trim()
+  const status = String(
+    artifact.status
+      ?? payload.status
+      ?? 'completed',
+  ).trim().toLowerCase()
+  const detailText = String(
+    artifact.detail
+      ?? payload.summary
+      ?? payload.detail
+      ?? '',
+  ).trim()
+
+  return {
+    id: String(artifact.id ?? ''),
+    type,
+    position: Number.isFinite(artifact.position) ? artifact.position : 0,
+    label,
+    status,
+    detail: detailText || null,
+    payload,
+  }
+}
+
+function inlineArtifactFromToolRunBlock(block = {}) {
+  return normalizeThreadInlineArtifact({
+    id: block.id,
+    type: 'TOOL_STATUS',
+    position: block.position,
+    label: block.payload?.toolId ?? block.title ?? 'ferramenta',
+    status: block.payload?.status ?? 'completed',
+    detail: block.payload?.summary ?? '',
+    payload: {
+      ...block.payload,
+      title: block.title ?? null,
+    },
+  })
+}
+
 function resolveThreadText(contentText, blocks = []) {
   const text = String(contentText ?? '').trim()
   if (text) return text
@@ -288,9 +361,17 @@ function resolveThreadText(contentText, blocks = []) {
  * @returns {ThreadMessage}
  */
 export function mapApiMessageToThreadMessage(apiMessage = {}) {
-  const blocks = (Array.isArray(apiMessage.blocks) ? apiMessage.blocks : [])
+  const normalizedBlocks = (Array.isArray(apiMessage.blocks) ? apiMessage.blocks : [])
     .map(normalizeAiMessageBlock)
     .sort((left, right) => left.position - right.position)
+  const blocks = normalizedBlocks.filter((block) => !INLINE_ONLY_BLOCK_TYPES.has(block.type))
+  const inlineArtifacts = [
+    ...(Array.isArray(apiMessage.inlineArtifacts) ? apiMessage.inlineArtifacts : [])
+      .map(normalizeThreadInlineArtifact),
+    ...normalizedBlocks
+      .filter((block) => INLINE_ONLY_BLOCK_TYPES.has(block.type))
+      .map(inlineArtifactFromToolRunBlock),
+  ].sort((left, right) => left.position - right.position)
 
   const contentText = String(apiMessage.contentText ?? '')
   const text = resolveThreadText(contentText, blocks)
@@ -306,6 +387,7 @@ export function mapApiMessageToThreadMessage(apiMessage = {}) {
       ? normalizeContextSnapshot(apiMessage.contextSnapshot)
       : null,
     blocks,
+    inlineArtifacts,
     errorCode: apiMessage.errorCode ?? null,
     openaiResponseId: apiMessage.openaiResponseId ?? null,
     createdAt: apiMessage.createdAt ?? null,
@@ -328,6 +410,15 @@ export function mapThreadMessageToApiShape(message = {}) {
     contextSnapshot: message.contextSnapshot
       ? serializeContextSnapshotForApi(message.contextSnapshot)
       : null,
+    inlineArtifacts: (message.inlineArtifacts ?? []).map((artifact, index) => ({
+      id: artifact.id,
+      type: artifact.type,
+      position: Number.isFinite(artifact.position) ? artifact.position : index,
+      label: artifact.label,
+      status: artifact.status,
+      detail: artifact.detail ?? null,
+      payloadJson: JSON.stringify(artifact.payload ?? {}),
+    })),
     blocks: (message.blocks ?? []).map((block, index) => ({
       id: block.id,
       blockType: block.type,
@@ -352,6 +443,7 @@ function buildThreadMessage({
   text,
   contextSnapshot = null,
   blocks = [],
+  inlineArtifacts = [],
   errorCode = null,
   createdAt = null,
   conversationId = null,
@@ -368,6 +460,9 @@ function buildThreadMessage({
     contentText,
     contextSnapshot: contextSnapshot ? normalizeContextSnapshot(contextSnapshot) : null,
     blocks: Array.isArray(blocks) ? blocks.map(normalizeAiMessageBlock) : [],
+    inlineArtifacts: Array.isArray(inlineArtifacts)
+      ? inlineArtifacts.map(normalizeThreadInlineArtifact)
+      : [],
     errorCode,
     openaiResponseId,
     createdAt,
@@ -386,6 +481,7 @@ export function createOptimisticUserMessage({
     text,
     contextSnapshot,
     blocks: [],
+    inlineArtifacts: [],
   })
 }
 
@@ -398,6 +494,7 @@ export function createOptimisticAssistantPlaceholder({
     status: AI_MESSAGE_STATUSES.PENDING,
     text: '',
     blocks: [],
+    inlineArtifacts: [],
   })
 }
 
@@ -405,6 +502,7 @@ export function createCompletedAssistantMessage({
   id = createThreadMessageId('assistant'),
   text = '',
   blocks = [],
+  inlineArtifacts = [],
 } = {}) {
   return buildThreadMessage({
     id,
@@ -412,6 +510,7 @@ export function createCompletedAssistantMessage({
     status: AI_MESSAGE_STATUSES.COMPLETED,
     text,
     blocks,
+    inlineArtifacts,
   })
 }
 
@@ -430,6 +529,7 @@ export function buildCreateMessagePayload({ text = '', contextSnapshot = null } 
 export function normalizeStructuredAssistantResponse(response = {}) {
   const summary = String(response.summary ?? '').trim()
   const rawBlocks = Array.isArray(response.blocks) ? response.blocks : []
+  const rawInlineArtifacts = Array.isArray(response.inlineArtifacts) ? response.inlineArtifacts : []
   const memoryCandidates = Array.isArray(response.memoryCandidates)
     ? response.memoryCandidates.map((item) => String(item ?? '').trim()).filter(Boolean)
     : []
@@ -446,9 +546,15 @@ export function normalizeStructuredAssistantResponse(response = {}) {
     }
   })
 
+  const inlineArtifacts = rawInlineArtifacts.map((artifact, index) => normalizeThreadInlineArtifact({
+    ...artifact,
+    position: Number.isFinite(artifact?.position) ? artifact.position : index,
+  }))
+
   return {
     summary,
     blocks,
+    inlineArtifacts,
     memoryCandidates,
   }
 }
@@ -456,13 +562,30 @@ export function normalizeStructuredAssistantResponse(response = {}) {
 export function structuredResponseToThreadBlocks(structuredResponse) {
   const normalized = normalizeStructuredAssistantResponse(structuredResponse)
 
-  return normalized.blocks.map((block, index) => normalizeAiMessageBlock({
-    id: `structured-${index}`,
-    blockType: block.type,
-    position: block.position ?? index,
-    title: block.title,
-    payloadJson: block.payload,
-    snapshotJson: null,
+  return normalized.blocks
+    .filter((block) => !INLINE_ONLY_BLOCK_TYPES.has(block.type))
+    .map((block, index) => normalizeAiMessageBlock({
+      id: `structured-${index}`,
+      blockType: block.type,
+      position: block.position ?? index,
+      title: block.title,
+      payloadJson: block.payload,
+      snapshotJson: null,
+    }))
+}
+
+export function structuredResponseToThreadInlineArtifacts(structuredResponse) {
+  const normalized = normalizeStructuredAssistantResponse(structuredResponse)
+
+  return [
+    ...normalized.inlineArtifacts,
+    ...normalized.blocks
+      .filter((block) => INLINE_ONLY_BLOCK_TYPES.has(block.type))
+      .map(inlineArtifactFromToolRunBlock),
+  ].map((artifact, index) => normalizeThreadInlineArtifact({
+    ...artifact,
+    id: artifact.id || `structured-inline-${index}`,
+    position: Number.isFinite(artifact.position) ? artifact.position : index,
   }))
 }
 
@@ -473,6 +596,7 @@ export function getThreadMessageDisplayText(message = {}) {
 export function assistantMessageHasRenderableContent(message = {}) {
   if (isAssistantMessagePending(message)) return true
   if (Array.isArray(message.blocks) && message.blocks.length > 0) return true
+  if (Array.isArray(message.inlineArtifacts) && message.inlineArtifacts.length > 0) return true
   return Boolean(getThreadMessageDisplayText(message))
 }
 

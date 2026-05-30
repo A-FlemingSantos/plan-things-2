@@ -13,7 +13,9 @@ import {
   normalizeAiMessageBlock,
   normalizeContextSnapshot,
   normalizeStructuredAssistantResponse,
+  normalizeThreadInlineArtifact,
   serializeContextSnapshotForApi,
+  structuredResponseToThreadInlineArtifacts,
   structuredResponseToThreadBlocks,
   assistantMessageHasRenderableContent,
   toApiRole,
@@ -117,6 +119,30 @@ describe('normalizeAiMessageBlock', () => {
   })
 })
 
+describe('normalizeThreadInlineArtifact', () => {
+  it('normalizes inline tool artifacts into canonical thread shape', () => {
+    const artifact = normalizeThreadInlineArtifact({
+      id: 'inline-1',
+      type: 'tool_status',
+      position: 2,
+      label: 'workspace.get_summary',
+      status: 'COMPLETED',
+      detail: 'Resumo do workspace carregado.',
+      payload: { title: 'Ferramenta: workspace.get_summary' },
+    })
+
+    expect(artifact).toEqual({
+      id: 'inline-1',
+      type: 'TOOL_STATUS',
+      position: 2,
+      label: 'workspace.get_summary',
+      status: 'completed',
+      detail: 'Resumo do workspace carregado.',
+      payload: { title: 'Ferramenta: workspace.get_summary' },
+    })
+  })
+})
+
 describe('mapApiMessageToThreadMessage', () => {
   it('maps backend message fields to canonical thread shape', () => {
     const threadMessage = mapApiMessageToThreadMessage({
@@ -136,6 +162,7 @@ describe('mapApiMessageToThreadMessage', () => {
       text: 'Priorizar planos',
       contentText: 'Priorizar planos',
       blocks: [],
+      inlineArtifacts: [],
     })
   })
 
@@ -154,6 +181,32 @@ describe('mapApiMessageToThreadMessage', () => {
     })
 
     expect(threadMessage.text).toBe('Resposta em bloco')
+  })
+
+  it('derives inline artifacts from legacy tool summary blocks', () => {
+    const threadMessage = mapApiMessageToThreadMessage({
+      id: 'msg-3',
+      role: 'ASSISTANT',
+      status: 'COMPLETED',
+      contentText: '',
+      blocks: [{
+        id: 'b2',
+        blockType: 'TOOL_RUN_SUMMARY',
+        position: 1,
+        title: 'Ferramenta: workspace.get_summary',
+        payloadJson: '{"toolId":"workspace.get_summary","status":"completed","summary":"Resumo carregado"}',
+      }],
+    })
+
+    expect(threadMessage.blocks).toEqual([])
+    expect(threadMessage.inlineArtifacts).toEqual([
+      expect.objectContaining({
+        type: 'TOOL_STATUS',
+        label: 'workspace.get_summary',
+        status: 'completed',
+        detail: 'Resumo carregado',
+      }),
+    ])
   })
 })
 
@@ -190,9 +243,19 @@ describe('optimistic thread messages', () => {
     const assistantDone = createCompletedAssistantMessage({
       id: 'asst-2',
       text: 'Pronto',
+      inlineArtifacts: [{
+        id: 'inline-1',
+        type: 'TOOL_STATUS',
+        position: 0,
+        label: 'workspace.get_summary',
+        status: 'completed',
+        detail: 'Resumo do workspace carregado.',
+        payload: {},
+      }],
     })
     expect(assistantDone.status).toBe(AI_MESSAGE_STATUSES.COMPLETED)
     expect(assistantDone.text).toBe('Pronto')
+    expect(assistantDone.inlineArtifacts).toHaveLength(1)
   })
 })
 
@@ -224,6 +287,7 @@ describe('normalizeStructuredAssistantResponse', () => {
     const normalized = normalizeStructuredAssistantResponse({
       summary: 'Resumo',
       blocks: [{ type: 'markdown', title: null, payload: { markdown: 'Texto' } }],
+      inlineArtifacts: [{ type: 'tool_status', label: 'workspace.get_summary', status: 'completed', detail: 'Resumo' }],
       memoryCandidates: [' prefere sprints '],
     })
 
@@ -234,6 +298,15 @@ describe('normalizeStructuredAssistantResponse', () => {
         title: null,
         payload: { markdown: 'Texto' },
         position: 0,
+      }],
+      inlineArtifacts: [{
+        id: '',
+        type: 'TOOL_STATUS',
+        position: 0,
+        label: 'workspace.get_summary',
+        status: 'completed',
+        detail: 'Resumo',
+        payload: {},
       }],
       memoryCandidates: ['prefere sprints'],
     })
@@ -250,6 +323,24 @@ describe('normalizeStructuredAssistantResponse', () => {
       type: 'MARKDOWN',
       payload: { markdown: 'Olá' },
     })
+  })
+
+  it('converts structured inline artifacts to canonical thread artifacts', () => {
+    const inlineArtifacts = structuredResponseToThreadInlineArtifacts({
+      summary: 'Resumo',
+      blocks: [],
+      inlineArtifacts: [{ type: 'TOOL_STATUS', label: 'workspace.get_summary', status: 'completed', detail: 'Resumo' }],
+      memoryCandidates: [],
+    })
+
+    expect(inlineArtifacts).toEqual([
+      expect.objectContaining({
+        type: 'TOOL_STATUS',
+        label: 'workspace.get_summary',
+        status: 'completed',
+        detail: 'Resumo',
+      }),
+    ])
   })
 })
 
@@ -303,6 +394,22 @@ describe('assistantMessageHasRenderableContent', () => {
       status: AI_MESSAGE_STATUSES.COMPLETED,
       text: '',
       blocks: [{ id: 'b1', type: 'MARKDOWN', position: 0, payload: { markdown: 'Oi' } }],
+    })).toBe(true)
+
+    expect(assistantMessageHasRenderableContent({
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.COMPLETED,
+      text: '',
+      blocks: [],
+      inlineArtifacts: [{
+        id: 'inline-1',
+        type: 'TOOL_STATUS',
+        position: 0,
+        label: 'workspace.get_summary',
+        status: 'completed',
+        detail: 'Resumo',
+        payload: {},
+      }],
     })).toBe(true)
   })
 })
