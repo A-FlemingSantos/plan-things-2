@@ -27,11 +27,16 @@
   cursor: pointer;
 }
 
+.toolsIconWrap,
 .chevronWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--intelligence-faint, var(--text-3));
+}
+
+.toolsIcon {
+  display: block;
 }
 
 .chevron {
