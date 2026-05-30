@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   createCompletedAssistantMessage,
+  createOptimisticAssistantPlaceholder,
   createOptimisticUserMessage,
   createThreadMessageId,
 } from '../../../shared/contracts/intelligenceContracts.js'
@@ -48,13 +49,18 @@ export function useMockAiConversation({
     if (!text && !hasComposerContext(chips)) return false
 
     const contextSnapshot = snapshotComposerContext(chips)
+    const userMessageId = createThreadMessageId('user')
+    const assistantMessageId = createThreadMessageId('assistant')
 
     setMessages((current) => [
       ...current,
       createOptimisticUserMessage({
-        id: createThreadMessageId('user'),
+        id: userMessageId,
         text,
         contextSnapshot,
+      }),
+      createOptimisticAssistantPlaceholder({
+        id: assistantMessageId,
       }),
     ])
 
@@ -66,13 +72,14 @@ export function useMockAiConversation({
     clearResponseTimer()
 
     responseTimerRef.current = setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        createCompletedAssistantMessage({
-          id: createThreadMessageId('assistant'),
-          text: buildMockIntelligenceReply(text),
-        }),
-      ])
+      setMessages((current) => current.map((message) => (
+        message.id === assistantMessageId
+          ? createCompletedAssistantMessage({
+            id: assistantMessageId,
+            text: buildMockIntelligenceReply(text),
+          })
+          : message
+      )))
       setIsThinking(false)
       responseTimerRef.current = null
     }, mockReplyDelayMs)

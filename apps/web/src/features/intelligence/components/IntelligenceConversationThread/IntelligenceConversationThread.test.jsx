@@ -14,7 +14,7 @@ describe('IntelligenceConversationThread', () => {
       <IntelligenceConversationThread
         messages={[
           { id: 'u1', role: 'user', text: 'Mensagem do usuário' },
-          { id: 'a1', role: 'assistant', text: 'Resposta do assistente' },
+          { id: 'a1', role: 'assistant', text: 'Resposta do assistente', status: 'COMPLETED' },
         ]}
         isThinking
       />,
@@ -27,5 +27,39 @@ describe('IntelligenceConversationThread', () => {
     expect(userBubble).toHaveClass(styles.messageUser)
     expect(assistantMessage).toHaveClass(styles.messageAssistant)
     expect(thinkingMessage).toHaveClass(styles.thinking)
+  })
+
+  it('derives assistant content from canonical message shape and renders pending placeholders inline', () => {
+    render(
+      <IntelligenceConversationThread
+        messages={[
+          {
+            id: 'a1',
+            role: 'assistant',
+            status: 'PENDING',
+            text: '',
+            contentText: '',
+            blocks: [],
+          },
+          {
+            id: 'a2',
+            role: 'assistant',
+            status: 'COMPLETED',
+            text: '',
+            contentText: '',
+            blocks: [{
+              id: 'block-1',
+              type: 'MARKDOWN',
+              position: 0,
+              payload: { markdown: 'Resposta em bloco' },
+            }],
+          },
+        ]}
+        isThinking={false}
+      />,
+    )
+
+    expect(screen.getByText('Pensando...')).toHaveClass(styles.messageAssistant)
+    expect(screen.getByText('Resposta em bloco')).toHaveClass(styles.messageAssistant)
   })
 })

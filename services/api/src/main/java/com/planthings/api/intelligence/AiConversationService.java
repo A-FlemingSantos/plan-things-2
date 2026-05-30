@@ -23,6 +23,8 @@ import com.planthings.api.plans.PlanAccessService;
 import com.planthings.api.plans.PlanEntity;
 import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -138,12 +140,14 @@ public class AiConversationService {
 
     String normalizedContent = normalizeContent(content);
     AiConversationEntity conversation = requireOwnedConversation(conversationId);
+    OffsetDateTime userCreatedAt = OffsetDateTime.now(ZoneOffset.UTC).minusNanos(1_000_000);
 
     AiMessageEntity userMessage = new AiMessageEntity();
     userMessage.setConversationId(conversation.getId());
     userMessage.setRole(AiMessageRole.USER);
     userMessage.setStatus(AiMessageStatus.COMPLETED);
     userMessage.setContentText(normalizedContent);
+    userMessage.setCreatedAt(userCreatedAt);
     messageRepository.save(userMessage);
 
     AiMessageEntity assistantMessage = new AiMessageEntity();

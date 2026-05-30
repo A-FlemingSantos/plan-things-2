@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
+import {
+  getThreadMessageDisplayText,
+  isAssistantMessagePending,
+} from '../../../../shared/contracts/intelligenceContracts.js'
 import UserChatMessage from '../UserChatMessage/UserChatMessage.jsx'
 import defaultStyles from './IntelligenceConversationThread.module.css'
 
@@ -34,6 +38,8 @@ export default function IntelligenceConversationThread({
   }, [messages, isThinking, scrollIntoView])
 
   if (messages.length === 0 && !isThinking) return null
+  const hasPendingAssistantMessage = messages.some(isAssistantMessagePending)
+  const shouldRenderLegacyThinking = isThinking && !hasPendingAssistantMessage
 
   const content = (
     <div className={joinClasses(defaultStyles.messages, messagesClass)}>
@@ -46,15 +52,24 @@ export default function IntelligenceConversationThread({
             bubbleClassName={messageUserClass || defaultStyles.messageUser}
           />
         ) : (
-          <div
-            key={msg.id}
-            className={messageAssistantClass || defaultStyles.messageAssistant}
-          >
-            {msg.text}
-          </div>
+          (() => {
+            const pending = isAssistantMessagePending(msg)
+            const displayText = getThreadMessageDisplayText(msg)
+            if (!pending && !displayText) return null
+
+            return (
+              <div
+                key={msg.id}
+                className={messageAssistantClass || defaultStyles.messageAssistant}
+                aria-busy={pending ? 'true' : undefined}
+              >
+                {pending && !displayText ? 'Pensando...' : displayText}
+              </div>
+            )
+          })()
         )
       ))}
-      {isThinking ? (
+      {shouldRenderLegacyThinking ? (
         <div className={thinkingClass || defaultStyles.thinking}>
           Pensando...
         </div>

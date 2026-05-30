@@ -23,8 +23,14 @@ describe('useMockAiConversation', () => {
     })
 
     expect(submitted).toBe(true)
-    expect(result.current.messages).toHaveLength(1)
+    expect(result.current.messages).toHaveLength(2)
     expect(result.current.messages[0].contextSnapshot.imageAttachments).toHaveLength(1)
+    expect(result.current.messages[1]).toMatchObject({
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.PENDING,
+      text: '',
+      blocks: [],
+    })
     expect(setAiChips).toHaveBeenCalledWith([
       expect.objectContaining({ kind: 'connector', label: 'GitHub' }),
     ])
