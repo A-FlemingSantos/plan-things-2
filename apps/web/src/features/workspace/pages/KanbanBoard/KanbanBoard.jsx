@@ -626,7 +626,9 @@ export default function KanbanBoard() {
   const intelligenceCloseTimerRef = useRef(null)
   const boardViewToolbarRef = useRef(null)
   const intelligencePanelRef = useRef(null)
+  const intelligenceComposerAreaRef = useRef(null)
   const intelligenceComposerInputRef = useRef(null)
+  const [intelligenceComposerOverlayHeight, setIntelligenceComposerOverlayHeight] = useState(132)
   const { filteredEvents: plannerCalendarEvents } = useCalendarEvents({
     enabled: isPlannerPanelMounted,
     includeGeneratedFromCard: false,
@@ -771,6 +773,35 @@ export default function KanbanBoard() {
     return () => {
       document.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isIntelligencePanelMounted])
+
+  useLayoutEffect(() => {
+    if (!isIntelligencePanelMounted) return undefined
+
+    const composerArea = intelligenceComposerAreaRef.current
+    if (!composerArea || typeof window === 'undefined') return undefined
+
+    const updateComposerOverlayHeight = () => {
+      const nextHeight = Math.ceil(composerArea.getBoundingClientRect().height)
+      setIntelligenceComposerOverlayHeight((current) => (
+        current === nextHeight ? current : nextHeight
+      ))
+    }
+
+    updateComposerOverlayHeight()
+
+    let observer = null
+    if (typeof ResizeObserver === 'function') {
+      observer = new ResizeObserver(() => updateComposerOverlayHeight())
+      observer.observe(composerArea)
+    }
+
+    window.addEventListener('resize', updateComposerOverlayHeight)
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updateComposerOverlayHeight)
     }
   }, [isIntelligencePanelMounted])
 
@@ -2009,6 +2040,9 @@ export default function KanbanBoard() {
     bottom: `${toolbarMetrics.bottom + toolbarMetrics.height + 14}px`,
     ...intelligenceThemeStyle,
   }
+  const intelligenceThreadStyle = hasIntelligenceConversation
+    ? { paddingBottom: `${intelligenceComposerOverlayHeight + 12}px` }
+    : undefined
 
   const renderInboxPanel = () => (
     <aside
@@ -2587,6 +2621,7 @@ export default function KanbanBoard() {
                 isThinking={isIntelligenceThinking}
                 useCustomScrollbar
                 className={styles.intelligencePanelThread}
+                style={intelligenceThreadStyle}
                 classes={{
                   messages: styles.intelligencePanelMessages,
                   messageUser: styles.intelligencePanelMessageUser,
@@ -2595,38 +2630,45 @@ export default function KanbanBoard() {
                 }}
               />
 
-              <IntelligenceComposer
-                value={intelligenceDraft}
-                onChange={setIntelligenceDraft}
-                inputRef={intelligenceComposerInputRef}
-                rows={1}
-                placeholder="Escreva sua pergunta..."
-                submitAriaLabel="Enviar mensagem"
-                voiceAriaLabelIdle="Usar voz"
-                voiceAriaLabelListening="Usar voz"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  if (submitIntelligenceMessage(intelligenceDraft)) {
-                    setIntelligenceDraft('')
-                  }
-                }}
-                submitDisabled={!canSubmitIntelligenceMessage(intelligenceDraft, kanbanAiChips)}
-                aiChips={kanbanAiChips}
-                onChipsChange={setKanbanAiChips}
-                boardCards={intelligenceBoardCards}
-                showGitHubBar={intelligenceActiveConnectors.includes('github')}
-                githubBarClassName={styles.intelligenceGitHubBar}
-                classes={{
-                  form: styles.intelligenceComposer,
-                  input: styles.intelligenceComposerInput,
-                  attachmentStrip: styles.intelligenceComposerAttachmentStrip,
-                  controls: styles.intelligenceComposerFooter,
-                  contextSlot: styles.intelligenceComposerTools,
-                  actions: styles.intelligenceComposerActions,
-                  iconButton: styles.intelligenceComposerIconButton,
-                  sendButton: styles.intelligenceComposerSubmit,
-                }}
-              />
+              <div
+                ref={intelligenceComposerAreaRef}
+                className={styles.intelligenceComposerArea}
+                data-testid="board-intelligence-composer-area"
+              >
+                <IntelligenceComposer
+                  value={intelligenceDraft}
+                  onChange={setIntelligenceDraft}
+                  inputRef={intelligenceComposerInputRef}
+                  rows={1}
+                  placeholder="Escreva sua pergunta..."
+                  submitAriaLabel="Enviar mensagem"
+                  voiceAriaLabelIdle="Usar voz"
+                  voiceAriaLabelListening="Usar voz"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    if (submitIntelligenceMessage(intelligenceDraft)) {
+                      setIntelligenceDraft('')
+                    }
+                  }}
+                  submitDisabled={!canSubmitIntelligenceMessage(intelligenceDraft, kanbanAiChips)}
+                  aiChips={kanbanAiChips}
+                  onChipsChange={setKanbanAiChips}
+                  boardCards={intelligenceBoardCards}
+                  showGitHubBar={intelligenceActiveConnectors.includes('github')}
+                  githubBarClassName={styles.intelligenceGitHubBar}
+                  classes={{
+                    form: styles.intelligenceComposer,
+                    input: styles.intelligenceComposerInput,
+                    attachmentStrip: styles.intelligenceComposerAttachmentStrip,
+                    controls: styles.intelligenceComposerFooter,
+                    contextSlot: styles.intelligenceComposerTools,
+                    actions: styles.intelligenceComposerActions,
+                    iconButton: styles.intelligenceComposerIconButton,
+                    iconButtonActive: styles.intelligenceComposerIconButtonActive,
+                    sendButton: styles.intelligenceComposerSubmit,
+                  }}
+                />
+              </div>
             </div>
           </section>
         ) : null}

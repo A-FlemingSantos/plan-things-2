@@ -880,6 +880,7 @@
   gap: 10px;
   min-height: 100%;
   padding: 18px 22px 18px;
+  position: relative;
   background:
     radial-gradient(circle at top, color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 14%, transparent) 0%, transparent 46%);
 }
@@ -903,7 +904,6 @@
   flex: 1 1 auto;
   min-height: 0;
   max-height: min(42vh, 360px);
-  margin-bottom: 4px;
   margin-inline: calc(var(--intelligence-chat-side-gutter) * -1);
   padding: 0;
 }
@@ -976,120 +976,162 @@
   color: var(--text-2);
 }
 
-.intelligenceComposer {
-  --intelligence-input-bg: transparent;
+.intelligenceComposerArea {
+  --intelligence-accent: var(--intelligence-theme-accent, var(--kanban-accent-color, var(--focus-ring)));
+  --intelligence-accent-foreground: var(--intelligence-theme-accent-foreground, var(--kanban-accent-foreground, var(--text-inverse)));
+  --intelligence-text: var(--text-1);
+  --intelligence-muted: var(--text-2);
+  --intelligence-faint: var(--text-3);
+  --intelligence-panel-bg: color-mix(in srgb, var(--surface-2) 96%, transparent);
+  --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 98%, transparent);
+  --intelligence-border: var(--border-1);
+  --intelligence-button-bg: var(--intelligence-accent);
+  --intelligence-shadow: 0 -4px 24px color-mix(in srgb, var(--text-1) 5%, transparent);
 
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px 20px;
+  z-index: 1;
+}
+
+[data-theme='dark'] .intelligenceComposerArea {
+  --intelligence-panel-bg: color-mix(in srgb, var(--surface-3) 82%, transparent);
+  --intelligence-input-bg: color-mix(in srgb, var(--surface-1) 94%, transparent);
+  --intelligence-border: rgba(255, 255, 255, 0.08);
+  --intelligence-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+}
+
+.intelligenceComposer {
   width: 100%;
   min-width: 0;
-  padding: 10px 14px 10px;
-  border: 1px solid color-mix(in srgb, var(--border-1) 82%, rgba(255, 255, 255, 0.72));
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--surface-1) 90%, rgba(255, 255, 255, 0.9));
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--intelligence-border);
+  border-radius: 20px;
+  background: var(--intelligence-panel-bg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 14px 36px rgba(15, 23, 42, 0.08);
+    inset 0 1px 0 color-mix(in srgb, var(--surface-1) 70%, transparent),
+    var(--intelligence-shadow);
+  overflow: visible;
 }
 
 .intelligenceComposerAttachmentStrip {
-  margin: -10px -14px 0;
-  padding: 10px 14px 6px;
-  border-radius: 21px 21px 0 0;
+  margin: 0;
+  padding: 10px 18px 0;
+  border-radius: 19px 19px 0 0;
   background: transparent;
 }
 
 .intelligenceComposerInput {
   width: 100%;
   min-height: 28px;
+  padding: 12px 22px 4px;
   border: 0;
-  padding: 0;
+  outline: 0;
   resize: none;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  background: transparent;
-  color: var(--text-1);
+  background: var(--intelligence-input-bg);
+  color: var(--intelligence-text);
   font-family: var(--font-family);
-  font-size: 14px;
-  line-height: 1.25;
-  outline: none;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: text;
+  border-radius: 19px 19px 0 0;
 }
 
 .intelligenceComposerInput[data-has-attachments='true'] {
-  margin-top: 2px;
+  border-radius: 0;
+  padding-top: 8px;
 }
 
 .intelligenceComposerInput::placeholder {
-  color: var(--text-3);
+  color: var(--intelligence-faint);
 }
 
 .intelligenceComposerFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  padding: 0 18px 10px;
+  background: var(--intelligence-input-bg);
+  border-radius: 0 0 19px 19px;
 }
 
-.intelligenceComposerTools,
-.intelligenceComposerActions {
+.intelligenceComposerTools {
   display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.intelligenceComposerActions {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
 .intelligenceComposerIconButton,
 .intelligenceComposerSubmit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   font-family: var(--font-family);
   cursor: pointer;
-  transition:
-    transform 160ms ease,
-    background var(--transition-fast),
-    color var(--transition-fast),
-    opacity var(--transition-fast);
-}
-
-.intelligenceComposerIconButton:hover,
-.intelligenceComposerSubmit:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .intelligenceComposerIconButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--surface-2) 74%, rgba(255, 255, 255, 0.88));
-  color: var(--text-2);
+  width: 28px;
+  height: 28px;
+  color: var(--intelligence-faint);
+  background: transparent;
+}
+
+.intelligenceComposerIconButton:hover,
+.intelligenceComposerTools button:hover {
+  color: var(--intelligence-text);
+}
+
+.intelligenceComposerIconButtonActive {
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--intelligence-accent) 16%, transparent);
+  color: var(--intelligence-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--intelligence-accent) 38%, transparent);
 }
 
 .intelligenceComposerSubmit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--kanban-accent-color, var(--focus-ring));
-  color: var(--kanban-accent-foreground, var(--text-inverse));
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16);
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--intelligence-button-bg);
+  color: var(--intelligence-accent-foreground);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-1) 65%, transparent);
+}
+
+.intelligenceComposerSubmit:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--intelligence-accent) 88%, var(--surface-1));
 }
 
 .intelligenceComposerSubmit:disabled {
-  opacity: 0.45;
   cursor: not-allowed;
-  transform: none;
+  opacity: 0.38;
 }
 
 .intelligenceGitHubBar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 4px;
+  width: 100%;
+  padding: 0 6px;
+  animation: intelligenceMessageIn 0.16s ease both;
 }
 
 
