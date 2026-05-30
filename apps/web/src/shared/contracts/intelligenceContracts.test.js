@@ -29,7 +29,7 @@ describe('intelligenceContracts roles', () => {
 })
 
 describe('normalizeContextSnapshot', () => {
-  it('clones attachment and inline chips without non-serializable fields', () => {
+  it('preserves ChipIcon on inline chips for UI rendering', () => {
     const ChipIcon = () => null
     const snapshot = normalizeContextSnapshot({
       imageAttachments: [{ id: '1', kind: 'file', type: 'f', label: 'a.png', isImage: true, ChipIcon }],
@@ -38,7 +38,7 @@ describe('normalizeContextSnapshot', () => {
     })
 
     expect(snapshot.imageAttachments[0]).not.toHaveProperty('ChipIcon')
-    expect(snapshot.contextChips[0]).not.toHaveProperty('ChipIcon')
+    expect(snapshot.contextChips[0].ChipIcon).toBe(ChipIcon)
     expect(snapshot.imageAttachments[0].label).toBe('a.png')
   })
 
@@ -73,6 +73,18 @@ describe('serializeContextSnapshotForApi', () => {
       fileAttachments: [expect.objectContaining({ label: 'doc.pdf' })],
       contextChips: [],
     })
+  })
+
+  it('strips ChipIcon from context chips in API serialization', () => {
+    const ChipIcon = () => null
+    const serialized = serializeContextSnapshotForApi({
+      imageAttachments: [],
+      fileAttachments: [],
+      contextChips: [{ id: '1', kind: 'plan', type: 'plan-1', label: 'Plano', ChipIcon }],
+    })
+
+    expect(serialized.contextChips[0]).not.toHaveProperty('ChipIcon')
+    expect(serialized.contextChips[0].label).toBe('Plano')
   })
 })
 

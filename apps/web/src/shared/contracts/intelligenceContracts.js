@@ -151,6 +151,21 @@ function cloneAttachmentChip(chip = {}) {
 }
 
 function cloneInlineChip(chip = {}) {
+  const cloned = {
+    id: String(chip.id ?? ''),
+    type: String(chip.type ?? ''),
+    kind: String(chip.kind ?? ''),
+    label: String(chip.label ?? ''),
+  }
+
+  if (typeof chip.ChipIcon === 'function') {
+    cloned.ChipIcon = chip.ChipIcon
+  }
+
+  return cloned
+}
+
+function cloneInlineChipForApi(chip = {}) {
   return {
     id: String(chip.id ?? ''),
     type: String(chip.type ?? ''),
@@ -237,7 +252,7 @@ export function serializeContextSnapshotForApi(snapshot) {
     version: CONTEXT_SNAPSHOT_VERSION,
     imageAttachments: normalized.imageAttachments,
     fileAttachments: normalized.fileAttachments,
-    contextChips: normalized.contextChips,
+    contextChips: normalized.contextChips.map(cloneInlineChipForApi),
   }
 }
 
