@@ -869,6 +869,7 @@
 }
 
 .intelligencePanelBody {
+  --intelligence-chat-side-gutter: 22px;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -899,7 +900,8 @@
   min-height: 0;
   max-height: min(42vh, 360px);
   margin-bottom: 4px;
-  padding: 0 2px;
+  margin-inline: calc(var(--intelligence-chat-side-gutter) * -1);
+  padding: 0;
 }
 
 .intelligencePanelMessages {
@@ -907,6 +909,7 @@
   flex-direction: column;
   gap: 12px;
   width: 100%;
+  padding: 0 calc(var(--intelligence-chat-side-gutter) + 2px);
 }
 
 .intelligencePanelMessageUser {
@@ -5583,6 +5586,7 @@
     border-radius: var(--radius-md);
   }
   .intelligencePanelBody {
+    --intelligence-chat-side-gutter: 14px;
     padding: 18px 14px 14px;
     gap: 12px;
   }
