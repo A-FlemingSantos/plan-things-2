@@ -2563,7 +2563,7 @@ export default function KanbanBoard() {
           <section
             id="board-intelligence-panel"
             ref={intelligencePanelRef}
-            className={`${styles.intelligencePanel} ${isIntelligenceOpen ? '' : styles.intelligencePanelClosing}`}
+            className={`${styles.intelligencePanel} ${hasIntelligenceConversation ? styles.intelligencePanelWithConversation : ''} ${isIntelligenceOpen ? '' : styles.intelligencePanelClosing}`}
             style={intelligencePanelStyle}
             aria-label="Chat de IA"
           >
@@ -2595,40 +2595,38 @@ export default function KanbanBoard() {
                 }}
               />
 
-              <div className={styles.intelligenceComposerWrap}>
-                <IntelligenceComposer
-                  value={intelligenceDraft}
-                  onChange={setIntelligenceDraft}
-                  inputRef={intelligenceComposerInputRef}
-                  rows={1}
-                  placeholder="Escreva sua pergunta..."
-                  submitAriaLabel="Enviar mensagem"
-                  voiceAriaLabelIdle="Usar voz"
-                  voiceAriaLabelListening="Usar voz"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    if (submitIntelligenceMessage(intelligenceDraft)) {
-                      setIntelligenceDraft('')
-                    }
-                  }}
-                  submitDisabled={!canSubmitIntelligenceMessage(intelligenceDraft, kanbanAiChips)}
-                  aiChips={kanbanAiChips}
-                  onChipsChange={setKanbanAiChips}
-                  boardCards={intelligenceBoardCards}
-                  showGitHubBar={intelligenceActiveConnectors.includes('github')}
-                  githubBarClassName={styles.intelligenceGitHubBar}
-                  classes={{
-                    form: styles.intelligenceComposer,
-                    input: styles.intelligenceComposerInput,
-                    attachmentStrip: styles.intelligenceComposerAttachmentStrip,
-                    controls: styles.intelligenceComposerFooter,
-                    contextSlot: styles.intelligenceComposerTools,
-                    actions: styles.intelligenceComposerActions,
-                    iconButton: styles.intelligenceComposerIconButton,
-                    sendButton: styles.intelligenceComposerSubmit,
-                  }}
-                />
-              </div>
+              <IntelligenceComposer
+                value={intelligenceDraft}
+                onChange={setIntelligenceDraft}
+                inputRef={intelligenceComposerInputRef}
+                rows={1}
+                placeholder="Escreva sua pergunta..."
+                submitAriaLabel="Enviar mensagem"
+                voiceAriaLabelIdle="Usar voz"
+                voiceAriaLabelListening="Usar voz"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (submitIntelligenceMessage(intelligenceDraft)) {
+                    setIntelligenceDraft('')
+                  }
+                }}
+                submitDisabled={!canSubmitIntelligenceMessage(intelligenceDraft, kanbanAiChips)}
+                aiChips={kanbanAiChips}
+                onChipsChange={setKanbanAiChips}
+                boardCards={intelligenceBoardCards}
+                showGitHubBar={intelligenceActiveConnectors.includes('github')}
+                githubBarClassName={styles.intelligenceGitHubBar}
+                classes={{
+                  form: styles.intelligenceComposer,
+                  input: styles.intelligenceComposerInput,
+                  attachmentStrip: styles.intelligenceComposerAttachmentStrip,
+                  controls: styles.intelligenceComposerFooter,
+                  contextSlot: styles.intelligenceComposerTools,
+                  actions: styles.intelligenceComposerActions,
+                  iconButton: styles.intelligenceComposerIconButton,
+                  sendButton: styles.intelligenceComposerSubmit,
+                }}
+              />
             </div>
           </section>
         ) : null}

@@ -165,4 +165,13 @@ describe('KanbanBoard intelligence', () => {
     })
     expect(screen.getByRole('button', { name: 'Intelligence' })).toHaveAttribute('aria-expanded', 'true')
   })
+
+  it('renders the internal composer directly in the panel body without an extra wrapper', async () => {
+    renderBoard()
+    await userEvent.click(await screen.findByRole('button', { name: 'Intelligence' }))
+
+    const composerForm = (await screen.findByLabelText('Prompt do Intelligence')).closest('form')
+    expect(composerForm).not.toBeNull()
+    expect(composerForm?.parentElement?.lastElementChild).toBe(composerForm)
+  })
 })
