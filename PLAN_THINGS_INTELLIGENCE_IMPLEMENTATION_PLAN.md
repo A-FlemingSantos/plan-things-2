@@ -181,7 +181,7 @@ ACTION_EVENT
 
 ### 4.3 Tipos de bloco
 
-Separar blocos em quatro familias:
+Separar blocos estruturados em quatro familias:
 
 ```txt
 NarrativeBlock
@@ -206,8 +206,9 @@ member_reference
 inbox_reference
 github_commit_reference
 github_pull_request_reference
-tool_run_summary
 ```
+
+Tool execution/status nao entra mais como bloco estruturado. Esse tipo de informacao vive em `inlineArtifacts[]` (ex.: `TOOL_STATUS`) e aparece como elemento inline retratil na mensagem do assistente.
 
 ### 4.4 Proposal vs Entity Reference
 
@@ -237,7 +238,7 @@ Exemplo de referencia de plano:
   "entityType": "plan",
   "entityId": "uuid",
   "title": "Lancamento da landing page",
-  "href": "/workspace/plans/uuid",
+  "href": "/workspace/board/uuid",
   "snapshot": {
     "tag": "Marketing",
     "cardCount": 12,
@@ -257,7 +258,7 @@ Exemplo de referencia de cartao:
   "parentEntityType": "plan",
   "parentEntityId": "uuid-plan",
   "title": "Implementar hero da landing page",
-  "href": "/plans/uuid-plan/cards/uuid",
+  "href": "/workspace/board/uuid-plan?card=uuid",
   "snapshot": {
     "column": "Em andamento",
     "assignees": ["Arthur"],
@@ -1310,13 +1311,13 @@ commit -> abre GitHub em nova aba ou bloco de detalhes
 Se a rota atual nao suporta abrir card por URL, criar suporte:
 
 ```txt
-/plans/{planId}/cards/{cardId}
+/workspace/board/{planId}?card={cardId}
 ```
 
 ou query param:
 
 ```txt
-/plans/{planId}?card={cardId}
+/workspace/board/{planId}?card={cardId}
 ```
 
 ### 12.2 Mock visual como contrato
@@ -1334,7 +1335,7 @@ GitHubCommitBlock
 GitHubPullRequestBlock
 ActionProposalBlock
 QuestionBlock
-ToolRunStatusBlock
+InlineToolArtifact
 ```
 
 Estados obrigatorios a representar:
@@ -1356,8 +1357,8 @@ error_permission
 ```
 
 - Entidades navegaveis; propostas deixam claro que nada foi aplicado.
-- `buildMockIntelligenceReply` deve evoluir para retornar `blocks[]`, nao so texto.
-- `AiBlockRenderer` substitui dados fake sem mudar layout (0.5.2 antes de tools reais).
+- `buildMockIntelligenceReply` deve evoluir para retornar `blocks[]` e `inlineArtifacts[]`, nao so texto.
+- `AiBlockRenderer` substitui dados fake sem mudar layout (0.5.2 antes de tools reais); tool execution/status aparece inline, fora dos blocos.
 
 ### 12.3 Renderizacao markdown e blocos estruturados
 
@@ -1372,10 +1373,10 @@ Para o Plan Things, a decisao arquitetural e:
 MarkdownBlock = narrativa, listas, tabelas, codigo, links, citacoes e diagramas.
 EntityReferenceBlock = objetos reais navegaveis, fora do markdown.
 ActionProposalBlock = propostas aprovaveis, fora do markdown.
-ToolRunStatusBlock = estado de ferramentas, fora do markdown.
+InlineToolArtifact = execucao/resultado de ferramentas, fora do markdown e fora dos blocos estruturados.
 ```
 
-Ou seja, nao embutir planos, cartoes, arquivos, membros, Inbox ou commits como markdown customizado. Esses itens devem continuar como blocos estruturados tipados, renderizados pelo `AiBlockRenderer`. O markdown pode mencionar ou explicar objetos, mas a navegacao, o estado, a aprovacao e a aplicacao de acoes pertencem aos blocos estruturados.
+Ou seja, nao embutir planos, cartoes, arquivos, membros, Inbox ou commits como markdown customizado. Esses itens devem continuar como blocos estruturados tipados, renderizados pelo `AiBlockRenderer`. O markdown pode mencionar ou explicar objetos, mas a navegacao, o estado, a aprovacao e a aplicacao de acoes pertencem aos blocos estruturados. Tool execution/status fica em uma camada inline separada.
 
 Implementacao recomendada:
 
@@ -1386,10 +1387,12 @@ AiBlockRenderer
   CardReferenceBlock -> componente React proprio
   FileReferenceBlock -> componente React proprio
   ActionProposalBlock -> componente React proprio
-  ToolRunStatusBlock -> componente React proprio
+
+InlineArtifactsList
+  InlineToolArtifact -> linha compacta expansivel
 ```
 
-Durante streaming, renderizar deltas narrativos de forma barata e criar/promover blocos estruturados apenas quando o backend emitir eventos como `block.created`, `proposal.created`, `entity.created`, `entity.updated` ou `assistant.completed`.
+Durante streaming, renderizar deltas narrativos de forma barata, atualizar inline artifacts para tool events/status, e criar/promover blocos estruturados apenas quando o backend emitir eventos como `block.created`, `proposal.created`, `entity.created`, `entity.updated` ou `assistant.completed`.
 
 ## 13. Contrato de resposta da IA
 
@@ -1403,6 +1406,21 @@ Schema conceitual:
   "additionalProperties": false,
   "properties": {
     "summary": { "type": "string" },
+    "inlineArtifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": { "type": "string" },
+          "label": { "type": "string" },
+          "status": { "type": "string" },
+          "detail": { "type": ["string", "null"] },
+          "payload": { "type": "object" }
+        },
+        "required": ["type", "label", "status", "payload"]
+      }
+    },
     "blocks": {
       "type": "array",
       "items": {
@@ -1421,7 +1439,7 @@ Schema conceitual:
       "items": { "type": "string" }
     }
   },
-  "required": ["summary", "blocks", "memoryCandidates"]
+  "required": ["summary", "inlineArtifacts", "blocks", "memoryCandidates"]
 }
 ```
 
@@ -1480,9 +1498,10 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 #### 0.5.2 — Blocos mock do assistente — **concluido**
 
 - `AiBlockRenderer` + componentes em `components/blocks/` (dados fake).
-- `buildMockIntelligenceReply` retorna `blocks[]`.
+- `buildMockIntelligenceReply` retorna `blocks[]` + `inlineArtifacts[]`.
 - `MarkdownBlock`: `react-markdown` + `remark-gfm` + `rehype-sanitize`; extensoes opcionais math/highlight/mermaid.
-- Cenarios: narrativa → tool → proposta → entity reference.
+- `InlineArtifactsList`: tools/status como inline retratil, fora dos blocos.
+- Cenarios: narrativa markdown → inline de tool/evento → proposta → entity reference.
 
 ### Fase 1: chat real (markdown, sem tools mutantes)
 
