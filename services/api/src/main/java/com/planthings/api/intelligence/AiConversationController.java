@@ -23,15 +23,18 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class AiConversationController {
 
   private final AiConversationService conversationService;
+  private final AiResponseOrchestrator responseOrchestrator;
   private final AiStreamingService streamingService;
   private final IntelligenceFeatureService intelligenceFeatureService;
 
   public AiConversationController(
       AiConversationService conversationService,
+      AiResponseOrchestrator responseOrchestrator,
       AiStreamingService streamingService,
       IntelligenceFeatureService intelligenceFeatureService
   ) {
     this.conversationService = conversationService;
+    this.responseOrchestrator = responseOrchestrator;
     this.streamingService = streamingService;
     this.intelligenceFeatureService = intelligenceFeatureService;
   }
@@ -73,7 +76,13 @@ public class AiConversationController {
       @PathVariable UUID conversationId,
       @Valid @RequestBody CreateMessageRequest request
   ) {
-    return ApiEnvelope.ok(conversationService.createUserMessage(conversationId, request.content()));
+    AiConversationService.MessageAcceptedResult result = conversationService.createUserMessage(conversationId, request.content());
+    responseOrchestrator.enqueueResponse(
+        result.conversationId(),
+        result.userMessageId(),
+        result.assistantMessageId()
+    );
+    return ApiEnvelope.ok(result);
   }
 
   @GetMapping(value = "/{conversationId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

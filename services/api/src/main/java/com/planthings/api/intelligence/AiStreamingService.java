@@ -58,4 +58,21 @@ public class AiStreamingService {
 
     return emitter;
   }
+
+  public void sendEvent(UUID conversationId, String eventName, Object payload) {
+    SseEmitter emitter = activeEmitters.get(conversationId);
+    if (emitter == null) {
+      return;
+    }
+
+    try {
+      emitter.send(SseEmitter.event()
+          .name(eventName)
+          .data(payload, MediaType.APPLICATION_JSON));
+    } catch (IOException exception) {
+      logger.warn("Falha ao enviar evento {} para a conversa {}", eventName, conversationId, exception);
+      activeEmitters.remove(conversationId, emitter);
+      emitter.completeWithError(exception);
+    }
+  }
 }

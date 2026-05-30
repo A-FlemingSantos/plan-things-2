@@ -11,9 +11,17 @@ const plansMock = vi.hoisted(() => ({
 
 vi.mock('../../../auth/context/AuthContext.jsx', () => ({
   useAuth: () => ({
+    accessToken: 'test-token',
     currentUser: { fullName: 'Arthur Owner' },
   }),
 }))
+
+vi.mock('../../hooks/useAiConversation.js', async () => {
+  const actual = await vi.importActual('../../hooks/useMockAiConversation.js')
+  return {
+    useAiConversation: actual.useMockAiConversation,
+  }
+})
 
 vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   usePreferences: () => ({

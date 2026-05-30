@@ -13,7 +13,7 @@ import {
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import IntelligenceConversationThread from '../../components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
 import ConversationToolbar from '../../components/ConversationToolbar/ConversationToolbar.jsx'
-import { useMockAiConversation } from '../../hooks/useMockAiConversation.js'
+import { useAiConversation } from '../../hooks/useAiConversation.js'
 import styles from './IntelligenceChat.module.css'
 
 function SparkleIcon() {
@@ -54,7 +54,7 @@ function getVoiceInputErrorMessage(error) {
 
 export default function IntelligenceChat() {
   const location = useLocation()
-  const { currentUser } = useAuth()
+  const { accessToken, currentUser } = useAuth()
   const { localPreferences } = usePreferences()
   const { aiChips = [], setAiChips = () => {} } = usePlans()
   const activeConnectors = useMemo(
@@ -79,7 +79,10 @@ export default function IntelligenceChat() {
     hasConversation,
     submitMessage,
     canSubmitWith,
-  } = useMockAiConversation({
+  } = useAiConversation({
+    accessToken,
+    enabled: true,
+    scope: chatScope,
     aiChips,
     setAiChips,
     initialPrompt: location.state?.initialPrompt,
@@ -116,9 +119,9 @@ export default function IntelligenceChat() {
     voiceEndingRecognitionRef.current = null
   }, [])
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    if (submitMessage(draft)) {
+    if (await submitMessage(draft)) {
       setDraft('')
       setVoiceFeedback('')
     }
@@ -353,7 +356,12 @@ export default function IntelligenceChat() {
                     key={s.label}
                     type="button"
                     className={styles.emptySuggestionButton}
-                    onClick={() => submitMessage(s.prompt)}
+                    onClick={async () => {
+                      if (await submitMessage(s.prompt)) {
+                        setDraft('')
+                        setVoiceFeedback('')
+                      }
+                    }}
                     disabled={isThinking}
                   >
                     {s.label}

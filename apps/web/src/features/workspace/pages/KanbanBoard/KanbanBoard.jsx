@@ -28,7 +28,7 @@ import {
 } from '../../data/kanbanColorPalette.js'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import IntelligenceConversationThread from '../../../intelligence/components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
-import { useMockAiConversation } from '../../../intelligence/hooks/useMockAiConversation.js'
+import { useAiConversation } from '../../../intelligence/hooks/useAiConversation.js'
 import styles from './KanbanBoard.module.css'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -599,7 +599,16 @@ export default function KanbanBoard() {
     hasConversation: hasIntelligenceConversation,
     submitMessage: submitIntelligenceMessage,
     canSubmitWith: canSubmitIntelligenceMessage,
-  } = useMockAiConversation({ aiChips: kanbanAiChips, setAiChips: setKanbanAiChips })
+  } = useAiConversation({
+    accessToken,
+    enabled: isIntelligenceOpen || isIntelligencePanelMounted,
+    scope: {
+      planId: activePlan?.id ?? null,
+      planName: activePlan?.name ?? null,
+    },
+    aiChips: kanbanAiChips,
+    setAiChips: setKanbanAiChips,
+  })
   const [toolbarMetrics, setToolbarMetrics] = useState({ left: null, width: 0, height: 44, bottom: 24 })
   const [planFiles, setPlanFiles] = useState([])
   const [libraryFiles, setLibraryFiles] = useState([])
@@ -2608,9 +2617,9 @@ export default function KanbanBoard() {
                   submitAriaLabel="Enviar mensagem"
                   voiceAriaLabelIdle="Usar voz"
                   voiceAriaLabelListening="Usar voz"
-                  onSubmit={(event) => {
+                  onSubmit={async (event) => {
                     event.preventDefault()
-                    if (submitIntelligenceMessage(intelligenceDraft)) {
+                    if (await submitIntelligenceMessage(intelligenceDraft)) {
                       setIntelligenceDraft('')
                     }
                   }}

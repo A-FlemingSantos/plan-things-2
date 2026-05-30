@@ -43,6 +43,13 @@ vi.mock('../../../../shared/api/apiClient.js', async () => {
   }
 })
 
+vi.mock('../../../intelligence/hooks/useAiConversation.js', async () => {
+  const actual = await vi.importActual('../../../intelligence/hooks/useMockAiConversation.js')
+  return {
+    useAiConversation: actual.useMockAiConversation,
+  }
+})
+
 vi.mock('../../../auth/context/AuthContext.jsx', () => ({
   useAuth: () => ({
     accessToken: 'test-token',
