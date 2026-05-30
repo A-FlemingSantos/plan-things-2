@@ -2585,6 +2585,7 @@ export default function KanbanBoard() {
               <IntelligenceConversationThread
                 messages={intelligenceMessages}
                 isThinking={isIntelligenceThinking}
+                useCustomScrollbar
                 className={styles.intelligencePanelThread}
                 classes={{
                   messages: styles.intelligencePanelMessages,

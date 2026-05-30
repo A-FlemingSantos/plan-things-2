@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import UserChatMessage from '../UserChatMessage/UserChatMessage.jsx'
 import defaultStyles from './IntelligenceConversationThread.module.css'
 
@@ -14,6 +15,7 @@ export default function IntelligenceConversationThread({
   classes = {},
   ariaLabel = 'Conversa com o Intelligence',
   scrollIntoView = true,
+  useCustomScrollbar = false,
 }) {
   const {
     scroll: scrollClass,
@@ -33,6 +35,53 @@ export default function IntelligenceConversationThread({
 
   if (messages.length === 0 && !isThinking) return null
 
+  const content = (
+    <div className={joinClasses(defaultStyles.messages, messagesClass)}>
+      {messages.map((msg) => (
+        msg.role === 'user' ? (
+          <UserChatMessage
+            key={msg.id}
+            text={msg.text}
+            contextSnapshot={msg.contextSnapshot}
+            bubbleClassName={messageUserClass || defaultStyles.messageUser}
+          />
+        ) : (
+          <div
+            key={msg.id}
+            className={messageAssistantClass || defaultStyles.messageAssistant}
+          >
+            {msg.text}
+          </div>
+        )
+      ))}
+      {isThinking ? (
+        <div className={thinkingClass || defaultStyles.thinking}>
+          Pensando...
+        </div>
+      ) : null}
+      <div ref={endRef} />
+    </div>
+  )
+
+  if (useCustomScrollbar) {
+    return (
+      <CustomScrollArea
+        enabled
+        refreshKey={`thread-${messages.length}-${isThinking ? 'thinking' : 'idle'}`}
+        className={className}
+        viewportClassName={scrollClass}
+        viewportProps={{
+          style,
+          role: 'log',
+          'aria-label': ariaLabel,
+          'aria-live': 'polite',
+        }}
+      >
+        {content}
+      </CustomScrollArea>
+    )
+  }
+
   return (
     <div
       ref={scrollRef}
@@ -42,31 +91,7 @@ export default function IntelligenceConversationThread({
       aria-label={ariaLabel}
       aria-live="polite"
     >
-      <div className={joinClasses(defaultStyles.messages, messagesClass)}>
-        {messages.map((msg) => (
-          msg.role === 'user' ? (
-            <UserChatMessage
-              key={msg.id}
-              text={msg.text}
-              contextSnapshot={msg.contextSnapshot}
-              bubbleClassName={messageUserClass || defaultStyles.messageUser}
-            />
-          ) : (
-            <div
-              key={msg.id}
-              className={messageAssistantClass || defaultStyles.messageAssistant}
-            >
-              {msg.text}
-            </div>
-          )
-        ))}
-        {isThinking ? (
-          <div className={thinkingClass || defaultStyles.thinking}>
-            Pensando...
-          </div>
-        ) : null}
-        <div ref={endRef} />
-      </div>
+      {content}
     </div>
   )
 }
