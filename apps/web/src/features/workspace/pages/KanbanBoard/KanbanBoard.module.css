@@ -867,6 +867,10 @@
   min-height: 502px;
 }
 
+.intelligencePanelWithConversation .intelligencePanelBody {
+  gap: 0;
+}
+
 .intelligencePanelClosing {
   pointer-events: none;
   animation: intelligencePanelExit 220ms ease both;
@@ -914,6 +918,10 @@
   gap: 12px;
   width: 100%;
   padding: 0 calc(var(--intelligence-chat-side-gutter) + 2px);
+}
+
+.intelligencePanelMessages > div:last-child:empty {
+  margin-top: -12px;
 }
 
 .intelligencePanelMessageUser {
@@ -988,15 +996,13 @@
   --intelligence-button-bg: var(--intelligence-accent);
   --intelligence-shadow: 0 -4px 24px color-mix(in srgb, var(--text-1) 5%, transparent);
 
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  flex: 0 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 8px 20px 20px;
+  padding: 0;
   z-index: 1;
 }
 

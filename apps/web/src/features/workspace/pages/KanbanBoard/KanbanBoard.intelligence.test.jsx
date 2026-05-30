@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
@@ -166,7 +168,7 @@ describe('KanbanBoard intelligence', () => {
     expect(screen.getByRole('button', { name: 'Intelligence' })).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('renders the internal composer inside the overlay footer area', async () => {
+  it('renders the internal composer inside the panel composer area', async () => {
     renderBoard()
     await userEvent.click(await screen.findByRole('button', { name: 'Intelligence' }))
 
@@ -174,5 +176,27 @@ describe('KanbanBoard intelligence', () => {
     const composerForm = (await screen.findByLabelText('Prompt do Intelligence')).closest('form')
     expect(composerForm).not.toBeNull()
     expect(composerArea).toContainElement(composerForm)
+  })
+
+  it('does not reserve overlay padding inside the chat thread above the composer', async () => {
+    const user = userEvent.setup()
+    renderBoard()
+    await user.click(await screen.findByRole('button', { name: 'Intelligence' }))
+
+    await user.type(await screen.findByLabelText('Prompt do Intelligence'), 'Resuma este quadro')
+    await user.click(screen.getByRole('button', { name: 'Enviar mensagem' }))
+
+    const thread = await screen.findByRole('log', { name: 'Conversa com o Intelligence' })
+    expect(thread.style.paddingBottom).toBe('')
+  })
+
+  it('collapses structural spacing between the thread and composer when conversation is active', () => {
+    const cssPath = join(process.cwd(), 'src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css')
+    const cssText = readFileSync(cssPath, 'utf8')
+
+    expect(cssText).toContain('.intelligencePanelWithConversation .intelligencePanelBody')
+    expect(cssText).toContain('gap: 0;')
+    expect(cssText).toContain('.intelligencePanelMessages > div:last-child:empty')
+    expect(cssText).toContain('margin-top: -12px;')
   })
 })
