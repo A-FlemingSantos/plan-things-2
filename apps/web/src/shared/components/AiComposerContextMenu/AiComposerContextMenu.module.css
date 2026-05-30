@@ -406,6 +406,24 @@
   color: var(--text-1);
 }
 
+.chip[data-kind='card'] {
+  --chip-accent: var(--composer-card-chip-accent, #5c6ec0);
+  border-color: color-mix(in srgb, var(--chip-accent) 28%, transparent);
+  background: color-mix(in srgb, var(--chip-accent) 12%, transparent);
+  color: color-mix(in srgb, var(--chip-accent) 72%, var(--text-1));
+}
+
+.chip[data-kind='card'] .chipIcon {
+  color: var(--chip-accent);
+}
+
+[data-theme='dark'] .chip[data-kind='card'] {
+  --composer-card-chip-accent: #9aa8ef;
+  border-color: color-mix(in srgb, var(--chip-accent) 36%, transparent);
+  background: color-mix(in srgb, var(--chip-accent) 18%, var(--surface-2, #121212));
+  color: color-mix(in srgb, var(--chip-accent) 42%, var(--text-1));
+}
+
 @keyframes chipIn {
   from { opacity: 0; transform: scale(0.82); }
   to   { opacity: 1; transform: scale(1); }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { COMPOSER_CHIP_KIND_CARD } from '../../../shared/components/ComposerChip/composerChipPresentation.jsx'
 import {
   hasComposerContext,
   hasContextSnapshot,
@@ -25,6 +26,19 @@ describe('snapshotComposerContext', () => {
     expect(snapshot.fileAttachments[0].label).toBe('brief.pdf')
     expect(snapshot.contextChips).toHaveLength(2)
     expect(snapshot.contextChips.map((chip) => chip.label)).toEqual(['Plan A', 'GitHub'])
+  })
+
+  it('preserves card chips in the context snapshot', () => {
+    const chips = [
+      { id: '1', kind: COMPOSER_CHIP_KIND_CARD, type: 'card-card-1', label: 'Login UI', ChipIcon },
+      { id: '2', kind: 'file', type: 'file-a', label: 'a.png', isImage: true },
+    ]
+
+    const snapshot = snapshotComposerContext(chips)
+
+    expect(snapshot.contextChips).toEqual([
+      expect.objectContaining({ kind: COMPOSER_CHIP_KIND_CARD, label: 'Login UI' }),
+    ])
   })
 
   it('clones snapshot data without mutating the composer chips', () => {

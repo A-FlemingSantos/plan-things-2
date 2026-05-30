@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { COMPOSER_CHIP_KIND_CARD } from '../ComposerChip/composerChipPresentation.jsx'
 import AiComposerContextMenu from './AiComposerContextMenu.jsx'
 
 const ChipIcon = () => null
@@ -102,6 +103,49 @@ describe('AiComposerContextMenu', () => {
         kind: 'connector',
       }),
     ])
+  })
+
+  it('renders card chips with data-kind card and the card icon', () => {
+    const { container } = render(
+      <AiComposerContextMenu
+        onChipsChange={vi.fn()}
+        initialChips={[
+          {
+            id: 'ctx-card-card-1',
+            type: 'card-card-1',
+            label: 'Login UI',
+            kind: COMPOSER_CHIP_KIND_CARD,
+          },
+        ]}
+      />,
+    )
+
+    const chip = screen.getByText('Login UI').closest('[data-kind]')
+    expect(chip).toHaveAttribute('data-kind', 'card')
+    expect(chip.querySelector('svg rect')).toBeInTheDocument()
+    expect(container.querySelector('[data-theme]')).toBeNull()
+  })
+
+  it('applies card chip dark-theme tokens when rendered inside a dark scope', () => {
+    render(
+      <div data-theme="dark">
+        <AiComposerContextMenu
+          onChipsChange={vi.fn()}
+          initialChips={[
+            {
+              id: 'ctx-card-card-1',
+              type: 'card-card-1',
+              label: 'Login UI',
+              kind: COMPOSER_CHIP_KIND_CARD,
+            },
+          ]}
+        />
+      </div>,
+    )
+
+    const chip = screen.getByText('Login UI').closest('[data-kind="card"]')
+    expect(chip).toBeInTheDocument()
+    expect(chip?.className).toMatch(/chip/)
   })
 
   it('does not render file attachments as inline chips', () => {

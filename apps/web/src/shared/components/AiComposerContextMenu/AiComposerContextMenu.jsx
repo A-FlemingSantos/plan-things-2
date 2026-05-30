@@ -8,6 +8,7 @@ import {
   partitionComposerChips,
   removeAttachmentChip,
 } from '../ComposerAttachmentStrip/composerAttachmentUtils.js'
+import { resolveComposerChipIcon } from '../ComposerChip/composerChipPresentation.jsx'
 import styles from './AiComposerContextMenu.module.css'
 
 /* ── Icons ─────────────────────────────────────────────────────── */
@@ -348,23 +349,30 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips } = 
       {/* ── Inline context chips (non-attachments) ── */}
       {inlineChips.length > 0 ? (
         <div className={styles.chips} role="group" aria-label="Contexto adicionado">
-          {inlineChips.map((chip) => (
-            <div key={chip.id} className={styles.chip} data-kind={chip.kind}>
-              <span className={styles.chipIcon} aria-hidden="true"><chip.ChipIcon /></span>
-              <span className={styles.chipLabel}>{chip.label}</span>
-              <button
-                type="button"
-                className={styles.chipRemove}
-                aria-label={`Remover ${chip.label} do contexto`}
-                onClick={() => {
-                  const nextChips = chips.filter((c) => c.type !== chip.type)
-                  commitChips(nextChips)
-                }}
-              >
-                <XSmallIcon />
-              </button>
-            </div>
-          ))}
+          {inlineChips.map((chip) => {
+            const ChipIcon = resolveComposerChipIcon(chip)
+            return (
+              <div key={chip.id} className={styles.chip} data-kind={chip.kind}>
+                {ChipIcon ? (
+                  <span className={styles.chipIcon} aria-hidden="true">
+                    <ChipIcon />
+                  </span>
+                ) : null}
+                <span className={styles.chipLabel}>{chip.label}</span>
+                <button
+                  type="button"
+                  className={styles.chipRemove}
+                  aria-label={`Remover ${chip.label} do contexto`}
+                  onClick={() => {
+                    const nextChips = chips.filter((c) => c.type !== chip.type)
+                    commitChips(nextChips)
+                  }}
+                >
+                  <XSmallIcon />
+                </button>
+              </div>
+            )
+          })}
         </div>
       ) : null}
     </>
