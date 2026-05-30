@@ -1,96 +1,74 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  margin: 8px 0 2px;
+  gap: 4px;
+  margin: 6px 0 4px;
 }
 
 .item {
-  border: 1px solid color-mix(in srgb, var(--intelligence-border, var(--border-1)) 85%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .trigger {
-  width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  appearance: none;
+  gap: 8px;
+  width: fit-content;
+  padding: 0;
   border: 0;
   background: transparent;
-  color: inherit;
-  padding: 8px 10px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.trigger:hover {
-  background: color-mix(in srgb, var(--surface-3, var(--surface-2)) 45%, transparent);
-}
-
-.summary {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.segment {
-  font-size: 11px;
-  line-height: 1.4;
   color: var(--intelligence-faint, var(--text-3));
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
 }
 
-.segmentStrong {
-  font-weight: 600;
-  color: var(--intelligence-text, var(--text-1));
-}
-
-.separator {
-  opacity: 0.55;
+.chevronWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--intelligence-faint, var(--text-3));
 }
 
 .chevron {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 auto;
-  color: var(--intelligence-faint, var(--text-3));
-  transition: transform 0.18s ease;
+  display: block;
+  transform: rotate(0deg);
+  transition: transform 160ms ease;
 }
 
-.chevronExpanded {
+.chevronOpen {
+  display: block;
   transform: rotate(90deg);
+  transition: transform 160ms ease;
 }
 
 .details {
+  padding-left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 10px 10px;
-  border-top: 1px solid color-mix(in srgb, var(--intelligence-border, var(--border-1)) 70%, transparent);
+  gap: 2px;
+}
+
+.detailTitle,
+.detailText,
+.detailMeta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .detailTitle {
-  margin: 8px 0 0;
-  font-size: 12px;
-  font-weight: 600;
   color: var(--intelligence-text, var(--text-1));
 }
 
-.detailBody {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
+.detailText {
   color: var(--intelligence-muted, var(--text-2));
 }
 
 .detailMeta {
-  margin: 0;
-  font-size: 11px;
   color: var(--intelligence-faint, var(--text-3));
 }

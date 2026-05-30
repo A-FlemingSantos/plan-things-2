@@ -100,9 +100,9 @@ describe('IntelligenceConversationThread', () => {
       />,
     )
 
-    expect(screen.getByText('Ferramenta')).toBeInTheDocument()
-    expect(screen.getByText('workspace.get_summary')).toBeInTheDocument()
-    expect(screen.getByText('concluída')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Ferramenta \| workspace\.get_summary \| concluída/i }),
+    ).toBeInTheDocument()
     expect(screen.queryByText('Resumo do workspace carregado (mock).')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Aprovar' })).toBeInTheDocument()
 

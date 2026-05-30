@@ -21,20 +21,21 @@ function resolveInlineStatusLabel(status) {
   return INLINE_STATUS_LABELS[key] ?? (key || 'desconhecido')
 }
 
-function Chevron({ expanded }) {
+function ChevronIcon({ open = false }) {
   return (
     <svg
+      width="11"
+      height="11"
       viewBox="0 0 12 12"
-      aria-hidden="true"
-      className={`${styles.chevron} ${expanded ? styles.chevronExpanded : ''}`}
+      fill="none"
+      className={open ? styles.chevronOpen : styles.chevron}
     >
       <path
-        d="M4 2.5L7.5 6 4 9.5"
-        fill="none"
+        d="M4.5 3l3 3-3 3"
         stroke="currentColor"
+        strokeWidth="1.3"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="1.4"
       />
     </svg>
   )
@@ -77,19 +78,15 @@ export default function InlineArtifactsList({ items = [] }) {
               aria-expanded={expanded ? 'true' : 'false'}
               onClick={() => toggleItem(artifactId)}
             >
-              <span className={styles.summary}>
-                <span className={`${styles.segment} ${styles.segmentStrong}`}>{typeLabel}</span>
-                <span className={styles.separator}>|</span>
-                <span className={styles.segment}>{artifact.label || 'item'}</span>
-                <span className={styles.separator}>|</span>
-                <span className={styles.segment}>{statusLabel}</span>
+              <span>{typeLabel} | {artifact.label || 'item'} | {statusLabel}</span>
+              <span className={styles.chevronWrap} aria-hidden="true">
+                <ChevronIcon open={expanded} />
               </span>
-              <Chevron expanded={expanded} />
             </button>
             {expanded ? (
               <div className={styles.details}>
                 {detailTitle ? <p className={styles.detailTitle}>{detailTitle}</p> : null}
-                {detailText ? <p className={styles.detailBody}>{detailText}</p> : null}
+                {detailText ? <p className={styles.detailText}>{detailText}</p> : null}
                 {detailNote ? <p className={styles.detailMeta}>{detailNote}</p> : null}
               </div>
             ) : null}
