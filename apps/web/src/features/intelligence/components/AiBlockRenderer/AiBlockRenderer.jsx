@@ -1,0 +1,54 @@
+import { isProposalBlockType, isReferenceBlockType } from '../blocks/blockTypes.js'
+import MarkdownBlock from '../blocks/MarkdownBlock/MarkdownBlock.jsx'
+import ToolRunSummaryBlock from '../blocks/ToolRunSummaryBlock/ToolRunSummaryBlock.jsx'
+import ActionProposalBlock from '../blocks/ActionProposalBlock/ActionProposalBlock.jsx'
+import EntityReferenceBlock from '../blocks/EntityReferenceBlock/EntityReferenceBlock.jsx'
+import QuestionBlock from '../blocks/QuestionBlock/QuestionBlock.jsx'
+import styles from './AiBlockRenderer.module.css'
+
+function renderBlock(block) {
+  const type = String(block?.type ?? '').toUpperCase()
+
+  if (type === 'MARKDOWN') {
+    return <MarkdownBlock markdown={block?.payload?.markdown} />
+  }
+
+  if (type === 'TOOL_RUN_SUMMARY') {
+    return <ToolRunSummaryBlock block={block} />
+  }
+
+  if (isProposalBlockType(type)) {
+    return <ActionProposalBlock block={block} />
+  }
+
+  if (isReferenceBlockType(type)) {
+    return <EntityReferenceBlock block={block} />
+  }
+
+  if (type === 'QUESTION') {
+    return <QuestionBlock block={block} />
+  }
+
+  return null
+}
+
+export default function AiBlockRenderer({ blocks = [] }) {
+  const sortedBlocks = [...blocks].sort((left, right) => left.position - right.position)
+
+  if (sortedBlocks.length === 0) return null
+
+  return (
+    <div className={styles.root} data-testid="ai-block-renderer">
+      {sortedBlocks.map((block) => {
+        const content = renderBlock(block)
+        if (!content) return null
+
+        return (
+          <div key={block.id || `${block.type}-${block.position}`} className={styles.block}>
+            {content}
+          </div>
+        )
+      })}
+    </div>
+  )
+}

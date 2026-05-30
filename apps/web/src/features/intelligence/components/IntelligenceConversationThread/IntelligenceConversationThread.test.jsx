@@ -60,6 +60,7 @@ describe('IntelligenceConversationThread', () => {
     )
 
     expect(screen.getByText('Pensando...')).toHaveClass(styles.messageAssistant)
-    expect(screen.getByText('Resposta em bloco')).toHaveClass(styles.messageAssistant)
+    expect(screen.getByTestId('ai-block-renderer')).toBeInTheDocument()
+    expect(screen.getByText('Resposta em bloco')).toBeInTheDocument()
   })
 })

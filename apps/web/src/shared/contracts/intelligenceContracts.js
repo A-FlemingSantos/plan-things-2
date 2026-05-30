@@ -470,6 +470,12 @@ export function getThreadMessageDisplayText(message = {}) {
   return resolveThreadText(message.contentText ?? message.text, message.blocks ?? [])
 }
 
+export function assistantMessageHasRenderableContent(message = {}) {
+  if (isAssistantMessagePending(message)) return true
+  if (Array.isArray(message.blocks) && message.blocks.length > 0) return true
+  return Boolean(getThreadMessageDisplayText(message))
+}
+
 export function isAssistantMessagePending(message = {}) {
   if (message.role !== 'assistant') return false
   const status = String(message.status ?? '').toUpperCase()

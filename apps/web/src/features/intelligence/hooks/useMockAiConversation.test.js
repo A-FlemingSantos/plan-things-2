@@ -51,8 +51,9 @@ describe('useMockAiConversation', () => {
     expect(result.current.messages[1]).toMatchObject({
       role: 'assistant',
       status: AI_MESSAGE_STATUSES.COMPLETED,
-      blocks: [],
     })
+    expect(result.current.messages[1].blocks.length).toBeGreaterThan(0)
+    expect(result.current.messages[1].text).toBeTruthy()
     expect(result.current.hasConversation).toBe(true)
   })
 

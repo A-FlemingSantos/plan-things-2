@@ -2,7 +2,7 @@
 
 Data de referencia: 2026-05-30
 
-**Progresso:** Fase 0 (backend) concluida. Fase 0.5.1 (UI mock + contexto no composer) concluida. Fase 0.5.3 (contratos formais) concluida. Frontend ainda nao consome `/api/intelligence`. Proximo: 0.5.2 (blocos mock) → Fase 1 (chat real).
+**Progresso:** Fase 0 (backend) concluida. Fase 0.5.1 (UI mock + contexto no composer) concluida. Fase 0.5.2 (blocos mock + AiBlockRenderer) concluida. Fase 0.5.3 (contratos formais) concluida. Frontend ainda nao consome `/api/intelligence`. Proximo: Fase 1 (chat real).
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, File Search e GitHub.
 
@@ -1477,7 +1477,7 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - Alinhado com `AiMessageBlockType` e `normalizeStructuredAssistantResponse` (secao 13).
 - `useMockAiConversation` usa mensagens canonicas (`blocks: []`, `status`, `contentText`).
 
-#### 0.5.2 — Blocos mock do assistente — **pendente**
+#### 0.5.2 — Blocos mock do assistente — **concluido**
 
 - `AiBlockRenderer` + componentes em `components/blocks/` (dados fake).
 - `buildMockIntelligenceReply` retorna `blocks[]`.

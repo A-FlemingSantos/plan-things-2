@@ -15,6 +15,7 @@ import {
   normalizeStructuredAssistantResponse,
   serializeContextSnapshotForApi,
   structuredResponseToThreadBlocks,
+  assistantMessageHasRenderableContent,
   toApiRole,
   toUiRole,
 } from './intelligenceContracts.js'
@@ -285,5 +286,23 @@ describe('AI_BLOCK_TYPES', () => {
     expect(AI_BLOCK_TYPES).toContain('MARKDOWN')
     expect(AI_BLOCK_TYPES).toContain('PLAN_REFERENCE')
     expect(AI_BLOCK_TYPES).toHaveLength(14)
+  })
+})
+
+describe('assistantMessageHasRenderableContent', () => {
+  it('returns true for pending assistant placeholders and block replies', () => {
+    expect(assistantMessageHasRenderableContent({
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.PENDING,
+      text: '',
+      blocks: [],
+    })).toBe(true)
+
+    expect(assistantMessageHasRenderableContent({
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.COMPLETED,
+      text: '',
+      blocks: [{ id: 'b1', type: 'MARKDOWN', position: 0, payload: { markdown: 'Oi' } }],
+    })).toBe(true)
   })
 })

@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import {
+  assistantMessageHasRenderableContent,
   getThreadMessageDisplayText,
   isAssistantMessagePending,
 } from '../../../../shared/contracts/intelligenceContracts.js'
+import AiBlockRenderer from '../AiBlockRenderer/AiBlockRenderer.jsx'
 import UserChatMessage from '../UserChatMessage/UserChatMessage.jsx'
 import defaultStyles from './IntelligenceConversationThread.module.css'
 
@@ -53,9 +55,11 @@ export default function IntelligenceConversationThread({
           />
         ) : (
           (() => {
+            if (!assistantMessageHasRenderableContent(msg)) return null
+
             const pending = isAssistantMessagePending(msg)
             const displayText = getThreadMessageDisplayText(msg)
-            if (!pending && !displayText) return null
+            const hasBlocks = Array.isArray(msg.blocks) && msg.blocks.length > 0
 
             return (
               <div
@@ -63,7 +67,14 @@ export default function IntelligenceConversationThread({
                 className={messageAssistantClass || defaultStyles.messageAssistant}
                 aria-busy={pending ? 'true' : undefined}
               >
-                {pending && !displayText ? 'Pensando...' : displayText}
+                {pending && !hasBlocks && !displayText ? (
+                  'Pensando...'
+                ) : (
+                  <>
+                    {hasBlocks ? <AiBlockRenderer blocks={msg.blocks} /> : null}
+                    {!hasBlocks && displayText ? displayText : null}
+                  </>
+                )}
               </div>
             )
           })()
