@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  createCompletedAssistantMessage,
+  createOptimisticUserMessage,
+  createThreadMessageId,
+} from '../../../shared/contracts/intelligenceContracts.js'
 import { buildMockIntelligenceReply } from '../mock/buildMockIntelligenceReply.js'
 import {
   hasComposerContext,
@@ -8,10 +13,6 @@ import {
 
 const DEFAULT_MOCK_REPLY_DELAY_MS = 550
 const WORKSPACE_LAYOUT_SUBMIT_DELAY_MS = 480
-
-function createMessageId(role) {
-  return `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-}
 
 /**
  * Shared mock conversation state for Intelligence surfaces (chat page, workspace, kanban).
@@ -50,12 +51,11 @@ export function useMockAiConversation({
 
     setMessages((current) => [
       ...current,
-      {
-        id: createMessageId('user'),
-        role: 'user',
+      createOptimisticUserMessage({
+        id: createThreadMessageId('user'),
         text,
         contextSnapshot,
-      },
+      }),
     ])
 
     if (typeof setAiChips === 'function') {
@@ -68,11 +68,10 @@ export function useMockAiConversation({
     responseTimerRef.current = setTimeout(() => {
       setMessages((current) => [
         ...current,
-        {
-          id: createMessageId('assistant'),
-          role: 'assistant',
+        createCompletedAssistantMessage({
+          id: createThreadMessageId('assistant'),
           text: buildMockIntelligenceReply(text),
-        },
+        }),
       ])
       setIsThinking(false)
       responseTimerRef.current = null

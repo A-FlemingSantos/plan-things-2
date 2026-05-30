@@ -2,7 +2,7 @@
 
 Data de referencia: 2026-05-30
 
-**Progresso:** Fase 0 (backend) concluida. Fase 0.5.1 (UI mock + contexto no composer) concluida. Frontend ainda nao consome `/api/intelligence`. Proximo: 0.5.3 (contratos) → 0.5.2 (blocos mock) → Fase 1 (chat real).
+**Progresso:** Fase 0 (backend) concluida. Fase 0.5.1 (UI mock + contexto no composer) concluida. Fase 0.5.3 (contratos formais) concluida. Frontend ainda nao consome `/api/intelligence`. Proximo: 0.5.2 (blocos mock) → Fase 1 (chat real).
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, File Search e GitHub.
 
@@ -1469,11 +1469,13 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - `ConversationToolbar` mock, voz no chat, chips `data-kind="card"`.
 - Testes: `IntelligenceChat.test.jsx`, `snapshotComposerContext.test.js`, `KanbanBoard.intelligence.test.jsx`, etc.
 
-#### 0.5.3 — Contratos formais — **pendente (antes da Fase 1)**
+#### 0.5.3 — Contratos formais — **concluido**
 
-- Mapear mensagem mock `{ text, contextSnapshot, blocks? }` ↔ backend `{ contentText, blocks, status }`.
-- `contextSnapshot` → `ai_context_snapshots` (Fase 1.5).
-- Alinhar com `AiMessageBlockType` e schema da secao 13.
+- `apps/web/src/shared/contracts/intelligenceContracts.js` + testes.
+- Mapeamento mock/API: `mapApiMessageToThreadMessage`, `mapThreadMessageToApiShape`, mensagens otimistas.
+- `serializeContextSnapshotForApi` preparado para `ai_context_snapshots` (Fase 1.5).
+- Alinhado com `AiMessageBlockType` e `normalizeStructuredAssistantResponse` (secao 13).
+- `useMockAiConversation` usa mensagens canonicas (`blocks: []`, `status`, `contentText`).
 
 #### 0.5.2 — Blocos mock do assistente — **pendente**
 

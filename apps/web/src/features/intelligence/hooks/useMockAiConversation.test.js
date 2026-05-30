@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { AI_MESSAGE_STATUSES } from '../../../shared/contracts/intelligenceContracts.js'
 import { useMockAiConversation } from './useMockAiConversation.js'
 
 describe('useMockAiConversation', () => {
@@ -34,7 +35,18 @@ describe('useMockAiConversation', () => {
     })
 
     expect(result.current.messages).toHaveLength(2)
-    expect(result.current.messages[1].role).toBe('assistant')
+    expect(result.current.messages[0]).toMatchObject({
+      role: 'user',
+      status: AI_MESSAGE_STATUSES.COMPLETED,
+      text: 'Olá',
+      contentText: 'Olá',
+      blocks: [],
+    })
+    expect(result.current.messages[1]).toMatchObject({
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.COMPLETED,
+      blocks: [],
+    })
     expect(result.current.hasConversation).toBe(true)
   })
 
