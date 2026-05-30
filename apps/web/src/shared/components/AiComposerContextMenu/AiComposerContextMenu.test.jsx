@@ -1,10 +1,42 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { COMPOSER_CHIP_KIND_CARD } from '../ComposerChip/composerChipPresentation.jsx'
 import AiComposerContextMenu from './AiComposerContextMenu.jsx'
 
 const ChipIcon = () => null
+
+function hexToRgb(hex) {
+  const value = hex.replace('#', '')
+  const normalized = value.length === 3
+    ? value.split('').map((char) => `${char}${char}`).join('')
+    : value
+  const intValue = Number.parseInt(normalized, 16)
+  return {
+    r: (intValue >> 16) & 255,
+    g: (intValue >> 8) & 255,
+    b: intValue & 255,
+  }
+}
+
+function relativeLuminance(hex) {
+  const { r, g, b } = hexToRgb(hex)
+  const srgb = [r, g, b].map((channel) => channel / 255)
+  const linear = srgb.map((value) => (
+    value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  ))
+  return (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2])
+}
+
+function contrastRatio(foregroundHex, backgroundHex) {
+  const lumForeground = relativeLuminance(foregroundHex)
+  const lumBackground = relativeLuminance(backgroundHex)
+  const lighter = Math.max(lumForeground, lumBackground)
+  const darker = Math.min(lumForeground, lumBackground)
+  return (lighter + 0.05) / (darker + 0.05)
+}
 
 function createGithubChip(overrides = {}) {
   return {
@@ -201,6 +233,17 @@ describe('AiComposerContextMenu', () => {
     const chip = screen.getByText('Login UI').closest('[data-kind="card"]')
     expect(chip).toBeInTheDocument()
     expect(chip?.className).toMatch(/chip/)
+  })
+
+  it('keeps dark card chip palette above WCAG AA contrast for normal text', () => {
+    const cssPath = join(process.cwd(), 'src/shared/components/AiComposerContextMenu/AiComposerContextMenu.module.css')
+    const cssText = readFileSync(cssPath, 'utf8')
+
+    expect(cssText).toContain('--composer-card-chip-bg: #1f253f;')
+    expect(cssText).toContain('--composer-card-chip-text: #e5eaff;')
+
+    const ratio = contrastRatio('#e5eaff', '#1f253f')
+    expect(ratio).toBeGreaterThanOrEqual(4.5)
   })
 
   it('does not render file attachments as inline chips', () => {

@@ -1519,9 +1519,9 @@ Escopo geral que continua valendo para toda a fase:
 - Respostas do assistente na pagina dedicada ja renderizam em **largura total** da coluna do chat, sem balao.
 - Testes em `IntelligenceChat.test.jsx` e `snapshotComposerContext.test.js`.
 
-**Pendente nesta subfase:**
+**Encerrado nesta subfase:**
 
-- Diferenciar visualmente chips de **card** no composer (quando existir) e validar contraste em tema escuro.
+- Diferenciacao visual de chips de **card** no composer e no contexto da mensagem enviada, com validacao de contraste em tema escuro.
 
 #### 0.5.2 — UI/mock dos blocos do assistente
 

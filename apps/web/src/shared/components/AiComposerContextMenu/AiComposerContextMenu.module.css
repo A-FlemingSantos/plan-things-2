@@ -438,9 +438,12 @@
 
 [data-theme='dark'] .chip[data-kind='card'] {
   --composer-card-chip-accent: #9aa8ef;
-  border-color: color-mix(in srgb, var(--chip-accent) 36%, transparent);
-  background: color-mix(in srgb, var(--chip-accent) 18%, var(--surface-2, #121212));
-  color: color-mix(in srgb, var(--chip-accent) 42%, var(--text-1));
+  --composer-card-chip-border: #6573b5;
+  --composer-card-chip-bg: #1f253f;
+  --composer-card-chip-text: #e5eaff;
+  border-color: var(--composer-card-chip-border);
+  background: var(--composer-card-chip-bg);
+  color: var(--composer-card-chip-text);
 }
 
 @keyframes chipIn {
