@@ -1,8 +1,10 @@
 # Plan Things Intelligence: plano de implementacao robusta
 
-Data de referencia: 2026-05-23
+Data de referencia: 2026-05-30
 
-Este documento descreve um plano completo para transformar a UI incompleta de IA do Plan Things em um copiloto operacional real: chat com `gpt-5.4-mini`, ferramentas internas permissionadas, blocos interativos vinculados a objetos reais, memoria/contexto por conversa, File Search, e integracao GitHub.
+**Progresso:** Fase 0 (backend) concluida. Fase 0.5.1 (UI mock + contexto no composer) concluida. Frontend ainda nao consome `/api/intelligence`. Proximo: 0.5.3 (contratos) → 0.5.2 (blocos mock) → Fase 1 (chat real).
+
+Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, File Search e GitHub.
 
 ## 1. Objetivo do produto
 
@@ -21,21 +23,47 @@ O mesmo padrao vale para cartoes, listas, arquivos, membros, Inbox, commits, pul
 
 ## 2. Estado atual do projeto
 
-Pontos ja existentes no app web:
+### Superficies de UI
 
-- `apps/web/src/features/workspace/pages/Workspace/Workspace.jsx`
-  
-  - Contem `WorkspaceIntelligenceSection`.
-  - Hoje usa `buildWorkspaceIntelligenceReply(prompt)`, com resposta simulada por timer.
-  - Ja possui prompt, sugestoes, historico simples, voz e botao para adicionar contexto.
+| Superficie | Arquivo / rota | Comportamento hoje |
+| --- | --- | --- |
+| Launcher | `WorkspaceIntelligenceSection` | Composer + redirect para `/workspace/chat` |
+| Chat dedicado | `IntelligenceChat` (`/workspace/chat`) | Mock via `useMockAiConversation` |
+| Kanban inline | painel `#board-intelligence-panel` | Mesmo mock compartilhado |
 
-- `apps/web/src/features/workspace/pages/KanbanBoard/KanbanBoard.jsx`
-  
-  - Contem painel `board-intelligence-panel`.
-  - Hoje o submit apenas mostra notificacao de integracao futura.
-  - Ja possui menu para adicionar arquivos, item do Kanban, Inbox e plugins GitHub/Teams/Slack.
+Nenhuma superficie chama o backend de intelligence ainda.
 
-Isso e uma boa base visual, mas a logica precisa sair do componente e virar uma feature backend-first.
+### Frontend ja existente
+
+```txt
+apps/web/src/features/intelligence/
+  hooks/useMockAiConversation.js
+  mock/buildMockIntelligenceReply.js
+  utils/snapshotComposerContext.js
+  pages/IntelligenceChat/
+  components/IntelligenceConversationThread/
+  components/UserChatMessage/
+  components/ConversationToolbar/          (mock: conversas, conectores, arquivos, atividade)
+
+apps/web/src/shared/components/
+  IntelligenceComposer/
+  AiComposerContextMenu/                 (plano, card, inbox, arquivo, conectores)
+  ComposerAttachmentStrip/
+  GitHubContextBar/
+```
+
+- Submit mock captura `contextSnapshot` imutavel; so anexos saem do composer apos envio.
+- Chips de card com `data-kind="card"` e tokens de tema escuro.
+- Preferencia `showIntelligenceSection` em Settings.
+
+### Backend ja existente (Fase 0)
+
+- Pacote `com.planthings.api.intelligence`, migration `V21__ai_intelligence_core.sql`.
+- Endpoints: status, conversa, mensagens, SSE (`stream.ready` apenas).
+- `POST /messages` persiste user + assistente `PENDING`; modelo nao e executado.
+- `AiMessageBlockType` enum alinhado ao contrato de blocos.
+- `DefaultAiOpenAiClient` (Responses API); `AiConversationService.defaultSystemPrompt()` como seed do prompt.
+- Testes: `IntelligenceApiIntegrationTest`, `DefaultAiOpenAiClientTest`.
 
 ## 3. Decisoes tecnicas principais
 
@@ -52,14 +80,16 @@ Motivos:
 Configuracao sugerida:
 
 ```yaml
-planthings:
+app:
   intelligence:
-    enabled: true
+    enabled: ${INTELLIGENCE_ENABLED:false}
+    api-key: ${OPENAI_API_KEY:}
     model: gpt-5.4-mini
     reasoning-effort: low
     max-output-tokens: 6000
     use-openai-conversations: false
     store-openai-responses: false
+    compact-threshold: 120000
 ```
 
 Para producao com comportamento mais estavel, avaliar pinagem por snapshot (`gpt-5.4-mini-2026-03-17`) depois de criar evals basicos.
@@ -84,26 +114,24 @@ Usar Server-Sent Events entre backend e frontend.
 Endpoints sugeridos:
 
 ```txt
-GET  /api/intelligence/conversations/status
-POST /api/intelligence/conversations
-GET  /api/intelligence/conversations/{conversationId}
-GET  /api/intelligence/conversations/{conversationId}/messages
-POST /api/intelligence/conversations/{conversationId}/messages
-GET  /api/intelligence/conversations/{conversationId}/stream
-POST /api/intelligence/actions/{proposalId}/apply
-POST /api/intelligence/actions/{proposalId}/reject
+GET    /api/intelligence/conversations/status
+GET    /api/intelligence/conversations                    (listar por escopo — Fase 1)
+POST   /api/intelligence/conversations
+GET    /api/intelligence/conversations/{conversationId}
+PATCH  /api/intelligence/conversations/{conversationId}   (titulo/arquivar — Fase 1.5)
+GET    /api/intelligence/conversations/{conversationId}/messages
+POST   /api/intelligence/conversations/{conversationId}/messages
+POST   /api/intelligence/conversations/{conversationId}/messages/{messageId}/cancel  (Fase 1)
+GET    /api/intelligence/conversations/{conversationId}/stream
+POST   /api/intelligence/actions/{proposalId}/apply
+POST   /api/intelligence/actions/{proposalId}/reject
 ```
 
-Para o primeiro MVP, `POST /messages` pode retornar o `messageId` e iniciar a execucao assincrona; o front abre/escuta o stream da conversa.
+`POST /messages` retorna ids, dispara execucao assincrona (`AiResponseOrchestrator`) e o front escuta o SSE da conversa. Body inclui `content` e, a partir da Fase 1.5, `contextSnapshot` (chips/anexos serializados).
 
-Status da Fase 0:
+Fase 0 no backend: ver secao 2. SSE hoje so emite `stream.ready`; demais eventos na Fase 1.
 
-- `GET /status`, criacao/busca de conversa, criacao de mensagem e listagem de mensagens ja existem no backend.
-- `POST /messages` ja persiste uma mensagem do usuario e cria uma mensagem do assistente em `PENDING`, mas ainda nao executa o modelo.
-- `GET /stream` ja abre um canal SSE validado por usuario e conversa; por enquanto envia apenas `stream.ready`. O streaming real de deltas, blocos e erro continua na Fase 1.
-- O backend fecha qualquer stream anterior da mesma conversa antes de registrar um novo emissor.
-
-Eventos SSE sugeridos:
+Eventos SSE:
 
 ```txt
 stream.ready
@@ -1174,14 +1202,7 @@ ai_memories
 ai_audit_events
 ```
 
-Status da Fase 0:
-
-- A migration `V21__ai_intelligence_core.sql` ja criou `ai_conversations`, `ai_messages` e `ai_message_blocks`.
-- `ai_conversations` ja guarda `workspace_id`, `plan_id`, `card_id`, usuario criador, `scope_type`, status e ids de continuidade da OpenAI.
-- `ai_messages` ja guarda role, status, texto, `openai_response_id`, uso de tokens e erro.
-- `ai_message_blocks` ja esta preparado para blocos narrativos, propostas, referencias internas e externas, com `payload_json` e `snapshot_json`.
-- `ai_action_proposals`, `ai_tool_calls`, settings, snapshots, compaction items, memories e audit events continuam planejados para fases posteriores.
-- O cleanup dos testes de integracao ja limpa as tabelas de IA antes das entidades de board/plano para respeitar as FKs novas.
+**Criado (V21):** `ai_conversations`, `ai_messages`, `ai_message_blocks`. **Planejado:** propostas, tool calls, settings, snapshots, compaction, memories, audit.
 
 `ai_audit_events` deve registrar:
 
@@ -1207,11 +1228,12 @@ Classes:
 AiConversationController
 AiConversationService
 AiStreamingService
+AiResponseOrchestrator          (Fase 1: POST /messages → OpenAI → SSE)
 AiOpenAiClient
 DefaultAiOpenAiClient
 IntelligenceFeatureService
 IntelligenceProperties
-AiPromptBuilder
+AiPromptBuilder                 (evoluir de defaultSystemPrompt em AiConversationService)
 AiContextBuilder
 AiContextCompactionService
 AiCapabilityRegistry
@@ -1238,49 +1260,38 @@ intelligence.files
 intelligence.persistence
 ```
 
-Status da Fase 0:
+**Implementado (Fase 0):** controller, services, client OpenAI, enums (`AiMessageBlockType` completo), repositories, validacao de escopo plano/card, `listMessages` com `blocks[]` (vazio).
 
-- `AiConversationController`, `AiConversationService`, `AiStreamingService`, `AiOpenAiClient`, `DefaultAiOpenAiClient`, `IntelligenceFeatureService`, `IntelligenceProperties`, modelos enum e repositories JPA ja existem.
-- `DefaultAiOpenAiClient` ja monta chamadas para a Responses API, extrai `output_text` e captura `usage`, mas ainda nao esta conectado ao fluxo de resposta do chat.
-- `IntelligenceProperties` ja cobre feature flag, `OPENAI_API_KEY`, modelo, reasoning effort, limite de output, opcao de store, opcao de conversations e `compact_threshold`.
-- A criacao de conversa ja valida workspace/plano/card: quando `cardId` vem no request, o backend deriva o `planId`, valida acesso ao plano do card e rejeita combinacoes `planId`/`cardId` inconsistentes.
-- `AiConversationService` ainda nao deve duplicar regra de negocio; nas proximas fases, tools e propostas devem continuar chamando servicos existentes como `BoardService`, `PlanService`, `FileService` e servicos de convites.
+**Pendente:** `AiResponseOrchestrator`, registries/tools, propostas, `AiPromptBuilder` (hoje so `defaultSystemPrompt()` inline), compaction na request OpenAI.
 
-Observacao importante: as ferramentas devem chamar os servicos existentes (`WorkspaceService`, `BoardService`, servicos de arquivos, convites etc.) em vez de duplicar regra de negocio.
+Tools e apply devem reutilizar `BoardService`, `PlanService`, `FileService` e servicos de convite — sem duplicar regra de negocio.
 
 ## 12. Frontend: componentes e hooks
 
-Criar feature compartilhada:
-
 ```txt
-apps/web/src/features/intelligence
+apps/web/src/features/intelligence/          (ja parcialmente criado)
+  api/intelligenceApi.js                     Fase 1
+  hooks/useMockAiConversation.js             existe (substituir na Fase 1)
+  hooks/useAiConversation.js                 Fase 1
+  hooks/useAiStream.js                       Fase 1
+  components/IntelligenceConversationThread/ existe
+  components/UserChatMessage/                existe
+  components/ConversationToolbar/            existe (mock)
+  components/AiBlockRenderer/                0.5.2
+  components/blocks/*                        0.5.2
+
+apps/web/src/shared/components/              (nao mover)
+  IntelligenceComposer/
+  AiComposerContextMenu/
+  GitHubContextBar/
 ```
 
-Estrutura:
+**Integracao por superficie:**
 
-```txt
-api/intelligenceApi.js
-hooks/useAiConversation.js
-hooks/useAiStream.js
-components/AiComposer
-components/AiConversation
-components/AiBlockRenderer
-components/blocks/MarkdownBlock
-components/blocks/PlanReferenceBlock
-components/blocks/CardReferenceBlock
-components/blocks/FileReferenceBlock
-components/blocks/MemberReferenceBlock
-components/blocks/GitHubCommitBlock
-components/blocks/GitHubPullRequestBlock
-components/blocks/ActionProposalBlock
-components/blocks/QuestionBlock
-```
-
-Integracao:
-
-- `WorkspaceIntelligenceSection` passa a usar `AiConversation`.
-- `KanbanBoard` passa a usar o mesmo componente com `scopeType=PLAN` e `planId`.
-- O menu `+` do Kanban cria anexos de contexto reais em vez de apenas mostrar notificacao.
+- **Workspace:** launcher apenas; sem chat inline.
+- **IntelligenceChat:** Fase 1 cria conversa backend com escopo de `location.state` (`planId`, `cardId`).
+- **Kanban:** painel inline; Fase 1 com `scopeType=PLAN` + `planId`.
+- Menu `+` do composer: anexos reais na Fase 1.5.
 
 ### 12.1 Navegacao
 
@@ -1308,23 +1319,9 @@ ou query param:
 /plans/{planId}?card={cardId}
 ```
 
-### 12.2 Mock visual como contrato de implementacao
+### 12.2 Mock visual como contrato
 
-A UI atual de IA no Workspace e no Kanban ainda deve ser remodelada antes da integracao real. Esse mock final deve ser tratado como **contrato visual e interativo** para a implementacao, nao como uma camada descartavel.
-
-O mock deve definir:
-
-- hierarquia do chat e do composer;
-- comportamento de streaming;
-- formato visual de blocos narrativos;
-- formato visual de propostas pendentes;
-- formato visual de objetos reais clicaveis;
-- estados de erro, retry, cancelamento e loading;
-- anexos/contexto adicionados ao prompt;
-- indicacao de ferramentas ou integracoes habilitadas;
-- diferencas entre Workspace, Kanban e contexto de card.
-
-O mock deve usar dados fake, mas com os mesmos tipos esperados pelo contrato real:
+Composer, thread, contexto na mensagem e `ConversationToolbar` mock ja existem. Pendente: `AiBlockRenderer` e mock com `blocks[]`.
 
 ```txt
 MarkdownBlock
@@ -1358,16 +1355,9 @@ error_retryable
 error_permission
 ```
 
-Regras para o mock:
-
-- blocos de entidade devem parecer objetos navegaveis, nao mensagens soltas;
-- propostas devem deixar claro que nada foi aplicado ainda;
-- depois de uma proposta aprovada, o mock deve mostrar o objeto real criado/editado como entity reference;
-- o composer deve suportar texto, contexto anexado, ferramentas/integracoes, voz e cancelamento de geracao;
-- o layout deve evitar depender de texto explicativo dentro do app para ensinar a feature;
-- o `AiBlockRenderer` real deve conseguir substituir os dados fake sem trocar a arquitetura visual.
-
-Essa etapa deve acontecer antes da implementacao completa de tools e propostas, porque ela define o contrato de experiencia que o backend precisa alimentar.
+- Entidades navegaveis; propostas deixam claro que nada foi aplicado.
+- `buildMockIntelligenceReply` deve evoluir para retornar `blocks[]`, nao so texto.
+- `AiBlockRenderer` substitui dados fake sem mudar layout (0.5.2 antes de tools reais).
 
 ### 12.3 Renderizacao markdown e blocos estruturados
 
@@ -1439,7 +1429,7 @@ Na pratica, o backend pode ser ainda mais rigoroso com discriminated unions por 
 
 ## 14. Prompt de sistema
 
-O prompt deve ser curto, estavel e reforcar regras operacionais.
+Seed em `AiConversationService.defaultSystemPrompt()`; evoluir para `AiPromptBuilder`. Curto, estavel, regras operacionais.
 
 Principios:
 
@@ -1463,103 +1453,54 @@ Depois que o usuario aprovar e o backend aplicar a acao, retorne bloco de refere
 
 ## 15. Ordem de implementacao recomendada
 
-### Fase 0: preparacao
+### Fase 0: preparacao — **concluida**
 
-- Concluido: configuracoes `OPENAI_API_KEY`, modelo, reasoning effort, limite de output, store, conversations, `compact_threshold` e feature flag foram adicionadas.
-- Concluido: pacote backend `intelligence` foi criado com controller, service, streaming service, propriedades, feature service, client OpenAI, modelos, entidades e repositories.
-- Concluido: migration das tabelas principais `ai_conversations`, `ai_messages` e `ai_message_blocks` foi criada.
-- Concluido: `AiOpenAiClient` e `DefaultAiOpenAiClient` foram criados para Responses API.
-- Concluido: `AiConversationController` foi criado com status, criacao/busca de conversa, criacao/listagem de mensagens e stream SSE inicial.
-- Concluido: `cardId` em conversa passou a ser validado contra plano, workspace e permissao do usuario.
-- Concluido: testes de integracao cobrem status, criacao de conversa, aceite de mensagem e validacao de escopo de card.
-- Preparado para Fase 1: mensagem do assistente ja nasce `PENDING`, e o canal SSE ja existe, mas a execucao real do modelo ainda nao esta ligada ao envio de mensagem.
+Ver secao 2 (backend). Pendente para Fase 1: `AiResponseOrchestrator` e execucao do modelo apos `POST /messages`.
 
 ### Fase 0.5: contrato visual da UI
 
-A Fase 0.5 foi dividida em tres entregas sequenciais. A primeira ja esta em andamento na pagina dedicada de chat; Workspace e Kanban ainda serao alinhados quando os blocos mock e o contrato formal existirem.
+Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 
-```txt
-0.5.1 — Fluxo de submit mock (mensagem do usuario + contexto anexado)
-0.5.2 — UI/mock dos blocos do assistente (propostas, referencias, ferramentas, markdown)
-0.5.3 — Contratos formais (tipos de bloco, payloads, estados, eventos SSE, modelo de mensagem)
-```
+#### 0.5.1 — Submit mock + contexto — **concluido**
 
-Escopo geral que continua valendo para toda a fase:
+- `useMockAiConversation`, `IntelligenceConversationThread`, `UserChatMessage`, `snapshotComposerContext`.
+- Consumidores: `IntelligenceChat`, painel Kanban; Workspace so redireciona para `/workspace/chat`.
+- Snapshot imutavel no envio; anexos saem do composer, chips permanecem.
+- `ConversationToolbar` mock, voz no chat, chips `data-kind="card"`.
+- Testes: `IntelligenceChat.test.jsx`, `snapshotComposerContext.test.js`, `KanbanBoard.intelligence.test.jsx`, etc.
 
-- Remodelar a UI mockada de IA no Workspace e no Kanban.
-- Criar dados fake usando os mesmos tipos de bloco do contrato real.
-- Representar estados obrigatorios de streaming, tool running, proposta pendente, entidade criada e erro.
-- Validar navegacao visual de plano, card, arquivo, Inbox e GitHub.
-- Usar o mock como referencia direta para `AiBlockRenderer` e `AiComposer` (`IntelligenceComposer` no codigo atual).
+#### 0.5.3 — Contratos formais — **pendente (antes da Fase 1)**
 
-#### 0.5.1 — Fluxo de submit mock (mensagem do usuario + contexto)
+- Mapear mensagem mock `{ text, contextSnapshot, blocks? }` ↔ backend `{ contentText, blocks, status }`.
+- `contextSnapshot` → `ai_context_snapshots` (Fase 1.5).
+- Alinhar com `AiMessageBlockType` e schema da secao 13.
 
-**Status: concluido** (pagina dedicada e painel do Kanban via base compartilhada; Workspace apenas redireciona para o chat).
+#### 0.5.2 — Blocos mock do assistente — **pendente**
 
-**Objetivo:** validar o envio mockado com contexto anexado antes de ligar API real ou blocos estruturados do assistente.
+- `AiBlockRenderer` + componentes em `components/blocks/` (dados fake).
+- `buildMockIntelligenceReply` retorna `blocks[]`.
+- `MarkdownBlock`: `react-markdown` + `remark-gfm` + `rehype-sanitize`; extensoes opcionais math/highlight/mermaid.
+- Cenarios: narrativa → tool → proposta → entity reference.
 
-**Concluido:**
+### Fase 1: chat real (markdown, sem tools mutantes)
 
-- Base compartilhada mock:
-  - `useMockAiConversation` (`apps/web/src/features/intelligence/hooks/useMockAiConversation.js`)
-  - `IntelligenceConversationThread` (`apps/web/src/features/intelligence/components/IntelligenceConversationThread/`)
-  - `buildMockIntelligenceReply` (`apps/web/src/features/intelligence/mock/buildMockIntelligenceReply.js`)
-- Consumidores: `IntelligenceChat` e painel Intelligence do `KanbanBoard`.
-- `WorkspaceIntelligenceSection` mantem apenas o composer e redireciona para `/workspace/chat` com `initialPrompt` e `submitComposer` (chips/anexos seguem no `PlansContext`).
-- No submit, capturar um **snapshot imutavel** dos anexos e chips ativos no composer e associar a mensagem do usuario (`snapshotComposerContext` em `apps/web/src/features/intelligence/utils/snapshotComposerContext.js`).
-- O snapshot **nao muda** se o usuario alterar o composer depois do envio.
-- **Somente anexos de arquivo** saem do composer apos o envio; **chips de contexto** (plano, Inbox, conectores etc.) permanecem no composer e tambem entram no snapshot da mensagem (`keepComposerInlineChips`).
-- Renderizar o contexto enviado **acima do balao de texto**, separado do texto, via `UserChatMessage` (`apps/web/src/features/intelligence/components/UserChatMessage/`).
-- Ordem visual do contexto na mensagem:
-  1. imagens (`128×128`);
-  2. arquivos (lista vertical, um por linha);
-  3. chips (fileira igual ao composer, sem botao remover);
-  4. balao com o texto do usuario.
-- O balao de texto usa `width: fit-content` e **nao acompanha** a largura de imagens, arquivos ou chips.
-- Respostas do assistente na pagina dedicada ja renderizam em **largura total** da coluna do chat, sem balao.
-- Testes em `IntelligenceChat.test.jsx` e `snapshotComposerContext.test.js`.
+- `intelligenceApi.js`, `useAiConversation`, `useAiStream`; substituir `useMockAiConversation` no chat e Kanban.
+- `AiResponseOrchestrator`: `POST /messages` → OpenAI → SSE (`assistant.delta`, `assistant.completed`, `assistant.failed`).
+- Criar/reusar conversa com escopo (`IntelligenceChat` via `location.state`; Kanban com `planId`).
+- Blocos `MARKDOWN` no backend; renderer na UI (de 0.5.2).
+- Compaction (`context_management`) + metadados em `ai_compaction_items`.
+- Cancelamento de geracao; listagem basica de conversas para toolbar.
 
-**Encerrado nesta subfase:**
+### Fase 1.5: contexto anexado persistido
 
-- Diferenciacao visual de chips de **card** no composer e no contexto da mensagem enviada, com validacao de contraste em tema escuro.
+- `POST /messages` aceita `contextSnapshot`; tabela `ai_context_snapshots`.
+- `AiContextBuilder` inclui snapshot no prompt.
+- Upload real de anexos (hoje preview local).
 
-#### 0.5.2 — UI/mock dos blocos do assistente
+### Fase 2: blocos estruturados reais
 
-**Status: pendente.**
-
-- Criar componentes mock para os tipos de bloco do contrato real (`MarkdownBlock`, `ActionProposalBlock`, referencias de entidade, `ToolRunStatusBlock`, etc.).
-- Adotar stack de renderizacao markdown ja nesta subfase para o `MarkdownBlock` (mesmo com dados fake): `react-markdown` + `remark-gfm` + `rehype-sanitize` (base), com extensoes opcionais `remark-math` + `rehype-katex` (math), `rehype-highlight`/`highlight.js` (code), e bloco dedicado para `language-mermaid` (diagramas).
-- Representar estados obrigatorios de streaming, tool running, proposta pendente, entidade criada e erro com dados fake.
-- Orquestrar cenarios de demonstracao no mock (ex.: narrativa → ferramenta → proposta → entity reference apos aprovar).
-
-#### 0.5.3 — Contratos formais
-
-**Status: pendente.**
-
-- Formalizar os shapes que a UI mock passou a exigir:
-  - tipos de bloco e payloads;
-  - estados de UI e de proposta;
-  - eventos SSE esperados;
-  - modelo de mensagem com `contextSnapshot` / contexto anexado.
-- Alinhar nomes com `AiMessageBlockType` no backend e com o schema de resposta da secao 13.
-
-### Fase 1: chat real sem ferramentas mutantes
-
-- Substituir respostas simuladas do Workspace por chamada real.
-- Implementar streaming SSE.
-- Persistir conversas, mensagens e blocos `markdown`.
-- Implementar renderizacao segura de markdown.
-- Configurar `context_management.compaction` para conversas que ultrapassarem o limiar definido.
-- Persistir metadados de compaction sem tratar o item opaco como conteudo auditavel.
-- Testar erro, retry, stop e loading.
-
-### Fase 2: blocos estruturados
-
-- Criar `AiBlockRenderer`.
-- Implementar `PlanReferenceBlock`, `CardReferenceBlock`, `FileReferenceBlock`.
-- Criar contrato JSON de blocos.
-- Fazer backend salvar blocos em `ai_message_blocks`.
-- Fazer blocos navegarem para objetos reais.
+- Wire `AiBlockRenderer` ao backend (`ai_message_blocks`).
+- `PlanReferenceBlock`, `CardReferenceBlock`, `FileReferenceBlock` com navegacao real.
 
 ### Fase 3: Model-facing tools e contexto read-only
 
@@ -1616,8 +1557,8 @@ Escopo geral que continua valendo para toda a fase:
 
 ### Fase 7: GitHub read-only
 
-- Criar GitHub App.
-- Implementar OAuth/instalacao/retorno.
+- UI mock ja tem chips de conector e `GitHubContextBar`; backend ainda sem GitHub App (so OAuth login Google/Microsoft).
+- Criar GitHub App; instalacao e retorno.
 - Salvar installations e repositorios.
 - Validar webhooks.
 - Implementar capabilities read-only:
@@ -1638,13 +1579,18 @@ Escopo geral que continua valendo para toda a fase:
 
 ### Fase 9: configuracoes e governanca
 
-- Tela de configuracoes de ferramentas.
+- Tela de configuracoes de ferramentas; wire `ConversationToolbar` (conversas, conectores) a APIs reais.
 - Habilitar/desabilitar por workspace/usuario.
-- Logs de auditoria.
-- Rate limits por usuario/workspace.
-- Evals de ferramentas e blocos.
+- Logs de auditoria; rate limits; evals.
 
 ## 16. Testes
+
+**Ja existentes:**
+
+- Backend: `IntelligenceApiIntegrationTest`, `DefaultAiOpenAiClientTest`.
+- Frontend: `IntelligenceChat.test.jsx`, `useMockAiConversation.test.js`, `IntelligenceConversationThread.test.jsx`, `UserChatMessage.test.jsx`, `IntelligenceComposer.test.jsx`, `AiComposerContextMenu.test.jsx`, `KanbanBoard.intelligence.test.jsx`, `snapshotComposerContext.test.js`.
+
+**A adicionar:**
 
 Backend:
 
@@ -1745,9 +1691,8 @@ Mitigacao: snapshot historico + live lookup opcional + estado "indisponivel".
 
 MVP pronto quando:
 
-- Workspace e Kanban usam backend real de IA.
-- Streaming funciona.
-- Conversas e mensagens persistem.
+- `/workspace/chat` e painel Kanban usam backend real (`useAiConversation`); Workspace permanece launcher.
+- Streaming SSE funciona; conversas e mensagens persistem; `contextSnapshot` no envio (Fase 1.5).
 - Markdown seguro renderiza.
 - Pelo menos tres blocos interativos existem: plano, cartao, proposta.
 - IA consegue ler contexto basico do workspace/plano via `context.search` e `entity.get`.
