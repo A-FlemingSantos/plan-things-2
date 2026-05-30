@@ -1,9 +1,13 @@
+import { buildWorkspaceBoardPath } from '../../../shared/config/routes.js'
+
 const PROPOSAL_TYPES = new Set([
   'PLAN_PROPOSAL',
   'CARD_BATCH_PROPOSAL',
   'MEMBER_INVITE_PROPOSAL',
   'FILE_ATTACH_PROPOSAL',
 ])
+
+const MOCK_PLAN_ROUTE_ID = 'product-launch-q3'
 
 function normalizePrompt(prompt) {
   return String(prompt ?? '').trim().toLowerCase()
@@ -119,7 +123,7 @@ function buildPlanCreationScenario(prompt, contextSnapshot) {
       planReferenceBlock({
         title: planName,
         entityId: 'mock-plan-created-1',
-        href: '/plans/mock-plan-created-1',
+        href: buildWorkspaceBoardPath(MOCK_PLAN_ROUTE_ID),
         snapshot: {
           subtitle: 'Kanban · 3 colunas',
           statusLabel: 'Pré-visualização',
@@ -153,7 +157,7 @@ function buildCardBatchScenario(prompt) {
       cardReferenceBlock({
         title: 'Definir critérios de aceite',
         entityId: 'mock-card-1',
-        href: '/plans/mock-plan-1?card=mock-card-1',
+        href: `${buildWorkspaceBoardPath(MOCK_PLAN_ROUTE_ID)}?card=mock-card-1`,
         snapshot: {
           subtitle: 'Em progresso',
           statusLabel: 'Pré-visualização',

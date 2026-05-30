@@ -20,6 +20,7 @@ describe('buildMockIntelligenceReply', () => {
       'PLAN_PROPOSAL',
       'PLAN_REFERENCE',
     ])
+    expect(reply.blocks.at(-1)?.payload?.href).toBe('/workspace/board/product-launch-q3')
   })
 
   it('returns card batch flow for card-related prompts', () => {
@@ -27,6 +28,8 @@ describe('buildMockIntelligenceReply', () => {
 
     expect(reply.blocks.some((block) => block.type === 'CARD_BATCH_PROPOSAL')).toBe(true)
     expect(reply.blocks.some((block) => block.type === 'CARD_REFERENCE')).toBe(true)
+    expect(reply.blocks.find((block) => block.type === 'CARD_REFERENCE')?.payload?.href)
+      .toBe('/workspace/board/product-launch-q3?card=mock-card-1')
   })
 
   it('uses plan chip label in plan proposal scenario', () => {

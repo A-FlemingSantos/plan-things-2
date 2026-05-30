@@ -50,7 +50,7 @@ describe('AiBlockRenderer', () => {
           position: 0,
           title: 'Meu plano',
           payload: {
-            href: '/plans/demo',
+            href: '/workspace/board/product-launch-q3',
             snapshot: { subtitle: 'Kanban' },
           },
         }]}
@@ -58,7 +58,7 @@ describe('AiBlockRenderer', () => {
     )
 
     const link = screen.getByRole('link', { name: /Meu plano/i })
-    expect(link).toHaveAttribute('href', '/plans/demo')
+    expect(link).toHaveAttribute('href', '/workspace/board/product-launch-q3')
     expect(screen.getByText('Kanban')).toBeInTheDocument()
   })
 
