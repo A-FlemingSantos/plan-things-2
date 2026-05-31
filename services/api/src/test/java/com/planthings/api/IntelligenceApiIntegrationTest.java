@@ -256,6 +256,75 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldPersistEntityReferenceBlocksFromContextSnapshot() throws Exception {
+    when(aiOpenAiClient.createResponseStream(any(), any())).thenReturn(new OpenAiResponseResult(
+        "resp_refs_1",
+        "Analisei o plano anexado.",
+        "{\"total_tokens\":90}"
+    ));
+
+    String token = registerAndGetToken("Arthur Blocks", "arthur-blocks@example.com", "12345678");
+    String planId = createPlan(token, "Plano com contexto").path("plan").path("id").asText();
+
+    String conversationId = readJson(mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "scopeType": "WORKSPACE",
+                  "title": "Referencias"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    JsonNode accepted = readJson(mockMvc.perform(post("/api/intelligence/conversations/" + conversationId + "/messages")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "content": "Resuma o plano",
+                  "contextSnapshot": {
+                    "version": 1,
+                    "contextChips": [
+                      { "id": "chip-1", "kind": "plan", "type": "plan-%s", "label": "Plano com contexto" }
+                    ],
+                    "imageAttachments": [],
+                    "fileAttachments": []
+                  }
+                }
+                """.formatted(planId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    JsonNode assistant = waitForMessageToSettle(
+        token,
+        conversationId,
+        accepted.path("assistantMessageId").asText()
+    );
+
+    assertEquals("COMPLETED", assistant.path("status").asText());
+    assertTrue(assistant.path("blocks").size() >= 2);
+
+    boolean hasMarkdown = false;
+    boolean hasPlanReference = false;
+    for (JsonNode block : assistant.path("blocks")) {
+      String blockType = block.path("blockType").asText();
+      if ("MARKDOWN".equals(blockType)) {
+        hasMarkdown = true;
+      }
+      if ("PLAN_REFERENCE".equals(blockType)) {
+        hasPlanReference = true;
+        assertEquals("/workspace/board/" + planId, block.path("href").asText());
+        assertEquals("Plano com contexto", block.path("title").asText());
+      }
+    }
+
+    assertTrue(hasMarkdown);
+    assertTrue(hasPlanReference);
+  }
+
+  @Test
   void shouldValidateCardScopeWhenCreatingConversation() throws Exception {
     String token = registerAndGetToken("Arthur Card Intelligence", "arthur-card-intelligence@example.com", "12345678");
     String planId = createPlan(token, "Plano da conversa").path("plan").path("id").asText();

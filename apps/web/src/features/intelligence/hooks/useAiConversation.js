@@ -5,6 +5,7 @@ import {
   createOptimisticUserMessage,
   isThreadMessageThinking,
   mapApiMessageToThreadMessage,
+  normalizeAiMessageBlock,
 } from '../../../shared/contracts/intelligenceContracts.js'
 import {
   cancelIntelligenceMessage,
@@ -67,15 +68,20 @@ function mergeMessagesPreservingStreaming(nextMessages, currentMessages) {
       return message
     }
 
-    if (!localHasText) {
+    if (!localHasText && (!Array.isArray(localMessage.blocks) || localMessage.blocks.length === 0)) {
       return message
     }
+
+    const remoteBlocks = Array.isArray(message.blocks) ? message.blocks : []
+    const localBlocks = Array.isArray(localMessage.blocks) ? localMessage.blocks : []
+    const shouldKeepLocalBlocks = localBlocks.length > remoteBlocks.length
 
     return {
       ...message,
       status: localStatus,
-      text: localMessage.text,
-      contentText: localMessage.contentText,
+      text: localHasText ? localMessage.text : message.text,
+      contentText: localHasText ? localMessage.contentText : message.contentText,
+      blocks: shouldKeepLocalBlocks ? localBlocks : message.blocks,
     }
   })
 }
@@ -176,6 +182,27 @@ export function useAiConversation({
           : message
       )))
       setIsThinking(true)
+      return
+    }
+
+    if (event.event === 'block.created') {
+      const messageId = String(event.data?.messageId ?? '')
+      const block = normalizeAiMessageBlock(event.data?.block ?? {})
+      if (!messageId || !block.type) return
+
+      setMessages((current) => current.map((message) => {
+        if (message.id !== messageId) return message
+
+        const existingBlocks = Array.isArray(message.blocks) ? message.blocks : []
+        if (existingBlocks.some((item) => item.id === block.id && block.id)) {
+          return message
+        }
+
+        return {
+          ...message,
+          blocks: [...existingBlocks, block].sort((left, right) => left.position - right.position),
+        }
+      }))
       return
     }
 

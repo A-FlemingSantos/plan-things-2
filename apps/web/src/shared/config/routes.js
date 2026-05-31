@@ -134,3 +134,13 @@ export function toRouteString(location) {
 export function buildWorkspaceBoardPath(planId) {
   return planId ? `${ROUTES.workspaceBoard}/${planId}` : ROUTES.workspaceBoard
 }
+
+export function buildWorkspaceBoardCardPath(planId, cardId) {
+  if (!planId || !cardId) return buildWorkspaceBoardPath(planId)
+  return `${buildWorkspaceBoardPath(planId)}?card=${cardId}`
+}
+
+export function buildWorkspaceFilePath(fileId) {
+  if (!fileId) return ROUTES.workspace
+  return `${ROUTES.workspace}?file=${fileId}`
+}

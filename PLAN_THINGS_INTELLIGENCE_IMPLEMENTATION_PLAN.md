@@ -2,7 +2,7 @@
 
 Data de referencia: 2026-05-31
 
-**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto em texto, upload de anexos no envio — **sem vision/File Search**). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional. **Fase 6** (planejada): multimodal/vision, preview persistente no chat e File Search.
+**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto em texto, upload de anexos no envio — **sem vision/File Search**). **Fase 2 concluida** (blocos `PLAN_REFERENCE`/`CARD_REFERENCE`/`FILE_REFERENCE` persistidos a partir do `contextSnapshot`, SSE `block.created`, navegacao interna `/workspace/board/...` e `?card=`). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional. **Fase 6** (planejada): multimodal/vision, preview persistente no chat e File Search.
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, **entrada multimodal (imagens e documentos)**, File Search e GitHub.
 
@@ -1585,10 +1585,13 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - O chat **nao garante preview persistente** de imagens apos envio (`previewUrl` local e removido apos upload; sem URL autenticada por `fileId` no historico).
 - **Vision multimodal** (`input_image`) e **leitura semantica de documentos** (File Search) ficam explicitamente na Fase 6.
 
-### Fase 2: blocos estruturados reais
+### Fase 2: blocos estruturados reais — **concluida**
 
-- Wire `AiBlockRenderer` ao backend (`ai_message_blocks`).
-- `PlanReferenceBlock`, `CardReferenceBlock`, `FileReferenceBlock` com navegacao real.
+- `AiBlockRenderer` consome `blocks[]` de `GET /messages` (`ai_message_blocks`).
+- Backend: `AiEntityReferenceResolver` + `AiMessageBlockWriter` geram referencias a partir de chips/anexos do `contextSnapshot` da mensagem do usuario.
+- SSE `block.created` para blocos de referencia ao concluir a resposta.
+- Frontend: `PlanReferenceBlock`, `CardReferenceBlock`, `FileReferenceBlock` com rotas internas (`/workspace/board/{planId}`, `?card=`, `/workspace?file=` + download).
+- Kanban: deep link `?card={cardId}` abre o modal do cartao.
 
 ### Fase 3: Model-facing tools e contexto read-only
 

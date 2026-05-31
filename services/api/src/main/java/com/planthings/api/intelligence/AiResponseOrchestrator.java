@@ -12,6 +12,9 @@ import com.planthings.api.intelligence.openai.OpenAiResponseRequest;
 import com.planthings.api.intelligence.openai.OpenAiResponseResult;
 import com.planthings.api.intelligence.persistence.AiConversationEntity;
 import com.planthings.api.intelligence.persistence.AiConversationRepository;
+import com.planthings.api.intelligence.blocks.AiEntityReferenceResolver;
+import com.planthings.api.intelligence.blocks.AiMessageBlockWriter;
+import com.planthings.api.intelligence.blocks.ResolvedEntityReferenceBlock;
 import com.planthings.api.intelligence.persistence.AiMessageBlockEntity;
 import com.planthings.api.intelligence.persistence.AiMessageBlockRepository;
 import com.planthings.api.intelligence.persistence.AiMessageEntity;
@@ -20,6 +23,7 @@ import jakarta.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,6 +59,8 @@ public class AiResponseOrchestrator {
   private final AiContextSnapshotRepository contextSnapshotRepository;
   private final AiContextBuilder contextBuilder;
   private final AiCompactionService compactionService;
+  private final AiEntityReferenceResolver entityReferenceResolver;
+  private final AiMessageBlockWriter messageBlockWriter;
   private final TransactionTemplate transactionTemplate;
   private final ObjectMapper objectMapper;
   private final ConcurrentHashMap<UUID, AtomicBoolean> cancellationFlags = new ConcurrentHashMap<>();
@@ -74,6 +80,8 @@ public class AiResponseOrchestrator {
       AiContextSnapshotRepository contextSnapshotRepository,
       AiContextBuilder contextBuilder,
       AiCompactionService compactionService,
+      AiEntityReferenceResolver entityReferenceResolver,
+      AiMessageBlockWriter messageBlockWriter,
       TransactionTemplate transactionTemplate,
       ObjectMapper objectMapper
   ) {
@@ -86,6 +94,8 @@ public class AiResponseOrchestrator {
     this.contextSnapshotRepository = contextSnapshotRepository;
     this.contextBuilder = contextBuilder;
     this.compactionService = compactionService;
+    this.entityReferenceResolver = entityReferenceResolver;
+    this.messageBlockWriter = messageBlockWriter;
     this.transactionTemplate = transactionTemplate;
     this.objectMapper = objectMapper;
   }
@@ -136,12 +146,17 @@ public class AiResponseOrchestrator {
 
       String outputText = normalizeOutputText(response.outputText());
 
-      transactionTemplate.executeWithoutResult(status -> completeAssistantMessage(
+      List<AiMessageBlockEntity> savedBlocks = transactionTemplate.execute(status -> completeAssistantMessage(
           conversationId,
           assistantMessageId,
           response,
-          outputText
+          outputText,
+          context
       ));
+
+      if (savedBlocks != null) {
+        publishBlockCreatedEvents(conversationId, assistantMessageId, savedBlocks);
+      }
 
       compactionService.recordCompactionOutput(
           conversationId,
@@ -222,6 +237,7 @@ public class AiResponseOrchestrator {
 
     return new OrchestrationContext(
         conversation.getId(),
+        conversation.getCreatedByUserId(),
         conversation.getScopeType().name(),
         conversation.getPlanId(),
         conversation.getCardId(),
@@ -315,19 +331,20 @@ public class AiResponseOrchestrator {
     ));
   }
 
-  private void completeAssistantMessage(
+  private List<AiMessageBlockEntity> completeAssistantMessage(
       UUID conversationId,
       UUID assistantMessageId,
       OpenAiResponseResult response,
-      String outputText
+      String outputText,
+      OrchestrationContext context
   ) {
     AiConversationEntity conversation = conversationRepository.findById(conversationId).orElse(null);
     AiMessageEntity assistantMessage = messageRepository.findById(assistantMessageId).orElse(null);
     if (conversation == null || assistantMessage == null) {
-      return;
+      return List.of();
     }
     if (assistantMessage.getStatus() == AiMessageStatus.CANCELLED) {
-      return;
+      return List.of();
     }
 
     assistantMessage.setStatus(AiMessageStatus.COMPLETED);
@@ -340,15 +357,16 @@ public class AiResponseOrchestrator {
     }
     messageRepository.save(assistantMessage);
 
-    messageBlockRepository.deleteByMessageId(assistantMessageId);
+    List<ResolvedEntityReferenceBlock> referenceBlocks = entityReferenceResolver.resolveFromSnapshotJson(
+        context.contextSnapshotJson(),
+        context.userId()
+    );
 
-    AiMessageBlockEntity markdownBlock = new AiMessageBlockEntity();
-    markdownBlock.setMessageId(assistantMessageId);
-    markdownBlock.setBlockType(AiMessageBlockType.MARKDOWN);
-    markdownBlock.setPosition(0);
-    markdownBlock.setPayloadJson(toMarkdownPayloadJson(outputText));
-    markdownBlock.setSnapshotJson(null);
-    messageBlockRepository.save(markdownBlock);
+    List<AiMessageBlockEntity> savedBlocks = messageBlockWriter.replaceAssistantBlocks(
+        assistantMessageId,
+        toMarkdownPayloadJson(outputText),
+        referenceBlocks
+    );
 
     if (properties.isStoreOpenaiResponses()) {
       conversation.setLastOpenaiResponseId(response.responseId());
@@ -356,6 +374,57 @@ public class AiResponseOrchestrator {
       conversation.setLastOpenaiResponseId(null);
     }
     conversationRepository.save(conversation);
+    return savedBlocks;
+  }
+
+  private void publishBlockCreatedEvents(
+      UUID conversationId,
+      UUID assistantMessageId,
+      List<AiMessageBlockEntity> savedBlocks
+  ) {
+    for (AiMessageBlockEntity block : savedBlocks) {
+      if (block.getBlockType() == AiMessageBlockType.MARKDOWN) {
+        continue;
+      }
+      streamingService.sendEvent(conversationId, "block.created", toBlockCreatedPayload(
+          conversationId,
+          assistantMessageId,
+          block
+      ));
+    }
+  }
+
+  private Map<String, Object> toBlockCreatedPayload(
+      UUID conversationId,
+      UUID messageId,
+      AiMessageBlockEntity block
+  ) {
+    Map<String, Object> blockPayload = new LinkedHashMap<>();
+    blockPayload.put("id", block.getId().toString());
+    blockPayload.put("blockType", block.getBlockType().name());
+    blockPayload.put("position", block.getPosition());
+    if (block.getTitle() != null) {
+      blockPayload.put("title", block.getTitle());
+    }
+    if (block.getHref() != null) {
+      blockPayload.put("href", block.getHref());
+    }
+    if (block.getEntityType() != null) {
+      blockPayload.put("entityType", block.getEntityType());
+    }
+    if (block.getEntityId() != null) {
+      blockPayload.put("entityId", block.getEntityId().toString());
+    }
+    blockPayload.put("payloadJson", block.getPayloadJson());
+    if (block.getSnapshotJson() != null) {
+      blockPayload.put("snapshotJson", block.getSnapshotJson());
+    }
+
+    return Map.of(
+        "conversationId", conversationId.toString(),
+        "messageId", messageId.toString(),
+        "block", blockPayload
+    );
   }
 
   private List<OpenAiResponseRequest.OpenAiInputMessage> buildOpenAiStateInput(OrchestrationContext context) {
@@ -479,6 +548,7 @@ public class AiResponseOrchestrator {
 
   private record OrchestrationContext(
       UUID conversationId,
+      UUID userId,
       String scopeType,
       UUID planId,
       UUID cardId,

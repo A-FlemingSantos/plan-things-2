@@ -41,7 +41,7 @@ describe('AiBlockRenderer', () => {
     expect(screen.getByText('Plano Demo')).toBeInTheDocument()
   })
 
-  it('renders entity reference with internal link', () => {
+  it('renders plan reference with internal link', () => {
     renderWithRouter(
       <AiBlockRenderer
         blocks={[{
@@ -49,10 +49,8 @@ describe('AiBlockRenderer', () => {
           type: 'PLAN_REFERENCE',
           position: 0,
           title: 'Meu plano',
-          payload: {
-            href: '/workspace/board/product-launch-q3',
-            snapshot: { subtitle: 'Kanban' },
-          },
+          href: '/workspace/board/product-launch-q3',
+          snapshot: { subtitle: 'Kanban' },
         }]}
       />,
     )
@@ -60,6 +58,23 @@ describe('AiBlockRenderer', () => {
     const link = screen.getByRole('link', { name: /Meu plano/i })
     expect(link).toHaveAttribute('href', '/workspace/board/product-launch-q3')
     expect(screen.getByText('Kanban')).toBeInTheDocument()
+  })
+
+  it('renders card reference with query param link', () => {
+    renderWithRouter(
+      <AiBlockRenderer
+        blocks={[{
+          id: 'b5',
+          type: 'CARD_REFERENCE',
+          position: 0,
+          title: 'Cartão alvo',
+          href: '/workspace/board/plan-1?card=card-9',
+        }]}
+      />,
+    )
+
+    const link = screen.getByRole('link', { name: /Cartão alvo/i })
+    expect(link).toHaveAttribute('href', '/workspace/board/plan-1?card=card-9')
   })
 
   it('simulates proposal approval without calling backend', async () => {

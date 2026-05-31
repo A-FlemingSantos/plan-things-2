@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
@@ -538,6 +538,7 @@ function BoardLoadingState({ styles }) {
 export default function KanbanBoard() {
   const { planId } = useParams()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { accessToken, currentUser } = useAuth()
   const {
     updatePlanBoard,
@@ -961,6 +962,22 @@ export default function KanbanBoard() {
   const handleBoardCardClick = useCallback((card, colTitle) => {
     setActiveCard({ card, colTitle })
   }, [])
+
+  useEffect(() => {
+    const cardIdFromUrl = String(searchParams.get('card') ?? '').trim()
+    if (!cardIdFromUrl || !columns.length) return
+
+    for (const column of columns) {
+      const card = column.cards?.find((item) => item.id === cardIdFromUrl)
+      if (card) {
+        setActiveCard({ card, colTitle: column.title })
+        const nextParams = new URLSearchParams(searchParams)
+        nextParams.delete('card')
+        setSearchParams(nextParams, { replace: true })
+        break
+      }
+    }
+  }, [columns, searchParams, setSearchParams])
 
   useEffect(() => {
     setBoardLoadError(null)
