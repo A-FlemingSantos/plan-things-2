@@ -22,10 +22,11 @@ describe('IntelligenceConversationThread', () => {
     )
 
     const userBubble = screen.getByText('Mensagem do usuário')
-    const assistantMessage = screen.getByText('Resposta do assistente')
+    const assistantContent = screen.getByText('Resposta do assistente')
+    const assistantMessage = assistantContent.closest(`.${styles.messageAssistant}`)
 
     expect(userBubble).toHaveClass(styles.messageUser)
-    expect(assistantMessage).toHaveClass(styles.messageAssistant)
+    expect(assistantMessage).not.toBeNull()
     expect(screen.queryByText('Pensando...')).not.toBeInTheDocument()
   })
 

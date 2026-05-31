@@ -2,6 +2,9 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--intelligence-text, var(--text-1));
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .root :global(p) {
@@ -16,9 +19,35 @@
 .root :global(ol) {
   margin: 0 0 10px;
   padding-left: 20px;
+  list-style-position: outside;
+}
+
+.root :global(ul) {
+  list-style-type: disc;
+}
+
+.root :global(ol) {
+  list-style-type: decimal;
+}
+
+.root :global(ul ul) {
+  list-style-type: circle;
+}
+
+.root :global(ul ul ul) {
+  list-style-type: square;
+}
+
+.root :global(ol ol) {
+  list-style-type: lower-alpha;
+}
+
+.root :global(ol ol ol) {
+  list-style-type: lower-roman;
 }
 
 .root :global(li) {
+  display: list-item;
   margin-bottom: 4px;
 }
 

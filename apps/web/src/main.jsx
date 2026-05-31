@@ -6,6 +6,7 @@ import { PreferencesProvider } from './features/preferences/context/PreferencesC
 import { PlansProvider } from './features/workspace/context/PlansContext.jsx'
 import App from './App.jsx'
 import './shared/styles/globals.css'
+import 'streamdown/styles.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

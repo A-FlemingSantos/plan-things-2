@@ -5,11 +5,11 @@ import EntityReferenceBlock from '../blocks/EntityReferenceBlock/EntityReference
 import QuestionBlock from '../blocks/QuestionBlock/QuestionBlock.jsx'
 import styles from './AiBlockRenderer.module.css'
 
-function renderBlock(block) {
+function renderBlock(block, { isStreaming = false } = {}) {
   const type = String(block?.type ?? '').toUpperCase()
 
   if (type === 'MARKDOWN') {
-    return <MarkdownBlock markdown={block?.payload?.markdown} />
+    return <MarkdownBlock markdown={block?.payload?.markdown} isStreaming={isStreaming} />
   }
 
   if (isProposalBlockType(type)) {
@@ -27,7 +27,7 @@ function renderBlock(block) {
   return null
 }
 
-export default function AiBlockRenderer({ blocks = [] }) {
+export default function AiBlockRenderer({ blocks = [], isStreaming = false }) {
   const sortedBlocks = [...blocks].sort((left, right) => left.position - right.position)
 
   if (sortedBlocks.length === 0) return null
@@ -35,7 +35,7 @@ export default function AiBlockRenderer({ blocks = [] }) {
   return (
     <div className={styles.root} data-testid="ai-block-renderer">
       {sortedBlocks.map((block) => {
-        const content = renderBlock(block)
+        const content = renderBlock(block, { isStreaming })
         if (!content) return null
 
         return (
