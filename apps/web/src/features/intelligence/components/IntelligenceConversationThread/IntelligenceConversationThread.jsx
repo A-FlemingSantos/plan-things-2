@@ -17,6 +17,15 @@ function joinClasses(...parts) {
   return parts.filter(Boolean).join(' ')
 }
 
+function getDistanceFromBottom(scrollContainer) {
+  if (!scrollContainer) return Number.POSITIVE_INFINITY
+  return (
+    scrollContainer.scrollHeight
+    - scrollContainer.scrollTop
+    - scrollContainer.clientHeight
+  )
+}
+
 export default function IntelligenceConversationThread({
   messages = [],
   isThinking = false,
@@ -40,6 +49,27 @@ export default function IntelligenceConversationThread({
   const previousMessageCountRef = useRef(messages.length)
   const lastStreamScrollAtRef = useRef(0)
   const initialBottomScrollDoneRef = useRef(false)
+  const autoScrollPinnedRef = useRef(true)
+
+  useEffect(() => {
+    const scrollContainer = endRef.current?.closest('[role="log"]') ?? scrollRef.current
+    if (!scrollContainer) {
+      return undefined
+    }
+
+    const syncPinnedState = () => {
+      autoScrollPinnedRef.current = (
+        getDistanceFromBottom(scrollContainer) <= STREAM_SCROLL_BOTTOM_THRESHOLD_PX
+      )
+    }
+
+    syncPinnedState()
+    scrollContainer.addEventListener('scroll', syncPinnedState, { passive: true })
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', syncPinnedState)
+    }
+  }, [useCustomScrollbar, messages.length])
 
   useEffect(() => {
     if (!scrollIntoView) return
@@ -54,6 +84,7 @@ export default function IntelligenceConversationThread({
     ) {
       previousMessageCountRef.current = nextMessageCount
       initialBottomScrollDoneRef.current = true
+      autoScrollPinnedRef.current = true
       endRef.current?.scrollIntoView({ behavior: 'auto' })
       return
     }
@@ -61,26 +92,19 @@ export default function IntelligenceConversationThread({
     previousMessageCountRef.current = nextMessageCount
 
     if (!isMessageAppended) {
+      if (!autoScrollPinnedRef.current) {
+        return
+      }
+
       const now = Date.now()
       if (now - lastStreamScrollAtRef.current < STREAM_SCROLL_THROTTLE_MS) {
         return
       }
 
-      const scrollContainer = endRef.current?.closest('[role="log"]')
-      if (scrollContainer) {
-        const distanceFromBottom = (
-          scrollContainer.scrollHeight
-          - scrollContainer.scrollTop
-          - scrollContainer.clientHeight
-        )
-        if (distanceFromBottom > STREAM_SCROLL_BOTTOM_THRESHOLD_PX) {
-          return
-        }
-      }
-
       lastStreamScrollAtRef.current = now
     }
 
+    autoScrollPinnedRef.current = true
     endRef.current?.scrollIntoView({ behavior: isMessageAppended ? 'smooth' : 'auto' })
   }, [messages, isThinking, scrollIntoView, scrollToBottomOnMount])
 

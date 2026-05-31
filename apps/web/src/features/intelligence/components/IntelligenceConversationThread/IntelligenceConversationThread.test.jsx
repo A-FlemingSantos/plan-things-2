@@ -133,4 +133,59 @@ describe('IntelligenceConversationThread', () => {
 
     expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'auto' })
   })
+
+  it('keeps following streaming updates while the user is still pinned to the bottom', () => {
+    const scrollIntoViewSpy = vi.fn()
+    const addEventListenerSpy = vi.fn()
+    const dateNowSpy = vi.spyOn(Date, 'now')
+    const originalClosest = Element.prototype.closest
+    const scrollContainer = {
+      scrollHeight: 400,
+      scrollTop: 200,
+      clientHeight: 200,
+      addEventListener: addEventListenerSpy,
+      removeEventListener: vi.fn(),
+    }
+
+    Element.prototype.scrollIntoView = scrollIntoViewSpy
+    dateNowSpy
+      .mockReturnValueOnce(1_000)
+      .mockReturnValueOnce(1_200)
+    Element.prototype.closest = vi.fn(function mockClosest(selector) {
+      if (selector === '[role="log"]') {
+        return scrollContainer
+      }
+      return originalClosest.call(this, selector)
+    })
+
+    const { rerender } = render(
+      <IntelligenceConversationThread
+        messages={[
+          { id: 'u1', role: 'user', text: 'Mensagem inicial' },
+          { id: 'a1', role: 'assistant', text: 'Resposta', status: 'STREAMING' },
+        ]}
+        isThinking
+      />,
+    )
+
+    scrollIntoViewSpy.mockClear()
+
+    scrollContainer.scrollHeight = 720
+
+    rerender(
+      <IntelligenceConversationThread
+        messages={[
+          { id: 'u1', role: 'user', text: 'Mensagem inicial' },
+          { id: 'a1', role: 'assistant', text: 'Resposta crescendo bastante durante o stream', status: 'STREAMING' },
+        ]}
+        isThinking
+      />,
+    )
+
+    expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'auto' })
+    expect(addEventListenerSpy).toHaveBeenCalledWith('scroll', expect.any(Function), { passive: true })
+
+    Element.prototype.closest = originalClosest
+    dateNowSpy.mockRestore()
+  })
 })
