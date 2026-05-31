@@ -1,7 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
+import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
@@ -974,7 +976,7 @@ function WorkspaceLoadingState({ view }) {
 
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const navigate = useNavigate()
-  const { aiChips = [], setAiChips = () => {} } = usePlans()
+  const { aiChips = [], setAiChips = () => {}, plans = [] } = usePlans()
   const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const [draft, setDraft] = useState('')
   const [isListening, setIsListening] = useState(false)
@@ -1060,6 +1062,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
           voiceAriaLabelListening="Parar gravação de áudio"
           aiChips={aiChips}
           onChipsChange={setAiChips}
+          planOptions={plans}
           showGitHubBar={activeConnectors.includes('github')}
           githubBarPlacement="insideForm"
           githubBarClassName={`${styles.intelligenceSuggestions} ${styles.intelligenceGitHubBar}`}
@@ -1084,6 +1087,8 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
 ═══════════════════════════════════════════ */
 export default function Workspace() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { accessToken } = useAuth()
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
@@ -1096,6 +1101,7 @@ export default function Workspace() {
   const [backgroundPicker, setBackgroundPicker] = useState(null)
   const [backgroundBusy, setBackgroundBusy] = useState(false)
   const notificationTimerRef = useRef(null)
+  const handledFileDeepLinkRef = useRef('')
   const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
@@ -1113,6 +1119,7 @@ export default function Workspace() {
   const backgroundPickerPlan = backgroundPicker?.planId
     ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
     : null
+  const fileIdFromUrl = String(searchParams.get('file') ?? '').trim()
 
   const pushNotification = (message) => {
     if (notificationTimerRef.current) {
@@ -1124,6 +1131,56 @@ export default function Workspace() {
       notificationTimerRef.current = null
     }, 2600)
   }
+
+  useEffect(() => {
+    if (!fileIdFromUrl) {
+      handledFileDeepLinkRef.current = ''
+      return undefined
+    }
+    if (handledFileDeepLinkRef.current === fileIdFromUrl) {
+      return undefined
+    }
+
+    handledFileDeepLinkRef.current = fileIdFromUrl
+    let cancelled = false
+
+    const clearFileParam = () => {
+      const nextParams = new URLSearchParams(searchParams)
+      if (nextParams.get('file') === fileIdFromUrl) {
+        nextParams.delete('file')
+        setSearchParams(nextParams, { replace: true })
+      }
+    }
+
+    if (!isBackendDriven || !accessToken) {
+      pushNotification('Arquivos ficam disponíveis quando a sessão está conectada ao backend.')
+      clearFileParam()
+      return undefined
+    }
+
+    apiRequest(`/api/files/${fileIdFromUrl}/download`, {
+      token: accessToken,
+      responseType: 'blob',
+    })
+      .then((blob) => {
+        if (cancelled) return
+        triggerBlobDownload(blob, `arquivo-${fileIdFromUrl.slice(0, 8)}`)
+        pushNotification('Download do arquivo iniciado.')
+      })
+      .catch((error) => {
+        if (cancelled) return
+        pushNotification(error?.message ?? 'Não foi possível abrir este arquivo.')
+      })
+      .finally(() => {
+        if (!cancelled) {
+          clearFileParam()
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [accessToken, fileIdFromUrl, isBackendDriven, searchParams, setSearchParams])
 
   const handleNewPlan = async (data) => {
     try {

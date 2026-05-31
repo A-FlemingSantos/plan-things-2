@@ -86,14 +86,28 @@ function normalizeChips(chips) {
   return Array.isArray(chips) ? chips : []
 }
 
+function normalizePlanOptions(planOptions) {
+  return Array.isArray(planOptions)
+    ? planOptions
+      .filter((plan) => plan?.id && plan?.name)
+      .map((plan) => ({
+        id: String(plan.id),
+        name: String(plan.name),
+        date: String(plan.date ?? plan.tag ?? 'Plano'),
+        color: plan.color ?? plan.tagColor ?? '#5B8AF5',
+      }))
+    : []
+}
+
 function stopEventPropagation(event) {
   event.stopPropagation()
 }
 
 /* ── Component ─────────────────────────────────────────────────── */
-export default function AiComposerContextMenu({ onChipsChange, initialChips, boardCards } = {}) {
+export default function AiComposerContextMenu({ onChipsChange, initialChips, planOptions, boardCards } = {}) {
   const showBoardCardsMenu = boardCards !== undefined
   const boardCardOptions = showBoardCardsMenu ? (Array.isArray(boardCards) ? boardCards : []) : []
+  const workspacePlanOptions = planOptions !== undefined ? normalizePlanOptions(planOptions) : MOCK_PLANS
   const entitySubmenuKey = showBoardCardsMenu ? 'cards' : 'plans'
   const [isMenuOpen, setIsMenuOpen]   = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState(null)
@@ -297,8 +311,8 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
           ) : (
             <p className={styles.submenuEmpty}>Nenhum cartão neste plano</p>
           )
-        ) : (
-          MOCK_PLANS.map(({ id, name, date, color }) => {
+        ) : workspacePlanOptions.length > 0 ? (
+          workspacePlanOptions.map(({ id, name, date, color }) => {
             const chipType = `plan-${id}`
             const active   = chips.some((c) => c.type === chipType)
             const PlanDot  = makePlanChipDot(color)
@@ -319,6 +333,8 @@ export default function AiComposerContextMenu({ onChipsChange, initialChips, boa
               </button>
             )
           })
+        ) : (
+          <p className={styles.submenuEmpty}>Nenhum plano neste workspace</p>
         )}
       </CustomScrollArea>
     </div>

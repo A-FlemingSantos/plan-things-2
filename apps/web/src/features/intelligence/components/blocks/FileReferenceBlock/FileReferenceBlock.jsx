@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../../../auth/context/AuthContext.jsx'
 import { apiRequest, triggerBlobDownload } from '../../../../../shared/api/apiClient.js'
 import shared from '../blocksShared.module.css'
 import {
@@ -15,6 +16,7 @@ function resolveFileId(block = {}) {
 }
 
 export default function FileReferenceBlock({ block }) {
+  const { accessToken } = useAuth()
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
 
@@ -31,7 +33,10 @@ export default function FileReferenceBlock({ block }) {
     setIsDownloading(true)
     setDownloadError('')
     try {
-      const blob = await apiRequest(`/api/files/${fileId}/download`, { responseType: 'blob' })
+      const blob = await apiRequest(`/api/files/${fileId}/download`, {
+        token: accessToken,
+        responseType: 'blob',
+      })
       triggerBlobDownload(blob, title)
     } catch (error) {
       setDownloadError(error instanceof Error ? error.message : 'Não foi possível baixar o arquivo.')

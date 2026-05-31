@@ -19,7 +19,7 @@ public record AiContextSnapshotPayload(
   @JsonIgnoreProperties(ignoreUnknown = false)
   public record ContextChipPayload(
       @Size(max = 120) String id,
-      @Size(max = 40) String type,
+      @Size(max = 120) String type,
       @Size(max = 40) String kind,
       @NotBlank @Size(max = AiContextBuilder.MAX_LABEL_LENGTH) String label
   ) {

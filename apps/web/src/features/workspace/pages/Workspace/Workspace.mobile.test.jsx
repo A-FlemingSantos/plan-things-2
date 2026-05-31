@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -31,6 +31,11 @@ const plansMock = vi.hoisted(() => ({
   setAiChips: vi.fn(),
 }))
 
+const apiClientMock = vi.hoisted(() => ({
+  apiRequest: vi.fn(),
+  triggerBlobDownload: vi.fn(),
+}))
+
 const preferencesMock = vi.hoisted(() => ({
   localPreferences: {
     confirmDestructiveActions: true,
@@ -40,9 +45,15 @@ const preferencesMock = vi.hoisted(() => ({
 
 vi.mock('../../../auth/context/AuthContext.jsx', () => ({
   useAuth: () => ({
+    accessToken: 'test-token',
     currentUser: { fullName: 'Arthur Fleming' },
     workspace: { name: 'Área de trabalho pessoal' },
   }),
+}))
+
+vi.mock('../../../../shared/api/apiClient.js', () => ({
+  apiRequest: (...args) => apiClientMock.apiRequest(...args),
+  triggerBlobDownload: (...args) => apiClientMock.triggerBlobDownload(...args),
 }))
 
 vi.mock('../../context/PlansContext.jsx', () => ({
@@ -72,9 +83,9 @@ vi.mock('../../components/InviteNotifications/InviteNotifications.jsx', () => ({
   default: () => <button type="button" aria-label="Notificações">Notificações</button>,
 }))
 
-function renderWorkspace() {
+function renderWorkspace(initialEntries = ['/workspace']) {
   return render(
-    <TestMemoryRouter>
+    <TestMemoryRouter initialEntries={initialEntries}>
       <Workspace />
     </TestMemoryRouter>,
   )
@@ -84,7 +95,10 @@ describe('Workspace mobile layout', () => {
   beforeEach(() => {
     preferencesMock.localPreferences.showIntelligenceSection = true
     plansMock.aiChips = []
+    plansMock.isBackendDriven = false
     plansMock.setAiChips.mockClear()
+    apiClientMock.apiRequest.mockReset()
+    apiClientMock.triggerBlobDownload.mockReset()
   })
 
   it('keeps the mobile workspace controls available without hiding the primary actions', () => {
@@ -138,5 +152,24 @@ describe('Workspace mobile layout', () => {
     await user.type(screen.getByLabelText('Prompt do Intelligence'), 'Planejar algo')
 
     expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeEnabled()
+  })
+
+  it('handles workspace file deep links with an authenticated download', async () => {
+    const blob = new Blob(['file'])
+    plansMock.isBackendDriven = true
+    apiClientMock.apiRequest.mockResolvedValue(blob)
+
+    renderWorkspace(['/workspace?file=12345678-1234-1234-1234-123456789abc'])
+
+    await waitFor(() => {
+      expect(apiClientMock.apiRequest).toHaveBeenCalledWith(
+        '/api/files/12345678-1234-1234-1234-123456789abc/download',
+        {
+          token: 'test-token',
+          responseType: 'blob',
+        },
+      )
+    })
+    expect(apiClientMock.triggerBlobDownload).toHaveBeenCalledWith(blob, 'arquivo-12345678')
   })
 })

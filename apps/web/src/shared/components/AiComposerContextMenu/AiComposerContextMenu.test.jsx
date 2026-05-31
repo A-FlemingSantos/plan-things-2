@@ -192,6 +192,37 @@ describe('AiComposerContextMenu', () => {
     ])
   })
 
+  it('adds a real plan context chip from workspace plan options', async () => {
+    const user = userEvent.setup()
+    const handleChipsChange = vi.fn()
+
+    render(
+      <AiComposerContextMenu
+        onChipsChange={handleChipsChange}
+        initialChips={[]}
+        planOptions={[{
+          id: 'd8b16b14-b735-4676-a2b4-c9a65c6f6ab3',
+          name: 'Roadmap real',
+          tag: 'Produto',
+          tagColor: '#5B8AF5',
+        }]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Adicionar contexto ao chat' }))
+    await user.click(screen.getByRole('menuitem', { name: /Planos/i }))
+    await user.click(screen.getByRole('menuitem', { name: /Roadmap real/i }))
+
+    expect(handleChipsChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'ctx-plan-d8b16b14-b735-4676-a2b4-c9a65c6f6ab3',
+        type: 'plan-d8b16b14-b735-4676-a2b4-c9a65c6f6ab3',
+        label: 'Roadmap real',
+        kind: 'plan',
+      }),
+    ])
+  })
+
   it('renders the Kanban card submenu in a floating layer above clipping containers', async () => {
     const user = userEvent.setup()
     render(

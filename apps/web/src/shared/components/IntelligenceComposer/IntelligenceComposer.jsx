@@ -72,6 +72,7 @@ export default function IntelligenceComposer({
   classes = {},
   aiChips = [],
   onChipsChange,
+  planOptions,
   boardCards,
   showGitHubBar = false,
   githubBarClassName,
@@ -172,6 +173,7 @@ export default function IntelligenceComposer({
           <AiComposerContextMenu
             onChipsChange={onChipsChange}
             initialChips={aiChips}
+            planOptions={planOptions}
             boardCards={boardCards}
           />
         </div>

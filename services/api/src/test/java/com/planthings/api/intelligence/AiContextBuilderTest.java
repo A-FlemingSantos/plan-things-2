@@ -69,6 +69,29 @@ class AiContextBuilderTest {
   }
 
   @Test
+  void shouldAcceptUuidBackedPlanChipType() {
+    contextBuilder.validateAndNormalize(java.util.Map.of(
+        "version",
+        1,
+        "contextChips",
+        java.util.List.of(java.util.Map.of(
+            "id",
+            "ctx-plan-d8b16b14-b735-4676-a2b4-c9a65c6f6ab3",
+            "kind",
+            "plan",
+            "type",
+            "plan-d8b16b14-b735-4676-a2b4-c9a65c6f6ab3",
+            "label",
+            "Roadmap real"
+        )),
+        "imageAttachments",
+        java.util.List.of(),
+        "fileAttachments",
+        java.util.List.of()
+    ));
+  }
+
+  @Test
   void shouldAcceptFrontendGeneratedAttachmentType() {
     String generatedType = "file-upload-product-screenshot-png-image-png-348921-1780252705803";
 
