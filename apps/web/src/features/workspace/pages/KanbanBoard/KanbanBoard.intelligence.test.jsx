@@ -201,8 +201,13 @@ describe('KanbanBoard intelligence', () => {
     const cssPath = join(process.cwd(), 'src/features/workspace/pages/KanbanBoard/KanbanBoard.module.css')
     const cssText = readFileSync(cssPath, 'utf8')
 
+    expect(cssText).not.toContain('min-height: 502px;')
+    expect(cssText).not.toContain('max-height: min(42vh, 360px);')
+    expect(cssText).not.toContain('margin-top: auto;')
     expect(cssText).toContain('.intelligencePanelWithConversation .intelligencePanelBody')
     expect(cssText).toContain('gap: 0;')
+    expect(cssText).toContain('.intelligencePanelThread')
+    expect(cssText).toContain('flex: 1 1 0;')
     expect(cssText).toContain('.intelligencePanelMessages > div:last-child:empty')
     expect(cssText).toContain('margin-top: -12px;')
   })

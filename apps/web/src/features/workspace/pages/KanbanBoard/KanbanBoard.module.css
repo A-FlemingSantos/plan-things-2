@@ -863,10 +863,6 @@
   animation: intelligencePanelEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.intelligencePanelWithConversation {
-  min-height: 502px;
-}
-
 .intelligencePanelWithConversation .intelligencePanelBody {
   gap: 0;
 }
@@ -905,9 +901,8 @@
 }
 
 .intelligencePanelThread {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
-  max-height: min(42vh, 360px);
   margin-inline: calc(var(--intelligence-chat-side-gutter) * -1);
   padding: 0;
 }
