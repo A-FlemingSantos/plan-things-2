@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planthings.api.intelligence.persistence.AiCompactionItemEntity;
 import com.planthings.api.intelligence.persistence.AiCompactionItemRepository;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -15,6 +14,8 @@ import org.springframework.util.StringUtils;
 public class AiCompactionService {
 
   public static final String MODE_SERVER_SIDE = "SERVER_SIDE";
+  public static final String MODE_THRESHOLD_AUDIT = "THRESHOLD_AUDIT";
+  private static final String COMPACTION_OUTPUT_TYPE = "compaction";
 
   private final AiCompactionItemRepository compactionItemRepository;
   private final IntelligenceProperties properties;
@@ -32,7 +33,8 @@ public class AiCompactionService {
 
   @Transactional(readOnly = true)
   public List<JsonNode> loadLatestCompactionInputItems(UUID conversationId) {
-    return compactionItemRepository.findTopByConversationIdOrderByCreatedAtDesc(conversationId)
+    return compactionItemRepository
+        .findTopByConversationIdAndCompactionModeOrderByCreatedAtDesc(conversationId, MODE_SERVER_SIDE)
         .map(this::parseCompactionInputItems)
         .orElse(List.of());
   }
@@ -52,7 +54,7 @@ public class AiCompactionService {
 
     int threshold = properties.getCompactThreshold();
     for (String itemJson : compactionOutputItemsJson) {
-      if (!StringUtils.hasText(itemJson)) {
+      if (!StringUtils.hasText(itemJson) || !isCompactionOutputItem(itemJson)) {
         continue;
       }
 
@@ -70,13 +72,16 @@ public class AiCompactionService {
   }
 
   private List<JsonNode> parseCompactionInputItems(AiCompactionItemEntity entity) {
+    if (!MODE_SERVER_SIDE.equals(entity.getCompactionMode())) {
+      return List.of();
+    }
     if (!StringUtils.hasText(entity.getOpaquePayloadJson())) {
       return List.of();
     }
 
     try {
       JsonNode item = objectMapper.readTree(entity.getOpaquePayloadJson());
-      if (item != null && item.isObject()) {
+      if (item != null && item.isObject() && isCompactionOutputNode(item)) {
         return List.of(item);
       }
     } catch (Exception ignored) {
@@ -111,14 +116,27 @@ public class AiCompactionService {
       item.setConversationId(conversationId);
       item.setMessageId(messageId);
       item.setOpenaiResponseId(openaiResponseId);
-      item.setCompactionMode(MODE_SERVER_SIDE);
+      item.setCompactionMode(MODE_THRESHOLD_AUDIT);
       item.setCompactThreshold(threshold);
       item.setInputTokenEstimate(inputTokens > 0 ? inputTokens : null);
-      item.setOpaquePayloadJson(tokenUsageJson);
+      item.setOpaquePayloadJson(null);
       compactionItemRepository.save(item);
     } catch (Exception ignored) {
       // Metadados de compaction sao best-effort; nao devem falhar a resposta.
     }
+  }
+
+  private boolean isCompactionOutputItem(String itemJson) {
+    try {
+      JsonNode item = objectMapper.readTree(itemJson);
+      return isCompactionOutputNode(item);
+    } catch (Exception exception) {
+      return false;
+    }
+  }
+
+  private boolean isCompactionOutputNode(JsonNode item) {
+    return item != null && item.isObject() && COMPACTION_OUTPUT_TYPE.equals(item.path("type").asText(""));
   }
 
   private Integer estimateInputTokens(String tokenUsageJson) {

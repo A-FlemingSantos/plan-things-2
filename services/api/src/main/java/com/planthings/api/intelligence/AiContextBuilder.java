@@ -28,7 +28,7 @@ public class AiContextBuilder {
       "fileAttachments"
   );
 
-  private static final Set<String> ALLOWED_CHIP_FIELDS = Set.of("id", "type", "kind", "label", "ChipIcon");
+  private static final Set<String> ALLOWED_CHIP_FIELDS = Set.of("id", "type", "kind", "label");
   private static final Set<String> ALLOWED_ATTACHMENT_FIELDS = Set.of(
       "id",
       "type",
@@ -63,6 +63,7 @@ public class AiContextBuilder {
     }
 
     rejectUnknownFields(root, ALLOWED_ROOT_FIELDS, "contextSnapshot");
+    validateAttachmentLists(root);
 
     String serialized = root.toString();
     if (serialized.length() > MAX_CONTEXT_JSON_LENGTH) {
@@ -79,7 +80,6 @@ public class AiContextBuilder {
       throw invalidSnapshot("Versao de contextSnapshot nao suportada.");
     }
 
-    validateAttachmentLists(root);
     return payload;
   }
 

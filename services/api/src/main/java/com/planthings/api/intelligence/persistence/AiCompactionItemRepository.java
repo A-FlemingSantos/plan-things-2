@@ -5,5 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AiCompactionItemRepository extends JpaRepository<AiCompactionItemEntity, UUID> {
 
-  java.util.Optional<AiCompactionItemEntity> findTopByConversationIdOrderByCreatedAtDesc(UUID conversationId);
+  java.util.Optional<AiCompactionItemEntity> findTopByConversationIdAndCompactionModeOrderByCreatedAtDesc(
+      UUID conversationId,
+      String compactionMode
+  );
 }

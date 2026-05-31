@@ -47,4 +47,24 @@ class AiContextBuilderTest {
         ))
     );
   }
+
+  @Test
+  void shouldRejectChipIconInContextChips() {
+    assertThrows(
+        com.planthings.api.common.error.BadRequestException.class,
+        () -> contextBuilder.validateAndNormalize(java.util.Map.of(
+            "contextChips",
+            java.util.List.of(java.util.Map.of(
+                "id",
+                "chip-1",
+                "kind",
+                "plan",
+                "label",
+                "Marketing",
+                "ChipIcon",
+                "not-serializable"
+            ))
+        ))
+    );
+  }
 }
