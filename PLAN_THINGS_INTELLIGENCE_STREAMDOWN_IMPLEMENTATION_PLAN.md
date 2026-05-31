@@ -1,189 +1,266 @@
-# Plan Things Intelligence: Streamdown Markdown Implementation Plan
+# Plan Things Intelligence: Streamdown Markdown Remaining Work Plan
 
-Data de referencia: 2026-05-30
+Data de referencia: 2026-05-31
 
-Este documento detalha a implementacao de markdown streaming robusto no frontend de Intelligence, usando `streamdown` com rollout seguro.
+Este documento substitui a versao anterior do plano de Streamdown e passa a refletir o estado real do projeto hoje: o que ja foi implementado, o que falta fechar e quais criterios definem a conclusao desse rollout.
 
-## 1. Objetivo
+## 1. Resumo executivo
 
-Resolver problemas de renderizacao durante streaming:
+O nucleo tecnico do plano de Streamdown ja foi implementado no frontend.
 
-- markdown literal temporario (ex.: `**`, headers, fences)
-- listas com bullets/numeracao inconsistentes durante delta streaming
-- jank visual por reparse excessivo durante respostas longas
+Ja existe:
 
-Objetivo de produto:
+- dependencia `streamdown` instalada no app web;
+- import global de `streamdown/styles.css`;
+- feature flag frontend para ligar e desligar o renderer;
+- fallback para `react-markdown` quando a flag estiver desativada;
+- uso de `mode="streaming"` durante stream e `mode="static"` quando a mensagem conclui;
+- guardrails locais de CSS para listas, espacos e links;
+- reconciliacao final da mensagem apos `assistant.completed`;
+- testes unitarios cobrindo o toggle do renderer e os estados `streaming`/`static`.
 
-- manter UX fluida em `IntelligenceChat` e painel IA do `KanbanBoard`
-- preservar seguranca de renderizacao
-- reduzir regressao com feature flag e fallback rapido
+Portanto, este plano nao e mais um plano de integracao inicial. Agora ele e um plano de conclusao, validacao e endurecimento operacional.
 
-## 2. Escopo tecnico (frontend)
+## 2. Estado atual do codigo
 
-Arquivos principais:
+### 2.1 Ja implementado
 
-- `apps/web/src/features/intelligence/components/blocks/MarkdownBlock/MarkdownBlock.jsx`
-- `apps/web/src/features/intelligence/components/IntelligenceConversationThread/IntelligenceConversationThread.jsx`
-- `apps/web/src/features/intelligence/hooks/useAiConversation.js`
-- `apps/web/src/features/intelligence/components/blocks/MarkdownBlock/MarkdownBlock.module.css`
-- `apps/web/src/shared/styles/globals.css`
-- `apps/web/src/main.jsx`
+Implementacao atual confirmada no codigo:
+
 - `apps/web/package.json`
+  - `streamdown` instalado.
+- `apps/web/src/main.jsx`
+  - `import 'streamdown/styles.css'`.
+- `apps/web/src/features/intelligence/components/blocks/MarkdownBlock/MarkdownBlock.jsx`
+  - flag `VITE_INTELLIGENCE_STREAMDOWN`;
+  - fallback para `react-markdown`;
+  - `Streamdown` com:
+    - `mode="streaming"` quando a mensagem esta em stream;
+    - `mode="static"` quando a mensagem esta concluida;
+    - `animated`;
+    - `isAnimating`;
+    - `remend={{ linkMode: 'text-only' }}`;
+    - links externos renderizados com seguranca de navegador.
+- `apps/web/src/features/intelligence/components/blocks/MarkdownBlock/MarkdownBlock.module.css`
+  - `white-space: normal`;
+  - `overflow-wrap` e `word-break`;
+  - restauracao de `ul/ol/li`;
+  - estilos basicos para titulos, tabelas, quotes, `code` e `pre`.
+- `apps/web/src/features/intelligence/hooks/useAiConversation.js`
+  - aplica deltas de `assistant.delta`;
+  - faz refresh final em `assistant.completed`;
+  - preserva texto parcial local enquanto o backend ainda nao persistiu o texto final.
+- `apps/web/src/features/intelligence/hooks/useAiStream.js`
+  - consome SSE manualmente via `fetch` e `ReadableStream`.
 
-Sem mudanca de protocolo SSE neste plano. O backend ja envia `assistant.delta`, `assistant.completed`, `assistant.failed`.
+### 2.2 Ja implementado em testes
 
-## 3. Estrategia de implementacao
+- `apps/web/src/features/intelligence/components/blocks/MarkdownBlock/MarkdownBlock.test.jsx`
+  - cobre fallback;
+  - cobre `streaming`;
+  - cobre `static`.
+- `apps/web/src/features/intelligence/hooks/useAiConversation.test.js`
+  - cobre hidratacao apos `assistant.completed`;
+  - cobre preservacao de texto parcial durante polling;
+  - cobre preservacao de `contextSnapshot` local ao recarregar mensagens.
 
-### 3.1 Trilha de baixo risco
+## 3. O que este plano considera concluido
 
-- integrar `streamdown` apenas no renderer markdown
-- manter reconciliacao final por `assistant.completed` + refresh de mensagens
-- habilitar por feature flag (rollback instantaneo)
-- manter fallback para renderer atual quando necessario
+As seguintes partes do plano anterior devem ser tratadas como concluidas:
 
-### 3.2 Trilha de alta fidelidade
+### 3.1 Integracao basica do Streamdown
 
-- usar modo `streaming` em mensagens `PENDING/STREAMING`
-- usar modo `static` em mensagens `COMPLETED`
-- ativar animacao apenas durante stream (`isAnimating`)
-- aplicar guardrails de CSS para listas e espacos
+Concluido:
 
-## 4. Plano em 3 etapas
+- instalacao da dependencia;
+- import dos estilos;
+- adocao do renderer por feature flag;
+- fallback para renderer anterior;
+- passagem do estado de streaming para o bloco markdown.
 
-### Etapa 1: Baseline e preparacao
+### 3.2 Hardening basico de CSS
 
-Objetivo:
+Concluido:
 
-- estabelecer baseline de flicker/performance antes da troca
-- preparar feature flag e cenarios de teste
+- override local do reset global de listas;
+- `white-space: normal` no escopo do markdown;
+- restauracao de bullets e numeracao dentro do bloco markdown.
 
-Tarefas:
+### 3.3 Compatibilidade com o fluxo atual de SSE
 
-1. Criar flag em frontend (ex.: `VITE_INTELLIGENCE_STREAMDOWN=true`).
-2. Mapear estado de streaming por mensagem (`PENDING`, `STREAMING`, `COMPLETED`).
-3. Definir corpus de prompts para validacao:
-   - listas simples e longas
-   - listas aninhadas
-   - code fences incompletas e completas
-   - links incompletos
-4. Registrar baseline manual com as duas superficies:
+Concluido:
+
+- o backend continua emitindo `assistant.delta`, `assistant.completed` e `assistant.failed`;
+- o frontend renderiza deltas durante o stream;
+- o frontend reconcilia o estado final a partir da mensagem persistida.
+
+## 4. O que ainda falta
+
+As pendencias restantes do plano de Streamdown nao sao mais de integracao principal. Elas estao concentradas em validacao real, rollout e robustez operacional.
+
+### 4.1 Baseline e validacao formal
+
+Ainda falta:
+
+1. Definir e registrar um corpus oficial de validacao para streaming markdown.
+2. Validar esse corpus nos dois entrypoints:
    - `/workspace/chat`
-   - painel IA no `KanbanBoard`
+   - painel IA do `KanbanBoard`
+3. Registrar os resultados esperados para:
+   - listas simples;
+   - listas aninhadas;
+   - fences incompletas e completas;
+   - links incompletos;
+   - tabelas;
+   - blocos longos com multiplos parágrafos.
+4. Formalizar criterio de aprovacao e rollback.
 
-Entrega:
+Observacao:
+essa parte nao esta implementada no codigo. E uma pendencia de produto/QA/engenharia.
 
-- baseline documentado + flag pronta para canario
+### 4.2 Regressao visual orientada a cenarios reais
 
-### Etapa 2: Integracao Streamdown
+Ainda falta:
+
+1. Rodar regressao visual real com mensagens longas.
+2. Confirmar que nao ha:
+   - flicker perceptivel;
+   - marcador solto em listas;
+   - quebra de hierarchy em listas aninhadas;
+   - code fence quebrando layout;
+   - jank perceptivel no composer durante stream.
+3. Documentar o resultado para cada superficie.
+
+Hoje existem testes unitarios, mas nao uma bateria formal de regressao visual do rollout.
+
+### 4.3 Rollout operacional da feature flag
+
+Ainda falta:
+
+1. Definir valor padrao da flag por ambiente.
+2. Confirmar se a flag ficara:
+   - desligada por padrao em producao ate validacao manual; ou
+   - ligada por padrao apos a homologacao.
+3. Registrar procedimento de rollback operacional.
+4. Se necessario, fazer rollout progressivo por ambiente interno antes de consolidar.
+
+O mecanismo da flag existe; o plano de ativacao gradual ainda nao esta formalizado neste documento.
+
+### 4.4 Robustez do transporte de stream
+
+Esta parte fica na borda entre o plano de Streamdown e a robustez geral do chat, mas vale registrar porque impacta diretamente a experiencia de markdown em stream.
+
+Ainda falta avaliar ou implementar, se o objetivo for endurecimento de producao:
+
+1. politica de reconnect para o SSE quando a conexao cair no meio da resposta;
+2. estrategia de retry/backoff;
+3. comportamento de recuperacao quando o stream falha e a mensagem final ja foi persistida;
+4. visibilidade melhor de erro transiente no frontend.
+
+Importante:
+isso nao bloqueia a integracao do Streamdown em si, mas bloqueia a ideia de "streaming totalmente robusto" em sentido de producao.
+
+## 5. Novo plano de execucao
+
+### Etapa 1: consolidar o contrato de validacao
 
 Objetivo:
 
-- trocar renderer markdown mantendo comportamento atual de conversa
+- transformar o rollout em algo verificavel.
 
 Tarefas:
 
-1. Instalar dependencia:
-   - `streamdown` em `apps/web`
-2. Importar estilos:
-   - `import 'streamdown/styles.css'` em `src/main.jsx`
-3. Atualizar `MarkdownBlock.jsx`:
-   - substituir `react-markdown` por `Streamdown`
-   - props recomendadas:
-     - `mode="streaming"` para mensagem em stream
-     - `mode="static"` para mensagem concluida
-     - `isAnimating={true}` apenas enquanto streama
-     - `animated` habilitado
-     - `remend={{ linkMode: 'text-only' }}` para evitar links parciais clicaveis
-4. Passar sinal de streaming de `IntelligenceConversationThread` para `MarkdownBlock`.
-5. Preservar fallback:
-   - se flag desativada, usar renderer atual.
+1. Escrever corpus oficial de prompts de teste.
+2. Definir expected behavior por cenario.
+3. Registrar checklist unico para `IntelligenceChat` e `KanbanBoard`.
 
 Entrega:
 
-- Streamdown funcional com toggle por feature flag
+- checklist de validacao aprovado pela equipe.
 
-### Etapa 3: Hardening de UX e estabilidade
+### Etapa 2: validar as duas superficies com a flag ativa
 
 Objetivo:
 
-- eliminar regressao de listas e melhorar custo de render
+- confirmar que a implementacao atual cumpre os objetivos de UX.
 
 Tarefas:
 
-1. Ajustar CSS de markdown:
-   - garantir `ul/ol` com `list-style` no escopo do markdown
-   - garantir `white-space: normal` no container markdown
-2. Revisar reset global:
-   - hoje `ul, ol { list-style: none; }` em `globals.css`
-   - garantir override local em `MarkdownBlock.module.css`
-3. Validar conflitos de ancestral com `white-space: pre-wrap` (especialmente em wrappers de mensagem).
-4. Rodar regressao visual nos cenarios do corpus.
-5. Consolidar regra operacional:
-   - qualquer regressao critica => rollback de flag.
+1. Testar o corpus com `VITE_INTELLIGENCE_STREAMDOWN=true`.
+2. Validar:
+   - listas;
+   - links parciais;
+   - code fences;
+   - respostas longas;
+   - mensagens multi-paragrafo.
+3. Comparar com o fallback para identificar regressao real.
 
 Entrega:
 
-- rollout pronto com criterios objetivos de Go/No-Go
+- relatorio curto de Go/No-Go.
 
-## 5. Criterios de aceite
+### Etapa 3: decidir estado final da flag
 
-### 5.1 Flicker
+Objetivo:
 
-- sem piscadas perceptiveis em respostas longas no fluxo normal
-- reducao visivel de markdown literal temporario durante stream
+- fechar o rollout.
 
-### 5.2 Listas
+Tarefas:
 
-- bullets e numeracao renderizados corretamente durante e apos stream
-- sem marcador isolado em linha separada
-- sem perda de hierarquia em listas aninhadas validas
+1. Se nao houver regressao critica, ligar a flag por padrao.
+2. Se houver regressao relevante, manter fallback como default e abrir correcoes pontuais.
+3. Registrar criterio de rollback simples.
 
-### 5.3 Code fences
+Entrega:
 
-- bloco de codigo nao deve "quebrar" layout durante abertura/fechamento
-- conteudo final apos `assistant.completed` deve estar consistente com texto acumulado
+- decisao final de rollout documentada.
 
-### 5.4 Custo de render
+### Etapa 4: opcional - endurecimento do transporte
 
-- sem travamento perceptivel do input/composer durante stream
-- reducao de re-renders custosos vs baseline em respostas longas
-- manter responsividade no painel IA do Kanban e na pagina de chat dedicada
+Objetivo:
 
-## 6. Rollout recomendado
+- melhorar resiliencia do streaming fim a fim.
 
-1. Deploy com flag desligada.
-2. Ativar flag para ambiente de teste interno.
-3. Validar corpus completo nos dois entrypoints.
-4. Ativar para pequena parcela de usuarios.
-5. Expandir gradualmente.
+Tarefas:
 
-Rollback:
+1. mapear falhas reais de stream;
+2. avaliar reconnect/backoff;
+3. melhorar UX de erro e recuperacao.
 
-- desligar flag para voltar ao renderer atual sem rollback de deploy.
+Entrega:
 
-## 7. Riscos e mitigacoes
+- chat com stream mais resiliente a falhas de conexao.
 
-Risco: estilo quebrado por dependencia de tokens/CSS base.
-Mitigacao: validar tema atual e sobrescrever apenas no escopo do bloco.
+## 6. Criterios de conclusao
 
-Risco: regressao de listas por `white-space` herdado.
-Mitigacao: forcar `white-space: normal` no container markdown e revisar ancestrais.
+Este plano so podera ser considerado concluido quando:
 
-Risco: diferenca visual entre streaming e completed.
-Mitigacao: consolidar estado final sempre via mensagem persistida no backend.
+1. o corpus de validacao estiver definido;
+2. os dois entrypoints tiverem sido validados com a flag ativa;
+3. nao houver regressao critica de listas, links, fences ou performance percebida;
+4. a decisao operacional da flag estiver documentada;
+5. existir procedimento claro de rollback.
 
-Risco: incompatibilidade com plugins markdown atuais.
-Mitigacao: comecar sem plugins opcionais (code/math/mermaid) e adicionar por fase.
+## 7. O que nao faz parte deste plano
 
-## 8. Fontes consultadas
+Os itens abaixo continuam sendo pendencias do plano principal de Intelligence, nao deste plano de Streamdown:
 
-- Streamdown README (GitHub): https://github.com/vercel/streamdown/blob/main/packages/streamdown/README.md
-- Streamdown docs (Usage): https://streamdown.ai/docs/usage
-- Streamdown docs (Getting Started): https://streamdown.ai/docs/getting-started
-- Streamdown docs (Unterminated parsing / remend): https://streamdown.ai/docs/termination
-- NPM streamdown: https://www.npmjs.com/package/streamdown
-- Issue Streamdown #68 (listas + `white-space: pre-wrap`): https://github.com/vercel/streamdown/issues/68
-- Issue Streamdown #158 (espacamento/tabelas + `white-space`): https://github.com/vercel/streamdown/issues/158
-- Issue Streamdown #475 (listas com quebra e wrappers): https://github.com/vercel/streamdown/issues/475
-- OpenAI Streaming Responses guide: https://developers.openai.com/api/docs/guides/streaming-responses
-- OpenAI migrate-to-responses guide: https://developers.openai.com/api/docs/guides/migrate-to-responses
+- persistencia backend de `contextSnapshot`;
+- `ai_context_snapshots`;
+- `ai_compaction_items`;
+- cancelamento de geracao;
+- listagem e `PATCH` de conversas;
+- tools, proposals e blocos estruturados reais;
+- compaction oficial da OpenAI;
+- governanca completa de streaming no backend.
+
+## 8. Veredito atual
+
+Estado atual resumido:
+
+- implementacao tecnica de Streamdown: concluida;
+- hardening basico de markdown streaming: concluido;
+- validacao formal e rollout: pendentes;
+- robustez total de stream em sentido operacional: parcialmente pendente.
+
+Em outras palavras: o projeto ja saiu da fase de "precisamos integrar Streamdown" e entrou na fase de "precisamos validar, consolidar e decidir rollout".

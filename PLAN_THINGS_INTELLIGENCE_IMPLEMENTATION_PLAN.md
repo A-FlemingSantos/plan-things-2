@@ -1,8 +1,8 @@
 # Plan Things Intelligence: plano de implementacao robusta
 
-Data de referencia: 2026-05-30
+Data de referencia: 2026-05-31
 
-**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 parcialmente concluida (chat real + SSE + markdown backend). Fase 1.5 iniciada no frontend, pendente no backend.
+**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 parcialmente concluida (chat real + SSE + markdown backend). Fase 1.5 iniciada no frontend, pendente no backend. Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional.
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, File Search e GitHub.
 
@@ -1322,7 +1322,7 @@ ou query param:
 
 ### 12.2 Mock visual como contrato
 
-Composer, thread, contexto na mensagem e `ConversationToolbar` mock ja existem. Pendente: `AiBlockRenderer` e mock com `blocks[]`.
+Composer, thread, contexto na mensagem e `ConversationToolbar` mock ja existem. `AiBlockRenderer` e o mock com `blocks[]` tambem ja existem e funcionam como contrato visual para a integracao com dados reais.
 
 ```txt
 MarkdownBlock
@@ -1394,7 +1394,7 @@ InlineArtifactsList
 
 Durante streaming, renderizar deltas narrativos de forma barata, atualizar inline artifacts para tool events/status, e criar/promover blocos estruturados apenas quando o backend emitir eventos como `block.created`, `proposal.created`, `entity.created`, `entity.updated` ou `assistant.completed`.
 
-Plano complementar (streaming markdown robusto com Streamdown): `PLAN_THINGS_INTELLIGENCE_STREAMDOWN_IMPLEMENTATION_PLAN.md`.
+Plano complementar (estado atual, validacao e rollout de Streamdown): `PLAN_THINGS_INTELLIGENCE_STREAMDOWN_IMPLEMENTATION_PLAN.md`.
 
 ## 13. Contrato de resposta da IA
 
@@ -1501,7 +1501,7 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 
 - `AiBlockRenderer` + componentes em `components/blocks/` (dados fake).
 - `buildMockIntelligenceReply` retorna `blocks[]` + `inlineArtifacts[]`.
-- `MarkdownBlock`: `react-markdown` + `remark-gfm` + `rehype-sanitize`; extensoes opcionais math/highlight/mermaid.
+- `MarkdownBlock`: `Streamdown` por feature flag, com fallback para `react-markdown` + `remark-gfm` + `rehype-sanitize`; extensoes opcionais math/highlight/mermaid.
 - `InlineArtifactsList`: tools/status como inline retratil, fora dos blocos.
 - Cenarios: narrativa markdown → inline de tool/evento → proposta → entity reference.
 
