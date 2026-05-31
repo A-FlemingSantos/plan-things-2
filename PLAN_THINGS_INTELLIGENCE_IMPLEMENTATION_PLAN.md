@@ -2,9 +2,9 @@
 
 Data de referencia: 2026-05-31
 
-**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto, upload de anexos no envio). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional.
+**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto em texto, upload de anexos no envio — **sem vision/File Search**). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional. **Fase 6** (planejada): multimodal/vision, preview persistente no chat e File Search.
 
-Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, File Search e GitHub.
+Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, **entrada multimodal (imagens e documentos)**, File Search e GitHub.
 
 ## 1. Objetivo do produto
 
@@ -945,6 +945,61 @@ Quando arquivo for criado, atualizado, removido ou permissao mudar:
 3. atualizar/remover no vector store;
 4. registrar falha se houver erro.
 
+### 8.4 Multimodal (vision) vs File Search — quando usar cada um
+
+A Fase 1.5 grava anexos no Plan Things e descreve-os no prompt. A **Fase 6** fecha o ciclo com **leitura real** pelo modelo e **preview confiavel** na UI. Sao tres capacidades complementares:
+
+| Capacidade | Objetivo | API OpenAI (Responses) | Quando usar no Plan Things |
+| ---------- | -------- | ---------------------- | -------------------------- |
+| **Vision (entrada multimodal)** | O modelo **ve** imagens anexadas no turno atual (objetos, texto em foto, UI, diagramas). | `content` da mensagem do usuario com partes `input_text` + `input_image` (`image_url`, data URL base64 ou `file_id` da Files API com `purpose: vision`). | `imageAttachments` do `contextSnapshot` apos upload local (`fileId` → blob no backend ou espelho OpenAI). |
+| **File Search (RAG)** | Busca **semantica e por palavra-chave** em documentos ja indexados (PDF, DOCX, MD, codigo, etc.). | Tool `file_search` + vector stores; citacoes em `message` / anotacoes. | Arquivos do workspace/plano/conversa indexados em `ai_file_index`; nao substitui permissao local. |
+| **Preview na UI** | Usuario revisa o que enviou no thread. | N/A (produto). | `UserChatMessage` resolve `fileId` → URL autenticada de download/preview (`GET /api/files/{fileId}/download` ou endpoint de thumbnail). |
+
+**Nao confundir:**
+
+- Metadados no system prompt (`fileId=...`, nome do arquivo) **nao** equivalem a vision; o modelo pode responder que "nao ve" a imagem — comportamento esperado ate a Fase 6.
+- File Search **nao** analisa uma foto recém-colada como vision; imagens entram por `input_image`. Documentos longos entram por indexacao + `file_search`, nao por colar bytes no prompt.
+- O upload Plan Things (`/api/files/upload`) e o upload OpenAI (Files API / vector store) podem coexistir: mapear `plan_things.file_id` → `openai_file_id` em `ai_file_index`.
+
+Referencia oficial — Images and vision (Responses API):
+
+```txt
+POST /v1/responses
+input:
+  - role: user
+    content:
+      - type: input_text
+        text: "Descreva esta imagem."
+      - type: input_image
+        file_id: file-abc          # ou image_url (URL publica ou data:...;base64,...)
+```
+
+Pontos da documentacao OpenAI relevantes para o desenho:
+
+- Modelos com vision processam imagens na **Responses API** (mesmo endpoint ja usado pelo `DefaultAiOpenAiClient`).
+- Formatos de imagem suportados: PNG, JPEG, WEBP, GIF nao animado; limites de payload e quantidade de imagens por request (ver guia Images and vision).
+- Tres formas de passar imagem: URL, base64 data URL, **`file_id`** criado via Files API (`purpose: "vision"`).
+- Varias imagens no mesmo turno: multiplas partes `input_image` no array `content` (contam como tokens).
+- Com `previous_response_id`, o turno atual ainda pode incluir `input_text` + `input_image` para anexos **desta** mensagem; estado anterior nao substitui vision do anexo novo.
+
+Referencia oficial — File Search:
+
+- Tool hospedada `file_search` na Responses API; exige vector store + arquivos com status `completed`.
+- Formatos indexaveis incluem PDF, DOCX, MD, TXT, codigo, etc. (lista completa no guia File Search); **nao** substitui vision para fotos/screenshots.
+- Vector store por conversa (secao 8.2) alinha com anexos ad hoc do chat; filtrar por metadata conforme workspace/plano/usuario.
+
+Fluxo alvo Fase 6 (resumo):
+
+```txt
+Usuario anexa imagem/arquivo no composer
+  -> upload Plan Things (ja existe na 1.5)
+  -> UI: preview no UserChatMessage via fileId (novo)
+  -> Backend orquestrador:
+       imagem? -> montar input_image (file_id OpenAI ou URL assinada de curta duracao)
+       documento? -> garantir index em vector store + file_search na request
+  -> Resposta do assistente pode citar arquivos (File Search) ou descrever imagem (vision)
+```
+
 ## 9. Integracao GitHub
 
 ### 9.1 Usar GitHub App
@@ -1521,8 +1576,14 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - Frontend monta e envia `contextSnapshot` no payload de `POST /messages`.
 - Backend aceita `contextSnapshot` em `CreateMessageRequest`.
 - Tabela `ai_context_snapshots` (migration `V22`) e retorno em `GET /messages`.
-- `AiContextBuilder` inclui snapshot no prompt do orquestrador.
+- `AiContextBuilder` inclui snapshot no prompt do orquestrador (**metadados em texto**: label, `fileId`, mime).
 - Upload de anexos locais via `/api/files/upload` antes do envio (`uploadComposerAttachments`).
+
+**Fora de escopo da 1.5 (previsto na Fase 6):**
+
+- O modelo **nao recebe pixels nem conteudo de arquivo** na Responses API; apenas descricao textual do snapshot.
+- O chat **nao garante preview persistente** de imagens apos envio (`previewUrl` local e removido apos upload; sem URL autenticada por `fileId` no historico).
+- **Vision multimodal** (`input_image`) e **leitura semantica de documentos** (File Search) ficam explicitamente na Fase 6.
 
 ### Fase 2: blocos estruturados reais
 
@@ -1572,15 +1633,54 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - Retornar entity reference real.
 - Atualizar conversa com bloco de resultado.
 
-### Fase 6: File Search
+### Fase 6: multimodal, leitura real de anexos e File Search
 
-- Criar mapeamento `ai_file_index`.
-- Criar fila de indexacao.
-- Indexar arquivos suportados.
-- Implementar capability interna `file.search_content`.
-- Expor ao modelo `file.search` quando arquivos estiverem habilitados.
-- Renderizar citacoes/referencias a arquivos.
-- Respeitar permissoes antes de anexar vector stores na request.
+Esta fase entrega o que a 1.5 **nao** promete: o modelo passa a **ver** imagens e a **consultar** conteudo de documentos indexados, e o usuario ve anexos de forma confiavel no historico do chat. Ver secao **8.4** e fontes OpenAI na secao **21**.
+
+#### 6.1 UI — preview persistente no thread
+
+- `UserChatMessage`: se `previewUrl` ausente e `fileId` presente, resolver URL autenticada de preview/download (reuso de `FileService` / `GET /api/files/{fileId}/download`).
+- Manter blob local na mensagem otimista ate o refresh, ou thumbnail cache por `fileId`.
+- Tratar falha de permissao (arquivo removido, outro workspace) com estado "indisponivel", nao placeholder generico sem explicacao.
+- Testes: `UserChatMessage.test.jsx`, `IntelligenceChat.test.jsx` com `fileId` mockado.
+
+#### 6.2 Backend — entrada multimodal (vision) na Responses API
+
+- Evoluir `OpenAiResponseRequest` / `DefaultAiOpenAiClient.buildRequestBody`: suportar `content` como array de partes (`input_text`, `input_image`), nao apenas `content` string.
+- Novo servico (ex.: `AiMultimodalInputBuilder`) a partir de `contextSnapshot` + `AiContextSnapshotRepository`:
+  - Para cada `imageAttachment` com `fileId` valido: carregar blob/mime via `FileService` (permissoes) e montar `input_image` (preferir `file_id` OpenAI apos upload com `purpose: vision`, ou data URL base64 para MVP interno se ZDR exigir).
+  - Texto do usuario permanece em `input_text`; instrucoes de escopo continuam no system prompt.
+- Integrar no `AiResponseOrchestrator.buildRequest` / `buildOpenAiStateInput` / `buildLocalStateInput`: anexos do turno atual viram partes multimodais, nao so linhas em `formatSnapshotForPrompt`.
+- Limites: tamanho/mime suportados (OpenAI + Plan Things), maximo de imagens por mensagem alinhado a `MAX_ATTACHMENTS`, recusar tipos nao-imagem para vision com erro claro.
+- Configuracao: flag `app.intelligence.multimodal-enabled` (default false ate rollout); validar que o modelo configurado suporta vision (`gpt-5.4-mini` conforme pagina do modelo).
+- Auditoria: registrar quais `fileId` foram enviados ao provedor (sem logar bytes).
+
+#### 6.3 Backend — File Search e indexacao de documentos
+
+- Criar mapeamento `ai_file_index` (secao 8.2).
+- Criar fila de indexacao ao criar/atualizar/remover arquivo (secao 8.3).
+- Upload/espelhamento para OpenAI Files API + anexar a vector store (workspace e/ou conversa).
+- Indexar formatos suportados pelo File Search (PDF, DOCX, MD, TXT, codigo, etc. — ver guia oficial).
+- Incluir tool `file_search` no body da Responses API quando arquivos estiverem habilitados no escopo da conversa.
+- Implementar capability interna `file.search_content`; expor ao modelo como tool model-facing quando registry existir (Fase 3+), ou injetar vector stores diretamente na Fase 6 se tools ainda nao estiverem prontas.
+- Renderizar citacoes/referencias a arquivos na UI (`FileReferenceBlock`, anotacoes no markdown).
+- **Sempre** filtrar vector stores e arquivos pela permissao Plan Things antes da request; nunca confiar só no isolamento da OpenAI.
+
+#### 6.4 Matriz anexo → tratamento
+
+| Tipo no composer | UI (6.1) | Modelo (6.2 / 6.3) |
+| -------------- | -------- | ------------------ |
+| Imagem (png, jpg, webp, gif) | Preview via `fileId` | `input_image` (vision) |
+| PDF, DOCX, planilhas, codigo, txt | Linha com nome + abrir download | Indexar + `file_search`; opcional citar `fileId` no prompt |
+| Chip de plano/card (inline) | Chips em `UserChatMessage` | Texto no system prompt (ja existe) |
+
+#### 6.5 Definition of Done da Fase 6
+
+- Usuario envia screenshot/foto com texto; a resposta descreve conteudo visivel da imagem (eval manual).
+- Historico do chat mostra thumbnail/preview da imagem apos reload (`GET /messages`).
+- Usuario anexa PDF; pergunta sobre conteudo; resposta usa File Search com citacao ou sumario fiel (eval manual).
+- Permissao negada: arquivo nao indexado nem enviado ao provedor.
+- Testes automatizados: builder multimodal (unit), integracao com mock OpenAI (input contem `input_image`), indexacao enqueue, UI preview com `fileId`.
 
 ### Fase 7: GitHub read-only
 
@@ -1619,6 +1719,18 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 
 **A adicionar:**
 
+Backend (Fase 6 — multimodal e arquivos):
+
+- testes de `AiMultimodalInputBuilder` (ou equivalente): montagem de `input_image` + limites de mime;
+- testes de integracao: mensagem com `contextSnapshot.imageAttachments` gera request OpenAI com partes multimodais;
+- testes de indexacao `ai_file_index` e fila;
+- testes de permissao: `fileId` de outro workspace nao entra na request.
+
+Frontend (Fase 6):
+
+- preview de imagem no `UserChatMessage` via `fileId`;
+- regressao do fluxo upload → envio → reload da conversa.
+
 Backend:
 
 - testes unitarios de `AiToolPermissionService`;
@@ -1646,7 +1758,9 @@ Evals:
 - usuario pede resumo do board;
 - usuario pede commits recentes;
 - usuario pede anexo de commit em cartao;
-- usuario pede acao sem permissao.
+- usuario pede acao sem permissao;
+- usuario envia imagem e pergunta "o que ha nesta imagem?" (vision — Fase 6);
+- usuario envia PDF e pergunta por clausula especifica (File Search — Fase 6).
 
 ## 17. Seguranca e privacidade
 
@@ -1662,6 +1776,8 @@ Regras:
 - payloads podem conter dados sensiveis, portanto precisam de retencao definida;
 - GitHub webhook sempre validado por assinatura;
 - File Search deve respeitar permissoes locais.
+- Imagens e documentos enviados a vision/File Search devem passar pelas mesmas regras de workspace/plano que o download local; nao expor URL publica permanente do blob.
+- Retencao e exclusao: ao apagar arquivo no Plan Things, remover/espelhar exclusao no `ai_file_index` e vector store OpenAI quando aplicavel.
 
 ## 18. Observabilidade
 
@@ -1735,6 +1851,7 @@ MVP pronto quando:
 OpenAI:
 
 - Function Calling: https://developers.openai.com/api/docs/guides/function-calling
+- Images and vision (Responses API, `input_image`, Files API `purpose: vision`): https://developers.openai.com/api/docs/guides/images-vision
 - File Search: https://developers.openai.com/api/docs/guides/tools-file-search
 - Structured Outputs: https://developers.openai.com/api/docs/guides/structured-outputs
 - Conversation State: https://developers.openai.com/api/docs/guides/conversation-state
