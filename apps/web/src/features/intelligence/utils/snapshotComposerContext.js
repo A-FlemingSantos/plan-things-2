@@ -9,6 +9,7 @@ function cloneAttachmentChip(chip) {
     isImage: chip.isImage,
     previewUrl: chip.previewUrl ?? null,
     mimeType: chip.mimeType ?? null,
+    fileId: chip.fileId ?? null,
     isMock: chip.isMock ?? false,
   }
 }

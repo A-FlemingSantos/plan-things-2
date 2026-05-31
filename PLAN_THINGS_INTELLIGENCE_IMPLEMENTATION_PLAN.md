@@ -2,7 +2,7 @@
 
 Data de referencia: 2026-05-31
 
-**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 parcialmente concluida (chat real + SSE + markdown backend). Fase 1.5 iniciada no frontend, pendente no backend. Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional.
+**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto, upload de anexos no envio). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional.
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, File Search e GitHub.
 
@@ -25,11 +25,11 @@ O mesmo padrao vale para cartoes, listas, arquivos, membros, Inbox, commits, pul
 
 ### Superficies de UI
 
-| Superficie | Arquivo / rota | Comportamento hoje |
-| --- | --- | --- |
-| Launcher | `WorkspaceIntelligenceSection` | Composer + redirect para `/workspace/chat` |
-| Chat dedicado | `IntelligenceChat` (`/workspace/chat`) | Mock via `useMockAiConversation` |
-| Kanban inline | painel `#board-intelligence-panel` | Mesmo mock compartilhado |
+| Superficie    | Arquivo / rota                         | Comportamento hoje                         |
+| ------------- | -------------------------------------- | ------------------------------------------ |
+| Launcher      | `WorkspaceIntelligenceSection`         | Composer + redirect para `/workspace/chat` |
+| Chat dedicado | `IntelligenceChat` (`/workspace/chat`) | Mock via `useMockAiConversation`           |
+| Kanban inline | painel `#board-intelligence-panel`     | Mesmo mock compartilhado                   |
 
 Nenhuma superficie chama o backend de intelligence ainda.
 
@@ -1505,34 +1505,24 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - `InlineArtifactsList`: tools/status como inline retratil, fora dos blocos.
 - Cenarios: narrativa markdown → inline de tool/evento → proposta → entity reference.
 
-### Fase 1: chat real (markdown, sem tools mutantes) — **parcialmente concluida**
-
-Concluido:
+### Fase 1: chat real (markdown, sem tools mutantes) — **concluida**
 
 - `intelligenceApi.js`, `useAiConversation`, `useAiStream` ativos no `IntelligenceChat` e no painel IA do Kanban.
 - `AiResponseOrchestrator` executando `POST /messages` → OpenAI → SSE com `assistant.delta`, `assistant.completed`, `assistant.failed`.
 - Reuso/criacao de conversa por escopo.
 - Persistencia de bloco `MARKDOWN` no backend e renderizacao na UI.
-
-Pendencias:
-
-- Listagem de conversas (`GET /api/intelligence/conversations`) para toolbar real.
+- Listagem de conversas (`GET /api/intelligence/conversations`) com filtros de escopo/status.
 - Atualizacao de conversa (`PATCH /api/intelligence/conversations/{conversationId}`) para titulo/arquivamento.
 - Cancelamento de geracao (`POST /api/intelligence/conversations/{conversationId}/messages/{messageId}/cancel`).
-- Compaction (`context_management`) + persistencia de metadados em `ai_compaction_items`.
+- Compaction (`context_management`) + metadados em `ai_compaction_items` quando uso de tokens excede threshold.
 
-### Fase 1.5: contexto anexado persistido — **iniciada (frontend)**
+### Fase 1.5: contexto anexado persistido — **concluida**
 
-Concluido (parcial):
-
-- Frontend ja monta e envia `contextSnapshot` no payload de `POST /messages`.
-
-Pendencias:
-
-- Backend aceitar `contextSnapshot` no contrato de `CreateMessageRequest`.
-- Criar e persistir `ai_context_snapshots`.
-- Incluir snapshot no contexto de prompt (`AiContextBuilder`/orquestracao).
-- Upload real de anexos (hoje apenas preview/local no composer).
+- Frontend monta e envia `contextSnapshot` no payload de `POST /messages`.
+- Backend aceita `contextSnapshot` em `CreateMessageRequest`.
+- Tabela `ai_context_snapshots` (migration `V22`) e retorno em `GET /messages`.
+- `AiContextBuilder` inclui snapshot no prompt do orquestrador.
+- Upload de anexos locais via `/api/files/upload` antes do envio (`uploadComposerAttachments`).
 
 ### Fase 2: blocos estruturados reais
 

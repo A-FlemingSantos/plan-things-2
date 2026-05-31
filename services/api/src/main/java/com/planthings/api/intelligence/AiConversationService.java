@@ -13,6 +13,8 @@ import com.planthings.api.intelligence.model.AiConversationScopeType;
 import com.planthings.api.intelligence.model.AiConversationStatus;
 import com.planthings.api.intelligence.model.AiMessageRole;
 import com.planthings.api.intelligence.model.AiMessageStatus;
+import com.planthings.api.intelligence.persistence.AiContextSnapshotEntity;
+import com.planthings.api.intelligence.persistence.AiContextSnapshotRepository;
 import com.planthings.api.intelligence.persistence.AiConversationEntity;
 import com.planthings.api.intelligence.persistence.AiConversationRepository;
 import com.planthings.api.intelligence.persistence.AiMessageBlockEntity;
@@ -47,6 +49,8 @@ public class AiConversationService {
   private final AiConversationRepository conversationRepository;
   private final AiMessageRepository messageRepository;
   private final AiMessageBlockRepository messageBlockRepository;
+  private final AiContextSnapshotRepository contextSnapshotRepository;
+  private final AiContextBuilder contextBuilder;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
 
   public AiConversationService(
@@ -58,6 +62,8 @@ public class AiConversationService {
       AiConversationRepository conversationRepository,
       AiMessageRepository messageRepository,
       AiMessageBlockRepository messageBlockRepository,
+      AiContextSnapshotRepository contextSnapshotRepository,
+      AiContextBuilder contextBuilder,
       BrazilDateTimeMapper brazilDateTimeMapper
   ) {
     this.intelligenceFeatureService = intelligenceFeatureService;
@@ -68,6 +74,8 @@ public class AiConversationService {
     this.conversationRepository = conversationRepository;
     this.messageRepository = messageRepository;
     this.messageBlockRepository = messageBlockRepository;
+    this.contextSnapshotRepository = contextSnapshotRepository;
+    this.contextBuilder = contextBuilder;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
   }
 
@@ -126,6 +134,44 @@ public class AiConversationService {
   }
 
   @Transactional(readOnly = true)
+  public List<ConversationSummary> listConversations(ListConversationsQuery query) {
+    intelligenceFeatureService.requireEnabled();
+
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(currentUser);
+    AiConversationStatus statusFilter = query.status() == null ? AiConversationStatus.ACTIVE : query.status();
+
+    List<AiConversationEntity> conversations = conversationRepository
+        .findByWorkspaceIdAndCreatedByUserIdAndStatusOrderByUpdatedAtDesc(
+            workspace.getId(),
+            currentUser.getId(),
+            statusFilter
+        );
+
+    return conversations.stream()
+        .filter(conversation -> matchesScopeFilter(conversation, query))
+        .limit(Math.min(Math.max(query.limit(), 1), 100))
+        .map(this::toConversationSummary)
+        .toList();
+  }
+
+  @Transactional
+  public ConversationDetails updateConversation(UUID conversationId, UpdateConversationCommand command) {
+    intelligenceFeatureService.requireEnabled();
+    AiConversationEntity conversation = requireOwnedConversation(conversationId);
+
+    if (command.title() != null) {
+      conversation.setTitle(normalizeTitle(command.title()));
+    }
+    if (command.status() != null) {
+      conversation.setStatus(command.status());
+    }
+
+    conversationRepository.save(conversation);
+    return toConversationDetails(conversation);
+  }
+
+  @Transactional(readOnly = true)
   public List<MessageDetails> listMessages(UUID conversationId) {
     intelligenceFeatureService.requireEnabled();
     requireOwnedConversation(conversationId);
@@ -135,10 +181,10 @@ public class AiConversationService {
   }
 
   @Transactional
-  public MessageAcceptedResult createUserMessage(UUID conversationId, String content) {
+  public MessageAcceptedResult createUserMessage(UUID conversationId, String content, Object contextSnapshot) {
     intelligenceFeatureService.requireEnabled();
 
-    String normalizedContent = normalizeContent(content);
+    String normalizedContent = normalizeContent(content, contextSnapshot);
     AiConversationEntity conversation = requireOwnedConversation(conversationId);
     OffsetDateTime userCreatedAt = OffsetDateTime.now(ZoneOffset.UTC).minusNanos(1_000_000);
 
@@ -149,6 +195,8 @@ public class AiConversationService {
     userMessage.setContentText(normalizedContent);
     userMessage.setCreatedAt(userCreatedAt);
     messageRepository.save(userMessage);
+
+    persistContextSnapshot(conversation, userMessage.getId(), contextSnapshot);
 
     AiMessageEntity assistantMessage = new AiMessageEntity();
     assistantMessage.setConversationId(conversation.getId());
@@ -166,6 +214,38 @@ public class AiConversationService {
     );
   }
 
+  @Transactional
+  public MessageDetails cancelAssistantMessage(UUID conversationId, UUID messageId) {
+    intelligenceFeatureService.requireEnabled();
+    requireOwnedConversation(conversationId);
+
+    AiMessageEntity assistantMessage = messageRepository.findById(messageId)
+        .orElseThrow(() -> new NotFoundException(
+            "MENSAGEM_NAO_ENCONTRADA",
+            "Nao encontramos a mensagem informada."
+        ));
+
+    if (!assistantMessage.getConversationId().equals(conversationId)) {
+      throw new NotFoundException("MENSAGEM_NAO_ENCONTRADA", "Nao encontramos a mensagem informada.");
+    }
+    if (assistantMessage.getRole() != AiMessageRole.ASSISTANT) {
+      throw new BadRequestException("MENSAGEM_INVALIDA", "Somente respostas do assistente podem ser canceladas.");
+    }
+
+    AiMessageStatus status = assistantMessage.getStatus();
+    if (status == AiMessageStatus.COMPLETED || status == AiMessageStatus.FAILED || status == AiMessageStatus.CANCELLED) {
+      throw new BadRequestException("MENSAGEM_JA_FINALIZADA", "Esta resposta ja foi concluida ou cancelada.");
+    }
+
+    assistantMessage.setStatus(AiMessageStatus.CANCELLED);
+    if (!StringUtils.hasText(assistantMessage.getContentText())) {
+      assistantMessage.setContentText("Resposta cancelada.");
+    }
+    messageRepository.save(assistantMessage);
+
+    return toMessageDetails(assistantMessage);
+  }
+
   @Transactional(readOnly = true)
   public AiConversationEntity requireOwnedConversation(UUID conversationId) {
     UUID userId = authenticatedUserService.requireUserId();
@@ -180,10 +260,44 @@ public class AiConversationService {
     return DEFAULT_SYSTEM_PROMPT;
   }
 
+  private void persistContextSnapshot(AiConversationEntity conversation, UUID messageId, Object contextSnapshot) {
+    if (contextSnapshot == null) {
+      return;
+    }
+
+    String contextJson = contextBuilder.serializeSnapshot(contextSnapshot);
+    if (!StringUtils.hasText(contextJson) || "{}".equals(contextJson.trim())) {
+      return;
+    }
+
+    AiContextSnapshotEntity snapshot = new AiContextSnapshotEntity();
+    snapshot.setConversationId(conversation.getId());
+    snapshot.setMessageId(messageId);
+    snapshot.setWorkspaceId(conversation.getWorkspaceId());
+    snapshot.setPlanId(conversation.getPlanId());
+    snapshot.setContextJson(contextJson);
+    snapshot.setTokenEstimate(contextBuilder.estimateTokenCount(contextJson));
+    contextSnapshotRepository.save(snapshot);
+  }
+
+  private boolean matchesScopeFilter(AiConversationEntity conversation, ListConversationsQuery query) {
+    if (query.planId() != null && !query.planId().equals(conversation.getPlanId())) {
+      return false;
+    }
+    if (query.cardId() != null && !query.cardId().equals(conversation.getCardId())) {
+      return false;
+    }
+    return true;
+  }
+
   private MessageDetails toMessageDetails(AiMessageEntity message) {
     List<MessageBlockDetails> blocks = messageBlockRepository.findByMessageIdOrderByPositionAsc(message.getId()).stream()
         .map(this::toMessageBlockDetails)
         .toList();
+
+    Object contextSnapshot = contextSnapshotRepository.findByMessageId(message.getId())
+        .map(entity -> contextBuilder.deserializeSnapshotForApi(entity.getContextJson()))
+        .orElse(null);
 
     return new MessageDetails(
         message.getId(),
@@ -194,6 +308,7 @@ public class AiConversationService {
         message.getOpenaiResponseId(),
         message.getErrorCode(),
         blocks,
+        contextSnapshot,
         toDateTime(message.getCreatedAt())
     );
   }
@@ -209,6 +324,19 @@ public class AiConversationService {
         block.getEntityId(),
         block.getPayloadJson(),
         block.getSnapshotJson()
+    );
+  }
+
+  private ConversationSummary toConversationSummary(AiConversationEntity conversation) {
+    return new ConversationSummary(
+        conversation.getId(),
+        conversation.getPlanId(),
+        conversation.getCardId(),
+        conversation.getTitle(),
+        conversation.getScopeType().name(),
+        conversation.getStatus().name(),
+        toDateTime(conversation.getCreatedAt()),
+        toDateTime(conversation.getUpdatedAt())
     );
   }
 
@@ -238,11 +366,12 @@ public class AiConversationService {
     return title.trim();
   }
 
-  private String normalizeContent(String content) {
-    if (!StringUtils.hasText(content)) {
-      throw new BadRequestException("MENSAGEM_VAZIA", "Escreva uma mensagem antes de enviar.");
+  private String normalizeContent(String content, Object contextSnapshot) {
+    String normalized = StringUtils.hasText(content) ? content.trim() : "";
+    if (!StringUtils.hasText(normalized) && contextSnapshot == null) {
+      throw new BadRequestException("MENSAGEM_VAZIA", "Escreva uma mensagem ou anexe contexto antes de enviar.");
     }
-    return content.trim();
+    return normalized;
   }
 
   public record CreateConversationCommand(
@@ -267,6 +396,37 @@ public class AiConversationService {
   ) {
   }
 
+  public record ListConversationsQuery(
+      UUID planId,
+      UUID cardId,
+      AiConversationStatus status,
+      int limit
+  ) {
+    public ListConversationsQuery {
+      if (limit <= 0) {
+        limit = 30;
+      }
+    }
+  }
+
+  public record UpdateConversationCommand(
+      String title,
+      AiConversationStatus status
+  ) {
+  }
+
+  public record ConversationSummary(
+      UUID id,
+      UUID planId,
+      UUID cardId,
+      String title,
+      String scopeType,
+      String status,
+      ApiDateTimeDto createdAt,
+      ApiDateTimeDto updatedAt
+  ) {
+  }
+
   public record MessageDetails(
       UUID id,
       UUID conversationId,
@@ -276,6 +436,7 @@ public class AiConversationService {
       String openaiResponseId,
       String errorCode,
       List<MessageBlockDetails> blocks,
+      Object contextSnapshot,
       ApiDateTimeDto createdAt
   ) {
   }

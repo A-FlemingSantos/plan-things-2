@@ -10,4 +10,10 @@ public interface AiConversationRepository extends JpaRepository<AiConversationEn
   Optional<AiConversationEntity> findByIdAndCreatedByUserId(UUID id, UUID createdByUserId);
 
   List<AiConversationEntity> findByWorkspaceIdAndCreatedByUserIdOrderByUpdatedAtDesc(UUID workspaceId, UUID createdByUserId);
+
+  List<AiConversationEntity> findByWorkspaceIdAndCreatedByUserIdAndStatusOrderByUpdatedAtDesc(
+      UUID workspaceId,
+      UUID createdByUserId,
+      com.planthings.api.intelligence.model.AiConversationStatus status
+  );
 }

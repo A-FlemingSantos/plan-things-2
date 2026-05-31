@@ -32,3 +32,42 @@ export function createIntelligenceMessage(conversationId, payload, { token } = {
     body: payload,
   })
 }
+
+export function listIntelligenceConversations({
+  token,
+  planId = null,
+  cardId = null,
+  status = 'ACTIVE',
+  limit = 30,
+} = {}) {
+  const params = new URLSearchParams()
+  if (planId) params.set('planId', planId)
+  if (cardId) params.set('cardId', cardId)
+  if (status) params.set('status', status)
+  if (limit) params.set('limit', String(limit))
+
+  const query = params.toString()
+  const path = query
+    ? `/api/intelligence/conversations?${query}`
+    : '/api/intelligence/conversations'
+
+  return apiRequest(path, { token })
+}
+
+export function updateIntelligenceConversation(conversationId, payload, { token } = {}) {
+  return apiRequest(`/api/intelligence/conversations/${conversationId}`, {
+    method: 'PATCH',
+    token,
+    body: payload,
+  })
+}
+
+export function cancelIntelligenceMessage(conversationId, messageId, { token } = {}) {
+  return apiRequest(
+    `/api/intelligence/conversations/${conversationId}/messages/${messageId}/cancel`,
+    {
+      method: 'POST',
+      token,
+    },
+  )
+}

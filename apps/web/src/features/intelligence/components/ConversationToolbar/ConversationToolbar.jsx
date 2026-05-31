@@ -324,6 +324,9 @@ function resolveConnectorState(activeConnectorIdSet, connectorOverrides, connect
 
 export default function ConversationToolbar({
   conversationTitle = 'Nova conversa',
+  recentConversations = null,
+  onSelectConversation = null,
+  onArchiveConversation = null,
   planId = null,
   planName = null,
   cardId = null,
@@ -345,6 +348,7 @@ export default function ConversationToolbar({
   const scopeLabel = resolveScopeLabel({ planId, planName, cardId, cardTitle })
   const scopeKind = resolveScopeKind({ planId, cardId })
   const loadedItemCount = MOCK_LOADED_ITEMS.length
+  const conversationItems = recentConversations ?? MOCK_RECENT_CONVERSATIONS
 
   const filteredItems = useMemo(() => {
     const query = filesFilter.trim().toLowerCase()
@@ -481,7 +485,7 @@ export default function ConversationToolbar({
             {openSections.conversations ? (
               <div id={sectionIds.conversations} className={styles.sectionBody}>
                 <ul className={styles.list}>
-                  {MOCK_RECENT_CONVERSATIONS.map((conversation) => (
+                  {conversationItems.map((conversation) => (
                     <li key={conversation.id} className={styles.listItem}>
                       <span className={styles.listItemLabel}>{conversation.title}</span>
                       <div className={styles.listItemActions}>
@@ -496,6 +500,7 @@ export default function ConversationToolbar({
                           type="button"
                           className={styles.listItemAction}
                           aria-label={`Arquivar "${conversation.title}"`}
+                          onClick={() => onArchiveConversation?.(conversation.id)}
                         >
                           Arquivar
                         </button>

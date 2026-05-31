@@ -7,6 +7,7 @@ import {
   mapApiMessageToThreadMessage,
 } from '../../../shared/contracts/intelligenceContracts.js'
 import {
+  cancelIntelligenceMessage,
   createIntelligenceConversation,
   createIntelligenceMessage,
   listIntelligenceMessages,
@@ -16,6 +17,7 @@ import {
   keepComposerInlineChips,
   snapshotComposerContext,
 } from '../utils/snapshotComposerContext.js'
+import { uploadComposerAttachments } from '../utils/uploadComposerAttachments.js'
 import { useAiStream } from './useAiStream.js'
 
 const WORKSPACE_LAYOUT_SUBMIT_DELAY_MS = 480
@@ -229,10 +231,14 @@ export function useAiConversation({
     if (isThinking) return false
     if (!text && !hasComposerContext(chips)) return false
 
-    const contextSnapshot = snapshotComposerContext(chips)
+    const localSnapshot = snapshotComposerContext(chips)
     try {
       const targetConversationId = await ensureConversation()
       if (!targetConversationId) return false
+
+      const contextSnapshot = await uploadComposerAttachments(localSnapshot, chips, {
+        token: accessToken,
+      })
 
       const acceptedMessage = await createIntelligenceMessage(
         targetConversationId,
@@ -325,6 +331,37 @@ export function useAiConversation({
     return Boolean(String(draftText ?? '').trim()) || hasComposerContext(chips)
   }, [accessToken, aiChips, enabled, isAwaitingInitialSubmit, isThinking])
 
+  const cancelActiveGeneration = useCallback(async () => {
+    if (!accessToken || !conversationId || !isThinking) return false
+
+    const pendingAssistant = [...messages].reverse().find((message) => {
+      const status = String(message.status ?? '').toUpperCase()
+      return message.role === 'assistant' && (status === 'PENDING' || status === 'STREAMING')
+    })
+
+    if (!pendingAssistant?.id) return false
+
+    try {
+      await cancelIntelligenceMessage(conversationId, pendingAssistant.id, { token: accessToken })
+      setMessages((current) => current.map((message) => (
+        message.id === pendingAssistant.id
+          ? {
+            ...message,
+            status: 'CANCELLED',
+            text: 'Resposta cancelada.',
+            contentText: 'Resposta cancelada.',
+            errorCode: 'CANCELLED',
+          }
+          : message
+      )))
+      setIsThinking(false)
+      return true
+    } catch (error) {
+      setStreamError(error instanceof Error ? error.message : 'Nao foi possivel cancelar a resposta.')
+      return false
+    }
+  }, [accessToken, conversationId, isThinking, messages])
+
   return {
     conversationId,
     messages,
@@ -332,6 +369,7 @@ export function useAiConversation({
     hasConversation,
     streamError,
     submitMessage,
+    cancelActiveGeneration,
     canSubmitWith,
     refreshMessages,
   }

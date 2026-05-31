@@ -102,6 +102,13 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       body.put("previous_response_id", request.previousResponseId());
     }
 
+    if (request.compactThreshold() != null && request.compactThreshold() > 0) {
+      ArrayNode contextManagement = body.putArray("context_management");
+      ObjectNode compaction = contextManagement.addObject();
+      compaction.put("type", "compaction");
+      compaction.put("compact_threshold", request.compactThreshold());
+    }
+
     return body;
   }
 

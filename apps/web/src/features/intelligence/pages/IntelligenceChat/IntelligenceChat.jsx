@@ -13,6 +13,7 @@ import {
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import IntelligenceConversationThread from '../../components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
 import ConversationToolbar from '../../components/ConversationToolbar/ConversationToolbar.jsx'
+import { listIntelligenceConversations, updateIntelligenceConversation } from '../../api/intelligenceApi.js'
 import { useAiConversation } from '../../hooks/useAiConversation.js'
 import styles from './IntelligenceChat.module.css'
 
@@ -73,7 +74,10 @@ export default function IntelligenceChat() {
   const [isListening, setIsListening] = useState(false)
   const [voiceFeedback, setVoiceFeedback] = useState('')
 
+  const [recentConversations, setRecentConversations] = useState([])
+
   const {
+    conversationId,
     messages,
     isThinking,
     hasConversation,
@@ -100,6 +104,46 @@ export default function IntelligenceChat() {
   const lastVoiceRecognitionErrorRef = useRef('')
   const voiceTranscriptEntriesRef = useRef(new Map())
   const voiceRecognitionSequenceRef = useRef(0)
+
+  useEffect(() => {
+    if (!accessToken) return undefined
+
+    let cancelled = false
+
+    void listIntelligenceConversations({
+      token: accessToken,
+      planId: chatScope.planId,
+      cardId: chatScope.cardId,
+    })
+      .then((items) => {
+        if (cancelled) return
+        setRecentConversations(
+          (Array.isArray(items) ? items : []).map((conversation) => ({
+            id: String(conversation.id),
+            title: conversation.title || 'Conversa sem título',
+          })),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setRecentConversations([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [accessToken, chatScope.cardId, chatScope.planId, conversationId])
+
+  const activeConversationTitle = useMemo(() => {
+    const match = recentConversations.find((item) => item.id === conversationId)
+    return match?.title ?? 'Nova conversa'
+  }, [conversationId, recentConversations])
+
+  const handleArchiveConversation = async (targetConversationId) => {
+    if (!accessToken || !targetConversationId) return
+
+    await updateIntelligenceConversation(targetConversationId, { status: 'ARCHIVED' }, { token: accessToken })
+    setRecentConversations((current) => current.filter((item) => item.id !== targetConversationId))
+  }
 
   const accentStyle = {
     '--intelligence-theme-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
@@ -322,7 +366,9 @@ export default function IntelligenceChat() {
           sticky
           centerContent={(
             <ConversationToolbar
-              conversationTitle="Nova conversa"
+              conversationTitle={activeConversationTitle}
+              recentConversations={recentConversations}
+              onArchiveConversation={handleArchiveConversation}
               planId={chatScope.planId}
               planName={chatScope.planName}
               cardId={chatScope.cardId}

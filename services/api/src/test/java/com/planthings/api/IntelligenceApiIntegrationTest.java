@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -156,6 +157,102 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
     assertTrue(requests.get(1).input().stream().anyMatch(item ->
         "user".equals(item.role()) && item.content().contains("Segunda pergunta?")
     ));
+  }
+
+  @Test
+  void shouldPersistContextSnapshotAndListConversations() throws Exception {
+    when(aiOpenAiClient.createResponseStream(any(), any())).thenReturn(new OpenAiResponseResult(
+        "resp_ctx_1",
+        "Entendi o contexto anexado.",
+        "{\"total_tokens\":80}"
+    ));
+
+    String token = registerAndGetToken("Arthur Snapshot", "arthur-snapshot@example.com", "12345678");
+
+    String conversationId = readJson(mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "scopeType": "WORKSPACE",
+                  "title": "Com contexto"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    JsonNode accepted = readJson(mockMvc.perform(post("/api/intelligence/conversations/" + conversationId + "/messages")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "content": "Analise o plano anexado",
+                  "contextSnapshot": {
+                    "version": 1,
+                    "contextChips": [
+                      { "id": "chip-1", "kind": "plan", "label": "Marketing", "type": "plan" }
+                    ],
+                    "imageAttachments": [],
+                    "fileAttachments": []
+                  }
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    waitForMessageToSettle(token, conversationId, accepted.path("assistantMessageId").asText());
+
+    JsonNode messages = readJson(mockMvc.perform(get("/api/intelligence/conversations/" + conversationId + "/messages")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    assertEquals("Marketing", messages.path(0).path("contextSnapshot").path("contextChips").path(0).path("label").asText());
+
+    mockMvc.perform(get("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data[0].id").value(conversationId))
+        .andExpect(jsonPath("$.data[0].title").value("Com contexto"));
+
+    mockMvc.perform(patch("/api/intelligence/conversations/" + conversationId)
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "title": "Contexto revisado",
+                  "status": "ARCHIVED"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.title").value("Contexto revisado"))
+        .andExpect(jsonPath("$.data.status").value("ARCHIVED"));
+  }
+
+  @Test
+  void shouldCancelPendingAssistantMessage() throws Exception {
+    when(aiOpenAiClient.createResponseStream(any(), any())).thenAnswer(invocation -> {
+      Thread.sleep(2_000);
+      return new OpenAiResponseResult("resp_slow", "Resposta tardia.", "{\"total_tokens\":10}");
+    });
+
+    String token = registerAndGetToken("Arthur Cancel", "arthur-cancel@example.com", "12345678");
+    String conversationId = readJson(mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                { "scopeType": "WORKSPACE", "title": "Cancelar" }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    JsonNode accepted = postMessage(token, conversationId, "Gere uma resposta longa");
+
+    mockMvc.perform(post("/api/intelligence/conversations/" + conversationId + "/messages/"
+            + accepted.path("assistantMessageId").asText() + "/cancel")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("CANCELLED"));
   }
 
   @Test

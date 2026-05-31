@@ -116,6 +116,7 @@ export async function createAttachmentFromFile(file) {
     isImage,
     previewUrl,
     mimeType: file.type,
+    sourceFile: file,
   }
 }
 

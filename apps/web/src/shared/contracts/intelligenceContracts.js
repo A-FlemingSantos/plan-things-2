@@ -9,6 +9,7 @@
  * @property {boolean} [isImage]
  * @property {string|null} [previewUrl]
  * @property {string|null} [mimeType]
+ * @property {string|null} [fileId]
  * @property {boolean} [isMock]
  */
 
@@ -171,6 +172,7 @@ function cloneAttachmentChip(chip = {}) {
     isImage: Boolean(chip.isImage),
     previewUrl: chip.previewUrl ?? null,
     mimeType: chip.mimeType ?? null,
+    fileId: chip.fileId != null ? String(chip.fileId) : null,
     isMock: chip.isMock ?? false,
   }
 }

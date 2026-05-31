@@ -1,7 +1,9 @@
 package com.planthings.api.intelligence;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.planthings.api.intelligence.persistence.AiContextSnapshotRepository;
 import com.planthings.api.intelligence.model.AiMessageBlockType;
 import com.planthings.api.intelligence.model.AiMessageRole;
 import com.planthings.api.intelligence.model.AiMessageStatus;
@@ -21,8 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -48,8 +52,12 @@ public class AiResponseOrchestrator {
   private final AiOpenAiClient aiOpenAiClient;
   private final IntelligenceProperties properties;
   private final AiStreamingService streamingService;
+  private final AiContextSnapshotRepository contextSnapshotRepository;
+  private final AiContextBuilder contextBuilder;
+  private final AiCompactionService compactionService;
   private final TransactionTemplate transactionTemplate;
   private final ObjectMapper objectMapper;
+  private final ConcurrentHashMap<UUID, AtomicBoolean> cancellationFlags = new ConcurrentHashMap<>();
   private final ExecutorService executor = Executors.newCachedThreadPool(runnable -> {
     Thread thread = new Thread(runnable, "ai-response-orchestrator");
     thread.setDaemon(true);
@@ -63,6 +71,9 @@ public class AiResponseOrchestrator {
       AiOpenAiClient aiOpenAiClient,
       IntelligenceProperties properties,
       AiStreamingService streamingService,
+      AiContextSnapshotRepository contextSnapshotRepository,
+      AiContextBuilder contextBuilder,
+      AiCompactionService compactionService,
       TransactionTemplate transactionTemplate,
       ObjectMapper objectMapper
   ) {
@@ -72,11 +83,20 @@ public class AiResponseOrchestrator {
     this.aiOpenAiClient = aiOpenAiClient;
     this.properties = properties;
     this.streamingService = streamingService;
+    this.contextSnapshotRepository = contextSnapshotRepository;
+    this.contextBuilder = contextBuilder;
+    this.compactionService = compactionService;
     this.transactionTemplate = transactionTemplate;
     this.objectMapper = objectMapper;
   }
 
+  public void requestCancellation(UUID assistantMessageId) {
+    cancellationFlags.computeIfAbsent(assistantMessageId, ignored -> new AtomicBoolean(false))
+        .set(true);
+  }
+
   public void enqueueResponse(UUID conversationId, UUID userMessageId, UUID assistantMessageId) {
+    cancellationFlags.putIfAbsent(assistantMessageId, new AtomicBoolean(false));
     executor.submit(() -> processResponse(conversationId, userMessageId, assistantMessageId));
   }
 
@@ -92,12 +112,28 @@ public class AiResponseOrchestrator {
         return;
       }
 
+      if (isCancellationRequested(assistantMessageId)) {
+        handleCancellation(conversationId, assistantMessageId);
+        return;
+      }
+
       markAssistantStreaming(assistantMessageId);
 
       OpenAiResponseResult response = aiOpenAiClient.createResponseStream(
           buildRequest(context),
-          delta -> streamAssistantDelta(conversationId, assistantMessageId, delta)
+          delta -> {
+            if (isCancellationRequested(assistantMessageId)) {
+              return;
+            }
+            streamAssistantDelta(conversationId, assistantMessageId, delta);
+          }
       );
+
+      if (isCancellationRequested(assistantMessageId)) {
+        handleCancellation(conversationId, assistantMessageId);
+        return;
+      }
+
       String outputText = normalizeOutputText(response.outputText());
 
       transactionTemplate.executeWithoutResult(status -> completeAssistantMessage(
@@ -107,12 +143,23 @@ public class AiResponseOrchestrator {
           outputText
       ));
 
+      compactionService.recordCompactionIfPresent(
+          conversationId,
+          assistantMessageId,
+          response.responseId(),
+          response.tokenUsageJson()
+      );
+
       streamingService.sendEvent(conversationId, "assistant.completed", Map.of(
           "conversationId", conversationId.toString(),
           "messageId", assistantMessageId.toString(),
           "status", AiMessageStatus.COMPLETED.name()
       ));
     } catch (Exception exception) {
+      if (isCancellationRequested(assistantMessageId)) {
+        handleCancellation(conversationId, assistantMessageId);
+        return;
+      }
       logger.warn("Falha ao processar resposta da conversa {}", conversationId, exception);
       transactionTemplate.executeWithoutResult(status -> failAssistantMessage(assistantMessageId, DEFAULT_ERROR_CODE, DEFAULT_ERROR_TEXT));
       streamingService.sendEvent(conversationId, "assistant.failed", Map.of(
@@ -122,7 +169,31 @@ public class AiResponseOrchestrator {
           "errorCode", DEFAULT_ERROR_CODE,
           "message", DEFAULT_ERROR_TEXT
       ));
+    } finally {
+      cancellationFlags.remove(assistantMessageId);
     }
+  }
+
+  private void handleCancellation(UUID conversationId, UUID assistantMessageId) {
+    transactionTemplate.executeWithoutResult(status -> {
+      AiMessageEntity assistantMessage = messageRepository.findById(assistantMessageId).orElse(null);
+      if (assistantMessage == null || assistantMessage.getStatus() == AiMessageStatus.CANCELLED) {
+        return;
+      }
+      if (assistantMessage.getStatus() == AiMessageStatus.COMPLETED) {
+        return;
+      }
+      assistantMessage.setStatus(AiMessageStatus.CANCELLED);
+      if (!StringUtils.hasText(assistantMessage.getContentText())) {
+        assistantMessage.setContentText("Resposta cancelada.");
+      }
+      messageRepository.save(assistantMessage);
+    });
+  }
+
+  private boolean isCancellationRequested(UUID assistantMessageId) {
+    AtomicBoolean flag = cancellationFlags.get(assistantMessageId);
+    return flag != null && flag.get();
   }
 
   private OrchestrationContext loadContext(UUID conversationId, UUID userMessageId, UUID assistantMessageId) {
@@ -135,6 +206,10 @@ public class AiResponseOrchestrator {
 
     List<OpenAiResponseRequest.OpenAiInputMessage> localConversationInput = buildLocalConversationInput(conversation.getId());
 
+    String contextSnapshotJson = contextSnapshotRepository.findByMessageId(userMessageId)
+        .map(snapshot -> snapshot.getContextJson())
+        .orElse(null);
+
     return new OrchestrationContext(
         conversation.getId(),
         conversation.getScopeType().name(),
@@ -142,7 +217,8 @@ public class AiResponseOrchestrator {
         conversation.getCardId(),
         conversation.getLastOpenaiResponseId(),
         localConversationInput,
-        userMessage.getContentText()
+        userMessage.getContentText(),
+        contextSnapshotJson
     );
   }
 
@@ -163,13 +239,18 @@ public class AiResponseOrchestrator {
       input = buildLocalStateInput(context);
     }
 
+    Integer compactThreshold = properties.getCompactThreshold() > 0
+        ? properties.getCompactThreshold()
+        : null;
+
     return new OpenAiResponseRequest(
         properties.getModel(),
         properties.getReasoningEffort(),
         properties.getMaxOutputTokens(),
         properties.isStoreOpenaiResponses(),
         useOpenAiState ? context.previousResponseId() : null,
-        input
+        input,
+        compactThreshold
     );
   }
 
@@ -184,6 +265,12 @@ public class AiResponseOrchestrator {
     }
     if (context.cardId() != null) {
       prompt.append("\nCartao em foco: ").append(context.cardId()).append('.');
+    }
+
+    JsonNode snapshot = contextBuilder.parseSnapshotJson(context.contextSnapshotJson());
+    String snapshotPrompt = contextBuilder.formatSnapshotForPrompt(snapshot);
+    if (StringUtils.hasText(snapshotPrompt)) {
+      prompt.append("\n\nContexto anexado pelo usuario nesta mensagem:\n").append(snapshotPrompt);
     }
 
     return prompt.toString();
@@ -222,6 +309,9 @@ public class AiResponseOrchestrator {
     AiConversationEntity conversation = conversationRepository.findById(conversationId).orElse(null);
     AiMessageEntity assistantMessage = messageRepository.findById(assistantMessageId).orElse(null);
     if (conversation == null || assistantMessage == null) {
+      return;
+    }
+    if (assistantMessage.getStatus() == AiMessageStatus.CANCELLED) {
       return;
     }
 
@@ -272,6 +362,9 @@ public class AiResponseOrchestrator {
     }
 
     String userContent = normalizeInputText(context.userContent());
+    if (!StringUtils.hasText(userContent) && StringUtils.hasText(context.contextSnapshotJson())) {
+      userContent = "Use o contexto anexado nesta mensagem para responder.";
+    }
     if (StringUtils.hasText(userContent)) {
       input.add(new OpenAiResponseRequest.OpenAiInputMessage("user", userContent));
     }
@@ -356,7 +449,8 @@ public class AiResponseOrchestrator {
       UUID cardId,
       String previousResponseId,
       List<OpenAiResponseRequest.OpenAiInputMessage> localConversationInput,
-      String userContent
+      String userContent,
+      String contextSnapshotJson
   ) {
   }
 }
