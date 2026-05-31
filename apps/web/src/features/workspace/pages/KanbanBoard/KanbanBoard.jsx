@@ -2595,6 +2595,7 @@ export default function KanbanBoard() {
                 messages={intelligenceMessages}
                 isThinking={isIntelligenceThinking}
                 useCustomScrollbar
+                scrollToBottomOnMount
                 className={styles.intelligencePanelThread}
                 classes={{
                   messages: styles.intelligencePanelMessages,

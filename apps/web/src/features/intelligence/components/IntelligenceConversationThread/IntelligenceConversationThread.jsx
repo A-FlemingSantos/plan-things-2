@@ -26,6 +26,7 @@ export default function IntelligenceConversationThread({
   ariaLabel = 'Conversa com o Intelligence',
   scrollIntoView = true,
   useCustomScrollbar = false,
+  scrollToBottomOnMount = false,
 }) {
   const {
     scroll: scrollClass,
@@ -38,12 +39,24 @@ export default function IntelligenceConversationThread({
   const endRef = useRef(null)
   const previousMessageCountRef = useRef(messages.length)
   const lastStreamScrollAtRef = useRef(0)
+  const initialBottomScrollDoneRef = useRef(false)
 
   useEffect(() => {
     if (!scrollIntoView) return
     const nextMessageCount = messages.length
     const previousMessageCount = previousMessageCountRef.current
     const isMessageAppended = nextMessageCount > previousMessageCount
+
+    if (
+      scrollToBottomOnMount
+      && !initialBottomScrollDoneRef.current
+      && nextMessageCount > 0
+    ) {
+      previousMessageCountRef.current = nextMessageCount
+      initialBottomScrollDoneRef.current = true
+      endRef.current?.scrollIntoView({ behavior: 'auto' })
+      return
+    }
 
     previousMessageCountRef.current = nextMessageCount
 
@@ -69,7 +82,7 @@ export default function IntelligenceConversationThread({
     }
 
     endRef.current?.scrollIntoView({ behavior: isMessageAppended ? 'smooth' : 'auto' })
-  }, [messages, isThinking, scrollIntoView])
+  }, [messages, isThinking, scrollIntoView, scrollToBottomOnMount])
 
   if (messages.length === 0) return null
 

@@ -1,10 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import IntelligenceConversationThread from './IntelligenceConversationThread.jsx'
 import styles from './IntelligenceConversationThread.module.css'
 
 describe('IntelligenceConversationThread', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
   it('returns null when there is no content to render', () => {
     const { container } = render(<IntelligenceConversationThread messages={[]} isThinking={false} />)
     expect(container.firstChild).toBeNull()
@@ -110,5 +114,23 @@ describe('IntelligenceConversationThread', () => {
 
     expect(screen.getByText('Resumo do workspace carregado (mock).')).toBeInTheDocument()
     expect(screen.getByText('Simulação — nenhuma ferramenta foi executada no servidor.')).toBeInTheDocument()
+  })
+
+  it('scrolls to the latest message on mount when requested', () => {
+    const scrollIntoViewSpy = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoViewSpy
+
+    render(
+      <IntelligenceConversationThread
+        messages={[
+          { id: 'u1', role: 'user', text: 'Primeira mensagem' },
+          { id: 'a1', role: 'assistant', text: 'Resposta mais recente', status: 'COMPLETED' },
+        ]}
+        isThinking={false}
+        scrollToBottomOnMount
+      />,
+    )
+
+    expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'auto' })
   })
 })
