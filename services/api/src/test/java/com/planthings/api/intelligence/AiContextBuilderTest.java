@@ -67,4 +67,39 @@ class AiContextBuilderTest {
         ))
     );
   }
+
+  @Test
+  void shouldAcceptFrontendGeneratedAttachmentType() {
+    String generatedType = "file-upload-product-screenshot-png-image-png-348921-1780252705803";
+
+    contextBuilder.validateAndNormalize(java.util.Map.of(
+        "version",
+        1,
+        "contextChips",
+        java.util.List.of(),
+        "imageAttachments",
+        java.util.List.of(java.util.Map.of(
+            "id",
+            "ctx-" + generatedType,
+            "kind",
+            "file",
+            "type",
+            generatedType,
+            "label",
+            "product-screenshot.png",
+            "isImage",
+            true,
+            "previewUrl",
+            "",
+            "mimeType",
+            "image/png",
+            "fileId",
+            "1b3896ff-1e55-4c15-b942-7ff5b3934352",
+            "isMock",
+            false
+        )),
+        "fileAttachments",
+        java.util.List.of()
+    ));
+  }
 }

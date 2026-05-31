@@ -14,6 +14,8 @@ public record AiContextSnapshotPayload(
     @Valid @Size(max = AiContextBuilder.MAX_ATTACHMENTS) List<AttachmentPayload> fileAttachments
 ) {
 
+  private static final int MAX_METADATA_LENGTH = 500;
+
   @JsonIgnoreProperties(ignoreUnknown = false)
   public record ContextChipPayload(
       @Size(max = 120) String id,
@@ -25,8 +27,8 @@ public record AiContextSnapshotPayload(
 
   @JsonIgnoreProperties(ignoreUnknown = false)
   public record AttachmentPayload(
-      @Size(max = 120) String id,
-      @Size(max = 40) String type,
+      @Size(max = MAX_METADATA_LENGTH) String id,
+      @Size(max = MAX_METADATA_LENGTH) String type,
       @Size(max = 40) String kind,
       @NotBlank @Size(max = AiContextBuilder.MAX_LABEL_LENGTH) String label,
       Boolean isImage,
