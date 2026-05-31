@@ -124,12 +124,10 @@ public class AiConversationController {
   ) {
     responseOrchestrator.requestCancellation(messageId);
     AiConversationService.MessageDetails cancelled = conversationService.cancelAssistantMessage(conversationId, messageId);
-    streamingService.sendEvent(conversationId, "assistant.failed", java.util.Map.of(
+    streamingService.sendEvent(conversationId, "assistant.cancelled", java.util.Map.of(
         "conversationId", conversationId.toString(),
         "messageId", messageId.toString(),
-        "status", "CANCELLED",
-        "errorCode", "CANCELLED",
-        "message", "Resposta cancelada."
+        "status", "CANCELLED"
     ));
     return ApiEnvelope.ok(cancelled);
   }

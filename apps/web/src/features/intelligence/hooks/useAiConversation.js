@@ -184,10 +184,43 @@ export function useAiConversation({
       return
     }
 
+    if (event.event === 'assistant.cancelled') {
+      const messageId = String(event.data?.messageId ?? '')
+      setMessages((current) => current.map((message) => (
+        message.id === messageId
+          ? {
+            ...message,
+            status: 'CANCELLED',
+            text: 'Resposta cancelada.',
+            contentText: 'Resposta cancelada.',
+            errorCode: 'CANCELLED',
+          }
+          : message
+      )))
+      setIsThinking(false)
+      return
+    }
+
     if (event.event === 'assistant.failed') {
       const messageId = String(event.data?.messageId ?? '')
-      const errorMessage = String(event.data?.message ?? 'Nao foi possivel obter resposta da IA agora.')
+      const status = String(event.data?.status ?? '').toUpperCase()
+      if (status === 'CANCELLED') {
+        setMessages((current) => current.map((message) => (
+          message.id === messageId
+            ? {
+              ...message,
+              status: 'CANCELLED',
+              text: 'Resposta cancelada.',
+              contentText: 'Resposta cancelada.',
+              errorCode: 'CANCELLED',
+            }
+            : message
+        )))
+        setIsThinking(false)
+        return
+      }
 
+      const errorMessage = String(event.data?.message ?? 'Nao foi possivel obter resposta da IA agora.')
       setMessages((current) => current.map((message) => (
         message.id === messageId
           ? {
@@ -323,6 +356,32 @@ export function useAiConversation({
     }
   }, [accessToken, conversationId, isThinking, refreshMessages])
 
+  const selectConversation = useCallback(async (targetConversationId) => {
+    if (!accessToken || !targetConversationId) return false
+    if (isThinking) return false
+
+    const normalizedId = String(targetConversationId)
+    if (normalizedId === conversationId) {
+      return true
+    }
+
+    conversationPromiseRef.current = null
+    initialPromptProcessedRef.current = true
+    setConversationId(normalizedId)
+    setMessages([])
+    setIsThinking(false)
+    setStreamError('')
+    setIsAwaitingInitialSubmit(false)
+
+    try {
+      await refreshMessages(normalizedId)
+      return true
+    } catch (error) {
+      setStreamError(error instanceof Error ? error.message : 'Nao foi possivel carregar a conversa.')
+      return false
+    }
+  }, [accessToken, conversationId, isThinking, refreshMessages])
+
   const hasConversation = messages.length > 0 || isThinking || isAwaitingInitialSubmit
 
   const canSubmitWith = useCallback((draftText, chips = aiChips) => {
@@ -370,6 +429,7 @@ export function useAiConversation({
     streamError,
     submitMessage,
     cancelActiveGeneration,
+    selectConversation,
     canSubmitWith,
     refreshMessages,
   }

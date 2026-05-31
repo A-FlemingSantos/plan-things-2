@@ -28,7 +28,7 @@ CREATE TABLE ai_compaction_items (
     output_item_ref NVARCHAR(200) NULL,
     opaque_payload_json NVARCHAR(MAX) NULL,
     CONSTRAINT fk_ai_compaction_items_conversation FOREIGN KEY (conversation_id) REFERENCES ai_conversations (id) ON DELETE CASCADE,
-    CONSTRAINT fk_ai_compaction_items_message FOREIGN KEY (message_id) REFERENCES ai_messages (id) ON DELETE SET NULL
+    CONSTRAINT fk_ai_compaction_items_message FOREIGN KEY (message_id) REFERENCES ai_messages (id) ON DELETE NO ACTION
 );
 
 CREATE INDEX ix_ai_compaction_items_conversation ON ai_compaction_items (conversation_id, created_at);

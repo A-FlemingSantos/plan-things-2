@@ -143,10 +143,11 @@ public class AiResponseOrchestrator {
           outputText
       ));
 
-      compactionService.recordCompactionIfPresent(
+      compactionService.recordCompactionOutput(
           conversationId,
           assistantMessageId,
           response.responseId(),
+          response.compactionOutputItemsJson(),
           response.tokenUsageJson()
       );
 
@@ -175,20 +176,29 @@ public class AiResponseOrchestrator {
   }
 
   private void handleCancellation(UUID conversationId, UUID assistantMessageId) {
-    transactionTemplate.executeWithoutResult(status -> {
+    boolean updated = Boolean.TRUE.equals(transactionTemplate.execute(status -> {
       AiMessageEntity assistantMessage = messageRepository.findById(assistantMessageId).orElse(null);
       if (assistantMessage == null || assistantMessage.getStatus() == AiMessageStatus.CANCELLED) {
-        return;
+        return false;
       }
       if (assistantMessage.getStatus() == AiMessageStatus.COMPLETED) {
-        return;
+        return false;
       }
       assistantMessage.setStatus(AiMessageStatus.CANCELLED);
       if (!StringUtils.hasText(assistantMessage.getContentText())) {
         assistantMessage.setContentText("Resposta cancelada.");
       }
       messageRepository.save(assistantMessage);
-    });
+      return true;
+    }));
+
+    if (Boolean.TRUE.equals(updated)) {
+      streamingService.sendEvent(conversationId, "assistant.cancelled", Map.of(
+          "conversationId", conversationId.toString(),
+          "messageId", assistantMessageId.toString(),
+          "status", AiMessageStatus.CANCELLED.name()
+      ));
+    }
   }
 
   private boolean isCancellationRequested(UUID assistantMessageId) {
@@ -243,6 +253,10 @@ public class AiResponseOrchestrator {
         ? properties.getCompactThreshold()
         : null;
 
+    List<com.fasterxml.jackson.databind.JsonNode> rawInputItems = useOpenAiState
+        ? List.of()
+        : compactionService.loadLatestCompactionInputItems(context.conversationId());
+
     return new OpenAiResponseRequest(
         properties.getModel(),
         properties.getReasoningEffort(),
@@ -250,6 +264,7 @@ public class AiResponseOrchestrator {
         properties.isStoreOpenaiResponses(),
         useOpenAiState ? context.previousResponseId() : null,
         input,
+        rawInputItems,
         compactThreshold
     );
   }
@@ -345,11 +360,31 @@ public class AiResponseOrchestrator {
 
   private List<OpenAiResponseRequest.OpenAiInputMessage> buildOpenAiStateInput(OrchestrationContext context) {
     List<OpenAiResponseRequest.OpenAiInputMessage> input = new ArrayList<>();
+    String turnContextPrompt = buildTurnContextPrompt(context);
+    if (StringUtils.hasText(turnContextPrompt)) {
+      input.add(new OpenAiResponseRequest.OpenAiInputMessage("system", turnContextPrompt));
+    }
+
     String userContent = normalizeInputText(context.userContent());
+    if (!StringUtils.hasText(userContent) && StringUtils.hasText(context.contextSnapshotJson())) {
+      userContent = "Use o contexto anexado nesta mensagem para responder.";
+    }
     if (StringUtils.hasText(userContent)) {
       input.add(new OpenAiResponseRequest.OpenAiInputMessage("user", userContent));
     }
     return input;
+  }
+
+  private String buildTurnContextPrompt(OrchestrationContext context) {
+    StringBuilder prompt = new StringBuilder();
+
+    JsonNode snapshot = contextBuilder.parseSnapshotJson(context.contextSnapshotJson());
+    String snapshotPrompt = contextBuilder.formatSnapshotForPrompt(snapshot);
+    if (StringUtils.hasText(snapshotPrompt)) {
+      prompt.append("Contexto anexado pelo usuario nesta mensagem:\n").append(snapshotPrompt);
+    }
+
+    return prompt.toString().trim();
   }
 
   private List<OpenAiResponseRequest.OpenAiInputMessage> buildLocalStateInput(OrchestrationContext context) {

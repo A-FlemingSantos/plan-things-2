@@ -92,8 +92,16 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
     reasoning.put("effort", request.reasoningEffort());
 
     ArrayNode input = body.putArray("input");
+    if (request.rawInputItems() != null) {
+      for (JsonNode rawItem : request.rawInputItems()) {
+        if (rawItem != null && rawItem.isObject()) {
+          input.add(rawItem.deepCopy());
+        }
+      }
+    }
     for (OpenAiResponseRequest.OpenAiInputMessage message : request.input()) {
       ObjectNode item = input.addObject();
+      item.put("type", "message");
       item.put("role", message.role());
       item.put("content", message.content());
     }
@@ -129,7 +137,8 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       return new OpenAiResponseResult(
           response.path("id").asText(null),
           extractOutputText(response.path("output")),
-          response.path("usage").isMissingNode() ? null : response.path("usage").toString()
+          response.path("usage").isMissingNode() ? null : response.path("usage").toString(),
+          extractCompactionOutputItems(response.path("output"))
       );
     } catch (RestClientResponseException exception) {
       logger.warn("Falha ao chamar OpenAI Responses API: status={} body={}", exception.getStatusCode(), exception.getResponseBodyAsString());
@@ -170,7 +179,8 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       return new OpenAiResponseResult(
           accumulator.responseId(),
           outputText,
-          accumulator.tokenUsageJson()
+          accumulator.tokenUsageJson(),
+          accumulator.compactionOutputItemsJson()
       );
     } catch (IOException exception) {
       logger.warn("Falha de IO ao consumir OpenAI Responses API em streaming", exception);
@@ -286,6 +296,21 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
     }
   }
 
+  private List<String> extractCompactionOutputItems(JsonNode outputNode) {
+    if (outputNode == null || !outputNode.isArray()) {
+      return List.of();
+    }
+
+    List<String> items = new ArrayList<>();
+    for (JsonNode item : outputNode) {
+      if (!"compaction".equals(item.path("type").asText(""))) {
+        continue;
+      }
+      items.add(item.toString());
+    }
+    return items;
+  }
+
   private String extractOutputText(JsonNode outputNode) {
     if (outputNode == null || !outputNode.isArray()) {
       return "";
@@ -312,6 +337,7 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
 
   private final class StreamAccumulator {
     private final StringBuilder outputBuilder = new StringBuilder();
+    private final List<String> compactionOutputItemsJson = new ArrayList<>();
     private JsonNode completedResponse;
     private String responseId;
     private String tokenUsageJson;
@@ -326,6 +352,16 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
 
       if ("response.completed".equals(eventType) && candidateNode.isObject()) {
         completedResponse = candidateNode;
+        captureCompactionItems(candidateNode.path("output"));
+      }
+
+      JsonNode outputItems = payload.path("output");
+      if (outputItems.isArray()) {
+        captureCompactionItems(outputItems);
+      }
+      JsonNode itemNode = payload.path("item");
+      if (itemNode.isObject() && "compaction".equals(itemNode.path("type").asText(""))) {
+        compactionOutputItemsJson.add(itemNode.toString());
       }
 
       if (!StringUtils.hasText(responseId)) {
@@ -352,6 +388,24 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
 
     String tokenUsageJson() {
       return tokenUsageJson;
+    }
+
+    List<String> compactionOutputItemsJson() {
+      if (!compactionOutputItemsJson.isEmpty()) {
+        return List.copyOf(compactionOutputItemsJson);
+      }
+      if (completedResponse != null && completedResponse.isObject()) {
+        return extractCompactionOutputItems(completedResponse.path("output"));
+      }
+      return List.of();
+    }
+
+    void captureCompactionItems(JsonNode outputNode) {
+      for (String itemJson : extractCompactionOutputItems(outputNode)) {
+        if (!compactionOutputItemsJson.contains(itemJson)) {
+          compactionOutputItemsJson.add(itemJson);
+        }
+      }
     }
 
     String finalOutputText() {

@@ -66,6 +66,8 @@ export default function IntelligenceComposer({
   inputRef,
   inputDisabled = false,
   submitDisabled,
+  isGenerating = false,
+  onCancelGeneration = null,
   motionLayoutId,
   classes = {},
   aiChips = [],
@@ -99,6 +101,7 @@ export default function IntelligenceComposer({
   const { attachments } = partitionComposerChips(aiChips)
   const hasAttachments = attachments.length > 0
   const isSubmitDisabled = submitDisabled ?? !String(value ?? '').trim()
+  const showCancelGeneration = Boolean(isGenerating && onCancelGeneration)
   const formClassName = joinClasses(styles.composerVars, form)
 
   const setTextareaRef = useCallback((node) => {
@@ -184,14 +187,25 @@ export default function IntelligenceComposer({
               <MicIcon />
             </button>
           ) : null}
-          <button
-            type="submit"
-            className={sendButton}
-            aria-label={submitAriaLabel}
-            disabled={isSubmitDisabled}
-          >
-            <ArrowUpIcon />
-          </button>
+          {showCancelGeneration ? (
+            <button
+              type="button"
+              className={sendButton}
+              aria-label="Cancelar resposta em andamento"
+              onClick={onCancelGeneration}
+            >
+              Parar
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className={sendButton}
+              aria-label={submitAriaLabel}
+              disabled={isSubmitDisabled}
+            >
+              <ArrowUpIcon />
+            </button>
+          )}
         </div>
       </div>
       {githubBarPlacement === 'insideForm' ? githubBar : null}

@@ -82,6 +82,8 @@ export default function IntelligenceChat() {
     isThinking,
     hasConversation,
     submitMessage,
+    cancelActiveGeneration,
+    selectConversation,
     canSubmitWith,
   } = useAiConversation({
     accessToken,
@@ -367,7 +369,9 @@ export default function IntelligenceChat() {
           centerContent={(
             <ConversationToolbar
               conversationTitle={activeConversationTitle}
+              activeConversationId={conversationId}
               recentConversations={recentConversations}
+              onSelectConversation={selectConversation}
               onArchiveConversation={handleArchiveConversation}
               planId={chatScope.planId}
               planName={chatScope.planName}
@@ -425,6 +429,8 @@ export default function IntelligenceChat() {
             onSubmit={handleSubmit}
             motionLayoutId="ai-composer"
             submitDisabled={!canSubmitWith(draft, aiChips)}
+            isGenerating={isThinking}
+            onCancelGeneration={() => { void cancelActiveGeneration() }}
             isListening={isListening}
             onVoiceClick={handleVoiceInput}
             aiChips={aiChips}

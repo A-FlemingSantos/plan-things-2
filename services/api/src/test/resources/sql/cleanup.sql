@@ -1,4 +1,6 @@
 DELETE FROM ai_message_blocks;
+DELETE FROM ai_compaction_items;
+DELETE FROM ai_context_snapshots;
 DELETE FROM ai_messages;
 DELETE FROM ai_conversations;
 DELETE FROM card_attachments;

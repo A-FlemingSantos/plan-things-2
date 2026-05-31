@@ -338,13 +338,27 @@
   color: unset;
 }
 
-.listItemLabel {
+.listItemLabel,
+.listItemSelect {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
   color: var(--text-1);
+}
+
+.listItemSelect {
+  flex: 1 1 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.listItemActive {
+  background: color-mix(in srgb, var(--intelligence-accent, var(--text-1)) 10%, transparent);
 }
 
 .changeRow {

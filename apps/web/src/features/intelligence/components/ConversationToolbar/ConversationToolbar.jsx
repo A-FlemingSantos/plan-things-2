@@ -324,6 +324,7 @@ function resolveConnectorState(activeConnectorIdSet, connectorOverrides, connect
 
 export default function ConversationToolbar({
   conversationTitle = 'Nova conversa',
+  activeConversationId = null,
   recentConversations = null,
   onSelectConversation = null,
   onArchiveConversation = null,
@@ -486,8 +487,18 @@ export default function ConversationToolbar({
               <div id={sectionIds.conversations} className={styles.sectionBody}>
                 <ul className={styles.list}>
                   {conversationItems.map((conversation) => (
-                    <li key={conversation.id} className={styles.listItem}>
-                      <span className={styles.listItemLabel}>{conversation.title}</span>
+                    <li
+                      key={conversation.id}
+                      className={`${styles.listItem} ${conversation.id === activeConversationId ? styles.listItemActive : ''}`}
+                    >
+                      <button
+                        type="button"
+                        className={styles.listItemSelect}
+                        onClick={() => onSelectConversation?.(conversation.id)}
+                        aria-current={conversation.id === activeConversationId ? 'true' : undefined}
+                      >
+                        {conversation.title}
+                      </button>
                       <div className={styles.listItemActions}>
                         <button
                           type="button"
