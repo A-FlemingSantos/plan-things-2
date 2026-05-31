@@ -2,7 +2,7 @@
 
 Data de referencia: 2026-05-30
 
-**Progresso:** Fase 0 (backend) concluida. Fase 0.5.1 (UI mock + contexto no composer) concluida. Fase 0.5.2 (blocos mock + AiBlockRenderer) concluida. Fase 0.5.3 (contratos formais) concluida. Frontend ainda nao consome `/api/intelligence`. Proximo: Fase 1 (chat real).
+**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 parcialmente concluida (chat real + SSE + markdown backend). Fase 1.5 iniciada no frontend, pendente no backend.
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, File Search e GitHub.
 
@@ -1505,20 +1505,34 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - `InlineArtifactsList`: tools/status como inline retratil, fora dos blocos.
 - Cenarios: narrativa markdown → inline de tool/evento → proposta → entity reference.
 
-### Fase 1: chat real (markdown, sem tools mutantes)
+### Fase 1: chat real (markdown, sem tools mutantes) — **parcialmente concluida**
 
-- `intelligenceApi.js`, `useAiConversation`, `useAiStream`; substituir `useMockAiConversation` no chat e Kanban.
-- `AiResponseOrchestrator`: `POST /messages` → OpenAI → SSE (`assistant.delta`, `assistant.completed`, `assistant.failed`).
-- Criar/reusar conversa com escopo (`IntelligenceChat` via `location.state`; Kanban com `planId`).
-- Blocos `MARKDOWN` no backend; renderer na UI (de 0.5.2).
-- Compaction (`context_management`) + metadados em `ai_compaction_items`.
-- Cancelamento de geracao; listagem basica de conversas para toolbar.
+Concluido:
 
-### Fase 1.5: contexto anexado persistido
+- `intelligenceApi.js`, `useAiConversation`, `useAiStream` ativos no `IntelligenceChat` e no painel IA do Kanban.
+- `AiResponseOrchestrator` executando `POST /messages` → OpenAI → SSE com `assistant.delta`, `assistant.completed`, `assistant.failed`.
+- Reuso/criacao de conversa por escopo.
+- Persistencia de bloco `MARKDOWN` no backend e renderizacao na UI.
 
-- `POST /messages` aceita `contextSnapshot`; tabela `ai_context_snapshots`.
-- `AiContextBuilder` inclui snapshot no prompt.
-- Upload real de anexos (hoje preview local).
+Pendencias:
+
+- Listagem de conversas (`GET /api/intelligence/conversations`) para toolbar real.
+- Atualizacao de conversa (`PATCH /api/intelligence/conversations/{conversationId}`) para titulo/arquivamento.
+- Cancelamento de geracao (`POST /api/intelligence/conversations/{conversationId}/messages/{messageId}/cancel`).
+- Compaction (`context_management`) + persistencia de metadados em `ai_compaction_items`.
+
+### Fase 1.5: contexto anexado persistido — **iniciada (frontend)**
+
+Concluido (parcial):
+
+- Frontend ja monta e envia `contextSnapshot` no payload de `POST /messages`.
+
+Pendencias:
+
+- Backend aceitar `contextSnapshot` no contrato de `CreateMessageRequest`.
+- Criar e persistir `ai_context_snapshots`.
+- Incluir snapshot no contexto de prompt (`AiContextBuilder`/orquestracao).
+- Upload real de anexos (hoje apenas preview/local no composer).
 
 ### Fase 2: blocos estruturados reais
 
