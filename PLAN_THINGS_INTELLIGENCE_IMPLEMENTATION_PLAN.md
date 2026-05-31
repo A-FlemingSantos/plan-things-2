@@ -1394,6 +1394,8 @@ InlineArtifactsList
 
 Durante streaming, renderizar deltas narrativos de forma barata, atualizar inline artifacts para tool events/status, e criar/promover blocos estruturados apenas quando o backend emitir eventos como `block.created`, `proposal.created`, `entity.created`, `entity.updated` ou `assistant.completed`.
 
+Plano complementar (streaming markdown robusto com Streamdown): `PLAN_THINGS_INTELLIGENCE_STREAMDOWN_IMPLEMENTATION_PLAN.md`.
+
 ## 13. Contrato de resposta da IA
 
 Mesmo usando tool calls, a resposta final para UI deve ser estruturada.
