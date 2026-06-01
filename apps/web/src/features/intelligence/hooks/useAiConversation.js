@@ -92,19 +92,25 @@ export function useAiConversation({
   enabled = true,
   aiChips = [],
   setAiChips,
+  initialConversationId = null,
+  autoCreateOnMount = true,
+  onConversationCreated = null,
   initialPrompt = null,
   initialSubmitComposer = false,
   initialSubmitDelayMs = initialSubmitComposer ? WORKSPACE_LAYOUT_SUBMIT_DELAY_MS : 0,
 } = {}) {
-  const sessionScopeKey = `${accessToken ?? 'anonymous'}:${scope?.planId ?? ''}:${scope?.cardId ?? ''}`
+  const normalizedInitialConversationId = String(initialConversationId ?? '').trim() || null
+  const sessionScopeKey = `${accessToken ?? 'anonymous'}:${scope?.planId ?? ''}:${scope?.cardId ?? ''}:${normalizedInitialConversationId ?? ''}`
   const [messages, setMessages] = useState([])
-  const [conversationId, setConversationId] = useState(null)
+  const [conversationId, setConversationId] = useState(normalizedInitialConversationId)
   const [isThinking, setIsThinking] = useState(false)
-  const willSubmitOnMount = Boolean(String(initialPrompt ?? '').trim() || initialSubmitComposer)
+  const [isHydratingConversation, setIsHydratingConversation] = useState(Boolean(normalizedInitialConversationId))
+  const willSubmitOnMount = !normalizedInitialConversationId && Boolean(String(initialPrompt ?? '').trim() || initialSubmitComposer)
   const [isAwaitingInitialSubmit, setIsAwaitingInitialSubmit] = useState(willSubmitOnMount)
   const [streamError, setStreamError] = useState('')
   const conversationPromiseRef = useRef(null)
-  const initialPromptProcessedRef = useRef(false)
+  const initialPromptProcessedRef = useRef(Boolean(normalizedInitialConversationId))
+  const hydratedConversationIdRef = useRef(null)
   const lastSessionScopeKeyRef = useRef(sessionScopeKey)
 
   useEffect(() => {
@@ -114,13 +120,22 @@ export function useAiConversation({
 
     lastSessionScopeKeyRef.current = sessionScopeKey
     conversationPromiseRef.current = null
-    initialPromptProcessedRef.current = false
-    setConversationId(null)
+    hydratedConversationIdRef.current = null
+    initialPromptProcessedRef.current = Boolean(normalizedInitialConversationId)
+
+    if (normalizedInitialConversationId && normalizedInitialConversationId === conversationId) {
+      setIsAwaitingInitialSubmit(false)
+      setIsHydratingConversation(false)
+      return
+    }
+
+    setConversationId(normalizedInitialConversationId)
     setMessages([])
     setIsThinking(false)
     setStreamError('')
+    setIsHydratingConversation(Boolean(normalizedInitialConversationId))
     setIsAwaitingInitialSubmit(willSubmitOnMount)
-  }, [sessionScopeKey, willSubmitOnMount])
+  }, [conversationId, normalizedInitialConversationId, sessionScopeKey, willSubmitOnMount])
 
   const refreshMessages = useCallback(async (targetConversationId = conversationId) => {
     if (!accessToken || !targetConversationId) return []
@@ -136,12 +151,67 @@ export function useAiConversation({
     return normalizedMessages
   }, [accessToken, conversationId])
 
+  useEffect(() => {
+    if (!enabled || !accessToken || !normalizedInitialConversationId) {
+      setIsHydratingConversation(false)
+      return undefined
+    }
+
+    if (hydratedConversationIdRef.current === normalizedInitialConversationId) {
+      setIsHydratingConversation(false)
+      return undefined
+    }
+
+    if (conversationId !== normalizedInitialConversationId) {
+      setConversationId(normalizedInitialConversationId)
+      return undefined
+    }
+
+    if (messages.length > 0 || isThinking) {
+      hydratedConversationIdRef.current = normalizedInitialConversationId
+      setIsHydratingConversation(false)
+      return undefined
+    }
+
+    let cancelled = false
+    setIsHydratingConversation(true)
+
+    void refreshMessages(normalizedInitialConversationId)
+      .then(() => {
+        if (!cancelled) {
+          hydratedConversationIdRef.current = normalizedInitialConversationId
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setStreamError(error instanceof Error ? error.message : 'Nao foi possivel carregar a conversa.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsHydratingConversation(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    accessToken,
+    conversationId,
+    enabled,
+    isThinking,
+    messages.length,
+    normalizedInitialConversationId,
+    refreshMessages,
+  ])
+
   const ensureConversation = useCallback(async () => {
     if (!accessToken || !enabled) {
       return null
     }
     if (conversationId) {
-      return conversationId
+      return { id: conversationId, created: false }
     }
     if (conversationPromiseRef.current) {
       return conversationPromiseRef.current
@@ -154,7 +224,7 @@ export function useAiConversation({
       .then((conversation) => {
         const nextConversationId = String(conversation.id)
         setConversationId(nextConversationId)
-        return nextConversationId
+        return { id: nextConversationId, created: true }
       })
       .finally(() => {
         conversationPromiseRef.current = null
@@ -277,23 +347,26 @@ export function useAiConversation({
 
   useEffect(() => {
     if (!enabled || !accessToken) return
+    if (!autoCreateOnMount || normalizedInitialConversationId) return
     void ensureConversation().catch((error) => {
       setStreamError(error instanceof Error ? error.message : 'Nao foi possivel iniciar a conversa.')
     })
-  }, [accessToken, enabled, ensureConversation])
+  }, [accessToken, autoCreateOnMount, enabled, ensureConversation, normalizedInitialConversationId])
 
   const submitMessage = useCallback(async (rawText, chips = aiChips, options = {}) => {
     const { allowWhileAwaiting = false } = options
     const text = String(rawText ?? '').trim()
 
     if (!enabled || !accessToken) return false
+    if (isHydratingConversation) return false
     if (isAwaitingInitialSubmit && !allowWhileAwaiting) return false
     if (isThinking) return false
     if (!text && !hasComposerContext(chips)) return false
 
     const localSnapshot = snapshotComposerContext(chips)
     try {
-      const targetConversationId = await ensureConversation()
+      const ensuredConversation = await ensureConversation()
+      const targetConversationId = ensuredConversation?.id
       if (!targetConversationId) return false
 
       const contextSnapshot = await uploadComposerAttachments(localSnapshot, chips, {
@@ -324,6 +397,9 @@ export function useAiConversation({
 
       setIsThinking(true)
       setStreamError('')
+      if (ensuredConversation.created && typeof onConversationCreated === 'function') {
+        onConversationCreated(targetConversationId)
+      }
       return true
     } catch (error) {
       setStreamError(error instanceof Error ? error.message : 'Nao foi possivel enviar a mensagem agora.')
@@ -334,14 +410,21 @@ export function useAiConversation({
     aiChips,
     enabled,
     ensureConversation,
+    isHydratingConversation,
     isAwaitingInitialSubmit,
     isThinking,
+    onConversationCreated,
     setAiChips,
   ])
 
   useEffect(() => {
     if (initialPromptProcessedRef.current) return
     if (!enabled) return
+    if (normalizedInitialConversationId) {
+      initialPromptProcessedRef.current = true
+      setIsAwaitingInitialSubmit(false)
+      return undefined
+    }
 
     const prompt = String(initialPrompt ?? '').trim()
     const shouldSubmitComposer = Boolean(initialSubmitComposer)
@@ -369,7 +452,16 @@ export function useAiConversation({
     return () => {
       clearTimeout(timer)
     }
-  }, [aiChips, enabled, initialPrompt, initialSubmitComposer, initialSubmitDelayMs, isThinking, submitMessage])
+  }, [
+    aiChips,
+    enabled,
+    initialPrompt,
+    initialSubmitComposer,
+    initialSubmitDelayMs,
+    isThinking,
+    normalizedInitialConversationId,
+    submitMessage,
+  ])
 
   useEffect(() => {
     if (!conversationId || !accessToken || !isThinking) return undefined
@@ -393,29 +485,33 @@ export function useAiConversation({
     }
 
     conversationPromiseRef.current = null
+    hydratedConversationIdRef.current = normalizedId
     initialPromptProcessedRef.current = true
     setConversationId(normalizedId)
     setMessages([])
     setIsThinking(false)
     setStreamError('')
+    setIsHydratingConversation(true)
     setIsAwaitingInitialSubmit(false)
 
     try {
       await refreshMessages(normalizedId)
+      setIsHydratingConversation(false)
       return true
     } catch (error) {
       setStreamError(error instanceof Error ? error.message : 'Nao foi possivel carregar a conversa.')
+      setIsHydratingConversation(false)
       return false
     }
   }, [accessToken, conversationId, isThinking, refreshMessages])
 
-  const hasConversation = messages.length > 0 || isThinking || isAwaitingInitialSubmit
+  const hasConversation = messages.length > 0 || isThinking || isAwaitingInitialSubmit || isHydratingConversation
 
   const canSubmitWith = useCallback((draftText, chips = aiChips) => {
     if (!enabled || !accessToken) return false
-    if (isThinking || isAwaitingInitialSubmit) return false
+    if (isThinking || isAwaitingInitialSubmit || isHydratingConversation) return false
     return Boolean(String(draftText ?? '').trim()) || hasComposerContext(chips)
-  }, [accessToken, aiChips, enabled, isAwaitingInitialSubmit, isThinking])
+  }, [accessToken, aiChips, enabled, isAwaitingInitialSubmit, isHydratingConversation, isThinking])
 
   const cancelActiveGeneration = useCallback(async () => {
     if (!accessToken || !conversationId || !isThinking) return false
@@ -452,6 +548,7 @@ export function useAiConversation({
     conversationId,
     messages,
     isThinking,
+    isHydratingConversation,
     hasConversation,
     streamError,
     submitMessage,

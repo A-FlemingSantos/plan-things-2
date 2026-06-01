@@ -23,6 +23,12 @@ vi.mock('../../hooks/useAiConversation.js', async () => {
   }
 })
 
+vi.mock('../../api/intelligenceApi.js', () => ({
+  getIntelligenceConversation: vi.fn(),
+  listIntelligenceConversations: vi.fn(async () => []),
+  updateIntelligenceConversation: vi.fn(),
+}))
+
 vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
   usePreferences: () => ({
     localPreferences: { kanbanAccentColor: '' },

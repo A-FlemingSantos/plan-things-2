@@ -2,7 +2,7 @@
 
 Data de referencia: 2026-05-31
 
-**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto em texto, upload de anexos no envio — **sem vision/File Search**). **Fase 2 concluida** (blocos `PLAN_REFERENCE`/`CARD_REFERENCE`/`FILE_REFERENCE` persistidos a partir do `contextSnapshot`, SSE `block.created`, navegacao interna `/workspace/board/...` e `?card=`). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional. **Fase 6** (planejada): multimodal/vision, preview persistente no chat e File Search.
+**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction + hardening de URL por conversa e preservacao apos reload). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto em texto, upload de anexos no envio — **sem vision/File Search**). **Fase 2 concluida** (blocos `PLAN_REFERENCE`/`CARD_REFERENCE`/`FILE_REFERENCE` persistidos a partir do `contextSnapshot`, SSE `block.created`, navegacao interna `/workspace/board/...` e `?card=`). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional. **Fase 6** (planejada): multimodal/vision, preview persistente no chat e File Search.
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, **entrada multimodal (imagens e documentos)**, File Search e GitHub.
 
@@ -1565,6 +1565,7 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - `intelligenceApi.js`, `useAiConversation`, `useAiStream` ativos no `IntelligenceChat` e no painel IA do Kanban.
 - `AiResponseOrchestrator` executando `POST /messages` → OpenAI → SSE com `assistant.delta`, `assistant.completed`, `assistant.failed`.
 - Reuso/criacao de conversa por escopo.
+- Hardening de preservacao no chat dedicado: URL canonica `/workspace/chat/{conversationId}`, hidratacao segura apos reload e handoff idempotente do launcher para nao reenviar a primeira mensagem.
 - Persistencia de bloco `MARKDOWN` no backend e renderizacao na UI.
 - Listagem de conversas (`GET /api/intelligence/conversations`) com filtros de escopo/status.
 - Atualizacao de conversa (`PATCH /api/intelligence/conversations/{conversationId}`) para titulo/arquivamento.

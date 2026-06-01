@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -13,7 +13,12 @@ import {
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import IntelligenceConversationThread from '../../components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
 import ConversationToolbar from '../../components/ConversationToolbar/ConversationToolbar.jsx'
-import { listIntelligenceConversations, updateIntelligenceConversation } from '../../api/intelligenceApi.js'
+import { buildWorkspaceChatPath, ROUTES } from '../../../../shared/config/routes.js'
+import {
+  getIntelligenceConversation,
+  listIntelligenceConversations,
+  updateIntelligenceConversation,
+} from '../../api/intelligenceApi.js'
 import { useAiConversation } from '../../hooks/useAiConversation.js'
 import styles from './IntelligenceChat.module.css'
 
@@ -46,6 +51,39 @@ const CHAT_SUGGESTIONS = [
   { label: 'Inicializar UI system', prompt: 'Inicialize um UI system com componentes e tokens essenciais.' },
 ]
 
+const HANDOFF_STORAGE_PREFIX = 'plan-things:intelligence-handoff:v1:'
+
+function normalizeOptionalId(value) {
+  return String(value ?? '').trim() || null
+}
+
+function buildInitialHandoff(location, routeConversationId) {
+  if (routeConversationId || typeof window === 'undefined') return null
+
+  const state = location.state ?? {}
+  const hasHandoff = Boolean(String(state.initialPrompt ?? '').trim() || state.submitComposer)
+  if (!hasHandoff) return null
+
+  const handoffId = String(state.handoffId ?? `legacy-${location.key ?? 'default'}`).trim()
+  if (!handoffId) return null
+
+  const storageKey = `${HANDOFF_STORAGE_PREFIX}${handoffId}`
+  if (window.sessionStorage.getItem(storageKey) === 'processed') {
+    return null
+  }
+
+  return {
+    id: handoffId,
+    initialPrompt: String(state.initialPrompt ?? ''),
+    submitComposer: Boolean(state.submitComposer),
+  }
+}
+
+function markHandoffProcessed(handoffId) {
+  if (!handoffId || typeof window === 'undefined') return
+  window.sessionStorage.setItem(`${HANDOFF_STORAGE_PREFIX}${handoffId}`, 'processed')
+}
+
 function getVoiceInputErrorMessage(error) {
   const code = error?.error || error?.name
   if (code === 'NotAllowedError' || code === 'PermissionDeniedError') return VOICE_INPUT_ERROR_MESSAGES['not-allowed']
@@ -55,6 +93,10 @@ function getVoiceInputErrorMessage(error) {
 
 export default function IntelligenceChat() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { conversationId: routeConversationIdParam } = useParams()
+  const routeConversationId = normalizeOptionalId(routeConversationIdParam)
+  const initialHandoffRef = useRef(buildInitialHandoff(location, routeConversationId))
   const { accessToken, currentUser } = useAuth()
   const { localPreferences } = usePreferences()
   const { aiChips = [], setAiChips = () => {} } = usePlans()
@@ -63,12 +105,21 @@ export default function IntelligenceChat() {
     [aiChips],
   )
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
-  const chatScope = {
-    planId: location.state?.planId ?? null,
-    planName: location.state?.planName ?? null,
-    cardId: location.state?.cardId ?? null,
-    cardTitle: location.state?.cardTitle ?? null,
-  }
+  const [routeConversationDetails, setRouteConversationDetails] = useState(null)
+  const [conversationNotice, setConversationNotice] = useState(String(location.state?.chatError ?? ''))
+  const [conversationLoadError, setConversationLoadError] = useState('')
+  const chatScope = useMemo(() => {
+    const state = location.state ?? {}
+    const planId = routeConversationDetails?.planId ?? state.planId ?? null
+    const cardId = routeConversationDetails?.cardId ?? state.cardId ?? null
+
+    return {
+      planId,
+      planName: state.planName ?? (planId ? 'Plano selecionado' : null),
+      cardId,
+      cardTitle: state.cardTitle ?? (cardId ? 'Card selecionado' : null),
+    }
+  }, [location.state, routeConversationDetails])
 
   const [draft, setDraft] = useState('')
   const [isListening, setIsListening] = useState(false)
@@ -83,16 +134,23 @@ export default function IntelligenceChat() {
     hasConversation,
     submitMessage,
     cancelActiveGeneration,
-    selectConversation,
     canSubmitWith,
+    streamError,
+    isHydratingConversation,
   } = useAiConversation({
     accessToken,
-    enabled: true,
+    enabled: !routeConversationId || Boolean(routeConversationDetails),
     scope: chatScope,
     aiChips,
     setAiChips,
-    initialPrompt: location.state?.initialPrompt,
-    initialSubmitComposer: location.state?.submitComposer,
+    initialConversationId: routeConversationDetails ? routeConversationId : null,
+    autoCreateOnMount: false,
+    onConversationCreated: (nextConversationId) => {
+      markHandoffProcessed(initialHandoffRef.current?.id)
+      navigate(buildWorkspaceChatPath(nextConversationId), { replace: true, state: null })
+    },
+    initialPrompt: initialHandoffRef.current?.initialPrompt,
+    initialSubmitComposer: initialHandoffRef.current?.submitComposer,
   })
 
   const recognitionRef = useRef(null)
@@ -106,6 +164,61 @@ export default function IntelligenceChat() {
   const lastVoiceRecognitionErrorRef = useRef('')
   const voiceTranscriptEntriesRef = useRef(new Map())
   const voiceRecognitionSequenceRef = useRef(0)
+
+  useEffect(() => {
+    const state = location.state ?? {}
+    if (!state.initialPrompt && !state.submitComposer && !state.handoffId) return
+
+    const nextState = { ...state }
+    delete nextState.handoffId
+    delete nextState.initialPrompt
+    delete nextState.submitComposer
+
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: Object.keys(nextState).length > 0 ? nextState : null,
+    })
+  }, [location.pathname, location.search, location.state, navigate])
+
+  useEffect(() => {
+    if (!routeConversationId) {
+      setRouteConversationDetails(null)
+      setConversationLoadError('')
+      return undefined
+    }
+
+    if (!accessToken) return undefined
+
+    let cancelled = false
+    setConversationLoadError('')
+    setRouteConversationDetails(null)
+
+    void getIntelligenceConversation(routeConversationId, { token: accessToken })
+      .then((conversation) => {
+        if (!cancelled) {
+          setRouteConversationDetails(conversation)
+        }
+      })
+      .catch((error) => {
+        if (cancelled) return
+
+        const status = Number(error?.status ?? 0)
+        if (status === 403 || status === 404) {
+          navigate(ROUTES.workspaceChat, {
+            replace: true,
+            state: { chatError: 'Nao foi possivel abrir essa conversa.' },
+          })
+          setConversationNotice('Nao foi possivel abrir essa conversa.')
+          return
+        }
+
+        setConversationLoadError(error instanceof Error ? error.message : 'Nao foi possivel carregar a conversa.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [accessToken, navigate, routeConversationId])
 
   useEffect(() => {
     if (!accessToken) return undefined
@@ -137,14 +250,28 @@ export default function IntelligenceChat() {
 
   const activeConversationTitle = useMemo(() => {
     const match = recentConversations.find((item) => item.id === conversationId)
-    return match?.title ?? 'Nova conversa'
-  }, [conversationId, recentConversations])
+    return match?.title ?? routeConversationDetails?.title ?? 'Nova conversa'
+  }, [conversationId, recentConversations, routeConversationDetails])
+
+  const handleSelectConversation = (targetConversationId) => {
+    if (!targetConversationId || isThinking) return
+    navigate(buildWorkspaceChatPath(targetConversationId))
+  }
+
+  const handleNewConversation = () => {
+    if (isThinking) return
+    setConversationNotice('')
+    navigate(ROUTES.workspaceChat)
+  }
 
   const handleArchiveConversation = async (targetConversationId) => {
     if (!accessToken || !targetConversationId) return
 
     await updateIntelligenceConversation(targetConversationId, { status: 'ARCHIVED' }, { token: accessToken })
     setRecentConversations((current) => current.filter((item) => item.id !== targetConversationId))
+    if (targetConversationId === conversationId) {
+      navigate(ROUTES.workspaceChat, { replace: true })
+    }
   }
 
   const accentStyle = {
@@ -153,6 +280,8 @@ export default function IntelligenceChat() {
     '--intelligence-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
     '--intelligence-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
   }
+  const isConversationRouteLoading = Boolean(routeConversationId && !routeConversationDetails && !conversationLoadError)
+  const statusFeedback = voiceFeedback || conversationLoadError || conversationNotice || streamError
 
   useEffect(() => () => {
     if (recognitionRestartTimerRef.current) clearTimeout(recognitionRestartTimerRef.current)
@@ -371,7 +500,8 @@ export default function IntelligenceChat() {
               conversationTitle={activeConversationTitle}
               activeConversationId={conversationId}
               recentConversations={recentConversations}
-              onSelectConversation={selectConversation}
+              onSelectConversation={handleSelectConversation}
+              onNewConversation={handleNewConversation}
               onArchiveConversation={handleArchiveConversation}
               planId={chatScope.planId}
               planName={chatScope.planName}
@@ -383,7 +513,12 @@ export default function IntelligenceChat() {
         />
 
         <div className={styles.chatArea}>
-          {hasConversation ? (
+          {isConversationRouteLoading || isHydratingConversation ? (
+            <div className={styles.emptyState}>
+              <p className={styles.emptyGreeting}>Carregando conversa</p>
+              <h2 className={styles.emptyTitle}>Recuperando o histórico...</h2>
+            </div>
+          ) : hasConversation ? (
             <IntelligenceConversationThread
               messages={messages}
               isThinking={isThinking}
@@ -447,8 +582,8 @@ export default function IntelligenceChat() {
               iconButtonActive: styles.iconButtonActive,
               sendButton: styles.sendButton,
             }}
-            afterForm={voiceFeedback ? (
-              <p className={styles.voiceFeedback} role="status">{voiceFeedback}</p>
+            afterForm={statusFeedback ? (
+              <p className={styles.voiceFeedback} role="status">{statusFeedback}</p>
             ) : null}
           />
         </div>

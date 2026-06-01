@@ -63,6 +63,15 @@ describe('ConversationToolbar', () => {
       expect(screen.getByText('Login UI')).toBeInTheDocument()
     })
 
+    it('uses scoped fallbacks when ids are present without names', () => {
+      renderToolbar({
+        conversationTitle: 'Test',
+        planId: 'plan-1',
+      })
+
+      expect(screen.getByText('Plano selecionado')).toBeInTheDocument()
+    })
+
     it('shows loaded item count in indicators', () => {
       renderToolbar()
 
@@ -176,6 +185,17 @@ describe('ConversationToolbar', () => {
 
       expect(screen.getByLabelText(/Renomear "Estrutura do pitch deck"/)).toBeInTheDocument()
       expect(screen.getByLabelText(/Arquivar "Estrutura do pitch deck"/)).toBeInTheDocument()
+    })
+
+    it('calls onNewConversation from the new conversation action', async () => {
+      const user = userEvent.setup()
+      const onNewConversation = vi.fn()
+      renderToolbar({ onNewConversation })
+
+      await user.click(screen.getByRole('button', { name: /toolbar da conversa/i }))
+      await user.click(screen.getByLabelText('Nova conversa'))
+
+      expect(onNewConversation).toHaveBeenCalledTimes(1)
     })
   })
 

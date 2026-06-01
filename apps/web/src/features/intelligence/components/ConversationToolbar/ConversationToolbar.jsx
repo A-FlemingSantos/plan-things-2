@@ -301,6 +301,8 @@ function ActivityActorAvatar({ actor }) {
 function resolveScopeLabel({ planId, planName, cardId, cardTitle }) {
   if (cardId && cardTitle) return cardTitle
   if (planId && planName) return planName
+  if (cardId) return 'Card selecionado'
+  if (planId) return 'Plano selecionado'
   return 'Área de trabalho'
 }
 
@@ -327,6 +329,7 @@ export default function ConversationToolbar({
   activeConversationId = null,
   recentConversations = null,
   onSelectConversation = null,
+  onNewConversation = null,
   onArchiveConversation = null,
   planId = null,
   planName = null,
@@ -479,7 +482,12 @@ export default function ConversationToolbar({
 
           <section className={styles.section}>
             {renderSectionHeader('conversations', 'Conversas', ConversationsIcon, (
-              <button type="button" className={styles.sectionAction} aria-label="Nova conversa">
+              <button
+                type="button"
+                className={styles.sectionAction}
+                aria-label="Nova conversa"
+                onClick={() => onNewConversation?.()}
+              >
                 <PlusIcon />
               </button>
             ))}

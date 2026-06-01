@@ -140,6 +140,10 @@ export function buildWorkspaceBoardCardPath(planId, cardId) {
   return `${buildWorkspaceBoardPath(planId)}?card=${cardId}`
 }
 
+export function buildWorkspaceChatPath(conversationId) {
+  return conversationId ? `${ROUTES.workspaceChat}/${conversationId}` : ROUTES.workspaceChat
+}
+
 export function buildWorkspaceFilePath(fileId) {
   if (!fileId) return ROUTES.workspace
   return `${ROUTES.workspace}?file=${fileId}`

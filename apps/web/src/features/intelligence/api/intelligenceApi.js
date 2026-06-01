@@ -19,6 +19,12 @@ export function createIntelligenceConversation({ token, scope = {}, title = null
   })
 }
 
+export function getIntelligenceConversation(conversationId, { token } = {}) {
+  return apiRequest(`/api/intelligence/conversations/${conversationId}`, {
+    token,
+  })
+}
+
 export function listIntelligenceMessages(conversationId, { token } = {}) {
   return apiRequest(`/api/intelligence/conversations/${conversationId}/messages`, {
     token,

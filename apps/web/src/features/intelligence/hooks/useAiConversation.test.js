@@ -89,6 +89,117 @@ describe('useAiConversation', () => {
     expect(result.current.isThinking).toBe(true)
   })
 
+  it('does not create a conversation on mount when autoCreateOnMount is false', async () => {
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+      autoCreateOnMount: false,
+    }))
+
+    await act(async () => {})
+
+    expect(apiMocks.createConversation).not.toHaveBeenCalled()
+    expect(result.current.conversationId).toBe(null)
+    expect(result.current.hasConversation).toBe(false)
+  })
+
+  it('hydrates an initial conversation without creating a new one', async () => {
+    apiMocks.listMessages.mockResolvedValue([
+      {
+        id: 'user-1',
+        conversationId: 'conv-1',
+        role: 'USER',
+        status: 'COMPLETED',
+        contentText: 'Mensagem salva',
+        blocks: [],
+      },
+    ])
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+      initialConversationId: 'conv-1',
+      autoCreateOnMount: false,
+    }))
+
+    await waitFor(() => {
+      expect(apiMocks.listMessages).toHaveBeenCalledWith('conv-1', { token: 'token-1' })
+    })
+
+    expect(apiMocks.createConversation).not.toHaveBeenCalled()
+    expect(result.current.conversationId).toBe('conv-1')
+    expect(result.current.messages[0]).toMatchObject({
+      id: 'user-1',
+      text: 'Mensagem salva',
+    })
+  })
+
+  it('creates the first conversation on submit and reports the created id', async () => {
+    const onConversationCreated = vi.fn()
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockResolvedValue({
+      conversationId: 'conv-1',
+      userMessageId: 'user-1',
+      assistantMessageId: 'asst-1',
+      assistantStatus: 'PENDING',
+    })
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+      autoCreateOnMount: false,
+      onConversationCreated,
+    }))
+
+    await act(async () => {
+      await result.current.submitMessage('Primeira mensagem')
+    })
+
+    expect(apiMocks.createConversation).toHaveBeenCalledTimes(1)
+    expect(apiMocks.createMessage).toHaveBeenCalledWith(
+      'conv-1',
+      expect.objectContaining({ content: 'Primeira mensagem' }),
+      { token: 'token-1' },
+    )
+    expect(onConversationCreated).toHaveBeenCalledWith('conv-1')
+  })
+
+  it('clears the current thread and hydrates when initialConversationId changes', async () => {
+    apiMocks.listMessages.mockImplementation(async (conversationId) => ([
+      {
+        id: `user-${conversationId}`,
+        conversationId,
+        role: 'USER',
+        status: 'COMPLETED',
+        contentText: `Mensagem ${conversationId}`,
+        blocks: [],
+      },
+    ]))
+
+    const { result, rerender } = renderHook(
+      ({ conversationId }) => useAiConversation({
+        accessToken: 'token-1',
+        enabled: true,
+        initialConversationId: conversationId,
+        autoCreateOnMount: false,
+      }),
+      { initialProps: { conversationId: 'conv-1' } },
+    )
+
+    await waitFor(() => {
+      expect(result.current.messages[0]?.text).toBe('Mensagem conv-1')
+    })
+
+    rerender({ conversationId: 'conv-2' })
+
+    await waitFor(() => {
+      expect(result.current.messages[0]?.text).toBe('Mensagem conv-2')
+    })
+
+    expect(result.current.conversationId).toBe('conv-2')
+    expect(apiMocks.listMessages).toHaveBeenCalledWith('conv-2', { token: 'token-1' })
+  })
+
   it('hydrates the completed assistant message from the backend after assistant.completed', async () => {
     apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
     apiMocks.createMessage.mockResolvedValue({

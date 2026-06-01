@@ -993,6 +993,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
 
     navigate(ROUTES.workspaceChat, {
       state: {
+        handoffId: window.crypto?.randomUUID?.() ?? `handoff-${Date.now()}`,
         initialPrompt: text,
         submitComposer: true,
       },
