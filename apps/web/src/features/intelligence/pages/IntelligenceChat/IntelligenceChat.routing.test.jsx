@@ -128,6 +128,16 @@ function mockConversation(id, overrides = {}) {
   }
 }
 
+function createDeferred() {
+  let resolve
+  let reject
+  const promise = new Promise((promiseResolve, promiseReject) => {
+    resolve = promiseResolve
+    reject = promiseReject
+  })
+  return { promise, resolve, reject }
+}
+
 describe('IntelligenceChat routing', () => {
   beforeEach(() => {
     window.sessionStorage.clear()
@@ -180,6 +190,35 @@ describe('IntelligenceChat routing', () => {
     })
 
     expect(apiMocks.createConversation).not.toHaveBeenCalled()
+  })
+
+  it('keeps the route conversation area neutral until message hydration finishes', async () => {
+    const messagesDeferred = createDeferred()
+    apiMocks.listMessages.mockReturnValue(messagesDeferred.promise)
+
+    renderChat('/workspace/chat/conv-1')
+
+    await waitFor(() => {
+      expect(apiMocks.listMessages).toHaveBeenCalledWith('conv-1', { token: 'test-token' })
+    })
+
+    expect(screen.queryByText('O que vamos construir hoje?')).not.toBeInTheDocument()
+    expect(screen.queryByText('Recuperando o histórico...')).not.toBeInTheDocument()
+
+    messagesDeferred.resolve([
+      {
+        id: 'user-1',
+        conversationId: 'conv-1',
+        role: 'USER',
+        status: 'COMPLETED',
+        contentText: 'Mensagem recuperada',
+        blocks: [],
+      },
+    ])
+
+    await waitFor(() => {
+      expect(screen.getByText('Mensagem recuperada')).toBeInTheDocument()
+    })
   })
 
   it('updates the URL when selecting a saved conversation', async () => {
@@ -245,6 +284,21 @@ describe('IntelligenceChat routing', () => {
 
     expect(apiMocks.createConversation).not.toHaveBeenCalled()
     expect(apiMocks.createMessage).not.toHaveBeenCalled()
+  })
+
+  it('shows the optimistic user message during launcher handoff instead of the empty chat', () => {
+    renderChat({
+      pathname: '/workspace/chat',
+      state: {
+        handoffId: 'handoff-loading',
+        initialPrompt: 'Primeira mensagem',
+        submitComposer: true,
+      },
+    })
+
+    expect(screen.getByText('Primeira mensagem')).toBeInTheDocument()
+    expect(screen.queryByText('O que vamos construir hoje?')).not.toBeInTheDocument()
+    expect(screen.queryByText('Preparando sua mensagem...')).not.toBeInTheDocument()
   })
 
   it('does not resubmit a prompt state when reloading a URL-backed conversation', async () => {

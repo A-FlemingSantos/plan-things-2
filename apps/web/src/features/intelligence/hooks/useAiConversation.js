@@ -24,6 +24,24 @@ import { useAiStream } from './useAiStream.js'
 const WORKSPACE_LAYOUT_SUBMIT_DELAY_MS = 480
 const STREAM_SYNC_POLL_MS = 900
 
+function createFailedAssistantMessage(message) {
+  const text = String(message ?? 'Nao foi possivel enviar a mensagem agora.')
+  return {
+    id: `assistant-failed-${Date.now()}`,
+    conversationId: null,
+    role: 'assistant',
+    status: 'FAILED',
+    text,
+    contentText: text,
+    contextSnapshot: null,
+    blocks: [],
+    inlineArtifacts: [],
+    errorCode: 'MESSAGE_SEND_FAILED',
+    openaiResponseId: null,
+    createdAt: null,
+  }
+}
+
 function mergeMessagesWithLocalContext(nextMessages, currentMessages) {
   const currentById = new Map(currentMessages.map((message) => [message.id, message]))
 
@@ -101,11 +119,23 @@ export function useAiConversation({
 } = {}) {
   const normalizedInitialConversationId = String(initialConversationId ?? '').trim() || null
   const sessionScopeKey = `${accessToken ?? 'anonymous'}:${scope?.planId ?? ''}:${scope?.cardId ?? ''}:${normalizedInitialConversationId ?? ''}`
-  const [messages, setMessages] = useState([])
+  const willSubmitOnMount = !normalizedInitialConversationId && Boolean(String(initialPrompt ?? '').trim() || initialSubmitComposer)
+  const initialOptimisticUserMessageRef = useRef(null)
+  const pendingOptimisticUserMessageIdRef = useRef(null)
+  if (!initialOptimisticUserMessageRef.current && willSubmitOnMount) {
+    initialOptimisticUserMessageRef.current = createOptimisticUserMessage({
+      text: initialPrompt,
+      contextSnapshot: snapshotComposerContext(aiChips),
+    })
+    pendingOptimisticUserMessageIdRef.current = initialOptimisticUserMessageRef.current.id
+  }
+
+  const [messages, setMessages] = useState(() => (
+    initialOptimisticUserMessageRef.current ? [initialOptimisticUserMessageRef.current] : []
+  ))
   const [conversationId, setConversationId] = useState(normalizedInitialConversationId)
   const [isThinking, setIsThinking] = useState(false)
   const [isHydratingConversation, setIsHydratingConversation] = useState(Boolean(normalizedInitialConversationId))
-  const willSubmitOnMount = !normalizedInitialConversationId && Boolean(String(initialPrompt ?? '').trim() || initialSubmitComposer)
   const [isAwaitingInitialSubmit, setIsAwaitingInitialSubmit] = useState(willSubmitOnMount)
   const [streamError, setStreamError] = useState('')
   const conversationPromiseRef = useRef(null)
@@ -121,6 +151,7 @@ export function useAiConversation({
     lastSessionScopeKeyRef.current = sessionScopeKey
     conversationPromiseRef.current = null
     hydratedConversationIdRef.current = null
+    pendingOptimisticUserMessageIdRef.current = null
     initialPromptProcessedRef.current = Boolean(normalizedInitialConversationId)
 
     if (normalizedInitialConversationId && normalizedInitialConversationId === conversationId) {
@@ -364,10 +395,32 @@ export function useAiConversation({
     if (!text && !hasComposerContext(chips)) return false
 
     const localSnapshot = snapshotComposerContext(chips)
+    const pendingOptimisticUserMessageId = pendingOptimisticUserMessageIdRef.current
+    const optimisticUserMessage = pendingOptimisticUserMessageId
+      ? null
+      : createOptimisticUserMessage({
+        text,
+        contextSnapshot: localSnapshot,
+      })
+    const optimisticUserMessageId = pendingOptimisticUserMessageId ?? optimisticUserMessage.id
+
+    if (optimisticUserMessage) {
+      setMessages((current) => [...current, optimisticUserMessage])
+    }
+    setIsThinking(true)
+    setStreamError('')
+
     try {
       const ensuredConversation = await ensureConversation()
       const targetConversationId = ensuredConversation?.id
-      if (!targetConversationId) return false
+      if (!targetConversationId) {
+        setMessages((current) => [
+          ...current,
+          createFailedAssistantMessage('Nao foi possivel iniciar a conversa.'),
+        ])
+        setIsThinking(false)
+        return false
+      }
 
       const contextSnapshot = await uploadComposerAttachments(localSnapshot, chips, {
         token: accessToken,
@@ -379,17 +432,30 @@ export function useAiConversation({
         { token: accessToken },
       )
 
-      setMessages((current) => [
-        ...current,
-        createOptimisticUserMessage({
+      pendingOptimisticUserMessageIdRef.current = null
+      setMessages((current) => {
+        const acceptedUserMessage = createOptimisticUserMessage({
           id: acceptedMessage.userMessageId,
           text,
           contextSnapshot,
-        }),
-        createOptimisticAssistantPlaceholder({
-          id: acceptedMessage.assistantMessageId,
-        }),
-      ])
+        })
+        const nextMessages = current.map((message) => (
+          message.id === optimisticUserMessageId ? acceptedUserMessage : message
+        ))
+        const hasAcceptedUserMessage = nextMessages.some((message) => message.id === acceptedMessage.userMessageId)
+        const withUserMessage = hasAcceptedUserMessage ? nextMessages : [...nextMessages, acceptedUserMessage]
+
+        if (withUserMessage.some((message) => message.id === acceptedMessage.assistantMessageId)) {
+          return withUserMessage
+        }
+
+        return [
+          ...withUserMessage,
+          createOptimisticAssistantPlaceholder({
+            id: acceptedMessage.assistantMessageId,
+          }),
+        ]
+      })
 
       if (typeof setAiChips === 'function') {
         setAiChips(keepComposerInlineChips(chips))
@@ -402,7 +468,14 @@ export function useAiConversation({
       }
       return true
     } catch (error) {
-      setStreamError(error instanceof Error ? error.message : 'Nao foi possivel enviar a mensagem agora.')
+      const errorMessage = error instanceof Error ? error.message : 'Nao foi possivel enviar a mensagem agora.'
+      pendingOptimisticUserMessageIdRef.current = null
+      setMessages((current) => [
+        ...current,
+        createFailedAssistantMessage(errorMessage),
+      ])
+      setIsThinking(false)
+      setStreamError(errorMessage)
       return false
     }
   }, [
@@ -505,13 +578,24 @@ export function useAiConversation({
     }
   }, [accessToken, conversationId, isThinking, refreshMessages])
 
-  const hasConversation = messages.length > 0 || isThinking || isAwaitingInitialSubmit || isHydratingConversation
+  const isInitialConversationPending = Boolean(
+    normalizedInitialConversationId
+    && conversationId !== normalizedInitialConversationId,
+  )
+  const effectiveIsHydratingConversation = isHydratingConversation || isInitialConversationPending
+
+  const hasConversation = (
+    messages.length > 0
+    || isThinking
+    || isAwaitingInitialSubmit
+    || effectiveIsHydratingConversation
+  )
 
   const canSubmitWith = useCallback((draftText, chips = aiChips) => {
     if (!enabled || !accessToken) return false
-    if (isThinking || isAwaitingInitialSubmit || isHydratingConversation) return false
+    if (isThinking || isAwaitingInitialSubmit || effectiveIsHydratingConversation) return false
     return Boolean(String(draftText ?? '').trim()) || hasComposerContext(chips)
-  }, [accessToken, aiChips, enabled, isAwaitingInitialSubmit, isHydratingConversation, isThinking])
+  }, [accessToken, aiChips, effectiveIsHydratingConversation, enabled, isAwaitingInitialSubmit, isThinking])
 
   const cancelActiveGeneration = useCallback(async () => {
     if (!accessToken || !conversationId || !isThinking) return false
@@ -548,7 +632,7 @@ export function useAiConversation({
     conversationId,
     messages,
     isThinking,
-    isHydratingConversation,
+    isHydratingConversation: effectiveIsHydratingConversation,
     hasConversation,
     streamError,
     submitMessage,

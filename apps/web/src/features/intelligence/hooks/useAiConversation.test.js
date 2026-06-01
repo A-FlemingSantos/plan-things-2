@@ -126,12 +126,15 @@ describe('useAiConversation', () => {
       expect(apiMocks.listMessages).toHaveBeenCalledWith('conv-1', { token: 'token-1' })
     })
 
+    await waitFor(() => {
+      expect(result.current.messages[0]).toMatchObject({
+        id: 'user-1',
+        text: 'Mensagem salva',
+      })
+    })
+
     expect(apiMocks.createConversation).not.toHaveBeenCalled()
     expect(result.current.conversationId).toBe('conv-1')
-    expect(result.current.messages[0]).toMatchObject({
-      id: 'user-1',
-      text: 'Mensagem salva',
-    })
   })
 
   it('creates the first conversation on submit and reports the created id', async () => {

@@ -281,6 +281,7 @@ export default function IntelligenceChat() {
     '--intelligence-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
   }
   const isConversationRouteLoading = Boolean(routeConversationId && !routeConversationDetails && !conversationLoadError)
+  const shouldHoldConversationRender = Boolean((isConversationRouteLoading || isHydratingConversation) && messages.length === 0)
   const statusFeedback = voiceFeedback || conversationLoadError || conversationNotice || streamError
 
   useEffect(() => () => {
@@ -513,12 +514,7 @@ export default function IntelligenceChat() {
         />
 
         <div className={styles.chatArea}>
-          {isConversationRouteLoading || isHydratingConversation ? (
-            <div className={styles.emptyState}>
-              <p className={styles.emptyGreeting}>Carregando conversa</p>
-              <h2 className={styles.emptyTitle}>Recuperando o histórico...</h2>
-            </div>
-          ) : hasConversation ? (
+          {shouldHoldConversationRender ? null : hasConversation ? (
             <IntelligenceConversationThread
               messages={messages}
               isThinking={isThinking}
