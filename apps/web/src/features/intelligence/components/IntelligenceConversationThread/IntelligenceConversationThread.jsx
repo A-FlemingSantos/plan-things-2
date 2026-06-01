@@ -115,9 +115,9 @@ export default function IntelligenceConversationThread({
       {messages.map((msg) => (
         msg.role === 'user' ? (
           <UserChatMessage
-            key={msg.id}
-            text={msg.text}
-            contextSnapshot={msg.contextSnapshot}
+            key={msg.clientKey ?? msg.id}
+            text={msg.displayText ?? msg.text}
+            contextSnapshot={msg.displayContextSnapshot ?? msg.contextSnapshot}
             bubbleClassName={messageUserClass || defaultStyles.messageUser}
           />
         ) : (
@@ -135,9 +135,10 @@ export default function IntelligenceConversationThread({
               || primaryBlocks.length > 0
               || inlineArtifacts.length > 0
             )
+            const messageRenderKey = msg.clientKey ?? msg.id
             const fallbackMarkdownBlocks = markdownBlocks.length === 0 && displayText
               ? [{
-                id: `${msg.id}-stream-markdown`,
+                id: `${messageRenderKey}-stream-markdown`,
                 type: 'MARKDOWN',
                 position: -1,
                 payload: { markdown: displayText },
@@ -152,7 +153,7 @@ export default function IntelligenceConversationThread({
 
             return (
               <div
-                key={msg.id}
+                key={messageRenderKey}
                 className={messageAssistantClass || defaultStyles.messageAssistant}
                 aria-busy={pending ? 'true' : undefined}
               >
@@ -176,7 +177,7 @@ export default function IntelligenceConversationThread({
     return (
       <CustomScrollArea
         enabled
-        refreshKey={`thread-${messages.length}-${isThinking ? 'thinking' : 'idle'}`}
+        refreshKey={`thread-${messages.length}`}
         className={className}
         viewportClassName={scrollClass}
         viewportProps={{

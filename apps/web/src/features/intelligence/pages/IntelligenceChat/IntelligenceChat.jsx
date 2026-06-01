@@ -84,6 +84,27 @@ function markHandoffProcessed(handoffId) {
   window.sessionStorage.setItem(`${HANDOFF_STORAGE_PREFIX}${handoffId}`, 'processed')
 }
 
+function buildLocalConversationDetails(conversationId, scope = {}) {
+  return {
+    id: String(conversationId),
+    title: 'Nova conversa',
+    planId: scope.planId ?? null,
+    cardId: scope.cardId ?? null,
+    scopeType: scope.cardId ? 'CARD' : scope.planId ? 'PLAN' : 'WORKSPACE',
+    status: 'ACTIVE',
+    isLocal: true,
+  }
+}
+
+function buildConversationRouteState(scope = {}) {
+  const nextState = {}
+  if (scope.planId) nextState.planId = scope.planId
+  if (scope.planName) nextState.planName = scope.planName
+  if (scope.cardId) nextState.cardId = scope.cardId
+  if (scope.cardTitle) nextState.cardTitle = scope.cardTitle
+  return Object.keys(nextState).length > 0 ? nextState : null
+}
+
 function getVoiceInputErrorMessage(error) {
   const code = error?.error || error?.name
   if (code === 'NotAllowedError' || code === 'PermissionDeniedError') return VOICE_INPUT_ERROR_MESSAGES['not-allowed']
@@ -147,7 +168,23 @@ export default function IntelligenceChat() {
     autoCreateOnMount: false,
     onConversationCreated: (nextConversationId) => {
       markHandoffProcessed(initialHandoffRef.current?.id)
-      navigate(buildWorkspaceChatPath(nextConversationId), { replace: true, state: null })
+      const localConversation = buildLocalConversationDetails(nextConversationId, chatScope)
+      setRouteConversationDetails(localConversation)
+      setConversationLoadError('')
+      setRecentConversations((current) => {
+        const normalizedId = String(nextConversationId)
+        if (current.some((item) => item.id === normalizedId)) {
+          return current
+        }
+        return [
+          { id: normalizedId, title: localConversation.title },
+          ...current,
+        ]
+      })
+      navigate(buildWorkspaceChatPath(nextConversationId), {
+        replace: true,
+        state: buildConversationRouteState(chatScope),
+      })
     },
     initialPrompt: initialHandoffRef.current?.initialPrompt,
     initialSubmitComposer: initialHandoffRef.current?.submitComposer,
@@ -191,7 +228,9 @@ export default function IntelligenceChat() {
 
     let cancelled = false
     setConversationLoadError('')
-    setRouteConversationDetails(null)
+    setRouteConversationDetails((current) => (
+      current && String(current.id) === routeConversationId ? current : null
+    ))
 
     void getIntelligenceConversation(routeConversationId, { token: accessToken })
       .then((conversation) => {
@@ -252,6 +291,26 @@ export default function IntelligenceChat() {
     const match = recentConversations.find((item) => item.id === conversationId)
     return match?.title ?? routeConversationDetails?.title ?? 'Nova conversa'
   }, [conversationId, recentConversations, routeConversationDetails])
+
+  const toolbarPresentation = useMemo(() => ({
+    conversationTitle: activeConversationTitle,
+    activeConversationId: conversationId,
+    planId: chatScope.planId,
+    planName: chatScope.planName,
+    cardId: chatScope.cardId,
+    cardTitle: chatScope.cardTitle,
+  }), [activeConversationTitle, chatScope, conversationId])
+  const stableToolbarPresentationRef = useRef(toolbarPresentation)
+
+  useEffect(() => {
+    if (!isThinking) {
+      stableToolbarPresentationRef.current = toolbarPresentation
+    }
+  }, [isThinking, toolbarPresentation])
+
+  const displayedToolbarPresentation = isThinking
+    ? stableToolbarPresentationRef.current
+    : toolbarPresentation
 
   const handleSelectConversation = (targetConversationId) => {
     if (!targetConversationId || isThinking) return
@@ -498,16 +557,16 @@ export default function IntelligenceChat() {
           sticky
           centerContent={(
             <ConversationToolbar
-              conversationTitle={activeConversationTitle}
-              activeConversationId={conversationId}
+              conversationTitle={displayedToolbarPresentation.conversationTitle}
+              activeConversationId={displayedToolbarPresentation.activeConversationId}
               recentConversations={recentConversations}
               onSelectConversation={handleSelectConversation}
               onNewConversation={handleNewConversation}
               onArchiveConversation={handleArchiveConversation}
-              planId={chatScope.planId}
-              planName={chatScope.planName}
-              cardId={chatScope.cardId}
-              cardTitle={chatScope.cardTitle}
+              planId={displayedToolbarPresentation.planId}
+              planName={displayedToolbarPresentation.planName}
+              cardId={displayedToolbarPresentation.cardId}
+              cardTitle={displayedToolbarPresentation.cardTitle}
               activeConnectors={activeConnectors}
             />
           )}
@@ -523,7 +582,6 @@ export default function IntelligenceChat() {
                 messages: styles.messages,
                 messageUser: styles.messageUser,
                 messageAssistant: styles.messageAssistant,
-                thinking: styles.thinking,
               }}
               style={accentStyle}
             />

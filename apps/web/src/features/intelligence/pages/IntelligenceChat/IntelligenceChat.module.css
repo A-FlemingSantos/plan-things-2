@@ -81,17 +81,6 @@
   animation: messageIn 0.22s ease both;
 }
 
-.thinking {
-  width: 100%;
-  max-width: 100%;
-  align-self: stretch;
-  padding: 8px 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--intelligence-faint);
-  animation: messageIn 0.22s ease both;
-}
-
 /* ── Empty state ── */
 .emptyState {
   flex: 1;

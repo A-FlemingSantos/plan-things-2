@@ -21,13 +21,14 @@ import {
 import { uploadComposerAttachments } from '../utils/uploadComposerAttachments.js'
 import { useAiStream } from './useAiStream.js'
 
-const WORKSPACE_LAYOUT_SUBMIT_DELAY_MS = 480
 const STREAM_SYNC_POLL_MS = 900
 
 function createFailedAssistantMessage(message) {
   const text = String(message ?? 'Nao foi possivel enviar a mensagem agora.')
+  const id = `assistant-failed-${Date.now()}`
   return {
-    id: `assistant-failed-${Date.now()}`,
+    id,
+    clientKey: id,
     conversationId: null,
     role: 'assistant',
     status: 'FAILED',
@@ -42,64 +43,204 @@ function createFailedAssistantMessage(message) {
   }
 }
 
+function withLocalMessageIdentity(message, clientKey = message?.id) {
+  return {
+    ...message,
+    clientKey: String(clientKey ?? message?.id ?? ''),
+    localEcho: true,
+    displayText: message?.displayText ?? message?.text ?? '',
+    displayContextSnapshot: message?.displayContextSnapshot ?? message?.contextSnapshot ?? null,
+  }
+}
+
+function preserveLocalUiState(message, localMessage) {
+  if (!localMessage) return message
+
+  return {
+    ...message,
+    clientKey: localMessage.clientKey ?? message.clientKey,
+    localEcho: localMessage.localEcho === true ? true : message.localEcho,
+    displayText: localMessage.displayText ?? message.displayText,
+    displayContextSnapshot: localMessage.displayContextSnapshot ?? message.displayContextSnapshot,
+  }
+}
+
+function normalizeMessageText(message) {
+  return String(message?.displayText ?? message?.text ?? message?.contentText ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+function findMatchingLocalUserMessage(message, currentMessages, usedLocalIds) {
+  if (message?.role !== 'user') return null
+
+  const remoteText = normalizeMessageText(message)
+  if (!remoteText) return null
+
+  return currentMessages.find((localMessage) => (
+    localMessage.role === 'user'
+    && localMessage.localEcho === true
+    && !usedLocalIds.has(localMessage.id)
+    && normalizeMessageText(localMessage) === remoteText
+  )) ?? null
+}
+
+function dedupeThreadMessages(messages = []) {
+  const seenIds = new Set()
+  const seenClientKeys = new Set()
+
+  return messages.filter((message) => {
+    const id = String(message?.id ?? '')
+    const clientKey = String(message?.clientKey ?? '')
+    if (id && seenIds.has(id)) return false
+    if (clientKey && seenClientKeys.has(clientKey)) return false
+    if (id) seenIds.add(id)
+    if (clientKey) seenClientKeys.add(clientKey)
+    return true
+  })
+}
+
 function mergeMessagesWithLocalContext(nextMessages, currentMessages) {
   const currentById = new Map(currentMessages.map((message) => [message.id, message]))
 
   return nextMessages.map((message) => {
-    if (message.role !== 'user' || message.contextSnapshot) {
-      return message
+    const localMessage = currentById.get(message.id)
+    const messageWithStableUi = preserveLocalUiState(message, localMessage)
+
+    if (messageWithStableUi.role !== 'user' || messageWithStableUi.contextSnapshot) {
+      return messageWithStableUi
     }
 
-    const localMessage = currentById.get(message.id)
     if (!localMessage?.contextSnapshot) {
-      return message
+      return messageWithStableUi
     }
 
     return {
-      ...message,
+      ...messageWithStableUi,
       contextSnapshot: localMessage.contextSnapshot,
     }
   })
 }
 
-function mergeMessagesPreservingStreaming(nextMessages, currentMessages) {
-  const currentById = new Map(currentMessages.map((message) => [message.id, message]))
+function mergeUniqueBlocks(localBlocks = [], remoteBlocks = [], { skipRemoteMarkdown = false } = {}) {
+  const nextBlocks = [...localBlocks]
+  const existingIds = new Set(nextBlocks.map((block) => block.id).filter(Boolean))
+  const existingSignatures = new Set(nextBlocks.map((block) => `${block.type}:${block.position}`))
 
-  return nextMessages.map((message) => {
+  remoteBlocks.forEach((block) => {
+    if (skipRemoteMarkdown && block.type === 'MARKDOWN') {
+      return
+    }
+
+    const hasSameId = block.id && existingIds.has(block.id)
+    const hasSamePosition = existingSignatures.has(`${block.type}:${block.position}`)
+    if (hasSameId || hasSamePosition) {
+      return
+    }
+
+    nextBlocks.push(block)
+    if (block.id) existingIds.add(block.id)
+    existingSignatures.add(`${block.type}:${block.position}`)
+  })
+
+  return nextBlocks.sort((left, right) => left.position - right.position)
+}
+
+function mergeUniqueInlineArtifacts(localArtifacts = [], remoteArtifacts = []) {
+  const nextArtifacts = [...localArtifacts]
+  const existingIds = new Set(nextArtifacts.map((artifact) => artifact.id).filter(Boolean))
+  const existingSignatures = new Set(nextArtifacts.map((artifact) => `${artifact.type}:${artifact.position}`))
+
+  remoteArtifacts.forEach((artifact) => {
+    const hasSameId = artifact.id && existingIds.has(artifact.id)
+    const hasSamePosition = existingSignatures.has(`${artifact.type}:${artifact.position}`)
+    if (hasSameId || hasSamePosition) {
+      return
+    }
+
+    nextArtifacts.push(artifact)
+    if (artifact.id) existingIds.add(artifact.id)
+    existingSignatures.add(`${artifact.type}:${artifact.position}`)
+  })
+
+  return nextArtifacts.sort((left, right) => left.position - right.position)
+}
+
+function mergeMessagesPreservingStreaming(nextMessages, currentMessages, { preserveLocalStreaming = false } = {}) {
+  const currentById = new Map(currentMessages.map((message) => [message.id, message]))
+  const nextIds = new Set(nextMessages.map((message) => message.id))
+  const matchedLocalIds = new Set()
+
+  const mergedMessages = nextMessages.map((message) => {
     const localMessage = currentById.get(message.id)
+      ?? findMatchingLocalUserMessage(message, currentMessages, matchedLocalIds)
     if (!localMessage) {
       return message
     }
+    matchedLocalIds.add(localMessage.id)
+    const messageWithStableUi = preserveLocalUiState(message, localMessage)
 
     const localStatus = String(localMessage.status ?? '').toUpperCase()
-    const remoteStatus = String(message.status ?? '').toUpperCase()
-    const remoteHasText = Boolean(String(message.contentText ?? message.text ?? '').trim())
+    const remoteStatus = String(messageWithStableUi.status ?? '').toUpperCase()
+    const remoteHasText = Boolean(String(messageWithStableUi.contentText ?? messageWithStableUi.text ?? '').trim())
     const localHasText = Boolean(String(localMessage.contentText ?? localMessage.text ?? '').trim())
 
-    if (localStatus !== 'STREAMING') {
-      return message
+    if (localStatus !== 'STREAMING' && localStatus !== 'PENDING') {
+      return messageWithStableUi
     }
 
-    // During active stream polling, backend may still return empty/pending content.
-    // Keep local delta-rendered text until persisted content becomes available.
-    if (remoteStatus === 'COMPLETED' || remoteHasText) {
-      return message
+    if (!preserveLocalStreaming && (remoteStatus === 'COMPLETED' || remoteHasText)) {
+      return messageWithStableUi
     }
 
     if (!localHasText && (!Array.isArray(localMessage.blocks) || localMessage.blocks.length === 0)) {
+      return messageWithStableUi
+    }
+
+    const remoteBlocks = Array.isArray(messageWithStableUi.blocks) ? messageWithStableUi.blocks : []
+    const localBlocks = Array.isArray(localMessage.blocks) ? localMessage.blocks : []
+    const remoteInlineArtifacts = Array.isArray(messageWithStableUi.inlineArtifacts) ? messageWithStableUi.inlineArtifacts : []
+    const localInlineArtifacts = Array.isArray(localMessage.inlineArtifacts) ? localMessage.inlineArtifacts : []
+    const shouldPreserveLocalText = localHasText && (
+      !remoteHasText
+      || String(localMessage.contentText ?? localMessage.text ?? '').length >= String(messageWithStableUi.contentText ?? messageWithStableUi.text ?? '').length
+    )
+
+    return {
+      ...messageWithStableUi,
+      status: remoteStatus || localStatus,
+      text: shouldPreserveLocalText ? localMessage.text : messageWithStableUi.text,
+      contentText: shouldPreserveLocalText ? localMessage.contentText : messageWithStableUi.contentText,
+      blocks: mergeUniqueBlocks(localBlocks, remoteBlocks, {
+        skipRemoteMarkdown: shouldPreserveLocalText,
+      }),
+      inlineArtifacts: mergeUniqueInlineArtifacts(localInlineArtifacts, remoteInlineArtifacts),
+    }
+  })
+
+  if (!preserveLocalStreaming) {
+    return mergedMessages
+  }
+
+  const localOnlyMessages = currentMessages.filter((message) => {
+    if (nextIds.has(message.id)) return false
+    if (matchedLocalIds.has(message.id)) return false
+    const status = String(message.status ?? '').toUpperCase()
+    return message.localEcho === true || status === 'PENDING' || status === 'STREAMING'
+  })
+
+  return dedupeThreadMessages([...mergedMessages, ...localOnlyMessages])
+}
+
+function completeAssistantMessageLocally(messages, messageId) {
+  return messages.map((message) => {
+    if (message.id !== messageId) {
       return message
     }
 
-    const remoteBlocks = Array.isArray(message.blocks) ? message.blocks : []
-    const localBlocks = Array.isArray(localMessage.blocks) ? localMessage.blocks : []
-    const shouldKeepLocalBlocks = localBlocks.length > remoteBlocks.length
-
     return {
       ...message,
-      status: localStatus,
-      text: localHasText ? localMessage.text : message.text,
-      contentText: localHasText ? localMessage.contentText : message.contentText,
-      blocks: shouldKeepLocalBlocks ? localBlocks : message.blocks,
+      status: 'COMPLETED',
     }
   })
 }
@@ -115,7 +256,7 @@ export function useAiConversation({
   onConversationCreated = null,
   initialPrompt = null,
   initialSubmitComposer = false,
-  initialSubmitDelayMs = initialSubmitComposer ? WORKSPACE_LAYOUT_SUBMIT_DELAY_MS : 0,
+  initialSubmitDelayMs = 0,
 } = {}) {
   const normalizedInitialConversationId = String(initialConversationId ?? '').trim() || null
   const sessionScopeKey = `${accessToken ?? 'anonymous'}:${scope?.planId ?? ''}:${scope?.cardId ?? ''}:${normalizedInitialConversationId ?? ''}`
@@ -123,10 +264,12 @@ export function useAiConversation({
   const initialOptimisticUserMessageRef = useRef(null)
   const pendingOptimisticUserMessageIdRef = useRef(null)
   if (!initialOptimisticUserMessageRef.current && willSubmitOnMount) {
-    initialOptimisticUserMessageRef.current = createOptimisticUserMessage({
-      text: initialPrompt,
-      contextSnapshot: snapshotComposerContext(aiChips),
-    })
+    initialOptimisticUserMessageRef.current = withLocalMessageIdentity(
+      createOptimisticUserMessage({
+        text: initialPrompt,
+        contextSnapshot: snapshotComposerContext(aiChips),
+      }),
+    )
     pendingOptimisticUserMessageIdRef.current = initialOptimisticUserMessageRef.current.id
   }
 
@@ -142,6 +285,8 @@ export function useAiConversation({
   const initialPromptProcessedRef = useRef(Boolean(normalizedInitialConversationId))
   const hydratedConversationIdRef = useRef(null)
   const lastSessionScopeKeyRef = useRef(sessionScopeKey)
+  const locallyCreatedConversationIdRef = useRef(null)
+  const submittingMessageIdsRef = useRef(new Set())
 
   useEffect(() => {
     if (lastSessionScopeKeyRef.current === sessionScopeKey) {
@@ -152,9 +297,21 @@ export function useAiConversation({
     conversationPromiseRef.current = null
     hydratedConversationIdRef.current = null
     pendingOptimisticUserMessageIdRef.current = null
+    submittingMessageIdsRef.current.clear()
     initialPromptProcessedRef.current = Boolean(normalizedInitialConversationId)
 
-    if (normalizedInitialConversationId && normalizedInitialConversationId === conversationId) {
+    const isLocallyCreatedConversationRoute = Boolean(
+      normalizedInitialConversationId
+      && normalizedInitialConversationId === locallyCreatedConversationIdRef.current,
+    )
+
+    if (
+      normalizedInitialConversationId
+      && (normalizedInitialConversationId === conversationId || isLocallyCreatedConversationRoute)
+    ) {
+      if (conversationId !== normalizedInitialConversationId) {
+        setConversationId(normalizedInitialConversationId)
+      }
       setIsAwaitingInitialSubmit(false)
       setIsHydratingConversation(false)
       return
@@ -168,14 +325,19 @@ export function useAiConversation({
     setIsAwaitingInitialSubmit(willSubmitOnMount)
   }, [conversationId, normalizedInitialConversationId, sessionScopeKey, willSubmitOnMount])
 
-  const refreshMessages = useCallback(async (targetConversationId = conversationId) => {
+  const refreshMessages = useCallback(async (
+    targetConversationId = conversationId,
+    { preserveLocalStreaming = false } = {},
+  ) => {
     if (!accessToken || !targetConversationId) return []
 
     const apiMessages = await listIntelligenceMessages(targetConversationId, { token: accessToken })
     const normalizedMessages = apiMessages.map(mapApiMessageToThreadMessage)
 
     setMessages((current) => {
-      const withStreamingMerge = mergeMessagesPreservingStreaming(normalizedMessages, current)
+      const withStreamingMerge = mergeMessagesPreservingStreaming(normalizedMessages, current, {
+        preserveLocalStreaming,
+      })
       return mergeMessagesWithLocalContext(withStreamingMerge, current)
     })
     setIsThinking(isThreadMessageThinking(normalizedMessages))
@@ -308,7 +470,31 @@ export function useAiConversation({
     }
 
     if (event.event === 'assistant.completed') {
-      void refreshMessages(String(event.data?.conversationId ?? conversationId ?? '')).catch(() => {})
+      const messageId = String(event.data?.messageId ?? '')
+      if (!messageId) {
+        setIsThinking(false)
+        return
+      }
+
+      let shouldFetchMissingContent = false
+      setMessages((current) => {
+        const localMessage = current.find((message) => message.id === messageId)
+        const localHasRenderableContent = Boolean(
+          String(localMessage?.contentText ?? localMessage?.text ?? '').trim()
+          || (Array.isArray(localMessage?.blocks) && localMessage.blocks.length > 0)
+          || (Array.isArray(localMessage?.inlineArtifacts) && localMessage.inlineArtifacts.length > 0),
+        )
+        shouldFetchMissingContent = !localHasRenderableContent
+
+        return completeAssistantMessageLocally(current, messageId)
+      })
+      setIsThinking(false)
+
+      if (shouldFetchMissingContent) {
+        void refreshMessages(String(event.data?.conversationId ?? conversationId ?? ''), {
+          preserveLocalStreaming: true,
+        }).catch(() => {})
+      }
       return
     }
 
@@ -391,18 +577,22 @@ export function useAiConversation({
     if (!enabled || !accessToken) return false
     if (isHydratingConversation) return false
     if (isAwaitingInitialSubmit && !allowWhileAwaiting) return false
-    if (isThinking) return false
+    if (isThinking && !allowWhileAwaiting) return false
     if (!text && !hasComposerContext(chips)) return false
 
     const localSnapshot = snapshotComposerContext(chips)
     const pendingOptimisticUserMessageId = pendingOptimisticUserMessageIdRef.current
     const optimisticUserMessage = pendingOptimisticUserMessageId
       ? null
-      : createOptimisticUserMessage({
+      : withLocalMessageIdentity(createOptimisticUserMessage({
         text,
         contextSnapshot: localSnapshot,
-      })
+      }))
     const optimisticUserMessageId = pendingOptimisticUserMessageId ?? optimisticUserMessage.id
+    if (submittingMessageIdsRef.current.has(optimisticUserMessageId)) {
+      return true
+    }
+    submittingMessageIdsRef.current.add(optimisticUserMessageId)
 
     if (optimisticUserMessage) {
       setMessages((current) => [...current, optimisticUserMessage])
@@ -439,18 +629,31 @@ export function useAiConversation({
           text,
           contextSnapshot,
         })
+        const localUserMessage = current.find((message) => message.id === optimisticUserMessageId)
+        const acceptedUserMessageWithStableUi = withLocalMessageIdentity(
+          acceptedUserMessage,
+          localUserMessage?.clientKey ?? optimisticUserMessageId,
+        )
         const nextMessages = current.map((message) => (
-          message.id === optimisticUserMessageId ? acceptedUserMessage : message
+          message.id === optimisticUserMessageId ? acceptedUserMessageWithStableUi : message
         ))
         const hasAcceptedUserMessage = nextMessages.some((message) => message.id === acceptedMessage.userMessageId)
-        const withUserMessage = hasAcceptedUserMessage ? nextMessages : [...nextMessages, acceptedUserMessage]
+        const hasAcceptedUserClientKey = nextMessages.some((message) => (
+          message.clientKey
+          && message.clientKey === acceptedUserMessageWithStableUi.clientKey
+        ))
+        const withUserMessage = hasAcceptedUserMessage || hasAcceptedUserClientKey
+          ? nextMessages
+          : [...nextMessages, acceptedUserMessageWithStableUi]
 
-        if (withUserMessage.some((message) => message.id === acceptedMessage.assistantMessageId)) {
-          return withUserMessage
+        const dedupedWithUserMessage = dedupeThreadMessages(withUserMessage)
+
+        if (dedupedWithUserMessage.some((message) => message.id === acceptedMessage.assistantMessageId)) {
+          return dedupedWithUserMessage
         }
 
         return [
-          ...withUserMessage,
+          ...dedupedWithUserMessage,
           createOptimisticAssistantPlaceholder({
             id: acceptedMessage.assistantMessageId,
           }),
@@ -464,6 +667,7 @@ export function useAiConversation({
       setIsThinking(true)
       setStreamError('')
       if (ensuredConversation.created && typeof onConversationCreated === 'function') {
+        locallyCreatedConversationIdRef.current = targetConversationId
         onConversationCreated(targetConversationId)
       }
       return true
@@ -477,6 +681,8 @@ export function useAiConversation({
       setIsThinking(false)
       setStreamError(errorMessage)
       return false
+    } finally {
+      submittingMessageIdsRef.current.delete(optimisticUserMessageId)
     }
   }, [
     accessToken,
@@ -493,6 +699,7 @@ export function useAiConversation({
   useEffect(() => {
     if (initialPromptProcessedRef.current) return
     if (!enabled) return
+    if (!accessToken) return
     if (normalizedInitialConversationId) {
       initialPromptProcessedRef.current = true
       setIsAwaitingInitialSubmit(false)
@@ -510,14 +717,13 @@ export function useAiConversation({
 
     const timer = setTimeout(() => {
       if (initialPromptProcessedRef.current) return
+      initialPromptProcessedRef.current = true
       void submitMessage(prompt, aiChips, { allowWhileAwaiting: true }).then((didSubmit) => {
         if (didSubmit) {
-          initialPromptProcessedRef.current = true
           setIsAwaitingInitialSubmit(false)
           return
         }
         if (isThinking) return
-        initialPromptProcessedRef.current = true
         setIsAwaitingInitialSubmit(false)
       })
     }, Math.max(0, initialSubmitDelayMs))
@@ -527,6 +733,7 @@ export function useAiConversation({
     }
   }, [
     aiChips,
+    accessToken,
     enabled,
     initialPrompt,
     initialSubmitComposer,
@@ -540,7 +747,7 @@ export function useAiConversation({
     if (!conversationId || !accessToken || !isThinking) return undefined
 
     const timer = setInterval(() => {
-      void refreshMessages(conversationId)
+      void refreshMessages(conversationId, { preserveLocalStreaming: true })
     }, STREAM_SYNC_POLL_MS)
 
     return () => {

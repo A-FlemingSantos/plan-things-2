@@ -239,8 +239,7 @@ export default function App() {
               />
               <Route path="/app" element={<RequireSession><PreferredAppEntryRedirect /></RequireSession>} />
               <Route path={ROUTES.workspace} element={<RequireSession><Workspace /></RequireSession>} />
-              <Route path={ROUTES.workspaceChat} element={<RequireSession><IntelligenceChat /></RequireSession>} />
-              <Route path={`${ROUTES.workspaceChat}/:conversationId`} element={<RequireSession><IntelligenceChat /></RequireSession>} />
+              <Route path={`${ROUTES.workspaceChat}/:conversationId?`} element={<RequireSession><IntelligenceChat /></RequireSession>} />
               <Route path={ROUTES.workspaceBoard} element={<RequireSession><KanbanBoard /></RequireSession>} />
               <Route path={`${ROUTES.workspaceBoard}/:planId`} element={<RequireSession><KanbanBoard /></RequireSession>} />
               <Route

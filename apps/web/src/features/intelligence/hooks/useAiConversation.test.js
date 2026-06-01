@@ -13,6 +13,16 @@ const streamState = vi.hoisted(() => ({
   options: null,
 }))
 
+function createDeferred() {
+  let resolve
+  let reject
+  const promise = new Promise((promiseResolve, promiseReject) => {
+    resolve = promiseResolve
+    reject = promiseReject
+  })
+  return { promise, resolve, reject }
+}
+
 vi.mock('../api/intelligenceApi.js', () => ({
   createIntelligenceConversation: (...args) => apiMocks.createConversation(...args),
   createIntelligenceMessage: (...args) => apiMocks.createMessage(...args),
@@ -394,6 +404,410 @@ describe('useAiConversation', () => {
       role: 'assistant',
       status: AI_MESSAGE_STATUSES.STREAMING,
       text: 'Parte parcial',
+    })
+  })
+
+  it('completes a streamed assistant message without refreshing the whole thread', async () => {
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockResolvedValue({
+      conversationId: 'conv-1',
+      userMessageId: 'user-1',
+      assistantMessageId: 'asst-1',
+      assistantStatus: 'PENDING',
+    })
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+    }))
+
+    await waitFor(() => {
+      expect(apiMocks.createConversation).toHaveBeenCalled()
+    })
+
+    await act(async () => {
+      await result.current.submitMessage('Mensagem')
+    })
+
+    await act(async () => {
+      streamState.options.onEvent({
+        event: 'assistant.delta',
+        data: {
+          conversationId: 'conv-1',
+          messageId: 'asst-1',
+          delta: 'Resposta final',
+        },
+      })
+    })
+
+    apiMocks.listMessages.mockClear()
+
+    await act(async () => {
+      streamState.options.onEvent({
+        event: 'assistant.completed',
+        data: {
+          conversationId: 'conv-1',
+          messageId: 'asst-1',
+        },
+      })
+    })
+
+    expect(apiMocks.listMessages).not.toHaveBeenCalled()
+    expect(result.current.messages[1]).toMatchObject({
+      id: 'asst-1',
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.COMPLETED,
+      text: 'Resposta final',
+    })
+    expect(result.current.isThinking).toBe(false)
+  })
+
+  it('preserves streamed assistant text when polling receives the persisted markdown block', async () => {
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockResolvedValue({
+      conversationId: 'conv-1',
+      userMessageId: 'user-1',
+      assistantMessageId: 'asst-1',
+      assistantStatus: 'PENDING',
+    })
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+    }))
+
+    await waitFor(() => {
+      expect(apiMocks.createConversation).toHaveBeenCalled()
+    })
+
+    await act(async () => {
+      await result.current.submitMessage('Mensagem')
+    })
+
+    await act(async () => {
+      streamState.options.onEvent({
+        event: 'assistant.delta',
+        data: {
+          conversationId: 'conv-1',
+          messageId: 'asst-1',
+          delta: 'Resposta final',
+        },
+      })
+    })
+
+    apiMocks.listMessages.mockResolvedValue([
+      {
+        id: 'user-1',
+        conversationId: 'conv-1',
+        role: 'USER',
+        status: 'COMPLETED',
+        contentText: 'Mensagem',
+        blocks: [],
+      },
+      {
+        id: 'asst-1',
+        conversationId: 'conv-1',
+        role: 'ASSISTANT',
+        status: 'COMPLETED',
+        contentText: 'Resposta final',
+        blocks: [
+          {
+            id: 'markdown-1',
+            blockType: 'MARKDOWN',
+            position: 0,
+            payloadJson: JSON.stringify({ markdown: 'Resposta final' }),
+          },
+          {
+            id: 'reference-1',
+            blockType: 'PLAN_REFERENCE',
+            position: 1,
+            title: 'Plano',
+            entityType: 'PLAN',
+            entityId: 'plan-1',
+            payloadJson: JSON.stringify({ entityId: 'plan-1' }),
+          },
+        ],
+      },
+    ])
+
+    await act(async () => {
+      await result.current.refreshMessages('conv-1', { preserveLocalStreaming: true })
+    })
+
+    expect(result.current.messages[1]).toMatchObject({
+      id: 'asst-1',
+      role: 'assistant',
+      status: AI_MESSAGE_STATUSES.COMPLETED,
+      text: 'Resposta final',
+    })
+    expect(result.current.messages[1].blocks).toEqual([
+      expect.objectContaining({
+        id: 'reference-1',
+        type: 'PLAN_REFERENCE',
+      }),
+    ])
+    expect(result.current.isThinking).toBe(false)
+  })
+
+  it('keeps a locally accepted user message while polling lags behind the backend write', async () => {
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockResolvedValue({
+      conversationId: 'conv-1',
+      userMessageId: 'real-user-id',
+      assistantMessageId: 'real-assistant-id',
+      assistantStatus: 'PENDING',
+    })
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+    }))
+
+    await waitFor(() => {
+      expect(apiMocks.createConversation).toHaveBeenCalled()
+    })
+
+    await act(async () => {
+      await result.current.submitMessage('Mensagem nova')
+    })
+
+    apiMocks.listMessages.mockResolvedValue([])
+
+    await act(async () => {
+      await result.current.refreshMessages('conv-1', { preserveLocalStreaming: true })
+    })
+
+    expect(result.current.messages).toEqual([
+      expect.objectContaining({
+        id: 'real-user-id',
+        role: 'user',
+        text: 'Mensagem nova',
+      }),
+      expect.objectContaining({
+        id: 'real-assistant-id',
+        role: 'assistant',
+        status: AI_MESSAGE_STATUSES.PENDING,
+      }),
+    ])
+  })
+
+  it('reconciles a persisted user message with the optimistic bubble while submit is still in flight', async () => {
+    const messageDeferred = createDeferred()
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockReturnValue(messageDeferred.promise)
+    apiMocks.listMessages.mockResolvedValue([
+      {
+        id: 'real-user-id',
+        conversationId: 'conv-1',
+        role: 'USER',
+        status: 'COMPLETED',
+        contentText: 'Primeira mensagem',
+        blocks: [],
+      },
+    ])
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+      autoCreateOnMount: false,
+    }))
+
+    let submitPromise
+    await act(async () => {
+      submitPromise = result.current.submitMessage('Primeira mensagem')
+    })
+
+    await waitFor(() => {
+      expect(apiMocks.createMessage).toHaveBeenCalled()
+    })
+
+    const optimisticClientKey = result.current.messages[0]?.clientKey
+
+    await act(async () => {
+      await result.current.refreshMessages('conv-1', { preserveLocalStreaming: true })
+    })
+
+    expect(result.current.messages).toEqual([
+      expect.objectContaining({
+        id: 'real-user-id',
+        role: 'user',
+        text: 'Primeira mensagem',
+        clientKey: optimisticClientKey,
+      }),
+    ])
+
+    messageDeferred.resolve({
+      conversationId: 'conv-1',
+      userMessageId: 'real-user-id',
+      assistantMessageId: 'real-assistant-id',
+      assistantStatus: 'PENDING',
+    })
+
+    await act(async () => {
+      await submitPromise
+    })
+
+    expect(result.current.messages).toEqual([
+      expect.objectContaining({
+        id: 'real-user-id',
+        role: 'user',
+        text: 'Primeira mensagem',
+        clientKey: optimisticClientKey,
+      }),
+      expect.objectContaining({
+        id: 'real-assistant-id',
+        role: 'assistant',
+        status: AI_MESSAGE_STATUSES.PENDING,
+      }),
+    ])
+  })
+
+  it('does not clear the optimistic first turn when the created conversation route arrives before state settles', async () => {
+    const messageDeferred = createDeferred()
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockReturnValue(messageDeferred.promise)
+
+    const { result, rerender } = renderHook(
+      ({ conversationId }) => useAiConversation({
+        accessToken: 'token-1',
+        enabled: true,
+        initialConversationId: conversationId,
+        autoCreateOnMount: false,
+        onConversationCreated: () => {},
+      }),
+      { initialProps: { conversationId: null } },
+    )
+
+    let submitPromise
+    await act(async () => {
+      submitPromise = result.current.submitMessage('Primeira mensagem')
+    })
+
+    await waitFor(() => {
+      expect(apiMocks.createMessage).toHaveBeenCalled()
+    })
+
+    messageDeferred.resolve({
+      conversationId: 'conv-1',
+      userMessageId: 'user-1',
+      assistantMessageId: 'asst-1',
+      assistantStatus: 'PENDING',
+    })
+
+    await act(async () => {
+      await submitPromise
+      rerender({ conversationId: 'conv-1' })
+    })
+
+    expect(result.current.messages).toEqual([
+      expect.objectContaining({
+        id: 'user-1',
+        role: 'user',
+        text: 'Primeira mensagem',
+      }),
+      expect.objectContaining({
+        id: 'asst-1',
+        role: 'assistant',
+        status: AI_MESSAGE_STATUSES.PENDING,
+      }),
+    ])
+    expect(result.current.isThinking).toBe(true)
+  })
+
+  it('shows the workspace handoff bubble without entering a fake thinking state before submit starts', async () => {
+    const messageDeferred = createDeferred()
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockReturnValue(messageDeferred.promise)
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+      autoCreateOnMount: false,
+      initialPrompt: 'Primeira mensagem',
+      initialSubmitComposer: true,
+      initialSubmitDelayMs: 25,
+    }))
+
+    expect(result.current.messages).toEqual([
+      expect.objectContaining({
+        role: 'user',
+        text: 'Primeira mensagem',
+      }),
+    ])
+    expect(result.current.isThinking).toBe(false)
+
+    await waitFor(() => {
+      expect(apiMocks.createMessage).toHaveBeenCalledWith(
+        'conv-1',
+        expect.objectContaining({ content: 'Primeira mensagem' }),
+        { token: 'token-1' },
+      )
+    })
+
+    messageDeferred.resolve({
+      conversationId: 'conv-1',
+      userMessageId: 'user-1',
+      assistantMessageId: 'asst-1',
+      assistantStatus: 'PENDING',
+    })
+
+    await waitFor(() => {
+      expect(result.current.messages[0]).toMatchObject({
+        id: 'user-1',
+        text: 'Primeira mensagem',
+      })
+    })
+  })
+
+  it('deduplicates repeated workspace handoff submits while the first submit is in flight', async () => {
+    const messageDeferred = createDeferred()
+    apiMocks.createConversation.mockResolvedValue({ id: 'conv-1' })
+    apiMocks.createMessage.mockReturnValue(messageDeferred.promise)
+
+    const { result } = renderHook(() => useAiConversation({
+      accessToken: 'token-1',
+      enabled: true,
+      autoCreateOnMount: false,
+      initialPrompt: 'Primeira mensagem',
+      initialSubmitComposer: true,
+    }))
+
+    await waitFor(() => {
+      expect(apiMocks.createMessage).toHaveBeenCalledTimes(1)
+    })
+
+    await act(async () => {
+      await result.current.submitMessage('Primeira mensagem', [], { allowWhileAwaiting: true })
+    })
+
+    expect(apiMocks.createMessage).toHaveBeenCalledTimes(1)
+    expect(result.current.messages).toEqual([
+      expect.objectContaining({
+        role: 'user',
+        text: 'Primeira mensagem',
+      }),
+    ])
+
+    messageDeferred.resolve({
+      conversationId: 'conv-1',
+      userMessageId: 'user-1',
+      assistantMessageId: 'asst-1',
+      assistantStatus: 'PENDING',
+    })
+
+    await waitFor(() => {
+      expect(result.current.messages).toEqual([
+        expect.objectContaining({
+          id: 'user-1',
+          role: 'user',
+          text: 'Primeira mensagem',
+        }),
+        expect.objectContaining({
+          id: 'asst-1',
+          role: 'assistant',
+          status: AI_MESSAGE_STATUSES.PENDING,
+        }),
+      ])
     })
   })
 })

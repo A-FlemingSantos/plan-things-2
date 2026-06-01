@@ -46,17 +46,6 @@
   animation: threadMessageIn 0.22s ease both;
 }
 
-.thinking {
-  width: 100%;
-  max-width: 100%;
-  align-self: stretch;
-  padding: 8px 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--intelligence-faint, var(--text-3));
-  animation: threadMessageIn 0.22s ease both;
-}
-
 @keyframes threadMessageIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }

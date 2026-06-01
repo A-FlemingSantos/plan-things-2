@@ -109,8 +109,7 @@ function renderChat(initialEntry = '/workspace/chat') {
     <TestMemoryRouter initialEntries={[initialEntry]}>
       <LocationProbe />
       <Routes>
-        <Route path="/workspace/chat" element={<IntelligenceChat />} />
-        <Route path="/workspace/chat/:conversationId" element={<IntelligenceChat />} />
+        <Route path="/workspace/chat/:conversationId?" element={<IntelligenceChat />} />
       </Routes>
     </TestMemoryRouter>,
   )
@@ -299,6 +298,49 @@ describe('IntelligenceChat routing', () => {
     expect(screen.getByText('Primeira mensagem')).toBeInTheDocument()
     expect(screen.queryByText('O que vamos construir hoje?')).not.toBeInTheDocument()
     expect(screen.queryByText('Preparando sua mensagem...')).not.toBeInTheDocument()
+  })
+
+  it('keeps toolbar scope stable while the created route conversation details load', async () => {
+    const conversationDeferred = createDeferred()
+    apiMocks.getConversation.mockReturnValue(conversationDeferred.promise)
+
+    renderChat({
+      pathname: '/workspace/chat',
+      state: {
+        handoffId: 'handoff-scoped',
+        initialPrompt: 'Primeira mensagem',
+        submitComposer: true,
+        planId: 'plan-1',
+        planName: 'Plano Alpha',
+      },
+    })
+
+    expect(screen.getByText('Plano Alpha')).toBeInTheDocument()
+    expect(screen.getByText('Primeira mensagem')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(apiMocks.createMessage).toHaveBeenCalledWith(
+        'conv-created',
+        expect.objectContaining({ content: 'Primeira mensagem' }),
+        { token: 'test-token' },
+      )
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/workspace/chat/conv-created')
+    })
+
+    expect(screen.getByText('Plano Alpha')).toBeInTheDocument()
+    expect(screen.getByText('Primeira mensagem')).toBeInTheDocument()
+    expect(screen.queryByText('Área de trabalho')).not.toBeInTheDocument()
+
+    conversationDeferred.resolve(mockConversation('conv-created', {
+      planId: 'plan-1',
+    }))
+
+    await waitFor(() => {
+      expect(apiMocks.getConversation).toHaveBeenCalledWith('conv-created', { token: 'test-token' })
+    })
   })
 
   it('does not resubmit a prompt state when reloading a URL-backed conversation', async () => {
