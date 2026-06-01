@@ -82,6 +82,14 @@ function AppBootstrapScreen() {
   )
 }
 
+export function resolveRouteTransitionKey(pathname) {
+  const normalized = normalizePathname(pathname)
+  if (normalized === ROUTES.workspaceChat || normalized.startsWith(`${ROUTES.workspaceChat}/`)) {
+    return ROUTES.workspaceChat
+  }
+  return normalized
+}
+
 export default function App() {
   const auth = useAuth()
   const isReady = auth.isReady
@@ -118,6 +126,7 @@ export default function App() {
       )
     : null
   const renderedLocation = modalBackgroundLocation ?? location
+  const routeTransitionKey = resolveRouteTransitionKey(renderedLocation.pathname)
 
   useEffect(() => {
     if (sessionMode !== 'anonymous') {
@@ -174,7 +183,7 @@ export default function App() {
       <LayoutGroup>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
-            key={renderedLocation.pathname}
+            key={routeTransitionKey}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >

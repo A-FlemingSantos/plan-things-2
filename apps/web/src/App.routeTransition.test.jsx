@@ -1,0 +1,15 @@
+import { describe, expect, it } from 'vitest'
+import { resolveRouteTransitionKey } from './App.jsx'
+
+describe('resolveRouteTransitionKey', () => {
+  it('keeps dedicated chat route transitions stable while the conversation id changes', () => {
+    expect(resolveRouteTransitionKey('/workspace/chat')).toBe('/workspace/chat')
+    expect(resolveRouteTransitionKey('/workspace/chat/conv-1')).toBe('/workspace/chat')
+    expect(resolveRouteTransitionKey('/workspace/chat/conv-2/')).toBe('/workspace/chat')
+  })
+
+  it('keeps other product routes keyed by their normalized pathname', () => {
+    expect(resolveRouteTransitionKey('/workspace')).toBe('/workspace')
+    expect(resolveRouteTransitionKey('/workspace/board/product-launch-q3')).toBe('/workspace/board/product-launch-q3')
+  })
+})
