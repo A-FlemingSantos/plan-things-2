@@ -4,7 +4,10 @@ import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import IntelligenceChat from './IntelligenceChat.jsx'
 
+const composerContextMenuMock = vi.hoisted(() => vi.fn())
+
 const plansMock = vi.hoisted(() => ({
+  plans: [],
   aiChips: [],
   setAiChips: vi.fn(),
 }))
@@ -57,7 +60,10 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 }))
 
 vi.mock('../../../../shared/components/AiComposerContextMenu/AiComposerContextMenu.jsx', () => ({
-  default: () => <div aria-label="Menu de contexto do composer" />,
+  default: (props) => {
+    composerContextMenuMock(props)
+    return <div aria-label="Menu de contexto do composer" />
+  },
 }))
 
 vi.mock('../../../../shared/components/GitHubContextBar/GitHubContextBar.jsx', () => ({
@@ -97,8 +103,10 @@ function renderChat(route = { pathname: '/workspace/chat' }) {
 
 describe('IntelligenceChat', () => {
   beforeEach(() => {
+    plansMock.plans = []
     plansMock.aiChips = []
     plansMock.setAiChips.mockReset()
+    composerContextMenuMock.mockReset()
   })
 
   it('renders collapsed toolbar with title, scope and indicators in the header', () => {
@@ -182,6 +190,19 @@ describe('IntelligenceChat', () => {
 
     expect(screen.getByText('pitch-deck-v2.pdf')).toBeInTheDocument()
     expect(screen.getByText('wireframes.fig')).toBeInTheDocument()
+  })
+
+  it('passes real workspace plans to the composer context menu', () => {
+    plansMock.plans = [
+      { id: 'plan-1', name: 'Sprint 3', tag: 'Produto', tagColor: '#4290da' },
+      { id: 'plan-2', name: 'Design System', tag: 'Design', tagColor: '#d4aef1' },
+    ]
+
+    renderChat()
+
+    const lastCall = composerContextMenuMock.mock.calls.at(-1)?.[0]
+    expect(lastCall?.planOptions).toEqual(plansMock.plans)
+    expect(lastCall?.boardCards).toBeUndefined()
   })
 
   it('moves attachments into the sent message but keeps context chips in the composer', async () => {

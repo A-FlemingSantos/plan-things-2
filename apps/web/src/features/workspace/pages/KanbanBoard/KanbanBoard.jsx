@@ -28,6 +28,7 @@ import {
 } from '../../data/kanbanColorPalette.js'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import IntelligenceConversationThread from '../../../intelligence/components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
+import { useIntelligenceComposerContext } from '../../../intelligence/hooks/useIntelligenceComposerContext.js'
 import { useAiConversation } from '../../../intelligence/hooks/useAiConversation.js'
 import styles from './KanbanBoard.module.css'
 
@@ -857,16 +858,10 @@ export default function KanbanBoard() {
     timeZone,
     dateFormat,
   })
-  const intelligenceBoardCards = useMemo(
-    () => columns.flatMap((column) => (
-      column.cards.map((card) => ({
-        id: card.id,
-        title: card.title,
-        columnTitle: column.title,
-      }))
-    )),
-    [columns],
-  )
+  const composerContext = useIntelligenceComposerContext({
+    scope: 'board',
+    boardColumns: columns,
+  })
   const {
     dragState,
     dropTarget,
@@ -2644,7 +2639,7 @@ export default function KanbanBoard() {
                   submitDisabled={!canSubmitIntelligenceMessage(intelligenceDraft, kanbanAiChips)}
                   aiChips={kanbanAiChips}
                   onChipsChange={setKanbanAiChips}
-                  boardCards={intelligenceBoardCards}
+                  {...composerContext}
                   showGitHubBar={intelligenceActiveConnectors.includes('github')}
                   githubBarClassName={styles.intelligenceGitHubBar}
                   classes={{

@@ -16,6 +16,7 @@ import {
 import { usePlans } from '../../context/PlansContext.jsx'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import { hasComposerContext } from '../../../intelligence/utils/snapshotComposerContext.js'
+import { useIntelligenceComposerContext } from '../../../intelligence/hooks/useIntelligenceComposerContext.js'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
@@ -976,7 +977,8 @@ function WorkspaceLoadingState({ view }) {
 
 function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
   const navigate = useNavigate()
-  const { aiChips = [], setAiChips = () => {}, plans = [] } = usePlans()
+  const { aiChips = [], setAiChips = () => {} } = usePlans()
+  const composerContext = useIntelligenceComposerContext({ scope: 'workspace' })
   const activeConnectors = aiChips.filter((c) => c.kind === 'connector').map((c) => c.type)
   const [draft, setDraft] = useState('')
   const [isListening, setIsListening] = useState(false)
@@ -1063,7 +1065,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
           voiceAriaLabelListening="Parar gravação de áudio"
           aiChips={aiChips}
           onChipsChange={setAiChips}
-          planOptions={plans}
+          {...composerContext}
           showGitHubBar={activeConnectors.includes('github')}
           githubBarPlacement="insideForm"
           githubBarClassName={`${styles.intelligenceSuggestions} ${styles.intelligenceGitHubBar}`}

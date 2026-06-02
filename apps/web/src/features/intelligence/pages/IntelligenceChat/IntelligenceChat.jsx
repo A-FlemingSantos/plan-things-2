@@ -19,6 +19,7 @@ import {
   listIntelligenceConversations,
   updateIntelligenceConversation,
 } from '../../api/intelligenceApi.js'
+import { useIntelligenceComposerContext } from '../../hooks/useIntelligenceComposerContext.js'
 import { useAiConversation } from '../../hooks/useAiConversation.js'
 import styles from './IntelligenceChat.module.css'
 
@@ -121,6 +122,7 @@ export default function IntelligenceChat() {
   const { accessToken, currentUser } = useAuth()
   const { localPreferences } = usePreferences()
   const { aiChips = [], setAiChips = () => {} } = usePlans()
+  const composerContext = useIntelligenceComposerContext({ scope: 'chat' })
   const activeConnectors = useMemo(
     () => aiChips.filter((c) => c.kind === 'connector').map((c) => c.type),
     [aiChips],
@@ -624,6 +626,7 @@ export default function IntelligenceChat() {
             onVoiceClick={handleVoiceInput}
             aiChips={aiChips}
             onChipsChange={setAiChips}
+            {...composerContext}
             showGitHubBar={activeConnectors.includes('github')}
             githubBarClassName={styles.githubContextBar}
             classes={{
