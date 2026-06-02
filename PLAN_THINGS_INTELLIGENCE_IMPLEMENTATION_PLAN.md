@@ -1,8 +1,8 @@
 # Plan Things Intelligence: plano de implementacao robusta
 
-Data de referencia: 2026-05-31
+Data de referencia: 2026-06-02
 
-**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction + hardening de URL por conversa e preservacao apos reload). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto em texto, upload de anexos no envio — **sem vision/File Search**). **Fase 2 concluida** (blocos `PLAN_REFERENCE`/`CARD_REFERENCE`/`FILE_REFERENCE` persistidos a partir do `contextSnapshot`, SSE `block.created`, navegacao interna `/workspace/board/...` e `?card=`). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional. **Fase 6** (planejada): multimodal/vision, preview persistente no chat e File Search.
+**Progresso:** Fase 0 concluida. Fases 0.5.1/0.5.2/0.5.3 concluidas. Fase 1 concluida (listagem/PATCH/cancelamento/compaction + hardening de URL por conversa e preservacao apos reload). Fase 1.5 concluida (contextSnapshot persistido, prompt com contexto em texto, upload de anexos no envio — **sem vision/File Search**). **Fase 2 concluida** (blocos `PLAN_REFERENCE`/`CARD_REFERENCE`/`FILE_REFERENCE` persistidos a partir do `contextSnapshot`, SSE `block.created`, navegacao interna `/workspace/board/...` e `?card=`). **Fase 3 concluida** (tool calling read-only com loop completo da Responses API, `context.search`, `entity.get`, auditoria em `ai_tool_calls` e SSE de tools). Integracao-base de Streamdown concluida no frontend; pendencias restantes de Streamdown ficam em validacao, rollout e endurecimento operacional. **Fase 6** (planejada): multimodal/vision, preview persistente no chat e File Search.
 
 Este documento descreve o plano para o **Plan Things Intelligence**: copiloto com `gpt-5.4-mini`, ferramentas permissionadas, blocos interativos, contexto por conversa, **entrada multimodal (imagens e documentos)**, File Search e GitHub.
 
@@ -28,16 +28,19 @@ O mesmo padrao vale para cartoes, listas, arquivos, membros, Inbox, commits, pul
 | Superficie    | Arquivo / rota                         | Comportamento hoje                         |
 | ------------- | -------------------------------------- | ------------------------------------------ |
 | Launcher      | `WorkspaceIntelligenceSection`         | Composer + redirect para `/workspace/chat` |
-| Chat dedicado | `IntelligenceChat` (`/workspace/chat`) | Mock via `useMockAiConversation`           |
-| Kanban inline | painel `#board-intelligence-panel`     | Mesmo mock compartilhado                   |
+| Chat dedicado | `IntelligenceChat` (`/workspace/chat`) | Backend real via `useAiConversation` + SSE |
+| Kanban inline | painel `#board-intelligence-panel`     | Backend real via `useAiConversation`       |
 
-Nenhuma superficie chama o backend de intelligence ainda.
+O Workspace continua como launcher. O chat dedicado e o painel IA do Kanban ja chamam o backend de intelligence. Partes da `ConversationToolbar` ainda seguem mock e permanecem fora do escopo desta atualizacao.
 
 ### Frontend ja existente
 
 ```txt
 apps/web/src/features/intelligence/
-  hooks/useMockAiConversation.js
+  api/intelligenceApi.js
+  hooks/useAiConversation.js
+  hooks/useAiStream.js
+  hooks/useMockAiConversation.js            (mantido para testes/mock local)
   mock/buildMockIntelligenceReply.js
   utils/snapshotComposerContext.js
   pages/IntelligenceChat/
@@ -55,15 +58,18 @@ apps/web/src/shared/components/
 - Submit mock captura `contextSnapshot` imutavel; so anexos saem do composer apos envio.
 - Chips de card com `data-kind="card"` e tokens de tema escuro.
 - Preferencia `showIntelligenceSection` em Settings.
+- O composer do launcher e do chat dedicado agora compartilham a mesma fonte real de `planOptions` via contexto comum.
 
-### Backend ja existente (Fase 0)
+### Backend ja existente / status atual
 
-- Pacote `com.planthings.api.intelligence`, migration `V21__ai_intelligence_core.sql`.
-- Endpoints: status, conversa, mensagens, SSE (`stream.ready` apenas).
-- `POST /messages` persiste user + assistente `PENDING`; modelo nao e executado.
+- Pacote `com.planthings.api.intelligence`, migrations `V21`/`V22`/`V23`.
+- Endpoints: status, conversa, mensagens, cancelamento, listagem, `PATCH` de conversa e SSE por conversa.
+- `POST /messages` persiste user + assistente `PENDING`, executa `AiResponseOrchestrator` assincronamente e transmite deltas/fechamento por SSE.
 - `AiMessageBlockType` enum alinhado ao contrato de blocos.
-- `DefaultAiOpenAiClient` (Responses API); `AiConversationService.defaultSystemPrompt()` como seed do prompt.
-- Testes: `IntelligenceApiIntegrationTest`, `DefaultAiOpenAiClientTest`.
+- `DefaultAiOpenAiClient` (Responses API) com suporte a `tools`, reaproveitamento de `outputItems` e continuidade de loop.
+- Tool calling read-only concluido com `AiCapabilityRegistry`, `AiModelToolRegistry`, `AiToolPermissionService` e `AiModelToolRouter`.
+- Auditoria de tools em `ai_tool_calls`; snapshots em `ai_context_snapshots`; compaction em `ai_compaction_items`.
+- Testes: `IntelligenceApiIntegrationTest`, `DefaultAiOpenAiClientTest` e suites focadas em routing/permissoes/tools.
 
 ## 3. Decisoes tecnicas principais
 
@@ -393,23 +399,25 @@ Nao enviar tools de integracao desconectada ou desabilitada.
 Nao enviar tools de aplicacao/write direta ao modelo.
 ```
 
-Tools recomendadas:
+Estado atual apos a Fase 3:
 
 ```txt
 context.search
 entity.get
+```
+
+| Tool exposta     | Papel                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `context.search` | Busca contexto operacional autorizado do workspace/plano: `workspace`, `plan`, `board`, `cards` e `files`.             |
+| `entity.get`     | Busca detalhes autorizados de uma entidade especifica ja identificada (`workspace`, `plan`, `board`, `file`).           |
+
+Tools futuras planejadas para fases posteriores:
+
+```txt
 action.propose
 file.search
 github.search
 ```
-
-| Tool exposta     | Papel                                                                                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- |
-| `context.search` | Busca contexto operacional do workspace/plano: planos, cards, membros, Inbox, calendario e estado do board. |
-| `entity.get`     | Busca detalhes de uma entidade especifica ja identificada.                                                  |
-| `action.propose` | Cria uma proposta de acao, sem aplicar diretamente.                                                         |
-| `file.search`    | Busca arquivos por metadados e/ou conteudo semantico.                                                       |
-| `github.search`  | Busca repositorios, commits e pull requests autorizados.                                                    |
 
 Exemplos de paleta dinamica:
 
@@ -417,15 +425,12 @@ Exemplos de paleta dinamica:
 Workspace geral:
 context.search
 entity.get
-action.propose
 
-Kanban com arquivos habilitados:
+Kanban:
 context.search
 entity.get
-action.propose
-file.search
 
-Kanban com GitHub conectado:
+Fases futuras com propostas/integrações:
 context.search
 entity.get
 action.propose
@@ -437,7 +442,26 @@ github.search
 
 O backend deve rotear tools agregadoras para capabilities internas.
 
-Fluxo:
+Estado atual da Fase 3:
+
+```txt
+context.search
+  -> workspace.get_summary
+  -> plan.get
+  -> board.get
+  -> board.card.search
+  -> file.search_metadata
+
+entity.get
+  -> workspace.get_summary
+  -> plan.get
+  -> board.get
+  -> file.search_metadata
+```
+
+O roteamento atual e read-only e sempre limitado ao escopo resolvido pela conversa autenticada. O modelo nao envia `workspaceId`, `planId` ou `cardId` como autoridade.
+
+Fluxo futuro para propostas mutantes:
 
 ```txt
 Modelo chama action.propose
@@ -453,7 +477,7 @@ POST /api/intelligence/actions/{proposalId}/apply
 Backend revalida permissoes e executa servico interno real
 ```
 
-Handlers internos sugeridos:
+Handlers internos sugeridos para fases futuras:
 
 ```txt
 PlanCreateProposalHandler
@@ -472,7 +496,86 @@ GithubAttachToCardProposalHandler
 
 Cada ferramenta exposta para OpenAI deve usar JSON Schema com `strict: true`.
 
-Exemplo conceitual de `action.propose`:
+Schemas atualmente expostos ao modelo (Fase 3):
+
+```json
+{
+  "type": "function",
+  "name": "context_search",
+  "description": "Busca contexto operacional autorizado no Plan Things.",
+  "strict": true,
+  "parameters": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "query": { "type": "string" },
+      "include": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["workspace", "plan", "board", "cards", "files"]
+        }
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 12
+      }
+    },
+    "required": ["query"]
+  }
+}
+```
+
+```json
+{
+  "type": "function",
+  "name": "entity_get",
+  "description": "Busca uma entidade autorizada do Plan Things.",
+  "strict": true,
+  "parameters": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "entityType": {
+        "type": "string",
+        "enum": ["workspace", "plan", "board", "file"]
+      },
+      "entityId": { "type": "string" }
+    },
+    "required": ["entityType", "entityId"]
+  }
+}
+```
+
+Exemplo conceitual atual de `context.search`:
+
+```json
+{
+  "query": "cards relacionados a login",
+  "include": ["plan", "board", "cards"],
+  "limit": 12
+}
+```
+
+`query` e uma frase de intencao para busca e ranking, nao um mecanismo de permissao nem um parser palavra por palavra. O backend nao deve liberar tools por detectar termos como "arquivo", "commit" ou "card" dentro da query. A paleta de tools ja deve ter sido montada antes, com base em escopo, permissoes, integracoes habilitadas e configuracoes do usuario/workspace. Depois disso, `context.search` usa a query para encontrar entidades relevantes dentro do universo autorizado.
+
+Resposta deve ser categorizada, nao texto solto:
+
+```json
+{
+  "results": [
+    {
+      "entityType": "card",
+      "entityId": "uuid-card",
+      "title": "Implementar tela de login",
+      "summary": "Card em Em andamento com uma checklist pendente."
+    }
+  ]
+}
+```
+
+Schema conceitual de `action.propose` para fases futuras:
 
 ```json
 {
@@ -612,38 +715,6 @@ Exemplo de chamada para criar varios cartoes:
 ```
 
 O schema exposto ao modelo deve ser simples, mas fechado. Campos nao usados ficam `null` ou arrays vazios. O backend deve aplicar schemas internos mais especificos por `actionType`. Se `payload` nao bater com o schema interno, a proposta falha com erro recuperavel e o modelo pode pedir os dados faltantes.
-
-Exemplo conceitual de `context.search`:
-
-```json
-{
-  "scope": {
-    "type": "PLAN",
-    "workspaceId": "uuid-workspace",
-    "planId": "uuid-plan"
-  },
-  "query": "cards relacionados a login",
-  "include": ["plans", "cards", "members", "inbox"],
-  "limit": 12
-}
-```
-
-`query` e uma frase de intencao para busca e ranking, nao um mecanismo de permissao nem um parser palavra por palavra. O backend nao deve liberar tools por detectar termos como "arquivo", "commit" ou "card" dentro da query. A paleta de tools ja deve ter sido montada antes, com base em escopo, permissoes, integracoes habilitadas e configuracoes do usuario/workspace. Depois disso, `context.search` usa a query para encontrar entidades relevantes dentro do universo autorizado.
-
-Resposta deve ser categorizada, nao texto solto:
-
-```json
-{
-  "results": [
-    {
-      "entityType": "card",
-      "entityId": "uuid-card",
-      "title": "Implementar tela de login",
-      "summary": "Card em Em andamento com uma checklist pendente."
-    }
-  ]
-}
-```
 
 Exemplo conceitual de `github.search`:
 
@@ -1258,7 +1329,7 @@ ai_memories
 ai_audit_events
 ```
 
-**Criado (V21):** `ai_conversations`, `ai_messages`, `ai_message_blocks`. **Planejado:** propostas, tool calls, settings, snapshots, compaction, memories, audit.
+**Criado (V21/V22/V23):** `ai_conversations`, `ai_messages`, `ai_message_blocks`, `ai_context_snapshots`, `ai_compaction_items`, `ai_tool_calls`. **Planejado:** propostas, settings, memories e camadas adicionais de auditoria.
 
 `ai_audit_events` deve registrar:
 
@@ -1316,9 +1387,9 @@ intelligence.files
 intelligence.persistence
 ```
 
-**Implementado (Fase 0):** controller, services, client OpenAI, enums (`AiMessageBlockType` completo), repositories, validacao de escopo plano/card, `listMessages` com `blocks[]` (vazio).
+**Implementado (ate a Fase 3):** controller, services, client OpenAI, enums (`AiMessageBlockType` completo), repositories, validacao de escopo plano/card, `AiResponseOrchestrator`, compaction, snapshots, routing de tools read-only, auditoria `ai_tool_calls`, SSE de assistant/tools e registries/permissoes de tools.
 
-**Pendente:** `AiResponseOrchestrator`, registries/tools, propostas, `AiPromptBuilder` (hoje so `defaultSystemPrompt()` inline), compaction na request OpenAI.
+**Pendente:** propostas confirmaveis, `AiPromptBuilder` dedicado (hoje ainda evolucao de `defaultSystemPrompt()`/builder inline), memories, adapters de GitHub/File Search mais avancados e tools mutantes.
 
 Tools e apply devem reutilizar `BoardService`, `PlanService`, `FileService` e servicos de convite — sem duplicar regra de negocio.
 
@@ -1326,10 +1397,10 @@ Tools e apply devem reutilizar `BoardService`, `PlanService`, `FileService` e se
 
 ```txt
 apps/web/src/features/intelligence/          (ja parcialmente criado)
-  api/intelligenceApi.js                     Fase 1
-  hooks/useMockAiConversation.js             existe (substituir na Fase 1)
-  hooks/useAiConversation.js                 Fase 1
-  hooks/useAiStream.js                       Fase 1
+  api/intelligenceApi.js                     concluido
+  hooks/useMockAiConversation.js             mantido para testes/mock local
+  hooks/useAiConversation.js                 concluido
+  hooks/useAiStream.js                       concluido
   components/IntelligenceConversationThread/ existe
   components/UserChatMessage/                existe
   components/ConversationToolbar/            existe (mock)
@@ -1530,7 +1601,7 @@ Depois que o usuario aprovar e o backend aplicar a acao, retorne bloco de refere
 
 ### Fase 0: preparacao — **concluida**
 
-Ver secao 2 (backend). Pendente para Fase 1: `AiResponseOrchestrator` e execucao do modelo apos `POST /messages`.
+Historico: ver secao 2 (backend). O que estava pendente para a Fase 1 (`AiResponseOrchestrator` e execucao do modelo apos `POST /messages`) ja foi entregue.
 
 ### Fase 0.5: contrato visual da UI
 
@@ -1594,21 +1665,31 @@ Ordem: **0.5.3 → 0.5.2 → Fase 1** (contratos antes de API e blocos mock).
 - Frontend: `PlanReferenceBlock`, `CardReferenceBlock`, `FileReferenceBlock` com rotas internas (`/workspace/board/{planId}`, `?card=`, `/workspace?file=` + download).
 - Kanban: deep link `?card={cardId}` abre o modal do cartao.
 
-### Fase 3: Model-facing tools e contexto read-only
+### Fase 3: Model-facing tools e contexto read-only — **concluida**
 
-- Criar `AiCapabilityRegistry`.
-- Criar `AiModelToolRegistry`.
-- Criar `AiToolPermissionService`.
-- Criar `AiModelToolRouter`.
-- Implementar capabilities read-only:
+- `OpenAiResponseRequest` e `OpenAiResponseResult` evoluidos para suportar `tools`, `rawInputItems`, `trailingInputItems` e reaproveitamento de `outputItems`.
+- `AiResponseOrchestrator` agora executa loop completo da Responses API com ate 6 rodadas por turno, incluindo function calls e `function_call_output`.
+- Registries/permissionamento entregues:
+  - `AiCapabilityRegistry`
+  - `AiModelToolRegistry`
+  - `AiToolPermissionService`
+  - `AiModelToolRouter`
+- Capabilities read-only entregues:
   - `workspace.get_summary`
   - `plan.get`
   - `board.get`
   - `board.card.search`
   - `file.search_metadata`
-- Expor ao modelo apenas `context.search` e `entity.get` nessa fase.
-- Enviar somente model-facing tools habilitadas, conectadas e relevantes ao escopo.
-- Registrar `ai_tool_calls`.
+- Tools model-facing expostas nesta fase:
+  - `context.search`
+  - `entity.get`
+- Escopo autorizado resolvido pelo backend a partir da conversa atual; o modelo nao controla o escopo.
+- Auditoria entregue em `ai_tool_calls` (migration `V23`).
+- SSE de tools entregue no backend:
+  - `tool.started`
+  - `tool.completed`
+  - `tool.failed`
+- Sem UI nova obrigatoria nesta fase; o fluxo textual do chat permanece.
 
 ### Fase 4: propostas confirmaveis via `action.propose`
 
@@ -1666,7 +1747,7 @@ Esta fase entrega o que a 1.5 **nao** promete: o modelo passa a **ver** imagens 
 - Upload/espelhamento para OpenAI Files API + anexar a vector store (workspace e/ou conversa).
 - Indexar formatos suportados pelo File Search (PDF, DOCX, MD, TXT, codigo, etc. — ver guia oficial).
 - Incluir tool `file_search` no body da Responses API quando arquivos estiverem habilitados no escopo da conversa.
-- Implementar capability interna `file.search_content`; expor ao modelo como tool model-facing quando registry existir (Fase 3+), ou injetar vector stores diretamente na Fase 6 se tools ainda nao estiverem prontas.
+- Implementar capability interna `file.search_content`; expor ao modelo como tool model-facing quando a camada de File Search estiver pronta, ou injetar vector stores diretamente na Fase 6 se a paleta model-facing ainda nao tiver sido expandida.
 - Renderizar citacoes/referencias a arquivos na UI (`FileReferenceBlock`, anotacoes no markdown).
 - **Sempre** filtrar vector stores e arquivos pela permissao Plan Things antes da request; nunca confiar só no isolamento da OpenAI.
 
