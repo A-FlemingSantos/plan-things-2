@@ -2,11 +2,16 @@ package com.planthings.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.planthings.api.auth.UserRepository;
+import com.planthings.api.files.FileEntryEntity;
+import com.planthings.api.files.FileEntryRepository;
+import com.planthings.api.files.FileEntryType;
 import com.planthings.api.intelligence.openai.AiOpenAiClient;
 import com.planthings.api.intelligence.openai.OpenAiResponseRequest;
 import com.planthings.api.intelligence.openai.OpenAiResponseResult;
 import com.planthings.api.intelligence.persistence.AiToolCallRepository;
 import com.planthings.api.intelligence.tools.AiCapabilityRegistry;
+import com.planthings.api.workspace.WorkspaceRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -39,6 +44,15 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
 
   @Autowired
   private AiToolCallRepository aiToolCallRepository;
+
+  @Autowired
+  private FileEntryRepository fileEntryRepository;
+
+  @Autowired
+  private UserRepository userRepository;
+
+  @Autowired
+  private WorkspaceRepository workspaceRepository;
 
   @MockBean
   private AiOpenAiClient aiOpenAiClient;
@@ -385,26 +399,32 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
                 "",
                 "{\"total_tokens\":40}",
                 List.of(),
-                List.of(functionCallNode(
-                    "call_cards_1",
-                    AiCapabilityRegistry.OPENAI_TOOL_CONTEXT_SEARCH,
-                    """
-                        {"query":"login","include":["cards"],"limit":10}
+                List.of(
+                    reasoningItemNode("rs_tool_round_1"),
+                    functionCallNode(
+                        "call_cards_1",
+                        AiCapabilityRegistry.OPENAI_TOOL_CONTEXT_SEARCH,
                         """
-                ))
+                            {"query":"login","include":["cards"],"limit":10}
+                            """
+                    )
+                )
             ),
             new OpenAiResponseResult(
                 "resp_tool_round_2",
                 "",
                 "{\"total_tokens\":50}",
                 List.of(),
-                List.of(functionCallNode(
-                    "call_plan_1",
-                    AiCapabilityRegistry.OPENAI_TOOL_ENTITY_GET,
-                    """
-                        {"entityType":"plan","entityId":"%s"}
-                        """.formatted(planId)
-                ))
+                List.of(
+                    reasoningItemNode("rs_tool_round_2"),
+                    functionCallNode(
+                        "call_plan_1",
+                        AiCapabilityRegistry.OPENAI_TOOL_ENTITY_GET,
+                        """
+                            {"entityType":"plan","entityId":"%s"}
+                            """.formatted(planId)
+                    )
+                )
             ),
             new OpenAiResponseResult(
                 "resp_tool_round_3",
@@ -440,6 +460,10 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
     assertEquals(2, requests.get(0).tools().size());
     assertEquals(2, requests.get(1).trailingInputItems().size());
     assertEquals(4, requests.get(2).trailingInputItems().size());
+    assertFalse(requests.get(1).trailingInputItems().toString().contains("rs_tool_round_1"));
+    assertFalse(requests.get(2).trailingInputItems().toString().contains("rs_tool_round_2"));
+    assertFalse(requests.get(1).trailingInputItems().get(0).has("id"));
+    assertFalse(requests.get(2).trailingInputItems().get(2).has("id"));
 
     JsonNode searchOutput = objectMapper.readTree(requests.get(1).trailingInputItems().get(1).path("output").asText());
     assertEquals(1, searchOutput.path("results").size());
@@ -456,6 +480,67 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
     assertEquals("entity.get", audits.get(1).getToolName());
     assertEquals("COMPLETED", audits.get(0).getStatus().name());
     assertEquals("COMPLETED", audits.get(1).getStatus().name());
+  }
+
+  @Test
+  void shouldSearchAccessibleWorkspaceFilesBeforeApplyingLimit() throws Exception {
+    String email = "arthur-file-search@example.com";
+    String token = registerAndGetToken("Arthur File Search", email, "12345678");
+    String otherEmail = "blocked-file-owner@example.com";
+    registerAndGetToken("Blocked File Owner", otherEmail, "12345678");
+
+    UUID userId = userRepository.findByEmailIgnoreCase(email).orElseThrow().getId();
+    UUID otherUserId = userRepository.findByEmailIgnoreCase(otherEmail).orElseThrow().getId();
+    UUID workspaceId = workspaceRepository.findByOwnerUserId(userId).orElseThrow().getId();
+    FileEntryEntity accessibleFile = saveFileEntry(workspaceId, userId, "relatorio-acessivel.pdf");
+    for (int index = 0; index < 12; index += 1) {
+      saveFileEntry(workspaceId, otherUserId, "relatorio-bloqueado-" + index + ".pdf");
+    }
+
+    when(aiOpenAiClient.createResponseStream(any(), any()))
+        .thenReturn(
+            new OpenAiResponseResult(
+                "resp_file_search_1",
+                "",
+                "{\"total_tokens\":30}",
+                List.of(),
+                List.of(functionCallNode(
+                    "call_files_1",
+                    AiCapabilityRegistry.OPENAI_TOOL_CONTEXT_SEARCH,
+                    """
+                        {"query":"relatorio","include":["files"],"limit":1}
+                        """
+                ))
+            ),
+            new OpenAiResponseResult(
+                "resp_file_search_2",
+                "Encontrei o arquivo acessivel.",
+                "{\"total_tokens\":40}"
+            )
+        );
+
+    String conversationId = readJson(mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "scopeType": "WORKSPACE",
+                  "title": "Busca de arquivos"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    JsonNode accepted = postMessage(token, conversationId, "Procure o relatorio");
+    JsonNode assistant = waitForMessageToSettle(token, conversationId, accepted.path("assistantMessageId").asText());
+    assertEquals("COMPLETED", assistant.path("status").asText());
+
+    ArgumentCaptor<OpenAiResponseRequest> requestCaptor = ArgumentCaptor.forClass(OpenAiResponseRequest.class);
+    verify(aiOpenAiClient, org.mockito.Mockito.times(2)).createResponseStream(requestCaptor.capture(), any());
+    JsonNode fileOutput = objectMapper.readTree(requestCaptor.getAllValues().get(1).trailingInputItems().get(1).path("output").asText());
+    assertEquals(1, fileOutput.path("results").size());
+    assertEquals(accessibleFile.getId().toString(), fileOutput.path("results").path(0).path("entityId").asText());
+    assertFalse(fileOutput.toString().contains("relatorio-bloqueado"));
   }
 
   @Test
@@ -571,14 +656,36 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
     throw new AssertionError("A resposta da mensagem " + messageId + " nao concluiu dentro do tempo esperado.");
   }
 
+  private FileEntryEntity saveFileEntry(UUID workspaceId, UUID ownerUserId, String name) {
+    FileEntryEntity file = new FileEntryEntity();
+    file.setWorkspaceId(workspaceId);
+    file.setOwnerUserId(ownerUserId);
+    file.setType(FileEntryType.FILE);
+    file.setName(name);
+    file.setMimeType("application/pdf");
+    file.setSizeBytes(1024L);
+    return fileEntryRepository.saveAndFlush(file);
+  }
+
   private JsonNode functionCallNode(String callId, String name, String argumentsJson) throws Exception {
     return objectMapper.readTree("""
         {
+          "id": "fc_%s",
           "type": "function_call",
           "call_id": "%s",
           "name": "%s",
           "arguments": %s
         }
-        """.formatted(callId, name, objectMapper.writeValueAsString(argumentsJson.trim())));
+        """.formatted(callId, callId, name, objectMapper.writeValueAsString(argumentsJson.trim())));
+  }
+
+  private JsonNode reasoningItemNode(String id) throws Exception {
+    return objectMapper.readTree("""
+        {
+          "id": "%s",
+          "type": "reasoning",
+          "summary": []
+        }
+        """.formatted(id));
   }
 }

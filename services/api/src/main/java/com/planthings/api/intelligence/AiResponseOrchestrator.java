@@ -372,7 +372,7 @@ public class AiResponseOrchestrator {
         return latestResponse;
       }
 
-      extraRawInputItems.addAll(latestResponse.outputItems());
+      extraRawInputItems.addAll(buildFunctionCallInputItems(functionCalls));
       extraRawInputItems.addAll(executeToolCalls(
           context.conversationId(),
           assistantMessageId,
@@ -513,6 +513,23 @@ public class AiResponseOrchestrator {
     item.put("call_id", callId);
     item.put("output", serializeJson(output));
     return item;
+  }
+
+  private List<JsonNode> buildFunctionCallInputItems(List<ModelFunctionCall> functionCalls) {
+    if (functionCalls == null || functionCalls.isEmpty()) {
+      return List.of();
+    }
+
+    List<JsonNode> items = new ArrayList<>();
+    for (ModelFunctionCall functionCall : functionCalls) {
+      ObjectNode item = objectMapper.createObjectNode();
+      item.put("type", "function_call");
+      item.put("call_id", functionCall.callId());
+      item.put("name", functionCall.name());
+      item.put("arguments", functionCall.argumentsJson());
+      items.add(item);
+    }
+    return items;
   }
 
   private List<ModelFunctionCall> extractFunctionCalls(List<JsonNode> outputItems) {

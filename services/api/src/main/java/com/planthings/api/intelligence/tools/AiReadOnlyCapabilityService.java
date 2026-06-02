@@ -250,11 +250,10 @@ public class AiReadOnlyCapabilityService {
     } else {
       files = fileEntryRepository.searchFilesByWorkspaceId(
           context.workspaceId(),
+          context.userId(),
           normalizedQuery,
           PageRequest.of(0, Math.max(1, Math.min(limit, 12)))
-      ).stream()
-          .filter(file -> canAccessFile(file, context.userId()))
-          .toList();
+      );
     }
 
     ArrayNode results = objectMapper.createArrayNode();

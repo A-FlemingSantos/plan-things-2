@@ -23,6 +23,20 @@ public interface FileEntryRepository extends JpaRepository<FileEntryEntity, UUID
         and entry.deletedAt is null
         and entry.type = com.planthings.api.files.FileEntryType.FILE
         and (
+          entry.ownerUserId = :userId
+          or exists (
+            select share.id
+            from FilePlanShareEntity share
+            where share.fileEntryId = entry.id
+              and exists (
+                select member.id
+                from PlanMemberEntity member
+                where member.planId = share.planId
+                  and member.userId = :userId
+              )
+          )
+        )
+        and (
           :query = ''
           or lower(entry.name) like lower(concat('%', :query, '%'))
           or lower(coalesce(entry.mimeType, '')) like lower(concat('%', :query, '%'))
@@ -31,6 +45,7 @@ public interface FileEntryRepository extends JpaRepository<FileEntryEntity, UUID
       """)
   List<FileEntryEntity> searchFilesByWorkspaceId(
       @Param("workspaceId") UUID workspaceId,
+      @Param("userId") UUID userId,
       @Param("query") String query,
       org.springframework.data.domain.Pageable pageable
   );
