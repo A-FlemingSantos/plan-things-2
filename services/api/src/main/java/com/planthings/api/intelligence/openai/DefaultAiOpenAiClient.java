@@ -105,6 +105,13 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       item.put("role", message.role());
       item.put("content", message.content());
     }
+    if (request.trailingInputItems() != null) {
+      for (JsonNode trailingItem : request.trailingInputItems()) {
+        if (trailingItem != null && trailingItem.isObject()) {
+          input.add(trailingItem.deepCopy());
+        }
+      }
+    }
 
     if (StringUtils.hasText(request.previousResponseId())) {
       body.put("previous_response_id", request.previousResponseId());
@@ -115,6 +122,15 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       ObjectNode compaction = contextManagement.addObject();
       compaction.put("type", "compaction");
       compaction.put("compact_threshold", request.compactThreshold());
+    }
+
+    if (request.tools() != null && !request.tools().isEmpty()) {
+      ArrayNode tools = body.putArray("tools");
+      for (JsonNode tool : request.tools()) {
+        if (tool != null && tool.isObject()) {
+          tools.add(tool.deepCopy());
+        }
+      }
     }
 
     return body;
@@ -138,7 +154,8 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
           response.path("id").asText(null),
           extractOutputText(response.path("output")),
           response.path("usage").isMissingNode() ? null : response.path("usage").toString(),
-          extractCompactionOutputItems(response.path("output"))
+          extractCompactionOutputItems(response.path("output")),
+          extractOutputItems(response.path("output"))
       );
     } catch (RestClientResponseException exception) {
       logger.warn("Falha ao chamar OpenAI Responses API: status={} body={}", exception.getStatusCode(), exception.getResponseBodyAsString());
@@ -172,7 +189,7 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       consumeSseStream(response.body(), accumulator, onDelta);
 
       String outputText = accumulator.finalOutputText();
-      if (!StringUtils.hasText(outputText)) {
+      if (!StringUtils.hasText(outputText) && accumulator.outputItems().isEmpty()) {
         throw new BadRequestException("OPENAI_RESPOSTA_VAZIA", "A OpenAI retornou uma resposta vazia.");
       }
 
@@ -180,7 +197,8 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
           accumulator.responseId(),
           outputText,
           accumulator.tokenUsageJson(),
-          accumulator.compactionOutputItemsJson()
+          accumulator.compactionOutputItemsJson(),
+          accumulator.outputItems()
       );
     } catch (IOException exception) {
       logger.warn("Falha de IO ao consumir OpenAI Responses API em streaming", exception);
@@ -335,9 +353,24 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
     return String.join("\n", chunks).trim();
   }
 
+  private List<JsonNode> extractOutputItems(JsonNode outputNode) {
+    if (outputNode == null || !outputNode.isArray()) {
+      return List.of();
+    }
+
+    List<JsonNode> items = new ArrayList<>();
+    for (JsonNode item : outputNode) {
+      if (item != null && item.isObject()) {
+        items.add(item.deepCopy());
+      }
+    }
+    return items;
+  }
+
   private final class StreamAccumulator {
     private final StringBuilder outputBuilder = new StringBuilder();
     private final List<String> compactionOutputItemsJson = new ArrayList<>();
+    private final List<JsonNode> outputItems = new ArrayList<>();
     private JsonNode completedResponse;
     private String responseId;
     private String tokenUsageJson;
@@ -353,11 +386,13 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       if ("response.completed".equals(eventType) && candidateNode.isObject()) {
         completedResponse = candidateNode;
         captureCompactionItems(candidateNode.path("output"));
+        captureOutputItems(candidateNode.path("output"));
       }
 
       JsonNode outputItems = payload.path("output");
       if (outputItems.isArray()) {
         captureCompactionItems(outputItems);
+        captureOutputItems(outputItems);
       }
       JsonNode itemNode = payload.path("item");
       if (itemNode.isObject() && "compaction".equals(itemNode.path("type").asText(""))) {
@@ -400,12 +435,30 @@ public class DefaultAiOpenAiClient implements AiOpenAiClient {
       return List.of();
     }
 
+    List<JsonNode> outputItems() {
+      if (!outputItems.isEmpty()) {
+        return List.copyOf(outputItems);
+      }
+      if (completedResponse != null && completedResponse.isObject()) {
+        return extractOutputItems(completedResponse.path("output"));
+      }
+      return List.of();
+    }
+
     void captureCompactionItems(JsonNode outputNode) {
       for (String itemJson : extractCompactionOutputItems(outputNode)) {
         if (!compactionOutputItemsJson.contains(itemJson)) {
           compactionOutputItemsJson.add(itemJson);
         }
       }
+    }
+
+    void captureOutputItems(JsonNode outputNode) {
+      if (outputNode == null || !outputNode.isArray()) {
+        return;
+      }
+      outputItems.clear();
+      outputItems.addAll(extractOutputItems(outputNode));
     }
 
     String finalOutputText() {

@@ -11,7 +11,9 @@ public record OpenAiResponseRequest(
     String previousResponseId,
     List<OpenAiInputMessage> input,
     List<JsonNode> rawInputItems,
-    Integer compactThreshold
+    List<JsonNode> trailingInputItems,
+    Integer compactThreshold,
+    List<JsonNode> tools
 ) {
 
   public OpenAiResponseRequest(
@@ -22,7 +24,7 @@ public record OpenAiResponseRequest(
       String previousResponseId,
       List<OpenAiInputMessage> input
   ) {
-    this(model, reasoningEffort, maxOutputTokens, store, previousResponseId, input, List.of(), null);
+    this(model, reasoningEffort, maxOutputTokens, store, previousResponseId, input, List.of(), List.of(), null, List.of());
   }
 
   public OpenAiResponseRequest(
@@ -34,7 +36,7 @@ public record OpenAiResponseRequest(
       List<OpenAiInputMessage> input,
       Integer compactThreshold
   ) {
-    this(model, reasoningEffort, maxOutputTokens, store, previousResponseId, input, List.of(), compactThreshold);
+    this(model, reasoningEffort, maxOutputTokens, store, previousResponseId, input, List.of(), List.of(), compactThreshold, List.of());
   }
 
   public record OpenAiInputMessage(

@@ -1,5 +1,7 @@
 package com.planthings.api.intelligence;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -16,6 +18,9 @@ public class IntelligenceProperties {
   private boolean useOpenaiConversations;
   private boolean storeOpenaiResponses;
   private int compactThreshold = 120_000;
+  private boolean toolsEnabled = true;
+  private Set<String> disabledModelTools = new LinkedHashSet<>();
+  private Set<String> disabledCapabilities = new LinkedHashSet<>();
 
   public boolean isEnabled() {
     return enabled;
@@ -79,6 +84,30 @@ public class IntelligenceProperties {
 
   public void setCompactThreshold(int compactThreshold) {
     this.compactThreshold = compactThreshold;
+  }
+
+  public boolean isToolsEnabled() {
+    return toolsEnabled;
+  }
+
+  public void setToolsEnabled(boolean toolsEnabled) {
+    this.toolsEnabled = toolsEnabled;
+  }
+
+  public Set<String> getDisabledModelTools() {
+    return disabledModelTools;
+  }
+
+  public void setDisabledModelTools(Set<String> disabledModelTools) {
+    this.disabledModelTools = disabledModelTools == null ? new LinkedHashSet<>() : new LinkedHashSet<>(disabledModelTools);
+  }
+
+  public Set<String> getDisabledCapabilities() {
+    return disabledCapabilities;
+  }
+
+  public void setDisabledCapabilities(Set<String> disabledCapabilities) {
+    this.disabledCapabilities = disabledCapabilities == null ? new LinkedHashSet<>() : new LinkedHashSet<>(disabledCapabilities);
   }
 
   public boolean isConfigured() {

@@ -1,17 +1,22 @@
 package com.planthings.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planthings.api.intelligence.openai.AiOpenAiClient;
 import com.planthings.api.intelligence.openai.OpenAiResponseRequest;
 import com.planthings.api.intelligence.openai.OpenAiResponseResult;
+import com.planthings.api.intelligence.persistence.AiToolCallRepository;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +33,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "app.intelligence.api-key=test-openai-key"
 })
 class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
+  @Autowired
+  private AiToolCallRepository aiToolCallRepository;
 
   @MockBean
   private AiOpenAiClient aiOpenAiClient;
@@ -359,6 +369,151 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.scopeType").value("CARD"));
   }
 
+  @Test
+  void shouldExecuteMultipleReadOnlyToolRoundsAndPersistAudits() throws Exception {
+    String token = registerAndGetToken("Arthur Tool Loop", "arthur-tool-loop@example.com", "12345678");
+    String planId = createPlan(token, "Plano dos cards").path("plan").path("id").asText();
+    String otherPlanId = createPlan(token, "Plano fora do escopo").path("plan").path("id").asText();
+    String matchingCardId = createCard(token, planId, "Implementar login");
+    createCard(token, otherPlanId, "Implementar login em outro plano");
+
+    when(aiOpenAiClient.createResponseStream(any(), any()))
+        .thenReturn(
+            new OpenAiResponseResult(
+                "resp_tool_round_1",
+                "",
+                "{\"total_tokens\":40}",
+                List.of(),
+                List.of(functionCallNode(
+                    "call_cards_1",
+                    "context.search",
+                    """
+                        {"query":"login","include":["cards"],"limit":10}
+                        """
+                ))
+            ),
+            new OpenAiResponseResult(
+                "resp_tool_round_2",
+                "",
+                "{\"total_tokens\":50}",
+                List.of(),
+                List.of(functionCallNode(
+                    "call_plan_1",
+                    "entity.get",
+                    """
+                        {"entityType":"plan","entityId":"%s"}
+                        """.formatted(planId)
+                ))
+            ),
+            new OpenAiResponseResult(
+                "resp_tool_round_3",
+                "Encontrei um card de login no plano em foco.",
+                "{\"total_tokens\":60}"
+            )
+        );
+
+    String conversationId = readJson(mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "planId": "%s",
+                  "scopeType": "PLAN",
+                  "title": "Ferramentas read-only"
+                }
+                """.formatted(planId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    JsonNode accepted = postMessage(token, conversationId, "Procure cards de login");
+    String assistantMessageId = accepted.path("assistantMessageId").asText();
+
+    JsonNode assistant = waitForMessageToSettle(token, conversationId, assistantMessageId);
+    assertEquals("COMPLETED", assistant.path("status").asText());
+    assertEquals("Encontrei um card de login no plano em foco.", assistant.path("contentText").asText());
+
+    ArgumentCaptor<OpenAiResponseRequest> requestCaptor = ArgumentCaptor.forClass(OpenAiResponseRequest.class);
+    verify(aiOpenAiClient, org.mockito.Mockito.times(3)).createResponseStream(requestCaptor.capture(), any());
+    List<OpenAiResponseRequest> requests = requestCaptor.getAllValues();
+
+    assertEquals(2, requests.get(0).tools().size());
+    assertEquals(2, requests.get(1).trailingInputItems().size());
+    assertEquals(4, requests.get(2).trailingInputItems().size());
+
+    JsonNode searchOutput = objectMapper.readTree(requests.get(1).trailingInputItems().get(1).path("output").asText());
+    assertEquals(1, searchOutput.path("results").size());
+    assertEquals(matchingCardId, searchOutput.path("results").path(0).path("entityId").asText());
+    assertFalse(searchOutput.toString().contains(otherPlanId));
+
+    JsonNode planOutput = objectMapper.readTree(requests.get(2).trailingInputItems().get(3).path("output").asText());
+    assertEquals("plan", planOutput.path("entityType").asText());
+    assertEquals(planId, planOutput.path("entityId").asText());
+
+    var audits = aiToolCallRepository.findByMessageIdOrderByCreatedAtAsc(UUID.fromString(assistantMessageId));
+    assertEquals(2, audits.size());
+    assertEquals("context.search", audits.get(0).getToolName());
+    assertEquals("entity.get", audits.get(1).getToolName());
+    assertEquals("COMPLETED", audits.get(0).getStatus().name());
+    assertEquals("COMPLETED", audits.get(1).getStatus().name());
+  }
+
+  @Test
+  void shouldTreatToolValidationErrorsAsRecoverableOutputs() throws Exception {
+    when(aiOpenAiClient.createResponseStream(any(), any()))
+        .thenReturn(
+            new OpenAiResponseResult(
+                "resp_tool_fail_1",
+                "",
+                "{\"total_tokens\":20}",
+                List.of(),
+                List.of(functionCallNode(
+                    "call_bad_1",
+                    "entity.get",
+                    """
+                        {"entityType":"file","entityId":"not-a-uuid"}
+                        """
+                ))
+            ),
+            new OpenAiResponseResult(
+                "resp_tool_fail_2",
+                "Preciso de um identificador valido para consultar o arquivo.",
+                "{\"total_tokens\":30}"
+            )
+        );
+
+    String token = registerAndGetToken("Arthur Tool Failure", "arthur-tool-failure@example.com", "12345678");
+    String conversationId = readJson(mockMvc.perform(post("/api/intelligence/conversations")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "scopeType": "WORKSPACE",
+                  "title": "Erro de tool"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("id").asText();
+
+    JsonNode accepted = postMessage(token, conversationId, "Abra o arquivo");
+    String assistantMessageId = accepted.path("assistantMessageId").asText();
+
+    JsonNode assistant = waitForMessageToSettle(token, conversationId, assistantMessageId);
+    assertEquals("COMPLETED", assistant.path("status").asText());
+    assertEquals("Preciso de um identificador valido para consultar o arquivo.", assistant.path("contentText").asText());
+
+    ArgumentCaptor<OpenAiResponseRequest> requestCaptor = ArgumentCaptor.forClass(OpenAiResponseRequest.class);
+    verify(aiOpenAiClient, org.mockito.Mockito.times(2)).createResponseStream(requestCaptor.capture(), any());
+    List<OpenAiResponseRequest> requests = requestCaptor.getAllValues();
+
+    JsonNode failureOutput = objectMapper.readTree(requests.get(1).trailingInputItems().get(1).path("output").asText());
+    assertEquals("UUID_INVALIDO", failureOutput.path("error").path("code").asText());
+
+    var audits = aiToolCallRepository.findByMessageIdOrderByCreatedAtAsc(UUID.fromString(assistantMessageId));
+    assertEquals(1, audits.size());
+    assertEquals("FAILED", audits.get(0).getStatus().name());
+    assertEquals("UUID_INVALIDO", audits.get(0).getErrorCode());
+  }
+
   private String createCard(String token, String planId, String title) throws Exception {
     String columnId = createBoardColumn(token, planId, "Tarefas");
     return readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
@@ -413,5 +568,16 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
     }
 
     throw new AssertionError("A resposta da mensagem " + messageId + " nao concluiu dentro do tempo esperado.");
+  }
+
+  private JsonNode functionCallNode(String callId, String name, String argumentsJson) throws Exception {
+    return objectMapper.readTree("""
+        {
+          "type": "function_call",
+          "call_id": "%s",
+          "name": "%s",
+          "arguments": %s
+        }
+        """.formatted(callId, name, objectMapper.writeValueAsString(argumentsJson.trim())));
   }
 }

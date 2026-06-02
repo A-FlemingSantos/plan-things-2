@@ -17,6 +17,44 @@ public interface FileEntryRepository extends JpaRepository<FileEntryEntity, UUID
   List<FileEntryEntity> findByWorkspaceIdAndDeletedAtIsNotNullOrderByUpdatedAtDesc(UUID workspaceId);
 
   @Query("""
+      select entry
+      from FileEntryEntity entry
+      where entry.workspaceId = :workspaceId
+        and entry.deletedAt is null
+        and entry.type = com.planthings.api.files.FileEntryType.FILE
+        and (
+          :query = ''
+          or lower(entry.name) like lower(concat('%', :query, '%'))
+          or lower(coalesce(entry.mimeType, '')) like lower(concat('%', :query, '%'))
+        )
+      order by entry.updatedAt desc
+      """)
+  List<FileEntryEntity> searchFilesByWorkspaceId(
+      @Param("workspaceId") UUID workspaceId,
+      @Param("query") String query,
+      org.springframework.data.domain.Pageable pageable
+  );
+
+  @Query("""
+      select entry
+      from FileEntryEntity entry
+      where entry.id in :fileIds
+        and entry.deletedAt is null
+        and entry.type = com.planthings.api.files.FileEntryType.FILE
+        and (
+          :query = ''
+          or lower(entry.name) like lower(concat('%', :query, '%'))
+          or lower(coalesce(entry.mimeType, '')) like lower(concat('%', :query, '%'))
+        )
+      order by entry.updatedAt desc
+      """)
+  List<FileEntryEntity> searchFilesByIds(
+      @Param("fileIds") List<UUID> fileIds,
+      @Param("query") String query,
+      org.springframework.data.domain.Pageable pageable
+  );
+
+  @Query("""
       select coalesce(sum(entry.sizeBytes), 0)
       from FileEntryEntity entry
       where entry.workspaceId = :workspaceId
