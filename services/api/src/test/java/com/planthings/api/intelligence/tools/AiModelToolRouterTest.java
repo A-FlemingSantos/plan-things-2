@@ -93,4 +93,23 @@ class AiModelToolRouterTest {
     assertEquals("PLANO_INVALIDO", execution.audits().get(0).errorCode());
     assertEquals("PLANO_INVALIDO", execution.output().path("error").path("code").asText());
   }
+
+  @Test
+  void shouldAcceptOpenAiWireToolNames() throws Exception {
+    when(capabilityService.getWorkspaceSummary(context))
+        .thenReturn(objectMapper.readTree("""
+            {"entityType":"workspace","entityId":"w1","title":"Workspace","summary":"Resumo","payload":{}}
+            """));
+
+    AiModelToolRouter.ModelToolExecution execution = router.execute(
+        AiCapabilityRegistry.OPENAI_TOOL_CONTEXT_SEARCH,
+        objectMapper.readTree("""
+            {"query":"login","include":["workspace"],"limit":5}
+            """),
+        context
+    );
+
+    assertEquals(1, execution.output().path("results").size());
+    assertEquals(AiToolCallStatus.COMPLETED, execution.audits().get(0).status());
+  }
 }

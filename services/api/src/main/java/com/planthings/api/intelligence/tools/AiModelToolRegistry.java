@@ -27,6 +27,7 @@ public class AiModelToolRegistry {
     if (permissionService.isModelToolEnabled(AiCapabilityRegistry.TOOL_CONTEXT_SEARCH, context)) {
       tools.add(new ModelToolDefinition(
           AiCapabilityRegistry.TOOL_CONTEXT_SEARCH,
+          AiCapabilityRegistry.toOpenAiToolName(AiCapabilityRegistry.TOOL_CONTEXT_SEARCH),
           "Busca contexto read-only dentro do escopo autorizado do Plan Things.",
           buildContextSearchSchema()
       ));
@@ -34,6 +35,7 @@ public class AiModelToolRegistry {
     if (permissionService.isModelToolEnabled(AiCapabilityRegistry.TOOL_ENTITY_GET, context)) {
       tools.add(new ModelToolDefinition(
           AiCapabilityRegistry.TOOL_ENTITY_GET,
+          AiCapabilityRegistry.toOpenAiToolName(AiCapabilityRegistry.TOOL_ENTITY_GET),
           "Busca detalhes estruturados de uma entidade autorizada do Plan Things.",
           buildEntityGetSchema()
       ));
@@ -96,13 +98,14 @@ public class AiModelToolRegistry {
 
   public record ModelToolDefinition(
       String name,
+      String openAiName,
       String description,
       JsonNode parameters
   ) {
     public JsonNode toOpenAiToolJson(ObjectMapper objectMapper) {
       ObjectNode node = objectMapper.createObjectNode();
       node.put("type", "function");
-      node.put("name", name);
+      node.put("name", openAiName);
       node.put("description", description);
       node.put("strict", true);
       node.set("parameters", parameters.deepCopy());

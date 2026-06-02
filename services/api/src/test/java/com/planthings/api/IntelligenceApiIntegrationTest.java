@@ -6,6 +6,7 @@ import com.planthings.api.intelligence.openai.AiOpenAiClient;
 import com.planthings.api.intelligence.openai.OpenAiResponseRequest;
 import com.planthings.api.intelligence.openai.OpenAiResponseResult;
 import com.planthings.api.intelligence.persistence.AiToolCallRepository;
+import com.planthings.api.intelligence.tools.AiCapabilityRegistry;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -386,7 +387,7 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
                 List.of(),
                 List.of(functionCallNode(
                     "call_cards_1",
-                    "context.search",
+                    AiCapabilityRegistry.OPENAI_TOOL_CONTEXT_SEARCH,
                     """
                         {"query":"login","include":["cards"],"limit":10}
                         """
@@ -399,7 +400,7 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
                 List.of(),
                 List.of(functionCallNode(
                     "call_plan_1",
-                    "entity.get",
+                    AiCapabilityRegistry.OPENAI_TOOL_ENTITY_GET,
                     """
                         {"entityType":"plan","entityId":"%s"}
                         """.formatted(planId)
@@ -468,7 +469,7 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
                 List.of(),
                 List.of(functionCallNode(
                     "call_bad_1",
-                    "entity.get",
+                    AiCapabilityRegistry.OPENAI_TOOL_ENTITY_GET,
                     """
                         {"entityType":"file","entityId":"not-a-uuid"}
                         """

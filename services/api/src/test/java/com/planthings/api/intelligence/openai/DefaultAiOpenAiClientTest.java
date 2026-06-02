@@ -127,7 +127,7 @@ class DefaultAiOpenAiClientTest {
             """)),
         null,
         List.of(mapper.readTree("""
-            {"type":"function","name":"context.search","strict":true,"parameters":{"type":"object"}}
+            {"type":"function","name":"context_search","strict":true,"parameters":{"type":"object"}}
             """))
     );
 
@@ -139,6 +139,6 @@ class DefaultAiOpenAiClientTest {
     assertEquals("compaction", body.path("input").path(0).path("type").asText());
     assertEquals("message", body.path("input").path(1).path("type").asText());
     assertEquals("function_call_output", body.path("input").path(2).path("type").asText());
-    assertEquals("context.search", body.path("tools").path(0).path("name").asText());
+    assertEquals("context_search", body.path("tools").path(0).path("name").asText());
   }
 }

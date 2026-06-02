@@ -15,6 +15,8 @@ public class AiCapabilityRegistry {
 
   public static final String TOOL_CONTEXT_SEARCH = "context.search";
   public static final String TOOL_ENTITY_GET = "entity.get";
+  public static final String OPENAI_TOOL_CONTEXT_SEARCH = "context_search";
+  public static final String OPENAI_TOOL_ENTITY_GET = "entity_get";
 
   private final Map<String, CapabilityDefinition> definitions;
 
@@ -34,6 +36,28 @@ public class AiCapabilityRegistry {
 
   public CapabilityDefinition get(String capabilityId) {
     return definitions.get(capabilityId);
+  }
+
+  public static String toCanonicalToolName(String toolName) {
+    String normalized = normalizeToolName(toolName);
+    return switch (normalized) {
+      case TOOL_CONTEXT_SEARCH, OPENAI_TOOL_CONTEXT_SEARCH -> TOOL_CONTEXT_SEARCH;
+      case TOOL_ENTITY_GET, OPENAI_TOOL_ENTITY_GET -> TOOL_ENTITY_GET;
+      default -> normalized;
+    };
+  }
+
+  public static String toOpenAiToolName(String toolName) {
+    String canonical = toCanonicalToolName(toolName);
+    return switch (canonical) {
+      case TOOL_CONTEXT_SEARCH -> OPENAI_TOOL_CONTEXT_SEARCH;
+      case TOOL_ENTITY_GET -> OPENAI_TOOL_ENTITY_GET;
+      default -> canonical;
+    };
+  }
+
+  private static String normalizeToolName(String value) {
+    return String.valueOf(value == null ? "" : value).trim().toLowerCase();
   }
 
   public record CapabilityDefinition(String id, String description) {

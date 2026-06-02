@@ -18,8 +18,8 @@ public class AiToolPermissionService {
       return false;
     }
 
-    String normalized = normalize(toolName);
-    if (properties.getDisabledModelTools().stream().map(this::normalize).anyMatch(normalized::equals)) {
+    String normalized = AiCapabilityRegistry.toCanonicalToolName(toolName);
+    if (properties.getDisabledModelTools().stream().map(AiCapabilityRegistry::toCanonicalToolName).anyMatch(normalized::equals)) {
       return false;
     }
 

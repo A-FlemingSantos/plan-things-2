@@ -409,15 +409,17 @@ public class AiResponseOrchestrator {
         break;
       }
 
+      String canonicalToolName = com.planthings.api.intelligence.tools.AiCapabilityRegistry.toCanonicalToolName(functionCall.name());
+
       streamingService.sendEvent(conversationId, "tool.started", Map.of(
           "conversationId", conversationId.toString(),
           "messageId", assistantMessageId.toString(),
-          "toolName", functionCall.name(),
+          "toolName", canonicalToolName,
           "callId", functionCall.callId()
       ));
 
       AiModelToolRouter.ModelToolExecution execution = executeModelTool(functionCall, toolContext);
-      persistToolCallAudits(conversationId, assistantMessageId, openaiResponseId, functionCall, execution);
+      persistToolCallAudits(conversationId, assistantMessageId, openaiResponseId, functionCall, canonicalToolName, execution);
 
       if (execution.isFullyFailed()) {
         String errorCode = execution.audits().isEmpty() ? DEFAULT_ERROR_CODE : String.valueOf(execution.audits().get(0).errorCode());
@@ -425,7 +427,7 @@ public class AiResponseOrchestrator {
         streamingService.sendEvent(conversationId, "tool.failed", Map.of(
             "conversationId", conversationId.toString(),
             "messageId", assistantMessageId.toString(),
-            "toolName", functionCall.name(),
+            "toolName", canonicalToolName,
             "callId", functionCall.callId(),
             "errorCode", errorCode,
             "message", message
@@ -434,7 +436,7 @@ public class AiResponseOrchestrator {
         streamingService.sendEvent(conversationId, "tool.completed", Map.of(
             "conversationId", conversationId.toString(),
             "messageId", assistantMessageId.toString(),
-            "toolName", functionCall.name(),
+            "toolName", canonicalToolName,
             "callId", functionCall.callId()
         ));
       }
@@ -482,6 +484,7 @@ public class AiResponseOrchestrator {
       UUID assistantMessageId,
       String openaiResponseId,
       ModelFunctionCall functionCall,
+      String canonicalToolName,
       AiModelToolRouter.ModelToolExecution execution
   ) {
     transactionTemplate.executeWithoutResult(status -> {
@@ -490,7 +493,7 @@ public class AiResponseOrchestrator {
         entity.setConversationId(conversationId);
         entity.setMessageId(assistantMessageId);
         entity.setOpenaiResponseId(openaiResponseId);
-        entity.setToolName(functionCall.name());
+        entity.setToolName(canonicalToolName);
         entity.setCapabilityId(audit.capabilityId());
         entity.setStatus(audit.status());
         entity.setArgumentsJson(functionCall.argumentsJson());

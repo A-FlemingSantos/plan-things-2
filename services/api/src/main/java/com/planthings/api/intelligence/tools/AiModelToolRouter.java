@@ -33,7 +33,7 @@ public class AiModelToolRouter {
   }
 
   public ModelToolExecution execute(String toolName, JsonNode arguments, AiToolExecutionContext context) {
-    String normalizedToolName = normalize(toolName);
+    String normalizedToolName = AiCapabilityRegistry.toCanonicalToolName(toolName);
     try {
       return switch (normalizedToolName) {
         case AiCapabilityRegistry.TOOL_CONTEXT_SEARCH -> executeContextSearch(arguments, context);
@@ -350,7 +350,7 @@ public class AiModelToolRouter {
   }
 
   private String normalize(String value) {
-    return String.valueOf(value == null ? "" : value).trim().toLowerCase(Locale.ROOT);
+    return AiCapabilityRegistry.toCanonicalToolName(String.valueOf(value == null ? "" : value).trim().toLowerCase(Locale.ROOT));
   }
 
   public record ModelToolExecution(
