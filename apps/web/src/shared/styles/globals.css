@@ -113,6 +113,7 @@
   --overlay-bg: rgba(0,0,0,.15);
 
   /* Landing */
+  --landing-header-height: 52px;
   --landing-hero-scrim-1: rgba(255,255,255,0.76);
   --landing-hero-scrim-2: rgba(255,255,255,0.58);
 

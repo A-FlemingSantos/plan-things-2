@@ -4,6 +4,8 @@
   left: 0;
   right: 0;
   z-index: 100;
+  height: var(--landing-header-height);
+  box-sizing: border-box;
   background: var(--app-bg);
   border-bottom: 1px solid transparent;
   transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
@@ -18,7 +20,8 @@
 .navbar {
   display: flex;
   align-items: center;
-  height: var(--landing-header-height);
+  height: 100%;
+  min-height: 0;
   gap: 0;
 }
 
@@ -38,8 +41,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-sm);
   background: var(--text-1);
   color: var(--text-inverse);
@@ -100,8 +103,8 @@
   justify-content: center;
   flex-direction: column;
   gap: 3px;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
   background: var(--app-bg);
