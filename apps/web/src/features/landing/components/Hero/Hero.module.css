@@ -1,238 +1,181 @@
 .hero {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  padding-top: 72px; /* offset for fixed navbar */
+  --hero-width: 1300px;
+  --hero-mock-height: 720px;
+
   background: var(--app-bg);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
+  padding-top: var(--landing-header-height);
 }
 
-.inner {
-  display: grid;
-  grid-template-columns: minmax(500px, 5fr) minmax(0, 7fr);
-  align-items: center;
-  gap: 80px;
-  width: calc(100% + 520px);
-  margin-left: -260px;
-  margin-right: -260px;
-  padding-top: 64px;
-  padding-bottom: 80px;
+.shell {
+  width: 100%;
+  max-width: var(--hero-width);
+  margin-inline: auto;
+  padding-inline: 0;
+  box-sizing: border-box;
 }
 
-/* ── Content ── */
-.content {
+@media (max-width: 1339px) {
+  .shell {
+    padding-inline: max(20px, var(--container-px));
+  }
+}
+
+.copyBlock {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  min-width: 0;
-}
-
-.eyebrow {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--text-3);
-  font-weight: var(--font-weight-regular);
+  align-items: flex-start;
+  gap: clamp(24px, 3vw, 32px);
+  padding-top: clamp(80px, 12vw, 140px);
+  padding-bottom: clamp(40px, 5vw, 64px);
+  text-align: left;
 }
 
 .headline {
-  font-size: clamp(40px, 5vw, 64px);
+  max-width: none;
+  font-size: clamp(26px, 3vw, 36px);
   font-weight: var(--font-weight-regular);
-  line-height: 1.08;
-  letter-spacing: -.035em;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
   color: var(--text-1);
-  max-width: 700px;
-  text-wrap: pretty;
+  text-wrap: balance;
 }
 
-.headlineLight {
-  font-weight: var(--font-weight-light);
-  color: var(--text-3);
-}
-
-.subtext {
-  font-size: 17px;
-  font-weight: var(--font-weight-light);
-  line-height: 1.65;
-  color: var(--text-2);
-  max-width: 440px;
-}
-
-.ctas {
+.actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-.ctaPrimary {
-  display: inline-flex;
-  align-items: center;
-  padding: 13px 28px;
-  font-size: 15px;
-  font-weight: var(--font-weight-regular);
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: var(--radius-md);
-  transition: opacity var(--transition-fast);
-  letter-spacing: -.01em;
-}
-
-.ctaPrimary:hover { opacity: .82; }
-
+.ctaPrimary,
 .ctaSecondary {
   display: inline-flex;
   align-items: center;
-  padding: 12px 24px;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 22px;
   font-size: 15px;
   font-weight: var(--font-weight-regular);
-  background: transparent;
-  color: var(--text-1);
+  letter-spacing: -0.01em;
+  border-radius: 999px;
+  transition:
+    opacity var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.ctaPrimary {
+  background: var(--text-1);
+  color: var(--app-bg);
+}
+
+.ctaPrimary:hover {
+  opacity: 0.88;
+}
+
+.ctaSecondary {
   border: 1px solid var(--border-2);
-  border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-  letter-spacing: -.01em;
+  color: var(--text-1);
+  background: transparent;
 }
 
 .ctaSecondary:hover {
-  border-color: var(--text-1);
-  background: var(--surface-2);
+  background: var(--hover);
 }
 
-/* ── Social proof ── */
-.socialProof {
+.mockShowcase {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-bottom: clamp(32px, 4vw, 48px);
+}
+
+/* Moldura 1300×720 — palco visual + mockup (mesmo padrão de #how-it-works) */
+.mockFrame {
+  --feature-stage-bg: var(--surface-3);
+  --feature-stage-border: var(--border-1);
+  --feature-stage-glow-a: rgba(66, 144, 218, 0.1);
+  --feature-stage-glow-b: rgba(0, 0, 0, 0.04);
+  --feature-mockup-bg: var(--surface-1);
+  --feature-mockup-chrome-bg: var(--surface-2);
+  --feature-mockup-media-bg: var(--surface-1);
+  --feature-mockup-border: var(--border-2);
+  --feature-mockup-shadow: var(--shadow-md);
+  --feature-mockup-placeholder-grid: var(--border-1);
+
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--hero-width);
+  height: var(--hero-mock-height);
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  padding: clamp(28px, 3.5vw, 44px);
+  overflow: hidden;
+  border: 1px solid var(--feature-stage-border);
+  border-radius: var(--radius-md);
+  background: var(--feature-stage-bg);
+  box-shadow: var(--shadow-sm);
 }
 
-.avatarGroup {
-  display: flex;
+[data-theme='dark'] .mockFrame {
+  --feature-stage-glow-b: rgba(255, 255, 255, 0.04);
 }
 
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--surface-1);
-  display: block;
+.mockFrame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 100%, var(--feature-stage-glow-a), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, var(--feature-stage-glow-b), transparent 50%);
 }
 
-.avatar + .avatar { margin-left: -8px; }
-
-.proofText {
-  font-size: 13px;
-  color: var(--text-3);
-}
-
-.proofText strong {
-  color: var(--text-1);
-  font-weight: var(--font-weight-regular);
-}
-
-/* ── Mockup wrap ── */
-.mockupWrap {
+.visualStageInner {
   position: relative;
-  width: 112%;
-  justify-self: end;
-  padding: 12px 0 36px;
+  z-index: 1;
+  width: 100%;
+  max-width: min(88%, 920px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.pedestal {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70%;
-  height: 24px;
-  background: var(--surface-3);
-  border-radius: 50%;
-  filter: blur(12px);
-  z-index: -1;
-}
-
-.pedestalInner {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 50%;
-  height: 8px;
-  background: var(--border-2);
-  border-radius: 50%;
-  filter: blur(6px);
-}
-
-@media (max-width: 1024px) {
-  .inner {
-    grid-template-columns: 1fr;
-    gap: 60px;
-    width: 100%;
-    margin-left: 0;
-    margin-right: 0;
-  }
-
-  .mockupWrap {
-    order: -1;
-    width: 100%;
-    max-width: 720px;
-    justify-self: center;
-  }
-}
-
-@media (max-width: 768px) {
-  .hero {
-    min-height: auto;
-  }
-
-  .inner {
-    gap: 36px;
-    padding-top: 24px;
-    padding-bottom: 48px;
-  }
-
-  .content {
-    gap: 20px;
-  }
-
+@media (max-width: 900px) {
   .headline {
-    font-size: clamp(32px, 10vw, 46px);
-  }
-
-  .subtext {
-    font-size: 15px;
-    line-height: 1.55;
     max-width: none;
+    font-size: clamp(24px, 5.5vw, 32px);
   }
 
-  .ctas {
+  .mockFrame {
+    height: auto;
+    min-height: 320px;
+    aspect-ratio: 1300 / 720;
+    padding: 24px 20px;
+  }
+
+  .visualStageInner {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .copyBlock {
+    padding-top: 64px;
+    padding-bottom: 32px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
     width: 100%;
   }
 
   .ctaPrimary,
   .ctaSecondary {
     width: 100%;
-    justify-content: center;
-  }
-
-  .socialProof {
-    flex-wrap: wrap;
-  }
-
-  .mockupWrap {
-    padding: 0 0 24px;
-  }
-}
-
-@media (max-width: 560px) {
-  .inner {
-    gap: 28px;
-    padding-bottom: 36px;
-  }
-
-  .headline {
-    font-size: 30px;
   }
 }

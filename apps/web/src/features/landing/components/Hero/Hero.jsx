@@ -1,53 +1,39 @@
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../../../../shared/config/routes.js'
+import ProductMockupFrame from '../HowItWorks/ProductMockupFrame.jsx'
 import styles from './Hero.module.css'
-import KanbanMockup from './KanbanMockup.jsx'
 
 export default function Hero() {
   return (
     <div className={styles.hero}>
-      <div className={`${styles.inner} container`}>
-        {/* Left column */}
-        <div className={styles.content}>
-          <p className={styles.eyebrow}>Gestão de projetos, reinventada</p>
+      <div className={styles.shell}>
+        <div className={styles.copyBlock}>
+          <h1 className={styles.headline}>Seu time, no mesmo quadro.</h1>
 
-          <h1 className={styles.headline}>
-            Faça o trabalho <span className={styles.headlineLight}>andar de verdade.</span>
-          </h1>
-
-          <p className={styles.subtext}>
-            O Plan Things traz clareza para projetos complexos: um workspace com foco em Kanban,
-            planejamento com IA, colaboração em tempo real e um design que sai do caminho
-            para o seu trabalho respirar.
-          </p>
-
-          <div className={styles.ctas}>
+          <div className={styles.actions}>
             <Link to={ROUTES.register} className={styles.ctaPrimary}>
               Começar grátis
             </Link>
             <a href="#how-it-works" className={styles.ctaSecondary}>
               Ver como funciona
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <path
+                  d="M2 7h10M8 3.5l3 3-3 3"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </a>
-          </div>
-
-          <div className={styles.socialProof}>
-            <div className={styles.avatarGroup}>
-              {['#d4aef1','#4290da','#0f703a','#ff6766','#000'].map((c, i) => (
-                <span key={i} className={styles.avatar} style={{ background: c }} />
-              ))}
-            </div>
-            <p className={styles.proofText}>
-              Confiado por <strong>12.000+</strong> equipes no mundo todo
-            </p>
           </div>
         </div>
 
-        {/* Right column – mockup */}
-        <div className={styles.mockupWrap}>
-          <KanbanMockup />
-          {/* Pedestal */}
-          <div className={styles.pedestal}>
-            <div className={styles.pedestalInner} />
+        <div className={styles.mockShowcase} aria-label="Prévia do produto">
+          <div className={styles.mockFrame}>
+            <div className={styles.visualStageInner}>
+              <ProductMockupFrame label="Plan Things" />
+            </div>
           </div>
         </div>
       </div>

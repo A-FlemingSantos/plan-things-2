@@ -1,8 +1,6 @@
 import Navbar from '../components/Navbar/Navbar.jsx'
 import Hero from '../components/Hero/Hero.jsx'
-import SectionNav from '../components/SectionNav/SectionNav.jsx'
 import HowItWorks from '../components/HowItWorks/HowItWorks.jsx'
-import Features from '../components/Features/Features.jsx'
 import HighlightedInnovation from '../components/HighlightedInnovation/HighlightedInnovation.jsx'
 import Pricing from '../components/Pricing/Pricing.jsx'
 import MobileDownload from '../components/MobileDownload/MobileDownload.jsx'
@@ -18,12 +16,8 @@ export default function LandingPage() {
         <section id="hero">
           <Hero />
         </section>
-        <SectionNav />
-        <section id="how-it-works">
+        <section id="how-it-works" aria-label="Como funciona">
           <HowItWorks />
-        </section>
-        <section id="features">
-          <Features />
         </section>
         <section id="innovation">
           <HighlightedInnovation />
