@@ -7,14 +7,7 @@
   height: var(--landing-header-height);
   box-sizing: border-box;
   background: var(--app-bg);
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
-  will-change: box-shadow;
-}
-
-.header.scrolled {
-  border-bottom-color: var(--border-1);
-  box-shadow: var(--shadow-xs);
+  transition: background var(--transition-normal);
 }
 
 .navbar {
