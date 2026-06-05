@@ -105,9 +105,7 @@
   align-items: center;
   justify-content: center;
   gap: 20px;
-  background:
-    radial-gradient(circle at top, color-mix(in srgb, var(--surface-2) 85%, transparent), transparent 70%),
-    var(--surface-1);
+  background: var(--surface-1);
   padding: 20px 28px;
   text-align: center;
 }
@@ -117,6 +115,7 @@
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
+  border-radius: 999px;
   border: 1px solid var(--border-1);
   background: var(--surface-1);
   color: var(--text-2);
