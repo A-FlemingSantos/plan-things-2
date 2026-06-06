@@ -6,7 +6,6 @@ import styles from './Navbar.module.css'
 const NAV_LINKS = [
   { label: 'Produto',    href: '#how-it-works' },
   { label: 'Preços',     href: '#pricing' },
-  { label: 'Ecossistema', href: '#ecosystem' },
   { label: 'Recursos úteis', href: '#faq' },
 ]
 

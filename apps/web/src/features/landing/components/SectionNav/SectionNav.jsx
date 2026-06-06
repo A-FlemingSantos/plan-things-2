@@ -9,7 +9,6 @@ const SECTIONS = [
   { label: 'Planejamento IA', href: '#innovation' },
   { label: 'Preços',        href: '#pricing'      },
   { label: 'Mobile',        href: '#mobile'       },
-  { label: 'Integrações',   href: '#ecosystem'    },
   { label: 'FAQ',           href: '#faq'          },
 ]
 

@@ -27,7 +27,7 @@ const SHOWCASE_ITEMS = [
     headline: 'Colabore em tempo real sem perder o contexto',
     body: 'Comentários no card, menções, atribuições e atualizações ao vivo mantêm todos alinhados no mesmo lugar em que o trabalho acontece.',
     mockupLabel: 'Colaboração',
-    link: { label: 'Explorar colaboração', href: '#ecosystem' },
+    link: { label: 'Explorar colaboração', href: '#how-it-works' },
   },
   {
     id: 'automate',
