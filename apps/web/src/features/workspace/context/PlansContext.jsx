@@ -11,6 +11,7 @@ import {
 } from '../../../shared/contracts/backendAdapters.js'
 import { normalizePlanRecord } from '../../../shared/contracts/planContracts.js'
 import { createInitialPlansSnapshot } from '../data/plansRepository.js'
+import { recordRecentPlan, removeRecentPlan } from '../data/recentPlansStorage.js'
 
 const PlansContext = createContext(null)
 const INITIAL_PLANS = createInitialPlansSnapshot()
@@ -186,6 +187,10 @@ export function PlansProvider({ children }) {
       })
     }
 
+    if (currentUser?.id) {
+      removeRecentPlan(currentUser.id, planId)
+    }
+
     let nextPlansSnapshot = []
     setPlans((prev) => {
       const nextPlans = prev.filter((plan) => plan.id !== planId)
@@ -195,7 +200,7 @@ export function PlansProvider({ children }) {
     })
 
     return nextPlansSnapshot
-  }, [accessToken, backendEnabled, ensureInteractiveSession])
+  }, [accessToken, backendEnabled, currentUser?.id, ensureInteractiveSession])
 
   const renamePlan = useCallback(async (planId, name) => {
     const trimmedName = name?.trim()
@@ -289,7 +294,10 @@ export function PlansProvider({ children }) {
 
   const selectPlan = useCallback((planId) => {
     setActivePlanId(planId)
-  }, [])
+    if (currentUser?.id && planId) {
+      recordRecentPlan(currentUser.id, planId)
+    }
+  }, [currentUser?.id])
 
   const getPlanById = useCallback((planId) => {
     if (!planId) return null

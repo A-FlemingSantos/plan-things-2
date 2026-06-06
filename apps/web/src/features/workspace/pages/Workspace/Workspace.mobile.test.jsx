@@ -19,12 +19,13 @@ const plansMock = vi.hoisted(() => ({
     },
   ],
   activePlan: null,
+  activePlanId: null,
   createPlan: vi.fn(),
   deletePlan: vi.fn(),
   renamePlan: vi.fn(),
   updatePlanCover: vi.fn(),
   selectPlan: vi.fn(),
-  currentUser: { fullName: 'Arthur Fleming' },
+  currentUser: { id: 'user-1', fullName: 'Arthur Fleming' },
   isBackendDriven: false,
   isLoading: false,
   aiChips: [],
@@ -46,7 +47,7 @@ const preferencesMock = vi.hoisted(() => ({
 vi.mock('../../../auth/context/AuthContext.jsx', () => ({
   useAuth: () => ({
     accessToken: 'test-token',
-    currentUser: { fullName: 'Arthur Fleming' },
+    currentUser: { id: 'user-1', fullName: 'Arthur Fleming' },
     workspace: { name: 'Área de trabalho pessoal' },
   }),
 }))
@@ -93,6 +94,10 @@ function renderWorkspace(initialEntries = ['/workspace']) {
 
 describe('Workspace mobile layout', () => {
   beforeEach(() => {
+    window.localStorage.setItem(
+      'plan-things:recent-plans:v1:user-1',
+      JSON.stringify(['plan-1']),
+    )
     preferencesMock.localPreferences.showIntelligenceSection = true
     plansMock.aiChips = []
     plansMock.isBackendDriven = false
@@ -110,7 +115,12 @@ describe('Workspace mobile layout', () => {
     expect(screen.getAllByRole('button', { name: /novo plano/i }).length).toBeGreaterThan(0)
     expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Notificações' })).toBeInTheDocument()
-    expect(screen.getByText('Todos os planos')).toBeInTheDocument()
+    expect(screen.getByText('Recentes')).toBeInTheDocument()
+    expect(screen.getByText('Workspaces')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Planos' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Membros' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visualização em grade' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visualização em lista' })).toBeInTheDocument()
   })
@@ -121,7 +131,12 @@ describe('Workspace mobile layout', () => {
     renderWorkspace()
 
     expect(screen.queryByRole('region', { name: 'Seção do Intelligence' })).not.toBeInTheDocument()
-    expect(screen.getByText('Todos os planos')).toBeInTheDocument()
+    expect(screen.getByText('Recentes')).toBeInTheDocument()
+    expect(screen.getByText('Workspaces')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Planos' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Membros' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument()
   })
 
   it('has a prompt input and send button in the intelligence section', () => {

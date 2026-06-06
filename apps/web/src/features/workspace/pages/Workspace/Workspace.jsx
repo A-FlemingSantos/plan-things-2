@@ -1,8 +1,10 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
+import { WorkspaceIconGlyph } from '../../../../shared/components/WorkspaceIconBadge/WorkspaceIconBadge.jsx'
+import { readRecentPlanIds } from '../../data/recentPlansStorage.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
@@ -30,6 +32,74 @@ function ListIcon()     { return <svg width="14" height="14" viewBox="0 0 14 14"
 function ChevronIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 function XIcon()        { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> }
 function CheckIcon()    { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.2l3 3L11.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> }
+
+function WorkspacePlansNavIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <rect x="2.5" y="1.8" width="9" height="10.4" rx="1.4" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5 5h4M5 7h4M5 9h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function WorkspaceMembersNavIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <circle cx="4.8" cy="4.6" r="1.6" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M2 11.5c.3-1.8 1.5-2.8 2.8-2.8s2.5 1 2.8 2.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="9.6" cy="5.2" r="1.3" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M8 11.5c.4-1.3 1.2-2.1 2.1-2.1.9 0 1.7.8 2.1 2.1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function WorkspaceSettingsNavIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2.5 4.5h9M2.5 7h9M2.5 9.5h9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="5.2" cy="4.5" r="1" fill="currentColor" />
+      <circle cx="8.8" cy="7" r="1" fill="currentColor" />
+      <circle cx="6.4" cy="9.5" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+function WorkspaceLibraryNavIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2.5 3.2v8.1c0 .6.5 1.1 1.1 1.1h2.1V2.1H3.6c-.6 0-1.1.5-1.1 1.1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M5.7 2.1v10.3h2.1c.6 0 1.1-.5 1.1-1.1V3.2c0-.6-.5-1.1-1.1-1.1H5.7z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M8.9 2.1h2.1c.6 0 1.1.5 1.1 1.1v7c0 .6-.5 1.1-1.1 1.1H8.9" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+const WORKSPACE_SECTION_ACTIONS = [
+  { id: 'plans', label: 'Planos', Icon: WorkspacePlansNavIcon },
+  { id: 'members', label: 'Membros', Icon: WorkspaceMembersNavIcon },
+  { id: 'settings', label: 'Configurações', Icon: WorkspaceSettingsNavIcon },
+  { id: 'library', label: 'Biblioteca', Icon: WorkspaceLibraryNavIcon },
+]
+
+function WorkspaceSectionActions() {
+  return (
+    <div className={styles.workspaceSectionActions}>
+      {WORKSPACE_SECTION_ACTIONS.map(({ id, label, Icon }) => (
+        <button
+          key={id}
+          type="button"
+          className={styles.workspaceSectionAction}
+          aria-label={label}
+        >
+          <span className={styles.workspaceSectionActionIcon} aria-hidden="true">
+            <Icon />
+          </span>
+          <span className={styles.workspaceSectionActionLabel}>{label}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
 /* ═══════════════════════════════════════════
    DATA
 ═══════════════════════════════════════════ */
@@ -1091,7 +1161,7 @@ function WorkspaceIntelligenceSection({ firstName, accentStyle }) {
 export default function Workspace() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { accessToken } = useAuth()
+  const { accessToken, currentUser: authUser, workspace } = useAuth()
   const [view,         setView]         = useState('grid')
   const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
@@ -1105,7 +1175,7 @@ export default function Workspace() {
   const [backgroundBusy, setBackgroundBusy] = useState(false)
   const notificationTimerRef = useRef(null)
   const handledFileDeepLinkRef = useRef('')
-  const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { plans, activePlan, activePlanId, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
   const showIntelligenceSection = localPreferences.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection
@@ -1114,11 +1184,40 @@ export default function Workspace() {
     '--intelligence-theme-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
   }
   const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
+  const userId = authUser?.id ?? currentUser?.id ?? null
+  const [recentPlanIds, setRecentPlanIds] = useState(() => readRecentPlanIds(userId))
 
-  const filtered = plans.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.tag.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    setRecentPlanIds(readRecentPlanIds(userId))
+  }, [userId, activePlanId])
+
+  const matchesSearch = (plan) => {
+    const query = search.trim().toLowerCase()
+    if (!query) return true
+    return (
+      plan.name.toLowerCase().includes(query)
+      || plan.tag.toLowerCase().includes(query)
+    )
+  }
+
+  const filtered = plans.filter(matchesSearch)
+  const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
+  const recentPlans = useMemo(
+    () => recentPlanIds
+      .map((planId) => plansById.get(planId))
+      .filter(Boolean)
+      .filter(matchesSearch),
+    [plansById, recentPlanIds, search],
   )
+  const workspaceGroups = useMemo(() => ([
+    {
+      id: workspace?.id ?? 'current-workspace',
+      name: workspace?.name?.trim() || 'Área de trabalho pessoal',
+      iconKey: workspace?.iconKey,
+      plans: filtered,
+    },
+  ]), [filtered, workspace?.iconKey, workspace?.id, workspace?.name])
+  const hasVisiblePlans = recentPlans.length > 0 || workspaceGroups.some((group) => group.plans.length > 0)
   const backgroundPickerPlan = backgroundPicker?.planId
     ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
     : null
@@ -1344,126 +1443,178 @@ export default function Workspace() {
     setNewPlanAnchor(event.currentTarget)
   }
 
-  const plansSectionContent = (
-    <>
-      <div className={styles.sectionHeader}>
-        <div className={styles.sectionLeft}>
-          <h2 id="workspace-plans-title" className={styles.sectionTitle}>Todos os planos</h2>
-          <span className={styles.planCount}>{filtered.length}</span>
-        </div>
-        <div className={styles.sectionControls}>
-          <label className={styles.searchWrap}>
-            <span className={styles.searchIcon} aria-hidden="true"><SearchIcon /></span>
-            <input
-              className={styles.searchInput}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar planos..."
-            />
-            {search ? (
-              <button
-                type="button"
-                className={styles.searchClear}
-                onClick={() => setSearch('')}
-                aria-label="Limpar busca de planos"
-              >
-                <XIcon />
-              </button>
-            ) : null}
-          </label>
-          <div className={styles.viewToggle}>
-            <button
-              className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
-              onClick={() => setView('grid')}
-              aria-label="Visualização em grade"
-            ><GridIcon /></button>
-            <button
-              className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
-              onClick={() => setView('list')}
-              aria-label="Visualização em lista"
-            ><ListIcon /></button>
-          </div>
-        </div>
-      </div>
+  const renderPlanCard = (plan, cardView = view) => (
+    <PlanCard
+      key={plan.id}
+      plan={plan}
+      view={cardView}
+      onOpen={() => openBoard(plan.id)}
+      onMore={(anchorRect) => {
+        setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
+        setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
+      }}
+      menuOpen={openPlanMenuId === plan.id}
+      menuAnchorRect={planMenuAnchorRect}
+      onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+      isRenaming={renamingPlan?.id === plan.id}
+      renameDraft={renameDraft}
+      renameBusy={renameBusy}
+      onRenameDraftChange={setRenameDraft}
+      onRenameCommit={commitInlineRename}
+      onRenameCancel={cancelRename}
+      isActive={plan.id === activePlan?.id}
+    />
+  )
 
-      <div className={showIntelligenceSection ? styles.plansGalleryBody : ''}>
-        {filtered.length === 0 ? (
-          <div className={styles.emptyState}>
-            <span className={styles.emptyStateIcon}><SearchIcon /></span>
-            <p className={styles.emptyStateTitle}>Nenhum plano encontrado</p>
-            <p className={styles.emptyStateHint}>
-              {search
-                ? `Tente outro termo ou limpe "${search}" para ver tudo.`
-                : 'Crie seu primeiro plano para organizar o trabalho no quadro.'}
-            </p>
-            <div className={styles.emptyStateActions}>
-              {search && (
-                <button type="button" className={styles.emptyStateBtn} onClick={() => setSearch('')}>
-                  Limpar busca
-                </button>
-              )}
-              <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
-                <PlusIcon />
-                Novo plano
-              </button>
-            </div>
-          </div>
-        ) : view === 'grid' ? (
-          <div className={styles.grid}>
-            {filtered.map(plan => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                view="grid"
-                onOpen={() => openBoard(plan.id)}
-                onMore={(anchorRect) => {
-                  setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
-                  setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
-                }}
-                menuOpen={openPlanMenuId === plan.id}
-                menuAnchorRect={planMenuAnchorRect}
-                onMenuAction={(action) => handlePlanMenuAction(plan, action)}
-                isRenaming={renamingPlan?.id === plan.id}
-                renameDraft={renameDraft}
-                renameBusy={renameBusy}
-                onRenameDraftChange={setRenameDraft}
-                onRenameCommit={commitInlineRename}
-                onRenameCancel={cancelRename}
-                isActive={plan.id === activePlan?.id}
-              />
-            ))}
+  const renderPlanCollection = (planList, { includeNewPlanCard = false, gridClassName = styles.grid } = {}) => {
+    if (planList.length === 0 && !includeNewPlanCard) {
+      return null
+    }
+
+    if (view === 'grid') {
+      return (
+        <div className={gridClassName}>
+          {planList.map((plan) => renderPlanCard(plan, 'grid'))}
+          {includeNewPlanCard ? (
             <button className={styles.newPlanCard} onClick={openNewPlan}>
               <span className={styles.newPlanIcon}><PlusIcon /></span>
               <span className={styles.newPlanLabel}>Novo plano</span>
             </button>
-          </div>
-        ) : (
-          <div className={styles.listView}>
-            {filtered.map(plan => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                view="list"
-                onOpen={() => openBoard(plan.id)}
-                onMore={(anchorRect) => {
-                  setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
-                  setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)
-                }}
-                menuOpen={openPlanMenuId === plan.id}
-                menuAnchorRect={planMenuAnchorRect}
-                onMenuAction={(action) => handlePlanMenuAction(plan, action)}
-                isRenaming={renamingPlan?.id === plan.id}
-                renameDraft={renameDraft}
-                renameBusy={renameBusy}
-                onRenameDraftChange={setRenameDraft}
-                onRenameCommit={commitInlineRename}
-                onRenameCancel={cancelRename}
-                isActive={plan.id === activePlan?.id}
-              />
-            ))}
-          </div>
-        )}
+          ) : null}
+        </div>
+      )
+    }
+
+    return (
+      <div className={styles.listView}>
+        {planList.map((plan) => renderPlanCard(plan, 'list'))}
       </div>
+    )
+  }
+
+  const sectionControls = (
+    <div className={styles.sectionControls}>
+      <label className={styles.searchWrap}>
+        <span className={styles.searchIcon} aria-hidden="true"><SearchIcon /></span>
+        <input
+          className={styles.searchInput}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar planos..."
+        />
+        {search ? (
+          <button
+            type="button"
+            className={styles.searchClear}
+            onClick={() => setSearch('')}
+            aria-label="Limpar busca de planos"
+          >
+            <XIcon />
+          </button>
+        ) : null}
+      </label>
+      <div className={styles.viewToggle}>
+        <button
+          className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
+          onClick={() => setView('grid')}
+          aria-label="Visualização em grade"
+        ><GridIcon /></button>
+        <button
+          className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
+          onClick={() => setView('list')}
+          aria-label="Visualização em lista"
+        ><ListIcon /></button>
+      </div>
+    </div>
+  )
+
+  const renderSectionHeader = (titleId, title, count, { withControls = false } = {}) => (
+    <div className={styles.sectionHeader}>
+      <div className={styles.sectionLeft}>
+        <h2 id={titleId} className={styles.sectionTitle}>{title}</h2>
+        <span className={styles.planCount}>{count}</span>
+      </div>
+      {withControls ? sectionControls : null}
+    </div>
+  )
+
+  const renderWorkspacesSectionHeader = (withControls = false) => (
+    <div className={styles.sectionHeader}>
+      <div className={styles.sectionLeft}>
+        <h2 id="workspace-workspaces-title" className={styles.sectionTitle}>Workspaces</h2>
+        <span className={styles.planCount}>{filtered.length}</span>
+      </div>
+      <div className={styles.sectionHeaderRight}>
+        <WorkspaceSectionActions />
+        {withControls ? sectionControls : null}
+      </div>
+    </div>
+  )
+
+  const plansSectionContent = (
+    <>
+      {!hasVisiblePlans ? (
+        <>
+          {renderWorkspacesSectionHeader(true)}
+          <div className={showIntelligenceSection ? styles.plansGalleryBody : ''}>
+            <div className={styles.emptyState}>
+              <span className={styles.emptyStateIcon}><SearchIcon /></span>
+              <p className={styles.emptyStateTitle}>Nenhum plano encontrado</p>
+              <p className={styles.emptyStateHint}>
+                {search
+                  ? `Tente outro termo ou limpe "${search}" para ver tudo.`
+                  : 'Crie seu primeiro plano para organizar o trabalho no quadro.'}
+              </p>
+              <div className={styles.emptyStateActions}>
+                {search && (
+                  <button type="button" className={styles.emptyStateBtn} onClick={() => setSearch('')}>
+                    Limpar busca
+                  </button>
+                )}
+                <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
+                  <PlusIcon />
+                  Novo plano
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className={showIntelligenceSection ? styles.plansGalleryBody : ''}>
+          {recentPlans.length > 0 ? (
+            <section className={styles.recentSection} aria-labelledby="workspace-recent-title">
+              {renderSectionHeader('workspace-recent-title', 'Recentes', recentPlans.length, { withControls: true })}
+              {renderPlanCollection(recentPlans, {
+                gridClassName: `${styles.grid} ${styles.recentGrid}`,
+              })}
+            </section>
+          ) : null}
+
+          <section className={styles.workspacesSection} aria-labelledby="workspace-workspaces-title">
+            {renderWorkspacesSectionHeader(recentPlans.length === 0)}
+
+            <div className={styles.workspaceGroups}>
+              {workspaceGroups.map((group) => (
+                <div key={group.id} className={styles.workspaceGroup}>
+                  <div className={styles.workspaceGroupHeader}>
+                    <span className={styles.workspaceGroupIcon} aria-hidden="true">
+                      <WorkspaceIconGlyph iconKey={group.iconKey} className={styles.workspaceGroupIconGlyph} />
+                    </span>
+                    <h3 className={styles.workspaceGroupTitle}>{group.name}</h3>
+                  </div>
+                  {group.plans.length === 0 ? (
+                    <p className={styles.workspaceGroupEmpty}>
+                      {search ? 'Nenhum plano corresponde à busca neste workspace.' : 'Nenhum plano neste workspace ainda.'}
+                    </p>
+                  ) : (
+                    renderPlanCollection(group.plans, { includeNewPlanCard: view === 'grid' })
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
     </>
   )
 
@@ -1501,7 +1652,7 @@ export default function Workspace() {
                 ) : null}
 
                 {showIntelligenceSection ? (
-                  <section className={styles.plansGalleryPanel} aria-labelledby="workspace-plans-title">
+                  <section className={styles.plansGalleryPanel} aria-labelledby="workspace-workspaces-title">
                     {plansSectionContent}
                   </section>
                 ) : (

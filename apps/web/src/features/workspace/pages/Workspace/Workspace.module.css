@@ -686,6 +686,133 @@
   border-radius: 99px;
 }
 
+.sectionHeaderRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.workspaceSectionActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.workspaceSectionAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.workspaceSectionAction:hover {
+  color: var(--text-1);
+  background: var(--surface-3);
+  border-color: var(--border-1);
+}
+
+.workspaceSectionActionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.workspaceSectionActionLabel {
+  letter-spacing: -.01em;
+}
+
+.recentSection,
+.workspacesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workspaceGroups {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 2.4vw, 28px);
+}
+
+.workspaceGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workspaceGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspaceGroupIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  border: 1px solid var(--border-1);
+  flex-shrink: 0;
+}
+
+.workspaceGroupIconGlyph {
+  display: inline-flex;
+}
+
+.workspaceGroupTitle {
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-1);
+  letter-spacing: -.02em;
+}
+
+.workspaceGroupEmpty {
+  margin: 0;
+  padding: 18px 20px;
+  border: 1px dashed var(--border-1);
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.recentGrid {
+  display: flex;
+  gap: clamp(14px, 1.5vw, 18px);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.recentGrid > .planCard,
+.recentGrid > .newPlanCard {
+  flex: 0 0 min(272px, 78vw);
+  scroll-snap-align: start;
+}
+
 /* View toggle */
 .viewToggle {
   display: flex;
