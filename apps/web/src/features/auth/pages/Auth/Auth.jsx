@@ -29,14 +29,6 @@ function MicrosoftIcon() {
   )
 }
 
-function ArrowLeftIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M8.75 3.5 5.25 7l3.5 3.5M5.75 7h5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 function EyeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -50,15 +42,6 @@ function EyeOffIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M2 2l12 12M6.5 6.5A2 2 0 0 0 9.5 9.5M4.5 4.5C2.5 5.8 1 8 1 8s2.5 5 7 5c1.3 0 2.5-.3 3.5-.9M7 3.1C7.3 3 7.7 3 8 3c4.5 0 7 5 7 5s-.7 1.4-2 2.7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function LogoMark() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M10 1.4 17.1 5.35v9.3L10 18.6l-7.1-3.95v-9.3L10 1.4Z" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M6.6 8.1 10 10l3.4-1.9M10 10v4.2M6.6 8.1V12l3.4 2.2M13.4 8.1V12L10 14.2M6.6 8.1 10 5.95l3.4 2.15" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -188,38 +171,7 @@ export default function Auth({ initialMode = 'login' }) {
       <div className={styles.pageGlow} aria-hidden />
 
       <main className={styles.shell}>
-        <section className={styles.brandPanel}>
-          <Link to={ROUTES.home} className={styles.backLink}>
-            <ArrowLeftIcon />
-            <span>Voltar para home</span>
-          </Link>
-
-          <div className={styles.brandAmbient} aria-hidden>
-            <span className={styles.brandMonogram}>PT</span>
-          </div>
-
-          <div className={styles.brandContent}>
-            <div className={styles.brandBadge}>
-              <span className={styles.brandBadgeMark}><LogoMark /></span>
-              <span className={styles.brandBadgeText}>Plan Things</span>
-            </div>
-
-            <div className={styles.brandStory}>
-              <p className={styles.brandLead}>
-                Planejamento, execucao e contexto reunidos em uma experiencia de trabalho mais calma.
-              </p>
-              <p className={styles.brandBody}>
-                Organize projetos, acompanhe ciclos e mantenha o time sincronizado com um fluxo claro do inicio ao fim.
-              </p>
-            </div>
-          </div>
-
-          <div className={styles.brandFooter}>
-            <Link to={ROUTES.home}>Sobre</Link>
-            <Link to={ROUTES.help}>Ajuda</Link>
-            <Link to={ROUTES.terms}>Suporte</Link>
-          </div>
-        </section>
+        <section className={styles.brandPanel} aria-hidden />
 
         <section className={styles.formPanel}>
           <div className={styles.formIntro}>

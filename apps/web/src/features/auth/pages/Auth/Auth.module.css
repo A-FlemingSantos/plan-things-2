@@ -32,142 +32,11 @@
 }
 
 .brandPanel {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 28px 30px 24px;
   background: #ffffff;
-  --text-1: #000000;
-  --text-2: color-mix(in srgb, #000000 68%, transparent);
-  --text-3: color-mix(in srgb, #000000 48%, transparent);
-  --border-1: color-mix(in srgb, #000000 14%, transparent);
-  --border-2: color-mix(in srgb, #000000 24%, transparent);
-  --surface-2: color-mix(in srgb, #000000 5%, #ffffff);
-  --surface-3: color-mix(in srgb, #000000 9%, #ffffff);
 }
 
 [data-theme='light'] .brandPanel {
   background: #000000;
-  --text-1: #ffffff;
-  --text-2: color-mix(in srgb, #ffffff 68%, transparent);
-  --text-3: color-mix(in srgb, #ffffff 48%, transparent);
-  --border-1: color-mix(in srgb, #ffffff 14%, transparent);
-  --border-2: color-mix(in srgb, #ffffff 24%, transparent);
-  --surface-2: color-mix(in srgb, #ffffff 5%, #000000);
-  --surface-3: color-mix(in srgb, #ffffff 9%, #000000);
-}
-
-.brandAmbient {
-  display: none;
-}
-
-.brandMonogram {
-  position: absolute;
-  top: 28px;
-  left: 22px;
-  font-size: 118px;
-  line-height: 0.9;
-  letter-spacing: -0.1em;
-  color: color-mix(in srgb, var(--text-1) 7%, transparent);
-  font-weight: 400;
-}
-
-.backLink {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  align-self: flex-start;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--border-1);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 11px;
-  letter-spacing: 0.01em;
-  transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast);
-}
-
-.backLink:hover {
-  color: var(--text-1);
-  border-color: var(--border-2);
-  background: var(--surface-3);
-}
-
-.brandContent {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-width: 360px;
-  margin-top: auto;
-}
-
-.brandBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.brandBadgeMark {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-2);
-  color: var(--text-1);
-}
-
-.brandBadgeText {
-  font-size: 15px;
-  color: var(--text-1);
-  letter-spacing: -0.02em;
-}
-
-.brandStory {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.brandLead {
-  font-size: clamp(20px, 2.2vw, 26px);
-  line-height: 1.16;
-  letter-spacing: -0.04em;
-  color: var(--text-1);
-  max-width: 16ch;
-}
-
-.brandBody {
-  max-width: 34ch;
-  font-size: 13px;
-  line-height: 1.65;
-  color: var(--text-2);
-}
-
-.brandFooter {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  margin-top: 36px;
-  color: var(--text-2);
-  font-size: 12px;
-}
-
-.brandFooter a {
-  transition: color var(--transition-fast);
-}
-
-.brandFooter a:hover {
-  color: var(--text-1);
 }
 
 .formPanel {
@@ -571,9 +440,7 @@
   }
 
   .brandPanel {
-    min-height: 320px;
-    padding: 24px;
-    gap: 40px;
+    min-height: 120px;
     border-bottom: 1px solid var(--border-1);
   }
 
@@ -590,11 +457,6 @@
     width: 100%;
   }
 
-  .brandMonogram {
-    top: 30px;
-    left: 14px;
-    font-size: 92px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -614,22 +476,7 @@
   }
 
   .brandPanel {
-    min-height: 270px;
-    padding: 20px;
-  }
-
-  .brandLead {
-    font-size: 22px;
-  }
-
-  .brandBody {
-    font-size: 12px;
-  }
-
-  .brandFooter {
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-top: 28px;
+    min-height: 80px;
   }
 
   .formPanel {
