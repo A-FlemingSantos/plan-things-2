@@ -174,7 +174,7 @@ export default function Auth({ initialMode = 'login' }) {
     : (isRegister ? 'Primeiro acesso' : 'Bem-vindo de volta')
   const subtitleText = isRegister
     ? 'Centralize tarefas, arquivos e rotinas da equipe em um unico espaco organizado.'
-    : 'Use seu email corporativo ou um provedor conectado para retomar seu trabalho.'
+    : 'Retome seu trabalho daqui'
 
   return (
     <div className={styles.page}>

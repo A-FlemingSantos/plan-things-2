@@ -112,9 +112,11 @@
 .formIntro {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
   width: min(100%, 360px);
   margin-bottom: 26px;
+  text-align: center;
   animation: fadeUp 0.5s ease both;
 }
 
