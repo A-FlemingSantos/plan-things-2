@@ -1542,7 +1542,7 @@ export default function Workspace() {
     <div className={styles.sectionHeader}>
       <div className={styles.sectionLeft}>
         <h2 id="workspace-workspaces-title" className={styles.sectionTitle}>Workspaces</h2>
-        <span className={styles.planCount}>{filtered.length}</span>
+        <span className={styles.planCount}>{workspaceGroups.length}</span>
       </div>
       <div className={styles.sectionHeaderRight}>
         <WorkspaceSectionActions />
@@ -1554,10 +1554,9 @@ export default function Workspace() {
   const plansSectionContent = (
     <>
       {!hasVisiblePlans ? (
-        <>
+        <div className={styles.plansGalleryBody}>
           {renderWorkspacesSectionHeader(true)}
-          <div className={showIntelligenceSection ? styles.plansGalleryBody : ''}>
-            <div className={styles.emptyState}>
+          <div className={styles.emptyState}>
               <span className={styles.emptyStateIcon}><SearchIcon /></span>
               <p className={styles.emptyStateTitle}>Nenhum plano encontrado</p>
               <p className={styles.emptyStateHint}>
@@ -1577,10 +1576,9 @@ export default function Workspace() {
                 </button>
               </div>
             </div>
-          </div>
-        </>
+        </div>
       ) : (
-        <div className={showIntelligenceSection ? styles.plansGalleryBody : ''}>
+        <div className={styles.plansGalleryBody}>
           {recentPlans.length > 0 ? (
             <section className={styles.recentSection} aria-labelledby="workspace-recent-title">
               {renderSectionHeader('workspace-recent-title', 'Recentes', recentPlans.length, { withControls: true })}
@@ -1601,6 +1599,7 @@ export default function Workspace() {
                       <WorkspaceIconGlyph iconKey={group.iconKey} className={styles.workspaceGroupIconGlyph} />
                     </span>
                     <h3 className={styles.workspaceGroupTitle}>{group.name}</h3>
+                    <span className={styles.planCount}>{group.plans.length}</span>
                   </div>
                   {group.plans.length === 0 ? (
                     <p className={styles.workspaceGroupEmpty}>
