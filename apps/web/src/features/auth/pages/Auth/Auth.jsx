@@ -47,6 +47,15 @@ function EyeOffIcon() {
   )
 }
 
+function LogoMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 1.4 17.1 5.35v9.3L10 18.6l-7.1-3.95v-9.3L10 1.4Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6.6 8.1 10 10l3.4-1.9M10 10v4.2M6.6 8.1V12l3.4 2.2M13.4 8.1V12L10 14.2M6.6 8.1 10 5.95l3.4 2.15" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function CheckIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
@@ -173,7 +182,14 @@ export default function Auth({ initialMode = 'login' }) {
 
       <main className={styles.shell}>
         <section className={styles.brandPanel}>
-          <BrandTypewriter />
+          <div className={styles.brandBadge}>
+            <span className={styles.brandBadgeMark}><LogoMark /></span>
+            <span className={styles.brandBadgeText}>Plan Things</span>
+          </div>
+
+          <div className={styles.brandTypewriterSlot}>
+            <BrandTypewriter />
+          </div>
         </section>
 
         <section className={styles.formPanel}>

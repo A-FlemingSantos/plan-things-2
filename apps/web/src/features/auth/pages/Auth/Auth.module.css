@@ -33,7 +33,7 @@
 
 .brandPanel {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   background: #ffffff;
   color: #000000;
 }
@@ -41,6 +41,33 @@
 [data-theme='light'] .brandPanel {
   background: #000000;
   color: #ffffff;
+}
+
+.brandBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: clamp(24px, 3vw, 32px) 0 0 clamp(12px, 1.6vw, 20px);
+}
+
+.brandBadgeMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+
+.brandBadgeText {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  color: currentColor;
+}
+
+.brandTypewriterSlot {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 0;
 }
 
 .typewriterWrap {
@@ -478,8 +505,12 @@
 
   .brandPanel {
     min-height: 220px;
-    padding: 40px 0;
     border-bottom: 1px solid var(--border-1);
+  }
+
+  .brandBadge {
+    padding-top: 24px;
+    padding-left: 16px;
   }
 
   .typewriterWrap {
@@ -519,7 +550,10 @@
 
   .brandPanel {
     min-height: 180px;
-    padding: 32px 0;
+  }
+
+  .brandBadge {
+    padding-top: 20px;
   }
 
   .typewriterText {
