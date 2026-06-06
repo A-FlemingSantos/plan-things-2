@@ -36,45 +36,25 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 28px 30px 24px;
-  background: var(--surface-1);
+  background: #ffffff;
+  --text-1: #000000;
+  --text-2: color-mix(in srgb, #000000 68%, transparent);
+  --text-3: color-mix(in srgb, #000000 48%, transparent);
+  --border-1: color-mix(in srgb, #000000 14%, transparent);
+  --border-2: color-mix(in srgb, #000000 24%, transparent);
+  --surface-2: color-mix(in srgb, #000000 5%, #ffffff);
+  --surface-3: color-mix(in srgb, #000000 9%, #ffffff);
 }
 
-.brandMedia {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.brandMediaImage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.58;
-}
-
-.brandMediaImageLight {
-  display: none;
-}
-
-[data-theme='light'] .brandMediaImageDark {
-  display: none;
-}
-
-[data-theme='light'] .brandMediaImageLight {
-  display: block;
-}
-
-.brandMedia::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--surface-1) 30%, transparent);
-}
-
-[data-theme='light'] .brandMedia::after {
-  background: color-mix(in srgb, var(--surface-1) 14%, transparent);
+[data-theme='light'] .brandPanel {
+  background: #000000;
+  --text-1: #ffffff;
+  --text-2: color-mix(in srgb, #ffffff 68%, transparent);
+  --text-3: color-mix(in srgb, #ffffff 48%, transparent);
+  --border-1: color-mix(in srgb, #ffffff 14%, transparent);
+  --border-2: color-mix(in srgb, #ffffff 24%, transparent);
+  --surface-2: color-mix(in srgb, #ffffff 5%, #000000);
+  --surface-3: color-mix(in srgb, #ffffff 9%, #000000);
 }
 
 .brandAmbient {
