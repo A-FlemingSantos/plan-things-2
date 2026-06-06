@@ -5,6 +5,7 @@ import { usePreferences } from '../../../preferences/context/PreferencesContext.
 import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/authRedirect.js'
 import { clearAuthIntent, persistAuthIntent } from '../../utils/authIntent.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
+import BrandTypewriter from './BrandTypewriter.jsx'
 import styles from './Auth.module.css'
 
 function GoogleIcon() {
@@ -171,7 +172,9 @@ export default function Auth({ initialMode = 'login' }) {
       <div className={styles.pageGlow} aria-hidden />
 
       <main className={styles.shell}>
-        <section className={styles.brandPanel} aria-hidden />
+        <section className={styles.brandPanel}>
+          <BrandTypewriter />
+        </section>
 
         <section className={styles.formPanel}>
           <div className={styles.formIntro}>
