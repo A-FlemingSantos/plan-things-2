@@ -116,7 +116,7 @@ const VISUALS = { planning: PlanningVisual, kanban: KanbanVisual, workspace: Wor
 export default function FeatureCard({ feature }) {
   const Visual = VISUALS[feature.visual]
   const featureHref =
-    feature.visual === 'planning' ? '#innovation' :
+    feature.visual === 'planning' ? '#how-it-works' :
     feature.visual === 'kanban' ? '#how-it-works' :
     ROUTES.workspace
 

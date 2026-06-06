@@ -9,7 +9,7 @@ const SHOWCASE_ITEMS = [
     headline: 'Planeje com clareza, a partir de uma frase',
     body: 'Descreva o objetivo em linguagem natural. A IA transforma em épicos, tarefas e prazos que você revisa e ajusta em segundos.',
     mockupLabel: 'Planejamento com IA',
-    link: { label: 'Conhecer o planejamento com IA', href: '#innovation' },
+    link: { label: 'Conhecer o planejamento com IA', href: '#how-it-works' },
   },
   {
     id: 'kanban',
@@ -36,7 +36,7 @@ const SHOWCASE_ITEMS = [
     headline: 'Automatize o repetitivo e foque no que importa',
     body: 'Regras, lembretes e ações em lote reduzem cliques manuais para que a equipe avance em vez de administrar o quadro.',
     mockupLabel: 'Automações',
-    link: { label: 'Saiba mais sobre automações', href: '#innovation' },
+    link: { label: 'Saiba mais sobre automações', href: '#how-it-works' },
   },
 ]
 

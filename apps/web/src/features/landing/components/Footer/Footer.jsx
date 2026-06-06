@@ -5,11 +5,11 @@ import styles from './Footer.module.css'
 const FOOTER_LINKS = {
   Product: [
     { label: 'Quadro Kanban', href: '#how-it-works' },
-    { label: 'Planejamento com IA', href: '#innovation' },
+    { label: 'Planejamento com IA', href: '#how-it-works' },
     { label: 'Linha do tempo', href: '#how-it-works' },
-    { label: 'Automações', href: '#innovation' },
+    { label: 'Automações', href: '#how-it-works' },
     { label: 'App mobile', href: '#mobile' },
-    { label: 'Integrações', href: '#innovation' },
+    { label: 'Integrações', href: '#how-it-works' },
   ],
   Company: [
     { label: 'Sobre', href: '#hero' },
@@ -22,15 +22,15 @@ const FOOTER_LINKS = {
   Resources: [
     { label: 'Documentação', href: '#how-it-works' },
     { label: 'Referência da API', href: '#faq' },
-    { label: 'Novidades', href: '#innovation' },
+    { label: 'Novidades', href: '#faq' },
     { label: 'Comunidade', href: '#faq' },
-    { label: 'Status', href: '#innovation' },
+    { label: 'Status', href: '#faq' },
     { label: 'Segurança', href: '#faq' },
   ],
   Support: [
     { label: 'Central de ajuda', href: ROUTES.help, internal: true },
     { label: 'Fale conosco', href: '#pricing' },
-    { label: 'Status do sistema', href: '#innovation' },
+    { label: 'Status do sistema', href: '#faq' },
     { label: 'Webinars', href: '#how-it-works' },
     { label: 'Modelos', href: '#how-it-works' },
     { label: 'Roadmap', href: '#pricing' },

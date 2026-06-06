@@ -6,7 +6,6 @@ import styles from './SectionNav.module.css'
 const SECTIONS = [
   { label: 'Visão geral',   href: '#how-it-works' },
   { label: 'Recursos',      href: '#features'     },
-  { label: 'Planejamento IA', href: '#innovation' },
   { label: 'Preços',        href: '#pricing'      },
   { label: 'Mobile',        href: '#mobile'       },
   { label: 'FAQ',           href: '#faq'          },

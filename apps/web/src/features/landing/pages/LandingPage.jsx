@@ -2,7 +2,6 @@ import Navbar from '../components/Navbar/Navbar.jsx'
 import Hero from '../components/Hero/Hero.jsx'
 import PixelLogoGrid from '../components/PixelLogoGrid/PixelLogoGrid.jsx'
 import HowItWorks from '../components/HowItWorks/HowItWorks.jsx'
-import HighlightedInnovation from '../components/HighlightedInnovation/HighlightedInnovation.jsx'
 import Pricing from '../components/Pricing/Pricing.jsx'
 import MobileDownload from '../components/MobileDownload/MobileDownload.jsx'
 import FAQ from '../components/FAQ/FAQ.jsx'
@@ -21,9 +20,6 @@ export default function LandingPage() {
         </section>
         <section id="how-it-works" aria-label="Como funciona">
           <HowItWorks />
-        </section>
-        <section id="innovation">
-          <HighlightedInnovation />
         </section>
         <section id="pricing">
           <Pricing />
