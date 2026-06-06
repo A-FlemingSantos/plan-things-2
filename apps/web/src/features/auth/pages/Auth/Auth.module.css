@@ -450,12 +450,32 @@
   text-decoration: underline;
 }
 
-.legalText {
+.formFooter {
   width: min(100%, 360px);
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   padding-top: 26px;
+}
+
+.formFooterMark {
+  display: inline-flex;
+  color: var(--text-3);
+}
+
+.formFooterMark svg {
+  width: 32px;
+  height: 32px;
+}
+
+.legalText {
+  width: 100%;
+  margin: 0;
   font-size: 11px;
   line-height: 1.5;
+  text-align: center;
   color: var(--text-3);
 }
 
@@ -528,7 +548,7 @@
   .oauthGroup,
   .form,
   .switchRow,
-  .legalText {
+  .formFooter {
     width: 100%;
   }
 

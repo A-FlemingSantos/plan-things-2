@@ -341,9 +341,14 @@ export default function Auth({ initialMode = 'login' }) {
             </Link>
           </p>
 
-          <p className={styles.legalText}>
-            Plan Things • Design system interno • Todos os direitos reservados.
-          </p>
+          <div className={styles.formFooter}>
+            <span className={styles.formFooterMark} aria-hidden>
+              <LogoMark />
+            </span>
+            <p className={styles.legalText}>
+              Plan Things • Design system interno • Todos os direitos reservados.
+            </p>
+          </div>
         </section>
       </main>
     </div>
