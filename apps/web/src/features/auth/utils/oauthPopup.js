@@ -60,12 +60,6 @@ export function waitForOAuthPopup(popup) {
       settle(() => reject(new Error('O login externo demorou demais e foi cancelado.')))
     }, OAUTH_POPUP_TIMEOUT_MS)
 
-    const pollId = window.setInterval(() => {
-      if (popup.closed) {
-        settle(() => reject(new Error('A janela de login foi fechada antes da conclusao.')))
-      }
-    }, 400)
-
     function onMessage(event) {
       if (event.origin !== window.location.origin) return
       if (event.source !== popup) return
@@ -81,7 +75,6 @@ export function waitForOAuthPopup(popup) {
 
     function cleanup() {
       window.clearTimeout(timeoutId)
-      window.clearInterval(pollId)
       window.removeEventListener('message', onMessage)
     }
 

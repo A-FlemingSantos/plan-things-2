@@ -37,7 +37,14 @@ describe('oauthPopup', () => {
   })
 
   it('resolves when the popup posts a success message', async () => {
-    const popup = { closed: false }
+    const popup = {}
+    Object.defineProperty(popup, 'closed', {
+      configurable: true,
+      get() {
+        throw new Error('waitForOAuthPopup should not read popup.closed while the popup is cross-origin')
+      },
+    })
+
     const waitPromise = waitForOAuthPopup(popup)
 
     window.dispatchEvent(new MessageEvent('message', {
