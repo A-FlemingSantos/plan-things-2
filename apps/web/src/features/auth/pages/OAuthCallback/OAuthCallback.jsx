@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/authRedirect.js'
 import { clearAuthIntent, readAuthIntent } from '../../utils/authIntent.js'
+import { isOAuthPopupContext, postOAuthPopupResult } from '../../utils/oauthPopup.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 
 export default function OAuthCallback() {
@@ -29,6 +30,16 @@ export default function OAuthCallback() {
       resolveAuthRedirectTarget(storedIntent?.redirectTo, null),
     )
 
+    function finishPopupOAuth(result) {
+      if (!isOAuthPopupContext()) {
+        return false
+      }
+
+      postOAuthPopupResult(result)
+      window.close()
+      return true
+    }
+
     async function completeLogin() {
       if (error) {
         throw new Error('Nao foi possivel concluir o login externo.')
@@ -41,16 +52,36 @@ export default function OAuthCallback() {
         mode: authMode,
       })
 
-      navigate(resolvePostAuthRoute({
+      const nextRoute = resolvePostAuthRoute({
         authMode,
         redirectTo,
         userId: session?.user?.id,
         resolveInitialRoute,
-      }), { replace: true })
+      })
+
+      if (finishPopupOAuth({
+        success: true,
+        authMode,
+        redirectTo: nextRoute,
+        userId: session?.user?.id,
+      })) {
+        return
+      }
+
+      navigate(nextRoute, { replace: true })
     }
 
     completeLogin().catch((error) => {
-      setMessage(error.message ?? 'Nao foi possivel concluir o login externo.')
+      const message = error.message ?? 'Nao foi possivel concluir o login externo.'
+
+      if (finishPopupOAuth({
+        success: false,
+        error: message,
+      })) {
+        return
+      }
+
+      setMessage(message)
       setFailed(true)
     }).finally(() => {
       clearAuthIntent()

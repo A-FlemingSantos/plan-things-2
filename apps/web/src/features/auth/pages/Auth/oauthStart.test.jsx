@@ -9,6 +9,12 @@ const authMocks = vi.hoisted(() => ({
   login: vi.fn(),
   register: vi.fn(),
   startOAuthLogin: vi.fn(),
+  reloadStoredSession: vi.fn(),
+}))
+
+const oauthPopupMocks = vi.hoisted(() => ({
+  openOAuthPopup: vi.fn(),
+  waitForOAuthPopup: vi.fn(),
 }))
 
 const preferenceMocks = vi.hoisted(() => ({
@@ -32,6 +38,8 @@ vi.mock('../../context/AuthContext.jsx', () => ({
   useAuth: () => authMocks,
 }))
 
+vi.mock('../../utils/oauthPopup.js', () => oauthPopupMocks)
+
 vi.mock('../../../preferences/context/PreferencesContext.jsx', async () => {
   const actual = await vi.importActual('../../../preferences/context/PreferencesContext.jsx')
 
@@ -46,13 +54,23 @@ describe('OAuth start buttons', () => {
     authMocks.login.mockReset()
     authMocks.register.mockReset()
     authMocks.startOAuthLogin.mockReset()
+    authMocks.reloadStoredSession.mockReset()
+    oauthPopupMocks.openOAuthPopup.mockReset()
+    oauthPopupMocks.waitForOAuthPopup.mockReset()
     preferenceMocks.resolveInitialRoute.mockClear()
     navigationMocks.navigate.mockReset()
   })
 
   it('starts Google OAuth with the pending internal redirect', async () => {
     const oauthStart = createDeferred()
+    const popup = { closed: false }
     authMocks.startOAuthLogin.mockReturnValue(oauthStart.promise)
+    oauthPopupMocks.openOAuthPopup.mockReturnValue(popup)
+    oauthPopupMocks.waitForOAuthPopup.mockResolvedValue({
+      success: true,
+      redirectTo: '/settings',
+      userId: 'user-1',
+    })
 
     renderAuth('/login', { redirectTo: '/settings' })
 
@@ -66,15 +84,27 @@ describe('OAuth start buttons', () => {
     })
     expect(screen.getByRole('button', { name: /google/i })).toBeDisabled()
 
-    oauthStart.reject(new Error('Test cancelled pending OAuth start'))
+    oauthStart.resolve({ authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth' })
+
     await waitFor(() => {
+      expect(oauthPopupMocks.openOAuthPopup).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth')
+      expect(oauthPopupMocks.waitForOAuthPopup).toHaveBeenCalledWith(popup)
+      expect(authMocks.reloadStoredSession).toHaveBeenCalled()
+      expect(navigationMocks.navigate).toHaveBeenCalledWith('/settings', { replace: true })
       expect(screen.getByRole('button', { name: /google/i })).toBeEnabled()
     })
   })
 
   it('starts OAuth in add-account mode without preserving the current redirect target', async () => {
     const oauthStart = createDeferred()
+    const popup = { closed: false }
     authMocks.startOAuthLogin.mockReturnValue(oauthStart.promise)
+    oauthPopupMocks.openOAuthPopup.mockReturnValue(popup)
+    oauthPopupMocks.waitForOAuthPopup.mockResolvedValue({
+      success: true,
+      redirectTo: '/workspace',
+      userId: 'user-2',
+    })
 
     renderAuth('/login', {
       redirectTo: '/files',
@@ -89,8 +119,10 @@ describe('OAuth start buttons', () => {
       })
     })
 
-    oauthStart.reject(new Error('Test cancelled pending OAuth start'))
+    oauthStart.resolve({ authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth' })
+
     await waitFor(() => {
+      expect(navigationMocks.navigate).toHaveBeenCalledWith('/workspace', { replace: true })
       expect(screen.getByRole('button', { name: /google/i })).toBeEnabled()
     })
   })

@@ -327,6 +327,12 @@ export function AuthProvider({ children }) {
     return savedStore
   }, [saveAccountStore])
 
+  const reloadStoredSession = useCallback(() => {
+    const storedStore = readAccountStore()
+    saveAccountStore(storedStore)
+    return getActiveSession(storedStore)
+  }, [saveAccountStore])
+
   const saveAuthenticatedSession = useCallback((nextSession, options = {}) => {
     const mode = options.mode === ADD_ACCOUNT_AUTH_MODE ? ADD_ACCOUNT_AUTH_MODE : DEFAULT_AUTH_MODE
     const normalizedSession = normalizeSession(nextSession)
@@ -689,6 +695,7 @@ export function AuthProvider({ children }) {
     resetPassword,
     startOAuthLogin,
     completeOAuthLogin,
+    reloadStoredSession,
     switchAccount,
     patchSession,
     logout,
@@ -701,6 +708,7 @@ export function AuthProvider({ children }) {
     clearPendingAccountRedirect,
     clearPendingLogoutRedirect,
     completeOAuthLogin,
+    reloadStoredSession,
     forgotPassword,
     isReady,
     login,

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/authRedirect.js'
 import { clearAuthIntent, persistAuthIntent } from '../../utils/authIntent.js'
+import { openOAuthPopup, waitForOAuthPopup } from '../../utils/oauthPopup.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import BrandTypewriter from './BrandTypewriter.jsx'
 import styles from './Auth.module.css'
@@ -75,7 +76,7 @@ function ToggleIcon({ enabled }) {
 export default function Auth({ initialMode = 'login' }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login, register, startOAuthLogin } = useAuth()
+  const { login, register, startOAuthLogin, reloadStoredSession } = useAuth()
   const { resolveInitialRoute } = usePreferences()
   const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
@@ -150,9 +151,19 @@ export default function Auth({ initialMode = 'login' }) {
         ...(redirectTo ? { redirectTo } : {}),
       })
 
-      window.location.assign(response.authorizationUrl)
+      const popup = openOAuthPopup(response.authorizationUrl)
+      const result = await waitForOAuthPopup(popup)
+      reloadStoredSession()
+
+      navigate(resolvePostAuthRoute({
+        authMode,
+        redirectTo: result.redirectTo,
+        userId: result.userId,
+        resolveInitialRoute,
+      }), { replace: true })
     } catch (error) {
       setErrorMessage(error.message ?? `Nao foi possivel iniciar o login com ${provider}.`)
+    } finally {
       setLoading(null)
     }
   }
