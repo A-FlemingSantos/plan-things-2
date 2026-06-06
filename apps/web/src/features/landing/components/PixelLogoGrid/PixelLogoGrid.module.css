@@ -1,24 +1,45 @@
 .section {
   background: var(--app-bg);
-  padding: clamp(28px, 5vw, 56px) 0 var(--section-py);
+  padding: clamp(24px, 4vw, 40px) 0 var(--section-py);
 }
 
-.viewport {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 8px;
-}
-
-.grid {
+.shell {
   display: grid;
-  grid-template-columns: repeat(5, minmax(148px, 1fr));
-  grid-template-rows: repeat(4, 96px);
-  gap: 1px;
-  min-width: 920px;
-  background: var(--border-1);
-  border: 1px solid var(--border-1);
-  box-shadow: var(--shadow-xs);
+  gap: 14px;
+}
+
+.header {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.railViewport {
+  position: relative;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+}
+
+.railTrack {
+  display: flex;
+  width: max-content;
+  animation: marquee 34s linear infinite;
+}
+
+.railViewport:hover .railTrack,
+.railViewport:focus-within .railTrack {
+  animation-play-state: paused;
+}
+
+.railSet {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.railItem {
+  flex: 0 0 clamp(136px, 14vw, 178px);
+  min-width: clamp(136px, 14vw, 178px);
 }
 
 .card {
@@ -26,6 +47,8 @@
   position: relative;
   display: grid;
   place-items: center;
+  min-height: clamp(78px, 8vw, 92px);
+  border-inline-end: 1px solid var(--border-1);
   overflow: hidden;
   isolation: isolate;
   background: var(--surface-1);
@@ -97,43 +120,29 @@
   transform: scale(1.06);
 }
 
-.centerBlock {
-  grid-column: 2 / span 3;
-  grid-row: 2 / span 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  background: var(--surface-1);
-  padding: 20px 28px;
-  text-align: center;
-}
-
 .badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 0;
   border-radius: 999px;
-  border: 1px solid var(--border-1);
-  background: var(--surface-1);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  box-shadow: var(--shadow-xs);
+  opacity: 0.75;
 }
 
 .heading {
-  max-width: 516px;
-  color: var(--text-1);
-  font-size: clamp(24px, 2.8vw, 34px);
-  line-height: 1.1;
-  letter-spacing: -0.035em;
+  max-width: 38rem;
+  color: var(--text-2);
+  font-size: clamp(13px, 1.5vw, 15px);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
   font-weight: var(--font-weight-regular);
   text-wrap: balance;
+  opacity: 0.82;
 }
 
 :global([data-theme='dark']) .card {
@@ -150,39 +159,53 @@
   filter: none;
 }
 
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @media (max-width: 960px) {
   .section {
     padding-top: 20px;
-  }
-
-  .grid {
-    min-width: 860px;
-    grid-template-columns: repeat(5, minmax(136px, 1fr));
   }
 }
 
 @media (max-width: 640px) {
   .section {
-    padding-bottom: 72px;
-  }
-
-  .grid {
-    min-width: 760px;
-    grid-template-columns: repeat(5, minmax(120px, 1fr));
-    grid-template-rows: repeat(4, 84px);
-  }
-
-  .centerBlock {
-    gap: 16px;
-    padding: 18px 22px;
+    padding-bottom: 64px;
   }
 
   .heading {
-    font-size: 22px;
+    font-size: 13px;
   }
 
   .badge {
-    font-size: 12px;
-    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .railViewport {
+    margin-inline: calc(var(--page-gutter, 16px) * -0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .railViewport {
+    overflow-x: auto;
+    mask-image: none;
+    -webkit-mask-image: none;
+    scrollbar-width: none;
+  }
+
+  .railViewport::-webkit-scrollbar {
+    display: none;
+  }
+
+  .railTrack {
+    animation: none;
   }
 }

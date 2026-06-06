@@ -415,15 +415,27 @@ export default function PixelLogoGrid({
 }) {
   return (
     <section className={styles.section}>
-      <div className={cx('container', styles.viewport)}>
-        <div className={styles.grid}>
-          {LOGOS.map((logo) => (
-            <LogoCard key={logo.name} logo={logo} />
-          ))}
+      <div className={cx('container', styles.shell)}>
+        <div className={styles.header}>
+          <span className={styles.badge}>{badge}</span>
+          <h2 className={styles.heading}>{heading}</h2>
+        </div>
 
-          <div className={styles.centerBlock}>
-            <span className={styles.badge}>{badge}</span>
-            <h2 className={styles.heading}>{heading}</h2>
+        <div className={styles.railViewport}>
+          <div className={styles.railTrack}>
+            {[0, 1].map((setIndex) => (
+              <div
+                key={`logo-set-${setIndex}`}
+                className={styles.railSet}
+                aria-hidden={setIndex === 1 ? 'true' : undefined}
+              >
+                {LOGOS.map((logo) => (
+                  <div key={`${setIndex}-${logo.name}`} className={styles.railItem}>
+                    <LogoCard logo={logo} />
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </div>
