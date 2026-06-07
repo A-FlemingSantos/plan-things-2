@@ -91,13 +91,12 @@
 }
 
 .ctaSecondary {
-  border: 1px solid var(--border-2);
   color: var(--text-1);
-  background: transparent;
+  background: var(--surface-3);
 }
 
 .ctaSecondary:hover {
-  background: var(--hover);
+  background: var(--border-1);
 }
 
 .mockShowcase {
