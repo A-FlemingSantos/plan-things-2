@@ -1,49 +1,22 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../../../../shared/config/routes.js'
+import { LANDING_NAV_LINKS } from '../../config/landingNav.js'
+import { useLandingActiveSection } from '../../hooks/useLandingActiveSection.js'
 import styles from './SectionNav.module.css'
 
-const SECTIONS = [
-  { label: 'Visão geral',   href: '#how-it-works' },
-  { label: 'Recursos',      href: '#features'     },
-  { label: 'Preços',        href: '#pricing'      },
-  { label: 'Mobile',        href: '#mobile'       },
-  { label: 'FAQ',           href: '#faq'          },
-]
-
 export default function SectionNav() {
-  const [active, setActive] = useState('#how-it-works')
-
-  useEffect(() => {
-    const ids = SECTIONS.map(s => s.href.slice(1))
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setActive(`#${entry.target.id}`)
-          }
-        })
-      },
-      { threshold: 0.35 }
-    )
-
-    ids.forEach(id => {
-      const el = document.getElementById(id)
-      if (el) observer.observe(el)
-    })
-
-    return () => observer.disconnect()
-  }, [])
+  const active = useLandingActiveSection()
 
   return (
     <div className={styles.wrapper}>
       <div className={`${styles.bar} container`}>
         <nav className={styles.nav} aria-label="Navegação por seções">
-          {SECTIONS.map(s => (
+          {LANDING_NAV_LINKS.map(s => (
             <a
               key={s.href}
               href={s.href}
               className={`${styles.link} ${active === s.href ? styles.active : ''}`}
+              aria-current={active === s.href ? 'true' : undefined}
             >
               {s.label}
             </a>
