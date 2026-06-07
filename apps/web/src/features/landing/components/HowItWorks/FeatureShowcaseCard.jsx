@@ -1,4 +1,5 @@
 import FeatureVisualPanel from './FeatureVisualPanel.jsx'
+import { useRevealOnScroll } from '../../hooks/useRevealOnScroll.js'
 import styles from './HowItWorks.module.css'
 
 const VARIANT_CLASS = {
@@ -18,6 +19,7 @@ export default function FeatureShowcaseCard({
   imageAlt,
   imageFit = 'cover',
 }) {
+  const { ref, isRevealed } = useRevealOnScroll()
   const variantClass = VARIANT_CLASS[variant] ?? VARIANT_CLASS['image-left']
 
   const visualColumn = (
@@ -46,7 +48,10 @@ export default function FeatureShowcaseCard({
   )
 
   return (
-    <article className={`${styles.featureRow} ${variantClass}`}>
+    <article
+      ref={ref}
+      className={`${styles.featureRow} ${variantClass} ${isRevealed ? styles.featureRowRevealed : ''}`}
+    >
       {variant === 'image-left' ? (
         <>
           {visualColumn}
