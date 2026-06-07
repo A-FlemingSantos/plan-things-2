@@ -1,3 +1,19 @@
+export const KANBAN_LABEL_COLOR_OPTIONS = [
+  { id: 'blue', label: 'Azul', value: '#2363eb' },
+  { id: 'red', label: 'Vermelho', value: '#a90707' },
+  { id: 'green', label: 'Verde', value: '#13442f' },
+  { id: 'orange', label: 'Laranja', value: '#e24123' },
+  { id: 'yellow', label: 'Amarelo', value: '#fade48' },
+]
+
+export const KANBAN_DEFAULT_LABELS = [
+  { id: 'l1', text: 'Design', color: '#fade48' },
+  { id: 'l2', text: 'Engenharia', color: '#2363eb' },
+  { id: 'l3', text: 'Pesquisa', color: '#e24123' },
+  { id: 'l4', text: 'Marketing', color: '#a90707' },
+  { id: 'l5', text: 'QA', color: '#13442f' },
+]
+
 const KANBAN_BASE_COLOR_DEFINITIONS = [
   { id: 'none', columnLabel: 'Sem cor', preferenceLabel: 'Padrão', value: '' },
   { id: 'gray', columnLabel: 'Cinza', preferenceLabel: 'Cinza', value: '#a0a0a0' },

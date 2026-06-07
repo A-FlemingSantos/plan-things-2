@@ -807,11 +807,11 @@ public class BoardService {
       return;
     }
 
-    createLabel(planId, "Design", "#d4aef1");
-    createLabel(planId, "Engenharia", "#4290da");
-    createLabel(planId, "Pesquisa", "#f5a623");
-    createLabel(planId, "Marketing", "#ff6766");
-    createLabel(planId, "QA", "#0f703a");
+    createLabel(planId, "Design", "#fade48");
+    createLabel(planId, "Engenharia", "#2363eb");
+    createLabel(planId, "Pesquisa", "#e24123");
+    createLabel(planId, "Marketing", "#a90707");
+    createLabel(planId, "QA", "#13442f");
   }
 
   private void createLabel(UUID planId, String name, String color) {

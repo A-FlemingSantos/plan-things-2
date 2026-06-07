@@ -22,6 +22,7 @@ import { getFileTypeFromName } from '../../../files/data/libraryRepository.js'
 import { buildPlannerView, filterPlannerItems } from './plannerFilters.js'
 import {
   KANBAN_COLUMN_COLOR_OPTIONS,
+  KANBAN_DEFAULT_LABELS,
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
 } from '../../data/kanbanColorPalette.js'
@@ -107,14 +108,6 @@ const IntelligencePluginLogo = {
 /* ═══════════════════════════════════════════════════════════════
    INITIAL DATA
 ═══════════════════════════════════════════════════════════════ */
-const LABELS = [
-  { id: 'l1', text: 'Design',      color: '#d4aef1' },
-  { id: 'l2', text: 'Engenharia',  color: '#4290da' },
-  { id: 'l3', text: 'Pesquisa',    color: '#f5a623' },
-  { id: 'l4', text: 'Marketing',   color: '#ff6766' },
-  { id: 'l5', text: 'QA',          color: '#0f703a' },
-]
-
 const MEMBERS = [
   { id: 'm1', initials: 'AS', color: '#000'    },
   { id: 'm2', initials: 'MK', color: '#d4aef1' },
@@ -642,7 +635,7 @@ export default function KanbanBoard() {
     includeGeneratedFromCard: false,
     enrichGeneratedCardKinds: false,
   })
-  const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : LABELS
+  const planLabels = activePlan?.labelsMeta?.length ? activePlan.labelsMeta : KANBAN_DEFAULT_LABELS
   const isPlanMembersLoading = Boolean(isBackendDriven && activePlan?.id && !activePlan.detailsLoaded)
   const backendPlanMembers = Array.isArray(activePlan?.membersMeta) ? activePlan.membersMeta : []
   const planMembers = isBackendDriven

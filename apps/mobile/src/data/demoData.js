@@ -59,11 +59,11 @@ export const plans = [
 ]
 
 export const boardLabels = [
-  { id: 'l1', text: 'Design', color: colors.purple },
-  { id: 'l2', text: 'Engenharia', color: colors.blue },
-  { id: 'l3', text: 'Pesquisa', color: colors.amber },
-  { id: 'l4', text: 'Marketing', color: colors.red },
-  { id: 'l5', text: 'QA', color: colors.green },
+  { id: 'l1', text: 'Design', color: '#fade48' },
+  { id: 'l2', text: 'Engenharia', color: '#2363eb' },
+  { id: 'l3', text: 'Pesquisa', color: '#e24123' },
+  { id: 'l4', text: 'Marketing', color: '#a90707' },
+  { id: 'l5', text: 'QA', color: '#13442f' },
 ]
 
 export const boardMembers = [
