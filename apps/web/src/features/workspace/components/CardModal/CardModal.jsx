@@ -143,6 +143,12 @@ function buildInitials(fullName = '') {
     .join('') || 'PT'
 }
 
+function formatCardCreatedLabel(createdAt) {
+  if (!createdAt) return null
+  if (typeof createdAt === 'string') return createdAt
+  return createdAt.text ?? null
+}
+
 function normalizeChecklistItem(item = {}) {
   const title = item.title ?? item.text ?? 'Item'
   const completed = Boolean(item.completed ?? item.checked)
@@ -211,6 +217,14 @@ function SearchIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <circle cx="7.1" cy="7.1" r="4.6" stroke="currentColor" strokeWidth="1.3" />
       <path d="m10.7 10.7 2.8 2.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function PlayIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M3 2.2 9.5 6 3 9.8V2.2Z" fill="currentColor" />
     </svg>
   )
 }
@@ -1218,6 +1232,9 @@ export default function CardModal({
   const selectedDueDateSummary = dueEnabled && dueDateValue && (displayLabel || dueDate)
     ? dueDateValue
     : ''
+  const createdAtLabel = formatCardCreatedLabel(card.createdAt) ?? formatCardCreatedLabel(card.created) ?? 'Recentemente'
+  const datesSummary = selectedDueDateSummary
+    || (startEnabled && startDateValue ? `${startDateValue} → Vencimento` : 'Início → Vencimento')
   const handleLabelSelect = async (nextLabelId) => {
     if (isMutating) return
 
@@ -1869,15 +1886,19 @@ export default function CardModal({
         aria-modal="true"
         aria-labelledby={dialogTitleId}
       >
-        {/* Header */}
-        <div className={styles.cmHeader}>
-          <div className={styles.cmHeaderLeft}>
-            <button type="button" className={styles.cmStatusBtn}>
-              <span>{colTitle}</span>
-              <span className={styles.cmStatusBtnIcon}><icons.Chevron /></span>
-            </button>
+        <div className={styles.cmTopBar}>
+          <div className={styles.cmBreadcrumbs}>
+            <span>Quadro</span>
+            <span className={styles.cmBreadcrumbSep}>/</span>
+            <span className={styles.cmBreadcrumbCurrent}>{colTitle}</span>
           </div>
-          <div className={styles.cmHeaderActions}>
+          <div className={styles.cmTopBarMeta}>
+            <span className={styles.cmCreatedAt}>Criada em {createdAtLabel}</span>
+            <span className={styles.cmTopBarDivider} aria-hidden="true" />
+            <button type="button" className={styles.cmTopBarLink}>Faça uma pergunta</button>
+            <button type="button" className={styles.cmTopBarLink}>Compartilhar</button>
+            <span className={styles.cmTopBarDivider} aria-hidden="true" />
+            <button type="button" className={styles.cmIconBtn} title="Favoritar" aria-label="Favoritar"><icons.Star /></button>
             <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão" disabled={isMutating}><icons.Trash /></button>
             <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão" disabled={isMutating}><icons.X /></button>
           </div>
@@ -1885,8 +1906,15 @@ export default function CardModal({
 
         <div className={styles.cmBody}>
           <div className={styles.cmMain}>
+            <div className={styles.cmTaskTypeRow}>
+              <button type="button" className={styles.cmTaskTypePill} aria-label="Tipo de tarefa">
+                <span className={styles.cmTaskTypeIcon}><icons.List /></span>
+                <span>Tarefa</span>
+                <span className={styles.cmStatusBtnIcon}><icons.Chevron /></span>
+              </button>
+            </div>
+
             <div className={styles.cmTitleRow}>
-              <span className={styles.cmTitleMarker} />
               <div className={styles.cmTitleEditor}>
                 <textarea
                   ref={titleTextareaRef}
@@ -1939,88 +1967,207 @@ export default function CardModal({
               </div>
             </div>
 
-            <div className={styles.cmToolbar}>
-              <button
-                ref={membersMenuButtonRef}
-                type="button"
-                className={`${styles.cmToolbarBtn} ${showMembersMenu ? styles.cmToolbarBtnActive : ''}`}
-                onClick={() => setShowMembersMenu(v => !v)}
-                aria-expanded={showMembersMenu}
-                aria-haspopup="menu"
-                disabled={isMutating}
+            <div className={styles.cmAiBar}>
+              <span className={styles.cmAiBarIcon} aria-hidden="true">✦</span>
+              <span>Peça ao Brain para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes</span>
+            </div>
+
+            <div className={styles.cmPropertiesGrid}>
+              <div className={styles.cmPropertiesCol}>
+                <div className={styles.cmPropertyRow}>
+                  <span className={styles.cmPropertyLabel}>Status</span>
+                  <div className={styles.cmPropertyValue}>
+                    <span className={styles.cmStatusPill}>
+                      {colTitle}
+                      <span className={styles.cmStatusPillActions}>
+                        <button type="button" className={styles.cmStatusPillAction} aria-label="Iniciar tarefa"><PlayIcon /></button>
+                        <button type="button" className={styles.cmStatusPillAction} aria-label="Concluir tarefa"><icons.Check /></button>
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.cmPropertyRow}>
+                  <span className={styles.cmPropertyLabel}><icons.Clock /> Datas</span>
+                  <div className={styles.cmPropertyValue}>
+                    <button
+                      ref={dateMenuButtonRef}
+                      type="button"
+                      className={`${styles.cmPropertyBtn} ${showDateMenu ? styles.cmPropertyBtnActive : ''}`}
+                      onClick={() => setShowDateMenu(v => !v)}
+                      aria-expanded={showDateMenu}
+                      aria-haspopup="dialog"
+                      disabled={isMutating}
+                    >
+                      {datesSummary}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.cmPropertyRow}>
+                  <span className={styles.cmPropertyLabel}><icons.Clock /> Estimativa de tempo</span>
+                  <div className={styles.cmPropertyValue}>
+                    <span className={styles.cmPropertyEmpty}>Vazio</span>
+                  </div>
+                </div>
+
+                <div className={styles.cmPropertyRow}>
+                  <span className={styles.cmPropertyLabel}><icons.Tag /> Etiquetas</span>
+                  <div className={styles.cmPropertyValue}>
+                    <button
+                      ref={labelMenuButtonRef}
+                      type="button"
+                      className={`${styles.cmPropertyBtn} ${showLabelMenu ? styles.cmPropertyBtnActive : ''}`}
+                      onClick={() => setShowLabelMenu(v => !v)}
+                      aria-expanded={showLabelMenu}
+                      aria-haspopup="menu"
+                      disabled={isMutating}
+                    >
+                      {selectedLabelSummary ? (
+                        <span
+                          className={styles.cmToolbarLabelChip}
+                          style={{ background: `${label.color}20`, color: label.color }}
+                          title={selectedLabelSummary}
+                        >
+                          {selectedLabelSummary}
+                        </span>
+                      ) : (
+                        <span className={styles.cmPropertyEmpty}>Vazio</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.cmPropertiesCol}>
+                <div className={styles.cmPropertyRow}>
+                  <span className={styles.cmPropertyLabel}><icons.User /> Responsáveis</span>
+                  <div className={styles.cmPropertyValue}>
+                    <button
+                      ref={membersMenuButtonRef}
+                      type="button"
+                      className={`${styles.cmAssigneeChip} ${showMembersMenu ? styles.cmPropertyBtnActive : ''}`}
+                      onClick={() => setShowMembersMenu(v => !v)}
+                      aria-expanded={showMembersMenu}
+                      aria-haspopup="menu"
+                      disabled={isMutating}
+                    >
+                      {selectedMembers.length > 0 ? (
+                        <>
+                          <AuthenticatedAvatar
+                            className={styles.cmAssigneeAvatar}
+                            imageClassName={styles.avatarImage}
+                            style={{ background: selectedMembers[0].color }}
+                            avatarUrl={selectedMembers[0].avatarUrl}
+                            fallback={selectedMembers[0].initials}
+                            title={getMemberName(selectedMembers[0])}
+                          />
+                          <span className={styles.cmAssigneeName}>{selectedMembersSummary}</span>
+                        </>
+                      ) : (
+                        <span className={styles.cmPropertyEmpty}>Vazio</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.cmPropertyRow}>
+                  <span className={styles.cmPropertyLabel}><icons.Priority /> Prioridade</span>
+                  <div className={styles.cmPropertyValue}>
+                    <span className={styles.cmPropertyEmpty}>Vazio</span>
+                  </div>
+                </div>
+
+                <div className={styles.cmPropertyRow}>
+                  <span className={styles.cmPropertyLabel}><PlayIcon /> Rastrear tempo</span>
+                  <div className={styles.cmPropertyValue}>
+                    <span className={styles.cmPropertyEmpty}>Start</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.cmDescSection}>
+              <div
+                ref={descComposerRef}
+                className={`${styles.cmDescComposer} ${isEditingDescription ? styles.cmDescComposerActive : ''}`}
+                onFocus={() => setIsEditingDescription(true)}
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) {
+                    setIsEditingDescription(false)
+                  }
+                }}
               >
-                {selectedMembers.length > 0 ? (
-                  <span className={styles.cmToolbarAvatarStack} title={selectedMembersSummary}>
-                    {selectedMembers.map(member => (
-                      <AuthenticatedAvatar
-                        key={member.id}
-                        className={styles.cmToolbarAvatar}
-                        imageClassName={styles.avatarImage}
-                        style={{ background: member.color }}
-                        avatarUrl={member.avatarUrl}
-                        fallback={member.initials}
-                        title={getMemberName(member)}
-                      />
-                    ))}
-                  </span>
-                ) : (
-                  <>
-                    <icons.User />
-                    <span>Membros</span>
-                  </>
-                )}
-                <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
-              </button>
-              <button
-                ref={labelMenuButtonRef}
-                type="button"
-                className={`${styles.cmToolbarBtn} ${showLabelMenu ? styles.cmToolbarBtnActive : ''}`}
-                onClick={() => setShowLabelMenu(v => !v)}
-                aria-expanded={showLabelMenu}
-                aria-haspopup="menu"
-                disabled={isMutating}
-              >
-                {selectedLabelSummary ? (
-                  <span
-                    className={styles.cmToolbarLabelChip}
-                    style={{ background: `${label.color}20`, color: label.color }}
-                    title={selectedLabelSummary}
+                <textarea
+                  ref={descTextareaRef}
+                  className={`${styles.cmDesc} ${isEditingDescription ? styles.cmDescExpanded : ''}`}
+                  value={desc}
+                  onChange={e => setDesc(e.target.value)}
+                  onKeyDown={e => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                      e.preventDefault()
+                      void saveDescription()
+                    }
+
+                    if (e.key === 'Escape' && !isMutating) {
+                      e.preventDefault()
+                      cancelDescriptionEdit()
+                    }
+                  }}
+                  placeholder="Adicione uma descrição ou escreva com IA"
+                  rows={1}
+                  aria-label="Descrição do cartão"
+                  disabled={isMutating}
+                />
+              </div>
+              {isEditingDescription ? (
+                <div className={styles.cmDescActions}>
+                  <button
+                    type="button"
+                    className={styles.cmDescSaveBtn}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      void saveDescription()
+                    }}
+                    disabled={isMutating || desc === savedDesc}
+                    aria-label="Salvar descrição"
+                    title="Salvar descrição"
                   >
-                    {selectedLabelSummary}
-                  </span>
-                ) : (
-                  <>
-                    <icons.Tag />
-                    <span>Etiquetas</span>
-                  </>
-                )}
-                <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
+                    <icons.Check />
+                    <span>Salvar</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cmDescCancelBtn}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={cancelDescriptionEdit}
+                    disabled={isMutating}
+                    aria-label="Cancelar edição da descrição"
+                    title="Cancelar edição da descrição"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className={styles.cmActionList}>
+              <button type="button" className={styles.cmActionItem}>
+                <span className={styles.cmActionItemIcon}><icons.Plus /></span>
+                Adicione os campos
               </button>
-              <button
-                ref={dateMenuButtonRef}
-                type="button"
-                className={styles.cmToolbarBtn}
-                onClick={() => setShowDateMenu(v => !v)}
-                aria-expanded={showDateMenu}
-                aria-haspopup="dialog"
-                disabled={isMutating}
-              >
-                {selectedDueDateSummary ? (
-                  <span className={styles.cmToolbarBtnValue} title={selectedDueDateSummary}>
-                    {selectedDueDateSummary}
-                  </span>
-                ) : (
-                  <>
-                    <icons.Clock />
-                    <span>Datas</span>
-                  </>
-                )}
-                <span className={styles.cmToolbarBtnChevron}><icons.Chevron /></span>
+              <button type="button" className={styles.cmActionItem}>
+                <span className={styles.cmActionItemIcon}><icons.Plus /></span>
+                Nova subtarefa
+              </button>
+              <button type="button" className={styles.cmActionItem}>
+                <span className={styles.cmActionItemIcon}><icons.Link /></span>
+                Vincular itens ou dependências
               </button>
               <button
                 ref={checklistMenuButtonRef}
                 type="button"
-                className={styles.cmToolbarBtn}
+                className={styles.cmActionItem}
                 onClick={() => {
                   if (!checklistReadOnly && !activeChecklist) setShowChecklistMenu(v => !v)
                 }}
@@ -2035,78 +2182,26 @@ export default function CardModal({
                       : undefined
                 }
               >
-                <icons.Check />
-                Checklist
+                <span className={styles.cmActionItemIcon}><icons.Check /></span>
+                Criar checklist
+              </button>
+              <button
+                type="button"
+                className={styles.cmActionItem}
+                onClick={() => {
+                  if (showFilePicker) {
+                    setFilePickerOpening(false)
+                    setShowFilePicker(false)
+                    return
+                  }
+                  void openFilePicker()
+                }}
+                disabled={uploadingLocalFile}
+              >
+                <span className={styles.cmActionItemIcon}><icons.Files /></span>
+                Anexar arquivo
               </button>
             </div>
-
-              <div className={styles.cmSection}>
-                <p className={styles.cmSectionTitle}>
-                  <icons.List />
-                  Descrição
-                </p>
-                <div
-                  ref={descComposerRef}
-                  className={`${styles.cmDescComposer} ${isEditingDescription ? styles.cmDescComposerActive : ''}`}
-                  onFocus={() => setIsEditingDescription(true)}
-                  onBlur={(event) => {
-                    if (!event.currentTarget.contains(event.relatedTarget)) {
-                      setIsEditingDescription(false)
-                    }
-                  }}
-                >
-                  <textarea
-                    ref={descTextareaRef}
-                    className={`${styles.cmDesc} ${isEditingDescription ? styles.cmDescExpanded : ''}`}
-                    value={desc}
-                    onChange={e => setDesc(e.target.value)}
-                    onKeyDown={e => {
-                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                        e.preventDefault()
-                        void saveDescription()
-                      }
-
-                      if (e.key === 'Escape' && !isMutating) {
-                        e.preventDefault()
-                        cancelDescriptionEdit()
-                      }
-                    }}
-                    placeholder="Adicione uma descrição mais detalhada..."
-                    rows={1}
-                    aria-label="Descrição do cartão"
-                    disabled={isMutating}
-                  />
-                </div>
-                {isEditingDescription ? (
-                  <div className={styles.cmDescActions}>
-                    <button
-                      type="button"
-                      className={styles.cmDescSaveBtn}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => {
-                        void saveDescription()
-                      }}
-                      disabled={isMutating || desc === savedDesc}
-                      aria-label="Salvar descrição"
-                      title="Salvar descrição"
-                    >
-                      <icons.Check />
-                      <span>Salvar</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.cmDescCancelBtn}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={cancelDescriptionEdit}
-                      disabled={isMutating}
-                      aria-label="Cancelar edição da descrição"
-                      title="Cancelar edição da descrição"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                ) : null}
-              </div>
 
               <div className={styles.cmSection}>
                   <div className={styles.cmAttachmentHeader}>
@@ -2119,6 +2214,7 @@ export default function CardModal({
                         ref={attachmentAddButtonRef}
                         type="button"
                         className={styles.cmAttachmentAddBtn}
+                        aria-label="Adicionar anexo"
                         onClick={() => {
                           if (showFilePicker) {
                             setFilePickerOpening(false)
@@ -2389,190 +2485,233 @@ export default function CardModal({
 
           <div className={styles.cmSidebar}>
             <div className={styles.cmSidebarHeader}>
-              <p className={styles.cmSidebarTitle}>
-                <icons.Comment />
-                Comentários e atividade
-              </p>
+              <p className={styles.cmSidebarTitle}>Activity</p>
+              <div className={styles.cmSidebarHeaderActions}>
+                <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Buscar atividade"><SearchIcon /></button>
+                <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Filtrar atividade"><icons.Filter /></button>
+                <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Notificações">1</button>
+              </div>
             </div>
 
-            <div ref={commentComposerRef} className={styles.cmCommentComposer}>
-              <div
-                className={`${styles.cmCommentComposerBox} ${commentFocused ? styles.cmCommentComposerBoxActive : ''}`}
-              >
-                <div className={`${styles.cmCommentToolbar} ${commentFocused ? styles.cmCommentToolbarOpen : ''}`}>
-                  <div className={styles.cmCommentToolbarGroup}>
-                    <div className={styles.cmCommentDropdown}>
-                      <button
-                        ref={textMenuButtonRef}
-                        type="button"
-                        className={`${styles.cmCommentToolBtn} ${showTextMenu ? styles.cmCommentToolBtnActive : ''}`}
-                        onMouseDown={e => e.preventDefault()}
-                        onClick={() => setShowTextMenu(v => !v)}
-                        aria-expanded={showTextMenu}
-                        aria-haspopup="menu"
-                        tabIndex={commentFocused ? 0 : -1}
-                      >
-                        Tt
-                        <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
-                      </button>
+            <div className={styles.cmSidebarContent}>
+              <div className={styles.cmActivityFeed}>
+                <div className={styles.cmActivityList}>
+                  {comments.length === 0 && (
+                    <div className={styles.cmActivityItem}>
+                      <div className={styles.cmActivityContent}>
+                        <p className={styles.cmActivityText}>Nenhum comentário registrado neste cartão ainda.</p>
+                      </div>
                     </div>
-                    <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}><strong>B</strong></button>
-                    <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}><em>I</em></button>
-                    <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}>…</button>
-                    <button
-                      ref={listMenuButtonRef}
-                      type="button"
-                      className={`${styles.cmCommentToolBtn} ${showListMenu ? styles.cmCommentToolBtnActive : ''}`}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => setShowListMenu(v => !v)}
-                      aria-expanded={showListMenu}
-                      aria-haspopup="menu"
-                      tabIndex={commentFocused ? 0 : -1}
-                    >
-                      <icons.List />
-                      <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
-                    </button>
-                    <button
-                      ref={insertMenuButtonRef}
-                      type="button"
-                      className={`${styles.cmCommentToolBtn} ${showInsertMenu ? styles.cmCommentToolBtnActive : ''}`}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => setShowInsertMenu(v => !v)}
-                      aria-expanded={showInsertMenu}
-                      aria-haspopup="menu"
-                      tabIndex={commentFocused ? 0 : -1}
-                    >
-                      <icons.Plus />
-                      <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
-                    </button>
-                  </div>
-                  <div className={styles.cmCommentToolbarGroup}>
-                    <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário" tabIndex={commentFocused ? 0 : -1}>
-                      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="m6.1 9 3.44-3.44a1.83 1.83 0 1 1 2.6 2.58l-4.2 4.28a3 3 0 0 1-4.25-4.24L7.95 3.95" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Ajuda do comentário" tabIndex={commentFocused ? 0 : -1}>
-                      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
-                        <path d="M6.85 6.25a1.6 1.6 0 1 1 2.38 1.4c-.56.31-.98.66-.98 1.35v.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                        <circle cx="8" cy="11.55" r=".7" fill="currentColor" />
-                      </svg>
-                    </button>
-                  </div>
+                  )}
+
+                  {comments.map(c => {
+                    const presenter = getCommentPresenter(c)
+                    const isExpanded = expandedComments[c.id]
+                    const isOverflowing = overflowingComments[c.id]
+                    return (
+                      <div key={c.id} className={styles.cmActivityItem}>
+                        <AuthenticatedAvatar
+                          className={styles.cmCommentAvatar}
+                          imageClassName={styles.avatarImage}
+                          style={{ background: presenter.color }}
+                          avatarUrl={presenter.avatarUrl}
+                          fallback={presenter.initials}
+                          title={presenter.name}
+                        />
+                        <div className={styles.cmActivityContent}>
+                          <p
+                            ref={element => {
+                              if (element) {
+                                commentTextRefs.current[c.id] = element
+                              } else {
+                                delete commentTextRefs.current[c.id]
+                              }
+                            }}
+                            className={`${styles.cmActivityText} ${!isExpanded ? styles.cmActivityTextClamped : ''}`}
+                          >
+                            <strong>{presenter.name}</strong> {c.text}
+                          </p>
+                          {isOverflowing && (
+                            <button
+                              type="button"
+                              className={styles.cmActivityToggle}
+                              onMouseDown={e => e.stopPropagation()}
+                              onClick={e => {
+                                e.stopPropagation()
+                                setExpandedComments(prev => ({ ...prev, [c.id]: !prev[c.id] }))
+                              }}
+                            >
+                              {isExpanded ? 'Ver menos' : 'Ver mais'}
+                            </button>
+                          )}
+                          <span className={styles.cmCommentTime}>{c.time}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
 
-                <textarea
-                  ref={commentTextareaRef}
-                  className={`${styles.cmCommentTextarea} ${commentFocused ? styles.cmCommentTextareaExpanded : ''}`}
-                  placeholder="Escrever comentário..."
-                  value={comment}
-                  onChange={e => setComment(e.target.value)}
-                  aria-label="Escrever comentário"
-                  onFocus={() => setCommentFocused(true)}
-                  onBlur={e => {
-                    if (
-                      !comment.trim() &&
-                      !commentComposerRef.current?.contains(e.relatedTarget)
-                    ) {
-                      setCommentFocused(false)
-                    }
-                  }}
-                  rows={commentFocused ? 3 : 1}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      void addComment()
-                    }
-                  }}
-                  disabled={isMutating}
-                />
+                <div className={styles.cmActivityHistory}>
+                  <p className={styles.cmHistoryItem}>
+                    <strong>{currentUserName}</strong> (você) criou esta tarefa · {createdAtLabel}
+                  </p>
+                  {selectedMembers.length > 0 && (
+                    <p className={styles.cmHistoryItem}>
+                      <strong>{currentUserName}</strong> (você) atribuiu a: {selectedMembersSummary || 'Você'} · {createdAtLabel}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div className={`${styles.cmCommentFooter} ${commentFocused ? styles.cmCommentFooterOpen : ''}`}>
-                  <button
-                    type="button"
-                    className={styles.cmCommentSaveBtn}
-                    onMouseDown={e => e.preventDefault()}
-                    onClick={() => {
-                      void addComment()
-                    }}
-                    disabled={!comment.trim() || isMutating}
-                    tabIndex={commentFocused ? 0 : -1}
+              <div className={styles.cmCommentDock}>
+                <div ref={commentComposerRef} className={styles.cmCommentComposer}>
+                  <div
+                    className={`${styles.cmCommentComposerBox} ${commentFocused ? styles.cmCommentComposerBoxActive : ''}`}
                   >
-                    Salvar
-                  </button>
-
-                  <label className={styles.cmCommentFollowLabel}>
-                    <input
-                      type="checkbox"
-                      className={styles.cmCommentFollowCheckbox}
-                      checked={commentFollow}
-                      onChange={(event) => setCommentFollow(event.target.checked)}
-                      disabled={isMutating}
-                      tabIndex={commentFocused ? 0 : -1}
-                    />
-                    <span>Seguir</span>
-                  </label>
-                </div>
-            </div>
-
-            <div className={styles.cmActivityList}>
-              {comments.length === 0 && (
-                <div className={styles.cmActivityItem}>
-                  <div className={styles.cmActivityContent}>
-                    <p className={styles.cmActivityText}>Nenhum comentário registrado neste cartão ainda.</p>
-                  </div>
-                </div>
-              )}
-
-              {comments.map(c => {
-                const presenter = getCommentPresenter(c)
-                const isExpanded = expandedComments[c.id]
-                const isOverflowing = overflowingComments[c.id]
-                return (
-                  <div key={c.id} className={styles.cmActivityItem}>
-                    <AuthenticatedAvatar
-                      className={styles.cmCommentAvatar}
-                      imageClassName={styles.avatarImage}
-                      style={{ background: presenter.color }}
-                      avatarUrl={presenter.avatarUrl}
-                      fallback={presenter.initials}
-                      title={presenter.name}
-                    />
-                    <div className={styles.cmActivityContent}>
-                      <p
-                        ref={element => {
-                          if (element) {
-                            commentTextRefs.current[c.id] = element
-                          } else {
-                            delete commentTextRefs.current[c.id]
-                          }
-                        }}
-                        className={`${styles.cmActivityText} ${!isExpanded ? styles.cmActivityTextClamped : ''}`}
-                      >
-                        <strong>{presenter.name}</strong> {c.text}
-                      </p>
-                      {isOverflowing && (
+                    <div className={`${styles.cmCommentToolbar} ${commentFocused ? styles.cmCommentToolbarOpen : ''}`}>
+                      <div className={styles.cmCommentToolbarGroup}>
+                        <div className={styles.cmCommentDropdown}>
+                          <button
+                            ref={textMenuButtonRef}
+                            type="button"
+                            className={`${styles.cmCommentToolBtn} ${showTextMenu ? styles.cmCommentToolBtnActive : ''}`}
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => setShowTextMenu(v => !v)}
+                            aria-expanded={showTextMenu}
+                            aria-haspopup="menu"
+                            tabIndex={commentFocused ? 0 : -1}
+                          >
+                            Tt
+                            <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
+                          </button>
+                        </div>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}><strong>B</strong></button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}><em>I</em></button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}>…</button>
                         <button
+                          ref={listMenuButtonRef}
                           type="button"
-                          className={styles.cmActivityToggle}
-                          onMouseDown={e => e.stopPropagation()}
-                          onClick={e => {
-                            e.stopPropagation()
-                            setExpandedComments(prev => ({ ...prev, [c.id]: !prev[c.id] }))
-                          }}
+                          className={`${styles.cmCommentToolBtn} ${showListMenu ? styles.cmCommentToolBtnActive : ''}`}
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => setShowListMenu(v => !v)}
+                          aria-expanded={showListMenu}
+                          aria-haspopup="menu"
+                          tabIndex={commentFocused ? 0 : -1}
                         >
-                          {isExpanded ? 'Ver menos' : 'Ver mais'}
+                          <icons.List />
+                          <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
                         </button>
-                      )}
-                      <span className={styles.cmCommentTime}>{c.time}</span>
+                        <button
+                          ref={insertMenuButtonRef}
+                          type="button"
+                          className={`${styles.cmCommentToolBtn} ${showInsertMenu ? styles.cmCommentToolBtnActive : ''}`}
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => setShowInsertMenu(v => !v)}
+                          aria-expanded={showInsertMenu}
+                          aria-haspopup="menu"
+                          tabIndex={commentFocused ? 0 : -1}
+                        >
+                          <icons.Plus />
+                          <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
+                        </button>
+                      </div>
+                      <div className={styles.cmCommentToolbarGroup}>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário" tabIndex={commentFocused ? 0 : -1}>
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="m6.1 9 3.44-3.44a1.83 1.83 0 1 1 2.6 2.58l-4.2 4.28a3 3 0 0 1-4.25-4.24L7.95 3.95" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Ajuda do comentário" tabIndex={commentFocused ? 0 : -1}>
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
+                            <path d="M6.85 6.25a1.6 1.6 0 1 1 2.38 1.4c-.56.31-.98.66-.98 1.35v.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                            <circle cx="8" cy="11.55" r=".7" fill="currentColor" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <textarea
+                      ref={commentTextareaRef}
+                      className={`${styles.cmCommentTextarea} ${commentFocused ? styles.cmCommentTextareaExpanded : ''}`}
+                      placeholder="Mencione @Brain para criar, encontrar ou perguntar qualquer coisa"
+                      value={comment}
+                      onChange={e => setComment(e.target.value)}
+                      aria-label="Escrever comentário"
+                      onFocus={() => setCommentFocused(true)}
+                      onBlur={e => {
+                        if (
+                          !comment.trim() &&
+                          !commentComposerRef.current?.contains(e.relatedTarget)
+                        ) {
+                          setCommentFocused(false)
+                        }
+                      }}
+                      rows={commentFocused ? 3 : 1}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          void addComment()
+                        }
+                      }}
+                      disabled={isMutating}
+                    />
+
+                    <div className={styles.cmCommentComposerFooter}>
+                      <div className={styles.cmCommentComposerFooterLeft}>
+                        <button type="button" className={styles.cmCommentTypeBtn} tabIndex={commentFocused ? 0 : -1}>
+                          <icons.Plus />
+                          Comentário
+                          <icons.Chevron />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mencionar" tabIndex={commentFocused ? 0 : -1}>@</button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Emoji" tabIndex={commentFocused ? 0 : -1}>☺</button>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.cmCommentSendBtn}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => {
+                          void addComment()
+                        }}
+                        disabled={!comment.trim() || isMutating}
+                        aria-label="Enviar comentário"
+                        tabIndex={commentFocused ? 0 : -1}
+                      >
+                        <icons.Send />
+                      </button>
                     </div>
                   </div>
-                )
-              })}
-            </div>
 
+                  <div className={`${styles.cmCommentFooter} ${commentFocused ? styles.cmCommentFooterOpen : ''}`}>
+                    <button
+                      type="button"
+                      className={styles.cmCommentSaveBtn}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => {
+                        void addComment()
+                      }}
+                      disabled={!comment.trim() || isMutating}
+                      tabIndex={commentFocused ? 0 : -1}
+                    >
+                      Salvar
+                    </button>
+
+                    <label className={styles.cmCommentFollowLabel}>
+                      <input
+                        type="checkbox"
+                        className={styles.cmCommentFollowCheckbox}
+                        checked={commentFollow}
+                        onChange={(event) => setCommentFollow(event.target.checked)}
+                        disabled={isMutating}
+                        tabIndex={commentFocused ? 0 : -1}
+                      />
+                      <span>Seguir</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
