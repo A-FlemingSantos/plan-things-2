@@ -136,16 +136,6 @@ function KanbanColumn({
         </div>
 
         <div className={styles.colHeaderRight}>
-          <button
-            type="button"
-            className={styles.colActionBtn}
-            onClick={startAddingCard}
-            disabled={isAddingCard}
-            title="Adicionar cartão"
-          >
-            <icons.Plus />
-          </button>
-
           <div className={styles.colMenuWrap}>
             <button
               type="button"
@@ -175,6 +165,16 @@ function KanbanColumn({
               />
             ) : null}
           </div>
+
+          <button
+            type="button"
+            className={styles.colActionBtn}
+            onClick={startAddingCard}
+            disabled={isAddingCard}
+            title="Adicionar cartão"
+          >
+            <icons.Plus />
+          </button>
         </div>
       </div>
       {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}

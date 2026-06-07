@@ -1,6 +1,13 @@
 import { memo } from 'react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 
+function getDescriptionPreview(description) {
+  if (!description?.trim()) return ''
+  const firstLine = description.trim().split('\n')[0].trim()
+  if (firstLine.length <= 72) return firstLine
+  return `${firstLine.slice(0, 69)}…`
+}
+
 function KanbanCard({
   card,
   colId,
@@ -22,6 +29,7 @@ function KanbanCard({
   styles,
 }) {
   const label = labels.find((item) => item.id === card.labelId)
+  const descriptionPreview = getDescriptionPreview(card.description)
   const comments = card.comments ?? []
   const attachments = card.attachments ?? []
   const [activeChecklist] = Array.isArray(card.checklists) ? card.checklists : []
@@ -38,7 +46,8 @@ function KanbanCard({
     || Boolean(card.dueDate)
     || attachments.length > 0
     || checklistProgress !== null
-  const isCompactCard = !label && !hasFooter
+  const hasTags = Boolean(colTitle || label)
+  const isCompactCard = !hasTags && !descriptionPreview && !hasFooter
   const toggleConfirmed = (event) => {
     event.preventDefault()
     event.stopPropagation()
@@ -81,30 +90,46 @@ function KanbanCard({
       }}
       aria-label={`Abrir cartão ${card.title}`}
     >
-      <div className={styles.cardTitleRow}>
-        <button
-          type="button"
-          className={`${styles.cardConfirmButton} ${isConfirmed ? styles.cardConfirmButtonChecked : ''}`}
-          onClick={toggleConfirmed}
-          onMouseDown={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
-          aria-label={isConfirmed ? `Desmarcar cartão ${card.title}` : `Marcar cartão ${card.title}`}
-          aria-pressed={isConfirmed}
-          draggable={false}
-          tabIndex={0}
-        >
-          {isConfirmed ? <CheckIcon /> : null}
-        </button>
-        <div className={styles.cardTitleContent}>
-          <div className={`${styles.cardTitleViewport} ${label ? styles.cardTitleViewportWithLabel : ''}`}>
-            <p className={`${styles.cardTitle} ${label ? styles.cardTitleWithLabel : ''}`}>{card.title}</p>
-          </div>
+      {hasTags ? (
+        <div className={styles.cardTags}>
+          {colTitle ? (
+            <span className={styles.cardStatusTag}>
+              <span className={styles.cardStatusBar} aria-hidden="true">|</span>
+              {colTitle}
+            </span>
+          ) : null}
           {label ? (
-            <span className={styles.cardLabel} style={{ background: `${label.color}20`, color: label.color }}>
+            <span className={styles.cardLabel} style={{ background: `${label.color}18`, color: label.color }}>
               {label.text}
             </span>
           ) : null}
         </div>
+      ) : null}
+
+      <div className={styles.cardBody}>
+        <div className={styles.cardTitleBlock}>
+          <button
+            type="button"
+            className={`${styles.cardConfirmButton} ${isConfirmed ? styles.cardConfirmButtonChecked : ''}`}
+            onClick={toggleConfirmed}
+            onMouseDown={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            aria-label={isConfirmed ? `Desmarcar cartão ${card.title}` : `Marcar cartão ${card.title}`}
+            aria-pressed={isConfirmed}
+            draggable={false}
+            tabIndex={0}
+          >
+            {isConfirmed ? <CheckIcon /> : null}
+          </button>
+          <p className={`${styles.cardTitle} ${isConfirmed ? styles.cardTitleCompleted : ''}`}>{card.title}</p>
+        </div>
+
+        {descriptionPreview ? (
+          <p className={styles.cardSubtitle}>
+            <span className={styles.cardSubtitleIcon} aria-hidden="true">↳</span>
+            {descriptionPreview}
+          </p>
+        ) : null}
       </div>
 
       {hasFooter ? (
@@ -142,7 +167,7 @@ function KanbanCard({
 
             {card.dueDate ? (
               <span
-                className={`${styles.cardDue} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}
+                className={`${styles.cardDue} ${['Today', 'Hoje', 'Amanhã', 'Tomorrow'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}
                 aria-label={`Entrega ${card.dueDate}`}
               >
                 {ClockIcon ? <ClockIcon /> : null}
