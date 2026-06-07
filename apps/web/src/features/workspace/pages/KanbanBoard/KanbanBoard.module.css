@@ -2441,6 +2441,7 @@
   min-height: 16px;
   flex: 1;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
+  perspective: 900px;
 }
 
 .colCardsEmpty {
@@ -2541,28 +2542,13 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  box-shadow: 0 1px 3px -2px color-mix(in srgb, var(--text-1) 10%, transparent);
+  transform: translate3d(0, 0, 0);
+  transform-style: preserve-3d;
   transition:
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast),
-    opacity var(--transition-fast);
+    transform 0.25s ease-out,
+    opacity var(--transition-fast),
+    z-index 0s;
   animation: cardEnter 0.22s ease both;
-}
-
-.card::after {
-  content: '';
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: -5px;
-  height: 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-1) 14%, transparent);
-  filter: blur(10px);
-  opacity: 0.22;
-  z-index: -1;
-  pointer-events: none;
-  transition: opacity var(--transition-fast), transform var(--transition-fast), filter var(--transition-fast);
 }
 
 .cardCompact {
@@ -2659,19 +2645,13 @@
 }
 
 @keyframes cardEnter {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .card:hover {
-  box-shadow: 0 4px 10px -5px color-mix(in srgb, var(--text-1) 14%, transparent);
-  transform: translateY(-2px) rotateX(0.3deg);
-}
-
-.card:hover::after {
-  opacity: 0.3;
-  transform: translateY(1px) scaleX(0.985);
-  filter: blur(12px);
+  z-index: 2;
+  transform: translate3d(0, -2px, 0);
 }
 
 .card:active { cursor: grabbing; }
@@ -2679,19 +2659,12 @@
 .cardDragging {
   opacity: .4;
   transform: scale(0.97) !important;
-  box-shadow: none !important;
 }
 
 .cardDropTarget {
-  box-shadow:
-    0 2px 6px -3px color-mix(in srgb, var(--text-1) 12%, transparent),
-    0 0 0 2px color-mix(in srgb, var(--focus-ring) 20%, transparent) !important;
+  outline: 2px solid color-mix(in srgb, var(--focus-ring) 20%, transparent);
+  outline-offset: 0;
   transform: none !important;
-}
-
-.cardDropTarget::after {
-  opacity: 0.28;
-  filter: blur(12px);
 }
 
 .cardLabel {
