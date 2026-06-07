@@ -4,7 +4,6 @@ import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CardModal from '../../components/CardModal/CardModal.jsx'
@@ -2367,218 +2366,222 @@ export default function KanbanBoard() {
       >
         <div className={boardMainClassName} style={boardCoverStyle}>
         <WorkspaceHeader compact />
-        <PlanPageHeader
-          title={boardHeaderTitle}
-          meta={boardHeaderMeta}
-          titleAccessory={boardHeaderTitleAccessory}
-          sticky
-          tone="frosted"
-          titleSize="medium"
-          className={styles.boardPlanHeader}
-          actions={(
-            <BoardHeaderActions
-              members={planMembers}
-              icons={{
-                Bolt: Icon.Bolt,
-                Users: Icon.Users,
-                Star: Icon.Star,
-                UserPlus: Icon.UserPlus,
-                More: Icon.More,
-              }}
-              styles={styles}
-              onOpenMembers={toggleMembersPanel}
-              membersButtonRef={membersButtonRef}
-              membersLoading={isPlanMembersLoading}
-              membersPlaceholderCount={membersPlaceholderCount}
-              onAutomate={() => showNotification('Integrações em breve')}
-              onFilter={() => showNotification('Opções do quadro em breve')}
-              onFavorite={() => showNotification('Favoritos em breve')}
-              onShare={openInviteModal}
-            />
-          )}
-        />
-
-        {isMembersOpen ? (
-          <div
-            ref={membersMenuRef}
-            className={styles.planMembersMenu}
-            style={membersMenuStyle ?? undefined}
-            aria-label="Membros do plano"
-            role="menu"
-          >
-            <div className={styles.planMembersPanelInner}>
-              <div className={styles.planMembersTabs} role="tablist" aria-label="Colaboração do plano">
-                <button
-                  type="button"
-                  className={`${styles.planMembersTab} ${membersPanelTab === 'members' ? styles.planMembersTabActive : ''}`}
-                  onClick={() => setMembersPanelTab('members')}
-                >
-                  Membros
-                </button>
-                {canManageMembers ? (
-                  <button
-                    type="button"
-                    className={`${styles.planMembersTab} ${membersPanelTab === 'invites' ? styles.planMembersTabActive : ''}`}
-                    onClick={() => setMembersPanelTab('invites')}
-                  >
-                    Convites
-                    {planInvites.filter((invite) => invite.status === 'PENDING').length ? (
-                      <span>{planInvites.filter((invite) => invite.status === 'PENDING').length}</span>
-                    ) : null}
-                  </button>
-                ) : null}
+        <section className={styles.boardBody}>
+          <div className={styles.boardBodyContent}>
+            <header className={styles.boardHeader}>
+              <div className={styles.boardHeaderLeft}>
+                <div className={styles.boardTitleRow}>
+                  <h1 className={styles.boardTitle}>{boardHeaderTitle}</h1>
+                  {boardHeaderTitleAccessory}
+                  {boardHeaderMeta ? <span className={styles.boardCardBadge}>{boardHeaderMeta}</span> : null}
+                </div>
               </div>
 
-              {membersPanelTab === 'members' ? (
-                !activePlan ? (
-                  <p className={styles.planMembersEmpty}>Nenhum plano ativo.</p>
-                ) : membersLoadError ? (
-                  <p className={styles.planMembersEmpty}>{membersLoadError}</p>
-                ) : isPlanMembersLoading ? (
-                  <p className={styles.planMembersEmpty}>Carregando membros do plano...</p>
-                ) : !planMembers?.length ? (
-                  <p className={styles.planMembersEmpty}>Nenhum membro para exibir.</p>
-                ) : (
-                  <div className={styles.planMembersList}>
-                    {planMembers.map((member) => {
-                      const isOwner = member.role === 'OWNER'
-                      const isSelf = currentUser?.id && member.id === currentUser.id
-                      const canRemove = canManageMembers && !isOwner && !isSelf
+              <div className={styles.boardHeaderRight}>
+                <BoardHeaderActions
+                  members={planMembers}
+                  icons={{
+                    Bolt: Icon.Bolt,
+                    Users: Icon.Users,
+                    Star: Icon.Star,
+                    UserPlus: Icon.UserPlus,
+                    More: Icon.More,
+                  }}
+                  styles={styles}
+                  onOpenMembers={toggleMembersPanel}
+                  membersButtonRef={membersButtonRef}
+                  membersLoading={isPlanMembersLoading}
+                  membersPlaceholderCount={membersPlaceholderCount}
+                  onAutomate={() => showNotification('Integrações em breve')}
+                  onFilter={() => showNotification('Opções do quadro em breve')}
+                  onFavorite={() => showNotification('Favoritos em breve')}
+                  onShare={openInviteModal}
+                />
+              </div>
+            </header>
 
-                      return (
-                        <div key={member.id} className={styles.planMemberRow} role="menuitem">
-                          <AuthenticatedAvatar
-                            className={styles.planMemberAvatar}
-                            imageClassName={styles.avatarImage}
-                            style={{ background: member.color }}
-                            avatarUrl={member.avatarUrl}
-                            fallback={member.initials}
-                            title={member.name}
-                          />
-                          <div className={styles.planMemberInfo}>
-                            <span className={styles.planMemberName}>{member.name}</span>
-                            <span className={styles.planMemberEmail}>{member.email}</span>
-                          </div>
-                          <span className={styles.planMemberRole}>{member.role === 'OWNER' ? 'Owner' : member.role === 'ADMIN' ? 'Admin' : 'Membro'}</span>
-                          {canRemove ? (
-                            <button
-                              type="button"
-                              className={styles.planMemberRemove}
-                              onClick={() => removeMemberFromPlan(member.id)}
-                            >
-                              Remover
-                            </button>
-                          ) : null}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              ) : planInvitesLoading ? (
-                <p className={styles.planMembersEmpty}>Carregando convites...</p>
-              ) : planInvitesError ? (
-                <p className={styles.planMembersEmpty}>{planInvitesError}</p>
-              ) : !planInvites.length ? (
-                <p className={styles.planMembersEmpty}>Nenhum convite enviado para este plano.</p>
-              ) : (
-                <div className={styles.planInvitesList}>
-                  {planInvites.map((invite) => {
-                    const pending = invite.status === 'PENDING'
-                    const revoking = revokingInviteId === invite.inviteId
-
-                    return (
-                      <div key={invite.inviteId} className={styles.planInviteRow} role="menuitem">
-                        <div className={styles.planInviteInfo}>
-                          <span className={styles.planMemberName}>{invite.invitedEmail}</span>
-                          <span className={styles.planMemberEmail}>
-                            {formatInviteStatus(invite.status)}
-                            {invite.expiresAt?.text ? ` · expira em ${invite.expiresAt.text}` : ''}
-                          </span>
-                        </div>
-                        <span className={`${styles.planInviteStatus} ${pending ? styles.planInviteStatusPending : ''}`}>
-                          {formatInviteStatus(invite.status)}
-                        </span>
-                        {pending ? (
-                          <button
-                            type="button"
-                            className={styles.planMemberRemove}
-                            onClick={() => revokePlanInvite(invite.inviteId)}
-                            disabled={revoking}
-                          >
-                            {revoking ? 'Revogando...' : 'Revogar'}
-                          </button>
+            {isMembersOpen ? (
+              <div
+                ref={membersMenuRef}
+                className={styles.planMembersMenu}
+                style={membersMenuStyle ?? undefined}
+                aria-label="Membros do plano"
+                role="menu"
+              >
+                <div className={styles.planMembersPanelInner}>
+                  <div className={styles.planMembersTabs} role="tablist" aria-label="Colaboração do plano">
+                    <button
+                      type="button"
+                      className={`${styles.planMembersTab} ${membersPanelTab === 'members' ? styles.planMembersTabActive : ''}`}
+                      onClick={() => setMembersPanelTab('members')}
+                    >
+                      Membros
+                    </button>
+                    {canManageMembers ? (
+                      <button
+                        type="button"
+                        className={`${styles.planMembersTab} ${membersPanelTab === 'invites' ? styles.planMembersTabActive : ''}`}
+                        onClick={() => setMembersPanelTab('invites')}
+                      >
+                        Convites
+                        {planInvites.filter((invite) => invite.status === 'PENDING').length ? (
+                          <span>{planInvites.filter((invite) => invite.status === 'PENDING').length}</span>
                         ) : null}
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {membersPanelTab === 'members' ? (
+                    !activePlan ? (
+                      <p className={styles.planMembersEmpty}>Nenhum plano ativo.</p>
+                    ) : membersLoadError ? (
+                      <p className={styles.planMembersEmpty}>{membersLoadError}</p>
+                    ) : isPlanMembersLoading ? (
+                      <p className={styles.planMembersEmpty}>Carregando membros do plano...</p>
+                    ) : !planMembers?.length ? (
+                      <p className={styles.planMembersEmpty}>Nenhum membro para exibir.</p>
+                    ) : (
+                      <div className={styles.planMembersList}>
+                        {planMembers.map((member) => {
+                          const isOwner = member.role === 'OWNER'
+                          const isSelf = currentUser?.id && member.id === currentUser.id
+                          const canRemove = canManageMembers && !isOwner && !isSelf
+
+                          return (
+                            <div key={member.id} className={styles.planMemberRow} role="menuitem">
+                              <AuthenticatedAvatar
+                                className={styles.planMemberAvatar}
+                                imageClassName={styles.avatarImage}
+                                style={{ background: member.color }}
+                                avatarUrl={member.avatarUrl}
+                                fallback={member.initials}
+                                title={member.name}
+                              />
+                              <div className={styles.planMemberInfo}>
+                                <span className={styles.planMemberName}>{member.name}</span>
+                                <span className={styles.planMemberEmail}>{member.email}</span>
+                              </div>
+                              <span className={styles.planMemberRole}>{member.role === 'OWNER' ? 'Owner' : member.role === 'ADMIN' ? 'Admin' : 'Membro'}</span>
+                              {canRemove ? (
+                                <button
+                                  type="button"
+                                  className={styles.planMemberRemove}
+                                  onClick={() => removeMemberFromPlan(member.id)}
+                                >
+                                  Remover
+                                </button>
+                              ) : null}
+                            </div>
+                          )
+                        })}
                       </div>
                     )
-                  })}
+                  ) : planInvitesLoading ? (
+                    <p className={styles.planMembersEmpty}>Carregando convites...</p>
+                  ) : planInvitesError ? (
+                    <p className={styles.planMembersEmpty}>{planInvitesError}</p>
+                  ) : !planInvites.length ? (
+                    <p className={styles.planMembersEmpty}>Nenhum convite enviado para este plano.</p>
+                  ) : (
+                    <div className={styles.planInvitesList}>
+                      {planInvites.map((invite) => {
+                        const pending = invite.status === 'PENDING'
+                        const revoking = revokingInviteId === invite.inviteId
+
+                        return (
+                          <div key={invite.inviteId} className={styles.planInviteRow} role="menuitem">
+                            <div className={styles.planInviteInfo}>
+                              <span className={styles.planMemberName}>{invite.invitedEmail}</span>
+                              <span className={styles.planMemberEmail}>
+                                {formatInviteStatus(invite.status)}
+                                {invite.expiresAt?.text ? ` · expira em ${invite.expiresAt.text}` : ''}
+                              </span>
+                            </div>
+                            <span className={`${styles.planInviteStatus} ${pending ? styles.planInviteStatusPending : ''}`}>
+                              {formatInviteStatus(invite.status)}
+                            </span>
+                            {pending ? (
+                              <button
+                                type="button"
+                                className={styles.planMemberRemove}
+                                onClick={() => revokePlanInvite(invite.inviteId)}
+                                disabled={revoking}
+                              >
+                                {revoking ? 'Revogando...' : 'Revogar'}
+                              </button>
+                            ) : null}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        ) : null}
+              </div>
+            ) : null}
 
-        {/* ── Board ── */}
-        {isBoardLoading ? (
-          <BoardLoadingState styles={styles} />
-        ) : hasNoPlan ? (
-          <section className={styles.boardStatusPanel} role="status" aria-live="polite">
-            <p className={styles.boardStatusTitle}>Nenhum plano ativo no momento</p>
-            <p className={styles.boardStatusText}>Quando houver um plano disponível, o quadro será exibido aqui.</p>
-          </section>
-        ) : boardLoadError ? (
-          <section className={styles.boardStatusPanel} role="status" aria-live="polite">
-            <p className={styles.boardStatusTitle}>Não foi possível carregar o quadro</p>
-            <p className={styles.boardStatusText}>{boardLoadError}</p>
-            <button type="button" className={styles.boardStatusRetry} onClick={retryLoadBoard}>
-              Tentar novamente
-            </button>
-          </section>
-        ) : boardViewMode === 'calendar' ? (
-          <CalendarWorkspaceView embedded />
-        ) : (
-          <div className={styles.board}>
-            {columns.map(col => (
-              <KanbanColumn
-                key={col.id}
-                col={col}
-                dragState={dragState}
-                dropTarget={dropTarget}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onDragEnd={handleDragEnd}
-                onAddCard={addCard}
-                onDeleteCol={handleColumnDelete}
-                onRenameCol={renameColumn}
-                onChangeColColor={handleColumnColorChange}
-                onCardClick={handleBoardCardClick}
-                onToggleCardCompleted={togglePlannerCardCompleted}
-                labels={planLabels}
-                members={planMembers}
-                colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
-                icons={boardColumnIcons}
-                styles={styles}
-              />
-            ))}
+            {isBoardLoading ? (
+              <BoardLoadingState styles={styles} />
+            ) : hasNoPlan ? (
+              <section className={styles.boardStatusPanel} role="status" aria-live="polite">
+                <p className={styles.boardStatusTitle}>Nenhum plano ativo no momento</p>
+                <p className={styles.boardStatusText}>Quando houver um plano disponível, o quadro será exibido aqui.</p>
+              </section>
+            ) : boardLoadError ? (
+              <section className={styles.boardStatusPanel} role="status" aria-live="polite">
+                <p className={styles.boardStatusTitle}>Não foi possível carregar o quadro</p>
+                <p className={styles.boardStatusText}>{boardLoadError}</p>
+                <button type="button" className={styles.boardStatusRetry} onClick={retryLoadBoard}>
+                  Tentar novamente
+                </button>
+              </section>
+            ) : boardViewMode === 'calendar' ? (
+              <CalendarWorkspaceView embedded />
+            ) : (
+              <div className={styles.board}>
+                {columns.map(col => (
+                  <KanbanColumn
+                    key={col.id}
+                    col={col}
+                    dragState={dragState}
+                    dropTarget={dropTarget}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                    onAddCard={addCard}
+                    onDeleteCol={handleColumnDelete}
+                    onRenameCol={renameColumn}
+                    onChangeColColor={handleColumnColorChange}
+                    onCardClick={handleBoardCardClick}
+                    onToggleCardCompleted={togglePlannerCardCompleted}
+                    labels={planLabels}
+                    members={planMembers}
+                    colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
+                    icons={boardColumnIcons}
+                    styles={styles}
+                  />
+                ))}
 
-            <AddColumnComposer
-              addingCol={addingCol}
-              newColTitle={newColTitle}
-              setNewColTitle={(value) => {
-                setNewColTitle(value)
-                if (addColumnError) {
-                  setAddColumnError(null)
-                }
-              }}
-              setAddingCol={setAddingCol}
-              addColumn={addColumn}
-              errorMessage={addColumnError}
-              PlusIcon={Icon.Plus}
-              XIcon={Icon.X}
-              styles={styles}
-            />
+                <AddColumnComposer
+                  addingCol={addingCol}
+                  newColTitle={newColTitle}
+                  setNewColTitle={(value) => {
+                    setNewColTitle(value)
+                    if (addColumnError) {
+                      setAddColumnError(null)
+                    }
+                  }}
+                  setAddingCol={setAddingCol}
+                  addColumn={addColumn}
+                  errorMessage={addColumnError}
+                  PlusIcon={Icon.Plus}
+                  XIcon={Icon.X}
+                  styles={styles}
+                />
+              </div>
+            )}
           </div>
-        )}
+        </section>
 
         {isIntelligencePanelMounted ? (
           <section

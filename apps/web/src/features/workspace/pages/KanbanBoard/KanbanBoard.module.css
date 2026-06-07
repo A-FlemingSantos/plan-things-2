@@ -19,11 +19,13 @@
 .boardAccentScope {
   --kanban-neutral-accent: var(--color-black);
   --kanban-neutral-accent-foreground: var(--color-white);
+  --board-base-bg: #ffffff;
 }
 
 [data-theme='dark'] .boardAccentScope {
   --kanban-neutral-accent: var(--color-white);
   --kanban-neutral-accent-foreground: var(--color-black);
+  --board-base-bg: #171717;
 }
 
 /* ════════════════════════════════════════
@@ -35,7 +37,7 @@
   min-height: 100vh;
   min-width: 0;
   overflow: hidden;
-  background: var(--app-bg);
+  background: var(--board-base-bg);
   transition: gap 220ms ease, padding 220ms ease;
 }
 
@@ -51,19 +53,31 @@
   min-width: 0;
   overflow: hidden;
   position: relative;
-  background:
-    linear-gradient(135deg, var(--cover-shine-1), transparent),
-    radial-gradient(circle at 20% 20%, var(--cover-shine-2), transparent 35%),
-    var(--cover-bg, var(--cover-fallback, var(--surface-2)));
-  background-position: 50% 50%, 20% 20%, 50% 50%;
-  background-size: 210% 210%, 260% 260%, 210% 210%;
+  background: var(--board-base-bg);
   transition: border-radius 180ms ease, border-color 180ms ease;
 }
 
+.boardBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  background: var(--board-base-bg);
+}
+
+.boardBodyContent {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+  position: relative;
+  background: var(--board-base-bg);
+}
+
 .boardMainImageCover {
-  background: var(--cover-bg, var(--cover-fallback, var(--surface-2)));
-  background-position: 50% 50%;
-  background-size: cover;
+  background: var(--board-base-bg);
 }
 
 .boardWrapperPlannerMounted .boardMain {
@@ -78,30 +92,22 @@
   padding: 12px;
 }
 
-.boardPlanHeader {
-  background: linear-gradient(180deg, rgba(10, 14, 20, 0.2) 0%, rgba(10, 14, 20, 0.14) 100%) !important;
-  border-bottom-color: transparent !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
 /* ── Board header ── */
 .boardHeader {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 24px 32px 20px;
-  border-bottom: 1px solid var(--border-1);
+  padding: 14px 20px 10px;
   flex-shrink: 0;
-  gap: 20px;
+  gap: 14px;
   flex-wrap: wrap;
-  background: var(--surface-1);
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  background: var(--board-base-bg);
+  position: static;
+  top: auto;
+  z-index: auto;
 }
 
-.boardHeaderLeft { display: flex; flex-direction: column; gap: 6px; }
+.boardHeaderLeft { display: flex; flex-direction: column; gap: 4px; }
 
 .boardBreadcrumb {
   display: flex;
@@ -118,7 +124,7 @@
 .boardTitleRow {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .boardIcon {
@@ -139,7 +145,7 @@
   font-size: 11px;
   color: var(--text-3);
   background: var(--surface-3);
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 99px;
   font-weight: var(--font-weight-regular);
 }
@@ -5503,7 +5509,7 @@
   .boardWrapperWithPlanner { gap: 10px; padding: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }
   .plannerPanelClosing { flex-basis: 0; width: 0; }
-  .boardHeader { padding: 18px 20px 16px; }
+  .boardHeader { padding: 12px 14px 10px; }
   .board       { padding: 20px 20px 108px; }
   .boardHeaderRight {
     flex-wrap: wrap;
@@ -5524,8 +5530,8 @@
     padding: 10px;
   }
   .boardHeader {
-    padding: 14px;
-    gap: 12px;
+    padding: 10px 10px 8px;
+    gap: 10px;
   }
   .cmFilePicker {
     width: min(312px, calc(100vw - 20px));
@@ -5591,7 +5597,7 @@
   }
   .boardTitleRow {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
   }
   .boardTitle {
     font-size: 17px;
@@ -5762,8 +5768,8 @@
 
 @media (max-width: 560px) {
   .boardHeader {
-    padding: 12px;
-    gap: 14px;
+    padding: 9px 8px 7px;
+    gap: 10px;
   }
   .boardHeaderActions {
     gap: 6px;
