@@ -30,14 +30,30 @@
   text-align: left;
 }
 
+.headlineGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .headline {
   max-width: none;
+  margin: 0;
   font-size: clamp(26px, 3vw, 36px);
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.03em;
   line-height: 1.12;
   color: var(--text-1);
   text-wrap: balance;
+}
+
+.subheadline {
+  margin: 0;
+  font-size: clamp(16px, 1.8vw, 18px);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+  color: var(--text-2);
 }
 
 .actions {

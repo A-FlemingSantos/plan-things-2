@@ -8,7 +8,10 @@ export default function Hero() {
     <div className={styles.hero}>
       <div className={styles.shell}>
         <div className={styles.copyBlock}>
-          <h1 className={styles.headline}>Seu time, no mesmo quadro.</h1>
+          <div className={styles.headlineGroup}>
+            <h1 className={styles.headline}>Seu time, no mesmo quadro.</h1>
+            <p className={styles.subheadline}>From developers to developers</p>
+          </div>
 
           <div className={styles.actions}>
             <Link to={ROUTES.register} className={styles.ctaPrimary}>
