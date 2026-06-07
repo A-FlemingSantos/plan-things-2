@@ -2540,8 +2540,9 @@
   flex-direction: column;
   gap: 5px;
   box-shadow:
-    0 0 10px -6px color-mix(in srgb, var(--text-1) 20%, transparent),
-    0 3px 12px -8px color-mix(in srgb, var(--text-1) 18%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--text-1) 2%, transparent),
+    0 2px 5px -4px color-mix(in srgb, var(--text-1) 10%, transparent),
+    0 10px 18px -16px color-mix(in srgb, var(--text-1) 18%, transparent);
   transition:
     box-shadow var(--transition-fast),
     transform var(--transition-fast),
@@ -2649,9 +2650,10 @@
 
 .card:hover {
   box-shadow:
-    0 0 14px -6px color-mix(in srgb, var(--text-1) 24%, transparent),
-    0 6px 18px -10px color-mix(in srgb, var(--text-1) 22%, transparent);
-  transform: translateY(-1px);
+    0 0 0 1px color-mix(in srgb, var(--text-1) 2.5%, transparent),
+    0 3px 7px -4px color-mix(in srgb, var(--text-1) 12%, transparent),
+    0 14px 24px -16px color-mix(in srgb, var(--text-1) 22%, transparent);
+  transform: translateY(-2px) rotateX(0.35deg);
 }
 
 .card:active { cursor: grabbing; }
@@ -2664,8 +2666,9 @@
 
 .cardDropTarget {
   box-shadow:
-    0 0 10px -6px color-mix(in srgb, var(--text-1) 20%, transparent),
-    0 3px 12px -8px color-mix(in srgb, var(--text-1) 18%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--text-1) 2%, transparent),
+    0 2px 5px -4px color-mix(in srgb, var(--text-1) 10%, transparent),
+    0 10px 18px -16px color-mix(in srgb, var(--text-1) 18%, transparent),
     0 0 0 2px color-mix(in srgb, var(--focus-ring) 20%, transparent) !important;
   transform: none !important;
 }
