@@ -58,6 +58,8 @@
 }
 
 .boardBody {
+  --board-inline-padding: 20px;
+  --board-section-padding: 12px;
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -97,7 +99,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 14px 20px 10px;
+  padding: var(--board-section-padding) var(--board-inline-padding);
   flex-shrink: 0;
   gap: 14px;
   flex-wrap: wrap;
@@ -649,7 +651,7 @@
 .board {
   display: flex;
   gap: 14px;
-  padding: 28px 32px 112px;
+  padding: var(--board-section-padding) var(--board-inline-padding) 112px;
   overflow-x: auto;
   flex: 1;
   align-items: flex-start;
@@ -783,7 +785,7 @@
 }
 
 .boardStatusPanel {
-  margin: 28px 32px 112px;
+  margin: var(--board-section-padding) var(--board-inline-padding) 112px;
   padding: 18px;
   border-radius: 12px;
   border: 1px solid var(--border-1);
@@ -5509,8 +5511,11 @@
   .boardWrapperWithPlanner { gap: 10px; padding: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }
   .plannerPanelClosing { flex-basis: 0; width: 0; }
-  .boardHeader { padding: 12px 14px 10px; }
-  .board       { padding: 20px 20px 108px; }
+  .boardBody {
+    --board-inline-padding: 14px;
+    --board-section-padding: 10px;
+  }
+  .board       { padding-bottom: 108px; }
   .boardHeaderRight {
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -5529,10 +5534,11 @@
     gap: 10px;
     padding: 10px;
   }
-  .boardHeader {
-    padding: 10px 10px 8px;
-    gap: 10px;
+  .boardBody {
+    --board-inline-padding: 10px;
+    --board-section-padding: 10px;
   }
+  .boardHeader { gap: 10px; }
   .cmFilePicker {
     width: min(312px, calc(100vw - 20px));
     max-width: min(312px, calc(100vw - 20px));
@@ -5607,7 +5613,7 @@
     font-size: 10px;
     padding: 2px 7px;
   }
-  .board  { padding: 14px 14px 92px; gap: 8px; }
+  .board  { padding-bottom: 92px; gap: 8px; }
   .boardViewToolbar {
     position: fixed;
     left: 50%;
@@ -5767,10 +5773,11 @@
 }
 
 @media (max-width: 560px) {
-  .boardHeader {
-    padding: 9px 8px 7px;
-    gap: 10px;
+  .boardBody {
+    --board-inline-padding: 8px;
+    --board-section-padding: 8px;
   }
+  .boardHeader { gap: 10px; }
   .boardHeaderActions {
     gap: 6px;
   }
