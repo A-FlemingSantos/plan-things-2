@@ -9,4 +9,6 @@ public interface BoardCardAssigneeRepository extends JpaRepository<BoardCardAssi
   List<BoardCardAssigneeEntity> findByCardId(UUID cardId);
 
   void deleteByCardId(UUID cardId);
+
+  void deleteByUserIdAndCardIdIn(UUID userId, List<UUID> cardIds);
 }

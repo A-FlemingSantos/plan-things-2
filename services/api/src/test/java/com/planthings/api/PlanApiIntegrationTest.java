@@ -1,6 +1,12 @@
 package com.planthings.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.planthings.api.board.BoardCardInboxDeliveryEntity;
+import com.planthings.api.board.BoardCardInboxDeliveryRepository;
+import com.planthings.api.intelligence.model.AiConversationScopeType;
+import com.planthings.api.intelligence.model.AiConversationStatus;
+import com.planthings.api.intelligence.persistence.AiConversationEntity;
+import com.planthings.api.intelligence.persistence.AiConversationRepository;
 import com.planthings.api.plans.PlanInviteEmailSender;
 import com.planthings.api.workspace.WorkspaceRepository;
 import org.junit.jupiter.api.Test;
@@ -14,6 +20,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,6 +31,12 @@ class PlanApiIntegrationTest extends ApiIntegrationTestSupport {
 
   @Autowired
   private WorkspaceRepository workspaceRepository;
+
+  @Autowired
+  private BoardCardInboxDeliveryRepository boardCardInboxDeliveryRepository;
+
+  @Autowired
+  private AiConversationRepository aiConversationRepository;
 
   @Test
   void shouldCreatePlanEvenWhenPersonalWorkspaceIsMissing() throws Exception {
@@ -243,6 +257,73 @@ class PlanApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.error.code").value("CONVITE_INVALIDO"));
+  }
+
+  @Test
+  void shouldDeletePlanEvenWhenInboxAndAiRecordsExist() throws Exception {
+    JsonNode session = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Arthur Delete Plan",
+                  "email": "arthur-delete-plan@example.com",
+                  "password": "12345678"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String token = session.path("accessToken").asText();
+    UUID userId = UUID.fromString(session.path("user").path("id").asText());
+
+    JsonNode createdPlan = createPlan(token, "Plano com dependencias");
+    String planId = createdPlan.path("plan").path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Tarefas");
+
+    JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card com dependencias"
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    UUID workspaceId = workspaceRepository.findByOwnerUserId(userId)
+        .orElseThrow()
+        .getId();
+    UUID parsedPlanId = UUID.fromString(planId);
+    UUID cardId = UUID.fromString(createdCard.path("id").asText());
+
+    BoardCardInboxDeliveryEntity delivery = new BoardCardInboxDeliveryEntity();
+    delivery.setPlanId(parsedPlanId);
+    delivery.setCardId(cardId);
+    delivery.setSentByUserId(userId);
+    delivery.setSentFrom("arthur-delete-plan@example.com");
+    delivery.setMessageId("message-1");
+    delivery.setThreadId("thread-1");
+    boardCardInboxDeliveryRepository.save(delivery);
+
+    AiConversationEntity conversation = new AiConversationEntity();
+    conversation.setWorkspaceId(workspaceId);
+    conversation.setPlanId(parsedPlanId);
+    conversation.setCardId(cardId);
+    conversation.setCreatedByUserId(userId);
+    conversation.setTitle("Conversa vinculada");
+    conversation.setScopeType(AiConversationScopeType.PLAN);
+    conversation.setStatus(AiConversationStatus.ACTIVE);
+    aiConversationRepository.save(conversation);
+
+    mockMvc.perform(delete("/api/plans/" + planId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Plano excluido com sucesso."));
+
+    assertTrue(boardCardInboxDeliveryRepository.findByPlanId(parsedPlanId).isEmpty());
+    assertTrue(aiConversationRepository.findAll().isEmpty());
   }
 
   @TestConfiguration

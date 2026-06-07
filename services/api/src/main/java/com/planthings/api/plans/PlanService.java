@@ -4,8 +4,12 @@ import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
 import com.planthings.api.avatar.AvatarImageService;
 import com.planthings.api.avatar.AvatarOwnerType;
+import com.planthings.api.board.BoardCardAssigneeRepository;
+import com.planthings.api.board.BoardCardEntity;
+import com.planthings.api.board.BoardCardInboxDeliveryRepository;
 import com.planthings.api.board.BoardColumnEntity;
 import com.planthings.api.board.BoardColumnRepository;
+import com.planthings.api.board.BoardChecklistItemRepository;
 import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.calendar.CalendarEventRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
@@ -14,6 +18,7 @@ import com.planthings.api.common.error.ConflictException;
 import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.intelligence.persistence.AiConversationRepository;
 import com.planthings.api.workspace.PersonalWorkspaceService;
 import com.planthings.api.workspace.WorkspaceEntity;
 import java.time.Clock;
@@ -38,7 +43,11 @@ public class PlanService {
   private final PersonalWorkspaceService personalWorkspaceService;
   private final BoardColumnRepository boardColumnRepository;
   private final BoardCardRepository boardCardRepository;
+  private final BoardCardAssigneeRepository boardCardAssigneeRepository;
+  private final BoardChecklistItemRepository boardChecklistItemRepository;
+  private final BoardCardInboxDeliveryRepository boardCardInboxDeliveryRepository;
   private final CalendarEventRepository calendarEventRepository;
+  private final AiConversationRepository aiConversationRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
@@ -56,7 +65,11 @@ public class PlanService {
       PersonalWorkspaceService personalWorkspaceService,
       BoardColumnRepository boardColumnRepository,
       BoardCardRepository boardCardRepository,
+      BoardCardAssigneeRepository boardCardAssigneeRepository,
+      BoardChecklistItemRepository boardChecklistItemRepository,
+      BoardCardInboxDeliveryRepository boardCardInboxDeliveryRepository,
       CalendarEventRepository calendarEventRepository,
+      AiConversationRepository aiConversationRepository,
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
       BrazilDateTimeMapper brazilDateTimeMapper,
@@ -73,7 +86,11 @@ public class PlanService {
     this.personalWorkspaceService = personalWorkspaceService;
     this.boardColumnRepository = boardColumnRepository;
     this.boardCardRepository = boardCardRepository;
+    this.boardCardAssigneeRepository = boardCardAssigneeRepository;
+    this.boardChecklistItemRepository = boardChecklistItemRepository;
+    this.boardCardInboxDeliveryRepository = boardCardInboxDeliveryRepository;
     this.calendarEventRepository = calendarEventRepository;
+    this.aiConversationRepository = aiConversationRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
@@ -150,6 +167,14 @@ public class PlanService {
   public MessageResponse deletePlan(UUID planId) {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanManager(planId, currentUserId);
+    List<UUID> cardIds = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(planId).stream()
+        .map(BoardCardEntity::getId)
+        .toList();
+    if (!cardIds.isEmpty()) {
+      aiConversationRepository.deleteByCardIdIn(cardIds);
+    }
+    aiConversationRepository.deleteByPlanId(planId);
+    boardCardInboxDeliveryRepository.deleteByPlanId(planId);
     calendarEventRepository.deleteForPlan(planId);
     planRepository.deleteById(planId);
     return new MessageResponse("Plano excluido com sucesso.");
@@ -370,6 +395,13 @@ public class PlanService {
       throw new BadRequestException("OWNER_NAO_PODE_SER_REMOVIDO", "O owner do plano nao pode ser removido.");
     }
 
+    List<UUID> cardIds = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(planId).stream()
+        .map(BoardCardEntity::getId)
+        .toList();
+    if (!cardIds.isEmpty()) {
+      boardCardAssigneeRepository.deleteByUserIdAndCardIdIn(memberUserId, cardIds);
+    }
+    boardChecklistItemRepository.clearAssigneeForPlanUser(planId, memberUserId);
     planMemberRepository.delete(member);
     return new MessageResponse("Membro removido com sucesso.");
   }

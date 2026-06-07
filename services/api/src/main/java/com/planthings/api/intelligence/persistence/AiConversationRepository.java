@@ -16,4 +16,8 @@ public interface AiConversationRepository extends JpaRepository<AiConversationEn
       UUID createdByUserId,
       com.planthings.api.intelligence.model.AiConversationStatus status
   );
+
+  void deleteByPlanId(UUID planId);
+
+  void deleteByCardIdIn(List<UUID> cardIds);
 }

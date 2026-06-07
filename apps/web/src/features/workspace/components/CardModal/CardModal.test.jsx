@@ -415,4 +415,46 @@ describe('CardModal file picker positioning', () => {
     const deleteButtons = screen.getAllByRole('button', { name: /excluir/i })
     expect(deleteButtons[deleteButtons.length - 1]).toBeEnabled()
   })
+
+  it('filters legacy member ids that no longer belong to the plan before saving another change', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn(async (nextCard) => nextCard)
+
+    render(
+      <CardModal
+        card={buildCard({
+          labelId: 'label-legacy',
+          memberIds: ['member-legacy'],
+        })}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={onUpdate}
+        onDelete={async () => {}}
+        labels={[
+          { id: 'label-legacy', text: 'Antiga', color: '#999999' },
+          { id: 'label-1', text: 'Urgente', color: '#ff6766' },
+        ]}
+        members={[
+          { id: 'member-1', name: 'Membro atual', email: 'member@example.com', color: '#4290da' },
+        ]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /antiga/i }))
+    await user.click(screen.getByRole('button', { name: /urgente/i }))
+
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        labelId: 'label-1',
+        memberIds: [],
+      }))
+    })
+  })
 })

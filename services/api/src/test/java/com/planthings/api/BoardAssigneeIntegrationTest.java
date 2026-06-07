@@ -1,9 +1,14 @@
 package com.planthings.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.planthings.api.plans.PlanMemberEntity;
+import com.planthings.api.plans.PlanMemberRepository;
+import com.planthings.api.plans.PlanMemberRole;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,6 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
+
+  @Autowired
+  private PlanMemberRepository planMemberRepository;
 
   @Test
   void shouldAllowAssigningMembersAndUpdatingDueDates() throws Exception {
@@ -188,6 +196,71 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.columns[0].cards[0].id").value(cardId))
         .andExpect(jsonPath("$.data.columns[0].cards[0].starred").value(false));
+  }
+
+  @Test
+  void shouldRemoveLegacyCardAssignmentsWhenAMemberLeavesThePlan() throws Exception {
+    JsonNode ownerSession = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Owner Cleanup",
+                  "email": "owner-cleanup@example.com",
+                  "password": "12345678"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    JsonNode memberSession = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Member Cleanup",
+                  "email": "member-cleanup@example.com",
+                  "password": "12345678"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String ownerToken = ownerSession.path("accessToken").asText();
+    String memberUserId = memberSession.path("user").path("id").asText();
+
+    JsonNode plan = createPlan(ownerToken, "Plano com limpeza de responsaveis");
+    String planId = plan.path("plan").path("id").asText();
+    String columnId = createBoardColumn(ownerToken, planId, "Tarefas");
+
+    PlanMemberEntity membership = new PlanMemberEntity();
+    membership.setPlanId(java.util.UUID.fromString(planId));
+    membership.setUserId(java.util.UUID.fromString(memberUserId));
+    membership.setRole(PlanMemberRole.MEMBER);
+    planMemberRepository.save(membership);
+
+    JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card com membro legado",
+                  "assigneeIds": ["%s"]
+                }
+                """.formatted(columnId, memberUserId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.assignees[0].id").value(memberUserId))
+        .andReturn()).path("data");
+
+    mockMvc.perform(delete("/api/plans/" + planId + "/members/" + memberUserId)
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Membro removido com sucesso."));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].cards[0].id").value(createdCard.path("id").asText()))
+        .andExpect(jsonPath("$.data.columns[0].cards[0].assignees").isEmpty());
   }
 }
 

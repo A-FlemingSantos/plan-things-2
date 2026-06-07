@@ -467,6 +467,10 @@ export default function CardModal({
 
   const buildNextCard = (overrides = {}) => {
     const hasOverride = (key) => Object.prototype.hasOwnProperty.call(overrides, key)
+    const validMemberIds = new Set((Array.isArray(members) ? members : [])
+      .map((member) => member?.id)
+      .filter(Boolean))
+    const shouldFilterMemberIds = validMemberIds.size > 0
     const nextSchedule = {
       selectedCalendarDay,
       startEnabled,
@@ -479,12 +483,17 @@ export default function CardModal({
       ...(overrides.schedule ?? {}),
     }
 
+    const nextMemberIds = Array.isArray(hasOverride('memberIds') ? overrides.memberIds : memberIds)
+      ? (hasOverride('memberIds') ? overrides.memberIds : memberIds)
+      : []
+
     return {
       ...card,
       title: hasOverride('title') ? overrides.title : savedTitle,
       description: hasOverride('description') ? overrides.description : savedDesc,
       labelId: hasOverride('labelId') ? overrides.labelId : labelId,
-      memberIds: hasOverride('memberIds') ? overrides.memberIds : memberIds,
+      memberIds: nextMemberIds
+        .filter((memberId) => !shouldFilterMemberIds || validMemberIds.has(memberId)),
       dueDate: hasOverride('dueDate') ? overrides.dueDate : dueDate,
       schedule: nextSchedule,
       comments: hasOverride('comments') ? overrides.comments : comments,
