@@ -1,6 +1,7 @@
 import Navbar from '../components/Navbar/Navbar.jsx'
 import Hero from '../components/Hero/Hero.jsx'
 import PixelLogoGrid from '../components/PixelLogoGrid/PixelLogoGrid.jsx'
+import OurPlatform from '../components/OurPlatform/OurPlatform.jsx'
 import HowItWorks from '../components/HowItWorks/HowItWorks.jsx'
 import Pricing from '../components/Pricing/Pricing.jsx'
 import MobileDownload from '../components/MobileDownload/MobileDownload.jsx'
@@ -17,6 +18,9 @@ export default function LandingPage() {
         </section>
         <section id="trusted-brands" aria-label="Marcas e clientes">
           <PixelLogoGrid />
+        </section>
+        <section id="our-platform" aria-label="Nossa plataforma">
+          <OurPlatform />
         </section>
         <section id="how-it-works" aria-label="Como funciona">
           <HowItWorks />
