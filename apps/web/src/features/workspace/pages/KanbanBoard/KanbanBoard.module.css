@@ -2664,14 +2664,14 @@
 }
 
 .card:hover {
-  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--text-1) 18%, transparent);
-  transform: translateY(-3px) rotateX(0.45deg);
+  box-shadow: 0 4px 10px -5px color-mix(in srgb, var(--text-1) 14%, transparent);
+  transform: translateY(-2px) rotateX(0.3deg);
 }
 
 .card:hover::after {
-  opacity: 0.42;
-  transform: translateY(2px) scaleX(0.98);
-  filter: blur(14px);
+  opacity: 0.3;
+  transform: translateY(1px) scaleX(0.985);
+  filter: blur(12px);
 }
 
 .card:active { cursor: grabbing; }
