@@ -5,9 +5,20 @@ export const OAUTH_POPUP_TIMEOUT_MS = 5 * 60 * 1000
 const POPUP_WIDTH = 520
 const POPUP_HEIGHT = 640
 
+export function getOAuthPopupPosition(width = POPUP_WIDTH, height = POPUP_HEIGHT) {
+  const parentLeft = window.screenX ?? window.screenLeft ?? 0
+  const parentTop = window.screenY ?? window.screenTop ?? 0
+  const parentWidth = window.outerWidth ?? window.innerWidth ?? width
+  const parentHeight = window.outerHeight ?? window.innerHeight ?? height
+
+  return {
+    left: Math.round(parentLeft + Math.max(0, (parentWidth - width) / 2)),
+    top: Math.round(parentTop + Math.max(0, (parentHeight - height) / 2)),
+  }
+}
+
 export function openOAuthPopup(url) {
-  const left = Math.max(0, window.screenX + window.outerWidth - POPUP_WIDTH - 24)
-  const top = Math.max(0, window.screenY + 24)
+  const { left, top } = getOAuthPopupPosition()
   const features = [
     'popup=yes',
     `width=${POPUP_WIDTH}`,

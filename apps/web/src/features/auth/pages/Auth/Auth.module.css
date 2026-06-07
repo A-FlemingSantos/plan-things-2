@@ -48,6 +48,13 @@
   align-items: center;
   gap: 12px;
   padding: clamp(24px, 3vw, 32px) 0 0 clamp(12px, 1.6vw, 20px);
+  color: inherit;
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.brandBadge:hover {
+  opacity: 0.72;
 }
 
 .brandBadgeMark {

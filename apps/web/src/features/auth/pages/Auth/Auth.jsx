@@ -193,10 +193,10 @@ export default function Auth({ initialMode = 'login' }) {
 
       <main className={styles.shell}>
         <section className={styles.brandPanel}>
-          <div className={styles.brandBadge}>
+          <Link to={ROUTES.home} className={styles.brandBadge}>
             <span className={styles.brandBadgeMark}><LogoMark /></span>
             <span className={styles.brandBadgeText}>Plan Things</span>
-          </div>
+          </Link>
 
           <div className={styles.brandTypewriterSlot}>
             <BrandTypewriter />

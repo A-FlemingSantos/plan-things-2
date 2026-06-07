@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   OAUTH_POPUP_MESSAGE_TYPE,
+  getOAuthPopupPosition,
   openOAuthPopup,
   postOAuthPopupResult,
   waitForOAuthPopup,
@@ -15,16 +16,22 @@ describe('oauthPopup', () => {
     vi.unstubAllGlobals()
   })
 
-  it('opens a compact popup window for OAuth', () => {
+  it('opens a compact popup window centered over the opener', () => {
     const popup = { focus: vi.fn() }
     window.open.mockReturnValue(popup)
 
+    vi.stubGlobal('screenX', 100)
+    vi.stubGlobal('screenY', 50)
+    Object.defineProperty(window, 'outerWidth', { configurable: true, value: 1200 })
+    Object.defineProperty(window, 'outerHeight', { configurable: true, value: 800 })
+
     const result = openOAuthPopup('https://accounts.google.com/o/oauth2/v2/auth')
 
+    expect(getOAuthPopupPosition()).toEqual({ left: 440, top: 130 })
     expect(window.open).toHaveBeenCalledWith(
       'https://accounts.google.com/o/oauth2/v2/auth',
       'plan-things-oauth',
-      expect.stringContaining('popup=yes'),
+      expect.stringMatching(/popup=yes.*width=520.*height=640.*left=440.*top=130/s),
     )
     expect(result).toBe(popup)
     expect(popup.focus).toHaveBeenCalled()
