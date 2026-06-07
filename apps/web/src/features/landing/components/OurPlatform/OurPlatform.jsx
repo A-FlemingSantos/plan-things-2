@@ -85,24 +85,11 @@ const PLATFORM_CARDS = [
   },
 ]
 
-function PlatformIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <rect x="1.5" y="3.5" width="7.5" height="7.5" rx="1.25" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="5" y="1.5" width="7.5" height="7.5" rx="1.25" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  )
-}
-
 export default function OurPlatform() {
   return (
     <div className={styles.section} aria-labelledby="our-platform-heading">
       <div className={`${styles.inner} container`}>
         <header className={styles.header}>
-          <p className={styles.eyebrow}>
-            <PlatformIcon />
-            Nossa plataforma
-          </p>
           <h2 id="our-platform-heading" className={styles.heading}>
             Transforme o ciclo de vida dos seus projetos
           </h2>
