@@ -1,6 +1,6 @@
 .section {
   background: var(--app-bg);
-  padding-top: clamp(24px, 3vw, 40px);
+  padding-top: clamp(80px, 10vw, 120px);
   padding-bottom: var(--section-py);
 }
 

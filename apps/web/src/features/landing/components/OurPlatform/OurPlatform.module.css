@@ -1,6 +1,7 @@
 .section {
   background: var(--app-bg);
-  padding: var(--section-py) 0;
+  padding-top: var(--section-py);
+  padding-bottom: calc(var(--section-py) + clamp(80px, 10vw, 128px));
 }
 
 .inner {
@@ -132,7 +133,7 @@
 @media (max-width: 640px) {
   .section {
     padding-top: 72px;
-    padding-bottom: 72px;
+    padding-bottom: calc(72px + 72px);
   }
 
   .grid {
