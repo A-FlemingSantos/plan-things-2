@@ -46,8 +46,8 @@ function KanbanCard({
     || Boolean(card.dueDate)
     || attachments.length > 0
     || checklistProgress !== null
-  const hasTags = Boolean(colTitle || label)
-  const isCompactCard = !hasTags && !descriptionPreview && !hasFooter
+  const hasLabel = Boolean(label)
+  const isCompactCard = !hasLabel && !descriptionPreview && !hasFooter
   const toggleConfirmed = (event) => {
     event.preventDefault()
     event.stopPropagation()
@@ -90,19 +90,9 @@ function KanbanCard({
       }}
       aria-label={`Abrir cartão ${card.title}`}
     >
-      {hasTags ? (
-        <div className={styles.cardTags}>
-          {colTitle ? (
-            <span className={styles.cardStatusTag}>
-              <span className={styles.cardStatusBar} aria-hidden="true">|</span>
-              {colTitle}
-            </span>
-          ) : null}
-          {label ? (
-            <span className={styles.cardLabel} style={{ background: `${label.color}18`, color: label.color }}>
-              {label.text}
-            </span>
-          ) : null}
+      {hasLabel ? (
+        <div className={styles.cardLabelBars} aria-label={`Etiqueta ${label.text}`}>
+          <span className={styles.cardLabelBar} style={{ background: label.color }} />
         </div>
       ) : null}
 
@@ -167,7 +157,7 @@ function KanbanCard({
 
             {card.dueDate ? (
               <span
-                className={`${styles.cardDue} ${['Today', 'Hoje', 'Amanhã', 'Tomorrow'].includes(card.dueDate) ? styles.cardDueUrgent : ''}`}
+                className={`${styles.cardDue} ${['Amanhã', 'Tomorrow'].includes(card.dueDate) ? styles.cardDueUrgent : ''} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueToday : ''}`}
                 aria-label={`Entrega ${card.dueDate}`}
               >
                 {ClockIcon ? <ClockIcon /> : null}
