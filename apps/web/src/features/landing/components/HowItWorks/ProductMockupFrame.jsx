@@ -1,4 +1,4 @@
-import styles from './HowItWorks.module.css'
+import styles from './ProductMockupFrame.module.css'
 
 /** Nível 3: janela do produto (dentro do painel visual). */
 export default function ProductMockupFrame({
