@@ -20,13 +20,15 @@
   --kanban-neutral-accent: var(--color-black);
   --kanban-neutral-accent-foreground: var(--color-white);
   --board-base-bg: #ffffff;
+  --board-canvas-bg: var(--board-base-bg);
   --board-column-bg: #fafafa;
 }
 
 [data-theme='dark'] .boardAccentScope {
   --kanban-neutral-accent: var(--color-white);
   --kanban-neutral-accent-foreground: var(--color-black);
-  --board-base-bg: #171717;
+  --board-base-bg: #111111;
+  --board-canvas-bg: #111111;
   --board-column-bg: var(--surface-1);
 }
 
@@ -39,7 +41,7 @@
   min-height: 100vh;
   min-width: 0;
   overflow: hidden;
-  background: var(--board-base-bg);
+  background: var(--board-canvas-bg);
   transition: gap 220ms ease, padding 220ms ease;
 }
 
@@ -55,7 +57,7 @@
   min-width: 0;
   overflow: hidden;
   position: relative;
-  background: var(--board-base-bg);
+  background: var(--board-canvas-bg);
   transition: border-radius 180ms ease, border-color 180ms ease;
 }
 
@@ -67,7 +69,7 @@
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  background: var(--board-base-bg);
+  background: var(--board-canvas-bg);
 }
 
 .boardBodyContent {
@@ -77,11 +79,11 @@
   min-width: 0;
   flex-direction: column;
   position: relative;
-  background: var(--board-base-bg);
+  background: var(--board-canvas-bg);
 }
 
 .boardMainImageCover {
-  background: var(--board-base-bg);
+  background: var(--board-canvas-bg);
 }
 
 .boardWrapperPlannerMounted .boardMain {
@@ -105,7 +107,7 @@
   flex-shrink: 0;
   gap: 14px;
   flex-wrap: wrap;
-  background: var(--board-base-bg);
+  background: var(--board-canvas-bg);
   position: static;
   top: auto;
   z-index: auto;
@@ -2530,7 +2532,7 @@
 ════════════════════════════════════════ */
 .card {
   background: var(--board-base-bg);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 12px;
   padding: 12px 14px 10px;
   cursor: grab;
@@ -2543,6 +2545,7 @@
   transform-style: preserve-3d;
   transition:
     transform 0.25s ease-out,
+    border-color 0.25s ease-out,
     opacity var(--transition-fast),
     z-index 0s;
   animation: cardEnter 0.22s ease both;
@@ -2641,6 +2644,7 @@
 .card:hover {
   z-index: 2;
   transform: translate3d(0, -2px, 0);
+  border-color: color-mix(in srgb, var(--text-1) 12%, transparent);
 }
 
 .card:active { cursor: grabbing; }
