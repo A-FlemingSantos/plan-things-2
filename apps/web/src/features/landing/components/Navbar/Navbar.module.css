@@ -31,15 +31,16 @@
 .logo:hover { opacity: .72; }
 
 .logoMark {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: var(--text-1);
-  color: var(--text-inverse);
+  color: currentColor;
   flex-shrink: 0;
+}
+
+.logoMark svg {
+  width: 25px;
+  height: 25px;
 }
 
 .logoText {

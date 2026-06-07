@@ -45,11 +45,15 @@ export default function Navbar() {
         {/* Logo */}
         <a href="#hero" className={styles.logo}>
           <span className={styles.logoMark}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <rect x="2"  y="2"  width="7" height="7" rx="2" fill="currentColor" />
-              <rect x="11" y="2"  width="7" height="7" rx="2" fill="currentColor" opacity=".35" />
-              <rect x="2"  y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".55" />
-              <rect x="11" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".75" />
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+              <path d="M10 1.4 17.1 5.35v9.3L10 18.6l-7.1-3.95v-9.3L10 1.4Z" stroke="currentColor" strokeWidth="1.5" />
+              <path
+                d="M6.6 8.1 10 10l3.4-1.9M10 10v4.2M6.6 8.1V12l3.4 2.2M13.4 8.1V12L10 14.2M6.6 8.1 10 5.95l3.4 2.15"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </span>
           <span className={styles.logoText}>Plan Things</span>
