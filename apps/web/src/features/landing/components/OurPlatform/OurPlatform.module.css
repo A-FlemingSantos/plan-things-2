@@ -62,18 +62,18 @@
   isolation: isolate;
 }
 
-.cardVisual[data-tone='warm'] {
+.cardVisual[data-tone='green'] {
   background:
-    radial-gradient(ellipse 95% 85% at 28% 38%, rgba(255, 92, 40, 0.95) 0%, transparent 58%),
-    radial-gradient(ellipse 80% 75% at 72% 62%, rgba(196, 30, 0, 0.88) 0%, transparent 52%),
-    linear-gradient(155deg, #1a0800 0%, #0d0d0d 48%, #000000 100%);
+    radial-gradient(ellipse 95% 85% at 28% 38%, rgba(14, 107, 61, 0.95) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 75% at 72% 62%, rgba(10, 61, 36, 0.92) 0%, transparent 52%),
+    linear-gradient(155deg, #052e1a 0%, #0d0d0d 48%, #000000 100%);
 }
 
-.cardVisual[data-tone='cool'] {
+.cardVisual[data-tone='blue'] {
   background:
-    radial-gradient(ellipse 95% 85% at 32% 42%, rgba(46, 196, 212, 0.92) 0%, transparent 58%),
-    radial-gradient(ellipse 80% 75% at 68% 58%, rgba(26, 110, 181, 0.9) 0%, transparent 52%),
-    linear-gradient(155deg, #001a2e 0%, #0a0f1a 48%, #000000 100%);
+    radial-gradient(ellipse 95% 85% at 32% 42%, rgba(17, 105, 238, 0.95) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 75% at 68% 58%, rgba(10, 58, 140, 0.92) 0%, transparent 52%),
+    linear-gradient(155deg, #061a3d 0%, #0a0f1a 48%, #000000 100%);
 }
 
 .cardVisualGlow {
@@ -84,16 +84,16 @@
   opacity: 0.72;
 }
 
-.cardVisual[data-tone='warm'] .cardVisualGlow {
+.cardVisual[data-tone='green'] .cardVisualGlow {
   background:
-    radial-gradient(circle at 35% 45%, rgba(255, 120, 60, 0.9) 0%, transparent 42%),
-    radial-gradient(circle at 65% 55%, rgba(220, 40, 20, 0.75) 0%, transparent 38%);
+    radial-gradient(circle at 35% 45%, rgba(14, 107, 61, 0.92) 0%, transparent 42%),
+    radial-gradient(circle at 65% 55%, rgba(45, 154, 95, 0.78) 0%, transparent 38%);
 }
 
-.cardVisual[data-tone='cool'] .cardVisualGlow {
+.cardVisual[data-tone='blue'] .cardVisualGlow {
   background:
-    radial-gradient(circle at 38% 48%, rgba(70, 210, 225, 0.85) 0%, transparent 42%),
-    radial-gradient(circle at 62% 52%, rgba(40, 120, 200, 0.8) 0%, transparent 38%);
+    radial-gradient(circle at 38% 48%, rgba(17, 105, 238, 0.9) 0%, transparent 42%),
+    radial-gradient(circle at 62% 52%, rgba(74, 144, 255, 0.8) 0%, transparent 38%);
 }
 
 .cardIcon {

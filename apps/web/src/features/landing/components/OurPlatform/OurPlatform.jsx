@@ -3,7 +3,7 @@ import styles from './OurPlatform.module.css'
 const PLATFORM_CARDS = [
   {
     id: 'planning',
-    tone: 'warm',
+    tone: 'green',
     title: 'Planejamento com IA',
     body: 'Descreva objetivos em linguagem natural e transforme ideias em planos estruturados com prioridades claras.',
     icon: (
@@ -27,7 +27,7 @@ const PLATFORM_CARDS = [
   },
   {
     id: 'boards',
-    tone: 'cool',
+    tone: 'blue',
     title: 'Quadros visuais',
     body: 'Organize tarefas em Kanban com campos personalizados, swimlanes e um fluxo visual que acompanha o trabalho real.',
     icon: (
@@ -45,7 +45,7 @@ const PLATFORM_CARDS = [
   },
   {
     id: 'collaboration',
-    tone: 'warm',
+    tone: 'green',
     title: 'Colaboração',
     body: 'Comentários, menções e atualizações em tempo real mantêm todos alinhados no mesmo contexto.',
     icon: (
@@ -62,7 +62,7 @@ const PLATFORM_CARDS = [
   },
   {
     id: 'security',
-    tone: 'cool',
+    tone: 'blue',
     title: 'Segurança',
     body: 'Criptografia, controle de acesso e governança para proteger os dados da sua empresa em cada etapa do trabalho.',
     icon: (
