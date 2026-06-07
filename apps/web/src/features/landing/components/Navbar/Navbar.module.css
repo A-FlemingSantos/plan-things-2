@@ -68,12 +68,13 @@
 }
 
 .navLink {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 6px 14px;
   font-size: 14px;
   font-weight: var(--font-weight-regular);
   color: var(--text-2);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   transition: color var(--transition-fast), background var(--transition-fast);
   letter-spacing: -.005em;
 }
@@ -100,9 +101,14 @@
   width: 42px;
   height: 42px;
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   background: var(--app-bg);
   color: var(--text-1);
+  transition: background var(--transition-fast);
+}
+
+.menuBtn:hover {
+  background: var(--hover);
 }
 
 .menuBtn span {
@@ -113,11 +119,12 @@
 }
 
 .actionLink {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 7px 16px;
   font-size: 14px;
   color: var(--text-2);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   transition: color var(--transition-fast), background var(--transition-fast);
 }
 
@@ -127,18 +134,23 @@
 }
 
 .ctaBtn {
-  display: inline-block;
-  padding: 8px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 18px;
   font-size: 14px;
   font-weight: var(--font-weight-regular);
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: var(--radius-sm);
-  transition: opacity var(--transition-fast);
+  background: var(--surface-3);
+  color: var(--text-1);
+  border-radius: 999px;
+  transition: background var(--transition-fast);
   letter-spacing: -.005em;
 }
 
-.ctaBtn:hover { opacity: .82; }
+.ctaBtn:hover {
+  background: var(--border-1);
+}
 
 .mobileOverlay {
   position: fixed;
@@ -218,8 +230,13 @@
 }
 
 .mobileCtaBtn {
-  background: var(--text-1);
-  color: var(--text-inverse);
+  background: var(--surface-3);
+  color: var(--text-1);
+  border-radius: 999px;
+}
+
+.mobileCtaBtn:hover {
+  background: var(--border-1);
 }
 
 @media (max-width: 1024px) {
