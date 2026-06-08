@@ -2900,7 +2900,7 @@
   display: flex;
   align-items: stretch;
   justify-content: center;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: var(--overlay-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -2924,8 +2924,8 @@
 .cardModal {
   --cm-accent: var(--kanban-accent-color, var(--focus-ring));
   --cm-accent-foreground: var(--kanban-accent-foreground, var(--text-on-accent));
-  width: min(1480px, 96vw);
-  max-width: min(1480px, 96vw);
+  width: min(1680px, 97vw);
+  max-width: min(1680px, 97vw);
   min-height: min(880px, 92vh);
   max-height: 92vh;
   margin: auto 0;
@@ -3231,7 +3231,7 @@
 
 .cmBody {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 520px);
   gap: 0;
   flex: 1;
   min-height: 0;
