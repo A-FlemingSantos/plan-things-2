@@ -221,6 +221,30 @@ function SearchIcon() {
   )
 }
 
+function ThumbsUpIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M4.75 13.5h-1a1 1 0 0 1-1-1V7.25a1 1 0 0 1 1-1h1v7.25ZM6.25 6.25 8.3 2.9a.75.75 0 0 1 1.28.53V6.5h2.42c.97 0 1.75.78 1.75 1.75l-.65 3.9a1.75 1.75 0 0 1-1.73 1.47H6.25V6.25Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function AddReactionIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="7.25" cy="7.75" r="4.25" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5.6 7.9h.01M7.25 7.9h.01M8.9 7.9h.01" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M5.35 9.55a2 2 0 0 0 3.8 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M11.75 4.25v2.5M10.5 5.5h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function PlayIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -2459,16 +2483,22 @@ export default function CardModal({
                     const isExpanded = expandedComments[c.id]
                     const isOverflowing = overflowingComments[c.id]
                     return (
-                      <div key={c.id} className={styles.cmActivityItem}>
-                        <AuthenticatedAvatar
-                          className={styles.cmCommentAvatar}
-                          imageClassName={styles.avatarImage}
-                          style={{ background: presenter.color }}
-                          avatarUrl={presenter.avatarUrl}
-                          fallback={presenter.initials}
-                          title={presenter.name}
-                        />
-                        <div className={styles.cmActivityContent}>
+                      <article key={c.id} className={styles.cmCommentCard}>
+                        <header className={styles.cmCommentCardHeader}>
+                          <AuthenticatedAvatar
+                            className={styles.cmCommentAvatar}
+                            imageClassName={styles.avatarImage}
+                            style={{ background: presenter.color }}
+                            avatarUrl={presenter.avatarUrl}
+                            fallback={presenter.initials}
+                            title={presenter.name}
+                          />
+                          <div className={styles.cmCommentCardMeta}>
+                            <strong className={styles.cmCommentAuthor}>{presenter.name}</strong>
+                            <span className={styles.cmCommentTime}>{c.time}</span>
+                          </div>
+                        </header>
+                        <div className={styles.cmCommentCardBody}>
                           <p
                             ref={element => {
                               if (element) {
@@ -2477,14 +2507,14 @@ export default function CardModal({
                                 delete commentTextRefs.current[c.id]
                               }
                             }}
-                            className={`${styles.cmActivityText} ${!isExpanded ? styles.cmActivityTextClamped : ''}`}
+                            className={`${styles.cmCommentCardText} ${!isExpanded ? styles.cmCommentCardTextClamped : ''}`}
                           >
-                            <strong>{presenter.name}</strong> {c.text}
+                            {c.text}
                           </p>
                           {isOverflowing && (
                             <button
                               type="button"
-                              className={styles.cmActivityToggle}
+                              className={styles.cmCommentCardToggle}
                               onMouseDown={e => e.stopPropagation()}
                               onClick={e => {
                                 e.stopPropagation()
@@ -2494,9 +2524,21 @@ export default function CardModal({
                               {isExpanded ? 'Ver menos' : 'Ver mais'}
                             </button>
                           )}
-                          <span className={styles.cmCommentTime}>{c.time}</span>
                         </div>
-                      </div>
+                        <footer className={styles.cmCommentCardFooter}>
+                          <div className={styles.cmCommentCardActions}>
+                            <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Curtir comentário">
+                              <ThumbsUpIcon />
+                            </button>
+                            <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Adicionar reação">
+                              <AddReactionIcon />
+                            </button>
+                          </div>
+                          <button type="button" className={styles.cmCommentReplyBtn}>
+                            Responder
+                          </button>
+                        </footer>
+                      </article>
                     )
                   })}
                 </div>

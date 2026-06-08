@@ -4135,11 +4135,11 @@
 }
 
 .cmCommentAvatar {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   color: var(--text-on-accent);
-  font-size: 11px;
+  font-size: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4151,8 +4151,9 @@
 
 .cmCommentTime {
   font-size: 12px;
-  color: var(--focus-ring);
-  text-decoration: underline;
+  color: #999;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .cmSidebar {
@@ -4667,39 +4668,66 @@
 .cmActivityList {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
 }
 
-.cmActivityItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.cmActivityContent {
+.cmCommentCard {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  background: #121212;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.cmCommentCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
-.cmActivityText {
-  font-size: 14px;
+.cmCommentCardMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cmCommentAuthor {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-1);
-  line-height: 1.45;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmCommentCardBody {
+  margin-top: 8px;
+  min-width: 0;
+}
+
+.cmCommentCardText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-1);
+  line-height: 1.4;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.cmActivityTextClamped {
+.cmCommentCardTextClamped {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 10;
   overflow: hidden;
 }
 
-.cmActivityToggle {
+.cmCommentCardToggle {
   align-self: flex-start;
+  margin-top: 4px;
   background: transparent;
   color: var(--cm-accent);
   font-family: var(--font-family);
@@ -4709,8 +4737,58 @@
   padding: 0;
 }
 
-.cmActivityToggle:hover {
+.cmCommentCardToggle:hover {
   text-decoration: underline;
+}
+
+.cmCommentCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.cmCommentCardActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cmCommentCardActionBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmCommentCardActionBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-2);
+}
+
+.cmCommentReplyBtn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 400;
+  color: #999;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.cmCommentReplyBtn:hover {
+  color: var(--text-2);
 }
 
 .cmDetailsPanel {
