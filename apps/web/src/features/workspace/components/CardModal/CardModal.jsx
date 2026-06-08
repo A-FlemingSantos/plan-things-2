@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import { formatFileSize } from '../../../files/data/libraryRepository.js'
 import { createOffsetDateTime } from '@plan-things/shared-client/dates'
@@ -147,6 +147,82 @@ function formatCardCreatedLabel(createdAt) {
   if (!createdAt) return null
   if (typeof createdAt === 'string') return createdAt
   return createdAt.text ?? null
+}
+
+function getTimestampMs(value) {
+  if (value == null) return null
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  if (typeof value === 'object') {
+    if (value.iso) {
+      const parsed = Date.parse(value.iso)
+      return Number.isNaN(parsed) ? null : parsed
+    }
+  }
+  return null
+}
+
+function buildActivityFeedItems({
+  card,
+  comments,
+  activityEvents,
+  currentUserName,
+  createdAtLabel,
+  members,
+  getMemberName,
+}) {
+  const cardCreatedMs = getTimestampMs(card.createdAt) ?? getTimestampMs(card.created) ?? 0
+  const items = [
+    {
+      id: 'activity-created',
+      type: 'history',
+      sortAt: cardCreatedMs,
+      actor: currentUserName,
+      text: `criou esta tarefa · ${createdAtLabel}`,
+    },
+  ]
+
+  const initialMemberIds = Array.isArray(card.memberIds) ? card.memberIds : []
+  if (initialMemberIds.length > 0) {
+    const initialSummary = initialMemberIds
+      .map((memberId) => members.find((member) => member.id === memberId))
+      .filter(Boolean)
+      .map(getMemberName)
+      .join(', ')
+
+    items.push({
+      id: 'activity-initial-assignment',
+      type: 'history',
+      sortAt: cardCreatedMs + 1,
+      actor: currentUserName,
+      text: `atribuiu a: ${initialSummary || 'Você'} · ${createdAtLabel}`,
+    })
+  }
+
+  activityEvents.forEach((event) => {
+    items.push(event)
+  })
+
+  comments.forEach((comment, index) => {
+    items.push({
+      id: comment.id,
+      type: 'comment',
+      sortAt: getTimestampMs(comment.createdAtIso)
+        ?? getTimestampMs(comment.createdAt)
+        ?? cardCreatedMs + 1000 + index,
+      comment,
+    })
+  })
+
+  return items.sort((left, right) => {
+    if (left.sortAt !== right.sortAt) {
+      return left.sortAt - right.sortAt
+    }
+    return String(left.id).localeCompare(String(right.id))
+  })
 }
 
 function normalizeChecklistItem(item = {}) {
@@ -387,6 +463,7 @@ export default function CardModal({
   const [dueDate,  setDueDate]  = useState(card.dueDate)
   const [comment,  setComment]  = useState('')
   const [comments, setComments] = useState(card.comments)
+  const [activityEvents, setActivityEvents] = useState([])
   const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
   const [exiting,  setExiting]  = useState(false)
   const [commentFocused, setCommentFocused] = useState(false)
@@ -488,6 +565,10 @@ export default function CardModal({
   const activityFeedRef = useRef(null)
   const saveStatusTimeoutRef = useRef(null)
   const dialogTitleId = `card-modal-title-${card.id}`
+
+  useEffect(() => {
+    setActivityEvents([])
+  }, [card.id])
 
   const label = labels.find(l => l.id === labelId)
   const currentUserName = currentUser?.fullName ?? currentUser?.email ?? 'Você'
@@ -748,7 +829,25 @@ export default function CardModal({
 
     if (!saved) {
       setMIds(previousMemberIds)
+      return
     }
+
+    const nextMembersSummary = nextMemberIds
+      .map((memberId) => members.find((member) => member.id === memberId))
+      .filter(Boolean)
+      .map(getMemberName)
+      .join(', ')
+
+    setActivityEvents((prev) => [
+      ...prev,
+      {
+        id: uid(),
+        type: 'history',
+        sortAt: Date.now(),
+        actor: currentUserName,
+        text: `atribuiu a: ${nextMembersSummary || 'Você'} · Agora`,
+      },
+    ])
   }
 
   const addComment = async () => {
@@ -773,6 +872,7 @@ export default function CardModal({
           authorName: currentUserName,
           text: nextCommentText,
           time: 'Agora',
+          createdAtIso: new Date().toISOString(),
         }
         setComments((prev) => [...prev, createdComment])
         const saved = await persistCardChanges(
@@ -1296,6 +1396,18 @@ export default function CardModal({
     ? dueDateValue
     : ''
   const createdAtLabel = formatCardCreatedLabel(card.createdAt) ?? formatCardCreatedLabel(card.created) ?? 'Recentemente'
+  const activityFeedItems = useMemo(
+    () => buildActivityFeedItems({
+      card,
+      comments,
+      activityEvents,
+      currentUserName,
+      createdAtLabel,
+      members,
+      getMemberName,
+    }),
+    [card, comments, activityEvents, currentUserName, createdAtLabel, members],
+  )
   const datesSummary = selectedDueDateSummary
     || (startEnabled && startDateValue ? `${startDateValue} → Vencimento` : 'Início → Vencimento')
   const handleLabelSelect = async (nextLabelId) => {
@@ -1922,7 +2034,7 @@ export default function CardModal({
     const feed = activityFeedRef.current
     if (!feed) return
     feed.scrollTop = feed.scrollHeight
-  }, [comments])
+  }, [activityFeedItems])
 
   useLayoutEffect(() => {
     if (!showListMenu || !listMenuButtonRef.current) return
@@ -2528,15 +2640,16 @@ export default function CardModal({
               <div ref={activityFeedRef} className={styles.cmActivityFeed}>
                 <div className={styles.cmActivitySpacer} aria-hidden="true" />
                 <div className={styles.cmActivityTimeline}>
-                  <p className={styles.cmHistoryItem}>
-                    <strong>{currentUserName}</strong> (você) criou esta tarefa · {createdAtLabel}
-                  </p>
-                  {selectedMembers.length > 0 && (
-                    <p className={styles.cmHistoryItem}>
-                      <strong>{currentUserName}</strong> (você) atribuiu a: {selectedMembersSummary || 'Você'} · {createdAtLabel}
-                    </p>
-                  )}
-                  {comments.map(c => {
+                  {activityFeedItems.map((item) => {
+                    if (item.type === 'history') {
+                      return (
+                        <p key={item.id} className={styles.cmHistoryItem}>
+                          <strong>{item.actor}</strong> (você) {item.text}
+                        </p>
+                      )
+                    }
+
+                    const c = item.comment
                     const presenter = getCommentPresenter(c)
                     const isExpanded = expandedComments[c.id]
                     const isOverflowing = overflowingComments[c.id]

@@ -426,6 +426,7 @@ function mapBoardComment(comment) {
     authorAvatarUrl: author?.avatarUrl ?? null,
     text: comment.message,
     time: comment.createdAt?.text ?? 'Agora',
+    createdAtIso: comment.createdAt?.iso ?? null,
   }
 }
 
