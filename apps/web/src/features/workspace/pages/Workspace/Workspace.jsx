@@ -1234,6 +1234,12 @@ export default function Workspace() {
     }, 2600)
   }
 
+  const clearSearch = (event) => {
+    event?.preventDefault?.()
+    event?.stopPropagation?.()
+    setSearch('')
+  }
+
   useEffect(() => {
     if (!fileIdFromUrl) {
       handledFileDeepLinkRef.current = ''
@@ -1506,7 +1512,8 @@ export default function Workspace() {
           <button
             type="button"
             className={styles.searchClear}
-            onClick={() => setSearch('')}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={clearSearch}
             aria-label="Limpar busca de planos"
           >
             <XIcon />
@@ -1566,7 +1573,7 @@ export default function Workspace() {
               </p>
               <div className={styles.emptyStateActions}>
                 {search && (
-                  <button type="button" className={styles.emptyStateBtn} onClick={() => setSearch('')}>
+                  <button type="button" className={styles.emptyStateBtn} onClick={clearSearch}>
                     Limpar busca
                   </button>
                 )}
@@ -1627,7 +1634,7 @@ export default function Workspace() {
         <CustomScrollArea
           className={styles.mainScrollArea}
           viewportClassName={styles.mainScrollViewport}
-          refreshKey={`workspace:${view}:${search}:${filtered.length}:${showIntelligenceSection ? 'intelligence' : 'plans'}:${isLoading ? 'loading' : 'ready'}`}
+          refreshKey={`workspace:${view}:${showIntelligenceSection ? 'intelligence' : 'plans'}:${isLoading ? 'loading' : 'ready'}`}
         >
           <WorkspaceHeader title="Início" compact sticky className={styles.workspaceTopHeaderGlass} />
 

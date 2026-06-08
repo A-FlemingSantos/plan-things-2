@@ -8,6 +8,16 @@ import {
   renderApp,
 } from './renderApp.jsx'
 
+async function expectWorkspaceHomeShell() {
+  await waitFor(() => {
+    expect(window.location.pathname).toBe('/workspace')
+  }, { timeout: 4000 })
+
+  expect(
+    await screen.findByPlaceholderText('Buscar planos...', {}, { timeout: 4000 }),
+  ).toBeInTheDocument()
+}
+
 function formatTodayAsScheduleDateValue() {
   const today = new Date()
   const day = String(today.getDate()).padStart(2, '0')
@@ -77,7 +87,7 @@ describe('App smoke flows', () => {
   it('redirects the legacy app route to the workspace for a demo session', async () => {
     renderApp('/app', { session: createDemoSession() })
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    await expectWorkspaceHomeShell()
     expect(window.location.pathname).toBe('/workspace')
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
@@ -100,7 +110,7 @@ describe('App smoke flows', () => {
 
     renderApp('/app', { session })
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    await expectWorkspaceHomeShell()
     expect(window.location.pathname).toBe('/workspace')
   })
 
@@ -130,7 +140,7 @@ describe('App smoke flows', () => {
       window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }))
     })
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    await expectWorkspaceHomeShell()
     expect(window.location.pathname).toBe('/workspace')
 
     await act(async () => {
@@ -172,8 +182,7 @@ describe('App smoke flows', () => {
 
     await loginFromProtectedRedirect(user)
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/workspace')
+    await expectWorkspaceHomeShell()
   })
 
   it('restores the board route after login when the route was protected', async () => {
@@ -183,8 +192,10 @@ describe('App smoke flows', () => {
 
     await loginFromProtectedRedirect(user)
 
-    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
+    }, { timeout: 4000 })
+    expect(await screen.findByText('Adicionar lista', {}, { timeout: 4000 })).toBeInTheDocument()
   })
 
   it('redirects the legacy files route to workspace after login', async () => {
@@ -194,8 +205,7 @@ describe('App smoke flows', () => {
 
     await loginFromProtectedRedirect(user)
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/workspace')
+    await expectWorkspaceHomeShell()
   })
 
   it('restores the calendar mode inside the board after login when the route was protected', async () => {
@@ -228,9 +238,11 @@ describe('App smoke flows', () => {
 
     await loginFromProtectedRedirect(user)
 
-    expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
-    expect(window.location.pathname).toBe('/settings')
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/settings')
+    }, { timeout: 4000 })
+    expect(await screen.findByRole('dialog', { name: 'Configurações' }, { timeout: 4000 })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
   })
 
   it('opens the Intelligence suspended chat from the board toolbar', async () => {

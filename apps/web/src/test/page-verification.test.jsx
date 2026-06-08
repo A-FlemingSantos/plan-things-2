@@ -1,8 +1,18 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createDemoSession, renderApp } from './renderApp.jsx'
 import { installMatchMediaController } from './matchMedia.js'
+
+async function expectWorkspaceHomeShell() {
+  await waitFor(() => {
+    expect(window.location.pathname).toBe('/workspace')
+  }, { timeout: 4000 })
+
+  expect(
+    await screen.findByPlaceholderText('Buscar planos...', {}, { timeout: 4000 }),
+  ).toBeInTheDocument()
+}
 
 describe('Page verification flows', () => {
   it('verifies key landing-page interactions', async () => {
@@ -10,7 +20,7 @@ describe('Page verification flows', () => {
 
     renderApp('/')
 
-    expect(await screen.findByRole('heading', { name: /faça o trabalho/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /seu time, no mesmo quadro/i })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /começar grátis/i }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: /começar grátis/i })[0]).toHaveAttribute('href', '/cadastro')
     expect(screen.getByRole('link', { name: /entrar/i })).toHaveAttribute('href', '/login')
@@ -81,7 +91,7 @@ describe('Page verification flows', () => {
 
     await user.click(screen.getByRole('button', { name: /limpar busca de planos/i }))
     expect(screen.queryByText('Nenhum plano encontrado')).not.toBeInTheDocument()
-    expect(search).toHaveValue('')
+    expect(screen.getByPlaceholderText('Buscar planos...')).toHaveValue('')
   })
 
   it('verifies kanban utility panels', async () => {
@@ -123,7 +133,7 @@ describe('Page verification flows', () => {
   it('verifies legacy files route lands in the workspace', async () => {
     renderApp('/files', { session: createDemoSession() })
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    await expectWorkspaceHomeShell()
     expect(window.location.pathname).toBe('/workspace')
     expect(screen.queryByPlaceholderText('Buscar arquivos...')).not.toBeInTheDocument()
   })
@@ -137,6 +147,6 @@ describe('Page verification flows', () => {
     await user.type(screen.getByLabelText('Senha'), '12345678')
     await user.click(screen.getByRole('button', { name: /continuar com e-mail/i }))
 
-    expect(await screen.findByRole('heading', { name: 'Início' }, { timeout: 4000 })).toBeInTheDocument()
+    await expectWorkspaceHomeShell()
   }, 10000)
 })

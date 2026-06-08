@@ -2670,6 +2670,11 @@ export default function CardModal({
                   <p className={styles.cmSubmitError}>{submitError}</p>
                 </div>
               ) : null}
+              {!submitError && saveStatus ? (
+                <div className={styles.cmSaveRow}>
+                  <p className={styles.cmSubmitSuccess} role="status" aria-live="polite">{saveStatus}</p>
+                </div>
+              ) : null}
           </div>
 
           <div className={styles.cmSidebar}>
