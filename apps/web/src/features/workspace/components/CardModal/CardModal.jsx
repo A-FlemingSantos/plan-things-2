@@ -1968,7 +1968,7 @@ export default function CardModal({
 
             <div className={styles.cmAiBar}>
               <span className={styles.cmAiBarIcon} aria-hidden="true">✦</span>
-              <span>Peça ao Brain para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes</span>
+              <span>Peça ao Intelligence para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes</span>
             </div>
 
             <div className={styles.cmPropertiesGrid}>
@@ -2521,7 +2521,7 @@ export default function CardModal({
                     <textarea
                       ref={commentTextareaRef}
                       className={`${styles.cmCommentTextarea} ${commentFocused ? styles.cmCommentTextareaExpanded : ''}`}
-                      placeholder="Mencione @Brain para criar, encontrar ou perguntar qualquer coisa"
+                      placeholder="Mencione @Intelligence para criar, encontrar ou perguntar qualquer coisa"
                       value={comment}
                       onChange={e => setComment(e.target.value)}
                       aria-label="Escrever comentário"
