@@ -446,6 +446,7 @@ export default function CardModal({
   const filePickerTypeMenuRef = useRef(null)
   const localFileInputRef = useRef(null)
   const commentTextRefs = useRef({})
+  const activityFeedRef = useRef(null)
   const saveStatusTimeoutRef = useRef(null)
   const dialogTitleId = `card-modal-title-${card.id}`
 
@@ -1879,6 +1880,12 @@ export default function CardModal({
   }, [comments])
 
   useLayoutEffect(() => {
+    const feed = activityFeedRef.current
+    if (!feed) return
+    feed.scrollTop = feed.scrollHeight
+  }, [comments])
+
+  useLayoutEffect(() => {
     if (!showListMenu || !listMenuButtonRef.current) return
 
     const updatePosition = () => {
@@ -2476,8 +2483,17 @@ export default function CardModal({
             </div>
 
             <div className={styles.cmSidebarContent}>
-              <div className={styles.cmActivityFeed}>
-                <div className={styles.cmActivityList}>
+              <div ref={activityFeedRef} className={styles.cmActivityFeed}>
+                <div className={styles.cmActivitySpacer} aria-hidden="true" />
+                <div className={styles.cmActivityTimeline}>
+                  <p className={styles.cmHistoryItem}>
+                    <strong>{currentUserName}</strong> (você) criou esta tarefa · {createdAtLabel}
+                  </p>
+                  {selectedMembers.length > 0 && (
+                    <p className={styles.cmHistoryItem}>
+                      <strong>{currentUserName}</strong> (você) atribuiu a: {selectedMembersSummary || 'Você'} · {createdAtLabel}
+                    </p>
+                  )}
                   {comments.map(c => {
                     const presenter = getCommentPresenter(c)
                     const isExpanded = expandedComments[c.id]
@@ -2541,17 +2557,6 @@ export default function CardModal({
                       </article>
                     )
                   })}
-                </div>
-
-                <div className={styles.cmActivityHistory}>
-                  <p className={styles.cmHistoryItem}>
-                    <strong>{currentUserName}</strong> (você) criou esta tarefa · {createdAtLabel}
-                  </p>
-                  {selectedMembers.length > 0 && (
-                    <p className={styles.cmHistoryItem}>
-                      <strong>{currentUserName}</strong> (você) atribuiu a: {selectedMembersSummary || 'Você'} · {createdAtLabel}
-                    </p>
-                  )}
                 </div>
               </div>
 

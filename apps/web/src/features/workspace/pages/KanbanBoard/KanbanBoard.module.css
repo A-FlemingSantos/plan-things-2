@@ -4220,17 +4220,20 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   padding: 16px;
   background: var(--cm-activity-feed-bg);
 }
 
-.cmActivityHistory {
-  margin-top: auto;
+.cmActivitySpacer {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cmActivityTimeline {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-top: 12px;
+  flex-shrink: 0;
 }
 
 .cmHistoryItem {
@@ -4672,12 +4675,6 @@
   height: 15px;
   margin: 0;
   accent-color: var(--cm-accent);
-}
-
-.cmActivityList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .cmCommentCard {
@@ -6374,7 +6371,7 @@
   .cmMain,
   .cmSidebarHeader,
   .cmCommentComposer,
-  .cmActivityList,
+  .cmActivityFeed,
   .cmDetailsPanel { padding-left: 14px; padding-right: 14px; }
   .cmHeader {
     align-items: flex-start;
