@@ -4297,25 +4297,30 @@
 
 .cmCommentComposer {
   display: block;
-  padding: 12px 14px 14px;
+  padding: 10px 12px 12px;
 }
 
 .cmCommentComposerBox {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border-1);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-2);
   overflow: hidden;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.cmCommentComposerBoxActive {
+  border-color: color-mix(in srgb, var(--cm-accent) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--cm-accent) 35%, transparent);
 }
 
 .cmCommentComposerFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px 8px;
+  gap: 6px;
+  padding: 5px 8px 7px;
   border-top: 1px solid var(--border-1);
   background: var(--surface-2);
 }
@@ -4323,22 +4328,66 @@
 .cmCommentComposerFooterLeft {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.cmCommentComposerFooterLeft::-webkit-scrollbar { display: none; }
+
+/* Standalone "+" add button */
+.cmCommentAddBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmCommentAddBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.cmCommentAddBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Vertical divider between button groups */
+.cmComposerDivider {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--border-1);
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
 .cmCommentTypeBtn {
-  height: 28px;
-  padding: 0 8px;
+  height: 26px;
+  padding: 0 7px;
   border-radius: 6px;
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
   font-size: 12px;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .cmCommentTypeBtn:hover {
@@ -4346,22 +4395,37 @@
   color: var(--text-1);
 }
 
+.cmCommentTypeBtn svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.7;
+}
+
+/* Split send button group */
+.cmCommentSendGroup {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--cm-accent);
+}
+
 .cmCommentSendBtn {
   width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  background: var(--cm-accent);
+  height: 28px;
+  background: transparent;
   color: var(--cm-accent-foreground);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
   cursor: pointer;
   transition: opacity var(--transition-fast);
+  border-right: 1px solid color-mix(in srgb, var(--cm-accent-foreground) 20%, transparent);
 }
 
 .cmCommentSendBtn:hover:not(:disabled) {
-  opacity: .88;
+  opacity: .85;
 }
 
 .cmCommentSendBtn:disabled {
@@ -4369,9 +4433,40 @@
   cursor: not-allowed;
 }
 
-.cmCommentComposerBoxActive {
-  border-color: var(--cm-accent);
-  box-shadow: 0 0 0 1px var(--cm-accent);
+.cmCommentSendChevron {
+  width: 20px;
+  height: 28px;
+  background: transparent;
+  color: var(--cm-accent-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.cmCommentSendChevron:hover:not(:disabled) {
+  opacity: .75;
+}
+
+.cmCommentSendChevron:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.cmCommentSendChevron svg {
+  width: 10px;
+  height: 10px;
+}
+
+.cmCommentSendBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* "..." more button in composer toolbar — slightly separated */
+.cmComposerMoreBtn {
+  margin-left: 2px;
 }
 
 .cmCommentToolbar {
@@ -4416,22 +4511,23 @@
 
 .cmCommentToolBtn,
 .cmCommentToolIconBtn {
-  min-width: 28px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 5px;
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .cmCommentToolBtn:hover,
@@ -4622,26 +4718,15 @@
   border: none;
   outline: none;
   resize: none;
-  padding: 12px 14px;
-  line-height: 1.45;
-  transition:
-    background var(--transition-fast),
-    min-height 160ms ease,
-    max-height 160ms ease;
-  min-height: 40px;
-  max-height: 40px;
-  overflow-y: hidden;
-}
-
-.cmCommentTextareaExpanded {
-  min-height: 96px;
-  max-height: 140px;
+  padding: 10px 14px 8px;
+  line-height: 1.5;
+  min-height: 38px;
+  max-height: 120px;
   overflow-y: auto;
 }
+
 .cmCommentTextarea::placeholder { color: var(--text-3); }
-.cmCommentTextarea:focus {
-  background: transparent;
-}
+.cmCommentTextarea:focus { background: transparent; }
 
 .cmCommentFooter {
   display: flex;

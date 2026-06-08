@@ -277,6 +277,108 @@ function AttachmentIcon() {
   )
 }
 
+function ComposerAppsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="2" y="2" width="5" height="5" rx="1.2" fill="#9b59b6" />
+      <rect x="9" y="2" width="5" height="5" rx="1.2" fill="#e67e22" />
+      <rect x="2" y="9" width="5" height="5" rx="1.2" fill="#2980b9" />
+      <rect x="9" y="9" width="5" height="5" rx="1.2" fill="#27ae60" />
+    </svg>
+  )
+}
+
+function ComposerGlobeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.5" stroke="#3498db" strokeWidth="1.3" />
+      <ellipse cx="8" cy="8" rx="2.5" ry="5.5" stroke="#3498db" strokeWidth="1.1" />
+      <line x1="2.5" y1="8" x2="13.5" y2="8" stroke="#3498db" strokeWidth="1.1" />
+      <line x1="3" y1="5.5" x2="13" y2="5.5" stroke="#3498db" strokeWidth="0.9" />
+      <line x1="3" y1="10.5" x2="13" y2="10.5" stroke="#3498db" strokeWidth="0.9" />
+    </svg>
+  )
+}
+
+function ComposerEmojiIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.5" stroke="#f39c12" strokeWidth="1.3" />
+      <circle cx="6" cy="6.5" r="0.9" fill="#f39c12" />
+      <circle cx="10" cy="6.5" r="0.9" fill="#f39c12" />
+      <path d="M5.5 9.5c.6 1.2 4.4 1.2 5 0" stroke="#f39c12" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ComposerMentionIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M11 8c0 1.66 0 3 2 3V5c-2 0-2 1.34-2 3Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  )
+}
+
+function ComposerBookmarkIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M5 3h6a1 1 0 0 1 1 1v8.5l-4-2.5-4 2.5V4a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ComposerGifIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="2" y="4.5" width="12" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <text x="3.5" y="10" fontFamily="sans-serif" fontSize="5.5" fontWeight="700" fill="currentColor">GIF</text>
+    </svg>
+  )
+}
+
+function ComposerDrawIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M11.5 2.5 13.5 4.5l-7 7-2.5.5.5-2.5 7-7Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M10 4 12 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ComposerMicIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="5.5" y="2" width="5" height="7" rx="2.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M3 8a5 5 0 0 0 10 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="8" y1="13" x2="8" y2="15" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ComposerScreenshotIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 5V3.5A1.5 1.5 0 0 1 3.5 2H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M11 2h1.5A1.5 1.5 0 0 1 14 3.5V5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M14 11v1.5A1.5 1.5 0 0 1 12.5 14H11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M5 14H3.5A1.5 1.5 0 0 1 2 12.5V11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  )
+}
+
+function ComposerMoreIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="3.5" cy="8" r="1.2" fill="currentColor" />
+      <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+      <circle cx="12.5" cy="8" r="1.2" fill="currentColor" />
+    </svg>
+  )
+}
+
 function getFileExtension(name = '') {
   const parts = name.toLowerCase().split('.')
   return parts.length > 1 ? parts.at(-1) ?? '' : ''
@@ -2570,8 +2672,8 @@ export default function CardModal({
                   >
                     <textarea
                       ref={commentTextareaRef}
-                      className={`${styles.cmCommentTextarea} ${commentFocused ? styles.cmCommentTextareaExpanded : ''}`}
-                      placeholder="Mencione @Intelligence para criar, encontrar ou perguntar qualquer coisa"
+                      className={styles.cmCommentTextarea}
+                      placeholder="Escreva um comentário..."
                       value={comment}
                       onChange={e => setComment(e.target.value)}
                       aria-label="Escrever comentário"
@@ -2584,7 +2686,6 @@ export default function CardModal({
                           setCommentFocused(false)
                         }
                       }}
-                      rows={commentFocused ? 3 : 1}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault()
@@ -2596,43 +2697,89 @@ export default function CardModal({
 
                     <div className={styles.cmCommentComposerFooter}>
                       <div className={styles.cmCommentComposerFooterLeft}>
-                        <button type="button" className={styles.cmCommentTypeBtn} tabIndex={commentFocused ? 0 : -1}>
+                        <button
+                          type="button"
+                          className={styles.cmCommentAddBtn}
+                          onMouseDown={e => e.preventDefault()}
+                          aria-label="Adicionar bloco"
+                        >
                           <icons.Plus />
+                        </button>
+
+                        <span className={styles.cmComposerDivider} aria-hidden="true" />
+
+                        <button type="button" className={styles.cmCommentTypeBtn}>
                           Comentário
                           <icons.Chevron />
                         </button>
+
+                        <span className={styles.cmComposerDivider} aria-hidden="true" />
+
                         <button
                           ref={insertMenuButtonRef}
                           type="button"
                           className={styles.cmCommentToolIconBtn}
                           onMouseDown={e => e.preventDefault()}
-                          aria-label="Inserir no comentário"
+                          aria-label="Aplicativos"
                           aria-expanded={showInsertMenu}
                           aria-haspopup="menu"
                           onClick={() => setShowInsertMenu(v => !v)}
-                          tabIndex={commentFocused ? 0 : -1}
                         >
-                          <icons.Bolt />
+                          <ComposerAppsIcon />
                         </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mencionar" tabIndex={commentFocused ? 0 : -1}>@</button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Emoji" tabIndex={commentFocused ? 0 : -1}>☺</button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário" tabIndex={commentFocused ? 0 : -1}>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Integrações">
+                          <ComposerGlobeIcon />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Emoji">
+                          <ComposerEmojiIcon />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário">
                           <AttachmentIcon />
                         </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mencionar">
+                          <ComposerMentionIcon />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Salvar">
+                          <ComposerBookmarkIcon />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="GIF">
+                          <ComposerGifIcon />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Desenhar">
+                          <ComposerDrawIcon />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Áudio">
+                          <ComposerMicIcon />
+                        </button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Captura de tela">
+                          <ComposerScreenshotIcon />
+                        </button>
+                        <button type="button" className={`${styles.cmCommentToolIconBtn} ${styles.cmComposerMoreBtn}`} onMouseDown={e => e.preventDefault()} aria-label="Mais opções">
+                          <ComposerMoreIcon />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className={styles.cmCommentSendBtn}
-                        onMouseDown={e => e.preventDefault()}
-                        onClick={() => {
-                          void addComment()
-                        }}
-                        disabled={!comment.trim() || isMutating}
-                        aria-label="Enviar comentário"
-                        tabIndex={commentFocused ? 0 : -1}
-                      >
-                        <icons.Send />
-                      </button>
+
+                      <div className={styles.cmCommentSendGroup}>
+                        <button
+                          type="button"
+                          className={styles.cmCommentSendBtn}
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => { void addComment() }}
+                          disabled={!comment.trim() || isMutating}
+                          aria-label="Enviar comentário"
+                        >
+                          <icons.Send />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.cmCommentSendChevron}
+                          onMouseDown={e => e.preventDefault()}
+                          aria-label="Mais opções de envio"
+                          disabled={isMutating}
+                        >
+                          <icons.Chevron />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

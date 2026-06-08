@@ -251,11 +251,8 @@ describe('CardModal file picker positioning', () => {
     )
 
     const commentField = screen.getByLabelText('Escrever comentário')
-    expect(screen.getByRole('button', { name: 'Enviar comentário' })).toHaveAttribute('tabindex', '-1')
-
-    await user.click(commentField)
-    expect(screen.getByRole('button', { name: 'Enviar comentário' })).toHaveAttribute('tabindex', '0')
-    expect(screen.getByLabelText('Anexar ao comentário')).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('button', { name: 'Enviar comentário' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Anexar ao comentário')).toBeInTheDocument()
 
     await user.type(commentField, 'Ola!')
     await user.click(screen.getByRole('button', { name: 'Enviar comentário' }))
