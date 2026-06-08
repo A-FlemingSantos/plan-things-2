@@ -4212,6 +4212,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 16px;
+  background: #090909;
 }
 
 .cmActivityHistory {
