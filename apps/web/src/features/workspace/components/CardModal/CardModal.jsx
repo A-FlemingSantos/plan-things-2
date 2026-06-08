@@ -1998,8 +1998,11 @@ export default function CardModal({
             </div>
 
             <div className={styles.cmAiBar}>
-              <span className={styles.cmAiBarIcon} aria-hidden="true">✦</span>
-              <span>Peça ao Intelligence para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes</span>
+              <span className={styles.cmAiBarIcon} aria-hidden="true">
+                <span className={styles.cmAiBarIconGlow} aria-hidden="true" />
+                <span className={styles.cmAiBarIconMark}>✦</span>
+              </span>
+              <span className={styles.cmAiBarText}>Peça ao Intelligence para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes</span>
             </div>
 
             <div className={styles.cmPropertiesGrid}>
