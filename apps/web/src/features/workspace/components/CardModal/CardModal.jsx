@@ -288,29 +288,6 @@ function ComposerAppsIcon() {
   )
 }
 
-function ComposerGlobeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="5.5" stroke="#3498db" strokeWidth="1.3" />
-      <ellipse cx="8" cy="8" rx="2.5" ry="5.5" stroke="#3498db" strokeWidth="1.1" />
-      <line x1="2.5" y1="8" x2="13.5" y2="8" stroke="#3498db" strokeWidth="1.1" />
-      <line x1="3" y1="5.5" x2="13" y2="5.5" stroke="#3498db" strokeWidth="0.9" />
-      <line x1="3" y1="10.5" x2="13" y2="10.5" stroke="#3498db" strokeWidth="0.9" />
-    </svg>
-  )
-}
-
-function ComposerEmojiIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="5.5" stroke="#f39c12" strokeWidth="1.3" />
-      <circle cx="6" cy="6.5" r="0.9" fill="#f39c12" />
-      <circle cx="10" cy="6.5" r="0.9" fill="#f39c12" />
-      <path d="M5.5 9.5c.6 1.2 4.4 1.2 5 0" stroke="#f39c12" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 function ComposerMentionIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -321,60 +298,20 @@ function ComposerMentionIcon() {
   )
 }
 
-function ComposerBookmarkIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M5 3h6a1 1 0 0 1 1 1v8.5l-4-2.5-4 2.5V4a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function ComposerGifIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="2" y="4.5" width="12" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-      <text x="3.5" y="10" fontFamily="sans-serif" fontSize="5.5" fontWeight="700" fill="currentColor">GIF</text>
-    </svg>
-  )
-}
-
-function ComposerDrawIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M11.5 2.5 13.5 4.5l-7 7-2.5.5.5-2.5 7-7Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d="M10 4 12 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function ComposerMicIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="5.5" y="2" width="5" height="7" rx="2.5" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M3 8a5 5 0 0 0 10 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <line x1="8" y1="13" x2="8" y2="15" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function ComposerScreenshotIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2 5V3.5A1.5 1.5 0 0 1 3.5 2H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M11 2h1.5A1.5 1.5 0 0 1 14 3.5V5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M14 11v1.5A1.5 1.5 0 0 1 12.5 14H11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M5 14H3.5A1.5 1.5 0 0 1 2 12.5V11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  )
-}
-
 function ComposerMoreIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <circle cx="3.5" cy="8" r="1.2" fill="currentColor" />
       <circle cx="8" cy="8" r="1.2" fill="currentColor" />
       <circle cx="12.5" cy="8" r="1.2" fill="currentColor" />
+    </svg>
+  )
+}
+
+function ComposerSendIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M15.1 1.1 1.3 6.1c-.55.2-.52.95.04 1.12l5.4 1.72 1.72 5.4c.17.56.92.59 1.12.04L15.1 1.1Z" />
     </svg>
   )
 }
@@ -2727,39 +2664,18 @@ export default function CardModal({
                         >
                           <ComposerAppsIcon />
                         </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Integrações">
-                          <ComposerGlobeIcon />
-                        </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Emoji">
-                          <ComposerEmojiIcon />
-                        </button>
                         <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário">
                           <AttachmentIcon />
                         </button>
                         <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mencionar">
                           <ComposerMentionIcon />
                         </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Salvar">
-                          <ComposerBookmarkIcon />
-                        </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="GIF">
-                          <ComposerGifIcon />
-                        </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Desenhar">
-                          <ComposerDrawIcon />
-                        </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Áudio">
-                          <ComposerMicIcon />
-                        </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Captura de tela">
-                          <ComposerScreenshotIcon />
-                        </button>
-                        <button type="button" className={`${styles.cmCommentToolIconBtn} ${styles.cmComposerMoreBtn}`} onMouseDown={e => e.preventDefault()} aria-label="Mais opções">
-                          <ComposerMoreIcon />
-                        </button>
                       </div>
 
-                      <div className={styles.cmCommentSendGroup}>
+                      <div className={styles.cmCommentComposerFooterRight}>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mais opções">
+                          <ComposerMoreIcon />
+                        </button>
                         <button
                           type="button"
                           className={styles.cmCommentSendBtn}
@@ -2768,16 +2684,7 @@ export default function CardModal({
                           disabled={!comment.trim() || isMutating}
                           aria-label="Enviar comentário"
                         >
-                          <icons.Send />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.cmCommentSendChevron}
-                          onMouseDown={e => e.preventDefault()}
-                          aria-label="Mais opções de envio"
-                          disabled={isMutating}
-                        >
-                          <icons.Chevron />
+                          <ComposerSendIcon />
                         </button>
                       </div>
                     </div>

@@ -4337,6 +4337,13 @@
 
 .cmCommentComposerFooterLeft::-webkit-scrollbar { display: none; }
 
+.cmCommentComposerFooterRight {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 /* Standalone "+" add button */
 .cmCommentAddBtn {
   width: 26px;
@@ -4401,72 +4408,38 @@
   opacity: 0.7;
 }
 
-/* Split send button group */
-.cmCommentSendGroup {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  border-radius: 7px;
-  overflow: hidden;
-  background: var(--cm-accent);
+.cmCommentComposerFooterRight .cmCommentSendBtn {
+  border-left: 1px solid var(--border-1);
+  margin-left: 0;
+  padding-left: 2px;
 }
 
 .cmCommentSendBtn {
   width: 30px;
   height: 28px;
   background: transparent;
-  color: var(--cm-accent-foreground);
+  color: var(--text-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   cursor: pointer;
-  transition: opacity var(--transition-fast);
-  border-right: 1px solid color-mix(in srgb, var(--cm-accent-foreground) 20%, transparent);
+  transition: color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .cmCommentSendBtn:hover:not(:disabled) {
-  opacity: .85;
+  color: var(--text-1);
 }
 
 .cmCommentSendBtn:disabled {
-  opacity: .35;
+  color: var(--text-3);
+  opacity: .55;
   cursor: not-allowed;
-}
-
-.cmCommentSendChevron {
-  width: 20px;
-  height: 28px;
-  background: transparent;
-  color: var(--cm-accent-foreground);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-}
-
-.cmCommentSendChevron:hover:not(:disabled) {
-  opacity: .75;
-}
-
-.cmCommentSendChevron:disabled {
-  opacity: .35;
-  cursor: not-allowed;
-}
-
-.cmCommentSendChevron svg {
-  width: 10px;
-  height: 10px;
 }
 
 .cmCommentSendBtn svg {
-  width: 14px;
-  height: 14px;
-}
-
-/* "..." more button in composer toolbar — slightly separated */
-.cmComposerMoreBtn {
-  margin-left: 2px;
+  width: 15px;
+  height: 15px;
 }
 
 .cmCommentToolbar {
