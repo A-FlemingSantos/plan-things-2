@@ -70,7 +70,7 @@ describe('CardModal file picker positioning', () => {
         }
       }
 
-      if (this.textContent?.includes('Adicionar')) {
+      if (this.getAttribute?.('aria-label') === 'Adicionar anexo' || this.textContent?.includes('Anexar arquivo')) {
         return {
           x: 120,
           y: 500,
@@ -126,7 +126,8 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await user.click(screen.getByRole('button', { name: /adicionar/i }))
+    await user.click(screen.getByRole('button', { name: /adicionar anexo/i }))
+    await user.click(screen.getByRole('menuitem', { name: /biblioteca/i }))
 
     const picker = await screen.findByRole('dialog', { name: 'Anexar arquivo' })
 
@@ -250,15 +251,14 @@ describe('CardModal file picker positioning', () => {
     )
 
     const commentField = screen.getByLabelText('Escrever comentário')
-    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('tabindex', '-1')
+    expect(screen.getByRole('button', { name: 'Enviar comentário' })).toHaveAttribute('tabindex', '-1')
 
     await user.click(commentField)
-    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('button', { name: 'Enviar comentário' })).toHaveAttribute('tabindex', '0')
     expect(screen.getByLabelText('Anexar ao comentário')).toHaveAttribute('tabindex', '0')
-    expect(screen.getByLabelText('Ajuda do comentário')).toHaveAttribute('tabindex', '0')
 
     await user.type(commentField, 'Ola!')
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    await user.click(screen.getByRole('button', { name: 'Enviar comentário' }))
 
     await waitFor(() => {
       expect(addComment).toHaveBeenCalledWith('card-1', 'Ola!')

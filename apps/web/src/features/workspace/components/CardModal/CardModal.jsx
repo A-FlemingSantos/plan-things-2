@@ -417,7 +417,6 @@ export default function CardModal({
   const attachmentAddMenuRef = useRef(null)
   const attachmentAddButtonRef = useRef(null)
   const attachmentAddSplitRef = useRef(null)
-  const attachmentAddToggleRef = useRef(null)
   const filePickerRef = useRef(null)
   const filePickerTypeButtonRef = useRef(null)
   const filePickerTypeMenuRef = useRef(null)
@@ -2087,6 +2086,8 @@ export default function CardModal({
               </div>
             </div>
 
+            <div className={styles.cmMainDivider} aria-hidden="true" />
+
             <div className={styles.cmDescSection}>
               <div
                 ref={descComposerRef}
@@ -2158,11 +2159,11 @@ export default function CardModal({
               </button>
               <button type="button" className={styles.cmActionItem}>
                 <span className={styles.cmActionItemIcon}><icons.Plus /></span>
-                Nova subtarefa
+                Adicionar subtarefa
               </button>
               <button type="button" className={styles.cmActionItem}>
                 <span className={styles.cmActionItemIcon}><icons.Link /></span>
-                Vincular itens ou dependências
+                Vincular itens ou adicionar dependências
               </button>
               <button
                 ref={checklistMenuButtonRef}
@@ -2185,155 +2186,111 @@ export default function CardModal({
                 <span className={styles.cmActionItemIcon}><icons.Check /></span>
                 Criar checklist
               </button>
-              <button
-                type="button"
-                className={styles.cmActionItem}
-                onClick={() => {
-                  if (showFilePicker) {
+              <div ref={attachmentAddSplitRef} className={styles.cmActionAttachWrap}>
+                <button
+                  ref={attachmentAddButtonRef}
+                  type="button"
+                  className={styles.cmActionItem}
+                  aria-label="Adicionar anexo"
+                  aria-expanded={showAttachmentAddMenu}
+                  aria-haspopup="menu"
+                  onClick={() => {
                     setFilePickerOpening(false)
                     setShowFilePicker(false)
-                    return
-                  }
-                  void openFilePicker()
-                }}
-                disabled={uploadingLocalFile}
-              >
-                <span className={styles.cmActionItemIcon}><icons.Files /></span>
-                Anexar arquivo
-              </button>
-            </div>
+                    setShowAttachmentAddMenu((value) => !value)
+                  }}
+                  disabled={uploadingLocalFile}
+                >
+                  <span className={styles.cmActionItemIcon}><AttachmentIcon /></span>
+                  {uploadingLocalFile ? 'Enviando...' : 'Anexar arquivo'}
+                </button>
 
-              <div className={styles.cmSection}>
-                  <div className={styles.cmAttachmentHeader}>
-                    <p className={styles.cmSectionTitle}>
-                      <icons.Files />
-                      Anexos
-                    </p>
-                    <div ref={attachmentAddSplitRef} className={styles.cmAttachmentAddSplit}>
-                      <button
-                        ref={attachmentAddButtonRef}
-                        type="button"
-                        className={styles.cmAttachmentAddBtn}
-                        aria-label="Adicionar anexo"
-                        onClick={() => {
-                          if (showFilePicker) {
-                            setFilePickerOpening(false)
-                            setShowFilePicker(false)
-                            return
-                          }
-                          void openFilePicker()
-                        }}
-                        disabled={uploadingLocalFile}
-                      >
-                        <icons.Plus />
-                        {uploadingLocalFile ? 'Enviando...' : 'Adicionar'}
-                      </button>
-                      <button
-                        ref={attachmentAddToggleRef}
-                        type="button"
-                        className={styles.cmAttachmentAddToggle}
-                        onClick={() => {
-                          setFilePickerOpening(false)
-                          setShowFilePicker(false)
-                          setShowAttachmentAddMenu((value) => !value)
-                        }}
-                        aria-label="Escolher origem do anexo"
-                        aria-expanded={showAttachmentAddMenu}
-                        aria-haspopup="menu"
-                        disabled={uploadingLocalFile}
-                      >
-                        <span className={`${styles.cmAttachmentAddToggleIcon} ${showAttachmentAddMenu ? styles.cmAttachmentAddToggleIconOpen : ''}`}>
-                          <icons.Chevron />
-                        </span>
-                      </button>
-
-                      {showAttachmentAddMenu && (
-                        <div
-                          ref={attachmentAddMenuRef}
-                          className={styles.cmAttachmentAddMenu}
-                          role="menu"
-                        >
-                          <button
-                            type="button"
-                            className={styles.cmAttachmentAddMenuItem}
-                            onClick={() => {
-                              void openFilePicker()
-                            }}
-                            role="menuitem"
-                          >
-                            <span className={styles.cmAttachmentAddMenuItemIcon}><icons.Files /></span>
-                            Biblioteca
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.cmAttachmentAddMenuItem}
-                            onClick={() => {
-                              setShowAttachmentAddMenu(false)
-                              localFileInputRef.current?.click()
-                            }}
-                            role="menuitem"
-                          >
-                            <span className={styles.cmAttachmentAddMenuItemIcon}><ComputerIcon /></span>
-                            Meu Computador
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                {showAttachmentAddMenu && (
+                  <div
+                    ref={attachmentAddMenuRef}
+                    className={styles.cmAttachmentAddMenu}
+                    role="menu"
+                  >
+                    <button
+                      type="button"
+                      className={styles.cmAttachmentAddMenuItem}
+                      onClick={() => {
+                        void openFilePicker()
+                      }}
+                      role="menuitem"
+                    >
+                      <span className={styles.cmAttachmentAddMenuItemIcon}><icons.Files /></span>
+                      Biblioteca
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.cmAttachmentAddMenuItem}
+                      onClick={() => {
+                        setShowAttachmentAddMenu(false)
+                        localFileInputRef.current?.click()
+                      }}
+                      role="menuitem"
+                    >
+                      <span className={styles.cmAttachmentAddMenuItemIcon}><ComputerIcon /></span>
+                      Meu Computador
+                    </button>
                   </div>
-
-                  <input
-                    ref={localFileInputRef}
-                    type="file"
-                    className={styles.cmHiddenFileInput}
-                    onChange={handleLocalFileInput}
-                    tabIndex={-1}
-                    aria-hidden="true"
-                  />
-
-                  {attachments.length ? (
-                  <div className={styles.cmAttachmentList}>
-                    {attachments.map((attachment) => (
-                      <div key={attachment.id} className={styles.cmAttachmentRow}>
-                        <span className={styles.cmAttachmentIcon}><icons.Files /></span>
-                        <div className={styles.cmAttachmentBody}>
-                          <p className={styles.cmAttachmentName}>{attachment.name}</p>
-                          <p className={styles.cmAttachmentMeta}>
-                            {formatFileSize(attachment.size)} · {attachment.attachedBy?.fullName ?? 'Membro'}
-                          </p>
-                        </div>
-                        <div className={styles.cmAttachmentActions}>
-                          {onDownloadFile ? (
-                            <button
-                              type="button"
-                              className={styles.cmAttachmentIconBtn}
-                              onClick={() => {
-                                Promise.resolve(onDownloadFile(attachment)).catch((error) => {
-                                  setSubmitError(error?.message ?? 'Não foi possível baixar o anexo.')
-                                })
-                              }}
-                              aria-label={`Baixar ${attachment.name}`}
-                            >
-                              <icons.Download />
-                            </button>
-                          ) : null}
-                          {attachment.canRemove ? (
-                            <button
-                              type="button"
-                              className={styles.cmAttachmentRemoveBtn}
-                              onClick={() => handleRemoveAttachment(attachment)}
-                              disabled={removingAttachmentId === attachment.id}
-                            >
-                              {removingAttachmentId === attachment.id ? 'Removendo...' : 'Remover'}
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={styles.cmAttachmentEmpty}>Nenhum arquivo anexado a este cartão.</p>
                 )}
               </div>
+            </div>
+
+            <input
+              ref={localFileInputRef}
+              type="file"
+              className={styles.cmHiddenFileInput}
+              onChange={handleLocalFileInput}
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+
+            {attachments.length > 0 && (
+              <div className={styles.cmInlineAttachments}>
+                {attachments.map((attachment) => (
+                  <div key={attachment.id} className={styles.cmInlineAttachmentRow}>
+                    <span className={styles.cmInlineAttachmentIcon}><icons.Files /></span>
+                    <div className={styles.cmInlineAttachmentBody}>
+                      <span className={styles.cmInlineAttachmentName}>{attachment.name}</span>
+                      <span className={styles.cmInlineAttachmentMeta}>
+                        {formatFileSize(attachment.size)}
+                        {attachment.attachedBy?.fullName ? ` · ${attachment.attachedBy.fullName}` : ''}
+                      </span>
+                    </div>
+                    <div className={styles.cmInlineAttachmentActions}>
+                      {onDownloadFile ? (
+                        <button
+                          type="button"
+                          className={styles.cmInlineAttachmentBtn}
+                          onClick={() => {
+                            Promise.resolve(onDownloadFile(attachment)).catch((error) => {
+                              setSubmitError(error?.message ?? 'Não foi possível baixar o anexo.')
+                            })
+                          }}
+                          aria-label={`Baixar ${attachment.name}`}
+                        >
+                          <icons.Download />
+                        </button>
+                      ) : null}
+                      {attachment.canRemove ? (
+                        <button
+                          type="button"
+                          className={styles.cmInlineAttachmentBtn}
+                          onClick={() => handleRemoveAttachment(attachment)}
+                          disabled={removingAttachmentId === attachment.id}
+                          aria-label={`Remover ${attachment.name}`}
+                        >
+                          <icons.X />
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
               {activeChecklist && (
                 <div className={styles.cmChecklistBlock}>
@@ -2477,10 +2434,11 @@ export default function CardModal({
                   </div>
                 )}
 
-              <div className={styles.cmSaveRow}>
-                {submitError && <p className={styles.cmSubmitError}>{submitError}</p>}
-                {!submitError && saveStatus ? <p className={styles.cmSaveStatus}>{saveStatus}</p> : null}
-            </div>
+              {submitError ? (
+                <div className={styles.cmSaveRow}>
+                  <p className={styles.cmSubmitError}>{submitError}</p>
+                </div>
+              ) : null}
           </div>
 
           <div className={styles.cmSidebar}>
@@ -2496,14 +2454,6 @@ export default function CardModal({
             <div className={styles.cmSidebarContent}>
               <div className={styles.cmActivityFeed}>
                 <div className={styles.cmActivityList}>
-                  {comments.length === 0 && (
-                    <div className={styles.cmActivityItem}>
-                      <div className={styles.cmActivityContent}>
-                        <p className={styles.cmActivityText}>Nenhum comentário registrado neste cartão ainda.</p>
-                      </div>
-                    </div>
-                  )}
-
                   {comments.map(c => {
                     const presenter = getCommentPresenter(c)
                     const isExpanded = expandedComments[c.id]
@@ -2568,69 +2518,6 @@ export default function CardModal({
                   <div
                     className={`${styles.cmCommentComposerBox} ${commentFocused ? styles.cmCommentComposerBoxActive : ''}`}
                   >
-                    <div className={`${styles.cmCommentToolbar} ${commentFocused ? styles.cmCommentToolbarOpen : ''}`}>
-                      <div className={styles.cmCommentToolbarGroup}>
-                        <div className={styles.cmCommentDropdown}>
-                          <button
-                            ref={textMenuButtonRef}
-                            type="button"
-                            className={`${styles.cmCommentToolBtn} ${showTextMenu ? styles.cmCommentToolBtnActive : ''}`}
-                            onMouseDown={e => e.preventDefault()}
-                            onClick={() => setShowTextMenu(v => !v)}
-                            aria-expanded={showTextMenu}
-                            aria-haspopup="menu"
-                            tabIndex={commentFocused ? 0 : -1}
-                          >
-                            Tt
-                            <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
-                          </button>
-                        </div>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}><strong>B</strong></button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}><em>I</em></button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} tabIndex={commentFocused ? 0 : -1}>…</button>
-                        <button
-                          ref={listMenuButtonRef}
-                          type="button"
-                          className={`${styles.cmCommentToolBtn} ${showListMenu ? styles.cmCommentToolBtnActive : ''}`}
-                          onMouseDown={e => e.preventDefault()}
-                          onClick={() => setShowListMenu(v => !v)}
-                          aria-expanded={showListMenu}
-                          aria-haspopup="menu"
-                          tabIndex={commentFocused ? 0 : -1}
-                        >
-                          <icons.List />
-                          <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
-                        </button>
-                        <button
-                          ref={insertMenuButtonRef}
-                          type="button"
-                          className={`${styles.cmCommentToolBtn} ${showInsertMenu ? styles.cmCommentToolBtnActive : ''}`}
-                          onMouseDown={e => e.preventDefault()}
-                          onClick={() => setShowInsertMenu(v => !v)}
-                          aria-expanded={showInsertMenu}
-                          aria-haspopup="menu"
-                          tabIndex={commentFocused ? 0 : -1}
-                        >
-                          <icons.Plus />
-                          <span className={styles.cmCommentToolBtnIcon}><icons.Chevron /></span>
-                        </button>
-                      </div>
-                      <div className={styles.cmCommentToolbarGroup}>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário" tabIndex={commentFocused ? 0 : -1}>
-                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <path d="m6.1 9 3.44-3.44a1.83 1.83 0 1 1 2.6 2.58l-4.2 4.28a3 3 0 0 1-4.25-4.24L7.95 3.95" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Ajuda do comentário" tabIndex={commentFocused ? 0 : -1}>
-                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
-                            <path d="M6.85 6.25a1.6 1.6 0 1 1 2.38 1.4c-.56.31-.98.66-.98 1.35v.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                            <circle cx="8" cy="11.55" r=".7" fill="currentColor" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
                     <textarea
                       ref={commentTextareaRef}
                       className={`${styles.cmCommentTextarea} ${commentFocused ? styles.cmCommentTextareaExpanded : ''}`}
@@ -2664,8 +2551,24 @@ export default function CardModal({
                           Comentário
                           <icons.Chevron />
                         </button>
+                        <button
+                          ref={insertMenuButtonRef}
+                          type="button"
+                          className={styles.cmCommentToolIconBtn}
+                          onMouseDown={e => e.preventDefault()}
+                          aria-label="Inserir no comentário"
+                          aria-expanded={showInsertMenu}
+                          aria-haspopup="menu"
+                          onClick={() => setShowInsertMenu(v => !v)}
+                          tabIndex={commentFocused ? 0 : -1}
+                        >
+                          <icons.Bolt />
+                        </button>
                         <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mencionar" tabIndex={commentFocused ? 0 : -1}>@</button>
                         <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Emoji" tabIndex={commentFocused ? 0 : -1}>☺</button>
+                        <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário" tabIndex={commentFocused ? 0 : -1}>
+                          <AttachmentIcon />
+                        </button>
                       </div>
                       <button
                         type="button"
@@ -2681,33 +2584,6 @@ export default function CardModal({
                         <icons.Send />
                       </button>
                     </div>
-                  </div>
-
-                  <div className={`${styles.cmCommentFooter} ${commentFocused ? styles.cmCommentFooterOpen : ''}`}>
-                    <button
-                      type="button"
-                      className={styles.cmCommentSaveBtn}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => {
-                        void addComment()
-                      }}
-                      disabled={!comment.trim() || isMutating}
-                      tabIndex={commentFocused ? 0 : -1}
-                    >
-                      Salvar
-                    </button>
-
-                    <label className={styles.cmCommentFollowLabel}>
-                      <input
-                        type="checkbox"
-                        className={styles.cmCommentFollowCheckbox}
-                        checked={commentFollow}
-                        onChange={(event) => setCommentFollow(event.target.checked)}
-                        disabled={isMutating}
-                        tabIndex={commentFocused ? 0 : -1}
-                      />
-                      <span>Seguir</span>
-                    </label>
                   </div>
                 </div>
               </div>

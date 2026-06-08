@@ -3503,6 +3503,96 @@
   flex-shrink: 0;
 }
 
+.cmActionAttachWrap {
+  position: relative;
+}
+
+.cmMainDivider {
+  height: 1px;
+  background: var(--border-1);
+  margin: 8px 0 4px;
+}
+
+.cmInlineAttachments {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 8px 26px;
+}
+
+.cmInlineAttachmentRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background var(--transition-fast);
+}
+
+.cmInlineAttachmentRow:hover {
+  background: var(--hover);
+}
+
+.cmInlineAttachmentIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.cmInlineAttachmentBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cmInlineAttachmentName {
+  font-size: 13px;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmInlineAttachmentMeta {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.cmInlineAttachmentActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.cmInlineAttachmentBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmInlineAttachmentBtn:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.cmInlineAttachmentBtn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
 .cmDescSection {
   display: flex;
   flex-direction: column;
@@ -5554,6 +5644,12 @@
 .cmAttachmentAddToggle:disabled {
   opacity: .62;
   cursor: not-allowed;
+}
+
+.cmActionAttachWrap .cmAttachmentAddMenu {
+  top: calc(100% + 4px);
+  left: 8px;
+  right: auto;
 }
 
 .cmAttachmentAddMenu {
