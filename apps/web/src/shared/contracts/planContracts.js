@@ -30,8 +30,11 @@ function normalizeComment(comment = {}) {
     author: comment.author ?? '',
     authorId: comment.authorId ?? null,
     authorName: comment.authorName ?? comment.author ?? '',
+    authorAvatarUrl: comment.authorAvatarUrl ?? null,
     text: comment.text ?? '',
     time: comment.time ?? '',
+    kind: comment.kind ?? 'USER_COMMENT',
+    createdAtIso: comment.createdAtIso ?? null,
   }
 }
 

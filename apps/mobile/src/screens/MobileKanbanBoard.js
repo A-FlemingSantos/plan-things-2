@@ -199,11 +199,16 @@ function normalizeAttachment(attachment = {}) {
   }
 }
 
+function isUserComment(comment = {}) {
+  return comment.kind !== 'ASSIGNEE_ACTIVITY'
+}
+
 function BoardCard({ card, onPress }) {
   const label = findLabel(card.labelId)
   const members = findMembers(card.memberIds)
   const dueLabel = card.dueDate || card.schedule?.displayLabel
-  const hasMeta = Boolean(dueLabel || card.comments?.length || members.length)
+  const commentCount = (card.comments ?? []).filter(isUserComment).length
+  const hasMeta = Boolean(dueLabel || commentCount || members.length)
 
   return (
     <Pressable
@@ -232,10 +237,10 @@ function BoardCard({ card, onPress }) {
                 <Text style={styles.metaText}>{dueLabel}</Text>
               </View>
             ) : null}
-            {card.comments?.length ? (
+            {commentCount ? (
               <View style={styles.metaPill}>
                 <MessageCircle size={12} color={theme.colors.text2} strokeWidth={1.8} />
-                <Text style={styles.metaText}>{card.comments.length}</Text>
+                <Text style={styles.metaText}>{commentCount}</Text>
               </View>
             ) : null}
           </View>
@@ -338,6 +343,7 @@ function CardDetailScreen({
   const availableLibraryFiles = useMemo(() => (
     (files ?? []).filter((file) => file.type !== 'folder' && !file.trashed)
   ), [files])
+  const visibleComments = useMemo(() => comments.filter(isUserComment), [comments])
   const translateY = slideProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, height],
@@ -599,6 +605,7 @@ function CardDetailScreen({
       {
         id: `comment-${Date.now()}`,
         author: 'm1',
+        kind: 'USER_COMMENT',
         text,
         time: 'agora',
       },
@@ -819,8 +826,8 @@ function CardDetailScreen({
             </View>
 
             <View style={styles.detailActivityList}>
-              {comments.length ? (
-                comments.map((comment) => {
+              {visibleComments.length ? (
+                visibleComments.map((comment) => {
                   const authorId = comment.authorId ?? comment.author
                   const author = boardMembers.find((member) => member.id === authorId)
                   const presenter = author ?? {

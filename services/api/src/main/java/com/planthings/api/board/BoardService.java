@@ -205,9 +205,15 @@ public class BoardService {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
+    List<UUID> previousAssigneeIds = normalizeAssigneeIds(
+        boardCardAssigneeRepository.findByCardId(cardId).stream()
+            .map(BoardCardAssigneeEntity::getUserId)
+            .toList()
+    );
+    List<UUID> nextAssigneeIds = normalizeAssigneeIds(assigneeIds);
     requireColumn(planId, columnId);
     validateLabel(planId, labelId);
-    validateAssignees(planId, assigneeIds);
+    validateAssignees(planId, nextAssigneeIds);
     validateSchedule(startAt, dueAt);
 
     if (!Objects.equals(card.getColumnId(), columnId)) {
@@ -230,7 +236,8 @@ public class BoardService {
     card.setDueAt(dueAt);
     boardCardRepository.save(card);
 
-    replaceAssignees(card.getId(), assigneeIds);
+    replaceAssignees(card.getId(), nextAssigneeIds);
+    appendAssigneeActivity(card.getId(), userId, previousAssigneeIds, nextAssigneeIds);
     calendarService.syncCardEvent(plan, card);
     return toCardView(card, userId, planAccessService.requireMemberRole(planId, userId));
   }
@@ -281,11 +288,7 @@ public class BoardService {
     planAccessService.requirePlanMember(planId, userId);
     requireCard(planId, cardId);
 
-    BoardCardCommentEntity comment = new BoardCardCommentEntity();
-    comment.setCardId(cardId);
-    comment.setAuthorUserId(userId);
-    comment.setMessage(requireText(message, "O comentario e obrigatorio."));
-    boardCardCommentRepository.save(comment);
+    BoardCardCommentEntity comment = createComment(cardId, userId, requireText(message, "O comentario e obrigatorio."), BoardCommentKind.USER_COMMENT);
     return toCommentView(comment);
   }
 
@@ -601,9 +604,53 @@ public class BoardService {
         comment.getId(),
         author == null ? "Usuario" : author.getFullName(),
         comment.getMessage(),
+        comment.getKind().name(),
         brazilDateTimeMapper.toDateTime(comment.getCreatedAt()),
         toUserSummary(author)
     );
+  }
+
+  private BoardCardCommentEntity createComment(UUID cardId, UUID authorUserId, String message, BoardCommentKind kind) {
+    BoardCardCommentEntity comment = new BoardCardCommentEntity();
+    comment.setCardId(cardId);
+    comment.setAuthorUserId(authorUserId);
+    comment.setMessage(message);
+    comment.setKind(kind == null ? BoardCommentKind.USER_COMMENT : kind);
+    return boardCardCommentRepository.save(comment);
+  }
+
+  private void appendAssigneeActivity(UUID cardId, UUID userId, List<UUID> previousAssigneeIds, List<UUID> nextAssigneeIds) {
+    List<UUID> previous = normalizeAssigneeIds(previousAssigneeIds);
+    List<UUID> next = normalizeAssigneeIds(nextAssigneeIds);
+
+    if (previous.equals(next)) {
+      return;
+    }
+
+    String message = buildAssigneeActivityMessage(previous, next);
+    if (!StringUtils.hasText(message)) {
+      return;
+    }
+
+    createComment(cardId, userId, message, BoardCommentKind.ASSIGNEE_ACTIVITY);
+  }
+
+  private String buildAssigneeActivityMessage(List<UUID> previousAssigneeIds, List<UUID> nextAssigneeIds) {
+    if (nextAssigneeIds == null || nextAssigneeIds.isEmpty()) {
+      return previousAssigneeIds.size() == 1
+          ? "removeu o responsavel"
+          : "removeu os responsaveis";
+    }
+
+    String assigneeNames = nextAssigneeIds.stream()
+        .map((assigneeId) -> userRepository.findById(assigneeId).orElse(null))
+        .filter(Objects::nonNull)
+        .map(UserEntity::getFullName)
+        .distinct()
+        .reduce((left, right) -> left + ", " + right)
+        .orElse("");
+
+    return "atribuiu a: " + (StringUtils.hasText(assigneeNames) ? assigneeNames : "Sem responsaveis");
   }
 
   private ChecklistView toChecklistView(BoardChecklistEntity checklist) {
@@ -724,6 +771,17 @@ public class BoardService {
     if (!assignees.isEmpty()) {
       boardCardAssigneeRepository.saveAll(assignees);
     }
+  }
+
+  private List<UUID> normalizeAssigneeIds(List<UUID> assigneeIds) {
+    if (assigneeIds == null || assigneeIds.isEmpty()) {
+      return List.of();
+    }
+
+    return assigneeIds.stream()
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
   }
 
   private List<UserEntity> resolveInboxRecipients(UUID planId, UUID cardId, List<UUID> recipientUserIds) {
@@ -860,7 +918,7 @@ public class BoardService {
   public record LabelView(UUID id, String name, String color) {
   }
 
-  public record CommentView(UUID id, String authorName, String message, ApiDateTimeDto createdAt, UserSummary author) {
+  public record CommentView(UUID id, String authorName, String message, String kind, ApiDateTimeDto createdAt, UserSummary author) {
   }
 
   public record ChecklistView(UUID id, String title, int position, List<ChecklistItemView> items) {

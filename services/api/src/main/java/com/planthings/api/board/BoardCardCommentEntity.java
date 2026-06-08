@@ -3,6 +3,8 @@ package com.planthings.api.board;
 import com.planthings.api.common.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
@@ -18,6 +20,10 @@ public class BoardCardCommentEntity extends BaseEntity {
 
   @Column(nullable = false, length = 4000)
   private String message;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private BoardCommentKind kind = BoardCommentKind.USER_COMMENT;
 
   public UUID getCardId() {
     return cardId;
@@ -41,5 +47,13 @@ public class BoardCardCommentEntity extends BaseEntity {
 
   public void setMessage(String message) {
     this.message = message;
+  }
+
+  public BoardCommentKind getKind() {
+    return kind;
+  }
+
+  public void setKind(BoardCommentKind kind) {
+    this.kind = kind;
   }
 }

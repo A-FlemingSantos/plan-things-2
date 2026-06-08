@@ -4,6 +4,8 @@ import { formatFileSize } from '../../../files/data/libraryRepository.js'
 import { createOffsetDateTime } from '@plan-things/shared-client/dates'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
+const USER_COMMENT_KIND = 'USER_COMMENT'
+const ASSIGNEE_ACTIVITY_KIND = 'ASSIGNEE_ACTIVITY'
 const DEFAULT_CARD_SCHEDULE = {
   selectedCalendarDay: 7,
   startEnabled: false,
@@ -165,8 +167,32 @@ function getTimestampMs(value) {
   return null
 }
 
+function buildInitialActivitySnapshot(card = {}) {
+  return {
+    createdAt: card.createdAt ?? null,
+    created: card.created ?? null,
+    memberIds: Array.isArray(card.memberIds) ? [...card.memberIds] : [],
+  }
+}
+
+function isAssigneeActivityComment(comment = {}) {
+  return comment.kind === ASSIGNEE_ACTIVITY_KIND
+}
+
+function isUserComment(comment = {}) {
+  return !isAssigneeActivityComment(comment)
+}
+
+function buildInlineAssignmentText(memberNames = []) {
+  if (memberNames.length === 0) {
+    return 'removeu os responsaveis · Agora'
+  }
+
+  return `atribuiu a: ${memberNames.join(', ')} · Agora`
+}
+
 function buildActivityFeedItems({
-  card,
+  activityBase,
   comments,
   activityEvents,
   currentUserName,
@@ -174,7 +200,7 @@ function buildActivityFeedItems({
   members,
   getMemberName,
 }) {
-  const cardCreatedMs = getTimestampMs(card.createdAt) ?? getTimestampMs(card.created) ?? 0
+  const cardCreatedMs = getTimestampMs(activityBase.createdAt) ?? getTimestampMs(activityBase.created) ?? 0
   const items = [
     {
       id: 'activity-created',
@@ -185,7 +211,7 @@ function buildActivityFeedItems({
     },
   ]
 
-  const initialMemberIds = Array.isArray(card.memberIds) ? card.memberIds : []
+  const initialMemberIds = Array.isArray(activityBase.memberIds) ? activityBase.memberIds : []
   if (initialMemberIds.length > 0) {
     const initialSummary = initialMemberIds
       .map((memberId) => members.find((member) => member.id === memberId))
@@ -207,12 +233,25 @@ function buildActivityFeedItems({
   })
 
   comments.forEach((comment, index) => {
+    const sortAt = getTimestampMs(comment.createdAtIso)
+      ?? getTimestampMs(comment.createdAt)
+      ?? cardCreatedMs + 1000 + index
+
+    if (isAssigneeActivityComment(comment)) {
+      items.push({
+        id: comment.id,
+        type: 'history',
+        sortAt,
+        actor: comment.authorName ?? currentUserName,
+        text: comment.time ? `${comment.text} · ${comment.time}` : comment.text,
+      })
+      return
+    }
+
     items.push({
       id: comment.id,
       type: 'comment',
-      sortAt: getTimestampMs(comment.createdAtIso)
-        ?? getTimestampMs(comment.createdAt)
-        ?? cardCreatedMs + 1000 + index,
+      sortAt,
       comment,
     })
   })
@@ -463,6 +502,7 @@ export default function CardModal({
   const [dueDate,  setDueDate]  = useState(card.dueDate)
   const [comment,  setComment]  = useState('')
   const [comments, setComments] = useState(card.comments)
+  const [activityBase, setActivityBase] = useState(() => buildInitialActivitySnapshot(card))
   const [activityEvents, setActivityEvents] = useState([])
   const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
   const [exiting,  setExiting]  = useState(false)
@@ -567,6 +607,7 @@ export default function CardModal({
   const dialogTitleId = `card-modal-title-${card.id}`
 
   useEffect(() => {
+    setActivityBase(buildInitialActivitySnapshot(card))
     setActivityEvents([])
   }, [card.id])
 
@@ -832,11 +873,14 @@ export default function CardModal({
       return
     }
 
+    if (isBackendDriven) {
+      return
+    }
+
     const nextMembersSummary = nextMemberIds
       .map((memberId) => members.find((member) => member.id === memberId))
       .filter(Boolean)
       .map(getMemberName)
-      .join(', ')
 
     setActivityEvents((prev) => [
       ...prev,
@@ -845,7 +889,7 @@ export default function CardModal({
         type: 'history',
         sortAt: Date.now(),
         actor: currentUserName,
-        text: `atribuiu a: ${nextMembersSummary || 'Você'} · Agora`,
+        text: buildInlineAssignmentText(nextMembersSummary),
       },
     ])
   }
@@ -870,6 +914,7 @@ export default function CardModal({
           author: currentUser?.id ?? null,
           authorId: currentUser?.id ?? null,
           authorName: currentUserName,
+          kind: USER_COMMENT_KIND,
           text: nextCommentText,
           time: 'Agora',
           createdAtIso: new Date().toISOString(),
@@ -1395,10 +1440,11 @@ export default function CardModal({
   const selectedDueDateSummary = dueEnabled && dueDateValue && (displayLabel || dueDate)
     ? dueDateValue
     : ''
-  const createdAtLabel = formatCardCreatedLabel(card.createdAt) ?? formatCardCreatedLabel(card.created) ?? 'Recentemente'
+  const createdAtLabel = formatCardCreatedLabel(activityBase.createdAt) ?? formatCardCreatedLabel(activityBase.created) ?? 'Recentemente'
+  const visibleComments = useMemo(() => comments.filter(isUserComment), [comments])
   const activityFeedItems = useMemo(
     () => buildActivityFeedItems({
-      card,
+      activityBase,
       comments,
       activityEvents,
       currentUserName,
@@ -1406,7 +1452,7 @@ export default function CardModal({
       members,
       getMemberName,
     }),
-    [card, comments, activityEvents, currentUserName, createdAtLabel, members],
+    [activityBase, comments, activityEvents, currentUserName, createdAtLabel, members],
   )
   const datesSummary = selectedDueDateSummary
     || (startEnabled && startDateValue ? `${startDateValue} → Vencimento` : 'Início → Vencimento')
@@ -2016,7 +2062,7 @@ export default function CardModal({
   useLayoutEffect(() => {
     const nextOverflowingComments = {}
 
-    comments.forEach((commentItem) => {
+    visibleComments.forEach((commentItem) => {
       const element = commentTextRefs.current[commentItem.id]
       if (!element) return
 
@@ -2028,7 +2074,7 @@ export default function CardModal({
     })
 
     setOverflowingComments(nextOverflowingComments)
-  }, [comments])
+  }, [visibleComments])
 
   useLayoutEffect(() => {
     const feed = activityFeedRef.current

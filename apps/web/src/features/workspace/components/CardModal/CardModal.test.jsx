@@ -3,6 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CardModal from './CardModal.jsx'
 
+vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx', () => ({
+  default: ({ fallback = 'PT', title = '' }) => (
+    <span aria-label={title || fallback}>
+      {fallback}
+    </span>
+  ),
+}))
+
 const styles = new Proxy({}, { get: (_, key) => String(key) })
 const icons = new Proxy({}, {
   get: (_, key) => () => <span aria-hidden="true">{String(key)}</span>,
@@ -260,6 +268,93 @@ describe('CardModal file picker positioning', () => {
     await waitFor(() => {
       expect(addComment).toHaveBeenCalledWith('card-1', 'Ola!')
     })
+  })
+
+  it('keeps the initial assignment history stable when the card props refresh', () => {
+    const baseCard = buildCard({
+      memberIds: ['member-1'],
+      createdAt: {
+        iso: '2026-06-07T20:00:00-03:00',
+        text: '07/06/2026 20:00',
+      },
+    })
+
+    const sharedProps = {
+      colTitle: 'Backlog',
+      onClose: () => {},
+      onUpdate: async () => {},
+      onDelete: async () => {},
+      labels: [],
+      members: [
+        { id: 'member-1', name: 'Arthur Fleming', initials: 'AF', color: '#4290da', email: 'arthur@example.com' },
+        { id: 'member-2', name: 'Beatriz Souza', initials: 'BS', color: '#ff6766', email: 'beatriz@example.com' },
+      ],
+      currentUser: { id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' },
+      calendarDays: [],
+      icons,
+      styles,
+      isBackendDriven: true,
+      planFiles: [],
+      libraryFiles: [],
+    }
+
+    const { rerender } = render(
+      <CardModal
+        card={baseCard}
+        {...sharedProps}
+      />
+    )
+
+    expect(screen.getByText(/atribuiu a: Arthur Fleming/i)).toBeInTheDocument()
+
+    rerender(
+      <CardModal
+        card={{
+          ...baseCard,
+          memberIds: ['member-2'],
+        }}
+        {...sharedProps}
+      />
+    )
+
+    expect(screen.getByText(/atribuiu a: Arthur Fleming/i)).toBeInTheDocument()
+    expect(screen.queryByText(/atribuiu a: Beatriz Souza/i)).not.toBeInTheDocument()
+  })
+
+  it('renders persisted assignee activity as inline history instead of a comment card', () => {
+    render(
+      <CardModal
+        card={buildCard({
+          comments: [
+            {
+              id: 'activity-1',
+              authorId: 'user-1',
+              authorName: 'Arthur Fleming',
+              kind: 'ASSIGNEE_ACTIVITY',
+              text: 'removeu os responsaveis',
+              time: '07/06/2026 22:00',
+              createdAtIso: '2026-06-07T22:00:00-03:00',
+            },
+          ],
+        })}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        icons={icons}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    expect(screen.getByText(/removeu os responsaveis/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Responder' })).not.toBeInTheDocument()
   })
 
   it('shows a new checklist immediately while the backend request is still pending', async () => {

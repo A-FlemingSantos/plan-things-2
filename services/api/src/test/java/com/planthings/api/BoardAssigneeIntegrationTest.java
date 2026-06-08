@@ -77,7 +77,100 @@ class BoardAssigneeIntegrationTest extends ApiIntegrationTestSupport {
                 """.formatted(columnId, userId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.assignees[0].id").value(userId))
-        .andExpect(jsonPath("$.data.dueAt.text").value("21/04/2026 14:00"));
+        .andExpect(jsonPath("$.data.dueAt.text").value("21/04/2026 14:00"))
+        .andExpect(jsonPath("$.data.comments").isEmpty());
+  }
+
+  @Test
+  void shouldPersistAssigneeActivityInCardComments() throws Exception {
+    JsonNode ownerSession = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Owner Activity",
+                  "email": "owner-activity@example.com",
+                  "password": "12345678"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    JsonNode memberSession = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Member Activity",
+                  "email": "member-activity@example.com",
+                  "password": "12345678"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String ownerToken = ownerSession.path("accessToken").asText();
+    String ownerUserId = ownerSession.path("user").path("id").asText();
+    String memberUserId = memberSession.path("user").path("id").asText();
+
+    JsonNode plan = createPlan(ownerToken, "Plano com historico de responsaveis");
+    String planId = plan.path("plan").path("id").asText();
+    String columnId = createBoardColumn(ownerToken, planId, "Tarefas");
+
+    PlanMemberEntity membership = new PlanMemberEntity();
+    membership.setPlanId(java.util.UUID.fromString(planId));
+    membership.setUserId(java.util.UUID.fromString(memberUserId));
+    membership.setRole(PlanMemberRole.MEMBER);
+    planMemberRepository.save(membership);
+
+    JsonNode createdCard = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card com historico"
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String cardId = createdCard.path("id").asText();
+
+    mockMvc.perform(patch("/api/plans/" + planId + "/board/cards/" + cardId)
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card com historico",
+                  "assigneeIds": ["%s"]
+                }
+                """.formatted(columnId, memberUserId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.comments[0].kind").value("ASSIGNEE_ACTIVITY"))
+        .andExpect(jsonPath("$.data.comments[0].author.id").value(ownerUserId))
+        .andExpect(jsonPath("$.data.comments[0].message").value("atribuiu a: Member Activity"));
+
+    mockMvc.perform(patch("/api/plans/" + planId + "/board/cards/" + cardId)
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "columnId": "%s",
+                  "title": "Card com historico",
+                  "assigneeIds": []
+                }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.comments[1].kind").value("ASSIGNEE_ACTIVITY"))
+        .andExpect(jsonPath("$.data.comments[1].message").value("removeu o responsavel"));
+
+    mockMvc.perform(get("/api/plans/" + planId + "/board")
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].cards[0].comments[0].kind").value("ASSIGNEE_ACTIVITY"))
+        .andExpect(jsonPath("$.data.columns[0].cards[0].comments[0].message").value("atribuiu a: Member Activity"))
+        .andExpect(jsonPath("$.data.columns[0].cards[0].comments[1].kind").value("ASSIGNEE_ACTIVITY"))
+        .andExpect(jsonPath("$.data.columns[0].cards[0].comments[1].message").value("removeu o responsavel"));
   }
 
   @Test

@@ -14,7 +14,9 @@ function mapBoardComment(comment) {
     authorName: comment.authorName,
     authorAvatarUrl: author?.avatarUrl ?? null,
     text: comment.message,
+    kind: comment.kind ?? 'USER_COMMENT',
     time: comment.createdAt?.text ?? 'Agora',
+    createdAtIso: comment.createdAt?.iso ?? null,
   }
 }
 

@@ -185,7 +185,10 @@ describe('useBoardColumns card saves without board reload', () => {
       id: 'comment-1',
       authorName: 'Arthur Fleming',
       message: 'Novo comentário',
-      createdAt: { text: 'Agora' },
+      createdAt: {
+        iso: '2026-06-07T21:38:00-03:00',
+        text: '07/06/2026 21:38',
+      },
       author: {
         id: 'user-1',
         avatarUrl: 'https://example.com/avatar.png',
@@ -219,12 +222,16 @@ describe('useBoardColumns card saves without board reload', () => {
       id: 'comment-1',
       authorId: 'user-1',
       authorName: 'Arthur Fleming',
+      kind: 'USER_COMMENT',
       text: 'Novo comentário',
+      createdAtIso: '2026-06-07T21:38:00-03:00',
     })
     expect(boardState[0].cards[0].comments).toEqual([
       expect.objectContaining({
         id: 'comment-1',
+        kind: 'USER_COMMENT',
         text: 'Novo comentário',
+        createdAtIso: '2026-06-07T21:38:00-03:00',
       }),
     ])
   })

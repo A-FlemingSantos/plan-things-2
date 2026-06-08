@@ -569,6 +569,7 @@ public class SettingsExportService {
         "id", comment.getId(),
         "cardId", comment.getCardId(),
         "authorUserId", comment.getAuthorUserId(),
+        "kind", comment.getKind() == null ? null : comment.getKind().name(),
         "message", comment.getMessage(),
         "createdAt", toIso(comment.getCreatedAt()),
         "updatedAt", toIso(comment.getUpdatedAt())

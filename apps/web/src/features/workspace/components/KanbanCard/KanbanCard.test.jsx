@@ -105,4 +105,18 @@ describe('KanbanCard drag-and-drop', () => {
     expect(screen.getByLabelText('Checklist 50% concluída')).toBeInTheDocument()
     expect(screen.getByLabelText('Entrega Amanhã')).toBeInTheDocument()
   })
+
+  it('counts only user comments in the card metadata', () => {
+    renderCard({
+      card: buildCard({
+        comments: [
+          { id: 'comment-1', text: 'Comentario', kind: 'USER_COMMENT' },
+          { id: 'activity-1', text: 'atribuiu a: Arthur', kind: 'ASSIGNEE_ACTIVITY' },
+        ],
+      }),
+    })
+
+    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.queryByText('2')).not.toBeInTheDocument()
+  })
 })

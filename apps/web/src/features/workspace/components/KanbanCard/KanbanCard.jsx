@@ -1,6 +1,10 @@
 import { memo } from 'react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 
+function isUserComment(comment = {}) {
+  return comment.kind !== 'ASSIGNEE_ACTIVITY'
+}
+
 function getDescriptionPreview(description) {
   if (!description?.trim()) return ''
   const firstLine = description.trim().split('\n')[0].trim()
@@ -30,7 +34,7 @@ function KanbanCard({
 }) {
   const label = labels.find((item) => item.id === card.labelId)
   const descriptionPreview = getDescriptionPreview(card.description)
-  const comments = card.comments ?? []
+  const comments = (card.comments ?? []).filter(isUserComment)
   const attachments = card.attachments ?? []
   const [activeChecklist] = Array.isArray(card.checklists) ? card.checklists : []
   const checklistItems = activeChecklist?.items ?? []
