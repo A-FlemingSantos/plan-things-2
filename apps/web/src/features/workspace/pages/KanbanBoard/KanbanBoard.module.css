@@ -28,7 +28,7 @@
   --kanban-neutral-accent: var(--color-white);
   --kanban-neutral-accent-foreground: var(--color-black);
   --board-base-bg: #1f1f1f;
-  --board-canvas-bg: #111111;
+  --board-canvas-bg: #0d0d0d;
   --board-column-bg: #161616;
 }
 
