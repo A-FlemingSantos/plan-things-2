@@ -122,20 +122,22 @@
 
 /* ── Board header ── */
 .boardHeader {
+  --board-header-block-padding: 6px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  padding: var(--board-section-padding) var(--board-inline-padding);
+  padding: var(--board-header-block-padding) var(--board-inline-padding);
   flex-shrink: 0;
-  gap: 14px;
+  gap: 8px;
   flex-wrap: wrap;
   background: var(--board-canvas-bg);
+  border-bottom: 1px solid var(--border-1);
   position: static;
   top: auto;
   z-index: auto;
 }
 
-.boardHeaderLeft { display: flex; flex-direction: column; gap: 4px; }
+.boardHeaderLeft { display: flex; flex-direction: column; gap: 2px; }
 
 .boardBreadcrumb {
   display: flex;
@@ -152,7 +154,7 @@
 .boardTitleRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .boardIcon {
@@ -162,33 +164,34 @@
 }
 
 .boardTitle {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: var(--font-weight-regular);
-  letter-spacing: -.03em;
+  letter-spacing: -.025em;
   color: var(--text-1);
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .boardCardBadge {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-3);
   background: var(--surface-3);
-  padding: 1px 7px;
+  padding: 1px 6px;
   border-radius: 99px;
   font-weight: var(--font-weight-regular);
+  line-height: 1.2;
 }
 
 .boardHeaderRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .boardHeaderActions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: nowrap;
   margin-left: auto;
 }
@@ -209,10 +212,10 @@
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
-  height: 30px;
-  padding: 0 10px;
+  height: 24px;
+  padding: 0 7px;
   position: relative;
   color: var(--text-2);
   background: transparent;
@@ -269,8 +272,8 @@
 }
 
 .boardHeaderTitleToggleIcon svg {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   display: block;
 }
 
@@ -279,8 +282,8 @@
 }
 
 .boardHeaderTitleToggleChevron svg {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   display: block;
   transform: rotate(90deg);
   transition: transform var(--transition-fast);
@@ -384,8 +387,8 @@
 }
 
 .boardHeaderCompactIconButton {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -396,8 +399,8 @@
 }
 
 .boardHeaderCompactIconButton svg {
-  width: 17px;
-  height: 17px;
+  width: 14px;
+  height: 14px;
   display: block;
   flex-shrink: 0;
 }
@@ -411,11 +414,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 13px 0 11px;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px 0 8px;
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
   color: var(--text-inverse);
@@ -437,8 +440,8 @@
 }
 
 .boardHeaderShareIcon {
-  width: 17px;
-  height: 17px;
+  width: 14px;
+  height: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6337,7 +6340,10 @@
     --board-inline-padding: 10px;
     --board-section-padding: 10px;
   }
-  .boardHeader { gap: 10px; }
+  .boardHeader {
+    --board-header-block-padding: 5px;
+    gap: 8px;
+  }
   .cmFilePicker {
     width: min(312px, calc(100vw - 20px));
     max-width: min(312px, calc(100vw - 20px));
@@ -6405,12 +6411,12 @@
     gap: 6px;
   }
   .boardTitle {
-    font-size: 17px;
-    line-height: 1.15;
+    font-size: 14px;
+    line-height: 1.1;
   }
   .boardCardBadge {
-    font-size: 10px;
-    padding: 2px 7px;
+    font-size: 9px;
+    padding: 1px 6px;
   }
   .board  { padding-bottom: 92px; gap: 8px; }
   .boardViewToolbar {
@@ -6576,18 +6582,21 @@
     --board-inline-padding: 8px;
     --board-section-padding: 8px;
   }
-  .boardHeader { gap: 10px; }
-  .boardHeaderActions {
+  .boardHeader {
+    --board-header-block-padding: 4px;
     gap: 6px;
+  }
+  .boardHeaderActions {
+    gap: 4px;
   }
   .boardHeaderActionCluster {
     width: 100%;
     justify-content: space-between;
-    padding: 2px 4px;
+    padding: 0 2px;
   }
   .boardHeaderCompactIconButton {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
   }
   .boardHeaderShareButton {
     flex: 1 1 auto;
@@ -6597,7 +6606,7 @@
     gap: 4px;
   }
   .boardTitle {
-    font-size: 16px;
+    font-size: 13px;
   }
   .board {
     padding: 12px 12px 88px;

@@ -18,6 +18,7 @@ export default function BoardHeaderActions({
       <MemberAvatarStack
         members={members}
         className={styles.boardHeaderMembersStack}
+        size="compact"
         isLoading={membersLoading}
         placeholderCount={membersPlaceholderCount}
       />
