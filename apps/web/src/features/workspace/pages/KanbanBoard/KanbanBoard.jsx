@@ -2355,10 +2355,13 @@ export default function KanbanBoard() {
       <div className={styles.boardAccentScope} style={boardAccentStyle}>
       <ProductAppShell
         styles={styles}
-        contentClassName={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
+        contentClassName={styles.boardPageShell}
       >
-        <div className={boardMainClassName} style={boardCoverStyle}>
         <WorkspaceHeader compact />
+        <div
+          className={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
+        >
+        <div className={boardMainClassName} style={boardCoverStyle}>
         <section className={styles.boardBody}>
           <div className={styles.boardBodyContent}>
             <header className={styles.boardHeader}>
@@ -2707,6 +2710,7 @@ export default function KanbanBoard() {
 
         {isInboxPanelMounted && renderInboxPanel()}
         {isPlannerPanelMounted && renderPlannerPanel()}
+        </div>
       </ProductAppShell>
 
       {/* ── Card modal ── */}

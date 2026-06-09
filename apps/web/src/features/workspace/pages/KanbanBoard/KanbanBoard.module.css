@@ -33,12 +33,29 @@
 }
 
 /* ════════════════════════════════════════
+   BOARD PAGE SHELL
+════════════════════════════════════════ */
+.boardPageShell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+  width: 100%;
+}
+
+.boardPageShell > :first-child {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+/* ════════════════════════════════════════
    BOARD WRAPPER
 ════════════════════════════════════════ */
 .boardWrapper {
   display: flex;
   gap: 0;
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
   overflow: hidden;
   background: var(--board-canvas-bg);
@@ -49,11 +66,17 @@
   align-items: stretch;
 }
 
+.boardWrapperPlannerMounted .boardMain,
+.boardWrapperPlannerMounted .plannerPanel {
+  align-self: stretch;
+  min-height: 0;
+}
+
 .boardMain {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  min-height: 100vh;
+  min-height: 0;
   min-width: 0;
   overflow: hidden;
   position: relative;
@@ -70,6 +93,7 @@
   min-height: 0;
   min-width: 0;
   background: var(--board-canvas-bg);
+  transition: border-radius 180ms ease, border-color 180ms ease;
 }
 
 .boardBodyContent {
@@ -87,7 +111,6 @@
 }
 
 .boardWrapperPlannerMounted .boardMain {
-  min-height: calc(100vh - 24px);
   border: 1px solid var(--border-1);
   border-radius: 8px;
   overflow: hidden;
@@ -1427,12 +1450,14 @@
 }
 
 .plannerPanel {
-  position: sticky;
-  top: 12px;
+  position: relative;
   z-index: 20;
   flex: 0 0 420px;
   width: 420px;
-  height: calc(100vh - 24px);
+  align-self: stretch;
+  height: auto;
+  max-height: none;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
