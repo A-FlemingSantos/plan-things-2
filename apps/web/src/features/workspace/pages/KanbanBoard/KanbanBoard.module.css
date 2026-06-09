@@ -27,9 +27,9 @@
 [data-theme='dark'] .boardAccentScope {
   --kanban-neutral-accent: var(--color-white);
   --kanban-neutral-accent-foreground: var(--color-black);
-  --board-base-bg: #111111;
+  --board-base-bg: #1f1f1f;
   --board-canvas-bg: #111111;
-  --board-column-bg: var(--surface-1);
+  --board-column-bg: #161616;
 }
 
 /* ════════════════════════════════════════
