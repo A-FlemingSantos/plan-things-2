@@ -337,7 +337,7 @@ export default function WorkspaceHeader({
       centerContent={centerContent}
       sticky={sticky}
       tone="solid"
-      titleSize="medium"
+      titleSize="small"
       className={headerClassName}
       actions={(
         <div className={styles.workspaceHeaderActions}>

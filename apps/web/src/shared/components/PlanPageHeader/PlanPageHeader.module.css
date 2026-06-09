@@ -69,6 +69,11 @@
   letter-spacing: -0.03em;
 }
 
+.titleSmall {
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+
 .titleLarge {
   font-size: 24px;
   letter-spacing: -0.04em;
@@ -192,6 +197,10 @@
 
   .titleMedium {
     font-size: 18px;
+  }
+
+  .titleSmall {
+    font-size: 15px;
   }
 
   .meta {

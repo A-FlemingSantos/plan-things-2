@@ -25,7 +25,11 @@ export default function PlanPageHeader({
 
   const titleClassName = [
     styles.title,
-    titleSize === 'large' ? styles.titleLarge : styles.titleMedium,
+    titleSize === 'large'
+      ? styles.titleLarge
+      : titleSize === 'small'
+        ? styles.titleSmall
+        : styles.titleMedium,
     titleContent ? styles.titleCustom : '',
   ].join(' ')
 
