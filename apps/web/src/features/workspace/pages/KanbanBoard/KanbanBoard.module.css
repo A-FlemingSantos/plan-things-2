@@ -48,6 +48,8 @@
   flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
   padding-left: 12px !important;
   padding-right: 12px !important;
 }
@@ -63,7 +65,7 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  padding: 12px;
+  padding: 0 12px 12px;
   background: var(--app-bg);
   transition: gap 220ms ease, padding 220ms ease;
 }
@@ -6283,10 +6285,11 @@
 
 @media (max-width: 1024px) {
   .boardPageShell > :first-child {
+    padding-top: 8px !important;
     padding-left: 10px !important;
     padding-right: 10px !important;
   }
-  .boardWrapper { padding: 10px; }
+  .boardWrapper { padding: 0 10px 10px; }
   .boardWrapperWithPlanner { gap: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }
   .plannerPanelClosing { flex-basis: 0; width: 0; }
@@ -6320,11 +6323,12 @@
     flex-direction: column;
   }
   .boardPageShell > :first-child {
+    padding-top: 8px !important;
     padding-left: 10px !important;
     padding-right: 10px !important;
   }
   .boardWrapper {
-    padding: 10px;
+    padding: 0 10px 10px;
   }
   .boardWrapperWithPlanner {
     gap: 10px;
