@@ -53,20 +53,18 @@
 ════════════════════════════════════════ */
 .boardWrapper {
   display: flex;
+  align-items: stretch;
   gap: 0;
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  padding: 12px;
   background: var(--board-canvas-bg);
   transition: gap 220ms ease, padding 220ms ease;
 }
 
-.boardWrapperPlannerMounted {
-  align-items: stretch;
-}
-
-.boardWrapperPlannerMounted .boardMain,
+.boardWrapper > .boardMain,
 .boardWrapperPlannerMounted .plannerPanel {
   align-self: stretch;
   min-height: 0;
@@ -80,6 +78,8 @@
   min-width: 0;
   overflow: hidden;
   position: relative;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
   background: var(--board-canvas-bg);
   transition: border-radius 180ms ease, border-color 180ms ease;
 }
@@ -110,15 +110,8 @@
   background: var(--board-canvas-bg);
 }
 
-.boardWrapperPlannerMounted .boardMain {
-  border: 1px solid var(--border-1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
 .boardWrapperWithPlanner {
   gap: 12px;
-  padding: 12px;
 }
 
 /* ── Board header ── */
@@ -6285,7 +6278,8 @@
 }
 
 @media (max-width: 1024px) {
-  .boardWrapperWithPlanner { gap: 10px; padding: 10px; }
+  .boardWrapper { padding: 10px; }
+  .boardWrapperWithPlanner { gap: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }
   .plannerPanelClosing { flex-basis: 0; width: 0; }
   .boardBody {
@@ -6317,9 +6311,11 @@
   .boardWrapperPlannerMounted {
     flex-direction: column;
   }
+  .boardWrapper {
+    padding: 10px;
+  }
   .boardWrapperWithPlanner {
     gap: 10px;
-    padding: 10px;
   }
   .boardBody {
     --board-inline-padding: 10px;
