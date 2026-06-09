@@ -93,6 +93,8 @@
 .boardBody {
   --board-inline-padding: 20px;
   --board-section-padding: 12px;
+  --board-canvas-top-inset: 6px;
+  --board-canvas-top-padding: calc(var(--board-section-padding) + var(--board-canvas-top-inset));
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -680,7 +682,7 @@
 .board {
   display: flex;
   gap: 14px;
-  padding: var(--board-section-padding) var(--board-inline-padding) 112px;
+  padding: var(--board-canvas-top-padding) var(--board-inline-padding) 112px;
   overflow-x: auto;
   flex: 1;
   align-items: flex-start;
@@ -6609,7 +6611,7 @@
     font-size: 13px;
   }
   .board {
-    padding: 12px 12px 88px;
+    padding: var(--board-canvas-top-padding) 12px 88px;
   }
   .boardViewToolbar {
     width: min(316px, calc(100vw - 20px));
