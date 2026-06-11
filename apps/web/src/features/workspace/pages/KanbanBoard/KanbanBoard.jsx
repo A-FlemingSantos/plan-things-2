@@ -507,9 +507,10 @@ export default function KanbanBoard() {
     planId,
     buildPath: buildWorkspaceBoardPath,
   })
-  const [boardViewMode, setBoardViewMode] = useState(() => (
-    location.state?.boardViewMode === 'calendar' ? 'calendar' : 'board'
-  ))
+  const [boardViewMode, setBoardViewMode] = useState(() => {
+    if (location.state?.boardViewMode === 'calendar') return 'calendar'
+    return 'kanban'
+  })
   const [activeCard,setActiveCard]= useState(null)   // { card, colTitle }
   const [addingCol, setAddingCol] = useState(false)
   const [newColTitle,setNewColTitle] = useState('')
@@ -1104,7 +1105,7 @@ export default function KanbanBoard() {
   }
 
   const showBoardView = () => {
-    setBoardViewMode('board')
+    setBoardViewMode('kanban')
     closeFloatingPanel()
   }
 
@@ -1997,7 +1998,14 @@ export default function KanbanBoard() {
         <div className={boardMainClassName} style={boardCoverStyle}>
         <section className={styles.boardBody}>
           <div className={styles.boardBodyContent}>
-            <BoardHeader planName={activePlan?.name ?? 'Plano'} />
+            <BoardHeader
+              planName={activePlan?.name ?? 'Plano'}
+              viewMode={boardViewMode === 'calendar' ? 'kanban' : boardViewMode}
+              onViewModeChange={(nextViewMode) => {
+                setBoardViewMode(nextViewMode)
+                closeFloatingPanel()
+              }}
+            />
 
             {isBoardLoading ? (
               <BoardLoadingState styles={styles} />
@@ -2016,6 +2024,21 @@ export default function KanbanBoard() {
               </section>
             ) : boardViewMode === 'calendar' ? (
               <CalendarWorkspaceView embedded />
+            ) : boardViewMode === 'timeline' ? (
+              <section className={styles.boardStatusPanel} role="status" aria-live="polite">
+                <p className={styles.boardStatusTitle}>Timeline</p>
+                <p className={styles.boardStatusText}>Este modo de visualização estará disponível em breve.</p>
+              </section>
+            ) : boardViewMode === 'bugtrack' ? (
+              <section className={styles.boardStatusPanel} role="status" aria-live="polite">
+                <p className={styles.boardStatusTitle}>Bugtrack</p>
+                <p className={styles.boardStatusText}>Este modo de visualização estará disponível em breve.</p>
+              </section>
+            ) : boardViewMode === 'actions' ? (
+              <section className={styles.boardStatusPanel} role="status" aria-live="polite">
+                <p className={styles.boardStatusTitle}>Actions</p>
+                <p className={styles.boardStatusText}>Este modo de visualização estará disponível em breve.</p>
+              </section>
             ) : (
               <div className={styles.board}>
                 {columns.map(col => (
@@ -2169,8 +2192,8 @@ export default function KanbanBoard() {
 
           <button
             type="button"
-            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-current={boardViewMode === 'board' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? 'page' : undefined}
+            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'kanban' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
+            aria-current={boardViewMode === 'kanban' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? 'page' : undefined}
             title="Quadro"
             onClick={showBoardView}
           >

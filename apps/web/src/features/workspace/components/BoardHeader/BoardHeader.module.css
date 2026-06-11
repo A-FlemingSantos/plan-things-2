@@ -14,25 +14,170 @@
 .left {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
-.planIcon {
+.viewMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.viewIconButton {
+  all: unset;
+  box-sizing: border-box;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 28px 0fr;
+  align-items: center;
+  overflow: hidden;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    grid-template-columns 0.22s ease,
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.viewIconButtonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.viewIconButtonLabel {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.viewIconButtonMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding-right: 0;
+  transition:
+    opacity 0.18s ease,
+    padding-right 0.22s ease;
+}
+
+.viewIconButtonChevron {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--text-2);
+  color: var(--text-3);
+  transition: transform var(--transition-fast);
+}
+
+.viewIconButtonOpen .viewIconButtonChevron {
+  transform: rotate(180deg);
+}
+
+.viewIconButton:hover,
+.viewIconButton:focus-visible,
+.viewIconButtonOpen {
+  grid-template-columns: 28px 1fr;
+  background: color-mix(in srgb, var(--surface-2) 96%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--border-2) 92%, var(--surface-1));
+  color: var(--text-1);
+}
+
+.viewIconButton:hover .viewIconButtonMeta,
+.viewIconButton:focus-visible .viewIconButtonMeta,
+.viewIconButtonOpen .viewIconButtonMeta {
+  opacity: 1;
+  padding-right: 6px;
+}
+
+.viewIconButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.titleDivider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-2);
+  flex-shrink: 0;
 }
 
 .planName {
   margin: 0;
+  min-width: 0;
   font-size: 15px;
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.025em;
   color: var(--text-1);
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viewMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(240px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--border-1) 92%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-1) 96%, var(--surface-2));
+  box-shadow: var(--shadow-lg);
+  z-index: 45;
+}
+
+.viewMenuItem {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.viewMenuItem:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.viewMenuItemActive {
+  background: color-mix(in srgb, var(--surface-2) 94%, var(--surface-1));
+  color: var(--text-1);
+}
+
+.viewMenuItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+
+.viewMenuItemLabel {
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -84,6 +229,25 @@
   .header {
     --board-header-block-padding: 4px;
     gap: 6px;
+  }
+
+  .left {
+    gap: 6px;
+  }
+
+  .viewIconButtonIcon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .viewIconButton {
+    grid-template-columns: 26px 0fr;
+  }
+
+  .viewIconButton:hover,
+  .viewIconButton:focus-visible,
+  .viewIconButtonOpen {
+    grid-template-columns: 26px 1fr;
   }
 
   .iconButton {
