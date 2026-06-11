@@ -9,6 +9,7 @@ import {
   Funnel,
   Globe,
   Route,
+  Share,
 } from 'lucide-react'
 import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import styles from './BoardHeader.module.css'
@@ -23,10 +24,13 @@ export const BOARD_VIEW_MODES = [
   { id: 'actions', label: 'Actions', Icon: Route },
 ]
 
-const ACTION_ITEMS = [
+const LEADING_ACTION_ITEMS = [
   { id: 'blocks', Icon: Blocks, label: 'Blocos' },
   { id: 'globe', Icon: Globe, label: 'Globo' },
   { id: 'funnel', Icon: Funnel, label: 'Filtros' },
+]
+
+const TRAILING_ACTION_ITEMS = [
   { id: 'more', Icon: EllipsisVertical, label: 'Mais opções' },
 ]
 
@@ -137,7 +141,21 @@ export default function BoardHeader({
             <span className={styles.actionsDivider} aria-hidden="true" />
           </>
         ) : null}
-        {ACTION_ITEMS.map(({ id, Icon, label }) => (
+        {LEADING_ACTION_ITEMS.map(({ id, Icon, label }) => (
+          <button
+            key={id}
+            type="button"
+            className={styles.iconButton}
+            aria-label={label}
+          >
+            <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          </button>
+        ))}
+        <button type="button" className={styles.shareButton}>
+          <Share size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          <span>Compartilhar</span>
+        </button>
+        {TRAILING_ACTION_ITEMS.map(({ id, Icon, label }) => (
           <button
             key={id}
             type="button"
