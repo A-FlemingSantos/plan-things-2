@@ -122,23 +122,6 @@
   gap: 12px;
 }
 
-/* ── Board header ── */
-.boardHeader {
-  --board-header-block-padding: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--board-header-block-padding) var(--board-inline-padding);
-  flex-shrink: 0;
-  gap: 8px;
-  flex-wrap: wrap;
-  background: var(--board-canvas-bg);
-  border-bottom: 1px solid var(--border-1);
-  position: static;
-  top: auto;
-  z-index: auto;
-}
-
 .planMemberAvatar {
   width: 28px;
   height: 28px;
@@ -5602,10 +5585,6 @@
     --board-inline-padding: 10px;
     --board-section-padding: 10px;
   }
-  .boardHeader {
-    --board-header-block-padding: 5px;
-    gap: 8px;
-  }
   .cmFilePicker {
     width: min(312px, calc(100vw - 20px));
     max-width: min(312px, calc(100vw - 20px));
@@ -5794,10 +5773,6 @@
   .boardBody {
     --board-inline-padding: 8px;
     --board-section-padding: 8px;
-  }
-  .boardHeader {
-    --board-header-block-padding: 4px;
-    gap: 6px;
   }
   .board {
     padding: var(--board-canvas-top-padding) 12px 88px;

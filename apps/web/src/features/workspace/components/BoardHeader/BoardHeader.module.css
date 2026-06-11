@@ -1,0 +1,97 @@
+.header {
+  --board-header-block-padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--board-header-block-padding) var(--board-inline-padding);
+  flex-shrink: 0;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--board-canvas-bg);
+  border-bottom: 1px solid var(--border-1);
+}
+
+.left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.planIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.planName {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.025em;
+  color: var(--text-1);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.iconButton {
+  all: unset;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-1);
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.iconButton:hover {
+  background: var(--hover);
+  transform: translateY(-1px);
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    --board-header-block-padding: 5px;
+    gap: 8px;
+  }
+
+  .planName {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .header {
+    --board-header-block-padding: 4px;
+    gap: 6px;
+  }
+
+  .iconButton {
+    width: 24px;
+    height: 24px;
+  }
+
+  .planName {
+    font-size: 13px;
+  }
+}

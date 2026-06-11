@@ -8,6 +8,7 @@ import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/Works
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
+import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
 import KanbanColumn from '../../components/KanbanColumn/KanbanColumn.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import { useBoardColumns } from '../../hooks/useBoardColumns.js'
@@ -1996,7 +1997,7 @@ export default function KanbanBoard() {
         <div className={boardMainClassName} style={boardCoverStyle}>
         <section className={styles.boardBody}>
           <div className={styles.boardBodyContent}>
-            <header className={styles.boardHeader} />
+            <BoardHeader planName={activePlan?.name ?? 'Plano'} />
 
             {isBoardLoading ? (
               <BoardLoadingState styles={styles} />
