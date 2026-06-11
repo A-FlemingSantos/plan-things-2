@@ -79,14 +79,6 @@ describe('ConversationToolbar', () => {
       expect(screen.queryByText('5')).not.toBeInTheDocument()
     })
 
-    it('shows mock participant avatars in the toolbar', () => {
-      renderToolbar()
-
-      expect(screen.getByTitle('Ana Silva')).toBeInTheDocument()
-      expect(screen.getByTitle('Maria Klink')).toBeInTheDocument()
-      expect(screen.getByTitle('Tom Kobayashi')).toBeInTheDocument()
-      expect(screen.getByTitle('Sara Ribeiro')).toBeInTheDocument()
-    })
   })
 
   describe('expand/collapse', () => {

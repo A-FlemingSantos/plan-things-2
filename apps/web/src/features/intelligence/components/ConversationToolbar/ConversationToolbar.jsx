@@ -2,7 +2,6 @@ import { useId, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
-import MemberAvatarStack from '../../../../shared/components/MemberAvatarStack/MemberAvatarStack.jsx'
 import Toggle from '../../../../shared/components/Toggle/Toggle.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import styles from './ConversationToolbar.module.css'
@@ -137,13 +136,6 @@ const MOCK_CONNECTORS = [
 ]
 
 const DEFAULT_ACTIVE_CONNECTORS = []
-
-const MOCK_CONVERSATION_MEMBERS = [
-  { id: 'm1', initials: 'AS', color: '#000', name: 'Ana Silva' },
-  { id: 'm2', initials: 'MK', color: '#d4aef1', name: 'Maria Klink' },
-  { id: 'm3', initials: 'TK', color: '#4290da', name: 'Tom Kobayashi' },
-  { id: 'm4', initials: 'SR', color: '#0f703a', name: 'Sara Ribeiro' },
-]
 
 function ChevronIcon({ open = false }) {
   return (
@@ -451,11 +443,6 @@ export default function ConversationToolbar({
           <span className={styles.toolbarScopeLabel}>{scopeLabel}</span>
         </span>
         <span className={styles.toolbarIndicators} aria-label="Indicadores da conversa">
-          <MemberAvatarStack
-            members={MOCK_CONVERSATION_MEMBERS}
-            className={styles.toolbarAvatarStack}
-            size="compact"
-          />
           <span className={styles.indicator} title="Itens carregados">{loadedItemCount} itens</span>
         </span>
         <ChevronIcon open={isExpanded} />
