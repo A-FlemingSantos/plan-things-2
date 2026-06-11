@@ -10,6 +10,7 @@ import {
   Globe,
   Route,
 } from 'lucide-react'
+import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import styles from './BoardHeader.module.css'
 
 const ICON_SIZE = 15
@@ -33,6 +34,7 @@ export default function BoardHeader({
   planName = 'Plano',
   viewMode = 'kanban',
   onViewModeChange,
+  members = [],
 }) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
   const viewMenuId = useId()
@@ -129,6 +131,12 @@ export default function BoardHeader({
       </div>
 
       <div className={styles.actions}>
+        {members.length > 0 ? (
+          <>
+            <MemberAvatarStack members={members} size={32} overlap={11} />
+            <span className={styles.actionsDivider} aria-hidden="true" />
+          </>
+        ) : null}
         {ACTION_ITEMS.map(({ id, Icon, label }) => (
           <button
             key={id}

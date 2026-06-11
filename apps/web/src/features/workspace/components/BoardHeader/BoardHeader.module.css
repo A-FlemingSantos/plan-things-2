@@ -7,6 +7,9 @@
   flex-shrink: 0;
   gap: 8px;
   flex-wrap: wrap;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
   background: var(--board-canvas-bg);
   border-bottom: 1px solid var(--border-1);
 }
@@ -230,9 +233,19 @@
 }
 
 .actions {
+  --actions-divider-gap: 12px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.actionsDivider {
+  width: 1px;
+  height: 16px;
+  margin-inline: var(--actions-divider-gap);
+  background: var(--border-2);
   flex-shrink: 0;
 }
 
@@ -280,6 +293,10 @@
   .left {
     --title-divider-gap: 10px;
     --view-icon-padding-inline: 5px;
+  }
+
+  .actions {
+    --actions-divider-gap: 10px;
   }
 
   .viewIconButton {

@@ -2005,6 +2005,7 @@ export default function KanbanBoard() {
                 setBoardViewMode(nextViewMode)
                 closeFloatingPanel()
               }}
+              members={planMembers}
             />
 
             {isBoardLoading ? (
