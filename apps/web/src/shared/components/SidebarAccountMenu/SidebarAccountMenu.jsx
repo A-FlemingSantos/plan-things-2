@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
+  Check,
+  ChevronRight,
   CircleFadingArrowUp,
   LogOut,
+  Plus,
   Settings,
   User,
 } from 'lucide-react'
@@ -27,18 +30,6 @@ const SUBMENU_MARGIN = 12
 
 const MENU_ITEM_ICON_SIZE = 14
 const MENU_ITEM_ICON_STROKE = 1.75
-
-function AddUserIcon() {
-  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3.25v9.5M3.25 8h9.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
-}
-
-function ChevronRightIcon() {
-  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5L8.5 7 5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-}
-
-function CheckIcon() {
-  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5l2.2 2.2L11 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-}
 
 const MENU_ITEMS = [
   { id: 'profile', label: 'Meu perfil', Icon: User, danger: false },
@@ -458,7 +449,7 @@ export default function SidebarAccountMenu({
                 ].filter(Boolean).join(' ')}
                 aria-hidden="true"
               >
-                <ChevronRightIcon />
+                <ChevronRight size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
               </span>
             </button>
 
@@ -539,7 +530,7 @@ export default function SidebarAccountMenu({
                       ].filter(Boolean).join(' ')}
                       aria-hidden="true"
                     >
-                      <CheckIcon />
+                      <Check size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
                     </span>
                   </button>
                 )
@@ -554,7 +545,9 @@ export default function SidebarAccountMenu({
                 disabled={switchingAccountId !== null}
                 onClick={handleOpenAddAccount}
               >
-                <span className={[menuStyles.icon, menuStyles.addAccountIcon].join(' ')}><AddUserIcon /></span>
+                <span className={[menuStyles.icon, menuStyles.addAccountIcon].join(' ')}>
+                  <Plus size={16} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
+                </span>
                 Adicionar conta
               </button>
 
