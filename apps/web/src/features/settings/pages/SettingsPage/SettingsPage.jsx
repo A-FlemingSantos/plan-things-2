@@ -1,4 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  BellRing,
+  Blocks,
+  LayoutDashboard,
+  Settings2,
+  ShieldCheck,
+  User,
+} from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js'
@@ -40,12 +48,6 @@ const Ic = {
   Files:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
   Chevron:  () => <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Check:    () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l2.5 2.5 5.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  User:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M3 14c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-  Globe:    () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M8 2c-2 2.2-2 9.8 0 12M8 2c2 2.2 2 9.8 0 12M2.5 8h11" stroke="currentColor" strokeWidth="1.3"/></svg>,
-  Building: () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M6 14V9h4v5" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 6h1M9.5 6h1M5.5 8h1M9.5 8h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-  Link:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.5 9.5a3 3 0 0 0 4.24.12l1.5-1.5a3 3 0 0 0-4.24-4.24L7 4.88" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M9.5 6.5a3 3 0 0 0-4.24-.12L3.76 7.88a3 3 0 0 0 4.24 4.24L9 11.12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-  Bell:     () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a5 5 0 0 0-5 5v3l-1 1.5h12L13 10V7a5 5 0 0 0-5-5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.3"/></svg>,
-  Shield:   () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L3 4.5v4C3 11.5 5.5 14 8 14s5-2.5 5-5.5V4.5L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M5.5 8l1.5 1.5 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Eye:      () => <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 7.5S3 3 7.5 3 14 7.5 14 7.5 12 12 7.5 12 1 7.5 1 7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.3"/></svg>,
   EyeOff:   () => <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 2l11 11M6.1 6.2A2 2 0 0 0 8.9 8.9M4 4C2.4 5.1 1 7.5 1 7.5s2 4.5 6.5 4.5c1.1 0 2.1-.3 3-.7M6.5 3C7 3 7.3 3 7.5 3c4.5 0 6.5 4.5 6.5 4.5s-.6 1.3-1.8 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Google:   () => <svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.21c0-.64-.06-1.25-.16-1.85H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z" fill="#4285F4"/><path d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/><path d="M3.96 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.28-1.71V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.04l3-2.33z" fill="#FBBC05"/><path d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z" fill="#EA4335"/></svg>,
@@ -65,13 +67,16 @@ function SidebarCollapseIcon() {
   )
 }
 
+const SECTION_NAV_ICON_SIZE = 16
+const SECTION_NAV_ICON_STROKE = 1.75
+
 const SECTIONS = [
-  { id: 'account',       label: 'Conta',                   Icon: Ic.User     },
-  { id: 'general',       label: 'Preferências gerais',      Icon: Ic.Globe    },
-  { id: 'workspace',     label: 'Workspace',                Icon: Ic.Building },
-  { id: 'integrations',  label: 'Integrações',              Icon: Ic.Link     },
-  { id: 'notifications', label: 'Notificações',             Icon: Ic.Bell     },
-  { id: 'security',      label: 'Privacidade e segurança',  Icon: Ic.Shield   },
+  { id: 'account',       label: 'Conta',                   Icon: User         },
+  { id: 'general',       label: 'Preferências gerais',      Icon: Settings2    },
+  { id: 'workspace',     label: 'Workspace',                Icon: LayoutDashboard },
+  { id: 'integrations',  label: 'Integrações',              Icon: Blocks       },
+  { id: 'notifications', label: 'Notificações',             Icon: BellRing     },
+  { id: 'security',      label: 'Privacidade e segurança',  Icon: ShieldCheck  },
 ]
 const SECTION_IDS = new Set(SECTIONS.map(({ id }) => id))
 
@@ -2259,7 +2264,9 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       onClick={() => handleSectionChange(id)}
       aria-current={activeSection === id ? 'page' : undefined}
     >
-      <span className={styles.settingsNavIcon}><Icon /></span>
+      <span className={styles.settingsNavIcon}>
+        <Icon size={SECTION_NAV_ICON_SIZE} strokeWidth={SECTION_NAV_ICON_STROKE} />
+      </span>
       <span className={styles.settingsNavLabel}>{label}</span>
     </button>
   ))
