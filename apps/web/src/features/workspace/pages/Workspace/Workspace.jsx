@@ -1,4 +1,11 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import {
+  AlignStartHorizontal,
+  Ellipsis,
+  Image,
+  PencilLine,
+  Trash2,
+} from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
@@ -135,24 +142,6 @@ function MoreIcon() {
       <circle cx="3" cy="7" r="1" fill="currentColor" />
       <circle cx="7" cy="7" r="1" fill="currentColor" />
       <circle cx="11" cy="7" r="1" fill="currentColor" />
-    </svg>
-  )
-}
-
-function TrashIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M3 4.5h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M5.2 4.5v-.8c0-.6.5-1.1 1.1-1.1h1.4c.6 0 1.1.5 1.1 1.1v.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M4.2 4.7l.4 6.3c.04.6.53 1.1 1.13 1.1h2.54c.6 0 1.1-.5 1.13-1.1l.4-6.3" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function PencilIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M8.8 2.7 11.3 5.2M2.5 11.5l2.8-.6L11 5.2a1.8 1.8 0 0 0-2.5-2.5L2.9 8.4l-.4 3.1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -598,6 +587,8 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
 const PLAN_OPTIONS_MENU_WIDTH = 176
 const PLAN_OPTIONS_MENU_HEIGHT = 190
 const PLAN_OPTIONS_MENU_GAP = 8
+const PLAN_OPTIONS_MENU_ICON_SIZE = 14
+const PLAN_OPTIONS_MENU_ICON_STROKE = 1.75
 const PLAN_BACKGROUND_PICKER_WIDTH = 420
 const PLAN_BACKGROUND_PICKER_HEIGHT = 520
 
@@ -634,10 +625,10 @@ function resolvePlanBackgroundPickerPosition(anchorRect) {
 
 function PlanOptionsMenu({ anchorRect, onAction }) {
   const actions = [
-    { id: 'board', label: 'Abrir quadro', Icon: GridIcon },
-    { id: 'rename', label: 'Renomear', Icon: PencilIcon },
-    { id: 'background', label: 'Alterar background', Icon: ImagePlusIcon },
-    { id: 'delete', label: 'Excluir', Icon: TrashIcon, danger: true },
+    { id: 'board', label: 'Abrir plano', Icon: AlignStartHorizontal },
+    { id: 'rename', label: 'Renomear', Icon: PencilLine },
+    { id: 'background', label: 'Alterar background', Icon: Image },
+    { id: 'delete', label: 'Excluir', Icon: Trash2, danger: true },
   ]
   const position = resolvePlanOptionsMenuPosition(anchorRect)
   const portalRoot = document.querySelector('[data-app-theme-scope]') ?? document.body
@@ -664,7 +655,7 @@ function PlanOptionsMenu({ anchorRect, onAction }) {
           role="menuitem"
           onClick={() => onAction?.(id)}
         >
-          <Icon />
+          <Icon size={PLAN_OPTIONS_MENU_ICON_SIZE} strokeWidth={PLAN_OPTIONS_MENU_ICON_STROKE} />
           <span>{label}</span>
         </button>
       ))}
@@ -897,7 +888,7 @@ function PlanCard({
           onMore?.(event.currentTarget.getBoundingClientRect())
         }}
       >
-        <MoreIcon />
+        <Ellipsis size={14} strokeWidth={1.75} />
       </button>
       {menuOpen && <PlanOptionsMenu anchorRect={menuAnchorRect} onAction={onMenuAction} />}
     </div>
