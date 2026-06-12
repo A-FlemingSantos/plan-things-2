@@ -118,8 +118,21 @@
   background: var(--board-canvas-bg);
 }
 
+.boardMainHasCover:not(.boardMainImageCover) {
+  background: var(--cover-bg, var(--cover-fallback, var(--board-canvas-bg)));
+  background-position: 50% 50%;
+  background-size: cover;
+}
+
 .boardMainImageCover {
-  background: var(--board-canvas-bg);
+  background: var(--cover-bg, var(--cover-fallback, var(--board-canvas-bg)));
+  background-position: 50% 50%;
+  background-size: cover;
+}
+
+.boardMainHasCover .boardBody,
+.boardMainHasCover .boardBodyContent {
+  background: transparent;
 }
 
 .boardWrapperWithPlanner {
@@ -183,27 +196,6 @@
 .themefrost {
   --cover-bg:
     linear-gradient(135deg, #dfe9f3 0%, #bdd4ea 28%, #5ba7d1 60%, #2356a8 100%);
-}
-
-@media (min-width: 860px) {
-  .boardMain {
-    background-size: 180% 180%, 220% 220%, 180% 180%;
-  }
-
-  .boardMainImageCover {
-    background-size: cover;
-  }
-}
-
-@media (min-width: 1200px) {
-  .boardMain {
-    background-size: 160% 160%, 200% 200%, 160% 160%;
-    background-position: 50% 50%, 20% 20%, 50% 40%;
-  }
-
-  .boardMainImageCover {
-    background-size: cover;
-  }
 }
 
 .board::-webkit-scrollbar { height: 6px; }

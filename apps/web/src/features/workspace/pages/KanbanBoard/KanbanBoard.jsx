@@ -1450,8 +1450,10 @@ export default function KanbanBoard() {
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
   const coverThemeClassName = activePlan?.coverThemeId ? (styles[`theme${activePlan.coverThemeId}`] ?? '') : ''
   const isImageCover = Boolean(activePlan?.coverImage)
+  const hasPlanCover = Boolean(coverThemeClassName || isImageCover)
   const boardMainClassName = [
     styles.boardMain,
+    hasPlanCover ? styles.boardMainHasCover : '',
     coverThemeClassName,
     isImageCover ? styles.boardMainImageCover : '',
   ].filter(Boolean).join(' ')
