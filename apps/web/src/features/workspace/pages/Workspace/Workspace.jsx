@@ -1618,9 +1618,9 @@ export default function Workspace() {
   return (
     <AppThemeScope>
       <ProductAppShell
-        styles={styles}
         contentClassName={styles.main}
         contentTag="main"
+        mobileTitle="Início"
       >
         <CustomScrollArea
           className={styles.mainScrollArea}

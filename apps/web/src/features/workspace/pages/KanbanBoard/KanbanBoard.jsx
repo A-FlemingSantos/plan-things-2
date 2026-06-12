@@ -1990,8 +1990,8 @@ export default function KanbanBoard() {
     <AppThemeScope>
       <div className={styles.boardAccentScope} style={boardAccentStyle}>
       <ProductAppShell
-        styles={styles}
         contentClassName={styles.boardPageShell}
+        mobileTitle="Quadros"
       >
         <WorkspaceHeader compact />
         <div

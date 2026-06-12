@@ -551,7 +551,7 @@ export default function IntelligenceChat() {
 
   return (
     <AppThemeScope>
-      <ProductAppShell styles={styles} contentClassName={styles.main} contentTag="main">
+      <ProductAppShell contentClassName={styles.main} contentTag="main" mobileTitle="Intelligence">
         <WorkspaceHeader
           title="Intelligence"
           icon={<SparkleIcon />}

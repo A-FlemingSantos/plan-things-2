@@ -2370,8 +2370,8 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   return (
     <AppThemeScope>
       <ProductAppShell
-        styles={styles}
         contentClassName={styles.settingsWrapper}
+        mobileTitle="Configurações"
       >
         <div style={settingsThemeStyle}>
           {settingsHeader}

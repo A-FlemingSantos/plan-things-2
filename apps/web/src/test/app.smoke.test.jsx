@@ -620,20 +620,22 @@ describe('App smoke flows', () => {
     expect(screen.getAllByRole('heading', { name: 'Plano Frontend QA' })).not.toHaveLength(0)
   })
 
-  it('does not render the removed global sidebar across product screens', async () => {
+  it('renders the shared sidebar across product screens', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
 
     expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
-    expect(document.querySelector('[data-product-sidebar]')).toBeNull()
-    expect(document.querySelector('[data-sidebar-collapse-button]')).toBeNull()
+    const sidebar = document.querySelector('[data-product-sidebar]')
+    expect(sidebar).toBeInTheDocument()
+    expect(within(sidebar).getByRole('button', { name: 'Início' })).toBeInTheDocument()
+    expect(within(sidebar).getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument()
+    expect(sidebar.querySelector('[data-sidebar-collapse-button]')).toBeInTheDocument()
 
     await user.click(await screen.findByRole('button', { name: /lançamento do produto/i }))
 
     expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
-    expect(document.querySelector('[data-product-sidebar]')).toBeNull()
-    expect(document.querySelector('[data-sidebar-collapse-button]')).toBeNull()
+    expect(document.querySelector('[data-product-sidebar]')).toBeInTheDocument()
   })
 
   it('shows the liquid-glass preference in general settings', async () => {

@@ -822,9 +822,9 @@ export function CalendarWorkspaceView({ embedded = false }) {
   return (
     <AppThemeScope>
       <ProductAppShell
-        styles={styles}
         contentClassName={styles.main}
         contentTag="main"
+        mobileTitle="Calendário"
       >
         <PlanPageHeader
           title="Calendário"
