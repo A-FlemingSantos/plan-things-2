@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Settings } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { usePreferences } from '../../../features/preferences/context/PreferencesContext.jsx'
@@ -353,7 +354,7 @@ export default function WorkspaceHeader({
             aria-label="Abrir configurações da Workspace"
             onClick={() => openSettingsSection('workspace')}
           >
-            <SettingsIcon />
+            <Settings size={14} strokeWidth={1.75} aria-hidden="true" />
           </button>
           <SidebarAccountMenu
             styles={styles}

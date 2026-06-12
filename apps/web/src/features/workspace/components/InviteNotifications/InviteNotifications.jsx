@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Bell } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js'
@@ -6,15 +7,6 @@ import { apiRequest } from '../../../../shared/api/apiClient.js'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { usePlans } from '../../context/PlansContext.jsx'
 import styles from './InviteNotifications.module.css'
-
-function BellIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-      <path d="M3.5 6.8a4.5 4.5 0 0 1 9 0v2.7l1 1.7H2.5l1-1.7V6.8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d="M6.4 13a1.7 1.7 0 0 0 3.2 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 function formatInviteStatus(status) {
   if (status === 'ACCEPTED') return 'Aceito'
@@ -146,7 +138,7 @@ export default function InviteNotifications({
         aria-label={invites.length ? `${invites.length} convites pendentes` : 'Notificações'}
         aria-expanded={open ? 'true' : 'false'}
       >
-        <BellIcon />
+        <Bell size={15} strokeWidth={1.75} aria-hidden="true" />
         {invites.length ? (
           <span className={[styles.badge, badgeClassName].filter(Boolean).join(' ')}>
             {invites.length}
