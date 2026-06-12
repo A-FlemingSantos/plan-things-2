@@ -39,38 +39,44 @@
 }
 
 .billingControls {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
 }
 
 .billingBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px 18px;
+  padding: 7px 16px;
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   color: var(--text-2);
-  background: var(--surface-1);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-md);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
   cursor: pointer;
   transition:
     color var(--transition-fast),
-    border-color var(--transition-fast);
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
-.billingBtn:hover {
+.billingBtn:hover:not(.billingBtnActive) {
   color: var(--text-1);
-  border-color: var(--text-1);
 }
 
 .billingBtnActive {
   color: var(--text-1);
-  border-color: var(--text-1);
-  background: transparent;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-xs);
 }
 
 .saveBadge {
