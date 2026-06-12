@@ -3,265 +3,284 @@
   padding: var(--section-py) 0;
 }
 
-.inner { display: flex; flex-direction: column; gap: 48px; }
-
-/* ── Header row ── */
-.headerRow {
+.inner {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 32px;
+}
+
+/* ── Header (FAQ pattern) ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   flex-wrap: wrap;
 }
 
 .heading {
-  font-size: clamp(28px, 3.5vw, 42px);
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: clamp(28px, 3.5vw, 44px);
   font-weight: var(--font-weight-regular);
-  letter-spacing: -.03em;
-  margin-bottom: 12px;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--text-1);
 }
 
-.subheading {
+.lead {
+  margin: -8px 0 0;
+  max-width: 46ch;
+  font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  color: var(--text-2);
-  max-width: 480px;
   line-height: 1.6;
+  color: var(--text-2);
 }
 
-/* Billing toggle */
-.billingToggle {
+.billingControls {
   display: flex;
-  gap: 4px;
-  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .billingBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 8px;
+  padding: 8px 18px;
+  font-family: var(--font-family);
   font-size: 13px;
+  font-weight: var(--font-weight-regular);
   color: var(--text-2);
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  background: var(--surface-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  background: none;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
-.billingActive {
-  color: var(--text-1) !important;
-  border-color: var(--border-2) !important;
-  background: var(--surface-1) !important;
+.billingBtn:hover {
+  color: var(--text-1);
+  border-color: var(--text-1);
+}
+
+.billingBtnActive {
+  color: var(--text-1);
+  border-color: var(--text-1);
+  background: transparent;
 }
 
 .saveBadge {
   font-size: 10px;
-  background: var(--color-green);
-  color: var(--text-on-accent);
-  padding: 2px 6px;
-  border-radius: 99px;
-}
-
-/* ── Cards grid ── */
-.grid {
-  display: grid;
-  grid-template-columns: 0.95fr 1.05fr 0.95fr;
-  gap: 20px;
-  align-items: center;
-}
-
-/* ── Card ── */
-.card {
-  position: relative;
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-lg);
-  padding: 28px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-height: 100%;
-  transition: box-shadow var(--transition-normal), transform var(--transition-normal), border-color var(--transition-normal);
-}
-
-.card:hover {
-  box-shadow: var(--shadow-md);
-}
-
-.highlighted {
-  border-color: var(--text-1);
-  background: var(--text-1);
-  box-shadow: var(--shadow-sm);
-  padding: 40px 32px;
-  transform: translateY(-18px) scale(1.04);
-  color: var(--text-inverse);
-}
-
-.highlighted .popularBadge {
-  background: var(--text-inverse);
-  color: var(--text-1);
-}
-
-.highlighted .planName,
-.highlighted .priceNum,
-.highlighted .pricePer,
-.highlighted .priceNote,
-.highlighted .featureItem {
-  color: var(--text-inverse);
-}
-
-.highlighted .priceCurrency {
-  color: var(--text-inverse);
-  opacity: 0.72;
-}
-
-.highlighted .cardDivider {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.highlighted .ctaPrimary {
-  background: var(--text-inverse);
-  color: var(--text-1);
-}
-
-[data-theme='dark'] .highlighted .cardDivider {
-  background: rgba(0, 0, 0, 0.14);
-}
-
-.popularBadge {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--text-1);
-  color: var(--text-inverse);
-  font-size: 11px;
-  padding: 5px 14px;
-  border-radius: 99px;
-  white-space: nowrap;
-}
-
-/* Card top */
-.cardTop {}
-
-.planName {
-  font-size: 15px;
   font-weight: var(--font-weight-regular);
-  color: var(--text-1);
-  margin-bottom: 16px;
-  letter-spacing: -.01em;
+  letter-spacing: 0.02em;
+  color: var(--text-on-accent);
+  background: var(--color-green);
+  padding: 2px 7px;
+  border-radius: 99px;
 }
 
-.priceRow {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-  margin-bottom: 6px;
-}
-
-.priceCurrency {
-  font-size: 18px;
-  color: var(--text-3);
-  margin-top: 4px;
-  align-self: flex-start;
-}
-
-.priceNum {
-  font-size: 44px;
-  font-weight: var(--font-weight-light);
-  letter-spacing: -.04em;
-  color: var(--text-1);
-  line-height: 1;
-}
-
-.highlighted .priceNum {
-  font-size: 56px;
-}
-
-.pricePer {
-  font-size: 14px;
-  color: var(--text-3);
-  margin-left: 2px;
-}
-
-.priceNote {
-  font-size: 12px;
-  color: var(--text-3);
-  line-height: 1.4;
-}
-
-.cardDivider {
-  height: 1px;
-  background: var(--border-1);
-}
-
-/* CTA */
-.planCta {
-  display: block;
-  text-align: center;
-  padding: 11px 20px;
-  font-size: 14px;
-  border-radius: var(--radius-md);
-  transition: opacity var(--transition-fast), background var(--transition-fast);
-}
-
-.ctaPrimary {
-  background: var(--text-1);
-  color: var(--text-inverse);
-}
-
-.ctaPrimary:hover { opacity: .8; }
-
-.ctaSecondary {
-  background: var(--surface-1);
-  color: var(--text-1);
-  border: 1px solid var(--border-2);
-}
-
-.ctaSecondary:hover { border-color: var(--text-1); }
-
-.ctaOutline {
-  background: transparent;
-  color: var(--text-1);
-  border: 1px solid var(--border-2);
-}
-
-.ctaOutline:hover { border-color: var(--text-1); }
-
-/* Feature list */
-.featureList {
+/* ── Plan list (FAQ list pattern) ── */
+.planList {
   display: flex;
   flex-direction: column;
+  border-top: 1px solid var(--border-1);
+}
+
+.planRow {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 20px 24px;
+  align-items: start;
+  padding: clamp(24px, 3vw, 32px) 0;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.planIndex {
+  padding-top: 2px;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.02em;
+  color: var(--text-3);
+}
+
+.planMain {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.planIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planTitleGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
 }
 
-.featureItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  font-size: 13px;
-  font-weight: var(--font-weight-light);
-  color: var(--text-2);
+.planName {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
   line-height: 1.4;
+  color: var(--text-1);
 }
 
-.featureItem svg { flex-shrink: 0; margin-top: 1px; }
+.planBadge {
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
 
-@media (max-width: 1100px) {
-  .grid {
+.planNote {
+  margin: 0;
+  max-width: 52ch;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.featureList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+}
+
+.featureList li {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.planAside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+  text-align: right;
+  padding-top: 2px;
+}
+
+.priceBlock {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.priceValue {
+  font-family: var(--font-family);
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.pricePeriod {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: var(--font-weight-light);
+  color: var(--text-3);
+}
+
+.planAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 1px;
+  white-space: nowrap;
+  transition: border-color var(--transition-fast);
+}
+
+.planAction:hover {
+  border-bottom-color: var(--text-1);
+}
+
+.planRowHighlight .planName {
+  color: var(--text-1);
+}
+
+@media (max-width: 900px) {
+  .planRow {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .planAside {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    text-align: left;
+    padding-top: 4px;
+  }
+
+  .priceBlock {
+    justify-content: flex-start;
+  }
+
+  .featureList {
     grid-template-columns: 1fr;
-    gap: 18px;
-  }
-
-  .highlighted {
-    transform: none;
-    padding: 32px 26px;
   }
 }
 
-@media (max-width: 600px) {
-  .grid { grid-template-columns: 1fr; }
-  .headerRow { flex-direction: column; align-items: flex-start; }
+@media (max-width: 640px) {
+  .section {
+    padding-top: 72px;
+    padding-bottom: 72px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .billingControls {
+    width: 100%;
+  }
+
+  .billingBtn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .planAside {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .planAction {
+    align-self: flex-start;
+  }
 }

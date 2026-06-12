@@ -5,11 +5,13 @@ import styles from './Pricing.module.css'
 
 const PLANS = [
   {
+    id: 'basic',
+    index: '01',
     name: 'Basic',
     price: { monthly: 0, annual: 0 },
     note: 'Grátis para sempre para quem trabalha sozinho',
-    cta: 'Começar grátis',
-    ctaStyle: 'secondary',
+    action: 'Continuar com Basic',
+    actionHref: ROUTES.register,
     features: [
       '5 projetos ativos',
       '1 workspace',
@@ -20,12 +22,14 @@ const PLANS = [
     ],
   },
   {
+    id: 'professional',
+    index: '02',
     name: 'Professional',
+    highlight: true,
     price: { monthly: 24, annual: 19 },
     note: 'Para usuários avançados com múltiplos fluxos',
-    cta: 'Iniciar teste grátis',
-    ctaStyle: 'primary',
-    highlight: true,
+    action: 'Continuar com Pro',
+    actionHref: ROUTES.register,
     features: [
       'Projetos ilimitados',
       'Kanban avançado + linha do tempo',
@@ -36,11 +40,13 @@ const PLANS = [
     ],
   },
   {
+    id: 'team',
+    index: '03',
     name: 'Team',
     price: { monthly: 42, annual: 34 },
     note: 'Para equipes em crescimento que entregam juntas',
-    cta: 'Falar com vendas',
-    ctaStyle: 'outline',
+    action: 'Continuar com Team',
+    actionHref: ROUTES.register,
     features: [
       'Tudo do Professional',
       'Membros ilimitados',
@@ -53,11 +59,50 @@ const PLANS = [
   },
 ]
 
-function CheckIcon({ color = 'var(--color-green)' }) {
+function PlanRow({ plan, annual }) {
+  const price = annual ? plan.price.annual : plan.price.monthly
+  const isFree = price === 0
+
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M3 7l2.5 2.5 5.5-5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+    <article className={`${styles.planRow} ${plan.highlight ? styles.planRowHighlight : ''}`}>
+      <span className={styles.planIndex}>{plan.index}</span>
+
+      <div className={styles.planMain}>
+        <div className={styles.planIntro}>
+          <div className={styles.planTitleGroup}>
+            <h3 className={styles.planName}>{plan.name}</h3>
+            {plan.highlight ? <span className={styles.planBadge}>Recomendado</span> : null}
+          </div>
+          <p className={styles.planNote}>{plan.note}</p>
+        </div>
+
+        <ul className={styles.featureList}>
+          {plan.features.map((feature) => (
+            <li key={feature}>{feature}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className={styles.planAside}>
+        <div className={styles.priceBlock}>
+          <span className={styles.priceValue}>{isFree ? 'Grátis' : `$${price}`}</span>
+          {!isFree ? <span className={styles.pricePeriod}>/mês</span> : null}
+        </div>
+
+        <Link to={plan.actionHref} className={styles.planAction}>
+          {plan.action}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+            <path
+              d="M3 7h8M8 4l3 3-3 3"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </Link>
+      </div>
+    </article>
   )
 }
 
@@ -65,80 +110,41 @@ export default function Pricing() {
   const [annual, setAnnual] = useState(true)
 
   return (
-    <div className={styles.section}>
+    <div className={styles.section} aria-labelledby="pricing-heading">
       <div className={`${styles.inner} container`}>
+        <header className={styles.header}>
+          <h2 id="pricing-heading" className={styles.heading}>
+            Preços simples e transparentes
+          </h2>
 
-        {/* Header row */}
-        <div className={styles.headerRow}>
-          <div>
-            <h2 className={styles.heading}>Preços simples e transparentes</h2>
-            <p className={styles.subheading}>
-              Três planos claros para trabalho individual, execução profissional e equipes colaborativas.
-            </p>
-          </div>
-
-          {/* Billing toggle */}
-          <div className={styles.billingToggle}>
+          <div className={styles.billingControls} role="group" aria-label="Período de cobrança">
             <button
-              className={`${styles.billingBtn} ${!annual ? styles.billingActive : ''}`}
+              type="button"
+              className={`${styles.billingBtn} ${!annual ? styles.billingBtnActive : ''}`}
               onClick={() => setAnnual(false)}
-            >Mensal</button>
+              aria-pressed={!annual}
+            >
+              Mensal
+            </button>
             <button
-              className={`${styles.billingBtn} ${annual ? styles.billingActive : ''}`}
+              type="button"
+              className={`${styles.billingBtn} ${annual ? styles.billingBtnActive : ''}`}
               onClick={() => setAnnual(true)}
+              aria-pressed={annual}
             >
               Anual
-              <span className={styles.saveBadge}>Economize 20%</span>
+              <span className={styles.saveBadge}>−20%</span>
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Cards */}
-        <div className={styles.grid}>
-          {PLANS.map(plan => (
-            <div
-              key={plan.name}
-              className={`${styles.card} ${plan.highlight ? styles.highlighted : ''}`}
-            >
-              {plan.highlight && (
-                <div className={styles.popularBadge}>Mais popular</div>
-              )}
+        <p className={styles.lead}>
+          Três planos claros para trabalho individual, execução profissional e equipes colaborativas.
+        </p>
 
-              <div className={styles.cardTop}>
-                <p className={styles.planName}>{plan.name}</p>
-                <div className={styles.priceRow}>
-                  <span className={styles.priceCurrency}>$</span>
-                  <span className={styles.priceNum}>
-                    {annual ? plan.price.annual : plan.price.monthly}
-                  </span>
-                  {plan.price.monthly > 0 && (
-                    <span className={styles.pricePer}>/mês</span>
-                  )}
-                </div>
-                <p className={styles.priceNote}>{plan.note}</p>
-              </div>
-
-              <div className={styles.cardDivider} />
-
-              <Link
-                to={plan.name === 'Team' ? ROUTES.help : ROUTES.register}
-                className={`${styles.planCta} ${
-                  plan.ctaStyle === 'primary' ? styles.ctaPrimary :
-                  plan.ctaStyle === 'outline' ? styles.ctaOutline : styles.ctaSecondary
-                }`}
-              >
-                {plan.cta}
-              </Link>
-
-              <ul className={styles.featureList}>
-                {plan.features.map(f => (
-                  <li key={f} className={styles.featureItem}>
-                    <CheckIcon color={plan.highlight ? 'var(--color-white)' : 'var(--color-gray-400)'} />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+        <div className={styles.planList}>
+          {PLANS.map((plan) => (
+            <PlanRow key={plan.id} plan={plan} annual={annual} />
           ))}
         </div>
       </div>
