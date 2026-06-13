@@ -2821,10 +2821,20 @@
   flex-shrink: 0;
 }
 
-.cmStatusSplitToggle:hover,
-.cmStatusSplitAction:hover {
+.cmStatusSplitToggle:hover:not(:disabled),
+.cmStatusSplitAction:hover:not(:disabled) {
   background: var(--hover);
   color: var(--text-1);
+}
+
+.cmStatusSplitToggle:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.cmStatusSplitAction:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 
 .cmStatusPill {

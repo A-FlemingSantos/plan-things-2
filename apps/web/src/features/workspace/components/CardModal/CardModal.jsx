@@ -381,6 +381,8 @@ export default function CardModal({
   onClose,
   onUpdate,
   onDelete,
+  onMoveToNextColumn,
+  canMoveToNextColumn = false,
   onAddComment,
   labels,
   members,
@@ -478,6 +480,7 @@ export default function CardModal({
   const [isSaving, setIsSaving] = useState(false)
   const [isSendingComment, setIsSendingComment] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isMovingToNextColumn, setIsMovingToNextColumn] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const [saveStatus, setSaveStatus] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -558,7 +561,7 @@ export default function CardModal({
     resetChecklistItemDraft()
     setChecklistComposerOpen(false)
   }
-  const isInteractionBlocked = isSaving || isDeleting
+  const isInteractionBlocked = isSaving || isDeleting || isMovingToNextColumn
   const isMutating = isInteractionBlocked || isSendingComment
 
   const updateSaveStatus = (message = '') => {
@@ -687,6 +690,19 @@ export default function CardModal({
   const close = () => {
     if (isMutating) return
     startClose()
+  }
+
+  const handleMoveToNextColumn = async () => {
+    if (isMutating || !canMoveToNextColumn || !onMoveToNextColumn) return
+
+    setIsMovingToNextColumn(true)
+    try {
+      await onMoveToNextColumn()
+    } catch {
+      // Parent handles user feedback.
+    } finally {
+      setIsMovingToNextColumn(false)
+    }
   }
 
   const saveTitle = async () => {
@@ -2134,7 +2150,13 @@ export default function CardModal({
                       <div className={styles.cmStatusSplitMain}>
                         <span className={styles.cmStatusSplitLabel}>{colTitle}</span>
                         <span className={styles.cmStatusSplitDivider} aria-hidden="true" />
-                        <button type="button" className={styles.cmStatusSplitToggle} aria-label="Alterar status" aria-haspopup="menu">
+                        <button
+                          type="button"
+                          className={styles.cmStatusSplitToggle}
+                          aria-label="Mover para a próxima coluna"
+                          disabled={isMutating || !canMoveToNextColumn}
+                          onClick={() => { void handleMoveToNextColumn() }}
+                        >
                           <ChevronDown size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       </div>

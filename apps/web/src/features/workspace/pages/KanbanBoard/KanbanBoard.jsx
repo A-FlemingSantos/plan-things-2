@@ -12,7 +12,7 @@ import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
 import KanbanColumn from '../../components/KanbanColumn/KanbanColumn.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import { useBoardColumns } from '../../hooks/useBoardColumns.js'
-import { useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
+import { moveCardInColumns, useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
 import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
 import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
 import { CalendarWorkspaceView } from '../../../calendar/pages/CalendarPage/CalendarPage.jsx'
@@ -727,6 +727,57 @@ export default function KanbanBoard() {
     setActiveCard({ card, colTitle })
   }, [])
 
+  const canMoveActiveCardToNextColumn = useMemo(() => {
+    if (!activeCard?.card?.id || !columns.length) return false
+
+    const sourceColumnIndex = columns.findIndex((column) => (
+      column.cards.some((card) => card.id === activeCard.card.id)
+    ))
+
+    return sourceColumnIndex >= 0 && sourceColumnIndex < columns.length - 1
+  }, [activeCard, columns])
+
+  const handleMoveCardToNextColumn = useCallback(async () => {
+    const cardId = activeCard?.card?.id
+    if (!cardId || !activePlan?.id) return
+
+    const sourceColumnIndex = columns.findIndex((column) => (
+      column.cards.some((card) => card.id === cardId)
+    ))
+    if (sourceColumnIndex === -1 || sourceColumnIndex >= columns.length - 1) return
+
+    const sourceColumn = columns[sourceColumnIndex]
+    const nextColumn = columns[sourceColumnIndex + 1]
+    const target = { type: 'col', colId: nextColumn.id }
+    const targetPosition = nextColumn.cards.length
+    const previousColumns = columns
+    const previousActiveCard = activeCard
+
+    updateColumns((prev) => moveCardInColumns(prev, cardId, sourceColumn.id, target))
+    setActiveCard((current) => (
+      current?.card?.id === cardId
+        ? {
+          ...current,
+          colTitle: nextColumn.title,
+          card: { ...current.card, columnId: nextColumn.id },
+        }
+        : current
+    ))
+
+    if (!isBackendDriven) {
+      return
+    }
+
+    try {
+      await moveCard(cardId, nextColumn.id, targetPosition)
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      setActiveCard(previousActiveCard ?? null)
+      showNotification(error?.message ?? 'Não foi possível mover o cartão.')
+      throw error
+    }
+  }, [activeCard, activePlan?.id, columns, isBackendDriven, moveCard, updateColumns])
+
   useEffect(() => {
     const cardIdFromUrl = String(searchParams.get('card') ?? '').trim()
     if (!cardIdFromUrl || !columns.length) return
@@ -824,13 +875,18 @@ export default function KanbanBoard() {
   }
 
   const refreshActiveCardFromColumns = (nextColumns, cardId) => {
-    const nextCard = nextColumns.flatMap((column) => column.cards).find((card) => card.id === cardId)
-    if (nextCard) {
-      setActiveCard((current) => (
-        current?.card?.id === cardId ? { ...current, card: nextCard } : current
-      ))
+    for (const column of nextColumns) {
+      const nextCard = column.cards.find((card) => card.id === cardId)
+      if (nextCard) {
+        setActiveCard((current) => (
+          current?.card?.id === cardId
+            ? { ...current, card: nextCard, colTitle: column.title }
+            : current
+        ))
+        return nextCard
+      }
     }
-    return nextCard
+    return null
   }
 
   const attachFileToCard = async (file, cardId) => {
@@ -2148,6 +2204,8 @@ export default function KanbanBoard() {
           onClose={() => setActiveCard(null)}
           onUpdate={handleCardUpdate}
           onDelete={handleCardDelete}
+          onMoveToNextColumn={handleMoveCardToNextColumn}
+          canMoveToNextColumn={canMoveActiveCardToNextColumn}
           onAddComment={isBackendDriven ? addCardComment : undefined}
           labels={planLabels}
           members={planMembers}

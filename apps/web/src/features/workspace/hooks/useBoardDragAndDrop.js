@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-function moveCardInColumns(columns, cardId, sourceColId, target) {
+export function moveCardInColumns(columns, cardId, sourceColId, target) {
   const nextColumns = columns.map((column) => ({ ...column, cards: [...column.cards] }))
   const sourceColumn = nextColumns.find((column) => column.id === sourceColId)
   const card = sourceColumn?.cards.find((item) => item.id === cardId)
