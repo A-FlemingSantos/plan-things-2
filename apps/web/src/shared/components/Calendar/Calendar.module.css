@@ -7,7 +7,7 @@
   --cal-primary-foreground: var(--text-inverse);
   --cal-background: var(--menu-bg);
   --cal-ring: var(--focus-ring-border);
-  --cal-range-fill: var(--active);
+  --cal-range-fill: color-mix(in srgb, var(--text-1) 5%, transparent);
   --cal-destructive: var(--danger-text);
   --cal-destructive-foreground: var(--text-on-accent);
   --cal-invalid-bg: var(--danger-bg);
