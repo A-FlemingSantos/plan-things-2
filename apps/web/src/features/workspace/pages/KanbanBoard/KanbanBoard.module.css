@@ -3105,7 +3105,7 @@
   border-radius: 0;
   outline: none;
   resize: none;
-  padding: 4px 8px;
+  padding: 20px 8px 4px;
   line-height: 1.55;
   min-height: 120px;
   transition: color var(--transition-fast);
