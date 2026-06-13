@@ -493,4 +493,34 @@ describe('CardModal file picker positioning', () => {
       }))
     })
   })
+
+  it('persists the Activity sidebar open state in localStorage', async () => {
+    const user = userEvent.setup()
+    window.localStorage.clear()
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        calendarDays={[]}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Recolher Activity' })).toHaveAttribute('aria-expanded', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Recolher Activity' }))
+
+    expect(screen.getByRole('button', { name: 'Expandir Activity' })).toHaveAttribute('aria-expanded', 'false')
+    expect(window.localStorage.getItem('plan-things:card-modal-activity-sidebar-open:v1:user-1')).toBe('false')
+  })
 })

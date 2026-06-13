@@ -49,6 +49,20 @@ import { createOffsetDateTime } from '@plan-things/shared-client/dates'
 const ICON_SIZE = 15
 const ICON_SIZE_SM = 12
 const ICON_STROKE = 1.75
+const ACTIVITY_SIDEBAR_STORAGE_PREFIX = 'plan-things:card-modal-activity-sidebar-open:v1:'
+
+function buildActivitySidebarStorageKey(userId) {
+  return `${ACTIVITY_SIDEBAR_STORAGE_PREFIX}${userId || 'anonymous'}`
+}
+
+function readActivitySidebarOpenState(storageKey) {
+  if (typeof window === 'undefined') return true
+
+  const stored = window.localStorage.getItem(storageKey)
+  if (stored === 'false') return false
+  if (stored === 'true') return true
+  return true
+}
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 const USER_COMMENT_KIND = 'USER_COMMENT'
@@ -413,6 +427,10 @@ export default function CardModal({
   dateFormat = 'dd/MM/yyyy',
 }) {
   const initialSchedule = buildInitialCardSchedule(card)
+  const activitySidebarStorageKey = useMemo(
+    () => buildActivitySidebarStorageKey(currentUser?.id),
+    [currentUser?.id],
+  )
   const [title,    setTitle]    = useState(card.title)
   const [savedTitle, setSavedTitle] = useState(card.title)
   const [desc,     setDesc]     = useState(card.description ?? '')
@@ -426,7 +444,9 @@ export default function CardModal({
   const [activityEvents, setActivityEvents] = useState([])
   const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
   const [exiting,  setExiting]  = useState(false)
-  const [isActivitySidebarOpen, setIsActivitySidebarOpen] = useState(true)
+  const [isActivitySidebarOpen, setIsActivitySidebarOpen] = useState(() => (
+    readActivitySidebarOpenState(buildActivitySidebarStorageKey(currentUser?.id))
+  ))
   const [commentFocused, setCommentFocused] = useState(false)
   const [commentFollow, setCommentFollow] = useState(false)
   const [showMembersMenu, setShowMembersMenu] = useState(false)
@@ -528,6 +548,10 @@ export default function CardModal({
   const activityFeedRef = useRef(null)
   const saveStatusTimeoutRef = useRef(null)
   const dialogTitleId = `card-modal-title-${card.id}`
+
+  useEffect(() => {
+    setIsActivitySidebarOpen(readActivitySidebarOpenState(activitySidebarStorageKey))
+  }, [activitySidebarStorageKey])
 
   useEffect(() => {
     setActivityBase(buildInitialActivitySnapshot(card))
@@ -2675,7 +2699,17 @@ export default function CardModal({
               title={isActivitySidebarOpen ? 'Recolher Activity' : 'Expandir Activity'}
               aria-label={isActivitySidebarOpen ? 'Recolher Activity' : 'Expandir Activity'}
               aria-expanded={isActivitySidebarOpen}
-              onClick={() => setIsActivitySidebarOpen((open) => !open)}
+              onClick={() => {
+                setIsActivitySidebarOpen((open) => {
+                  const next = !open
+                  if (typeof window !== 'undefined') {
+                    try {
+                      window.localStorage.setItem(activitySidebarStorageKey, String(next))
+                    } catch {}
+                  }
+                  return next
+                })
+              }}
               disabled={isMutating}
             >
               {isActivitySidebarOpen ? (
