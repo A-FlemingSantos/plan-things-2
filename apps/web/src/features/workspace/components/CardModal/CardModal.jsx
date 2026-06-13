@@ -43,6 +43,11 @@ import {
   X,
 } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import { RangeCalendar as DateRangeCalendar } from '../../../../shared/components/Calendar/Calendar.jsx'
+import {
+  buildBrazilDateRange,
+  formatCalendarDateToBrazil,
+} from '../../../../shared/components/Calendar/calendarDateUtils.js'
 import { formatFileSize } from '../../../files/data/libraryRepository.js'
 import { createOffsetDateTime } from '@plan-things/shared-client/dates'
 
@@ -434,6 +439,7 @@ export default function CardModal({
   const [commentFollow, setCommentFollow] = useState(false)
   const [showMembersMenu, setShowMembersMenu] = useState(false)
   const [showLabelMenu, setShowLabelMenu] = useState(false)
+  const [showDateMenu, setShowDateMenu] = useState(false)
   const [showChecklistMenu, setShowChecklistMenu] = useState(false)
   const [showTextMenu, setShowTextMenu] = useState(false)
   const [showListMenu, setShowListMenu] = useState(false)
@@ -452,6 +458,7 @@ export default function CardModal({
   const [removingAttachmentId, setRemovingAttachmentId] = useState(null)
   const [membersMenuPosition, setMembersMenuPosition] = useState({ top: 0, left: 0 })
   const [labelMenuPosition, setLabelMenuPosition] = useState({ top: 0, left: 0 })
+  const [dateMenuPosition, setDateMenuPosition] = useState({ top: 0, left: 0 })
   const [checklistMenuPosition, setChecklistMenuPosition] = useState({ top: 0, left: 0 })
   const [expandedComments, setExpandedComments] = useState({})
   const [overflowingComments, setOverflowingComments] = useState({})
@@ -503,6 +510,9 @@ export default function CardModal({
   const labelMenuRef = useRef(null)
   const labelMenuButtonRef = useRef(null)
   const labelMenuLabelRef = useRef(null)
+  const dateMenuRef = useRef(null)
+  const dateMenuButtonRef = useRef(null)
+  const dateMenuLabelRef = useRef(null)
   const checklistMenuRef = useRef(null)
   const checklistMenuButtonRef = useRef(null)
   const checklistAssignMenuRef = useRef(null)
@@ -1263,6 +1273,19 @@ export default function CardModal({
   const datesSummary = selectedDueDateSummary
     || (startEnabled && startDateValue ? `${startDateValue} → Vencimento` : null)
   const isDatesEmptyPlaceholder = !datesSummary
+  const selectedCalendarRange = useMemo(
+    () => buildBrazilDateRange(startDateValue, dueDateValue),
+    [startDateValue, dueDateValue],
+  )
+  const handleCalendarRangeChange = (range) => {
+    if (!range?.start || !range?.end) return
+
+    setStartDateValue(formatCalendarDateToBrazil(range.start))
+    setStartEnabled(true)
+    setDueDateValue(formatCalendarDateToBrazil(range.end))
+    setDueEnabled(true)
+    setSelectedCalendarDay(range.end.day)
+  }
   const handleLabelSelect = async (nextLabelId) => {
     if (isMutating) return
 
@@ -1559,6 +1582,34 @@ export default function CardModal({
   }, [showLabelMenu])
 
   useEffect(() => {
+    if (!showDateMenu) return
+
+    const handlePointerDown = (event) => {
+      const clickedMenu = dateMenuRef.current?.contains(event.target)
+      const clickedButton = dateMenuButtonRef.current?.contains(event.target)
+        || dateMenuLabelRef.current?.contains(event.target)
+
+      if (!clickedMenu && !clickedButton) {
+        setShowDateMenu(false)
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setShowDateMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showDateMenu])
+
+  useEffect(() => {
     if (!showTextMenu) return
 
     const handlePointerDown = (event) => {
@@ -1751,6 +1802,28 @@ export default function CardModal({
       window.removeEventListener('scroll', updatePosition, true)
     }
   }, [showLabelMenu])
+
+  useLayoutEffect(() => {
+    if (!showDateMenu || !dateMenuButtonRef.current) return
+
+    const updatePosition = () => {
+      const rect = dateMenuButtonRef.current.getBoundingClientRect()
+      setDateMenuPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+      })
+    }
+
+    updatePosition()
+
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [showDateMenu])
 
   useLayoutEffect(() => {
     if (!showTextMenu || !textMenuButtonRef.current) return
@@ -1998,11 +2071,27 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <button type="button" className={styles.cmPropertyLabelBtn} disabled={isMutating}>
+                  <button
+                    ref={dateMenuLabelRef}
+                    type="button"
+                    className={styles.cmPropertyLabelBtn}
+                    onClick={() => setShowDateMenu((value) => !value)}
+                    aria-expanded={showDateMenu}
+                    aria-haspopup="dialog"
+                    disabled={isMutating}
+                  >
                     <Calendar size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Datas
                   </button>
                   <div className={styles.cmPropertyValue}>
-                    <span className={styles.cmPropertyBtn}>
+                    <button
+                      ref={dateMenuButtonRef}
+                      type="button"
+                      className={`${styles.cmPropertyBtn} ${showDateMenu ? styles.cmPropertyBtnActive : ''}`}
+                      onClick={() => setShowDateMenu((value) => !value)}
+                      aria-expanded={showDateMenu}
+                      aria-haspopup="dialog"
+                      disabled={isMutating}
+                    >
                       {isDatesEmptyPlaceholder ? (
                         <span className={styles.cmPropertyDatesSummary}>
                           <span className={styles.cmPropertyDatesPart}>
@@ -2018,7 +2107,7 @@ export default function CardModal({
                       ) : (
                         datesSummary
                       )}
-                    </span>
+                    </button>
                   </div>
                 </div>
 
@@ -3103,6 +3192,22 @@ export default function CardModal({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {showDateMenu && (
+        <div
+          ref={dateMenuRef}
+          className={styles.cmDateMenu}
+          style={{ top: `${dateMenuPosition.top}px`, left: `${dateMenuPosition.left}px` }}
+          onClick={(event) => event.stopPropagation()}
+          role="dialog"
+          aria-label="Calendário de datas"
+        >
+          <DateRangeCalendar
+            value={selectedCalendarRange ?? undefined}
+            onChange={handleCalendarRangeChange}
+          />
         </div>
       )}
 

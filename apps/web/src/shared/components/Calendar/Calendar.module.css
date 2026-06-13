@@ -1,0 +1,239 @@
+.calendar,
+.rangeCalendar {
+  --cal-foreground: var(--text-1);
+  --cal-muted-foreground: var(--text-3);
+  --cal-accent: var(--hover);
+  --cal-primary: var(--text-1);
+  --cal-primary-foreground: var(--text-inverse);
+  --cal-background: var(--menu-bg);
+  --cal-ring: var(--focus-ring-border);
+  --cal-range-fill: var(--active);
+  --cal-destructive: var(--danger-text);
+  --cal-destructive-foreground: var(--text-on-accent);
+  --cal-invalid-bg: var(--danger-bg);
+  --cal-range-bridge: 1px;
+
+  width: fit-content;
+  color: var(--cal-foreground);
+  font-family: var(--font-family);
+  color-scheme: inherit;
+}
+
+.header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+.navButton {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cal-muted-foreground);
+  outline-offset: 2px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.navButton:hover {
+  background: var(--cal-accent);
+  color: var(--cal-foreground);
+}
+
+.navButton:focus {
+  outline: none;
+}
+
+.navButton[data-focus-visible] {
+  outline: 2px solid var(--cal-ring);
+  box-shadow: 0 0 0 3px var(--focus-ring-glow);
+}
+
+.heading {
+  flex: 1 1 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cal-foreground);
+}
+
+.headerCell {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cal-muted-foreground);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.grid :global(td),
+.grid :global(th) {
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  vertical-align: middle;
+}
+
+.gridBody :global(td) {
+  padding: 0;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--cal-foreground);
+  outline-offset: 2px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition-property: color, background-color, border-radius, box-shadow;
+  transition-duration: 150ms;
+}
+
+.cellRange {
+  width: 100%;
+  height: 100%;
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+}
+
+.cell:focus {
+  outline: none;
+}
+
+.cell[data-disabled],
+.cell[data-unavailable] {
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.cell[data-unavailable] {
+  text-decoration: line-through;
+}
+
+.cell[data-outside-month] {
+  color: color-mix(in srgb, var(--cal-muted-foreground) 72%, transparent);
+}
+
+.cell[data-focus-visible] {
+  z-index: 2;
+  outline: 2px solid var(--cal-ring);
+  box-shadow: 0 0 0 3px var(--focus-ring-glow);
+}
+
+.cell[data-hovered],
+.cell[data-hover] {
+  background: var(--cal-accent);
+  color: var(--cal-foreground);
+}
+
+.cell[data-selected]:not(.cellRange) {
+  background: var(--cal-primary);
+  color: var(--cal-primary-foreground);
+}
+
+.cellToday::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  z-index: 1;
+  width: 3px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--cal-primary);
+}
+
+.cellToday[data-selected]::after {
+  background: var(--cal-background);
+}
+
+.cellRange[data-selected] {
+  border-radius: 0;
+  background: var(--cal-range-fill);
+  color: var(--cal-foreground);
+  z-index: 0;
+}
+
+.cellRange[data-selected]:not([data-selection-end]) {
+  margin-right: calc(-1 * var(--cal-range-bridge));
+  padding-right: var(--cal-range-bridge);
+}
+
+.cellRange[data-selected]:not([data-selection-start]) {
+  margin-left: calc(-1 * var(--cal-range-bridge));
+  padding-left: var(--cal-range-bridge);
+}
+
+.cellRange[data-selection-start] {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  z-index: 1;
+}
+
+.cellRange[data-selection-end] {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  z-index: 1;
+}
+
+.cellRange[data-selection-start][data-selection-end] {
+  margin: 0;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.cellRange[data-invalid] {
+  background: var(--cal-invalid-bg);
+}
+
+.cellRange[data-selection-start],
+.cellRange[data-selection-end],
+.cellRange[data-selection-start][data-hovered],
+.cellRange[data-selection-end][data-hovered],
+.cellRange[data-selection-start][data-hover],
+.cellRange[data-selection-end][data-hover] {
+  background: var(--cal-primary);
+  color: var(--cal-primary-foreground);
+}
+
+.cellRange[data-invalid][data-selection-start],
+.cellRange[data-invalid][data-selection-end],
+.cellRange[data-invalid][data-selection-start][data-hovered],
+.cellRange[data-invalid][data-selection-end][data-hovered],
+.cellRange[data-invalid][data-selection-start][data-hover],
+.cellRange[data-invalid][data-selection-end][data-hover] {
+  background: var(--cal-destructive);
+  color: var(--cal-destructive-foreground);
+}
+
+.cellRangeToday[data-selection-start]::after,
+.cellRangeToday[data-selection-end]::after {
+  background: var(--cal-background);
+}

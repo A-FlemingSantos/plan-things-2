@@ -4478,6 +4478,16 @@
 
 .cmLabelCheck { margin-left: auto; color: inherit; display: flex; }
 
+.cmDateMenu {
+  position: fixed;
+  z-index: 1200;
+  padding: 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
+}
+
 .cmLabelMenu {
   position: fixed;
   z-index: 1200;
@@ -5760,6 +5770,7 @@
     justify-content: center;
   }
   .cmChecklistDateMenu,
+  .cmDateMenu,
   .cmChecklistMenu,
   .cmMembersMenu,
   .cmLabelMenu,

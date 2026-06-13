@@ -12,10 +12,12 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.2",
     "@plan-things/shared-client": "1.0.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.17.0",
     "react": "^18.3.1",
+    "react-aria-components": "^1.18.0",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.30.3",
