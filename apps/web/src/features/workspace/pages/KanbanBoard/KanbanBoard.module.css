@@ -2618,7 +2618,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px 32px;
-  padding: 4px 0 8px;
+  padding: 4px 0 0;
 }
 
 .cmPropertiesCol {
@@ -3006,12 +3006,6 @@
   position: relative;
 }
 
-.cmMainDivider {
-  height: 1px;
-  background: var(--border-1);
-  margin: 8px 0 4px;
-}
-
 .cmInlineAttachments {
   display: flex;
   flex-direction: column;
@@ -3095,7 +3089,8 @@
 .cmDescSection {
   display: flex;
   flex-direction: column;
-  padding-top: 4px;
+  border-top: 1px solid var(--border-1);
+  transition: background var(--transition-fast);
 }
 
 .cmDesc {
@@ -3107,13 +3102,13 @@
   color: var(--text-2);
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 0;
   outline: none;
   resize: none;
   padding: 4px 8px;
   line-height: 1.55;
   min-height: 120px;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
 .cmDesc::placeholder { color: var(--text-3); }
@@ -3123,8 +3118,11 @@
   cursor: not-allowed;
 }
 
-.cmDescSection:hover .cmDesc:not(:focus):not(:disabled) {
+.cmDescSection:hover:not(:focus-within) {
   background: var(--hover);
+}
+
+.cmDescSection:hover:not(:focus-within) .cmDesc:not(:disabled) {
   color: var(--text-1);
 }
 
@@ -3135,13 +3133,9 @@
   color: var(--text-1);
 }
 
-.cmDescSection:focus-within::after,
-.cmDescSectionHasValue::after {
-  content: '';
-  display: block;
-  height: 1px;
-  background: var(--border-1);
-  margin: 4px 0 0;
+.cmDescSection:focus-within,
+.cmDescSectionHasValue {
+  border-bottom: 1px solid var(--border-1);
 }
 
 .cmTitleRow {

@@ -2314,8 +2314,6 @@ export default function CardModal({
               </div>
             </div>
 
-            <div className={styles.cmMainDivider} aria-hidden="true" />
-
             <div className={`${styles.cmDescSection} ${desc.trim() ? styles.cmDescSectionHasValue : ''}`}>
               <textarea
                 className={styles.cmDesc}
