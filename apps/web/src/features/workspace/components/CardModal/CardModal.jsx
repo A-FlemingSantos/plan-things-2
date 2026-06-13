@@ -491,10 +491,13 @@ export default function CardModal({
   const textMenuButtonRef = useRef(null)
   const membersMenuRef = useRef(null)
   const membersMenuButtonRef = useRef(null)
+  const membersMenuLabelRef = useRef(null)
   const labelMenuRef = useRef(null)
   const labelMenuButtonRef = useRef(null)
+  const labelMenuLabelRef = useRef(null)
   const dateMenuRef = useRef(null)
   const dateMenuButtonRef = useRef(null)
+  const dateMenuLabelRef = useRef(null)
   const checklistMenuRef = useRef(null)
   const checklistMenuButtonRef = useRef(null)
   const checklistAssignMenuRef = useRef(null)
@@ -1616,6 +1619,7 @@ export default function CardModal({
     const handlePointerDown = (event) => {
       const clickedMenu = membersMenuRef.current?.contains(event.target)
       const clickedButton = membersMenuButtonRef.current?.contains(event.target)
+        || membersMenuLabelRef.current?.contains(event.target)
 
       if (!clickedMenu && !clickedButton) {
         setShowMembersMenu(false)
@@ -1643,6 +1647,7 @@ export default function CardModal({
     const handlePointerDown = (event) => {
       const clickedMenu = labelMenuRef.current?.contains(event.target)
       const clickedButton = labelMenuButtonRef.current?.contains(event.target)
+        || labelMenuLabelRef.current?.contains(event.target)
 
       if (!clickedMenu && !clickedButton) {
         setShowLabelMenu(false)
@@ -1670,6 +1675,7 @@ export default function CardModal({
     const handlePointerDown = (event) => {
       const clickedMenu = dateMenuRef.current?.contains(event.target)
       const clickedButton = dateMenuButtonRef.current?.contains(event.target)
+        || dateMenuLabelRef.current?.contains(event.target)
 
       if (!clickedMenu && !clickedButton) {
         setShowDateMenu(false)
@@ -2118,7 +2124,9 @@ export default function CardModal({
             <div className={styles.cmPropertiesGrid}>
               <div className={styles.cmPropertiesCol}>
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Goal size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Status</span>
+                  <button type="button" className={styles.cmPropertyLabelBtn}>
+                    <Goal size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Status
+                  </button>
                   <div className={styles.cmPropertyValue}>
                     <div className={styles.cmStatusSplit}>
                       <div className={styles.cmStatusSplitMain}>
@@ -2136,7 +2144,17 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Calendar size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Datas</span>
+                  <button
+                    ref={dateMenuLabelRef}
+                    type="button"
+                    className={styles.cmPropertyLabelBtn}
+                    onClick={() => setShowDateMenu(v => !v)}
+                    aria-expanded={showDateMenu}
+                    aria-haspopup="dialog"
+                    disabled={isMutating}
+                  >
+                    <Calendar size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Datas
+                  </button>
                   <div className={styles.cmPropertyValue}>
                     <button
                       ref={dateMenuButtonRef}
@@ -2153,14 +2171,26 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Hourglass size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Estimativa de tempo</span>
+                  <button type="button" className={styles.cmPropertyLabelBtn}>
+                    <Hourglass size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Estimativa de tempo
+                  </button>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Vazio</span>
                   </div>
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Tag size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Etiquetas</span>
+                  <button
+                    ref={labelMenuLabelRef}
+                    type="button"
+                    className={styles.cmPropertyLabelBtn}
+                    onClick={() => setShowLabelMenu(v => !v)}
+                    aria-expanded={showLabelMenu}
+                    aria-haspopup="menu"
+                    disabled={isMutating}
+                  >
+                    <Tag size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Etiquetas
+                  </button>
                   <div className={styles.cmPropertyValue}>
                     <button
                       ref={labelMenuButtonRef}
@@ -2189,7 +2219,17 @@ export default function CardModal({
 
               <div className={styles.cmPropertiesCol}>
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Users size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Responsáveis</span>
+                  <button
+                    ref={membersMenuLabelRef}
+                    type="button"
+                    className={styles.cmPropertyLabelBtn}
+                    onClick={() => setShowMembersMenu(v => !v)}
+                    aria-expanded={showMembersMenu}
+                    aria-haspopup="menu"
+                    disabled={isMutating}
+                  >
+                    <Users size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Responsáveis
+                  </button>
                   <div className={styles.cmPropertyValue}>
                     <button
                       ref={membersMenuButtonRef}
@@ -2220,14 +2260,18 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Flag size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Prioridade</span>
+                  <button type="button" className={styles.cmPropertyLabelBtn}>
+                    <Flag size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Prioridade
+                  </button>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Vazio</span>
                   </div>
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><TimerReset size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Rastrear tempo</span>
+                  <button type="button" className={styles.cmPropertyLabelBtn}>
+                    <TimerReset size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Rastrear tempo
+                  </button>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Start</span>
                   </div>
