@@ -1,4 +1,8 @@
 import { useEffect, useRef } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
+
+const ICON_SIZE = 13
+const ICON_STROKE = 1.75
 
 export default function ColMenu({
   onRename,
@@ -6,8 +10,6 @@ export default function ColMenu({
   onChangeColor,
   onClose,
   colorOptions,
-  EditIcon,
-  TrashIcon,
   styles,
 }) {
   const ref = useRef(null)
@@ -37,7 +39,7 @@ export default function ColMenu({
   return (
     <div className={styles.colMenu} ref={ref} role="menu">
       <button type="button" className={styles.colMenuItem} onClick={() => { onRename(); onClose() }} role="menuitem">
-        <EditIcon /> Renomear
+        <Pencil size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Renomear
       </button>
 
       {colorOptions.map((color) => (
@@ -59,7 +61,7 @@ export default function ColMenu({
       <div className={styles.colMenuDivider} />
 
       <button type="button" className={`${styles.colMenuItem} ${styles.colMenuItemDanger}`} onClick={() => { onDelete(); onClose() }} role="menuitem">
-        <TrashIcon /> Excluir lista
+        <Trash2 size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Excluir lista
       </button>
     </div>
   )

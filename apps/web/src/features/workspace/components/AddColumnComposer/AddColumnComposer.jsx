@@ -1,3 +1,8 @@
+import { Plus, X } from 'lucide-react'
+
+const ICON_SIZE = 13
+const ICON_STROKE = 1.75
+
 export default function AddColumnComposer({
   addingCol,
   newColTitle,
@@ -5,8 +10,6 @@ export default function AddColumnComposer({
   setAddingCol,
   addColumn,
   errorMessage,
-  PlusIcon,
-  XIcon,
   styles,
 }) {
   return (
@@ -34,13 +37,13 @@ export default function AddColumnComposer({
               Adicionar lista
             </button>
             <button type="button" className={styles.addColCancel} onClick={() => { setAddingCol(false); setNewColTitle('') }} aria-label="Cancelar nova lista">
-              <XIcon />
+              <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
             </button>
           </div>
         </div>
       ) : (
         <button type="button" className={styles.addColBtn} onClick={() => setAddingCol(true)}>
-          <PlusIcon />
+          <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
           Adicionar lista
         </button>
       )}

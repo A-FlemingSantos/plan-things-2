@@ -1,6 +1,11 @@
 import { memo, useRef, useState } from 'react'
+import { Ellipsis, Plus, X } from 'lucide-react'
 import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard from '../KanbanCard/KanbanCard.jsx'
+
+const ICON_SIZE = 13
+const ICON_SIZE_MD = 14
+const ICON_STROKE = 1.75
 
 function KanbanColumn({
   col,
@@ -19,7 +24,6 @@ function KanbanColumn({
   labels,
   members,
   colorOptions,
-  icons,
   styles,
 }) {
   const [addingCard, setAddingCard] = useState(false)
@@ -145,7 +149,7 @@ function KanbanColumn({
               aria-expanded={showMenu}
               aria-haspopup="menu"
             >
-              <icons.More />
+              <Ellipsis size={ICON_SIZE_MD} strokeWidth={ICON_STROKE} aria-hidden="true" />
             </button>
 
             {showMenu ? (
@@ -159,8 +163,6 @@ function KanbanColumn({
                 onChangeColor={(color) => onChangeColColor(col.id, color)}
                 onClose={() => setShowMenu(false)}
                 colorOptions={colorOptions}
-                EditIcon={icons.Edit}
-                TrashIcon={icons.Trash}
                 styles={styles}
               />
             ) : null}
@@ -173,7 +175,7 @@ function KanbanColumn({
             disabled={isAddingCard}
             title="Adicionar cartão"
           >
-            <icons.Plus />
+            <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -234,7 +236,7 @@ function KanbanColumn({
                 disabled={isAddingCard}
                 aria-label="Cancelar novo cartão"
               >
-                <icons.X />
+                <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -248,7 +250,7 @@ function KanbanColumn({
           onClick={startAddingCard}
           disabled={isAddingCard}
         >
-          <icons.Plus />
+          <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
           Adicionar cartão
         </button>
       ) : null}
@@ -263,7 +265,6 @@ function areKanbanColumnPropsEqual(prevProps, nextProps) {
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions
-    && prevProps.icons === nextProps.icons
     && prevProps.styles === nextProps.styles
 }
 

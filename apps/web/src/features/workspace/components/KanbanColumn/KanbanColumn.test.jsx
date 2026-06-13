@@ -4,10 +4,6 @@ import KanbanColumn from './KanbanColumn.jsx'
 
 const styles = new Proxy({}, { get: (_, key) => String(key) })
 
-function Icon() {
-  return <span aria-hidden="true" />
-}
-
 function buildColumnProps(props = {}) {
   const defaults = {
     col: {
@@ -30,13 +26,6 @@ function buildColumnProps(props = {}) {
     labels: [],
     members: [],
     colorOptions: [],
-    icons: {
-      Plus: Icon,
-      More: Icon,
-      Edit: Icon,
-      Trash: Icon,
-      X: Icon,
-    },
     styles,
   }
   return { ...defaults, ...props }

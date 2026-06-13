@@ -1435,13 +1435,6 @@ export default function KanbanBoard() {
       showNotification(error?.message ?? 'Não foi possível atualizar a tarefa.')
     }
   }, [saveCardOptimistically])
-  const boardColumnIcons = useMemo(() => ({
-    Plus: Icon.Plus,
-    More: Icon.More,
-    Edit: Icon.Edit,
-    Trash: Icon.Trash,
-    X: Icon.X,
-  }), [])
   const hasNoPlan = isBackendDriven && !isLoading && !activePlan
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
   const coverThemeClassName = activePlan?.coverThemeId ? (styles[`theme${activePlan.coverThemeId}`] ?? '') : ''
@@ -2059,7 +2052,6 @@ export default function KanbanBoard() {
                     labels={planLabels}
                     members={planMembers}
                     colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
-                    icons={boardColumnIcons}
                     styles={styles}
                   />
                 ))}
@@ -2076,8 +2068,6 @@ export default function KanbanBoard() {
                   setAddingCol={setAddingCol}
                   addColumn={addColumn}
                   errorMessage={addColumnError}
-                  PlusIcon={Icon.Plus}
-                  XIcon={Icon.X}
                   styles={styles}
                 />
               </div>
