@@ -4,7 +4,7 @@ import {
   Calendar,
   CalendarPlus,
   Check,
-  ChevronDown,
+  MoveRight,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -2157,7 +2157,7 @@ export default function CardModal({
                           disabled={isMutating || !canMoveToNextColumn}
                           onClick={() => { void handleMoveToNextColumn() }}
                         >
-                          <ChevronDown size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                          <MoveRight size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       </div>
                       <button type="button" className={styles.cmStatusSplitAction} aria-label="Concluir tarefa">
