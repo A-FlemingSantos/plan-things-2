@@ -197,9 +197,6 @@ function KanbanColumn({
             onToggleConfirmed={onToggleCardCompleted}
             labels={labels}
             members={members}
-            CheckIcon={icons.Check}
-            CommentIcon={icons.Comment}
-            ClockIcon={icons.Calendar}
             styles={styles}
           />
         ))}

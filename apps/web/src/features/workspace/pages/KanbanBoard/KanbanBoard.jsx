@@ -1441,10 +1441,6 @@ export default function KanbanBoard() {
     Edit: Icon.Edit,
     Trash: Icon.Trash,
     X: Icon.X,
-    Check: Icon.Check,
-    Comment: Icon.Comment,
-    Clock: Icon.Clock,
-    Calendar: Icon.Calendar,
   }), [])
   const hasNoPlan = isBackendDriven && !isLoading && !activePlan
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)

@@ -36,10 +36,6 @@ function buildColumnProps(props = {}) {
       Edit: Icon,
       Trash: Icon,
       X: Icon,
-      Check: Icon,
-      Comment: Icon,
-      Clock: Icon,
-      Calendar: Icon,
     },
     styles,
   }
@@ -143,11 +139,7 @@ describe('KanbanColumn card composer', () => {
     expect(screen.getByText('Falha ao renomear')).toBeInTheDocument()
   })
 
-  it('passes the calendar icon through to cards with due dates', () => {
-    function DueIcon() {
-      return <span data-testid="due-icon" />
-    }
-
+  it('renders due date metadata on cards with due dates', () => {
     renderColumn({
       col: {
         id: 'col-1',
@@ -166,12 +158,8 @@ describe('KanbanColumn card composer', () => {
           },
         ],
       },
-      icons: {
-        ...buildColumnProps().icons,
-        Calendar: DueIcon,
-      },
     })
 
-    expect(screen.getByTestId('due-icon')).toBeInTheDocument()
+    expect(screen.getByLabelText('Entrega Hoje')).toBeInTheDocument()
   })
 })

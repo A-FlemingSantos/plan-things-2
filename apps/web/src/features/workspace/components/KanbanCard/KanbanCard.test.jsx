@@ -4,10 +4,6 @@ import KanbanCard from './KanbanCard.jsx'
 
 const styles = new Proxy({}, { get: (_, key) => String(key) })
 
-function Icon() {
-  return <span aria-hidden="true" />
-}
-
 function buildCard(overrides = {}) {
   return {
     id: 'card-1',
@@ -35,8 +31,6 @@ function renderCard(props = {}) {
     onClick: vi.fn(),
     labels: [],
     members: [],
-    CommentIcon: Icon,
-    ClockIcon: Icon,
     styles,
   }
   const mergedProps = { ...defaults, ...props }

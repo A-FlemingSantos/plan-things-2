@@ -1,5 +1,16 @@
 import { memo } from 'react'
+import {
+  Calendar,
+  Check,
+  CornerDownRight,
+  MessageSquareText,
+  Paperclip,
+} from 'lucide-react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+
+const ICON_SIZE = 13
+const ICON_SIZE_SM = 12
+const ICON_STROKE = 1.75
 
 function isUserComment(comment = {}) {
   return comment.kind !== 'ASSIGNEE_ACTIVITY'
@@ -27,9 +38,6 @@ function KanbanCard({
   onToggleConfirmed,
   labels,
   members,
-  CheckIcon,
-  CommentIcon,
-  ClockIcon,
   styles,
 }) {
   const label = labels.find((item) => item.id === card.labelId)
@@ -113,14 +121,21 @@ function KanbanCard({
             draggable={false}
             tabIndex={0}
           >
-            {isConfirmed ? <CheckIcon /> : null}
+            {isConfirmed ? (
+              <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            ) : null}
           </button>
           <p className={`${styles.cardTitle} ${isConfirmed ? styles.cardTitleCompleted : ''}`}>{card.title}</p>
         </div>
 
         {descriptionPreview ? (
           <p className={styles.cardSubtitle}>
-            <span className={styles.cardSubtitleIcon} aria-hidden="true">↳</span>
+            <CornerDownRight
+              size={ICON_SIZE_SM}
+              strokeWidth={ICON_STROKE}
+              aria-hidden="true"
+              className={styles.cardSubtitleIcon}
+            />
             {descriptionPreview}
           </p>
         ) : null}
@@ -145,16 +160,14 @@ function KanbanCard({
           <div className={styles.cardMeta}>
             {comments.length > 0 ? (
               <span className={styles.cardMetaItem}>
-                <CommentIcon />
+                <MessageSquareText size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                 <span>{comments.length}</span>
               </span>
             ) : null}
 
             {attachments.length > 0 ? (
               <span className={styles.cardMetaItem} aria-label={`${attachments.length} ${attachments.length === 1 ? 'anexo' : 'anexos'}`}>
-                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                  <path d="M5.1 10.9 9 7a2 2 0 1 0-2.8-2.8L2.8 7.6a3.3 3.3 0 0 0 4.7 4.7l4.1-4.1a4.2 4.2 0 0 0-5.9-5.9L2.9 5.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                 <span>{attachments.length}</span>
               </span>
             ) : null}
@@ -164,7 +177,7 @@ function KanbanCard({
                 className={`${styles.cardDue} ${['Amanhã', 'Tomorrow'].includes(card.dueDate) ? styles.cardDueUrgent : ''} ${['Today', 'Hoje'].includes(card.dueDate) ? styles.cardDueToday : ''}`}
                 aria-label={`Entrega ${card.dueDate}`}
               >
-                {ClockIcon ? <ClockIcon /> : null}
+                <Calendar size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                 {card.dueDate}
               </span>
             ) : null}
@@ -219,9 +232,6 @@ function areKanbanCardPropsEqual(prevProps, nextProps) {
     && prevProps.isConfirmed === nextProps.isConfirmed
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
-    && prevProps.CheckIcon === nextProps.CheckIcon
-    && prevProps.CommentIcon === nextProps.CommentIcon
-    && prevProps.ClockIcon === nextProps.ClockIcon
     && prevProps.onClick === nextProps.onClick
     && prevProps.styles === nextProps.styles
 }
