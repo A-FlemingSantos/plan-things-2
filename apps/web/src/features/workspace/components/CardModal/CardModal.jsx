@@ -78,7 +78,6 @@ const DEFAULT_CARD_SCHEDULE = {
   preserveDisplayLabel: false,
 }
 
-const MONTH_LABELS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const FILE_PICKER_DESKTOP_WIDTH = 680
 const FILE_PICKER_MOBILE_WIDTH = 360
 const FILE_PICKER_FALLBACK_HEIGHT = 360
@@ -156,21 +155,6 @@ function formatCalendarMonthLabel(baseDate) {
     month: 'long',
     year: 'numeric',
   }).format(baseDate)
-}
-
-function formatDueDateLabelFromValue(dateValue, fallbackDay) {
-  const match = dateValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
-
-  if (!match) {
-    return fallbackDay ? `${fallbackDay} abr` : ''
-  }
-
-  const [, dayValue, monthValue] = match
-  const day = Number(dayValue)
-  const monthIndex = Number(monthValue) - 1
-  const monthLabel = MONTH_LABELS[monthIndex] ?? 'abr'
-
-  return `${day} ${monthLabel}`
 }
 
 function buildInitialCardSchedule(card) {
@@ -407,7 +391,6 @@ export default function CardModal({
   labels,
   members,
   currentUser,
-  calendarDays,
   styles,
   isBackendDriven = false,
   planFiles = [],
@@ -451,7 +434,6 @@ export default function CardModal({
   const [commentFollow, setCommentFollow] = useState(false)
   const [showMembersMenu, setShowMembersMenu] = useState(false)
   const [showLabelMenu, setShowLabelMenu] = useState(false)
-  const [showDateMenu, setShowDateMenu] = useState(false)
   const [showChecklistMenu, setShowChecklistMenu] = useState(false)
   const [showTextMenu, setShowTextMenu] = useState(false)
   const [showListMenu, setShowListMenu] = useState(false)
@@ -470,7 +452,6 @@ export default function CardModal({
   const [removingAttachmentId, setRemovingAttachmentId] = useState(null)
   const [membersMenuPosition, setMembersMenuPosition] = useState({ top: 0, left: 0 })
   const [labelMenuPosition, setLabelMenuPosition] = useState({ top: 0, left: 0 })
-  const [dateMenuPosition, setDateMenuPosition] = useState({ top: 0, left: 0 })
   const [checklistMenuPosition, setChecklistMenuPosition] = useState({ top: 0, left: 0 })
   const [expandedComments, setExpandedComments] = useState({})
   const [overflowingComments, setOverflowingComments] = useState({})
@@ -478,7 +459,6 @@ export default function CardModal({
   const [listMenuPosition, setListMenuPosition] = useState({ top: 0, left: 0 })
   const [insertMenuPosition, setInsertMenuPosition] = useState({ top: 0, left: 0 })
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(initialSchedule.selectedCalendarDay)
-  const [dateMenuMonth, setDateMenuMonth] = useState(() => buildCalendarBaseDate(initialSchedule.dueDateValue))
   const [startEnabled, setStartEnabled] = useState(initialSchedule.startEnabled)
   const [startDateValue, setStartDateValue] = useState(initialSchedule.startDateValue)
   const [dueEnabled, setDueEnabled] = useState(initialSchedule.dueEnabled)
@@ -486,7 +466,6 @@ export default function CardModal({
   const [dueTimeValue, setDueTimeValue] = useState(initialSchedule.dueTimeValue)
   const [displayLabel, setDisplayLabel] = useState(initialSchedule.displayLabel)
   const [preserveDisplayLabel, setPreserveDisplayLabel] = useState(initialSchedule.preserveDisplayLabel)
-  const [savedSchedule, setSavedSchedule] = useState(initialSchedule)
   const [checklistTitle, setChecklistTitle] = useState('Checklist')
   const [activeChecklist, setActiveChecklist] = useState(() => buildInitialChecklist(card))
   const [newChecklistItem, setNewChecklistItem] = useState('')
@@ -524,9 +503,6 @@ export default function CardModal({
   const labelMenuRef = useRef(null)
   const labelMenuButtonRef = useRef(null)
   const labelMenuLabelRef = useRef(null)
-  const dateMenuRef = useRef(null)
-  const dateMenuButtonRef = useRef(null)
-  const dateMenuLabelRef = useRef(null)
   const checklistMenuRef = useRef(null)
   const checklistMenuButtonRef = useRef(null)
   const checklistAssignMenuRef = useRef(null)
@@ -560,7 +536,6 @@ export default function CardModal({
 
   const label = labels.find(l => l.id === labelId)
   const currentUserName = currentUser?.fullName ?? currentUser?.email ?? 'Você'
-  const dateMenuDays = buildCalendarDays(dateMenuMonth)
   const checklistDateMenuDays = buildCalendarDays(checklistDateMenuMonth)
   const canPersistChecklist = isBackendDriven
     && typeof onCreateChecklist === 'function'
@@ -675,9 +650,7 @@ export default function CardModal({
     setComments(Array.isArray(nextCard.comments) ? nextCard.comments : [])
     setAttachments(Array.isArray(nextCard.attachments) ? nextCard.attachments : [])
 
-    setSavedSchedule(nextSchedule)
     setSelectedCalendarDay(nextSchedule.selectedCalendarDay)
-    setDateMenuMonth(buildCalendarBaseDate(nextSchedule.dueDateValue || nextSchedule.startDateValue))
     setStartEnabled(nextSchedule.startEnabled)
     setStartDateValue(nextSchedule.startDateValue)
     setDueEnabled(nextSchedule.dueEnabled)
@@ -1263,120 +1236,6 @@ export default function CardModal({
       items: prev.items.map(item => item.id === itemId ? { ...item, checked: !item.checked } : item),
     }))
   }
-  const handleDateSave = async () => {
-    if (isMutating) return
-
-    const shouldPreserveDisplayLabel =
-      dueEnabled &&
-      savedSchedule.preserveDisplayLabel &&
-      dueDateValue === savedSchedule.dueDateValue &&
-      selectedCalendarDay === savedSchedule.selectedCalendarDay
-
-    const nextDueDate = dueEnabled
-      ? (shouldPreserveDisplayLabel
-          ? savedSchedule.displayLabel
-          : formatDueDateLabelFromValue(dueDateValue, selectedCalendarDay))
-      : ''
-
-    const previousDateState = {
-      dueDate,
-      displayLabel,
-      preserveDisplayLabel,
-      dueEnabled,
-      dueDateValue,
-      dueTimeValue,
-      startEnabled,
-      startDateValue,
-      selectedCalendarDay,
-    }
-    const nextSchedule = {
-      selectedCalendarDay,
-      startEnabled,
-      startDateValue,
-      dueEnabled,
-      dueDateValue,
-      dueTimeValue,
-      displayLabel: nextDueDate,
-      preserveDisplayLabel: shouldPreserveDisplayLabel,
-    }
-
-    setDueDate(nextDueDate)
-    setDisplayLabel(nextDueDate)
-    setPreserveDisplayLabel(shouldPreserveDisplayLabel)
-    setShowDateMenu(false)
-
-    const saved = await persistCardChanges(
-      {
-        dueDate: nextDueDate,
-        schedule: nextSchedule,
-      },
-      {
-        errorMessage: 'Não foi possível salvar a data do cartão.',
-        successMessage: 'Data salva.',
-      },
-    )
-
-    if (!saved) {
-      setSelectedCalendarDay(previousDateState.selectedCalendarDay)
-      setStartEnabled(previousDateState.startEnabled)
-      setStartDateValue(previousDateState.startDateValue)
-      setDueEnabled(previousDateState.dueEnabled)
-      setDueDateValue(previousDateState.dueDateValue)
-      setDueTimeValue(previousDateState.dueTimeValue)
-      setDueDate(previousDateState.dueDate)
-      setDisplayLabel(previousDateState.displayLabel)
-      setPreserveDisplayLabel(previousDateState.preserveDisplayLabel)
-    }
-  }
-  const handleDateRemove = async () => {
-    if (isMutating) return
-
-    const previousDateState = {
-      dueDate,
-      displayLabel,
-      preserveDisplayLabel,
-      dueEnabled,
-      dueDateValue,
-      dueTimeValue,
-    }
-    const nextSchedule = {
-      selectedCalendarDay,
-      startEnabled,
-      startDateValue,
-      dueEnabled: false,
-      dueDateValue: '',
-      dueTimeValue,
-      displayLabel: '',
-      preserveDisplayLabel: false,
-    }
-
-    setDueEnabled(false)
-    setDueDateValue('')
-    setDueDate('')
-    setDisplayLabel('')
-    setPreserveDisplayLabel(false)
-    setShowDateMenu(false)
-
-    const saved = await persistCardChanges(
-      {
-        dueDate: '',
-        schedule: nextSchedule,
-      },
-      {
-        errorMessage: 'Não foi possível remover a data do cartão.',
-        successMessage: 'Data removida.',
-      },
-    )
-
-    if (!saved) {
-      setDueEnabled(previousDateState.dueEnabled)
-      setDueDateValue(previousDateState.dueDateValue)
-      setDueTimeValue(previousDateState.dueTimeValue)
-      setDueDate(previousDateState.dueDate)
-      setDisplayLabel(previousDateState.displayLabel)
-      setPreserveDisplayLabel(previousDateState.preserveDisplayLabel)
-    }
-  }
   const getMemberName = (member) => {
     if (!member) return 'Membro'
     return member.name ?? member.email ?? member.initials ?? 'Membro'
@@ -1472,12 +1331,6 @@ export default function CardModal({
       clearTimeout(saveStatusTimeoutRef.current)
     }
   }, [])
-
-  useEffect(() => {
-    if (showDateMenu) {
-      setDateMenuMonth(buildCalendarBaseDate(dueDateValue || startDateValue))
-    }
-  }, [dueDateValue, showDateMenu, startDateValue])
 
   useEffect(() => {
     if (showChecklistDueMenu) {
@@ -1706,34 +1559,6 @@ export default function CardModal({
   }, [showLabelMenu])
 
   useEffect(() => {
-    if (!showDateMenu) return
-
-    const handlePointerDown = (event) => {
-      const clickedMenu = dateMenuRef.current?.contains(event.target)
-      const clickedButton = dateMenuButtonRef.current?.contains(event.target)
-        || dateMenuLabelRef.current?.contains(event.target)
-
-      if (!clickedMenu && !clickedButton) {
-        setShowDateMenu(false)
-      }
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        setShowDateMenu(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [showDateMenu])
-
-  useEffect(() => {
     if (!showTextMenu) return
 
     const handlePointerDown = (event) => {
@@ -1926,28 +1751,6 @@ export default function CardModal({
       window.removeEventListener('scroll', updatePosition, true)
     }
   }, [showLabelMenu])
-
-  useLayoutEffect(() => {
-    if (!showDateMenu || !dateMenuButtonRef.current) return
-
-    const updatePosition = () => {
-      const rect = dateMenuButtonRef.current.getBoundingClientRect()
-      setDateMenuPosition({
-        top: rect.bottom + 8,
-        left: Math.max(16, rect.left - 24),
-      })
-    }
-
-    updatePosition()
-
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [showDateMenu])
 
   useLayoutEffect(() => {
     if (!showTextMenu || !textMenuButtonRef.current) return
@@ -2195,27 +1998,11 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <button
-                    ref={dateMenuLabelRef}
-                    type="button"
-                    className={styles.cmPropertyLabelBtn}
-                    onClick={() => setShowDateMenu(v => !v)}
-                    aria-expanded={showDateMenu}
-                    aria-haspopup="dialog"
-                    disabled={isMutating}
-                  >
+                  <button type="button" className={styles.cmPropertyLabelBtn} disabled={isMutating}>
                     <Calendar size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Datas
                   </button>
                   <div className={styles.cmPropertyValue}>
-                    <button
-                      ref={dateMenuButtonRef}
-                      type="button"
-                      className={`${styles.cmPropertyBtn} ${showDateMenu ? styles.cmPropertyBtnActive : ''}`}
-                      onClick={() => setShowDateMenu(v => !v)}
-                      aria-expanded={showDateMenu}
-                      aria-haspopup="dialog"
-                      disabled={isMutating}
-                    >
+                    <span className={styles.cmPropertyBtn}>
                       {isDatesEmptyPlaceholder ? (
                         <span className={styles.cmPropertyDatesSummary}>
                           <span className={styles.cmPropertyDatesPart}>
@@ -2231,7 +2018,7 @@ export default function CardModal({
                       ) : (
                         datesSummary
                       )}
-                    </button>
+                    </span>
                   </div>
                 </div>
 
@@ -3354,122 +3141,6 @@ export default function CardModal({
               <span className={styles.cmLabelMenuCreateIcon}><Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
               Nova Etiqueta
             </button>
-          </div>
-        </div>
-      )}
-
-      {showDateMenu && (
-        <div
-          ref={dateMenuRef}
-          className={styles.cmDateMenu}
-          style={{ top: `${dateMenuPosition.top}px`, left: `${dateMenuPosition.left}px` }}
-          onClick={e => e.stopPropagation()}
-          role="dialog"
-          aria-modal="false"
-        >
-          <div className={styles.cmDateMenuHeader}>
-            <h3 className={styles.cmDateMenuTitle}>Datas</h3>
-            <button type="button" className={styles.cmDateMenuClose} onClick={() => setShowDateMenu(false)}>
-              <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className={styles.cmDateMenuMonthBar}>
-            <div className={styles.cmDateMenuMonthNav}>
-              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} aria-label="Mês anterior">
-                <ChevronLeft size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-              </button>
-            </div>
-            <span className={styles.cmDateMenuMonthLabel}>{formatCalendarMonthLabel(dateMenuMonth)}</span>
-            <div className={styles.cmDateMenuMonthNav}>
-              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))} aria-label="Próximo mês">
-                <ChevronRight size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.cmDateMenuWeekdays}>
-            {['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'].map(day => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-
-          <div className={styles.cmDateMenuGrid}>
-            {dateMenuDays.map((day, index) => (
-              <button
-                key={`${day.label}-${index}`}
-                type="button"
-                className={`${styles.cmDateMenuDay} ${day.muted ? styles.cmDateMenuDayMuted : ''} ${selectedCalendarDay === day.label && !day.muted ? styles.cmDateMenuDaySelected : ''}`}
-                onClick={() => {
-                  if (day.muted) return
-                  setSelectedCalendarDay(day.label)
-                  setDueDateValue(formatCalendarInputValue(day.label, dateMenuMonth))
-                }}
-              >
-                <span className={day.underline ? styles.cmDateMenuDayUnderline : ''}>{day.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.cmDateMenuFields}>
-            <div className={styles.cmDateMenuFieldGroup}>
-              <label className={styles.cmDateMenuFieldLabel}>Data de inicio</label>
-              <div className={styles.cmDateMenuInputRow}>
-                <button
-                  type="button"
-                  className={`${styles.cmDateCheckbox} ${startEnabled ? styles.cmDateCheckboxActive : ''}`}
-                  onClick={() => setStartEnabled(v => !v)}
-                  disabled={isMutating}
-                >
-                  {startEnabled && <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />}
-                </button>
-                <input
-                  type="text"
-                  className={styles.cmDateMenuInput}
-                  placeholder="D/M/AAAA"
-                  value={startDateValue}
-                  onChange={e => setStartDateValue(e.target.value)}
-                  disabled={!startEnabled || isMutating}
-                  aria-label="Data inicial"
-                />
-              </div>
-            </div>
-
-            <div className={styles.cmDateMenuFieldGroup}>
-              <label className={styles.cmDateMenuFieldLabel}>Data de entrega</label>
-              <div className={styles.cmDateMenuInputRow}>
-                <button
-                  type="button"
-                  className={`${styles.cmDateCheckbox} ${dueEnabled ? styles.cmDateCheckboxActive : ''}`}
-                  onClick={() => setDueEnabled(v => !v)}
-                  disabled={isMutating}
-                >
-                  {dueEnabled && <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />}
-                </button>
-                <input
-                  type="text"
-                  className={`${styles.cmDateMenuInput} ${styles.cmDateMenuInputCompact}`}
-                  value={dueDateValue}
-                  onChange={e => setDueDateValue(e.target.value)}
-                  disabled={!dueEnabled || isMutating}
-                  aria-label="Data de entrega"
-                />
-                <input
-                  type="text"
-                  className={`${styles.cmDateMenuInput} ${styles.cmDateMenuInputTime}`}
-                  value={dueTimeValue}
-                  onChange={e => setDueTimeValue(e.target.value)}
-                  disabled={!dueEnabled || isMutating}
-                  aria-label="Hora de entrega"
-                />
-              </div>
-            </div>
-
-          </div>
-
-          <div className={styles.cmDateMenuActions}>
-            <button type="button" className={styles.cmDateMenuSave} onClick={() => { void handleDateSave() }} disabled={isMutating}>Salvar</button>
-            <button type="button" className={styles.cmDateMenuRemove} onClick={() => { void handleDateRemove() }} disabled={isMutating}>Remover</button>
           </div>
         </div>
       )}

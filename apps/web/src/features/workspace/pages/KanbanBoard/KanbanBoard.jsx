@@ -64,15 +64,6 @@ const MEMBERS = [
   { id: 'm4', initials: 'SR', color: '#0f703a' },
 ]
 
-const CALENDAR_DAYS = [
-  { label: 29, muted: true }, { label: 30, muted: true }, { label: 31, muted: true }, { label: 1 }, { label: 2 }, { label: 3 }, { label: 4 },
-  { label: 5 }, { label: 6, underline: true }, { label: 7, selected: true }, { label: 8 }, { label: 9 }, { label: 10 }, { label: 11 },
-  { label: 12 }, { label: 13 }, { label: 14 }, { label: 15 }, { label: 16 }, { label: 17 }, { label: 18 },
-  { label: 19 }, { label: 20 }, { label: 21 }, { label: 22 }, { label: 23 }, { label: 24 }, { label: 25 },
-  { label: 26 }, { label: 27 }, { label: 28 }, { label: 29 }, { label: 30 }, { label: 1, muted: true }, { label: 2, muted: true },
-  { label: 3, muted: true }, { label: 4, muted: true }, { label: 5, muted: true }, { label: 6, muted: true }, { label: 7, muted: true }, { label: 8, muted: true }, { label: 9, muted: true },
-]
-
 const uid = () => Math.random().toString(36).slice(2, 9)
 
 function mapApiFileItem(item) {
@@ -2211,7 +2202,6 @@ export default function KanbanBoard() {
           labels={planLabels}
           members={planMembers}
           currentUser={currentUser}
-          calendarDays={CALENDAR_DAYS}
           styles={styles}
           isBackendDriven={isBackendDriven}
           planFiles={planFiles}

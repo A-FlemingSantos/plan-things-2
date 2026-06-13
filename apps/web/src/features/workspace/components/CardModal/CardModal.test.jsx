@@ -122,7 +122,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -158,7 +157,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         onCreateChecklist={createChecklist}
@@ -200,7 +198,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -240,7 +237,6 @@ describe('CardModal file picker positioning', () => {
         { id: 'member-2', name: 'Beatriz Souza', initials: 'BS', color: '#ff6766', email: 'beatriz@example.com' },
       ],
       currentUser: { id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' },
-      calendarDays: [],
       styles,
       isBackendDriven: true,
       planFiles: [],
@@ -293,7 +289,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -320,7 +315,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         onCreateChecklist={createChecklist}
@@ -381,7 +375,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         onCreateChecklist={async () => {}}
@@ -436,7 +429,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         onCreateChecklist={async () => {}}
@@ -475,7 +467,6 @@ describe('CardModal file picker positioning', () => {
           { id: 'member-1', name: 'Membro atual', email: 'member@example.com', color: '#4290da' },
         ]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -508,7 +499,6 @@ describe('CardModal file picker positioning', () => {
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        calendarDays={[]}
         styles={styles}
         isBackendDriven
         planFiles={[]}
