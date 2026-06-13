@@ -3097,7 +3097,7 @@
   display: block;
   width: 100%;
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 400;
   color: var(--text-2);
   background: transparent;
@@ -3106,7 +3106,7 @@
   outline: none;
   resize: none;
   padding: 20px 8px 4px;
-  line-height: 1.55;
+  line-height: 1.6;
   min-height: 120px;
   transition: color var(--transition-fast);
 }
