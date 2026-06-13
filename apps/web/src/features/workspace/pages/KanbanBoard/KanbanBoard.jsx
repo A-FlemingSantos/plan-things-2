@@ -2206,6 +2206,7 @@ export default function KanbanBoard() {
           onDelete={handleCardDelete}
           onMoveToNextColumn={handleMoveCardToNextColumn}
           canMoveToNextColumn={canMoveActiveCardToNextColumn}
+          onToggleCardCompleted={togglePlannerCardCompleted}
           onAddComment={isBackendDriven ? addCardComment : undefined}
           labels={planLabels}
           members={planMembers}

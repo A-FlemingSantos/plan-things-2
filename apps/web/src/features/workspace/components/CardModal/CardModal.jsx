@@ -383,6 +383,7 @@ export default function CardModal({
   onDelete,
   onMoveToNextColumn,
   canMoveToNextColumn = false,
+  onToggleCardCompleted,
   onAddComment,
   labels,
   members,
@@ -481,6 +482,7 @@ export default function CardModal({
   const [isSendingComment, setIsSendingComment] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isMovingToNextColumn, setIsMovingToNextColumn] = useState(false)
+  const [isTogglingCompleted, setIsTogglingCompleted] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const [saveStatus, setSaveStatus] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -561,7 +563,7 @@ export default function CardModal({
     resetChecklistItemDraft()
     setChecklistComposerOpen(false)
   }
-  const isInteractionBlocked = isSaving || isDeleting || isMovingToNextColumn
+  const isInteractionBlocked = isSaving || isDeleting || isMovingToNextColumn || isTogglingCompleted
   const isMutating = isInteractionBlocked || isSendingComment
 
   const updateSaveStatus = (message = '') => {
@@ -702,6 +704,17 @@ export default function CardModal({
       // Parent handles user feedback.
     } finally {
       setIsMovingToNextColumn(false)
+    }
+  }
+
+  const handleToggleCardCompleted = async () => {
+    if (isMutating || !onToggleCardCompleted) return
+
+    setIsTogglingCompleted(true)
+    try {
+      await onToggleCardCompleted(card)
+    } finally {
+      setIsTogglingCompleted(false)
     }
   }
 
@@ -2160,8 +2173,15 @@ export default function CardModal({
                           <MoveRight size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       </div>
-                      <button type="button" className={styles.cmStatusSplitAction} aria-label="Concluir tarefa">
-                        <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                      <button
+                        type="button"
+                        className={`${styles.cmStatusSplitAction} ${card.isCompleted ? styles.cmStatusSplitActionChecked : ''}`}
+                        aria-label={card.isCompleted ? 'Desmarcar tarefa concluída' : 'Concluir tarefa'}
+                        aria-pressed={Boolean(card.isCompleted)}
+                        disabled={isMutating}
+                        onClick={() => { void handleToggleCardCompleted() }}
+                      >
+                        <Check size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
                       </button>
                     </div>
                   </div>

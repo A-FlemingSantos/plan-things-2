@@ -2837,6 +2837,17 @@
   cursor: not-allowed;
 }
 
+.cmStatusSplitAction.cmStatusSplitActionChecked,
+.cmStatusSplitAction.cmStatusSplitActionChecked:hover:not(:disabled) {
+  background: var(--cm-accent);
+  color: var(--cm-accent-foreground);
+}
+
+.cmStatusSplitAction.cmStatusSplitActionChecked svg,
+.cmStatusSplitAction.cmStatusSplitActionChecked:hover:not(:disabled) svg {
+  color: var(--cm-accent-foreground);
+}
+
 .cmStatusPill {
   display: inline-flex;
   align-items: center;
