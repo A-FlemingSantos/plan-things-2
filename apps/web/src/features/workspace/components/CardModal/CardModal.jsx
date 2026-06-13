@@ -26,6 +26,7 @@ import {
   Maximize2,
   Monitor,
   Paperclip,
+  PencilLine,
   Plus,
   Search,
   SendHorizontal,
@@ -2339,25 +2340,35 @@ export default function CardModal({
                   <Maximize2 size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
                 </button>
               </div>
-              <textarea
-                className={styles.cmDesc}
-                value={desc}
-                onChange={(event) => setDesc(event.target.value)}
-                onBlur={() => {
-                  void saveDescription()
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape' && !isMutating) {
-                    event.preventDefault()
-                    setDesc(savedDesc)
-                    event.currentTarget.blur()
-                  }
-                }}
-                placeholder="Adicione uma descrição ou escreva com IA"
-                rows={4}
-                aria-label="Descrição do cartão"
-                disabled={isMutating}
-              />
+              <div className={styles.cmDescEditor}>
+                {!desc.trim() ? (
+                  <div className={styles.cmDescPlaceholder} aria-hidden="true">
+                    <span>Adicione uma descrição ou escreva com</span>
+                    <span className={styles.cmDescPlaceholderAi}>
+                      <PencilLine size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                      <span>IA</span>
+                    </span>
+                  </div>
+                ) : null}
+                <textarea
+                  className={styles.cmDesc}
+                  value={desc}
+                  onChange={(event) => setDesc(event.target.value)}
+                  onBlur={() => {
+                    void saveDescription()
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape' && !isMutating) {
+                      event.preventDefault()
+                      setDesc(savedDesc)
+                      event.currentTarget.blur()
+                    }
+                  }}
+                  rows={4}
+                  aria-label="Descrição do cartão"
+                  disabled={isMutating}
+                />
+              </div>
             </div>
 
             <div className={styles.cmActionList}>

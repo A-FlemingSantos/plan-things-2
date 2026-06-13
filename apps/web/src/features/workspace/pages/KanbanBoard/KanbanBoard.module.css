@@ -3146,6 +3146,41 @@
   cursor: not-allowed;
 }
 
+.cmDescEditor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cmDescPlaceholder {
+  position: absolute;
+  top: 20px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-3);
+  pointer-events: none;
+  user-select: none;
+}
+
+.cmDescPlaceholderAi {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cmDescPlaceholderAi svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
 .cmDesc {
   display: block;
   width: 100%;
@@ -3163,8 +3198,6 @@
   min-height: 120px;
   transition: color var(--transition-fast);
 }
-
-.cmDesc::placeholder { color: var(--text-3); }
 
 .cmDesc:disabled {
   opacity: .75;
