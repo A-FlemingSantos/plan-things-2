@@ -3095,8 +3095,53 @@
 .cmDescSection {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   padding-top: 4px;
+}
+
+.cmDesc {
+  display: block;
+  width: 100%;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-2);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  outline: none;
+  resize: none;
+  padding: 4px 8px;
+  line-height: 1.55;
+  min-height: 120px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmDesc::placeholder { color: var(--text-3); }
+
+.cmDesc:disabled {
+  opacity: .75;
+  cursor: not-allowed;
+}
+
+.cmDescSection:hover .cmDesc:not(:focus):not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.cmDesc:focus {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-1);
+}
+
+.cmDescSection:focus-within::after,
+.cmDescSectionHasValue::after {
+  content: '';
+  display: block;
+  height: 1px;
+  background: var(--border-1);
+  margin: 4px 0 0;
 }
 
 .cmTitleRow {
@@ -3303,118 +3348,6 @@
   font-size: 14px;
   color: var(--text-1);
   font-weight: 600;
-}
-
-.cmDescComposer {
-  width: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow: hidden;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), border-radius var(--transition-fast);
-}
-
-.cmDescComposerActive {
-  border-radius: 8px;
-  border: 1px solid var(--cm-accent);
-  background: var(--surface-2);
-  box-shadow: 0 0 0 1px var(--cm-accent);
-  padding: 0 12px;
-}
-
-.cmDesc {
-  display: block;
-  width: 100%;
-  font-family: var(--font-family);
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--text-1);
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  outline: none;
-  resize: none;
-  padding: 8px 0;
-  line-height: 1.55;
-  min-height: 48px;
-  max-height: 48px;
-  overflow-y: hidden;
-  transition: min-height 160ms ease, max-height 160ms ease;
-}
-
-.cmDescExpanded {
-  min-height: 160px;
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.cmDesc::placeholder { color: var(--text-3); }
-
-.cmDesc:focus {
-  box-shadow: none;
-  background: transparent;
-}
-
-.cmDesc:disabled {
-  opacity: .75;
-  cursor: progress;
-}
-
-.cmDescActions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  padding-top: 10px;
-  flex-wrap: wrap;
-}
-
-.cmDescSaveBtn {
-  min-height: 32px;
-  padding: 0 14px;
-  border-radius: 8px;
-  background: var(--kanban-accent-color, var(--focus-ring));
-  color: var(--kanban-accent-foreground, var(--text-on-accent));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-  font-family: var(--font-family);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.cmDescSaveBtn:hover:not(:disabled) {
-  opacity: .82;
-}
-
-.cmDescSaveBtn:disabled {
-  opacity: .35;
-  cursor: not-allowed;
-}
-
-.cmDescCancelBtn {
-  min-height: 32px;
-  padding: 0 4px;
-  background: transparent;
-  color: var(--text-2);
-  font-family: var(--font-family);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: color var(--transition-fast), opacity var(--transition-fast);
-}
-
-.cmDescCancelBtn:hover:not(:disabled) {
-  color: var(--text-1);
-}
-
-.cmDescCancelBtn:disabled {
-  opacity: .45;
-  cursor: not-allowed;
 }
 
 .cmSaveRow {
