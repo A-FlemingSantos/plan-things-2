@@ -7,6 +7,8 @@ import {
   MoveRight,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Clock,
   Code,
   Download,
@@ -424,6 +426,7 @@ export default function CardModal({
   const [activityEvents, setActivityEvents] = useState([])
   const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
   const [exiting,  setExiting]  = useState(false)
+  const [isActivitySidebarOpen, setIsActivitySidebarOpen] = useState(true)
   const [commentFocused, setCommentFocused] = useState(false)
   const [commentFollow, setCommentFollow] = useState(false)
   const [showMembersMenu, setShowMembersMenu] = useState(false)
@@ -2057,7 +2060,7 @@ export default function CardModal({
           </div>
         </div>
 
-        <div className={styles.cmBody}>
+        <div className={`${styles.cmBody} ${!isActivitySidebarOpen ? styles.cmBodyActivityCollapsed : ''}`}>
           <div className={styles.cmMain}>
             <div className={styles.cmTaskTypeRow}>
               <button type="button" className={styles.cmTaskTypePill} aria-label="Tipo de tarefa">
@@ -2665,6 +2668,24 @@ export default function CardModal({
               ) : null}
           </div>
 
+          <div className={`${styles.cmSidebarShell} ${!isActivitySidebarOpen ? styles.cmSidebarShellCollapsed : ''}`}>
+            <button
+              type="button"
+              className={styles.cmSidebarToggleBtn}
+              title={isActivitySidebarOpen ? 'Recolher Activity' : 'Expandir Activity'}
+              aria-label={isActivitySidebarOpen ? 'Recolher Activity' : 'Expandir Activity'}
+              aria-expanded={isActivitySidebarOpen}
+              onClick={() => setIsActivitySidebarOpen((open) => !open)}
+              disabled={isMutating}
+            >
+              {isActivitySidebarOpen ? (
+                <ChevronsRight size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              ) : (
+                <ChevronsLeft size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              )}
+            </button>
+
+            {isActivitySidebarOpen ? (
           <div className={styles.cmSidebar}>
             <div className={styles.cmSidebarHeader}>
               <p className={styles.cmSidebarTitle}>Activity</p>
@@ -2844,6 +2865,8 @@ export default function CardModal({
                 </div>
               </div>
             </div>
+          </div>
+            ) : null}
           </div>
         </div>
 

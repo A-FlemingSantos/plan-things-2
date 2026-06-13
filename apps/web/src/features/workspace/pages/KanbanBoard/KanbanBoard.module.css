@@ -2347,6 +2347,7 @@
   --cm-comment-card-border: var(--border-1);
   --cm-main-padding-inline: 72px;
   --cm-sidebar-width: 520px;
+  --cm-main-solo-max-width: min(1040px, 100%);
   width: min(1560px, 97vw);
   max-width: min(1560px, 97vw);
   min-height: min(880px, 92vh);
@@ -2519,6 +2520,67 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+.cmBodyActivityCollapsed {
+  grid-template-columns: minmax(0, 1fr) 0;
+}
+
+.cmBodyActivityCollapsed .cmMain {
+  width: 100%;
+  max-width: var(--cm-main-solo-max-width);
+  margin-inline: auto;
+}
+
+.cmSidebarShell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: visible;
+}
+
+.cmSidebarShell > .cmSidebar {
+  flex: 1;
+  min-height: 0;
+}
+
+.cmSidebarToggleBtn {
+  position: absolute;
+  top: 20px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  background: var(--surface-1);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmSidebarShell:not(.cmSidebarShellCollapsed) .cmSidebarToggleBtn {
+  left: -34px;
+}
+
+.cmSidebarShellCollapsed .cmSidebarToggleBtn {
+  right: 6px;
+}
+
+.cmSidebarToggleBtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.cmSidebarToggleBtn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 
 .cmMain {
