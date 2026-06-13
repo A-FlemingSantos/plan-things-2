@@ -40,3 +40,35 @@ export function buildBrazilDateRange(startValue = '', endValue = '') {
 
   return null
 }
+
+export function isSameCalendarDate(left, right) {
+  if (!left || !right) return false
+  return left.compare(right) === 0
+}
+
+export function resolveCardScheduleFromRange(range) {
+  if (!range?.start || !range?.end) {
+    return null
+  }
+
+  const dueDateValue = formatCalendarDateToBrazil(range.end)
+  const isSingleDueDate = isSameCalendarDate(range.start, range.end)
+
+  if (isSingleDueDate) {
+    return {
+      startEnabled: false,
+      startDateValue: '',
+      dueEnabled: true,
+      dueDateValue,
+      selectedCalendarDay: range.end.day,
+    }
+  }
+
+  return {
+    startEnabled: true,
+    startDateValue: formatCalendarDateToBrazil(range.start),
+    dueEnabled: true,
+    dueDateValue,
+    selectedCalendarDay: range.end.day,
+  }
+}

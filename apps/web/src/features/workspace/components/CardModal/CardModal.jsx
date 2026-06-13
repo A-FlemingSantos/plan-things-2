@@ -46,7 +46,7 @@ import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvat
 import { RangeCalendar as DateRangeCalendar } from '../../../../shared/components/Calendar/Calendar.jsx'
 import {
   buildBrazilDateRange,
-  formatCalendarDateToBrazil,
+  resolveCardScheduleFromRange,
 } from '../../../../shared/components/Calendar/calendarDateUtils.js'
 import { formatFileSize } from '../../../files/data/libraryRepository.js'
 import { createOffsetDateTime } from '@plan-things/shared-client/dates'
@@ -82,6 +82,8 @@ const DEFAULT_CARD_SCHEDULE = {
   displayLabel: '',
   preserveDisplayLabel: false,
 }
+
+const MONTH_LABELS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 const FILE_PICKER_DESKTOP_WIDTH = 680
 const FILE_PICKER_MOBILE_WIDTH = 360
@@ -160,6 +162,48 @@ function formatCalendarMonthLabel(baseDate) {
     month: 'long',
     year: 'numeric',
   }).format(baseDate)
+}
+
+function formatDueDateLabelFromValue(dateValue, fallbackDay) {
+  const match = dateValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+
+  if (!match) {
+    return fallbackDay ? `${fallbackDay} abr` : ''
+  }
+
+  const [, dayValue, monthValue] = match
+  const day = Number(dayValue)
+  const monthIndex = Number(monthValue) - 1
+  const monthLabel = MONTH_LABELS[monthIndex] ?? 'abr'
+
+  return `${day} ${monthLabel}`
+}
+
+function PropertyDatesSummary({
+  startEnabled,
+  startDateValue,
+  dueEnabled,
+  dueDateValue,
+  styles,
+  iconSize,
+  iconStroke,
+}) {
+  const hasStart = Boolean(startEnabled && startDateValue)
+  const hasDue = Boolean(dueEnabled && dueDateValue)
+
+  return (
+    <span className={styles.cmPropertyDatesSummary}>
+      <span className={styles.cmPropertyDatesPart}>
+        <CalendarPlus size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+        {hasStart ? startDateValue : 'Início'}
+      </span>
+      <span className={styles.cmPropertyDatesSep} aria-hidden="true">→</span>
+      <span className={styles.cmPropertyDatesPart}>
+        <CalendarPlus size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+        {hasDue ? dueDateValue : 'Vencimento'}
+      </span>
+    </span>
+  )
 }
 
 function buildInitialCardSchedule(card) {
@@ -533,6 +577,8 @@ export default function CardModal({
   const commentTextRefs = useRef({})
   const activityFeedRef = useRef(null)
   const saveStatusTimeoutRef = useRef(null)
+  const dateRangePersistTimeoutRef = useRef(null)
+  const pendingDateRangePersistRef = useRef(null)
   const dialogTitleId = `card-modal-title-${card.id}`
 
   useEffect(() => {
@@ -1253,9 +1299,6 @@ export default function CardModal({
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
   const selectedMembersSummary = selectedMembers.map(getMemberName).join(', ')
   const selectedLabelSummary = label?.text ?? ''
-  const selectedDueDateSummary = dueEnabled && dueDateValue && (displayLabel || dueDate)
-    ? dueDateValue
-    : ''
   const createdAtLabel = formatCardCreatedLabel(activityBase.createdAt) ?? formatCardCreatedLabel(activityBase.created) ?? 'Recentemente'
   const visibleComments = useMemo(() => comments.filter(isUserComment), [comments])
   const activityFeedItems = useMemo(
@@ -1270,21 +1313,125 @@ export default function CardModal({
     }),
     [activityBase, comments, activityEvents, currentUserName, createdAtLabel, members],
   )
-  const datesSummary = selectedDueDateSummary
-    || (startEnabled && startDateValue ? `${startDateValue} → Vencimento` : null)
-  const isDatesEmptyPlaceholder = !datesSummary
   const selectedCalendarRange = useMemo(
     () => buildBrazilDateRange(startDateValue, dueDateValue),
     [startDateValue, dueDateValue],
   )
-  const handleCalendarRangeChange = (range) => {
-    if (!range?.start || !range?.end) return
+  const saveDateRange = async ({
+    resolvedSchedule,
+    previousDateState,
+  }) => {
+    if (isMutating || !resolvedSchedule) return
 
-    setStartDateValue(formatCalendarDateToBrazil(range.start))
-    setStartEnabled(true)
-    setDueDateValue(formatCalendarDateToBrazil(range.end))
-    setDueEnabled(true)
-    setSelectedCalendarDay(range.end.day)
+    const {
+      startEnabled: nextStartEnabled,
+      startDateValue: nextStartDateValue,
+      dueEnabled: nextDueEnabled,
+      dueDateValue: nextDueDateValue,
+      selectedCalendarDay: nextSelectedCalendarDay,
+    } = resolvedSchedule
+
+    const shouldPreserveDisplayLabel =
+      previousDateState.dueEnabled &&
+      previousDateState.preserveDisplayLabel &&
+      nextDueDateValue === previousDateState.dueDateValue &&
+      nextSelectedCalendarDay === previousDateState.selectedCalendarDay
+
+    const nextDueDate = formatDueDateLabelFromValue(nextDueDateValue, nextSelectedCalendarDay)
+    const nextSchedule = {
+      selectedCalendarDay: nextSelectedCalendarDay,
+      startEnabled: nextStartEnabled,
+      startDateValue: nextStartDateValue,
+      dueEnabled: nextDueEnabled,
+      dueDateValue: nextDueDateValue,
+      dueTimeValue: previousDateState.dueTimeValue,
+      displayLabel: nextDueDate,
+      preserveDisplayLabel: shouldPreserveDisplayLabel,
+    }
+
+    setStartEnabled(nextStartEnabled)
+    setStartDateValue(nextStartDateValue)
+    setDueEnabled(nextDueEnabled)
+    setDueDateValue(nextDueDateValue)
+    setSelectedCalendarDay(nextSelectedCalendarDay)
+    setDueDate(nextDueDate)
+    setDisplayLabel(nextDueDate)
+    setPreserveDisplayLabel(shouldPreserveDisplayLabel)
+
+    const saved = await persistCardChanges(
+      {
+        dueDate: nextDueDate,
+        schedule: nextSchedule,
+      },
+      {
+        errorMessage: 'Não foi possível salvar a data do cartão.',
+        successMessage: 'Data salva.',
+      },
+    )
+
+    if (!saved) {
+      setSelectedCalendarDay(previousDateState.selectedCalendarDay)
+      setStartEnabled(previousDateState.startEnabled)
+      setStartDateValue(previousDateState.startDateValue)
+      setDueEnabled(previousDateState.dueEnabled)
+      setDueDateValue(previousDateState.dueDateValue)
+      setDueTimeValue(previousDateState.dueTimeValue)
+      setDueDate(previousDateState.dueDate)
+      setDisplayLabel(previousDateState.displayLabel)
+      setPreserveDisplayLabel(previousDateState.preserveDisplayLabel)
+    }
+  }
+  const flushPendingDateRangePersist = () => {
+    const pending = pendingDateRangePersistRef.current
+    if (!pending) return
+
+    if (dateRangePersistTimeoutRef.current) {
+      clearTimeout(dateRangePersistTimeoutRef.current)
+      dateRangePersistTimeoutRef.current = null
+    }
+
+    pendingDateRangePersistRef.current = null
+    void saveDateRange(pending)
+  }
+  const handleCalendarRangeChange = (range) => {
+    const resolvedSchedule = resolveCardScheduleFromRange(range)
+    if (!resolvedSchedule) return
+
+    const previousDateState = {
+      dueDate,
+      displayLabel,
+      preserveDisplayLabel,
+      dueEnabled,
+      dueDateValue,
+      dueTimeValue,
+      startEnabled,
+      startDateValue,
+      selectedCalendarDay,
+    }
+
+    setStartEnabled(resolvedSchedule.startEnabled)
+    setStartDateValue(resolvedSchedule.startDateValue)
+    setDueEnabled(resolvedSchedule.dueEnabled)
+    setDueDateValue(resolvedSchedule.dueDateValue)
+    setSelectedCalendarDay(resolvedSchedule.selectedCalendarDay)
+
+    pendingDateRangePersistRef.current = {
+      resolvedSchedule,
+      previousDateState,
+    }
+
+    if (dateRangePersistTimeoutRef.current) {
+      clearTimeout(dateRangePersistTimeoutRef.current)
+    }
+
+    dateRangePersistTimeoutRef.current = setTimeout(() => {
+      dateRangePersistTimeoutRef.current = null
+      const pending = pendingDateRangePersistRef.current
+      pendingDateRangePersistRef.current = null
+      if (pending) {
+        void saveDateRange(pending)
+      }
+    }, 350)
   }
   const handleLabelSelect = async (nextLabelId) => {
     if (isMutating) return
@@ -1608,6 +1755,30 @@ export default function CardModal({
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [showDateMenu])
+
+  useEffect(() => {
+    if (showDateMenu) return undefined
+
+    const pending = pendingDateRangePersistRef.current
+    if (!pending) return undefined
+
+    if (dateRangePersistTimeoutRef.current) {
+      clearTimeout(dateRangePersistTimeoutRef.current)
+      dateRangePersistTimeoutRef.current = null
+    }
+
+    pendingDateRangePersistRef.current = null
+    void saveDateRange(pending)
+
+    return undefined
+  }, [showDateMenu])
+
+  useEffect(() => () => {
+    if (dateRangePersistTimeoutRef.current) {
+      clearTimeout(dateRangePersistTimeoutRef.current)
+      dateRangePersistTimeoutRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     if (!showTextMenu) return
@@ -2092,21 +2263,15 @@ export default function CardModal({
                       aria-haspopup="dialog"
                       disabled={isMutating}
                     >
-                      {isDatesEmptyPlaceholder ? (
-                        <span className={styles.cmPropertyDatesSummary}>
-                          <span className={styles.cmPropertyDatesPart}>
-                            <CalendarPlus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-                            Início
-                          </span>
-                          <span className={styles.cmPropertyDatesSep} aria-hidden="true">→</span>
-                          <span className={styles.cmPropertyDatesPart}>
-                            <CalendarPlus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-                            Vencimento
-                          </span>
-                        </span>
-                      ) : (
-                        datesSummary
-                      )}
+                      <PropertyDatesSummary
+                        startEnabled={startEnabled}
+                        startDateValue={startDateValue}
+                        dueEnabled={dueEnabled}
+                        dueDateValue={dueDateValue}
+                        styles={styles}
+                        iconSize={ICON_SIZE}
+                        iconStroke={ICON_STROKE}
+                      />
                     </button>
                   </div>
                 </div>
