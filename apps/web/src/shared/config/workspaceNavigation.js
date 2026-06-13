@@ -6,6 +6,7 @@ export const WORKSPACE_PRIMARY_NAV_ITEMS = [
   { id: 'templates', label: 'Templates' },
   { id: 'inbox', label: 'Inbox' },
   { id: 'library', label: 'Biblioteca' },
+  { id: 'knowledge', label: 'Knowledge' },
 ]
 
 export const WORKSPACE_SETTINGS_NAV_ITEM = {

@@ -3,6 +3,7 @@ import {
   Inbox,
   LayoutTemplate,
   LibraryBig,
+  BookOpenText,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
@@ -22,6 +23,7 @@ const NAV_ICONS = {
   templates: LayoutTemplate,
   inbox: Inbox,
   library: LibraryBig,
+  knowledge: BookOpenText,
   settings: Settings,
 }
 
