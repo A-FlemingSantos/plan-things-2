@@ -12,9 +12,6 @@ vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.j
 }))
 
 const styles = new Proxy({}, { get: (_, key) => String(key) })
-const icons = new Proxy({}, {
-  get: (_, key) => () => <span aria-hidden="true">{String(key)}</span>,
-})
 
 function buildCard(overrides = {}) {
   return {
@@ -126,7 +123,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -163,7 +159,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         onCreateChecklist={createChecklist}
@@ -203,7 +198,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -250,7 +244,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -291,7 +284,6 @@ describe('CardModal file picker positioning', () => {
       ],
       currentUser: { id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' },
       calendarDays: [],
-      icons,
       styles,
       isBackendDriven: true,
       planFiles: [],
@@ -345,7 +337,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         planFiles={[]}
@@ -373,7 +364,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         onCreateChecklist={createChecklist}
@@ -435,7 +425,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         onCreateChecklist={async () => {}}
@@ -491,7 +480,6 @@ describe('CardModal file picker positioning', () => {
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         onCreateChecklist={async () => {}}
@@ -531,7 +519,6 @@ describe('CardModal file picker positioning', () => {
         ]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         calendarDays={[]}
-        icons={icons}
         styles={styles}
         isBackendDriven
         planFiles={[]}

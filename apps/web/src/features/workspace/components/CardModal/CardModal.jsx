@@ -1,7 +1,44 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  AtSign,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Code,
+  Download,
+  Ellipsis,
+  FileText,
+  Flag,
+  Folder,
+  Funnel,
+  Image,
+  LayoutGrid,
+  Library,
+  Link,
+  List,
+  Monitor,
+  Paperclip,
+  Play,
+  Plus,
+  Search,
+  SendHorizontal,
+  SmilePlus,
+  Sparkles,
+  Star,
+  Tag,
+  ThumbsUp,
+  Trash2,
+  Users,
+  X,
+} from 'lucide-react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import { formatFileSize } from '../../../files/data/libraryRepository.js'
 import { createOffsetDateTime } from '@plan-things/shared-client/dates'
+
+const ICON_SIZE = 15
+const ICON_SIZE_SM = 12
+const ICON_STROKE = 1.75
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 const USER_COMMENT_KIND = 'USER_COMMENT'
@@ -302,135 +339,6 @@ function getChecklistAssigneeName(item) {
   return item.assignee?.fullName ?? item.assignee?.name ?? item.assignee?.email ?? ''
 }
 
-function ComputerIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <rect x="2" y="2.5" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M5 11.5h4M4 9.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function FolderIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2.25 4.75A1.75 1.75 0 0 1 4 3h2.1c.34 0 .67.14.91.39l.7.72c.24.24.57.39.91.39H12A1.75 1.75 0 0 1 13.75 6v5.25A1.75 1.75 0 0 1 12 13H4a1.75 1.75 0 0 1-1.75-1.75V4.75Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function LibraryIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2.5 4.25A1.75 1.75 0 0 1 4.25 2.5H7.5v10.75H4.25A1.75 1.75 0 0 0 2.5 15V4.25Zm11 0A1.75 1.75 0 0 0 11.75 2.5H8.5v10.75h3.25c.97 0 1.75.78 1.75 1.75V4.25Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function SearchIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="7.1" cy="7.1" r="4.6" stroke="currentColor" strokeWidth="1.3" />
-      <path d="m10.7 10.7 2.8 2.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function ThumbsUpIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M4.75 13.5h-1a1 1 0 0 1-1-1V7.25a1 1 0 0 1 1-1h1v7.25ZM6.25 6.25 8.3 2.9a.75.75 0 0 1 1.28.53V6.5h2.42c.97 0 1.75.78 1.75 1.75l-.65 3.9a1.75 1.75 0 0 1-1.73 1.47H6.25V6.25Z"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function AddReactionIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="7.25" cy="7.75" r="4.25" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M5.6 7.9h.01M7.25 7.9h.01M8.9 7.9h.01" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M5.35 9.55a2 2 0 0 0 3.8 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M11.75 4.25v2.5M10.5 5.5h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function PlayIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-      <path d="M3 2.2 9.5 6 3 9.8V2.2Z" fill="currentColor" />
-    </svg>
-  )
-}
-
-function FilterIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2.5 4.25h11l-4.2 4.65v3.1l-2.6 1.5V8.9L2.5 4.25Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function ViewListIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4.5 4.5h8M4.5 8h8m-8 3.5h8M2.75 4.5h.5m-.5 3.5h.5m-.5 3.5h.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function AttachmentIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="m6.1 8.95 3.44-3.44a1.83 1.83 0 0 1 2.6 2.58l-4.2 4.28a3 3 0 0 1-4.25-4.24L7.95 3.9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function ComposerAppsIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="2" y="2" width="5" height="5" rx="1.2" fill="#9b59b6" />
-      <rect x="9" y="2" width="5" height="5" rx="1.2" fill="#e67e22" />
-      <rect x="2" y="9" width="5" height="5" rx="1.2" fill="#2980b9" />
-      <rect x="9" y="9" width="5" height="5" rx="1.2" fill="#27ae60" />
-    </svg>
-  )
-}
-
-function ComposerMentionIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M11 8c0 1.66 0 3 2 3V5c-2 0-2 1.34-2 3Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  )
-}
-
-function ComposerMoreIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="3.5" cy="8" r="1.2" fill="currentColor" />
-      <circle cx="8" cy="8" r="1.2" fill="currentColor" />
-      <circle cx="12.5" cy="8" r="1.2" fill="currentColor" />
-    </svg>
-  )
-}
-
-function ComposerSendIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      <path d="M15.1 1.1 1.3 6.1c-.55.2-.52.95.04 1.12l5.4 1.72 1.72 5.4c.17.56.92.59 1.12.04L15.1 1.1Z" />
-    </svg>
-  )
-}
-
 function getFileExtension(name = '') {
   const parts = name.toLowerCase().split('.')
   return parts.length > 1 ? parts.at(-1) ?? '' : ''
@@ -473,7 +381,6 @@ export default function CardModal({
   members,
   currentUser,
   calendarDays,
-  icons,
   styles,
   isBackendDriven = false,
   planFiles = [],
@@ -2125,9 +2032,9 @@ export default function CardModal({
             <button type="button" className={styles.cmTopBarLink}>Faça uma pergunta</button>
             <button type="button" className={styles.cmTopBarLink}>Compartilhar</button>
             <span className={styles.cmTopBarDivider} aria-hidden="true" />
-            <button type="button" className={styles.cmIconBtn} title="Favoritar" aria-label="Favoritar"><icons.Star /></button>
-            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão" disabled={isMutating}><icons.Trash /></button>
-            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão" disabled={isMutating}><icons.X /></button>
+            <button type="button" className={styles.cmIconBtn} title="Favoritar" aria-label="Favoritar"><Star size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão" disabled={isMutating}><Trash2 size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
+            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão" disabled={isMutating}><X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
           </div>
         </div>
 
@@ -2135,9 +2042,9 @@ export default function CardModal({
           <div className={styles.cmMain}>
             <div className={styles.cmTaskTypeRow}>
               <button type="button" className={styles.cmTaskTypePill} aria-label="Tipo de tarefa">
-                <span className={styles.cmTaskTypeIcon}><icons.List /></span>
+                <span className={styles.cmTaskTypeIcon}><List size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                 <span>Tarefa</span>
-                <span className={styles.cmStatusBtnIcon}><icons.Chevron /></span>
+                <span className={styles.cmStatusBtnIcon}><ChevronRight size={11} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
               </button>
             </div>
 
@@ -2177,7 +2084,7 @@ export default function CardModal({
                         void saveTitle()
                       }}
                     >
-                      <icons.Check />
+                      <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -2187,7 +2094,7 @@ export default function CardModal({
                       disabled={isMutating}
                       onClick={cancelTitleEdit}
                     >
-                      <icons.X />
+                      <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                     </button>
                   </>
                 )}
@@ -2197,7 +2104,9 @@ export default function CardModal({
             <div className={styles.cmAiBar}>
               <span className={styles.cmAiBarIcon} aria-hidden="true">
                 <span className={styles.cmAiBarIconGlow} aria-hidden="true" />
-                <span className={styles.cmAiBarIconMark}>✦</span>
+                <span className={styles.cmAiBarIconMark}>
+                  <Sparkles size={11} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                </span>
               </span>
               <span className={styles.cmAiBarText}>Peça ao Intelligence para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes</span>
             </div>
@@ -2210,15 +2119,15 @@ export default function CardModal({
                     <span className={styles.cmStatusPill}>
                       {colTitle}
                       <span className={styles.cmStatusPillActions}>
-                        <button type="button" className={styles.cmStatusPillAction} aria-label="Iniciar tarefa"><PlayIcon /></button>
-                        <button type="button" className={styles.cmStatusPillAction} aria-label="Concluir tarefa"><icons.Check /></button>
+                        <button type="button" className={styles.cmStatusPillAction} aria-label="Iniciar tarefa"><Play size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" fill="currentColor" /></button>
+                        <button type="button" className={styles.cmStatusPillAction} aria-label="Concluir tarefa"><Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
                       </span>
                     </span>
                   </div>
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><icons.Clock /> Datas</span>
+                  <span className={styles.cmPropertyLabel}><Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Datas</span>
                   <div className={styles.cmPropertyValue}>
                     <button
                       ref={dateMenuButtonRef}
@@ -2235,14 +2144,14 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><icons.Clock /> Estimativa de tempo</span>
+                  <span className={styles.cmPropertyLabel}><Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Estimativa de tempo</span>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Vazio</span>
                   </div>
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><icons.Tag /> Etiquetas</span>
+                  <span className={styles.cmPropertyLabel}><Tag size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Etiquetas</span>
                   <div className={styles.cmPropertyValue}>
                     <button
                       ref={labelMenuButtonRef}
@@ -2271,7 +2180,7 @@ export default function CardModal({
 
               <div className={styles.cmPropertiesCol}>
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><icons.User /> Responsáveis</span>
+                  <span className={styles.cmPropertyLabel}><Users size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Responsáveis</span>
                   <div className={styles.cmPropertyValue}>
                     <button
                       ref={membersMenuButtonRef}
@@ -2302,14 +2211,14 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><icons.Priority /> Prioridade</span>
+                  <span className={styles.cmPropertyLabel}><Flag size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Prioridade</span>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Vazio</span>
                   </div>
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><PlayIcon /> Rastrear tempo</span>
+                  <span className={styles.cmPropertyLabel}><Play size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" fill="currentColor" /> Rastrear tempo</span>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Start</span>
                   </div>
@@ -2365,7 +2274,7 @@ export default function CardModal({
                     aria-label="Salvar descrição"
                     title="Salvar descrição"
                   >
-                    <icons.Check />
+                    <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
                     <span>Salvar</span>
                   </button>
                   <button
@@ -2385,15 +2294,15 @@ export default function CardModal({
 
             <div className={styles.cmActionList}>
               <button type="button" className={styles.cmActionItem}>
-                <span className={styles.cmActionItemIcon}><icons.Plus /></span>
+                <span className={styles.cmActionItemIcon}><Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                 Adicione os campos
               </button>
               <button type="button" className={styles.cmActionItem}>
-                <span className={styles.cmActionItemIcon}><icons.Plus /></span>
+                <span className={styles.cmActionItemIcon}><Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                 Adicionar subtarefa
               </button>
               <button type="button" className={styles.cmActionItem}>
-                <span className={styles.cmActionItemIcon}><icons.Link /></span>
+                <span className={styles.cmActionItemIcon}><Link size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                 Vincular itens ou adicionar dependências
               </button>
               <button
@@ -2414,7 +2323,7 @@ export default function CardModal({
                       : undefined
                 }
               >
-                <span className={styles.cmActionItemIcon}><icons.Check /></span>
+                <span className={styles.cmActionItemIcon}><Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                 Criar checklist
               </button>
               <div ref={attachmentAddSplitRef} className={styles.cmActionAttachWrap}>
@@ -2432,7 +2341,7 @@ export default function CardModal({
                   }}
                   disabled={uploadingLocalFile}
                 >
-                  <span className={styles.cmActionItemIcon}><AttachmentIcon /></span>
+                  <span className={styles.cmActionItemIcon}><Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                   {uploadingLocalFile ? 'Enviando...' : 'Anexar arquivo'}
                 </button>
 
@@ -2450,7 +2359,7 @@ export default function CardModal({
                       }}
                       role="menuitem"
                     >
-                      <span className={styles.cmAttachmentAddMenuItemIcon}><icons.Files /></span>
+                      <span className={styles.cmAttachmentAddMenuItemIcon}><FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                       Biblioteca
                     </button>
                     <button
@@ -2462,7 +2371,7 @@ export default function CardModal({
                       }}
                       role="menuitem"
                     >
-                      <span className={styles.cmAttachmentAddMenuItemIcon}><ComputerIcon /></span>
+                      <span className={styles.cmAttachmentAddMenuItemIcon}><Monitor size={14} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                       Meu Computador
                     </button>
                   </div>
@@ -2483,7 +2392,7 @@ export default function CardModal({
               <div className={styles.cmInlineAttachments}>
                 {attachments.map((attachment) => (
                   <div key={attachment.id} className={styles.cmInlineAttachmentRow}>
-                    <span className={styles.cmInlineAttachmentIcon}><icons.Files /></span>
+                    <span className={styles.cmInlineAttachmentIcon}><FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                     <div className={styles.cmInlineAttachmentBody}>
                       <span className={styles.cmInlineAttachmentName}>{attachment.name}</span>
                       <span className={styles.cmInlineAttachmentMeta}>
@@ -2503,7 +2412,7 @@ export default function CardModal({
                           }}
                           aria-label={`Baixar ${attachment.name}`}
                         >
-                          <icons.Download />
+                          <Download size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       ) : null}
                       {attachment.canRemove ? (
@@ -2514,7 +2423,7 @@ export default function CardModal({
                           disabled={removingAttachmentId === attachment.id}
                           aria-label={`Remover ${attachment.name}`}
                         >
-                          <icons.X />
+                          <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       ) : null}
                     </div>
@@ -2527,7 +2436,7 @@ export default function CardModal({
                 <div className={styles.cmChecklistBlock}>
                   <div className={styles.cmChecklistBlockHeader}>
                     <div className={styles.cmChecklistBlockTitleWrap}>
-                      <span className={styles.cmChecklistBlockIcon}><icons.Check /></span>
+                      <span className={styles.cmChecklistBlockIcon}><Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                       <p className={styles.cmChecklistBlockTitle}>{activeChecklist.title}</p>
                     </div>
                       {(!isBackendDriven || canDeletePersistedChecklist) && (
@@ -2570,7 +2479,7 @@ export default function CardModal({
                             onClick={() => toggleChecklistItem(item.id)}
                             disabled={checklistReadOnly || togglingChecklistItemId === item.id}
                           >
-                            {item.checked && <icons.Check />}
+                            {item.checked && <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />}
                           </button>
                           <div className={styles.cmChecklistItemBody}>
                             <span className={`${styles.cmChecklistItemText} ${item.checked ? styles.cmChecklistItemTextChecked : ''}`}>
@@ -2631,7 +2540,7 @@ export default function CardModal({
                             aria-haspopup="menu"
                             disabled={isChecklistMutating}
                           >
-                            <icons.User /> {checklistAssigneeUserId ? 'Responsável definido' : 'Atribuir'}
+                            <Users size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> {checklistAssigneeUserId ? 'Responsável definido' : 'Atribuir'}
                           </button>
                           <button
                             ref={checklistDueButtonRef}
@@ -2642,7 +2551,7 @@ export default function CardModal({
                             aria-haspopup="dialog"
                             disabled={isChecklistMutating}
                           >
-                            <icons.Clock /> {checklistDueLabel}
+                            <Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> {checklistDueLabel}
                           </button>
                         </div>
                       </>
@@ -2681,8 +2590,8 @@ export default function CardModal({
             <div className={styles.cmSidebarHeader}>
               <p className={styles.cmSidebarTitle}>Activity</p>
               <div className={styles.cmSidebarHeaderActions}>
-                <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Buscar atividade"><SearchIcon /></button>
-                <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Filtrar atividade"><icons.Filter /></button>
+                <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Buscar atividade"><Search size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
+                <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Filtrar atividade"><Funnel size={14} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
                 <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Notificações">1</button>
               </div>
             </div>
@@ -2750,10 +2659,10 @@ export default function CardModal({
                         <footer className={styles.cmCommentCardFooter}>
                           <div className={styles.cmCommentCardActions}>
                             <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Curtir comentário">
-                              <ThumbsUpIcon />
+                              <ThumbsUp size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                             </button>
                             <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Adicionar reação">
-                              <AddReactionIcon />
+                              <SmilePlus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                             </button>
                           </div>
                           <button type="button" className={styles.cmCommentReplyBtn}>
@@ -2804,14 +2713,14 @@ export default function CardModal({
                           onMouseDown={e => e.preventDefault()}
                           aria-label="Adicionar bloco"
                         >
-                          <icons.Plus />
+                          <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
 
                         <span className={styles.cmComposerDivider} aria-hidden="true" />
 
                         <button type="button" className={styles.cmCommentTypeBtn}>
                           Comentário
-                          <icons.Chevron />
+                          <ChevronRight size={11} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
 
                         <span className={styles.cmComposerDivider} aria-hidden="true" />
@@ -2826,19 +2735,19 @@ export default function CardModal({
                           aria-haspopup="menu"
                           onClick={() => setShowInsertMenu(v => !v)}
                         >
-                          <ComposerAppsIcon />
+                          <LayoutGrid size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                         <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Anexar ao comentário">
-                          <AttachmentIcon />
+                          <Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                         <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mencionar">
-                          <ComposerMentionIcon />
+                          <AtSign size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       </div>
 
                       <div className={styles.cmCommentComposerFooterRight}>
                         <button type="button" className={styles.cmCommentToolIconBtn} onMouseDown={e => e.preventDefault()} aria-label="Mais opções">
-                          <ComposerMoreIcon />
+                          <Ellipsis size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                         <button
                           type="button"
@@ -2848,7 +2757,7 @@ export default function CardModal({
                           disabled={!comment.trim() || isMutating}
                           aria-label="Enviar comentário"
                         >
-                          <ComposerSendIcon />
+                          <SendHorizontal size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -2920,7 +2829,7 @@ export default function CardModal({
                     aria-selected={filePickerFilter === option.id}
                   >
                     <span className={styles.cmFilePickerTabIcon}>
-                      {option.id === 'plan' ? <FolderIcon /> : <LibraryIcon />}
+                      {option.id === 'plan' ? <Folder size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> : <Library size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />}
                     </span>
                     <span className={styles.cmFilePickerTabLabel}>{option.label}</span>
                     <span className={styles.cmFilePickerTabCount}>{option.count}</span>
@@ -2936,9 +2845,9 @@ export default function CardModal({
                   aria-haspopup="menu"
                   aria-expanded={showFilePickerTypeMenu}
                 >
-                  <FilterIcon />
+                  <Funnel size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                   <span>{activeFileTypeLabel}</span>
-                  <span className={styles.cmFilePickerFilterBtnChevron}><icons.Chevron /></span>
+                  <span className={styles.cmFilePickerFilterBtnChevron}><ChevronRight size={11} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                 </button>
 
                 {showFilePickerTypeMenu && (
@@ -2965,7 +2874,7 @@ export default function CardModal({
 
             <div className={styles.cmFilePickerSearchRow}>
               <label className={styles.cmFilePickerSearchField}>
-                <span className={styles.cmFilePickerSearchIcon}><SearchIcon /></span>
+                <span className={styles.cmFilePickerSearchIcon}><Search size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                 <input
                   type="search"
                   className={styles.cmFilePickerSearch}
@@ -2976,7 +2885,7 @@ export default function CardModal({
                 />
               </label>
               <button type="button" className={styles.cmFilePickerViewBtn} aria-label="Lista">
-                <ViewListIcon />
+                <List size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -3000,7 +2909,7 @@ export default function CardModal({
                     key={file.id}
                     className={styles.cmFilePickerItem}
                   >
-                    <span className={styles.cmFilePickerIcon}><icons.Files /></span>
+                    <span className={styles.cmFilePickerIcon}><FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
                     <span className={styles.cmFilePickerBody}>
                       <span className={styles.cmFilePickerName}>{file.name}</span>
                       <span className={styles.cmFilePickerMeta}>{formatFileSize(file.size)} · {file.modified}</span>
@@ -3020,7 +2929,7 @@ export default function CardModal({
                           }}
                           aria-label={`Baixar ${file.name}`}
                         >
-                          <icons.Download />
+                          <Download size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                       ) : null}
                       <button
@@ -3029,7 +2938,7 @@ export default function CardModal({
                         onClick={() => handleAttachFile(file)}
                         disabled={isAttached || isBusy}
                       >
-                        <AttachmentIcon />
+                        <Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         {isAttached ? 'Anexado' : isBusy ? 'Anexando...' : 'Anexar'}
                       </button>
                     </span>
@@ -3038,7 +2947,7 @@ export default function CardModal({
               })
             ) : (
               <div className={styles.cmFilePickerEmpty}>
-                <icons.Files />
+                <FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                 <strong>Nada para mostrar</strong>
                 <p>{filePickerFilter === 'plan' ? 'Nenhum arquivo compartilhado com este plano.' : 'Nenhum arquivo disponível na sua biblioteca.'}</p>
               </div>
@@ -3076,7 +2985,7 @@ export default function CardModal({
                   title={getMemberName(m)}
                 />
                 <span className={styles.cmMemberName}>{getMemberName(m)}</span>
-                {memberIds.includes(m.id) && <span className={styles.cmMemberCheck}><icons.Check /></span>}
+                {memberIds.includes(m.id) && <span className={styles.cmMemberCheck}><Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>}
               </button>
             ))}
             <button
@@ -3085,7 +2994,7 @@ export default function CardModal({
               onClick={() => setShowMembersMenu(false)}
               disabled={isMutating}
             >
-              <span className={styles.cmMembersMenuCreateIcon}><icons.Plus /></span>
+              <span className={styles.cmMembersMenuCreateIcon}><Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
               Novo membro
             </button>
           </div>
@@ -3104,7 +3013,7 @@ export default function CardModal({
           <div className={styles.cmChecklistMenuHeader}>
             <h3 className={styles.cmChecklistMenuTitle}>Adicionar checklist</h3>
             <button type="button" className={styles.cmChecklistMenuClose} onClick={() => setShowChecklistMenu(false)}>
-              <icons.X />
+              <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
             </button>
           </div>
 
@@ -3158,7 +3067,7 @@ export default function CardModal({
               <span>{getMemberName(member)}</span>
               {checklistAssigneeUserId === member.id && (
                 <span className={styles.cmLabelCheck}>
-                  <icons.Check />
+                  <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
                 </span>
               )}
             </button>
@@ -3178,17 +3087,21 @@ export default function CardModal({
           <div className={styles.cmChecklistDateMenuHeader}>
             <h3 className={styles.cmChecklistDateMenuTitle}>Datas</h3>
             <button type="button" className={styles.cmChecklistDateMenuClose} onClick={() => setShowChecklistDueMenu(false)}>
-              <icons.X />
+              <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
             </button>
           </div>
 
           <div className={styles.cmChecklistDateMenuMonthBar}>
             <div className={styles.cmChecklistDateMenuMonthNav}>
-              <button type="button" className={styles.cmChecklistDateMenuNavBtn} onClick={() => setChecklistDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button>
+              <button type="button" className={styles.cmChecklistDateMenuNavBtn} onClick={() => setChecklistDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} aria-label="Mês anterior">
+                <ChevronLeft size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              </button>
             </div>
             <span className={styles.cmChecklistDateMenuMonthLabel}>{formatCalendarMonthLabel(checklistDateMenuMonth)}</span>
             <div className={styles.cmChecklistDateMenuMonthNav}>
-              <button type="button" className={styles.cmChecklistDateMenuNavBtn} onClick={() => setChecklistDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button>
+              <button type="button" className={styles.cmChecklistDateMenuNavBtn} onClick={() => setChecklistDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))} aria-label="Próximo mês">
+                <ChevronRight size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              </button>
             </div>
           </div>
 
@@ -3225,7 +3138,7 @@ export default function CardModal({
                   className={`${styles.cmDateCheckbox} ${checklistStartEnabled ? styles.cmDateCheckboxActive : ''}`}
                   onClick={() => setChecklistStartEnabled(v => !v)}
                 >
-                  {checklistStartEnabled && <icons.Check />}
+                  {checklistStartEnabled && <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />}
                 </button>
                 <input
                   type="text"
@@ -3254,7 +3167,7 @@ export default function CardModal({
                     }
                   }}
                 >
-                  {checklistDueEnabled && <icons.Check />}
+                  {checklistDueEnabled && <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />}
                 </button>
                 <input
                   type="text"
@@ -3293,7 +3206,7 @@ export default function CardModal({
               >
                 <span className={styles.cmLabelDot} style={{ background: l.color }} />
                 {l.text}
-                {labelId === l.id && <span className={styles.cmLabelCheck}><icons.Check /></span>}
+                {labelId === l.id && <span className={styles.cmLabelCheck}><Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>}
               </button>
             ))}
             <button
@@ -3302,7 +3215,7 @@ export default function CardModal({
               onClick={() => setShowLabelMenu(false)}
               disabled={isMutating}
             >
-              <span className={styles.cmLabelMenuCreateIcon}><icons.Plus /></span>
+              <span className={styles.cmLabelMenuCreateIcon}><Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
               Nova Etiqueta
             </button>
           </div>
@@ -3321,17 +3234,21 @@ export default function CardModal({
           <div className={styles.cmDateMenuHeader}>
             <h3 className={styles.cmDateMenuTitle}>Datas</h3>
             <button type="button" className={styles.cmDateMenuClose} onClick={() => setShowDateMenu(false)}>
-              <icons.X />
+              <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
             </button>
           </div>
 
           <div className={styles.cmDateMenuMonthBar}>
             <div className={styles.cmDateMenuMonthNav}>
-              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button>
+              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} aria-label="Mês anterior">
+                <ChevronLeft size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              </button>
             </div>
             <span className={styles.cmDateMenuMonthLabel}>{formatCalendarMonthLabel(dateMenuMonth)}</span>
             <div className={styles.cmDateMenuMonthNav}>
-              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button>
+              <button type="button" className={styles.cmDateMenuNavBtn} onClick={() => setDateMenuMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))} aria-label="Próximo mês">
+                <ChevronRight size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              </button>
             </div>
           </div>
 
@@ -3368,7 +3285,7 @@ export default function CardModal({
                   onClick={() => setStartEnabled(v => !v)}
                   disabled={isMutating}
                 >
-                  {startEnabled && <icons.Check />}
+                  {startEnabled && <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />}
                 </button>
                 <input
                   type="text"
@@ -3391,7 +3308,7 @@ export default function CardModal({
                   onClick={() => setDueEnabled(v => !v)}
                   disabled={isMutating}
                 >
-                  {dueEnabled && <icons.Check />}
+                  {dueEnabled && <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />}
                 </button>
                 <input
                   type="text"
@@ -3433,23 +3350,23 @@ export default function CardModal({
             {
               label: 'Link',
               description: 'Insira um link',
-              icon: <icons.Link />,
+              icon: <Link size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
             },
             {
               label: 'Arquivo',
               description: 'Anexe um arquivo',
-              icon: <icons.Files />,
+              icon: <FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
               action: openFilePicker,
             },
             {
               label: 'Imagem',
               description: 'Adicione uma imagem',
-              icon: <icons.Image />,
+              icon: <Image size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
             },
             {
               label: 'Código',
               description: 'Exibir código com destaque',
-              icon: <icons.Code />,
+              icon: <Code size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
             },
           ].map(option => (
             <button

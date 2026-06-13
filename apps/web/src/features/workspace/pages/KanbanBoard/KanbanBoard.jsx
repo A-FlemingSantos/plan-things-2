@@ -2236,7 +2236,6 @@ export default function KanbanBoard() {
           members={planMembers}
           currentUser={currentUser}
           calendarDays={CALENDAR_DAYS}
-          icons={Icon}
           styles={styles}
           isBackendDriven={isBackendDriven}
           planFiles={planFiles}
