@@ -16,12 +16,14 @@ import {
   Folder,
   Funnel,
   Goal,
+  History,
   Hourglass,
   Image,
   LayoutGrid,
   Library,
   Link,
   List,
+  Maximize2,
   Monitor,
   Paperclip,
   Plus,
@@ -2315,6 +2317,28 @@ export default function CardModal({
             </div>
 
             <div className={`${styles.cmDescSection} ${desc.trim() ? styles.cmDescSectionHasValue : ''}`}>
+              <div className={styles.cmDescToolbar}>
+                <button
+                  type="button"
+                  className={styles.cmDescToolbarBtn}
+                  title="Histórico da descrição"
+                  aria-label="Histórico da descrição"
+                  onMouseDown={(event) => event.preventDefault()}
+                  disabled={isMutating}
+                >
+                  <History size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={styles.cmDescToolbarBtn}
+                  title="Expandir descrição"
+                  aria-label="Expandir descrição"
+                  onMouseDown={(event) => event.preventDefault()}
+                  disabled={isMutating}
+                >
+                  <Maximize2 size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                </button>
+              </div>
               <textarea
                 className={styles.cmDesc}
                 value={desc}
