@@ -2724,6 +2724,27 @@
   color: var(--cm-accent);
 }
 
+.cmPropertyDatesSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmPropertyDatesPart {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cmPropertyDatesPart svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+
+.cmPropertyDatesSep {
+  color: var(--text-3);
+}
+
 .cmPropertyEmpty {
   display: inline-flex;
   align-items: center;

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   AtSign,
   Calendar,
+  CalendarPlus,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -1369,7 +1370,8 @@ export default function CardModal({
     [activityBase, comments, activityEvents, currentUserName, createdAtLabel, members],
   )
   const datesSummary = selectedDueDateSummary
-    || (startEnabled && startDateValue ? `${startDateValue} → Vencimento` : 'Início → Vencimento')
+    || (startEnabled && startDateValue ? `${startDateValue} → Vencimento` : null)
+  const isDatesEmptyPlaceholder = !datesSummary
   const handleLabelSelect = async (nextLabelId) => {
     if (isMutating) return
 
@@ -2165,7 +2167,21 @@ export default function CardModal({
                       aria-haspopup="dialog"
                       disabled={isMutating}
                     >
-                      {datesSummary}
+                      {isDatesEmptyPlaceholder ? (
+                        <span className={styles.cmPropertyDatesSummary}>
+                          <span className={styles.cmPropertyDatesPart}>
+                            <CalendarPlus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                            Início
+                          </span>
+                          <span className={styles.cmPropertyDatesSep} aria-hidden="true">→</span>
+                          <span className={styles.cmPropertyDatesPart}>
+                            <CalendarPlus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                            Vencimento
+                          </span>
+                        </span>
+                      ) : (
+                        datesSummary
+                      )}
                     </button>
                   </div>
                 </div>
