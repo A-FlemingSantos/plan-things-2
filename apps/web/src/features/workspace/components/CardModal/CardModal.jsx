@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   AtSign,
+  Calendar,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -12,6 +14,8 @@ import {
   Flag,
   Folder,
   Funnel,
+  Goal,
+  Hourglass,
   Image,
   LayoutGrid,
   Library,
@@ -19,7 +23,6 @@ import {
   List,
   Monitor,
   Paperclip,
-  Play,
   Plus,
   Search,
   SendHorizontal,
@@ -28,6 +31,7 @@ import {
   Star,
   Tag,
   ThumbsUp,
+  TimerReset,
   Trash2,
   Users,
   X,
@@ -2114,20 +2118,25 @@ export default function CardModal({
             <div className={styles.cmPropertiesGrid}>
               <div className={styles.cmPropertiesCol}>
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}>Status</span>
+                  <span className={styles.cmPropertyLabel}><Goal size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Status</span>
                   <div className={styles.cmPropertyValue}>
-                    <span className={styles.cmStatusPill}>
-                      {colTitle}
-                      <span className={styles.cmStatusPillActions}>
-                        <button type="button" className={styles.cmStatusPillAction} aria-label="Iniciar tarefa"><Play size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" fill="currentColor" /></button>
-                        <button type="button" className={styles.cmStatusPillAction} aria-label="Concluir tarefa"><Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
-                      </span>
-                    </span>
+                    <div className={styles.cmStatusSplit}>
+                      <div className={styles.cmStatusSplitMain}>
+                        <span className={styles.cmStatusSplitLabel}>{colTitle}</span>
+                        <span className={styles.cmStatusSplitDivider} aria-hidden="true" />
+                        <button type="button" className={styles.cmStatusSplitToggle} aria-label="Alterar status" aria-haspopup="menu">
+                          <ChevronDown size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                        </button>
+                      </div>
+                      <button type="button" className={styles.cmStatusSplitAction} aria-label="Concluir tarefa">
+                        <Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Datas</span>
+                  <span className={styles.cmPropertyLabel}><Calendar size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Datas</span>
                   <div className={styles.cmPropertyValue}>
                     <button
                       ref={dateMenuButtonRef}
@@ -2144,7 +2153,7 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Estimativa de tempo</span>
+                  <span className={styles.cmPropertyLabel}><Hourglass size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Estimativa de tempo</span>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Vazio</span>
                   </div>
@@ -2218,7 +2227,7 @@ export default function CardModal({
                 </div>
 
                 <div className={styles.cmPropertyRow}>
-                  <span className={styles.cmPropertyLabel}><Play size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" fill="currentColor" /> Rastrear tempo</span>
+                  <span className={styles.cmPropertyLabel}><TimerReset size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Rastrear tempo</span>
                   <div className={styles.cmPropertyValue}>
                     <span className={styles.cmPropertyEmpty}>Start</span>
                   </div>

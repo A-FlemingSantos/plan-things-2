@@ -2653,8 +2653,30 @@
   min-width: 0;
 }
 
-.cmPropertyBtn {
+.cmPropertyRow:hover .cmPropertyBtn,
+.cmPropertyRow:hover .cmPropertyEmpty,
+.cmPropertyRow:hover .cmAssigneeChip {
   width: 100%;
+}
+
+.cmPropertyRow:hover .cmPropertyBtn:not(.cmPropertyBtnActive) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.cmPropertyRow:hover .cmPropertyEmpty {
+  background: var(--hover);
+  color: var(--text-2);
+}
+
+.cmPropertyRow:hover .cmAssigneeChip:not(.cmPropertyBtnActive) {
+  background: var(--hover);
+  border-radius: 6px;
+}
+
+.cmPropertyBtn {
+  width: auto;
+  max-width: 100%;
   min-height: 30px;
   padding: 4px 8px;
   border-radius: 6px;
@@ -2682,9 +2704,85 @@
 }
 
 .cmPropertyEmpty {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  max-width: 100%;
   font-size: 13px;
   color: var(--text-3);
   padding: 4px 8px;
+  border-radius: 6px;
+  transition: background var(--transition-fast), color var(--transition-fast), width var(--transition-fast);
+}
+
+.cmStatusSplit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  max-width: 100%;
+  transition: width var(--transition-fast);
+}
+
+.cmStatusSplitMain {
+  display: inline-flex;
+  align-items: stretch;
+  min-height: 28px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  overflow: hidden;
+  transition: flex var(--transition-fast);
+}
+
+.cmStatusSplitLabel {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cmStatusSplitDivider {
+  width: 1px;
+  align-self: stretch;
+  background: color-mix(in srgb, var(--text-3) 35%, transparent);
+  flex-shrink: 0;
+}
+
+.cmStatusSplitToggle,
+.cmStatusSplitAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmStatusSplitToggle {
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.cmStatusSplitAction {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-1);
+  flex-shrink: 0;
+}
+
+.cmStatusSplitToggle:hover,
+.cmStatusSplitAction:hover {
+  background: var(--hover);
+  color: var(--text-1);
 }
 
 .cmStatusPill {
@@ -2733,8 +2831,9 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 2px 8px 2px 2px;
-  border-radius: 999px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: 6px;
   background: transparent;
   border: 0;
   color: var(--text-1);
