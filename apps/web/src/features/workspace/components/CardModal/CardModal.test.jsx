@@ -516,11 +516,11 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: 'Recolher Activity' })).toHaveAttribute('aria-expanded', 'true')
-
-    await user.click(screen.getByRole('button', { name: 'Recolher Activity' }))
-
     expect(screen.getByRole('button', { name: 'Expandir Activity' })).toHaveAttribute('aria-expanded', 'false')
-    expect(window.localStorage.getItem('plan-things:card-modal-activity-sidebar-open:v1:user-1')).toBe('false')
+
+    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+
+    expect(screen.getByRole('button', { name: 'Recolher Activity' })).toHaveAttribute('aria-expanded', 'true')
+    expect(window.localStorage.getItem('plan-things:card-modal-activity-sidebar-open:v1:user-1')).toBe('true')
   })
 })

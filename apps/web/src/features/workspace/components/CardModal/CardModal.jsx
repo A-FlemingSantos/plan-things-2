@@ -56,12 +56,12 @@ function buildActivitySidebarStorageKey(userId) {
 }
 
 function readActivitySidebarOpenState(storageKey) {
-  if (typeof window === 'undefined') return true
+  if (typeof window === 'undefined') return false
 
   const stored = window.localStorage.getItem(storageKey)
   if (stored === 'false') return false
   if (stored === 'true') return true
-  return true
+  return false
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9)
