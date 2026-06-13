@@ -2770,7 +2770,7 @@
   display: inline-flex;
   align-items: stretch;
   min-height: 28px;
-  border-radius: 6px;
+  border-radius: 999px;
   background: var(--surface-3);
   overflow: hidden;
   transition: flex var(--transition-fast);
@@ -2815,7 +2815,7 @@
 .cmStatusSplitAction {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 50%;
   background: var(--surface-3);
   color: var(--text-1);
   flex-shrink: 0;
