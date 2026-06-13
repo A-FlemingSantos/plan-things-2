@@ -563,7 +563,7 @@ export default function CardModal({
     resetChecklistItemDraft()
     setChecklistComposerOpen(false)
   }
-  const isInteractionBlocked = isSaving || isDeleting || isMovingToNextColumn || isTogglingCompleted
+  const isInteractionBlocked = isSaving || isDeleting
   const isMutating = isInteractionBlocked || isSendingComment
 
   const updateSaveStatus = (message = '') => {
@@ -708,7 +708,7 @@ export default function CardModal({
   }
 
   const handleToggleCardCompleted = async () => {
-    if (isMutating || !onToggleCardCompleted) return
+    if (isMutating || isTogglingCompleted || !onToggleCardCompleted) return
 
     setIsTogglingCompleted(true)
     try {
@@ -2167,7 +2167,7 @@ export default function CardModal({
                           type="button"
                           className={styles.cmStatusSplitToggle}
                           aria-label="Mover para a próxima coluna"
-                          disabled={isMutating || !canMoveToNextColumn}
+                          disabled={isMutating || isMovingToNextColumn || !canMoveToNextColumn}
                           onClick={() => { void handleMoveToNextColumn() }}
                         >
                           <MoveRight size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" />
@@ -2178,7 +2178,7 @@ export default function CardModal({
                         className={`${styles.cmStatusSplitAction} ${card.isCompleted ? styles.cmStatusSplitActionChecked : ''}`}
                         aria-label={card.isCompleted ? 'Desmarcar tarefa concluída' : 'Concluir tarefa'}
                         aria-pressed={Boolean(card.isCompleted)}
-                        disabled={isMutating}
+                        disabled={isMutating || isTogglingCompleted}
                         onClick={() => { void handleToggleCardCompleted() }}
                       >
                         <Check size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
