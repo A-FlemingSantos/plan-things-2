@@ -2776,10 +2776,24 @@
   transition: flex var(--transition-fast);
 }
 
+.cmStatusSplitMainLeft {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 2px 0 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 999px 0 0 999px;
+  transition: background var(--transition-fast);
+}
+
+.cmStatusSplitMainLeft:hover {
+  background: var(--hover);
+}
+
 .cmStatusSplitLabel {
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
   color: var(--text-1);
   font-size: 12px;
   font-weight: 600;
@@ -2790,7 +2804,9 @@
 
 .cmStatusSplitDivider {
   width: 1px;
-  align-self: stretch;
+  height: 14px;
+  align-self: center;
+  margin: 0 1px;
   background: color-mix(in srgb, var(--text-3) 35%, transparent);
   flex-shrink: 0;
 }
@@ -2802,14 +2818,21 @@
   justify-content: center;
   border: 0;
   background: transparent;
-  color: var(--text-3);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .cmStatusSplitToggle {
-  width: 28px;
+  align-self: stretch;
+  width: 32px;
+  min-height: 28px;
   flex-shrink: 0;
+  color: var(--text-2);
+  border-radius: 0 999px 999px 0;
+}
+
+.cmStatusSplitToggle svg {
+  color: var(--text-2);
 }
 
 .cmStatusSplitAction {
@@ -2824,6 +2847,10 @@
 .cmStatusSplitToggle:hover:not(:disabled),
 .cmStatusSplitAction:hover:not(:disabled) {
   background: var(--hover);
+  color: var(--text-1);
+}
+
+.cmStatusSplitToggle:hover:not(:disabled) svg {
   color: var(--text-1);
 }
 

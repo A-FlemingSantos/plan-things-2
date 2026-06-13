@@ -2161,7 +2161,9 @@ export default function CardModal({
                   <div className={styles.cmPropertyValue}>
                     <div className={styles.cmStatusSplit}>
                       <div className={styles.cmStatusSplitMain}>
-                        <span className={styles.cmStatusSplitLabel}>{colTitle}</span>
+                        <span className={styles.cmStatusSplitMainLeft}>
+                          <span className={styles.cmStatusSplitLabel}>{colTitle}</span>
+                        </span>
                         <span className={styles.cmStatusSplitDivider} aria-hidden="true" />
                         <button
                           type="button"
