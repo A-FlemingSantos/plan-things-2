@@ -82,10 +82,7 @@ export default function ProductSidebar({
     >
       <div className={styles.sidebarTop} data-sidebar-top>
         <div className={styles.workspaceRow} data-sidebar-workspace-row>
-          <div
-            className={styles.workspaceBrand}
-            data-sidebar-workspace-brand
-          >
+          <div className={styles.workspaceBrand} data-sidebar-workspace-brand>
             <span className={styles.workspaceLogo} data-sidebar-workspace-avatar title={workspaceName}>
               <WorkspaceIconGlyph iconKey={resolvedWorkspaceIconKey} />
             </span>
@@ -125,7 +122,6 @@ export default function ProductSidebar({
             <span className={styles.navIcon} data-sidebar-collapse-icon>
               <CollapseToggleIcon size={16} strokeWidth={1.75} aria-hidden="true" />
             </span>
-            <span className={styles.navLabel} data-sidebar-collapse-label aria-hidden="true" />
           </button>
         ) : null}
 
