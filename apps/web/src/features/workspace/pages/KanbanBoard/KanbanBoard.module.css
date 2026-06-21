@@ -1767,6 +1767,7 @@
 .colMenu {
   position: fixed;
   z-index: 1000;
+  width: 188px;
   min-width: 188px;
   padding: 6px;
   background: var(--menu-bg);

@@ -52,17 +52,15 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max))
 }
 
-function resolveMenuPosition(anchorRect, menuRect) {
+function resolveMenuPosition(anchorRect, menuHeight = 160) {
   if (!anchorRect) {
     return { top: VIEWPORT_GAP, left: VIEWPORT_GAP }
   }
 
-  const menuWidth = menuRect?.width ?? MENU_WIDTH
-  const menuHeight = menuRect?.height ?? 160
   const left = clamp(
-    anchorRect.right - menuWidth,
+    anchorRect.right - MENU_WIDTH,
     VIEWPORT_GAP,
-    window.innerWidth - menuWidth - VIEWPORT_GAP,
+    window.innerWidth - MENU_WIDTH - VIEWPORT_GAP,
   )
   const top = clamp(
     anchorRect.bottom + MENU_GAP,
@@ -120,16 +118,19 @@ export default function ColMenu({
     ? (document.querySelector('[data-app-theme-scope]') ?? document.body)
     : null
 
-  const updatePositions = () => {
+  const updateMenuPosition = () => {
     const anchorRect = anchorRef?.current?.getBoundingClientRect()
-    const menuRect = menuRef.current?.getBoundingClientRect()
-    setMenuPosition(resolveMenuPosition(anchorRect, menuRect))
+    const menuHeight = menuRef.current?.getBoundingClientRect().height ?? 160
+    setMenuPosition(resolveMenuPosition(anchorRect, menuHeight))
+  }
 
+  const updateFlyoutPosition = () => {
     if (!activeFlyout) {
       setFlyoutPosition(null)
       return
     }
 
+    const menuRect = menuRef.current?.getBoundingClientRect()
     const triggerRect = activeFlyout === 'color'
       ? colorTriggerRef.current?.getBoundingClientRect()
       : statusTriggerRef.current?.getBoundingClientRect()
@@ -140,11 +141,18 @@ export default function ColMenu({
   }
 
   useLayoutEffect(() => {
-    updatePositions()
+    updateMenuPosition()
+  }, [])
+
+  useLayoutEffect(() => {
+    updateFlyoutPosition()
   }, [activeFlyout, statusOptions.length])
 
   useEffect(() => {
-    const handleReposition = () => updatePositions()
+    const handleReposition = () => {
+      updateMenuPosition()
+      updateFlyoutPosition()
+    }
 
     window.addEventListener('resize', handleReposition)
     window.addEventListener('scroll', handleReposition, true)
