@@ -18,7 +18,10 @@ export function moveCardInColumns(columns, cardId, sourceColId, target) {
       return columns
     }
 
-    destinationColumn.cards.push(card)
+    const movedCard = card.columnId === target.colId
+      ? card
+      : { ...card, columnId: target.colId }
+    destinationColumn.cards.push(movedCard)
     return nextColumns
   }
 
@@ -31,9 +34,15 @@ export function moveCardInColumns(columns, cardId, sourceColId, target) {
   const targetIndex = destinationColumn.cards.findIndex((item) => item.id === target.cardId)
 
   if (targetIndex === -1) {
-    destinationColumn.cards.push(card)
+    const movedCard = card.columnId === target.colId
+      ? card
+      : { ...card, columnId: target.colId }
+    destinationColumn.cards.push(movedCard)
   } else {
-    destinationColumn.cards.splice(targetIndex, 0, card)
+    const movedCard = card.columnId === target.colId
+      ? card
+      : { ...card, columnId: target.colId }
+    destinationColumn.cards.splice(targetIndex, 0, movedCard)
   }
 
   return nextColumns

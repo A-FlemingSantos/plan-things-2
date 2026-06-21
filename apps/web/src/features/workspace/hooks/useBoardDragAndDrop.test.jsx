@@ -18,8 +18,8 @@ function buildColumns() {
       id: 'col-1',
       title: 'Backlog',
       cards: [
-        { id: 'card-1', title: 'Card 1' },
-        { id: 'card-2', title: 'Card 2' },
+        { id: 'card-1', title: 'Card 1', columnId: 'col-1' },
+        { id: 'card-2', title: 'Card 2', columnId: 'col-1' },
       ],
     },
     {
@@ -57,6 +57,7 @@ describe('useBoardDragAndDrop', () => {
       await Promise.resolve()
       expect(columns[0].cards.map((card) => card.id)).toEqual(['card-2'])
       expect(columns[1].cards.map((card) => card.id)).toEqual(['card-1'])
+      expect(columns[1].cards[0].columnId).toBe('col-2')
       deferred.resolve(true)
       await dropPromise
     })
@@ -91,11 +92,13 @@ describe('useBoardDragAndDrop', () => {
       await Promise.resolve()
       expect(columns[0].cards.map((card) => card.id)).toEqual(['card-2'])
       expect(columns[1].cards.map((card) => card.id)).toEqual(['card-1'])
+      expect(columns[1].cards[0].columnId).toBe('col-2')
       deferred.reject(error)
       await dropPromise
     })
 
     expect(columns[0].cards.map((card) => card.id)).toEqual(['card-1', 'card-2'])
+    expect(columns[0].cards[0].columnId).toBe('col-1')
     expect(columns[1].cards).toEqual([])
     expect(onMoveError).toHaveBeenCalledWith(error)
   })

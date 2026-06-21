@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
-import { buildBoardCardPayload, mapBoardCard } from '../../../shared/contracts/backendAdapters.js'
+import { buildBoardCardPayload, mapBoardCard, mapBoardViewToColumns } from '../../../shared/contracts/backendAdapters.js'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
@@ -18,6 +18,169 @@ function mapBoardComment(comment) {
     time: comment.createdAt?.text ?? 'Agora',
     createdAtIso: comment.createdAt?.iso ?? null,
   }
+}
+
+function normalizeDateLike(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  return value.iso ?? value.text ?? ''
+}
+
+function buildCardComparisonSignature(card) {
+  if (!card) {
+    return null
+  }
+
+  return JSON.stringify({
+    id: card.id ?? null,
+    columnId: card.columnId ?? null,
+    position: Number.isFinite(card.position) ? card.position : null,
+    title: card.title ?? '',
+    description: card.description ?? '',
+    isCompleted: Boolean(card.isCompleted),
+    starred: Boolean(card.starred),
+    labelId: card.labelId ?? '',
+    memberIds: Array.isArray(card.memberIds) ? card.memberIds : [],
+    dueDate: card.dueDate ?? '',
+    startAt: normalizeDateLike(card.startAt),
+    dueAt: normalizeDateLike(card.dueAt),
+    kind: card.kind ?? '',
+    comments: Array.isArray(card.comments)
+      ? card.comments.map((comment) => ({
+          id: comment.id ?? null,
+          kind: comment.kind ?? '',
+          text: comment.text ?? '',
+          createdAtIso: comment.createdAtIso ?? '',
+        }))
+      : [],
+    attachments: Array.isArray(card.attachments)
+      ? card.attachments.map((attachment) => ({
+          id: attachment.id ?? null,
+          fileId: attachment.fileId ?? null,
+          name: attachment.name ?? '',
+          size: attachment.size ?? 0,
+        }))
+      : [],
+    checklists: Array.isArray(card.checklists)
+      ? card.checklists.map((checklist) => ({
+          id: checklist.id ?? null,
+          items: Array.isArray(checklist.items)
+            ? checklist.items.map((item) => ({
+                id: item.id ?? null,
+                title: item.title ?? item.text ?? '',
+                completed: Boolean(item.completed ?? item.checked),
+              }))
+            : [],
+        }))
+      : [],
+    schedule: card.schedule
+      ? {
+          selectedCalendarDay: card.schedule.selectedCalendarDay ?? null,
+          startEnabled: Boolean(card.schedule.startEnabled),
+          startDateValue: card.schedule.startEnabled ? (card.schedule.startDateValue ?? '') : '',
+          dueEnabled: Boolean(card.schedule.dueEnabled),
+          dueDateValue: card.schedule.dueEnabled ? (card.schedule.dueDateValue ?? '') : '',
+          dueTimeValue: card.schedule.dueEnabled ? (card.schedule.dueTimeValue ?? '') : '',
+          displayLabel: card.schedule.displayLabel ?? '',
+        }
+      : null,
+  })
+}
+
+function areCardsEquivalent(leftCard, rightCard) {
+  if (leftCard === rightCard) {
+    return true
+  }
+  if (!leftCard || !rightCard) {
+    return false
+  }
+  return buildCardComparisonSignature(leftCard) === buildCardComparisonSignature(rightCard)
+}
+
+function mergePersistedCards(currentCards, persistedCards) {
+  if (!Array.isArray(currentCards) || !Array.isArray(persistedCards)) {
+    return persistedCards
+  }
+
+  const currentCardsById = new Map(currentCards.map((card) => [card.id, card]))
+  const nextCards = persistedCards.map((persistedCard) => {
+    const currentCard = currentCardsById.get(persistedCard.id)
+    return areCardsEquivalent(currentCard, persistedCard) ? currentCard : persistedCard
+  })
+
+  const sameLength = currentCards.length === nextCards.length
+  const sameReferences = sameLength && nextCards.every((card, index) => card === currentCards[index])
+  return sameReferences ? currentCards : nextCards
+}
+
+function mergePersistedColumnForMove(currentColumn, persistedColumn) {
+  if (!currentColumn || !persistedColumn) {
+    return currentColumn ?? persistedColumn ?? null
+  }
+
+  const nextCards = mergePersistedCards(currentColumn.cards, persistedColumn.cards ?? [])
+  const nextTitle = persistedColumn.title ?? currentColumn.title
+  const nextColor = persistedColumn.color ?? currentColumn.color
+  const nextStatus = typeof persistedColumn.status === 'string'
+    ? persistedColumn.status
+    : (currentColumn.status ?? '')
+
+  if (
+    nextTitle === currentColumn.title
+    && nextColor === currentColumn.color
+    && nextStatus === (currentColumn.status ?? '')
+    && nextCards === currentColumn.cards
+  ) {
+    return currentColumn
+  }
+
+  return {
+    ...currentColumn,
+    title: nextTitle,
+    color: nextColor,
+    status: nextStatus,
+    cards: nextCards,
+  }
+}
+
+function reconcileMoveConfirmation(columns, persistedColumns, cardId, targetColumnId) {
+  if (!Array.isArray(columns) || !Array.isArray(persistedColumns) || !cardId) {
+    return null
+  }
+
+  const currentSourceColumn = columns.find((column) => column.cards.some((card) => card.id === cardId))
+  const persistedSourceColumn = persistedColumns.find((column) => column.cards.some((card) => card.id === cardId))
+  const affectedColumnIds = new Set([
+    currentSourceColumn?.id,
+    persistedSourceColumn?.id,
+    targetColumnId,
+  ].filter(Boolean))
+
+  if (!affectedColumnIds.size) {
+    return null
+  }
+
+  const persistedColumnsById = new Map(persistedColumns.map((column) => [column.id, column]))
+  let hasChanges = false
+
+  const nextColumns = columns.map((column) => {
+    if (!affectedColumnIds.has(column.id)) {
+      return column
+    }
+
+    const persistedColumn = persistedColumnsById.get(column.id)
+    if (!persistedColumn) {
+      return column
+    }
+
+    const mergedColumn = mergePersistedColumnForMove(column, persistedColumn)
+    if (mergedColumn !== column) {
+      hasChanges = true
+    }
+    return mergedColumn
+  })
+
+  return hasChanges ? nextColumns : columns
 }
 
 function insertCardInOrder(cards, nextCard) {
@@ -193,6 +356,21 @@ function findColumnById(columns, columnId) {
   }
 
   return columns.find((column) => column.id === columnId) ?? null
+}
+
+function findCardInColumns(columns, cardId) {
+  if (!Array.isArray(columns) || !cardId) {
+    return null
+  }
+
+  for (const column of columns) {
+    const foundCard = column.cards.find((card) => card.id === cardId)
+    if (foundCard) {
+      return foundCard
+    }
+  }
+
+  return null
 }
 
 function replaceColumnById(columns, columnId, nextColumn) {
@@ -895,7 +1073,13 @@ export function useBoardColumns({
         dateFormat,
       })
 
-      updateColumns((prev) => replaceCardInColumns(prev, persistedCard))
+      updateColumns((prev) => {
+        const currentCard = findCardInColumns(prev, persistedCard.id)
+        if (areCardsEquivalent(currentCard, persistedCard)) {
+          return prev
+        }
+        return replaceCardInColumns(prev, persistedCard)
+      })
 
       if (newComments.length) {
         const createdComments = []
@@ -996,9 +1180,39 @@ export function useBoardColumns({
       },
     })
 
-    applyBoardView(activePlanId, boardView)
+    const persistedColumns = Array.isArray(boardView?.columns)
+      ? mapBoardViewToColumns(boardView, {
+          timeZone,
+          dateFormat,
+        })
+      : null
+
+    if (!persistedColumns) {
+      applyBoardView(activePlanId, boardView)
+      return true
+    }
+
+    const previewColumns = reconcileMoveConfirmation(columns, persistedColumns, cardId, targetColumnId)
+    if (previewColumns === null) {
+      applyBoardView(activePlanId, boardView)
+      return true
+    }
+
+    updateColumns((prev) => {
+      const reconciledColumns = reconcileMoveConfirmation(prev, persistedColumns, cardId, targetColumnId)
+      return reconciledColumns ?? prev
+    })
     return true
-  }, [accessToken, activePlanId, applyBoardView, isBackendDriven])
+  }, [
+    accessToken,
+    activePlanId,
+    applyBoardView,
+    columns,
+    dateFormat,
+    isBackendDriven,
+    timeZone,
+    updateColumns,
+  ])
 
   const createChecklist = useCallback(async (cardId, title) => {
     if (!activePlanId || !isBackendDriven) return null

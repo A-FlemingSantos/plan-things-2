@@ -166,6 +166,43 @@ describe('useBoardColumns card saves without board reload', () => {
     })
   })
 
+  it('skips redundant card replacement when persisted payload matches the current card', async () => {
+    const initialColumn = {
+      id: 'col-1',
+      title: 'Backlog',
+      color: '',
+      cards: [buildFrontendCard()],
+    }
+    const initialBoardState = [initialColumn]
+    let boardState = initialBoardState
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+
+    apiClientMock.apiRequest.mockResolvedValueOnce(buildBackendCardView())
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+      timeZone: 'America/Sao_Paulo',
+      dateFormat: 'dd/MM/yyyy',
+    }))
+
+    await act(async () => {
+      await result.current.updateCard(buildFrontendCard())
+    })
+
+    expect(boardState).toBe(initialBoardState)
+    expect(boardState[0]).toBe(initialColumn)
+    expect(boardState[0].cards[0]).toBe(initialColumn.cards[0])
+  })
+
   it('appends the created comment locally after POST and skips board reload', async () => {
     let boardState = [
       {
@@ -378,6 +415,93 @@ describe('useBoardColumns card saves without board reload', () => {
     })
 
     expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-1'])
+  })
+
+  it('reconciles move confirmations locally and preserves untouched column references', async () => {
+    const untouchedCard = buildFrontendCard({ id: 'card-4', columnId: 'col-3', title: 'Intacto' })
+    const untouchedColumn = {
+      id: 'col-3',
+      title: 'Done',
+      color: '',
+      cards: [untouchedCard],
+    }
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        cards: [
+          buildFrontendCard({ id: 'card-1', columnId: 'col-1', position: 0, title: 'Mover' }),
+          buildFrontendCard({ id: 'card-2', columnId: 'col-1', position: 1, title: 'Fica no backlog' }),
+        ],
+      },
+      {
+        id: 'col-2',
+        title: 'Doing',
+        color: '',
+        cards: [buildFrontendCard({ id: 'card-3', columnId: 'col-2', position: 0, title: 'Ja em doing' })],
+      },
+      untouchedColumn,
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const applyBoardView = vi.fn()
+
+    apiClientMock.apiRequest.mockResolvedValueOnce({
+      columns: [
+        {
+          id: 'col-1',
+          title: 'Backlog',
+          color: '',
+          status: '',
+          cards: [buildBackendCardView({ id: 'card-2', columnId: 'col-1', position: 0, title: 'Fica no backlog' })],
+        },
+        {
+          id: 'col-2',
+          title: 'Doing',
+          color: '',
+          status: '',
+          cards: [
+            buildBackendCardView({ id: 'card-3', columnId: 'col-2', position: 0, title: 'Ja em doing' }),
+            buildBackendCardView({ id: 'card-1', columnId: 'col-2', position: 1, title: 'Mover' }),
+          ],
+        },
+        {
+          id: 'col-3',
+          title: 'Done',
+          color: '',
+          status: '',
+          cards: [buildBackendCardView({ id: 'card-4', columnId: 'col-3', position: 0, title: 'Intacto' })],
+        },
+      ],
+      labels: [],
+      inboxItems: [],
+    })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView,
+      loadPlanBoard: vi.fn(),
+      timeZone: 'America/Sao_Paulo',
+      dateFormat: 'dd/MM/yyyy',
+    }))
+
+    await act(async () => {
+      await result.current.moveCard('card-1', 'col-2', 1)
+    })
+
+    expect(applyBoardView).not.toHaveBeenCalled()
+    expect(boardState[2]).toBe(untouchedColumn)
+    expect(boardState[2].cards[0]).toBe(untouchedCard)
+    expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-2'])
+    expect(boardState[1].cards.map((card) => card.id)).toEqual(['card-3', 'card-1'])
+    expect(boardState[1].cards[1].columnId).toBe('col-2')
   })
 
   it('deletes columns locally without reloading the board', async () => {

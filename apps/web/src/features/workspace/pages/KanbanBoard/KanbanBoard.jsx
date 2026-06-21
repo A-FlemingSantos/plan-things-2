@@ -311,6 +311,59 @@ function findCardInColumns(columns, cardId) {
   return columns.flatMap((column) => column.cards).find((card) => card.id === cardId) ?? null
 }
 
+function normalizeCardDateLike(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  return value.iso ?? value.text ?? ''
+}
+
+function buildCardPersistenceSignature(card) {
+  if (!card) {
+    return null
+  }
+
+  return JSON.stringify({
+    id: card.id ?? null,
+    columnId: card.columnId ?? null,
+    position: Number.isFinite(card.position) ? card.position : null,
+    title: card.title ?? '',
+    description: card.description ?? '',
+    isCompleted: Boolean(card.isCompleted),
+    starred: Boolean(card.starred),
+    labelId: card.labelId ?? '',
+    memberIds: Array.isArray(card.memberIds) ? card.memberIds : [],
+    dueDate: card.dueDate ?? '',
+    startAt: normalizeCardDateLike(card.startAt),
+    dueAt: normalizeCardDateLike(card.dueAt),
+    comments: Array.isArray(card.comments)
+      ? card.comments.map((comment) => ({
+          id: comment.id ?? null,
+          text: comment.text ?? '',
+          kind: comment.kind ?? '',
+          createdAtIso: comment.createdAtIso ?? '',
+        }))
+      : [],
+    attachments: Array.isArray(card.attachments)
+      ? card.attachments.map((attachment) => ({
+          id: attachment.id ?? null,
+          fileId: attachment.fileId ?? null,
+          name: attachment.name ?? '',
+          size: attachment.size ?? 0,
+        }))
+      : [],
+  })
+}
+
+function areCardsEquivalentForPersistence(leftCard, rightCard) {
+  if (leftCard === rightCard) {
+    return true
+  }
+  if (!leftCard || !rightCard) {
+    return false
+  }
+  return buildCardPersistenceSignature(leftCard) === buildCardPersistenceSignature(rightCard)
+}
+
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -689,11 +742,14 @@ export default function KanbanBoard() {
     try {
       const persistedCard = await updateCard(nextCard)
       if (persistedCard) {
-        setActiveCard((current) => (
-          current?.card?.id === persistedCard.id
-            ? { ...current, card: persistedCard }
-            : current
-        ))
+        const shouldReplaceActiveCard = !areCardsEquivalentForPersistence(persistedCard, nextCard)
+        if (shouldReplaceActiveCard) {
+          setActiveCard((current) => (
+            current?.card?.id === persistedCard.id
+              ? { ...current, card: persistedCard }
+              : current
+          ))
+        }
       }
       return persistedCard ?? nextCard
     } catch (error) {

@@ -312,6 +312,9 @@ export function PlansProvider({ children }) {
     setPlans((prev) => prev.map((plan) => {
       if (plan.id !== planId) return plan
       const nextColumns = typeof updater === 'function' ? updater(plan.boardColumns) : updater
+      if (nextColumns === plan.boardColumns) {
+        return plan
+      }
       return { ...plan, boardColumns: nextColumns }
     }))
   }, [])
