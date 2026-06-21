@@ -1789,39 +1789,8 @@
 .colMenuItemDanger { color: var(--danger-text); }
 .colMenuItemDanger:hover { background: var(--danger-bg); }
 
-.colMenuColorOpt {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background var(--transition-fast);
-}
-.colMenuColorOpt:hover { background: var(--hover); }
-
-.colMenuColorDot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-}
-
-.colMenuColorDotNone {
-  position: relative;
-  border: 1px solid var(--border-2);
-  background: transparent;
-}
-
-.colMenuColorDotNone::after {
-  content: '';
-  position: absolute;
-  top: 7px;
-  left: 2px;
-  width: 10px;
-  height: 1.5px;
-  border-radius: 999px;
-  background: var(--text-3);
-  transform: rotate(-35deg);
+.colMenuColorPalette {
+  margin: 2px 6px 4px;
 }
 
 .colMenuDivider {
@@ -2363,6 +2332,19 @@
   border-radius: 10px;
   box-shadow: var(--shadow-lg);
   animation: menuIn 0.15s ease both;
+}
+
+.addColColorPaletteInline {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-shadow: none;
+  animation: none;
 }
 
 .addColColorPaletteOption {

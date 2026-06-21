@@ -11,6 +11,7 @@ import {
   Plus,
   X,
 } from 'lucide-react'
+import KanbanColumnColorPalette from '../KanbanColumnColorPalette/KanbanColumnColorPalette.jsx'
 
 const ICON_SIZE = 13
 const ICON_STROKE = 1.75
@@ -221,38 +222,12 @@ export default function AddColumnComposer({
                     </button>
 
                     {isColorPaletteOpen ? (
-                      <div className={styles.addColColorPalette} role="listbox" aria-label="Cores da lista">
-                        {colorOptions.map((color) => {
-                          const isSelected = newColColor === color.value
-
-                          return (
-                            <button
-                              key={color.id}
-                              type="button"
-                              className={`${styles.addColColorPaletteOption} ${isSelected ? styles.addColColorPaletteOptionSelected : ''}`}
-                              onClick={() => handleColorSelect(color.value)}
-                              role="option"
-                              aria-selected={isSelected}
-                              aria-label={color.label ?? color.id}
-                              title={color.label ?? color.id}
-                            >
-                              {color.value ? (
-                                <span
-                                  className={styles.addColColorPaletteDot}
-                                  style={{ background: color.value }}
-                                />
-                              ) : (
-                                <CircleOff
-                                  size={14}
-                                  strokeWidth={ICON_STROKE}
-                                  className={styles.addColColorIconNone}
-                                  aria-hidden="true"
-                                />
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
+                      <KanbanColumnColorPalette
+                        value={newColColor}
+                        onChange={handleColorSelect}
+                        colorOptions={colorOptions}
+                        styles={styles}
+                      />
                     ) : null}
                   </div>
 

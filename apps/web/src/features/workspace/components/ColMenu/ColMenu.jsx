@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
+import KanbanColumnColorPalette from '../KanbanColumnColorPalette/KanbanColumnColorPalette.jsx'
 
 const ICON_SIZE = 13
 const ICON_STROKE = 1.75
 
 export default function ColMenu({
+  currentColor = '',
   onRename,
   onDelete,
   onChangeColor,
@@ -42,21 +44,17 @@ export default function ColMenu({
         <Pencil size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /> Renomear
       </button>
 
-      {colorOptions.map((color) => (
-        <button
-          type="button"
-          key={color.id}
-          className={styles.colMenuColorOpt}
-          onClick={() => { onChangeColor(color.value); onClose() }}
-          aria-label={`Definir cor da coluna: ${color.label ?? color.id}`}
-          title={color.label ?? color.id}
-        >
-          <span
-            className={`${styles.colMenuColorDot} ${color.value ? '' : styles.colMenuColorDotNone}`}
-            style={color.value ? { background: color.value } : undefined}
-          />
-        </button>
-      ))}
+      <KanbanColumnColorPalette
+        value={currentColor}
+        onChange={(color) => {
+          onChangeColor(color)
+          onClose()
+        }}
+        colorOptions={colorOptions}
+        styles={styles}
+        variant="inline"
+        className={styles.colMenuColorPalette}
+      />
 
       <div className={styles.colMenuDivider} />
 

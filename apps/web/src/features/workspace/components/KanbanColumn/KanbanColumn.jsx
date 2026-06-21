@@ -152,6 +152,7 @@ function KanbanColumn({
 
             {showMenu ? (
               <ColMenu
+                currentColor={col.color ?? ''}
                 onRename={() => {
                   setRenaming(true)
                   setRenameVal(col.title)
