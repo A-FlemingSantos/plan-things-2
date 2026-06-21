@@ -660,6 +660,7 @@ export function useBoardColumns({
           id: persistedColumnView.id,
           title: persistedColumnView.title ?? nextTitle,
           color: persistedColumnView.color ?? currentColumn?.color ?? '',
+          status: persistedColumnView.status ?? currentColumn?.status ?? '',
           cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
         }))
       } else {
@@ -714,6 +715,64 @@ export function useBoardColumns({
           id: persistedColumnView.id,
           title: persistedColumnView.title ?? currentColumn?.title ?? 'Nova coluna',
           color: persistedColumnView.color ?? color,
+          status: persistedColumnView.status ?? currentColumn?.status ?? '',
+          cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
+        }))
+      } else {
+        applyBoardView(activePlanId, boardView)
+      }
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, applyBoardView, columns, isBackendDriven, updateColumns])
+
+  const changeColStatus = useCallback(async (colId, status) => {
+    if (!activePlanId) return
+
+    const nextStatus = typeof status === 'string' ? status : ''
+
+    if (!isBackendDriven) {
+      updateColumns((prev) => prev.map((column) => (
+        column.id === colId ? { ...column, status: nextStatus } : column
+      )))
+      return
+    }
+
+    const previousColumns = columns
+    const currentColumn = findColumnById(previousColumns, colId)
+
+    updateColumns((prev) => replaceColumnById(prev, colId, {
+      ...(findColumnById(prev, colId) ?? currentColumn),
+      id: colId,
+      title: currentColumn?.title ?? findColumnById(prev, colId)?.title ?? 'Nova coluna',
+      color: currentColumn?.color ?? '',
+      status: nextStatus,
+      cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
+    }))
+
+    try {
+      const boardView = await apiRequest(`/api/plans/${activePlanId}/board/columns/${colId}`, {
+        method: 'PATCH',
+        token: accessToken,
+        body: {
+          title: currentColumn?.title ?? 'Nova coluna',
+          color: currentColumn?.color ?? '',
+          status: nextStatus,
+        },
+      })
+
+      const persistedColumnView = Array.isArray(boardView?.columns)
+        ? boardView.columns.find((column) => column.id === colId)
+        : null
+
+      if (persistedColumnView) {
+        updateColumns((prev) => replaceColumnById(prev, colId, {
+          ...(findColumnById(prev, colId) ?? currentColumn),
+          id: persistedColumnView.id,
+          title: persistedColumnView.title ?? currentColumn?.title ?? 'Nova coluna',
+          color: persistedColumnView.color ?? currentColumn?.color ?? '',
+          status: persistedColumnView.status ?? nextStatus,
           cards: findColumnById(prev, colId)?.cards ?? currentColumn?.cards ?? [],
         }))
       } else {
@@ -1068,6 +1127,7 @@ export function useBoardColumns({
     deleteColumn,
     renameColumn,
     changeColColor,
+    changeColStatus,
     addCard,
     updateCard,
     deleteCard,

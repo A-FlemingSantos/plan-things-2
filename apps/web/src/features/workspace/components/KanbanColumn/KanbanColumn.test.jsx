@@ -22,6 +22,11 @@ function buildColumnProps(props = {}) {
     onDeleteCol: vi.fn(),
     onRenameCol: vi.fn(),
     onChangeColColor: vi.fn(),
+    onChangeColStatus: vi.fn(),
+    statusOptions: [
+      { id: '', label: 'Sem status', icon: 'CircleOff', color: 'var(--text-3)' },
+      { id: 'in_progress', label: 'Em Progresso', icon: 'Loader', color: '#e8b923' },
+    ],
     onCardClick: vi.fn(),
     labels: [],
     members: [],
@@ -113,7 +118,7 @@ describe('KanbanColumn card composer', () => {
 
     renderColumn({ onRenameCol })
 
-    fireEvent.click(screen.getByRole('button', { name: /opções da coluna/i }))
+    fireEvent.click(screen.getByRole('button', { name: /opções da lista/i }))
     fireEvent.click(screen.getByRole('menuitem', { name: /renomear/i }))
     fireEvent.change(screen.getByLabelText('Nome da coluna'), {
       target: { value: 'Em andamento' },

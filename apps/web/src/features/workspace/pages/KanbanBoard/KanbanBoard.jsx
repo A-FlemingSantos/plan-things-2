@@ -604,6 +604,7 @@ export default function KanbanBoard() {
     deleteColumn,
     renameColumn,
     changeColColor,
+    changeColStatus,
     addCard,
     updateCard,
     deleteCard,
@@ -840,6 +841,12 @@ export default function KanbanBoard() {
   const handleColumnColorChange = (colId, color) => {
     changeColColor(colId, color).catch((error) => {
       showNotification(error?.message ?? 'Não foi possível alterar a cor da lista.')
+    })
+  }
+
+  const handleColumnStatusChange = (colId, status) => {
+    changeColStatus(colId, status).catch((error) => {
+      showNotification(error?.message ?? 'Não foi possível alterar o status da lista.')
     })
   }
 
@@ -2038,6 +2045,8 @@ export default function KanbanBoard() {
                     onDeleteCol={handleColumnDelete}
                     onRenameCol={renameColumn}
                     onChangeColColor={handleColumnColorChange}
+                    onChangeColStatus={handleColumnStatusChange}
+                    statusOptions={KANBAN_COLUMN_STATUS_OPTIONS}
                     onCardClick={handleBoardCardClick}
                     onToggleCardCompleted={togglePlannerCardCompleted}
                     labels={planLabels}

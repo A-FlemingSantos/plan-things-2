@@ -57,6 +57,8 @@ function KanbanColumn({
   onDeleteCol,
   onRenameCol,
   onChangeColColor,
+  onChangeColStatus,
+  statusOptions,
   onCardClick,
   onToggleCardCompleted,
   labels,
@@ -73,6 +75,7 @@ function KanbanColumn({
   const [cardError, setCardError] = useState(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
   const renameRef = useRef(null)
+  const menuAnchorRef = useRef(null)
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
   const hasColumnColor = Boolean(col.color?.trim())
 
@@ -183,10 +186,11 @@ function KanbanColumn({
         <div className={styles.colHeaderRight}>
           <div className={styles.colMenuWrap}>
             <button
+              ref={menuAnchorRef}
               type="button"
               className={styles.colActionBtn}
               onClick={() => setShowMenu((value) => !value)}
-              title="Opções da coluna"
+              title="Opções da lista"
               aria-expanded={showMenu}
               aria-haspopup="menu"
             >
@@ -195,7 +199,9 @@ function KanbanColumn({
 
             {showMenu ? (
               <ColMenu
+                anchorRef={menuAnchorRef}
                 currentColor={col.color ?? ''}
+                currentStatus={col.status ?? ''}
                 onRename={() => {
                   setRenaming(true)
                   setRenameVal(col.title)
@@ -203,8 +209,10 @@ function KanbanColumn({
                 }}
                 onDelete={() => onDeleteCol(col.id)}
                 onChangeColor={(color) => onChangeColColor(col.id, color)}
+                onChangeStatus={(status) => onChangeColStatus(col.id, status)}
                 onClose={() => setShowMenu(false)}
                 colorOptions={colorOptions}
+                statusOptions={statusOptions}
                 styles={styles}
               />
             ) : null}
@@ -269,6 +277,7 @@ function areKanbanColumnPropsEqual(prevProps, nextProps) {
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions
+    && prevProps.statusOptions === nextProps.statusOptions
     && prevProps.styles === nextProps.styles
 }
 
