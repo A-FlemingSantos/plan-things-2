@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,6 +13,10 @@ const apiMock = vi.hoisted(() => ({
 const boardState = vi.hoisted(() => ({
   columns: [],
   updateColumns: vi.fn(),
+}))
+
+const dndMock = vi.hoisted(() => ({
+  onInboxDrop: null,
 }))
 
 const activePlan = vi.hoisted(() => ({
@@ -113,6 +117,21 @@ vi.mock('../../hooks/useBoardColumns.js', () => ({
   }),
 }))
 
+vi.mock('../../hooks/useKanbanBoardDnd.js', () => ({
+  useKanbanBoardDnd: (options) => {
+    dndMock.onInboxDrop = options.onInboxDrop
+    return {
+      sensors: [],
+      activeCard: null,
+      isInboxDropActive: false,
+      handleDragStart: vi.fn(),
+      handleDragOver: vi.fn(),
+      handleDragEnd: vi.fn(),
+      handleDragCancel: vi.fn(),
+    }
+  },
+}))
+
 vi.mock('../../../calendar/hooks/useCalendarEvents.js', () => ({
   useCalendarEvents: () => ({ filteredEvents: [] }),
 }))
@@ -158,16 +177,13 @@ vi.mock('../../components/InviteNotifications/InviteNotifications.jsx', () => ({
 }))
 
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
-  default: ({ col, onDragStart, onDragEnd }) => (
+  default: ({ col }) => (
     <section aria-label={col.title}>
       {col.cards.map((card) => (
         <div
           key={card.id}
           role="button"
           tabIndex={0}
-          draggable
-          onDragStart={() => onDragStart(card.id, col.id)}
-          onDragEnd={onDragEnd}
         >
           {card.title}
         </div>
@@ -371,13 +387,12 @@ describe('KanbanBoard Inbox Gmail flow', () => {
 
 async function openInboxAndDropCard(cardName) {
   await userEvent.click(screen.getByRole('button', { name: /Caixa de entrada/i }))
-  const card = screen.getByRole('button', { name: cardName })
-  const dropZone = screen.getByLabelText('Enviar cartão por Gmail')
-  const dataTransfer = { dropEffect: '', setData: vi.fn(), getData: vi.fn() }
+  const card = boardState.columns
+    .flatMap((column) => column.cards)
+    .find((item) => item.title === cardName)
 
-  fireEvent.dragStart(card, { dataTransfer })
-  fireEvent.dragOver(dropZone, { dataTransfer })
-  fireEvent.drop(dropZone, { dataTransfer })
+  expect(card).toBeTruthy()
+  dndMock.onInboxDrop?.(card.id)
 }
 
 function renderBoard() {

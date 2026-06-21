@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
@@ -10,9 +11,12 @@ import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
 import KanbanColumn from '../../components/KanbanColumn/KanbanColumn.jsx'
+import KanbanCard from '../../components/KanbanCard/KanbanCard.jsx'
+import InboxDropPanel from '../../components/InboxDropPanel/InboxDropPanel.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import { useBoardColumns } from '../../hooks/useBoardColumns.js'
-import { moveCardInColumns, useBoardDragAndDrop } from '../../hooks/useBoardDragAndDrop.js'
+import { moveCardInColumns } from '../../hooks/boardDnDUtils.js'
+import { useKanbanBoardDnd } from '../../hooks/useKanbanBoardDnd.js'
 import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
 import { useCalendarEvents } from '../../../calendar/hooks/useCalendarEvents.js'
 import { CalendarWorkspaceView } from '../../../calendar/pages/CalendarPage/CalendarPage.jsx'
@@ -500,7 +504,6 @@ export default function KanbanBoard() {
   const [notification, setNotification] = useState(null)
   const [isInboxOpen, setIsInboxOpen] = useState(false)
   const [isInboxPanelMounted, setIsInboxPanelMounted] = useState(false)
-  const [isInboxDropActive, setIsInboxDropActive] = useState(false)
   const [inboxRecipientCard, setInboxRecipientCard] = useState(null)
   const [inboxSelectedMemberIds, setInboxSelectedMemberIds] = useState([])
   const [inboxSendingCardId, setInboxSendingCardId] = useState('')
@@ -682,20 +685,34 @@ export default function KanbanBoard() {
     scope: 'board',
     boardColumns: columns,
   })
+  const handleInboxCardDrop = useCallback((cardId) => {
+    const card = columns.flatMap((column) => column.cards).find((item) => item.id === cardId) ?? null
+    if (!card) {
+      showNotification('Não foi possível identificar o cartão arrastado.')
+      return
+    }
+
+    setInboxRecipientCard(card)
+    setInboxSelectedMemberIds([])
+    setInboxError('')
+  }, [columns])
+
   const {
-    dragState,
-    dropTarget,
+    sensors,
+    activeDragCard,
+    isInboxDropActive,
     handleDragStart,
     handleDragOver,
-    handleDrop,
     handleDragEnd,
-  } = useBoardDragAndDrop({
+    handleDragCancel,
+  } = useKanbanBoardDnd({
     activePlanId: activePlan?.id,
     columns,
     updateColumns,
     moveCard,
     isBackendDriven,
     onMoveError: (error) => showNotification(error?.message ?? 'Não foi possível mover o cartão.'),
+    onInboxDrop: handleInboxCardDrop,
   })
 
   const addColumn = async () => {
@@ -1092,7 +1109,6 @@ export default function KanbanBoard() {
 
   const closeInbox = () => {
     setIsInboxOpen(false)
-    setIsInboxDropActive(false)
     setInboxRecipientCard(null)
     setInboxSelectedMemberIds([])
     setInboxError('')
@@ -1623,32 +1639,6 @@ export default function KanbanBoard() {
     }
   }
 
-  const handleInboxDrop = async (event) => {
-    event.preventDefault()
-    setIsInboxDropActive(false)
-
-    const cardId = dragState?.cardId
-    handleDragEnd()
-    if (!cardId) return
-
-    const card = findBoardCard(cardId)
-    if (!card) {
-      showNotification('Não foi possível identificar o cartão arrastado.')
-      return
-    }
-
-    setInboxRecipientCard(card)
-    setInboxSelectedMemberIds([])
-    setInboxError('')
-  }
-
-  const handleInboxDragOver = (event) => {
-    if (!dragState?.cardId) return
-    event.preventDefault()
-    event.dataTransfer.dropEffect = 'copy'
-    setIsInboxDropActive(true)
-  }
-
   const toggleInboxRecipient = (memberId) => {
     setInboxSelectedMemberIds((current) => (
       current.includes(memberId)
@@ -1703,14 +1693,10 @@ export default function KanbanBoard() {
   }
 
   const renderInboxPanel = () => (
-    <aside
+    <InboxDropPanel
       id="board-inbox-panel"
       className={`${styles.plannerPanel} ${styles.inboxPanel} ${isInboxOpen ? '' : styles.plannerPanelClosing} ${isInboxDropActive ? styles.inboxPanelDropActive : ''}`}
       aria-label="Caixa de entrada"
-      onDragOver={handleInboxDragOver}
-      onDragEnter={handleInboxDragOver}
-      onDragLeave={() => setIsInboxDropActive(false)}
-      onDrop={handleInboxDrop}
     >
       <div className={styles.inboxPanelHeader}>
         <div className={styles.inboxPanelTitle}>
@@ -1829,7 +1815,7 @@ export default function KanbanBoard() {
         <Icon.Lock />
         <span>Envios usam somente a permissão Gmail de envio</span>
       </div>
-    </aside>
+    </InboxDropPanel>
   )
 
 	  const renderPlannerPanel = () => {
@@ -2037,6 +2023,14 @@ export default function KanbanBoard() {
         mobileTitle="Quadros"
       >
         <WorkspaceHeader compact />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
         <div
           className={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
         >
@@ -2091,12 +2085,6 @@ export default function KanbanBoard() {
                   <KanbanColumn
                     key={col.uiKey ?? col.id}
                     col={col}
-                    dragState={dragState}
-                    dropTarget={dropTarget}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onDragEnd={handleDragEnd}
                     onAddCard={addCard}
                     onDeleteCol={handleColumnDelete}
                     onRenameCol={renameColumn}
@@ -2270,6 +2258,21 @@ export default function KanbanBoard() {
         {isInboxPanelMounted && renderInboxPanel()}
         {isPlannerPanelMounted && renderPlannerPanel()}
         </div>
+        <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+          {activeDragCard ? (
+            <KanbanCard
+              card={activeDragCard.card}
+              colId={activeDragCard.columnId}
+              colTitle={activeDragCard.columnTitle}
+              isDragOverlay
+              isConfirmed={Boolean(activeDragCard.card.isCompleted)}
+              labels={planLabels}
+              members={planMembers}
+              styles={styles}
+            />
+          ) : null}
+        </DragOverlay>
+        </DndContext>
       </ProductAppShell>
 
       {/* ── Card modal ── */}

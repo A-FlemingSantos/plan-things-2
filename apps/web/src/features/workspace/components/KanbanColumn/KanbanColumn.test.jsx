@@ -1,3 +1,4 @@
+import { DndContext } from '@dnd-kit/core'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import KanbanColumn from './KanbanColumn.jsx'
@@ -12,12 +13,6 @@ function buildColumnProps(props = {}) {
       color: '#4290da',
       cards: [],
     },
-    dragState: null,
-    dropTarget: null,
-    onDragStart: vi.fn(),
-    onDragOver: vi.fn(),
-    onDrop: vi.fn(),
-    onDragEnd: vi.fn(),
     onAddCard: vi.fn(),
     onDeleteCol: vi.fn(),
     onRenameCol: vi.fn(),
@@ -39,7 +34,11 @@ function buildColumnProps(props = {}) {
 function renderColumn(props = {}) {
   const mergedProps = buildColumnProps(props)
 
-  render(<KanbanColumn {...mergedProps} />)
+  render(
+    <DndContext>
+      <KanbanColumn {...mergedProps} />
+    </DndContext>,
+  )
 
   return mergedProps
 }
@@ -94,16 +93,22 @@ describe('KanbanColumn card composer', () => {
       onCardClick,
     })
 
-    const { rerender } = render(<KanbanColumn {...props} />)
+    const { rerender } = render(
+      <DndContext>
+        <KanbanColumn {...props} />
+      </DndContext>,
+    )
 
     rerender(
-      <KanbanColumn
-        {...props}
-        col={{
-          ...props.col,
-          title: 'Em progresso',
-        }}
-      />,
+      <DndContext>
+        <KanbanColumn
+          {...props}
+          col={{
+            ...props.col,
+            title: 'Em progresso',
+          }}
+        />
+      </DndContext>,
     )
     fireEvent.click(screen.getByRole('button', { name: /abrir cartão card memoizado/i }))
 
@@ -136,30 +141,38 @@ describe('KanbanColumn card composer', () => {
   })
 
   it('shows the column status icon before the title when a status is defined', () => {
-    const { container } = render(<KanbanColumn {...buildColumnProps({
-      col: {
-        id: 'col-1',
-        title: 'Em andamento',
-        color: '#4290da',
-        status: 'in_progress',
-        cards: [],
-      },
-    })} />)
+    const { container } = render(
+      <DndContext>
+        <KanbanColumn {...buildColumnProps({
+          col: {
+            id: 'col-1',
+            title: 'Em andamento',
+            color: '#4290da',
+            status: 'in_progress',
+            cards: [],
+          },
+        })} />
+      </DndContext>,
+    )
 
     expect(container.querySelector('.colStatusIcon')).toBeInTheDocument()
     expect(screen.getByText('Em andamento')).toBeInTheDocument()
   })
 
   it('hides the column status icon when the status is empty', () => {
-    const { container } = render(<KanbanColumn {...buildColumnProps({
-      col: {
-        id: 'col-1',
-        title: 'Sem status',
-        color: '#4290da',
-        status: '',
-        cards: [],
-      },
-    })} />)
+    const { container } = render(
+      <DndContext>
+        <KanbanColumn {...buildColumnProps({
+          col: {
+            id: 'col-1',
+            title: 'Sem status',
+            color: '#4290da',
+            status: '',
+            cards: [],
+          },
+        })} />
+      </DndContext>,
+    )
 
     expect(container.querySelector('.colStatusIcon')).toBeNull()
   })

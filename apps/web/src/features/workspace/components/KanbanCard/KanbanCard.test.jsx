@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import KanbanCard from './KanbanCard.jsx'
 
@@ -22,12 +22,7 @@ function renderCard(props = {}) {
   const defaults = {
     card: buildCard(),
     colId: 'col-1',
-    isDragging: false,
-    isDropTarget: false,
-    onDragStart: vi.fn(),
-    onDragOver: vi.fn(),
-    onDrop: vi.fn(),
-    onDragEnd: vi.fn(),
+    isDragOverlay: true,
     onClick: vi.fn(),
     labels: [],
     members: [],
@@ -43,35 +38,10 @@ function renderCard(props = {}) {
   }
 }
 
-function buildDataTransfer() {
-  return {
-    dropEffect: 'move',
-    effectAllowed: 'move',
-    getData: vi.fn(),
-    setData: vi.fn(),
-    types: [],
-  }
-}
-
-describe('KanbanCard drag-and-drop', () => {
-  it('keeps the existing card drag behavior when no file is being dragged', () => {
-    const onDragStart = vi.fn()
-    const onDragOver = vi.fn()
-    const onDrop = vi.fn()
-    const { cardElement } = renderCard({
-      onDragStart,
-      onDragOver,
-      onDrop,
-    })
-    const dataTransfer = buildDataTransfer()
-
-    fireEvent.dragStart(cardElement, { dataTransfer })
-    fireEvent.dragOver(cardElement, { dataTransfer })
-    fireEvent.drop(cardElement, { dataTransfer })
-
-    expect(onDragStart).toHaveBeenCalledWith('card-1', 'col-1')
-    expect(onDragOver).toHaveBeenCalledWith({ type: 'card', cardId: 'card-1', colId: 'col-1' })
-    expect(onDrop).toHaveBeenCalledWith({ type: 'card', cardId: 'card-1', colId: 'col-1' })
+describe('KanbanCard', () => {
+  it('renders drag overlay cards without sortable context', () => {
+    const { cardElement } = renderCard({ isDragOverlay: true })
+    expect(cardElement.className).toContain('cardDragOverlay')
   })
 
   it('renders attachment count and checklist progress metadata', () => {

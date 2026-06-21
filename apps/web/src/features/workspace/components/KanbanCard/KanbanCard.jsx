@@ -1,4 +1,6 @@
 import { memo } from 'react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   Calendar,
   Check,
@@ -23,22 +25,21 @@ function getDescriptionPreview(description) {
   return `${firstLine.slice(0, 69)}…`
 }
 
-function KanbanCard({
+export function KanbanCardView({
   card,
-  colId,
   colTitle,
-  isDragging,
-  isDropTarget,
   isConfirmed,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
+  isDragging = false,
+  isDragOverlay = false,
   onClick,
   onToggleConfirmed,
   labels,
   members,
   styles,
+  style,
+  setNodeRef,
+  dragAttributes = {},
+  dragListeners = {},
 }) {
   const label = labels.find((item) => item.id === card.labelId)
   const descriptionPreview = getDescriptionPreview(card.description)
@@ -60,39 +61,32 @@ function KanbanCard({
     || checklistProgress !== null
   const hasLabel = Boolean(label)
   const isCompactCard = !hasLabel && !descriptionPreview && !hasFooter
+
   const toggleConfirmed = (event) => {
     event.preventDefault()
     event.stopPropagation()
     onToggleConfirmed?.(card)
   }
+
   const openCard = () => {
     onClick?.(card, colTitle)
   }
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={`
         ${styles.card}
         ${isCompactCard ? styles.cardCompact : ''}
         ${isConfirmed ? styles.cardConfirmed : ''}
         ${isDragging ? styles.cardDragging : ''}
-        ${isDropTarget ? styles.cardDropTarget : ''}
+        ${isDragOverlay ? styles.cardDragOverlay : ''}
       `}
       role="button"
       tabIndex={0}
-      draggable
-      onDragStart={() => onDragStart(card.id, colId)}
-      onDragOver={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        onDragOver({ type: 'card', cardId: card.id, colId })
-      }}
-      onDrop={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        onDrop({ type: 'card', cardId: card.id, colId })
-      }}
-      onDragEnd={onDragEnd}
+      {...dragAttributes}
+      {...dragListeners}
       onClick={openCard}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -115,10 +109,10 @@ function KanbanCard({
             className={`${styles.cardConfirmButton} ${isConfirmed ? styles.cardConfirmButtonChecked : ''}`}
             onClick={toggleConfirmed}
             onMouseDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
             aria-label={isConfirmed ? `Desmarcar cartão ${card.title}` : `Marcar cartão ${card.title}`}
             aria-pressed={isConfirmed}
-            draggable={false}
             tabIndex={0}
           >
             {isConfirmed ? (
@@ -223,12 +217,103 @@ function KanbanCard({
   )
 }
 
+function SortableKanbanCard({
+  card,
+  colId,
+  colTitle,
+  isConfirmed,
+  onClick,
+  onToggleConfirmed,
+  labels,
+  members,
+  styles,
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: card.id,
+    data: {
+      type: 'card',
+      columnId: colId,
+      cardId: card.id,
+    },
+  })
+
+  return (
+    <KanbanCardView
+      card={card}
+      colTitle={colTitle}
+      isConfirmed={isConfirmed}
+      isDragging={isDragging}
+      onClick={onClick}
+      onToggleConfirmed={onToggleConfirmed}
+      labels={labels}
+      members={members}
+      styles={styles}
+      setNodeRef={setNodeRef}
+      dragAttributes={attributes}
+      dragListeners={listeners}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+    />
+  )
+}
+
+function KanbanCard({
+  card,
+  colId,
+  colTitle,
+  isDragOverlay = false,
+  isConfirmed,
+  onClick,
+  onToggleConfirmed,
+  labels,
+  members,
+  styles,
+}) {
+  if (isDragOverlay) {
+    return (
+      <KanbanCardView
+        card={card}
+        colTitle={colTitle}
+        isConfirmed={isConfirmed}
+        isDragOverlay
+        onClick={onClick}
+        onToggleConfirmed={onToggleConfirmed}
+        labels={labels}
+        members={members}
+        styles={styles}
+      />
+    )
+  }
+
+  return (
+    <SortableKanbanCard
+      card={card}
+      colId={colId}
+      colTitle={colTitle}
+      isConfirmed={isConfirmed}
+      onClick={onClick}
+      onToggleConfirmed={onToggleConfirmed}
+      labels={labels}
+      members={members}
+      styles={styles}
+    />
+  )
+}
+
 function areKanbanCardPropsEqual(prevProps, nextProps) {
   return prevProps.card === nextProps.card
     && prevProps.colId === nextProps.colId
     && prevProps.colTitle === nextProps.colTitle
-    && prevProps.isDragging === nextProps.isDragging
-    && prevProps.isDropTarget === nextProps.isDropTarget
+    && prevProps.isDragOverlay === nextProps.isDragOverlay
     && prevProps.isConfirmed === nextProps.isConfirmed
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members

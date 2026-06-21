@@ -1,4 +1,6 @@
 import { memo, useRef, useState } from 'react'
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import {
   CircleAlert,
   CircleCheckBig,
@@ -47,12 +49,6 @@ function ColumnStatusIcon({ option, className }) {
 
 function KanbanColumn({
   col,
-  dragState,
-  dropTarget,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
   onAddCard,
   onDeleteCol,
   onRenameCol,
@@ -78,8 +74,16 @@ function KanbanColumn({
   const menuAnchorRef = useRef(null)
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
   const hasColumnColor = Boolean(col.color?.trim())
+  const cardIds = col.cards.map((card) => card.id)
 
-  const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
+  const { setNodeRef: setColumnDropRef, isOver: isColumnOver } = useDroppable({
+    id: col.id,
+    data: {
+      type: 'column',
+      columnId: col.id,
+    },
+  })
+
   const columnStatus = resolveKanbanColumnStatus(col.status)
   const showColumnStatusIcon = Boolean(col.status)
 
@@ -141,16 +145,9 @@ function KanbanColumn({
 
   return (
     <div
-      className={`${styles.column} ${isColDropTarget ? styles.columnDropTarget : ''} ${hasColumnColor ? styles.columnColored : ''}`}
+      ref={setColumnDropRef}
+      className={`${styles.column} ${isColumnOver ? styles.columnDropTarget : ''} ${hasColumnColor ? styles.columnColored : ''}`}
       style={hasColumnColor ? { '--column-color': col.color } : undefined}
-      onDragOver={(event) => {
-        event.preventDefault()
-        onDragOver({ type: 'col', colId: col.id })
-      }}
-      onDrop={(event) => {
-        event.preventDefault()
-        onDrop({ type: 'col', colId: col.id })
-      }}
     >
       <div className={styles.colHeader}>
         <div className={styles.colHeaderLeft}>
@@ -231,29 +228,24 @@ function KanbanColumn({
       </div>
       {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
 
-      <div className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}>
-        {col.cards.map((card) => (
-          <KanbanCard
-            key={card.uiKey ?? card.id}
-            card={card}
-            colId={col.id}
-            colTitle={col.title}
-            isDragging={dragState?.cardId === card.id}
-            isDropTarget={dropTarget?.type === 'card' && dropTarget.cardId === card.id}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
-            onClick={onCardClick}
-            isConfirmed={Boolean(card.isCompleted)}
-            onToggleConfirmed={onToggleCardCompleted}
-            labels={labels}
-            members={members}
-            styles={styles}
-          />
-        ))}
-
-      </div>
+      <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+        <div className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}>
+          {col.cards.map((card) => (
+            <KanbanCard
+              key={card.uiKey ?? card.id}
+              card={card}
+              colId={col.id}
+              colTitle={col.title}
+              onClick={onCardClick}
+              isConfirmed={Boolean(card.isCompleted)}
+              onToggleConfirmed={onToggleCardCompleted}
+              labels={labels}
+              members={members}
+              styles={styles}
+            />
+          ))}
+        </div>
+      </SortableContext>
 
       <AddCardComposer
         addingCard={addingCard}
@@ -272,8 +264,6 @@ function KanbanColumn({
 
 function areKanbanColumnPropsEqual(prevProps, nextProps) {
   return prevProps.col === nextProps.col
-    && prevProps.dragState === nextProps.dragState
-    && prevProps.dropTarget === nextProps.dropTarget
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions
