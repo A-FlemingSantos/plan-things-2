@@ -1,7 +1,8 @@
-import { pointerWithin } from '@dnd-kit/core'
-import { columnCardStackDropId } from './boardDnDUtils.js'
+import { closestCorners, pointerWithin } from '@dnd-kit/core'
+import { columnCardStackDropId, KANBAN_INBOX_DROP_ID } from './boardDnDUtils.js'
 
 const CARD_TYPE = 'card'
+const INBOX_TYPE = 'inbox'
 
 function getContainerType(droppableContainers, id) {
   const container = droppableContainers.find((item) => item.id === id)
@@ -99,8 +100,22 @@ export function createBoardCollisionDetection(columnIds, dragState) {
     const { droppableContainers, droppableRects, pointerCoordinates } = args
     const stickyColumnId = dragState.getStickyColumnId()
 
-    if (!stickyColumnId || !pointerCoordinates) {
+    if (!stickyColumnId) {
       return []
+    }
+
+    if (!pointerCoordinates) {
+      return closestCorners(args)
+    }
+
+    const pointerCollisions = pointerWithin(args)
+    const inboxCollision = pointerCollisions.find((collision) => {
+      const type = getContainerType(droppableContainers, collision.id)
+      return type === INBOX_TYPE || String(collision.id) === KANBAN_INBOX_DROP_ID
+    })
+    if (inboxCollision) {
+      dragState.setPointerColumnId(null)
+      return [inboxCollision]
     }
 
     const columnsUnderPointerX = getColumnsByPointerX(
@@ -136,7 +151,7 @@ export function createBoardCollisionDetection(columnIds, dragState) {
         : null,
     )
 
-    const cardPointerCollisions = pointerWithin(args).filter((collision) => {
+    const cardPointerCollisions = pointerCollisions.filter((collision) => {
       if (getContainerType(droppableContainers, collision.id) !== CARD_TYPE) {
         return false
       }

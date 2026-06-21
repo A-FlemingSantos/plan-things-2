@@ -4,12 +4,13 @@ vi.mock('@dnd-kit/core', async () => {
   const actual = await vi.importActual('@dnd-kit/core')
   return {
     ...actual,
+    closestCorners: vi.fn(() => []),
     pointerWithin: vi.fn(() => []),
   }
 })
 
-import { pointerWithin } from '@dnd-kit/core'
-import { columnCardStackDropId } from './boardDnDUtils.js'
+import { closestCorners, pointerWithin } from '@dnd-kit/core'
+import { columnCardStackDropId, KANBAN_INBOX_DROP_ID } from './boardDnDUtils.js'
 import {
   createBoardCollisionDetection,
   createBoardDragCollisionState,
@@ -53,6 +54,7 @@ function buildBoardRects() {
     ['col-2', buildColumnRect(314)],
     [columnCardStackDropId('col-1'), buildCardStackRect(12, 60, 360)],
     [columnCardStackDropId('col-2'), buildCardStackRect(326, 60, 360)],
+    [KANBAN_INBOX_DROP_ID, buildCardStackRect(700, 120, 460, 360)],
     ['card-2', buildCardStackRect(12, 120, 200)],
     ['card-4', buildCardStackRect(326, 120, 200)],
   ])
@@ -66,6 +68,7 @@ function buildBoardContainers() {
     { id: columnCardStackDropId('col-2'), data: { current: { type: 'card-stack', columnId: 'col-2' } }, rect: { current: null } },
     { id: 'card-2', data: { current: { type: 'card', columnId: 'col-1' } }, rect: { current: null } },
     { id: 'card-4', data: { current: { type: 'card', columnId: 'col-2' } }, rect: { current: null } },
+    { id: KANBAN_INBOX_DROP_ID, data: { current: { type: 'inbox' } }, rect: { current: null } },
   ]
 }
 
@@ -138,5 +141,39 @@ describe('boardCollisionDetection', () => {
 
     expect(collisions).toEqual([{ id: 'card-2' }])
     expect(dragState.getPointerColumnId()).toBeNull()
+  })
+
+  it('prefers inbox collision when pointer is over the inbox dropzone', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+    pointerWithin.mockReturnValueOnce([{ id: KANBAN_INBOX_DROP_ID }])
+
+    const collisions = detect(buildCollisionArgs({
+      pointer: { x: 820, y: 260 },
+      droppableContainers: buildBoardContainers(),
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(collisions).toEqual([{ id: KANBAN_INBOX_DROP_ID }])
+    expect(dragState.getPointerColumnId()).toBeNull()
+  })
+
+  it('falls back to closestCorners when pointer coordinates are unavailable', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+    closestCorners.mockReturnValueOnce([{ id: 'card-4' }])
+
+    const collisions = detect(buildCollisionArgs({
+      pointer: null,
+      droppableContainers: buildBoardContainers(),
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(collisions).toEqual([{ id: 'card-4' }])
+    expect(closestCorners).toHaveBeenCalledTimes(1)
   })
 })

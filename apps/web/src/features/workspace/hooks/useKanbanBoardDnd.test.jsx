@@ -178,4 +178,28 @@ describe('useKanbanBoardDnd', () => {
     expect(updateColumns).toHaveBeenCalled()
     expect(columns[1].cards.map((card) => card.id)).toEqual(['card-1'])
   })
+
+  it('marks inbox as active during drag-over on inbox target', () => {
+    const updateColumns = vi.fn()
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns: buildColumns(),
+      updateColumns,
+      moveCard: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: { id: 'card-1' } })
+      result.current.handleDragOver({
+        active: { id: 'card-1' },
+        over: { id: 'kanban-inbox-drop' },
+      })
+    })
+
+    expect(result.current.isInboxDropActive).toBe(true)
+    expect(result.current.dragOverColumnId).toBeNull()
+    expect(updateColumns).not.toHaveBeenCalled()
+  })
 })
