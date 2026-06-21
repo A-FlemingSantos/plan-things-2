@@ -436,6 +436,7 @@ export default function KanbanBoard() {
   const [activeCard,setActiveCard]= useState(null)   // { card, colTitle }
   const [addingCol, setAddingCol] = useState(false)
   const [newColTitle,setNewColTitle] = useState('')
+  const [newColColor, setNewColColor] = useState('')
   const [addColumnError, setAddColumnError] = useState(null)
   const [boardLoadError, setBoardLoadError] = useState(null)
   const [notification, setNotification] = useState(null)
@@ -642,15 +643,19 @@ export default function KanbanBoard() {
     const nextTitle = newColTitle.trim()
     if (!nextTitle) return
 
+    const nextColor = newColColor
+
     setNewColTitle('')
+    setNewColColor('')
     setAddingCol(false)
     setAddColumnError(null)
 
     try {
-      await createColumn(nextTitle)
+      await createColumn(nextTitle, { color: nextColor })
     } catch (error) {
       const message = error?.message ?? 'Não foi possível criar a lista.'
       setNewColTitle(nextTitle)
+      setNewColColor(nextColor)
       setAddingCol(true)
       setAddColumnError(message)
       showNotification(message)
@@ -2043,6 +2048,9 @@ export default function KanbanBoard() {
                       setAddColumnError(null)
                     }
                   }}
+                  newColColor={newColColor}
+                  setNewColColor={setNewColColor}
+                  colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
                   setAddingCol={setAddingCol}
                   addColumn={addColumn}
                   errorMessage={addColumnError}

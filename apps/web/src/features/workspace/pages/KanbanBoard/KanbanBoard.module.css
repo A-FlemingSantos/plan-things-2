@@ -2230,6 +2230,11 @@
 .addColShellOpen {
   background: var(--board-column-bg);
   border-color: transparent;
+  overflow: visible;
+}
+
+.addColShellOpen .addColExpandInner {
+  overflow: visible;
 }
 
 .addColTrigger {
@@ -2285,7 +2290,7 @@
 .addColForm {
   display: flex;
   flex-direction: column;
-  min-height: 88px;
+  min-height: 120px;
   opacity: 0;
   transform: translateY(-6px);
   transition:
@@ -2312,13 +2317,147 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 12px 14px 4px;
+  padding: 12px 14px 6px;
   flex: 1;
   min-width: 0;
 }
 
+.addColTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.addColColorField {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.addColColorTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.addColColorTrigger:hover {
+  background: color-mix(in srgb, var(--text-1) 6%, transparent);
+}
+
+.addColColorSwatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.addColColorSwatchNone {
+  position: relative;
+  border: 1px solid var(--border-2);
+  background: transparent;
+}
+
+.addColColorSwatchNone::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 2px;
+  width: 8px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: var(--text-3);
+  transform: rotate(-35deg);
+}
+
+.addColColorPalette {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: max-content;
+  max-width: 196px;
+  padding: 5px;
+  background: var(--menu-bg);
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  animation: menuIn 0.15s ease both;
+}
+
+.addColColorPaletteOption {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.addColColorPaletteOption:hover {
+  background: color-mix(in srgb, var(--text-1) 6%, transparent);
+}
+
+.addColColorPaletteOptionSelected {
+  background: color-mix(in srgb, var(--text-1) 8%, transparent);
+}
+
+.addColColorPaletteDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.addColOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.addColOptionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 24px;
+}
+
+.addColOptionLabel {
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-3);
+  letter-spacing: -.01em;
+  flex-shrink: 0;
+}
+
+.addColOptionPlaceholder {
+  font-size: 11px;
+  font-weight: var(--font-weight-light);
+  color: var(--text-3);
+  letter-spacing: -.01em;
+  text-align: right;
+}
+
 .addColInput {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+  width: auto;
   margin: 0;
   padding: 0;
   font-family: var(--font-family);

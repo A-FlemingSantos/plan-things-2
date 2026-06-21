@@ -527,8 +527,9 @@ export function useBoardColumns({
     updatePlanBoard(activePlanId, updater)
   }, [activePlanId, updatePlanBoard])
 
-  const createColumn = useCallback(async (title) => {
+  const createColumn = useCallback(async (title, { color = '' } = {}) => {
     const nextTitle = title.trim()
+    const nextColor = typeof color === 'string' ? color : ''
 
     if (!nextTitle || !activePlanId) {
       return false
@@ -537,7 +538,7 @@ export function useBoardColumns({
     if (!isBackendDriven) {
       updateColumns((prev) => [
         ...prev,
-        { id: uid(), title: nextTitle, color: '', cards: [] },
+        { id: uid(), title: nextTitle, color: nextColor, cards: [] },
       ])
       return true
     }
@@ -547,7 +548,7 @@ export function useBoardColumns({
     const optimisticColumn = {
       id: `temp-column-${uid()}`,
       title: nextTitle,
-      color: '',
+      color: nextColor,
       cards: [],
     }
 
@@ -559,7 +560,7 @@ export function useBoardColumns({
         token: accessToken,
         body: {
           title: nextTitle,
-          color: '',
+          color: nextColor,
         },
       })
 
@@ -568,7 +569,7 @@ export function useBoardColumns({
             boardView.columns.find((column) => !previousColumnIds.has(column.id))
             ?? boardView.columns.find((column) => (
               (column.title ?? '').trim() === nextTitle
-              && (column.color ?? '') === ''
+              && (column.color ?? '') === nextColor
             ))
           )
         : null
