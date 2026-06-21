@@ -216,6 +216,7 @@ function replaceColumnById(columns, columnId, nextColumn) {
         normalizedColumn.id !== column.id
         || normalizedColumn.title !== column.title
         || normalizedColumn.color !== column.color
+        || (normalizedColumn.status ?? '') !== (column.status ?? '')
         || normalizedColumn.cards !== column.cards
       )
 

@@ -544,6 +544,48 @@ describe('useBoardColumns card saves without board reload', () => {
     expect(boardState[0].color).toBe('#4290da')
   })
 
+  it('changes column status optimistically and restores the previous status when the backend update fails', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '#4290da',
+        status: '',
+        cards: [],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const deferred = createDeferred()
+    apiClientMock.apiRequest.mockReturnValueOnce(deferred.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let statusPromise
+    await act(async () => {
+      statusPromise = result.current.changeColStatus('col-1', 'in_progress')
+    })
+
+    expect(boardState[0].status).toBe('in_progress')
+
+    await act(async () => {
+      deferred.reject(new Error('Falha ao alterar status'))
+      await expect(statusPromise).rejects.toThrow('Falha ao alterar status')
+    })
+
+    expect(boardState[0].status).toBe('')
+  })
+
   it('deletes columns optimistically and restores them when the backend deletion fails', async () => {
     let boardState = [
       {
