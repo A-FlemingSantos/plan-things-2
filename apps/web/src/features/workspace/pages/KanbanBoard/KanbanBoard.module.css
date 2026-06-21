@@ -2253,7 +2253,7 @@
 .card:active { cursor: grabbing; }
 
 .cardDragging {
-  opacity: .25;
+  opacity: 0;
   pointer-events: none;
 }
 

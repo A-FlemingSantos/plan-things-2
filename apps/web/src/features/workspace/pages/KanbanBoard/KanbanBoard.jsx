@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
@@ -699,7 +699,9 @@ export default function KanbanBoard() {
 
   const {
     sensors,
+    collisionDetection,
     activeDragCard,
+    dragOverColumnId,
     isInboxDropActive,
     handleDragStart,
     handleDragOver,
@@ -2025,7 +2027,7 @@ export default function KanbanBoard() {
         <WorkspaceHeader compact />
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetection}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -2085,6 +2087,7 @@ export default function KanbanBoard() {
                   <KanbanColumn
                     key={col.uiKey ?? col.id}
                     col={col}
+                    isDropTarget={dragOverColumnId === col.id}
                     onAddCard={addCard}
                     onDeleteCol={handleColumnDelete}
                     onRenameCol={renameColumn}

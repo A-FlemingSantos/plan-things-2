@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   KeyboardSensor,
   PointerSensor,
@@ -7,12 +7,14 @@ import {
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import {
+  createBoardCollisionDetection,
+  createBoardDragCollisionState,
+} from './boardCollisionDetection.js'
+import {
+  applyDragOverToColumns,
   findCardIndex,
   findColumnIdForItem,
   KANBAN_INBOX_DROP_ID,
-  moveCardToIndex,
-  reorderCardWithinColumn,
-  resolveOverIndex,
 } from './boardDnDUtils.js'
 
 export function useKanbanBoardDnd({
@@ -26,12 +28,27 @@ export function useKanbanBoardDnd({
 }) {
   const [activeCardId, setActiveCardId] = useState(null)
   const [isInboxDropActive, setIsInboxDropActive] = useState(false)
+  const [dragOverColumnId, setDragOverColumnId] = useState(null)
   const columnsRef = useRef(columns)
+  const dragColumnsRef = useRef(columns)
   const dragStartSnapshotRef = useRef(null)
+  const dragCollisionStateRef = useRef(createBoardDragCollisionState())
 
   columnsRef.current = columns
 
+  useEffect(() => {
+    if (!activeCardId) {
+      dragColumnsRef.current = columns
+      columnsRef.current = columns
+    }
+  }, [activeCardId, columns])
+
   const columnIds = useMemo(() => columns.map((column) => column.id), [columns])
+
+  const collisionDetection = useMemo(
+    () => createBoardCollisionDetection(columnIds, dragCollisionStateRef.current),
+    [columnIds],
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -45,7 +62,9 @@ export function useKanbanBoardDnd({
   const activeCard = useMemo(() => {
     if (!activeCardId) return null
 
-    for (const column of columns) {
+    const sourceColumns = dragColumnsRef.current
+
+    for (const column of sourceColumns) {
       const card = column.cards.find((item) => item.id === activeCardId)
       if (card) {
         return { card, columnId: column.id, columnTitle: column.title }
@@ -55,116 +74,91 @@ export function useKanbanBoardDnd({
     return null
   }, [activeCardId, columns])
 
+  const resetDragCollisionState = useCallback(() => {
+    dragCollisionStateRef.current.reset()
+  }, [])
+
   const handleDragStart = useCallback(({ active }) => {
+    const sourceColumnId = findColumnIdForItem(columnsRef.current, String(active.id))
+
     dragStartSnapshotRef.current = columnsRef.current
+    dragColumnsRef.current = columnsRef.current
+    dragCollisionStateRef.current.reset()
+
+    if (sourceColumnId) {
+      dragCollisionStateRef.current.setStickyColumnId(sourceColumnId)
+      dragCollisionStateRef.current.setPointerColumnId(sourceColumnId)
+    }
+
     setActiveCardId(String(active.id))
     setIsInboxDropActive(false)
+    setDragOverColumnId(sourceColumnId)
   }, [])
 
   const handleDragOver = useCallback(({ active, over }) => {
+    const pointerColumnId = dragCollisionStateRef.current.getPointerColumnId()
+
     if (!over) {
       setIsInboxDropActive(false)
+      setDragOverColumnId(pointerColumnId)
       return
     }
 
     if (over.id === KANBAN_INBOX_DROP_ID) {
       setIsInboxDropActive(true)
+      setDragOverColumnId(null)
       return
     }
 
     setIsInboxDropActive(false)
+    setDragOverColumnId(pointerColumnId)
 
     const activeId = String(active.id)
     const overId = String(over.id)
+    const { columns: nextColumns, changed } = applyDragOverToColumns(
+      dragColumnsRef.current,
+      columnIds,
+      activeId,
+      overId,
+    )
 
-    if (activeId === overId) {
+    if (!changed) {
       return
     }
 
-    const currentColumns = columnsRef.current
-    const activeColumnId = findColumnIdForItem(currentColumns, activeId)
-    const overColumnId = findColumnIdForItem(currentColumns, overId)
-
-    if (!activeColumnId || !overColumnId) {
-      return
-    }
-
-    const activeIndex = findCardIndex(currentColumns, activeColumnId, activeId)
-    if (activeIndex === -1) {
-      return
-    }
-
-    const overIndex = resolveOverIndex(currentColumns, columnIds, overId, overColumnId)
-    if (overIndex === -1) {
-      return
-    }
-
-    updateColumns((previousColumns) => {
-      const previousActiveIndex = findCardIndex(previousColumns, activeColumnId, activeId)
-      if (previousActiveIndex === -1) {
-        return previousColumns
-      }
-
-      const previousOverIndex = resolveOverIndex(previousColumns, columnIds, overId, overColumnId)
-      if (previousOverIndex === -1) {
-        return previousColumns
-      }
-
-      if (activeColumnId === overColumnId) {
-        if (previousActiveIndex === previousOverIndex) {
-          return previousColumns
-        }
-
-        return reorderCardWithinColumn(
-          previousColumns,
-          activeColumnId,
-          previousActiveIndex,
-          previousOverIndex,
-        )
-      }
-
-      if (
-        previousColumns === currentColumns
-        && previousActiveIndex === activeIndex
-        && previousOverIndex === overIndex
-      ) {
-        const destinationColumn = previousColumns.find((column) => column.id === overColumnId)
-        const alreadyPlaced = destinationColumn?.cards[overIndex]?.id === activeId
-        if (alreadyPlaced) {
-          return previousColumns
-        }
-      }
-
-      return moveCardToIndex(
-        previousColumns,
-        activeId,
-        activeColumnId,
-        overColumnId,
-        overIndex,
-      )
-    })
+    dragColumnsRef.current = nextColumns
+    columnsRef.current = nextColumns
+    updateColumns(() => nextColumns)
   }, [columnIds, updateColumns])
 
   const handleDragCancel = useCallback(() => {
     const snapshot = dragStartSnapshotRef.current
     if (snapshot) {
+      dragColumnsRef.current = snapshot
+      columnsRef.current = snapshot
       updateColumns(() => snapshot)
     }
 
     dragStartSnapshotRef.current = null
+    resetDragCollisionState()
     setActiveCardId(null)
     setIsInboxDropActive(false)
-  }, [updateColumns])
+    setDragOverColumnId(null)
+  }, [resetDragCollisionState, updateColumns])
 
   const handleDragEnd = useCallback(async ({ active, over }) => {
     const cardId = String(active.id)
     const snapshot = dragStartSnapshotRef.current
     dragStartSnapshotRef.current = null
+    resetDragCollisionState()
     setActiveCardId(null)
     setIsInboxDropActive(false)
+    setDragOverColumnId(null)
 
     if (!over) {
       if (snapshot) {
+        dragColumnsRef.current = snapshot
+        columnsRef.current = snapshot
         updateColumns(() => snapshot)
       }
       return
@@ -172,6 +166,8 @@ export function useKanbanBoardDnd({
 
     if (over.id === KANBAN_INBOX_DROP_ID) {
       if (snapshot) {
+        dragColumnsRef.current = snapshot
+        columnsRef.current = snapshot
         updateColumns(() => snapshot)
       }
       onInboxDrop?.(cardId)
@@ -187,6 +183,8 @@ export function useKanbanBoardDnd({
 
     if (!targetColumnId) {
       if (snapshot) {
+        dragColumnsRef.current = snapshot
+        columnsRef.current = snapshot
         updateColumns(() => snapshot)
       }
       return
@@ -195,6 +193,8 @@ export function useKanbanBoardDnd({
     const targetPosition = findCardIndex(finalColumns, targetColumnId, cardId)
     if (targetPosition === -1) {
       if (snapshot) {
+        dragColumnsRef.current = snapshot
+        columnsRef.current = snapshot
         updateColumns(() => snapshot)
       }
       return
@@ -223,15 +223,20 @@ export function useKanbanBoardDnd({
     try {
       await moveCard(cardId, targetColumnId, targetPosition)
     } catch (error) {
-      updateColumns(() => snapshot ?? previousColumns)
+      const rollbackColumns = snapshot ?? previousColumns
+      dragColumnsRef.current = rollbackColumns
+      columnsRef.current = rollbackColumns
+      updateColumns(() => rollbackColumns)
       onMoveError?.(error)
     }
-  }, [activePlanId, isBackendDriven, moveCard, onInboxDrop, onMoveError, updateColumns])
+  }, [activePlanId, isBackendDriven, moveCard, onInboxDrop, onMoveError, resetDragCollisionState, updateColumns])
 
   return {
     sensors,
+    collisionDetection,
     activeCardId,
     activeDragCard: activeCard,
+    dragOverColumnId,
     isInboxDropActive,
     handleDragStart,
     handleDragOver,

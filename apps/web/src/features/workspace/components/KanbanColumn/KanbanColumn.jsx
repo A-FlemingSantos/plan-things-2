@@ -49,6 +49,7 @@ function ColumnStatusIcon({ option, className }) {
 
 function KanbanColumn({
   col,
+  isDropTarget = false,
   onAddCard,
   onDeleteCol,
   onRenameCol,
@@ -76,7 +77,7 @@ function KanbanColumn({
   const hasColumnColor = Boolean(col.color?.trim())
   const cardIds = col.cards.map((card) => card.id)
 
-  const { setNodeRef: setColumnDropRef, isOver: isColumnOver } = useDroppable({
+  const { setNodeRef: setColumnDropRef } = useDroppable({
     id: col.id,
     data: {
       type: 'column',
@@ -146,7 +147,7 @@ function KanbanColumn({
   return (
     <div
       ref={setColumnDropRef}
-      className={`${styles.column} ${isColumnOver ? styles.columnDropTarget : ''} ${hasColumnColor ? styles.columnColored : ''}`}
+      className={`${styles.column} ${isDropTarget ? styles.columnDropTarget : ''} ${hasColumnColor ? styles.columnColored : ''}`}
       style={hasColumnColor ? { '--column-color': col.color } : undefined}
     >
       <div className={styles.colHeader}>
@@ -264,6 +265,7 @@ function KanbanColumn({
 
 function areKanbanColumnPropsEqual(prevProps, nextProps) {
   return prevProps.col === nextProps.col
+    && prevProps.isDropTarget === nextProps.isDropTarget
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions

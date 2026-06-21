@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyDragOverToColumns,
   findCardIndex,
   findColumnIdForItem,
   moveCardInColumns,
@@ -71,5 +72,54 @@ describe('boardDnDUtils', () => {
 
     expect(nextColumns[1].cards.map((card) => card.id)).toEqual(['card-4', 'card-1'])
     expect(findCardIndex(nextColumns, 'col-2', 'card-1')).toBe(1)
+  })
+
+  it('removes duplicate card instances before inserting in another column', () => {
+    const columns = buildColumns()
+    const duplicatedColumns = columns.map((column) => {
+      if (column.id !== 'col-2') {
+        return column
+      }
+
+      return {
+        ...column,
+        cards: [
+          ...column.cards,
+          { id: 'card-1', title: 'Card 1 duplicate', columnId: 'col-2' },
+        ],
+      }
+    })
+
+    const nextColumns = moveCardToIndex(duplicatedColumns, 'card-1', 'col-1', 'col-2', 0)
+
+    expect(nextColumns.flatMap((column) => column.cards).filter((card) => card.id === 'card-1')).toHaveLength(1)
+    expect(nextColumns[1].cards.map((card) => card.id)).toEqual(['card-1', 'card-4'])
+  })
+
+  it('applies drag-over updates from the current drag snapshot', () => {
+    const columns = buildColumns()
+    const firstPass = applyDragOverToColumns(columns, ['col-1', 'col-2'], 'card-1', 'col-2')
+    const secondPass = applyDragOverToColumns(firstPass.columns, ['col-1', 'col-2'], 'card-1', 'card-4')
+
+    expect(firstPass.changed).toBe(true)
+    expect(secondPass.changed).toBe(true)
+    expect(secondPass.columns[1].cards.map((card) => card.id)).toEqual(['card-1', 'card-4'])
+    expect(secondPass.overColumnId).toBe('col-2')
+  })
+
+  it('skips drag-over updates when active and over target are the same card', () => {
+    const columns = buildColumns()
+    const result = applyDragOverToColumns(columns, ['col-1', 'col-2'], 'card-2', 'card-2')
+
+    expect(result.changed).toBe(false)
+    expect(result.overColumnId).toBeNull()
+    expect(result.columns).toBe(columns)
+  })
+
+  it('reports the destination column during drag-over', () => {
+    const columns = buildColumns()
+    const result = applyDragOverToColumns(columns, ['col-1', 'col-2'], 'card-1', 'card-4')
+
+    expect(result.overColumnId).toBe('col-2')
   })
 })

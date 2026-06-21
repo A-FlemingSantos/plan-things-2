@@ -22,27 +22,93 @@ export function findCardIndex(columns, columnId, cardId) {
 
 export function moveCardToIndex(columns, cardId, fromColumnId, toColumnId, toIndex) {
   const nextColumns = columns.map((column) => ({ ...column, cards: [...column.cards] }))
-  const fromColumn = nextColumns.find((column) => column.id === fromColumnId)
   const toColumn = nextColumns.find((column) => column.id === toColumnId)
 
-  if (!fromColumn || !toColumn) {
+  if (!toColumn) {
     return columns
   }
 
-  const fromIndex = fromColumn.cards.findIndex((card) => card.id === cardId)
-  if (fromIndex === -1) {
+  let movedCard = null
+
+  for (const column of nextColumns) {
+    const cardIndex = column.cards.findIndex((card) => card.id === cardId)
+    if (cardIndex === -1) {
+      continue
+    }
+
+    if (!movedCard) {
+      ;[movedCard] = column.cards.splice(cardIndex, 1)
+      continue
+    }
+
+    column.cards.splice(cardIndex, 1)
+  }
+
+  if (!movedCard) {
     return columns
   }
 
-  const [card] = fromColumn.cards.splice(fromIndex, 1)
-  const movedCard = card.columnId === toColumnId
-    ? card
-    : { ...card, columnId: toColumnId }
+  const nextCard = movedCard.columnId === toColumnId
+    ? movedCard
+    : { ...movedCard, columnId: toColumnId }
 
   const insertIndex = Math.max(0, Math.min(toIndex, toColumn.cards.length))
-  toColumn.cards.splice(insertIndex, 0, movedCard)
+  toColumn.cards.splice(insertIndex, 0, nextCard)
 
   return nextColumns
+}
+
+export function applyDragOverToColumns(columns, columnIds, activeId, overId) {
+  if (!overId || activeId === overId || overId === KANBAN_INBOX_DROP_ID) {
+    return { columns, overColumnId: null, changed: false }
+  }
+
+  const activeColumnId = findColumnIdForItem(columns, activeId)
+  const overColumnId = findColumnIdForItem(columns, overId)
+
+  if (!activeColumnId || !overColumnId) {
+    return { columns, overColumnId: null, changed: false }
+  }
+
+  const activeIndex = findCardIndex(columns, activeColumnId, activeId)
+  if (activeIndex === -1) {
+    return { columns, overColumnId, changed: false }
+  }
+
+  const overIndex = resolveOverIndex(columns, columnIds, overId, overColumnId)
+  if (overIndex === -1) {
+    return { columns, overColumnId, changed: false }
+  }
+
+  if (activeColumnId === overColumnId) {
+    if (activeIndex === overIndex) {
+      return { columns, overColumnId, changed: false }
+    }
+
+    const nextColumns = reorderCardWithinColumn(
+      columns,
+      activeColumnId,
+      activeIndex,
+      overIndex,
+    )
+
+    return { columns: nextColumns, overColumnId, changed: true }
+  }
+
+  const currentIndexInTarget = findCardIndex(columns, overColumnId, activeId)
+  if (currentIndexInTarget === overIndex) {
+    return { columns, overColumnId, changed: false }
+  }
+
+  const nextColumns = moveCardToIndex(
+    columns,
+    activeId,
+    activeColumnId,
+    overColumnId,
+    overIndex,
+  )
+
+  return { columns: nextColumns, overColumnId, changed: true }
 }
 
 export function reorderCardWithinColumn(columns, columnId, activeIndex, overIndex) {

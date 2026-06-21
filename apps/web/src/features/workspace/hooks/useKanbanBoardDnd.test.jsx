@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { moveCardToIndex } from './boardDnDUtils.js'
+import { applyDragOverToColumns } from './boardDnDUtils.js'
 import { useKanbanBoardDnd } from './useKanbanBoardDnd.js'
 
 function createDeferred() {
@@ -56,7 +56,7 @@ describe('useKanbanBoardDnd', () => {
       result.current.handleDragStart({ active: { id: 'card-1' } })
     })
 
-    columns = moveCardToIndex(columns, 'card-1', 'col-1', 'col-2', 0)
+    columns = applyDragOverToColumns(columns, ['col-1', 'col-2'], 'card-1', 'col-2').columns
     rerender({ currentColumns: columns })
 
     await act(async () => {
@@ -96,7 +96,7 @@ describe('useKanbanBoardDnd', () => {
       result.current.handleDragStart({ active: { id: 'card-1' } })
     })
 
-    columns = moveCardToIndex(columns, 'card-1', 'col-1', 'col-2', 0)
+    columns = applyDragOverToColumns(columns, ['col-1', 'col-2'], 'card-1', 'col-2').columns
     rerender({ currentColumns: columns })
 
     const error = new Error('Falha ao mover')
@@ -138,7 +138,7 @@ describe('useKanbanBoardDnd', () => {
       result.current.handleDragStart({ active: { id: 'card-1' } })
     })
 
-    columns = moveCardToIndex(columns, 'card-1', 'col-1', 'col-2', 0)
+    columns = applyDragOverToColumns(columns, ['col-1', 'col-2'], 'card-1', 'col-2').columns
     rerender({ currentColumns: columns })
 
     act(() => {
@@ -151,5 +151,31 @@ describe('useKanbanBoardDnd', () => {
     expect(onInboxDrop).toHaveBeenCalledWith('card-1')
     expect(columns[0].cards.map((card) => card.id)).toEqual(['card-1', 'card-2'])
     expect(columns[1].cards).toEqual([])
+  })
+
+  it('updates board state during drag-over', () => {
+    let columns = buildColumns()
+    const updateColumns = vi.fn((updater) => {
+      columns = typeof updater === 'function' ? updater(columns) : updater
+    })
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns,
+      moveCard: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: { id: 'card-1' } })
+      result.current.handleDragOver({
+        active: { id: 'card-1' },
+        over: { id: 'col-2' },
+      })
+    })
+
+    expect(updateColumns).toHaveBeenCalled()
+    expect(columns[1].cards.map((card) => card.id)).toEqual(['card-1'])
   })
 })
