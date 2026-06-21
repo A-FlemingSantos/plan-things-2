@@ -23,6 +23,7 @@ export default function AddColumnComposer({
   styles,
 }) {
   const inputRef = useRef(null)
+  const shellRef = useRef(null)
   const [isColorPaletteOpen, setIsColorPaletteOpen] = useState(false)
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false)
   const statusLabelId = 'add-col-status-label'
@@ -42,6 +43,21 @@ export default function AddColumnComposer({
     } else {
       setIsColorPaletteOpen(false)
       setIsStatusMenuOpen(false)
+    }
+  }, [addingCol])
+
+  useEffect(() => {
+    if (!addingCol) return undefined
+
+    const handlePointerDown = (event) => {
+      if (!shellRef.current?.contains(event.target)) {
+        dismissForm()
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
     }
   }, [addingCol])
 
@@ -70,7 +86,10 @@ export default function AddColumnComposer({
 
   return (
     <div className={styles.addColWrap}>
-      <div className={`${styles.addColShell} ${addingCol ? styles.addColShellOpen : ''}`}>
+      <div
+        ref={shellRef}
+        className={`${styles.addColShell} ${addingCol ? styles.addColShellOpen : ''}`}
+      >
         <button
           type="button"
           className={styles.addColTrigger}

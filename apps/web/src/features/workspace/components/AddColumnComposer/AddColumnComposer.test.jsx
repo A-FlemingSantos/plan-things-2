@@ -68,4 +68,41 @@ describe('AddColumnComposer regression', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Status' }))
     expect(screen.getByRole('listbox', { name: 'Status da lista' })).toBeInTheDocument()
   })
+
+  it('closes when clicking outside the form shell', () => {
+    const setAddingCol = vi.fn()
+    const setNewColTitle = vi.fn()
+    const setNewColColor = vi.fn()
+    const setNewColStatus = vi.fn()
+
+    render(
+      <>
+        <AddColumnComposer
+          {...buildProps({
+            setAddingCol,
+            setNewColTitle,
+            setNewColColor,
+            setNewColStatus,
+          })}
+        />
+        <button type="button">Fora do formulário</button>
+      </>,
+    )
+
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Fora do formulário' }))
+
+    expect(setAddingCol).toHaveBeenCalledWith(false)
+    expect(setNewColTitle).toHaveBeenCalledWith('')
+    expect(setNewColColor).toHaveBeenCalledWith('')
+    expect(setNewColStatus).toHaveBeenCalledWith('')
+  })
+
+  it('stays open when clicking inside the form shell', () => {
+    const setAddingCol = vi.fn()
+    render(<AddColumnComposer {...buildProps({ setAddingCol })} />)
+
+    fireEvent.mouseDown(screen.getByLabelText('Nome da lista'))
+
+    expect(setAddingCol).not.toHaveBeenCalled()
+  })
 })

@@ -16,12 +16,28 @@ export default function AddCardComposer({
   styles,
 }) {
   const inputRef = useRef(null)
+  const shellRef = useRef(null)
 
   useEffect(() => {
     if (addingCard) {
       inputRef.current?.focus()
     }
   }, [addingCard])
+
+  useEffect(() => {
+    if (!addingCard || isSubmitting) return undefined
+
+    const handlePointerDown = (event) => {
+      if (!shellRef.current?.contains(event.target)) {
+        onDismiss()
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+    }
+  }, [addingCard, isSubmitting, onDismiss])
 
   const handleInputKeyDown = (event) => {
     if (event.key === 'Enter') {
@@ -37,7 +53,10 @@ export default function AddCardComposer({
 
   return (
     <div className={styles.addCardWrap}>
-      <div className={`${styles.addCardShell} ${addingCard ? styles.addCardShellOpen : ''}`}>
+      <div
+        ref={shellRef}
+        className={`${styles.addCardShell} ${addingCard ? styles.addCardShellOpen : ''}`}
+      >
         <button
           type="button"
           className={styles.addCardTrigger}
