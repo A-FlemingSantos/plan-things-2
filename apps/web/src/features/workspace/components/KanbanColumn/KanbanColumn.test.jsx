@@ -59,7 +59,9 @@ describe('KanbanColumn card composer', () => {
 
     expect(onAddCard).toHaveBeenCalledWith('col-1', 'Novo cartão')
     await waitFor(() => {
-      expect(screen.queryByLabelText('Título do cartão')).toBeNull()
+      const input = screen.getByLabelText('Título do cartão')
+      expect(input).toHaveAttribute('tabindex', '-1')
+      expect(input.closest('[aria-hidden="true"]')).not.toBeNull()
     })
 
     resolveCreation(true)

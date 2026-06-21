@@ -1817,85 +1817,208 @@
   padding: 0;
 }
 
-/* Add card form inside column */
-.addCardForm {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: fadeUp 0.18s ease both;
+/* Add card composer inside column */
+.addCardWrap {
+  flex-shrink: 0;
+  width: 100%;
 }
 
-.addCardInput {
+.addCardShell {
   width: 100%;
-  padding: 9px 11px;
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: var(--font-weight-light);
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+  background: transparent;
+  transition: background 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.addCardShell:not(.addCardShellOpen):hover {
+  background: var(--hover);
+}
+
+.addCardShell:not(.addCardShellOpen):hover .addCardTrigger {
   color: var(--text-1);
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  outline: none;
-  resize: none;
-  line-height: 1.5;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-.addCardInput:focus {
-  border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
 }
 
-.addCardActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.addCardShellOpen {
+  background: color-mix(in srgb, var(--text-1) 4%, transparent);
+  overflow: visible;
 }
 
-.addCardSubmit {
-  height: 30px;
-  padding: 0 14px;
-  font-family: var(--font-family);
-  font-size: 12px;
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
+.addCardShellOpen .addCardExpandInner {
+  overflow: visible;
 }
-.addCardSubmit:hover:not(:disabled) { opacity: .8; }
-.addCardSubmit:disabled { opacity: .35; cursor: not-allowed; }
 
-.addCardCancel {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-.addCardCancel:hover { background: var(--hover); color: var(--text-1); }
-
-/* Add card button at column bottom */
-.colAddBtn {
+.addCardTrigger {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
+  max-height: 40px;
   padding: 8px 14px 10px;
   font-family: var(--font-family);
   font-size: 12px;
   font-weight: var(--font-weight-regular);
   line-height: 1.2;
-  color: var(--text-1);
+  color: var(--text-2);
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-  flex-shrink: 0;
-  border-radius: 0 0 14px 14px;
+  white-space: nowrap;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: top center;
+  transition:
+    opacity 0.2s ease,
+    transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    color var(--transition-fast);
 }
-.colAddBtn:hover { background: var(--hover); }
+
+.addCardShellOpen .addCardTrigger {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  pointer-events: none;
+}
+
+.addCardExpand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.addCardShellOpen .addCardExpand {
+  grid-template-rows: 1fr;
+}
+
+.addCardExpandInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.addCardForm {
+  display: flex;
+  flex-direction: column;
+  min-height: 72px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.addCardShellOpen .addCardForm {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.06s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .addCardShell,
+  .addCardTrigger,
+  .addCardExpand,
+  .addCardForm {
+    transition: none;
+  }
+}
+
+.addCardFormBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.addCardInput {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-1);
+  letter-spacing: -.02em;
+  line-height: 1.35;
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.addCardInput::placeholder {
+  color: var(--text-3);
+}
+
+.addCardInput:focus,
+.addCardInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.addCardError {
+  margin: 0;
+  font-size: 11px;
+  font-weight: var(--font-weight-light);
+  color: var(--danger-text);
+  line-height: 1.4;
+}
+
+.addCardFormFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 10px 14px;
+  flex-shrink: 0;
+}
+
+.addCardSubmit {
+  min-height: 28px;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.01em;
+  color: var(--text-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+.addCardSubmit:hover:not(:disabled) { color: var(--text-2); }
+.addCardSubmit:disabled {
+  color: var(--text-3);
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.addCardDismiss {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-3);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+.addCardDismiss:hover:not(:disabled) {
+  color: var(--text-1);
+  background: color-mix(in srgb, var(--text-1) 6%, transparent);
+}
+.addCardDismiss:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
 
 /* ════════════════════════════════════════
    CARD

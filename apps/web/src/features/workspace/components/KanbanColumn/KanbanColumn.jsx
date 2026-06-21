@@ -1,5 +1,6 @@
 import { memo, useRef, useState } from 'react'
-import { Ellipsis, Plus, X } from 'lucide-react'
+import { Ellipsis, Plus } from 'lucide-react'
+import AddCardComposer from '../AddCardComposer/AddCardComposer.jsx'
 import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard from '../KanbanCard/KanbanCard.jsx'
 
@@ -34,7 +35,6 @@ function KanbanColumn({
   const [renameError, setRenameError] = useState(null)
   const [cardError, setCardError] = useState(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
-  const addInputRef = useRef(null)
   const renameRef = useRef(null)
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
   const hasColumnColor = Boolean(col.color?.trim())
@@ -47,6 +47,7 @@ function KanbanColumn({
 
     try {
       setIsAddingCard(true)
+      setAddingCard(false)
       setNewCardText('')
       setCardError(null)
       await onAddCard(col.id, nextCardTitle)
@@ -55,7 +56,6 @@ function KanbanColumn({
       setAddingCard(true)
       setNewCardText(nextCardTitle)
       setCardError(error?.message ?? 'Nao foi possivel criar o cartao nesta coluna.')
-      setTimeout(() => addInputRef.current?.focus(), 0)
     } finally {
       setIsAddingCard(false)
     }
@@ -65,7 +65,6 @@ function KanbanColumn({
     if (isAddingCard) return
     setAddingCard(true)
     setCardError(null)
-    setTimeout(() => addInputRef.current?.focus(), 50)
   }
 
   const cancelAddingCard = () => {
@@ -202,57 +201,19 @@ function KanbanColumn({
           />
         ))}
 
-        {addingCard && !isAddingCard ? (
-          <div className={styles.addCardForm}>
-            <textarea
-              ref={addInputRef}
-              className={styles.addCardInput}
-              placeholder="Título do cartão..."
-              value={newCardText}
-              onChange={(event) => setNewCardText(event.target.value)}
-              aria-label="Título do cartão"
-              rows={2}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault()
-                  submitCard()
-                }
-                if (event.key === 'Escape') {
-                  cancelAddingCard()
-                }
-              }}
-            />
-            {cardError ? <p className={styles.inlineComposerError}>{cardError}</p> : null}
-
-            <div className={styles.addCardActions}>
-              <button type="button" className={styles.addCardSubmit} onClick={submitCard} disabled={!newCardText.trim() || isAddingCard}>
-                {isAddingCard ? 'Adicionando...' : 'Adicionar cartão'}
-              </button>
-              <button
-                type="button"
-                className={styles.addCardCancel}
-                onClick={cancelAddingCard}
-                disabled={isAddingCard}
-                aria-label="Cancelar novo cartão"
-              >
-                <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        ) : null}
       </div>
 
-      {!addingCard && !isAddingCard ? (
-        <button
-          type="button"
-          className={styles.colAddBtn}
-          onClick={startAddingCard}
-          disabled={isAddingCard}
-        >
-          <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          Adicionar cartão
-        </button>
-      ) : null}
+      <AddCardComposer
+        addingCard={addingCard}
+        setAddingCard={setAddingCard}
+        newCardText={newCardText}
+        setNewCardText={setNewCardText}
+        onSubmit={submitCard}
+        onDismiss={cancelAddingCard}
+        errorMessage={cardError}
+        isSubmitting={isAddingCard}
+        styles={styles}
+      />
     </div>
   )
 }
