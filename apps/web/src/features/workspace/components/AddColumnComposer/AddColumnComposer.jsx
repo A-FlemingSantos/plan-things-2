@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Check,
+  CircleAlert,
   CircleCheckBig,
   CircleDashed,
   CircleDotDashed,
@@ -16,9 +17,11 @@ const ICON_STROKE = 1.75
 const STATUS_ICON_SIZE = 14
 
 const STATUS_ICONS = {
+  CircleOff,
   CircleDashed,
   CircleDotDashed,
   Loader,
+  CircleAlert,
   CircleCheckBig,
   CircleX,
 }
@@ -64,7 +67,9 @@ export default function AddColumnComposer({
   const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false)
 
   const selectedColorLabel = colorOptions.find((color) => color.value === newColColor)?.label ?? 'Sem cor'
-  const selectedStatus = statusOptions.find((status) => status.id === newColStatus) ?? statusOptions[0]
+  const selectedStatus = statusOptions.find((status) => status.id === newColStatus)
+    ?? statusOptions.find((status) => status.id === '')
+    ?? statusOptions[0]
 
   const dismissForm = () => {
     setIsColorPaletteOpen(false)
@@ -295,7 +300,7 @@ export default function AddColumnComposer({
 
                             return (
                               <button
-                                key={status.id}
+                                key={status.id || 'none'}
                                 type="button"
                                 className={`${styles.addColStatusMenuOption} ${isSelected ? styles.addColStatusMenuOptionSelected : ''}`}
                                 onClick={() => handleStatusSelect(status.id)}
