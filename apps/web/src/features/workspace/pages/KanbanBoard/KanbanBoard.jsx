@@ -2089,7 +2089,7 @@ export default function KanbanBoard() {
               <div className={styles.board}>
                 {columns.map(col => (
                   <KanbanColumn
-                    key={col.id}
+                    key={col.uiKey ?? col.id}
                     col={col}
                     dragState={dragState}
                     dropTarget={dropTarget}

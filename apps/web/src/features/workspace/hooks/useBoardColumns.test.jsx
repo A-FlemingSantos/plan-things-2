@@ -318,7 +318,9 @@ describe('useBoardColumns card saves without board reload', () => {
       id: 'card-2',
       title: 'Novo card',
     })
+    expect(createdCard.uiKey).toMatch(/^card-ui-/)
     expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-1', 'card-2'])
+    expect(boardState[0].cards[1].uiKey).toBe(createdCard.uiKey)
 
     await act(async () => {
       await result.current.deleteCard('card-1')
@@ -502,6 +504,60 @@ describe('useBoardColumns card saves without board reload', () => {
     expect(boardState[0].cards.map((card) => card.id)).toEqual(['card-2'])
     expect(boardState[1].cards.map((card) => card.id)).toEqual(['card-3', 'card-1'])
     expect(boardState[1].cards[1].columnId).toBe('col-2')
+  })
+
+  it('keeps optimistic column ui key when backend confirms creation', async () => {
+    let boardState = [
+      {
+        id: 'col-1',
+        title: 'Backlog',
+        color: '',
+        status: '',
+        cards: [],
+      },
+    ]
+
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+
+    apiClientMock.apiRequest.mockResolvedValueOnce({
+      columns: [
+        {
+          id: 'col-1',
+          title: 'Backlog',
+          color: '',
+          status: '',
+          cards: [],
+        },
+        {
+          id: 'col-2',
+          title: 'Doing',
+          color: '',
+          status: '',
+          cards: [],
+        },
+      ],
+      labels: [],
+      inboxItems: [],
+    })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    await act(async () => {
+      await result.current.createColumn('Doing')
+    })
+
+    expect(boardState.map((column) => column.id)).toEqual(['col-1', 'col-2'])
+    expect(boardState[1].uiKey).toMatch(/^column-ui-/)
   })
 
   it('deletes columns locally without reloading the board', async () => {

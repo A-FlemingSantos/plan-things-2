@@ -105,7 +105,16 @@ function mergePersistedCards(currentCards, persistedCards) {
   const currentCardsById = new Map(currentCards.map((card) => [card.id, card]))
   const nextCards = persistedCards.map((persistedCard) => {
     const currentCard = currentCardsById.get(persistedCard.id)
-    return areCardsEquivalent(currentCard, persistedCard) ? currentCard : persistedCard
+    if (areCardsEquivalent(currentCard, persistedCard)) {
+      return currentCard
+    }
+    if (currentCard?.uiKey) {
+      return {
+        ...persistedCard,
+        uiKey: currentCard.uiKey,
+      }
+    }
+    return persistedCard
   })
 
   const sameLength = currentCards.length === nextCards.length
@@ -725,8 +734,10 @@ export function useBoardColumns({
 
     const previousColumns = columns
     const previousColumnIds = new Set(previousColumns.map((column) => column.id))
+    const optimisticColumnUiKey = `column-ui-${uid()}`
     const optimisticColumn = {
       id: `temp-column-${uid()}`,
+      uiKey: optimisticColumnUiKey,
       title: nextTitle,
       color: nextColor,
       status: nextStatus,
@@ -759,6 +770,7 @@ export function useBoardColumns({
       if (persistedColumnView?.id) {
         updateColumns((prev) => replaceColumnById(prev, optimisticColumn.id, {
           id: persistedColumnView.id,
+          uiKey: optimisticColumnUiKey,
           title: persistedColumnView.title ?? optimisticColumn.title,
           color: persistedColumnView.color ?? optimisticColumn.color,
           status: persistedColumnView.status ?? optimisticColumn.status,
@@ -987,8 +999,10 @@ export function useBoardColumns({
 
     const previousColumns = columns
     const targetColumn = findColumnById(previousColumns, colId)
+    const optimisticCardUiKey = `card-ui-${uid()}`
     const optimisticCard = {
       id: `temp-card-${uid()}`,
+      uiKey: optimisticCardUiKey,
       columnId: colId,
       position: targetColumn?.cards?.length ?? 0,
       title,
@@ -1037,9 +1051,13 @@ export function useBoardColumns({
         timeZone,
         dateFormat,
       })
+      const createdCardWithUiKey = {
+        ...createdCard,
+        uiKey: optimisticCardUiKey,
+      }
 
-      updateColumns((prev) => replaceCardByIdInColumns(prev, optimisticCard.id, createdCard))
-      return createdCard
+      updateColumns((prev) => replaceCardByIdInColumns(prev, optimisticCard.id, createdCardWithUiKey))
+      return createdCardWithUiKey
     } catch (error) {
       updateColumns(() => previousColumns)
       throw error
@@ -1072,6 +1090,12 @@ export function useBoardColumns({
         timeZone,
         dateFormat,
       })
+      if (previousCard?.uiKey) {
+        persistedCard = {
+          ...persistedCard,
+          uiKey: previousCard.uiKey,
+        }
+      }
 
       updateColumns((prev) => {
         const currentCard = findCardInColumns(prev, persistedCard.id)

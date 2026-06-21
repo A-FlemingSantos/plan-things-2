@@ -234,7 +234,7 @@ function KanbanColumn({
       <div className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}>
         {col.cards.map((card) => (
           <KanbanCard
-            key={card.id}
+            key={card.uiKey ?? card.id}
             card={card}
             colId={col.id}
             colTitle={col.title}

@@ -1659,7 +1659,6 @@
   border-radius: 14px;
   overflow: visible;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-  animation: colEnter 0.3s ease both;
 }
 
 @keyframes colEnter {
@@ -2153,7 +2152,6 @@
     border-color 0.25s ease-out,
     opacity var(--transition-fast),
     z-index 0s;
-  animation: cardEnter 0.22s ease both;
 }
 
 .cardCompact {
