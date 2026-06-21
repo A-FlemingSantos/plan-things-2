@@ -5,12 +5,13 @@ const ICON_STROKE = 1.75
 export default function KanbanColumnColorPalette({
   value = '',
   onChange,
-  colorOptions,
+  colorOptions = [],
   styles,
   variant = 'floating',
   className = '',
   ariaLabel = 'Cores da lista',
 }) {
+  const safeColorOptions = Array.isArray(colorOptions) ? colorOptions : []
   const paletteClassName = [
     styles.addColColorPalette,
     variant === 'inline' ? styles.addColColorPaletteInline : '',
@@ -19,7 +20,7 @@ export default function KanbanColumnColorPalette({
 
   return (
     <div className={paletteClassName} role="listbox" aria-label={ariaLabel}>
-      {colorOptions.map((color) => {
+      {safeColorOptions.map((color) => {
         const isSelected = value === color.value
 
         return (

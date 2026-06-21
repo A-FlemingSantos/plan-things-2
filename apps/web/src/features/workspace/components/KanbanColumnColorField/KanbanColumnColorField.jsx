@@ -7,7 +7,7 @@ const ICON_STROKE = 1.75
 export default function KanbanColumnColorField({
   value = '',
   onChange,
-  colorOptions,
+  colorOptions = [],
   styles,
   tabIndex = 0,
   onOpenChange,
@@ -15,7 +15,8 @@ export default function KanbanColumnColorField({
 }) {
   const fieldRef = useRef(null)
   const [isOpen, setIsOpen] = useState(false)
-  const selectedColorLabel = colorOptions.find((color) => color.value === value)?.label ?? 'Sem cor'
+  const safeColorOptions = Array.isArray(colorOptions) ? colorOptions : []
+  const selectedColorLabel = safeColorOptions.find((color) => color.value === value)?.label ?? 'Sem cor'
 
   const setOpen = (nextOpen) => {
     setIsOpen(nextOpen)
@@ -80,7 +81,7 @@ export default function KanbanColumnColorField({
             onChange(colorValue)
             setOpen(false)
           }}
-          colorOptions={colorOptions}
+          colorOptions={safeColorOptions}
           styles={styles}
         />
       ) : null}

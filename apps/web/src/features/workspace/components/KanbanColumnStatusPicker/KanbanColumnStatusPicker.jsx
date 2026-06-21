@@ -44,7 +44,7 @@ function ColumnStatusIcon({ option, className, size = STATUS_ICON_SIZE }) {
 export default function KanbanColumnStatusPicker({
   value = '',
   onChange,
-  statusOptions,
+  statusOptions = [],
   styles,
   labelId,
   tabIndex = 0,
@@ -53,9 +53,11 @@ export default function KanbanColumnStatusPicker({
 }) {
   const fieldRef = useRef(null)
   const [isOpen, setIsOpen] = useState(false)
-  const selectedStatus = statusOptions.find((status) => status.id === value)
-    ?? statusOptions.find((status) => status.id === '')
-    ?? statusOptions[0]
+  const safeStatusOptions = Array.isArray(statusOptions) ? statusOptions : []
+  const selectedStatus = safeStatusOptions.find((status) => status.id === value)
+    ?? safeStatusOptions.find((status) => status.id === '')
+    ?? safeStatusOptions[0]
+    ?? { id: '', label: 'Sem status', icon: 'CircleOff', color: 'var(--text-3)' }
 
   const setOpen = (nextOpen) => {
     setIsOpen(nextOpen)
@@ -107,7 +109,7 @@ export default function KanbanColumnStatusPicker({
 
       {isOpen ? (
         <div className={styles.addColStatusMenu} role="listbox" aria-label="Status da lista">
-          {statusOptions.map((status) => {
+          {safeStatusOptions.map((status) => {
             const isSelected = value === status.id
 
             return (
