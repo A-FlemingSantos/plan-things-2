@@ -9,6 +9,7 @@ vi.mock('@dnd-kit/core', async () => {
 })
 
 import { pointerWithin } from '@dnd-kit/core'
+import { columnCardStackDropId } from './boardDnDUtils.js'
 import {
   createBoardCollisionDetection,
   createBoardDragCollisionState,
@@ -35,6 +36,39 @@ function buildColumnRect(left, width = 300) {
   }
 }
 
+function buildCardStackRect(left, top, bottom, width = 276) {
+  return {
+    top,
+    left,
+    right: left + width,
+    bottom,
+    width,
+    height: bottom - top,
+  }
+}
+
+function buildBoardRects() {
+  return new Map([
+    ['col-1', buildColumnRect(0)],
+    ['col-2', buildColumnRect(314)],
+    [columnCardStackDropId('col-1'), buildCardStackRect(12, 60, 360)],
+    [columnCardStackDropId('col-2'), buildCardStackRect(326, 60, 360)],
+    ['card-2', buildCardStackRect(12, 120, 200)],
+    ['card-4', buildCardStackRect(326, 120, 200)],
+  ])
+}
+
+function buildBoardContainers() {
+  return [
+    { id: 'col-1', data: { current: { type: 'column' } }, rect: { current: null } },
+    { id: 'col-2', data: { current: { type: 'column' } }, rect: { current: null } },
+    { id: columnCardStackDropId('col-1'), data: { current: { type: 'card-stack', columnId: 'col-1' } }, rect: { current: null } },
+    { id: columnCardStackDropId('col-2'), data: { current: { type: 'card-stack', columnId: 'col-2' } }, rect: { current: null } },
+    { id: 'card-2', data: { current: { type: 'card', columnId: 'col-1' } }, rect: { current: null } },
+    { id: 'card-4', data: { current: { type: 'card', columnId: 'col-2' } }, rect: { current: null } },
+  ]
+}
+
 describe('boardCollisionDetection', () => {
   it('keeps the sticky column while the pointer is in the gap between columns', () => {
     const dragState = createBoardDragCollisionState()
@@ -42,22 +76,14 @@ describe('boardCollisionDetection', () => {
     dragState.setPointerColumnId('col-1')
 
     const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
-    const droppableRects = new Map([
-      ['col-1', buildColumnRect(0)],
-      ['col-2', buildColumnRect(314)],
-    ])
-    const droppableContainers = [
-      { id: 'col-1', data: { current: { type: 'column' } }, rect: { current: null } },
-      { id: 'col-2', data: { current: { type: 'column' } }, rect: { current: null } },
-    ]
 
     const collisions = detect(buildCollisionArgs({
       pointer: { x: 308, y: 200 },
-      droppableContainers,
-      droppableRects,
+      droppableContainers: buildBoardContainers(),
+      droppableRects: buildBoardRects(),
     }))
 
-    expect(collisions).toEqual([{ id: 'col-1' }])
+    expect(collisions).toEqual([{ id: 'card-2' }])
     expect(dragState.getStickyColumnId()).toBe('col-1')
     expect(dragState.getPointerColumnId()).toBeNull()
   })
@@ -67,26 +93,50 @@ describe('boardCollisionDetection', () => {
     dragState.setStickyColumnId('col-1')
 
     const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
-    const droppableRects = new Map([
-      ['col-1', buildColumnRect(0)],
-      ['col-2', buildColumnRect(314)],
-    ])
-    const droppableContainers = [
-      { id: 'col-1', data: { current: { type: 'column' } }, rect: { current: null } },
-      { id: 'col-2', data: { current: { type: 'column' } }, rect: { current: null } },
-      { id: 'card-4', data: { current: { type: 'card', columnId: 'col-2' } }, rect: { current: null } },
-    ]
 
     pointerWithin.mockReturnValueOnce([{ id: 'card-4' }])
 
     const collisions = detect(buildCollisionArgs({
       pointer: { x: 360, y: 200 },
-      droppableContainers,
-      droppableRects,
+      droppableContainers: buildBoardContainers(),
+      droppableRects: buildBoardRects(),
     }))
 
     expect(collisions).toEqual([{ id: 'card-4' }])
     expect(dragState.getStickyColumnId()).toBe('col-2')
+    expect(dragState.getPointerColumnId()).toBeNull()
+  })
+
+  it('targets a column by horizontal position when the pointer is below the list area', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+
+    const collisions = detect(buildCollisionArgs({
+      pointer: { x: 360, y: 1200 },
+      droppableContainers: buildBoardContainers(),
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(collisions).toEqual([{ id: 'col-2' }])
+    expect(dragState.getStickyColumnId()).toBe('col-2')
     expect(dragState.getPointerColumnId()).toBe('col-2')
+  })
+
+  it('does not append to the column bottom while the pointer is still inside the card stack', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+
+    const collisions = detect(buildCollisionArgs({
+      pointer: { x: 150, y: 300 },
+      droppableContainers: buildBoardContainers(),
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(collisions).toEqual([{ id: 'card-2' }])
+    expect(dragState.getPointerColumnId()).toBeNull()
   })
 })

@@ -15,6 +15,7 @@ import AddCardComposer from '../AddCardComposer/AddCardComposer.jsx'
 import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard from '../KanbanCard/KanbanCard.jsx'
 import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
+import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
 
 const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
@@ -81,6 +82,14 @@ function KanbanColumn({
     id: col.id,
     data: {
       type: 'column',
+      columnId: col.id,
+    },
+  })
+
+  const { setNodeRef: setCardStackDropRef } = useDroppable({
+    id: columnCardStackDropId(col.id),
+    data: {
+      type: 'card-stack',
       columnId: col.id,
     },
   })
@@ -230,7 +239,10 @@ function KanbanColumn({
       {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
 
       <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-        <div className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}>
+        <div
+          ref={setCardStackDropRef}
+          className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
+        >
           {col.cards.map((card) => (
             <KanbanCard
               key={card.uiKey ?? card.id}

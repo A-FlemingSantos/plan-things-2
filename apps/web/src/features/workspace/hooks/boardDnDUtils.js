@@ -2,6 +2,10 @@ import { arrayMove } from '@dnd-kit/sortable'
 
 export const KANBAN_INBOX_DROP_ID = 'kanban-inbox-drop'
 
+export function columnCardStackDropId(columnId) {
+  return `${columnId}::card-stack`
+}
+
 export function isColumnId(columns, id) {
   return columns.some((column) => column.id === id)
 }

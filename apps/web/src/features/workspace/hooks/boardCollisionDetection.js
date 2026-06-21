@@ -1,4 +1,5 @@
 import { pointerWithin } from '@dnd-kit/core'
+import { columnCardStackDropId } from './boardDnDUtils.js'
 
 const CARD_TYPE = 'card'
 
@@ -12,25 +13,14 @@ function getCardColumnId(droppableContainers, id) {
   return container?.data?.current?.columnId ?? null
 }
 
-function isPointerInsideRect(pointerCoordinates, rect) {
-  if (!pointerCoordinates || !rect) {
-    return false
-  }
-
-  return pointerCoordinates.x >= rect.left
-    && pointerCoordinates.x <= rect.right
-    && pointerCoordinates.y >= rect.top
-    && pointerCoordinates.y <= rect.bottom
+function isPointerInsideColumnHorizontally(pointerX, rect) {
+  return pointerX >= rect.left && pointerX <= rect.right
 }
 
-function getColumnsUnderPointer(columnIds, pointerCoordinates, droppableRects) {
-  if (!pointerCoordinates) {
-    return []
-  }
-
+function getColumnsByPointerX(columnIds, pointerX, droppableRects) {
   return columnIds.filter((columnId) => {
     const rect = droppableRects.get(columnId)
-    return isPointerInsideRect(pointerCoordinates, rect)
+    return rect && isPointerInsideColumnHorizontally(pointerX, rect)
   })
 }
 
@@ -54,6 +44,54 @@ function pickClosestColumnByPointer(columnIds, pointerCoordinates, droppableRect
   return bestColumnId
 }
 
+function isPointerBelowCardStack(pointerY, columnId, droppableRects) {
+  const cardStackRect = droppableRects.get(columnCardStackDropId(columnId))
+  if (!cardStackRect) {
+    return false
+  }
+
+  return pointerY > cardStackRect.bottom
+}
+
+function pickClosestCardCollisionInColumn(
+  columnId,
+  pointerCoordinates,
+  droppableContainers,
+  droppableRects,
+) {
+  if (!pointerCoordinates) {
+    return []
+  }
+
+  let bestCollision = null
+  let bestDistance = Infinity
+
+  for (const container of droppableContainers) {
+    if (getContainerType(droppableContainers, container.id) !== CARD_TYPE) {
+      continue
+    }
+
+    if (getCardColumnId(droppableContainers, container.id) !== columnId) {
+      continue
+    }
+
+    const rect = droppableRects.get(container.id)
+    if (!rect) {
+      continue
+    }
+
+    const centerY = rect.top + rect.height / 2
+    const distance = Math.abs(pointerCoordinates.y - centerY)
+
+    if (distance < bestDistance) {
+      bestDistance = distance
+      bestCollision = { id: container.id }
+    }
+  }
+
+  return bestCollision ? [bestCollision] : []
+}
+
 export function createBoardCollisionDetection(columnIds, dragState) {
   const columnIdSet = new Set(columnIds.map(String))
 
@@ -65,25 +103,38 @@ export function createBoardCollisionDetection(columnIds, dragState) {
       return []
     }
 
-    const columnsUnderPointer = getColumnsUnderPointer(columnIds, pointerCoordinates, droppableRects)
+    const columnsUnderPointerX = getColumnsByPointerX(
+      columnIds,
+      pointerCoordinates.x,
+      droppableRects,
+    )
 
     let pointerColumnId = null
 
-    if (columnsUnderPointer.length === 1) {
-      pointerColumnId = columnsUnderPointer[0]
+    if (columnsUnderPointerX.length === 1) {
+      pointerColumnId = columnsUnderPointerX[0]
       dragState.setStickyColumnId(pointerColumnId)
-    } else if (columnsUnderPointer.length > 1) {
+    } else if (columnsUnderPointerX.length > 1) {
       pointerColumnId = pickClosestColumnByPointer(
-        columnsUnderPointer,
+        columnsUnderPointerX,
         pointerCoordinates,
         droppableRects,
       )
       dragState.setStickyColumnId(pointerColumnId)
     }
 
-    dragState.setPointerColumnId(pointerColumnId)
-
     const activeColumnId = pointerColumnId ?? stickyColumnId
+    const isBelowActiveCardStack = isPointerBelowCardStack(
+      pointerCoordinates.y,
+      activeColumnId,
+      droppableRects,
+    )
+
+    dragState.setPointerColumnId(
+      pointerColumnId && isPointerBelowCardStack(pointerCoordinates.y, pointerColumnId, droppableRects)
+        ? pointerColumnId
+        : null,
+    )
 
     const cardPointerCollisions = pointerWithin(args).filter((collision) => {
       if (getContainerType(droppableContainers, collision.id) !== CARD_TYPE) {
@@ -95,6 +146,15 @@ export function createBoardCollisionDetection(columnIds, dragState) {
 
     if (cardPointerCollisions.length > 0) {
       return cardPointerCollisions
+    }
+
+    if (!isBelowActiveCardStack) {
+      return pickClosestCardCollisionInColumn(
+        activeColumnId,
+        pointerCoordinates,
+        droppableContainers,
+        droppableRects,
+      )
     }
 
     if (columnIdSet.has(String(activeColumnId))) {
