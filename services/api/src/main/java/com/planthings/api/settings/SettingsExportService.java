@@ -540,6 +540,7 @@ public class SettingsExportService {
         "planId", column.getPlanId(),
         "title", column.getTitle(),
         "color", column.getColor(),
+        "status", column.getStatus(),
         "positionIndex", column.getPositionIndex(),
         "createdAt", toIso(column.getCreatedAt()),
         "updatedAt", toIso(column.getUpdatedAt())

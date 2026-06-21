@@ -111,7 +111,7 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardView createColumn(UUID planId, String title, String color) {
+  public BoardView createColumn(UUID planId, String title, String color, String status) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
 
@@ -119,18 +119,22 @@ public class BoardService {
     column.setPlanId(planId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
     column.setColor(normalizeColumnColor(color));
+    column.setStatus(normalizeColumnStatus(status));
     column.setPositionIndex(boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).size());
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
   }
 
   @Transactional
-  public BoardView updateColumn(UUID planId, UUID columnId, String title, String color) {
+  public BoardView updateColumn(UUID planId, UUID columnId, String title, String color, String status) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardColumnEntity column = requireColumn(planId, columnId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
     column.setColor(normalizeColumnColor(color));
+    if (status != null) {
+      column.setStatus(normalizeColumnStatus(status));
+    }
     boardColumnRepository.save(column);
     return buildBoardView(plan, userId);
   }
@@ -416,6 +420,7 @@ public class BoardService {
             column.getId(),
             column.getTitle(),
             column.getColor(),
+            column.getStatus(),
             column.getPositionIndex(),
             cardsByColumn.getOrDefault(column.getId(), List.of()).stream()
                 .map(card -> toCardView(card, currentUserId, currentRole))
@@ -883,7 +888,7 @@ public class BoardService {
   public record BoardView(UUID planId, String planName, List<ColumnView> columns, List<LabelView> labels, List<InboxItemView> inboxItems) {
   }
 
-  public record ColumnView(UUID id, String title, String color, int position, List<BoardCardView> cards) {
+  public record ColumnView(UUID id, String title, String color, String status, int position, List<BoardCardView> cards) {
   }
 
   public record BoardCardView(
@@ -914,6 +919,23 @@ public class BoardService {
   private String normalizeColumnColor(String color) {
     return color == null ? "" : color.trim();
   }
+
+  private String normalizeColumnStatus(String status) {
+    String normalized = status == null ? "" : status.trim();
+    if (!normalized.isEmpty() && !VALID_COLUMN_STATUSES.contains(normalized)) {
+      throw new BadRequestException("STATUS_INVALIDO", "O status da coluna e invalido.");
+    }
+    return normalized;
+  }
+
+  private static final java.util.Set<String> VALID_COLUMN_STATUSES = java.util.Set.of(
+      "pending",
+      "planned",
+      "in_progress",
+      "review",
+      "completed",
+      "canceled"
+  );
 
   public record LabelView(UUID id, String name, String color) {
   }

@@ -35,12 +35,12 @@ public class BoardController {
 
   @PostMapping("/columns")
   public ApiEnvelope<BoardService.BoardView> createColumn(@PathVariable UUID planId, @Valid @RequestBody ColumnRequest request) {
-    return ApiEnvelope.ok(boardService.createColumn(planId, request.title(), request.color()));
+    return ApiEnvelope.ok(boardService.createColumn(planId, request.title(), request.color(), request.status()));
   }
 
   @PatchMapping("/columns/{columnId}")
   public ApiEnvelope<BoardService.BoardView> updateColumn(@PathVariable UUID planId, @PathVariable UUID columnId, @Valid @RequestBody ColumnRequest request) {
-    return ApiEnvelope.ok(boardService.updateColumn(planId, columnId, request.title(), request.color()));
+    return ApiEnvelope.ok(boardService.updateColumn(planId, columnId, request.title(), request.color(), request.status()));
   }
 
   @DeleteMapping("/columns/{columnId}")
@@ -113,7 +113,7 @@ public class BoardController {
     return ApiEnvelope.ok(boardService.updateChecklistItem(planId, itemId, request.title(), request.completed(), request.assigneeUserId(), request.startAt(), request.dueAt()));
   }
 
-  public record ColumnRequest(@NotBlank(message = "O titulo da coluna e obrigatorio.") String title, String color) {
+  public record ColumnRequest(@NotBlank(message = "O titulo da coluna e obrigatorio.") String title, String color, String status) {
   }
 
   public record ReorderColumnsRequest(List<UUID> orderedColumnIds) {

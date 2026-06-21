@@ -510,6 +510,7 @@ export function mapBoardViewToColumns(boardView, options = {}) {
     id: column.id,
     title: column.title,
     color: column.color,
+    status: typeof column.status === 'string' ? column.status : '',
     cards: Array.from(
       new Map((column.cards ?? []).map((card) => [card.id, card])).values(),
     ).map((card) => mapBoardCard(card, options)),

@@ -1,12 +1,49 @@
 import { memo, useRef, useState } from 'react'
-import { Ellipsis, Plus } from 'lucide-react'
+import {
+  CircleAlert,
+  CircleCheckBig,
+  CircleDashed,
+  CircleDotDashed,
+  CircleX,
+  Ellipsis,
+  Loader,
+  Plus,
+} from 'lucide-react'
 import AddCardComposer from '../AddCardComposer/AddCardComposer.jsx'
 import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard from '../KanbanCard/KanbanCard.jsx'
+import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
 
 const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
 const ICON_STROKE = 1.75
+
+const STATUS_ICONS = {
+  CircleDashed,
+  CircleDotDashed,
+  Loader,
+  CircleAlert,
+  CircleCheckBig,
+  CircleX,
+}
+
+function ColumnStatusIcon({ option, className }) {
+  const Icon = STATUS_ICONS[option.icon]
+
+  if (!Icon) {
+    return null
+  }
+
+  return (
+    <Icon
+      size={ICON_SIZE_MD}
+      strokeWidth={ICON_STROKE}
+      className={className}
+      style={{ color: option.color }}
+      aria-hidden="true"
+    />
+  )
+}
 
 function KanbanColumn({
   col,
@@ -40,6 +77,8 @@ function KanbanColumn({
   const hasColumnColor = Boolean(col.color?.trim())
 
   const isColDropTarget = dropTarget?.type === 'col' && dropTarget.colId === col.id
+  const columnStatus = resolveKanbanColumnStatus(col.status)
+  const showColumnStatusIcon = Boolean(col.status)
 
   const submitCard = async () => {
     if (!newCardText.trim() || isAddingCard) return
@@ -131,7 +170,12 @@ function KanbanColumn({
               autoFocus
             />
           ) : (
-            <span className={styles.colTitle}>{col.title}</span>
+            <>
+              {showColumnStatusIcon ? (
+                <ColumnStatusIcon option={columnStatus} className={styles.colStatusIcon} />
+              ) : null}
+              <span className={styles.colTitle}>{col.title}</span>
+            </>
           )}
           <span className={styles.colCount}>{col.cards.length}</span>
         </div>

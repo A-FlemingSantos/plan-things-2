@@ -99,6 +99,7 @@ export function mapBoardViewToColumns(boardView, options = {}) {
     id: column.id,
     title: column.title,
     color: column.color,
+    status: typeof column.status === 'string' ? column.status : '',
     cards: (column.cards ?? []).map((card) => mapBoardCard(card, options)),
   }))
 }

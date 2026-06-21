@@ -563,6 +563,7 @@ export function useBoardColumns({
         body: {
           title: nextTitle,
           color: nextColor,
+          status: nextStatus,
         },
       })
 
@@ -581,7 +582,7 @@ export function useBoardColumns({
           id: persistedColumnView.id,
           title: persistedColumnView.title ?? optimisticColumn.title,
           color: persistedColumnView.color ?? optimisticColumn.color,
-          status: optimisticColumn.status,
+          status: persistedColumnView.status ?? optimisticColumn.status,
           cards: [],
         }))
       } else {

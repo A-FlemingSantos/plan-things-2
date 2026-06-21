@@ -19,6 +19,9 @@ public class BoardColumnEntity extends BaseEntity {
   @Column(nullable = false, length = 20)
   private String color;
 
+  @Column(nullable = false, length = 32)
+  private String status;
+
   @Column(nullable = false)
   private Integer positionIndex;
 
@@ -44,6 +47,14 @@ public class BoardColumnEntity extends BaseEntity {
 
   public void setColor(String color) {
     this.color = color;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
   }
 
   public Integer getPositionIndex() {

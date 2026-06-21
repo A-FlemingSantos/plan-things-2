@@ -130,6 +130,35 @@ describe('KanbanColumn card composer', () => {
     expect(screen.getByText('Falha ao renomear')).toBeInTheDocument()
   })
 
+  it('shows the column status icon before the title when a status is defined', () => {
+    const { container } = render(<KanbanColumn {...buildColumnProps({
+      col: {
+        id: 'col-1',
+        title: 'Em andamento',
+        color: '#4290da',
+        status: 'in_progress',
+        cards: [],
+      },
+    })} />)
+
+    expect(container.querySelector('.colStatusIcon')).toBeInTheDocument()
+    expect(screen.getByText('Em andamento')).toBeInTheDocument()
+  })
+
+  it('hides the column status icon when the status is empty', () => {
+    const { container } = render(<KanbanColumn {...buildColumnProps({
+      col: {
+        id: 'col-1',
+        title: 'Sem status',
+        color: '#4290da',
+        status: '',
+        cards: [],
+      },
+    })} />)
+
+    expect(container.querySelector('.colStatusIcon')).toBeNull()
+  })
+
   it('renders due date metadata on cards with due dates', () => {
     renderColumn({
       col: {
