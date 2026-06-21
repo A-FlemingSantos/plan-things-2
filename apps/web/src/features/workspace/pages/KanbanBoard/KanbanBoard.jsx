@@ -21,6 +21,7 @@ import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThem
 import { getFileTypeFromName } from '../../../files/data/libraryRepository.js'
 import { buildPlannerView, filterPlannerItems } from './plannerFilters.js'
 import {
+  KANBAN_ADD_LIST_COLOR_OPTIONS,
   KANBAN_COLUMN_COLOR_OPTIONS,
   KANBAN_DEFAULT_LABELS,
   resolveKanbanAccentColor,
@@ -2058,7 +2059,7 @@ export default function KanbanBoard() {
                   }}
                   newColColor={newColColor}
                   setNewColColor={setNewColColor}
-                  colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
+                  colorOptions={KANBAN_ADD_LIST_COLOR_OPTIONS}
                   newColStatus={newColStatus}
                   setNewColStatus={setNewColStatus}
                   statusOptions={KANBAN_COLUMN_STATUS_OPTIONS}

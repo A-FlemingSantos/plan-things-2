@@ -6,6 +6,11 @@ export const KANBAN_LABEL_COLOR_OPTIONS = [
   { id: 'yellow', label: 'Amarelo', value: '#fade48' },
 ]
 
+export const KANBAN_ADD_LIST_COLOR_OPTIONS = [
+  { id: 'none', label: 'Sem cor', value: '' },
+  ...KANBAN_LABEL_COLOR_OPTIONS,
+]
+
 export const KANBAN_DEFAULT_LABELS = [
   { id: 'l1', text: 'Design', color: '#fade48' },
   { id: 'l2', text: 'Engenharia', color: '#2363eb' },
