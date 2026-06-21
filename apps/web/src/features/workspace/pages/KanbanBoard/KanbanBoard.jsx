@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
@@ -666,6 +667,7 @@ export default function KanbanBoard() {
     deleteCard,
     addCardComment,
     moveCard,
+    reorderColumns,
     createChecklist,
     deleteChecklist,
     createChecklistItem,
@@ -701,6 +703,7 @@ export default function KanbanBoard() {
     sensors,
     collisionDetection,
     activeDragCard,
+    activeDragColumn,
     dragOverColumnId,
     isInboxDropActive,
     handleDragStart,
@@ -712,8 +715,10 @@ export default function KanbanBoard() {
     columns,
     updateColumns,
     moveCard,
+    reorderColumns,
     isBackendDriven,
     onMoveError: (error) => showNotification(error?.message ?? 'Não foi possível mover o cartão.'),
+    onReorderError: (error) => showNotification(error?.message ?? 'Não foi possível reordenar as listas.'),
     onInboxDrop: handleInboxCardDrop,
   })
 
@@ -2082,6 +2087,10 @@ export default function KanbanBoard() {
                 <p className={styles.boardStatusText}>Este modo de visualização estará disponível em breve.</p>
               </section>
             ) : (
+              <SortableContext
+                items={columns.map((column) => column.id)}
+                strategy={horizontalListSortingStrategy}
+              >
               <div className={styles.board}>
                 {columns.map(col => (
                   <KanbanColumn
@@ -2125,6 +2134,7 @@ export default function KanbanBoard() {
                   styles={styles}
                 />
               </div>
+              </SortableContext>
             )}
           </div>
         </section>
@@ -2271,6 +2281,22 @@ export default function KanbanBoard() {
               isConfirmed={Boolean(activeDragCard.card.isCompleted)}
               labels={planLabels}
               members={planMembers}
+              styles={styles}
+            />
+          ) : activeDragColumn ? (
+            <KanbanColumn
+              col={activeDragColumn}
+              isDragOverlay
+              onAddCard={() => {}}
+              onDeleteCol={() => {}}
+              onRenameCol={() => {}}
+              onChangeColColor={() => {}}
+              onChangeColStatus={() => {}}
+              statusOptions={KANBAN_COLUMN_STATUS_OPTIONS}
+              onCardClick={() => {}}
+              labels={planLabels}
+              members={planMembers}
+              colorOptions={KANBAN_ADD_LIST_COLOR_OPTIONS}
               styles={styles}
             />
           ) : null}

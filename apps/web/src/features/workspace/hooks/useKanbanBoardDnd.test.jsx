@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { applyDragOverToColumns } from './boardDnDUtils.js'
+import { applyDragOverToColumns, reorderColumnsByDrag } from './boardDnDUtils.js'
 import { useKanbanBoardDnd } from './useKanbanBoardDnd.js'
 
 function createDeferred() {
@@ -46,6 +46,7 @@ describe('useKanbanBoardDnd', () => {
         columns: currentColumns,
         updateColumns,
         moveCard,
+        reorderColumns: vi.fn(),
         isBackendDriven: true,
         onMoveError: vi.fn(),
       }),
@@ -86,6 +87,7 @@ describe('useKanbanBoardDnd', () => {
         columns: currentColumns,
         updateColumns,
         moveCard,
+        reorderColumns: vi.fn(),
         isBackendDriven: true,
         onMoveError,
       }),
@@ -128,6 +130,7 @@ describe('useKanbanBoardDnd', () => {
         columns: currentColumns,
         updateColumns,
         moveCard: vi.fn(),
+        reorderColumns: vi.fn(),
         isBackendDriven: true,
         onInboxDrop,
       }),
@@ -164,6 +167,7 @@ describe('useKanbanBoardDnd', () => {
       columns,
       updateColumns,
       moveCard: vi.fn(),
+      reorderColumns: vi.fn(),
       isBackendDriven: true,
     }))
 
@@ -187,6 +191,7 @@ describe('useKanbanBoardDnd', () => {
       columns: buildColumns(),
       updateColumns,
       moveCard: vi.fn(),
+      reorderColumns: vi.fn(),
       isBackendDriven: true,
     }))
 
@@ -201,5 +206,92 @@ describe('useKanbanBoardDnd', () => {
     expect(result.current.isInboxDropActive).toBe(true)
     expect(result.current.dragOverColumnId).toBeNull()
     expect(updateColumns).not.toHaveBeenCalled()
+  })
+
+  it('persists column order after drag end', async () => {
+    let columns = buildColumns()
+    const deferred = createDeferred()
+    const updateColumns = vi.fn((updater) => {
+      columns = typeof updater === 'function' ? updater(columns) : updater
+    })
+    const reorderColumns = vi.fn(() => deferred.promise)
+
+    const { result, rerender } = renderHook(
+      ({ currentColumns }) => useKanbanBoardDnd({
+        activePlanId: 'plan-1',
+        columns: currentColumns,
+        updateColumns,
+        moveCard: vi.fn(),
+        reorderColumns,
+        isBackendDriven: true,
+      }),
+      { initialProps: { currentColumns: columns } },
+    )
+
+    act(() => {
+      result.current.handleDragStart({
+        active: { id: 'col-1', data: { current: { type: 'column' } } },
+      })
+    })
+
+    columns = reorderColumnsByDrag(columns, 'col-1', 'col-2').columns
+    rerender({ currentColumns: columns })
+
+    await act(async () => {
+      const dragEndPromise = result.current.handleDragEnd({
+        active: { id: 'col-1', data: { current: { type: 'column' } } },
+        over: { id: 'col-2' },
+      })
+      deferred.resolve(true)
+      await dragEndPromise
+    })
+
+    expect(reorderColumns).toHaveBeenCalledWith(['col-2', 'col-1'])
+  })
+
+  it('restores column order when backend reorder fails', async () => {
+    let columns = buildColumns()
+    const deferred = createDeferred()
+    const updateColumns = vi.fn((updater) => {
+      columns = typeof updater === 'function' ? updater(columns) : updater
+    })
+    const onReorderError = vi.fn()
+    const reorderColumns = vi.fn(() => deferred.promise)
+
+    const { result, rerender } = renderHook(
+      ({ currentColumns }) => useKanbanBoardDnd({
+        activePlanId: 'plan-1',
+        columns: currentColumns,
+        updateColumns,
+        moveCard: vi.fn(),
+        reorderColumns,
+        isBackendDriven: true,
+        onReorderError,
+      }),
+      { initialProps: { currentColumns: columns } },
+    )
+
+    act(() => {
+      result.current.handleDragStart({
+        active: { id: 'col-1', data: { current: { type: 'column' } } },
+      })
+    })
+
+    columns = reorderColumnsByDrag(columns, 'col-1', 'col-2').columns
+    rerender({ currentColumns: columns })
+
+    const error = new Error('Falha ao reordenar')
+
+    await act(async () => {
+      const dragEndPromise = result.current.handleDragEnd({
+        active: { id: 'col-1', data: { current: { type: 'column' } } },
+        over: { id: 'col-2' },
+      })
+      deferred.reject(error)
+      await dragEndPromise
+    })
+
+    expect(columns.map((column) => column.id)).toEqual(['col-1', 'col-2'])
+    expect(onReorderError).toHaveBeenCalledWith(error)
   })
 })

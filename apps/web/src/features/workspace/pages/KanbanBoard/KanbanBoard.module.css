@@ -1675,12 +1675,55 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
 
+.columnDragging {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.columnDragOverlay {
+  cursor: grabbing;
+  box-shadow: var(--shadow-lg);
+  width: 300px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.columnDragOverlay .colDragHandle {
+  cursor: grabbing;
+  color: var(--text-2);
+}
+
+.colDragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 24px;
+  margin-right: 2px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-3);
+  cursor: grab;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.colDragHandle:hover {
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--text-1) 6%, transparent);
+}
+
+.colDragHandle:active {
+  cursor: grabbing;
+}
+
 /* Column header */
 .colHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px 8px;
+  padding: 10px 14px 8px 8px;
   gap: 6px;
   flex-shrink: 0;
   border-radius: 14px 14px 0 0;

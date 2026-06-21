@@ -6,6 +6,7 @@ import {
   moveCardInColumns,
   moveCardToIndex,
   reorderCardWithinColumn,
+  reorderColumnsByDrag,
 } from './boardDnDUtils.js'
 
 function buildColumns() {
@@ -121,5 +122,13 @@ describe('boardDnDUtils', () => {
     const result = applyDragOverToColumns(columns, ['col-1', 'col-2'], 'card-1', 'card-4')
 
     expect(result.overColumnId).toBe('col-2')
+  })
+
+  it('reorders columns by drag target', () => {
+    const columns = buildColumns()
+    const result = reorderColumnsByDrag(columns, 'col-1', 'col-2')
+
+    expect(result.changed).toBe(true)
+    expect(result.columns.map((column) => column.id)).toEqual(['col-2', 'col-1'])
   })
 })

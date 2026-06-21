@@ -1,6 +1,7 @@
 import { memo, useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   CircleAlert,
   CircleCheckBig,
@@ -8,12 +9,13 @@ import {
   CircleDotDashed,
   CircleX,
   Ellipsis,
+  GripVertical,
   Loader,
   Plus,
 } from 'lucide-react'
 import AddCardComposer from '../AddCardComposer/AddCardComposer.jsx'
 import ColMenu from '../ColMenu/ColMenu.jsx'
-import KanbanCard from '../KanbanCard/KanbanCard.jsx'
+import KanbanCard, { KanbanCardView } from '../KanbanCard/KanbanCard.jsx'
 import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
 import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
 
@@ -48,9 +50,11 @@ function ColumnStatusIcon({ option, className }) {
   )
 }
 
-function KanbanColumn({
+export function KanbanColumnView({
   col,
   isDropTarget = false,
+  isDragging = false,
+  isDragOverlay = false,
   onAddCard,
   onDeleteCol,
   onRenameCol,
@@ -63,6 +67,10 @@ function KanbanColumn({
   members,
   colorOptions,
   styles,
+  setNodeRef,
+  style,
+  dragHandleAttributes = {},
+  dragHandleListeners = {},
 }) {
   const [addingCard, setAddingCard] = useState(false)
   const [newCardText, setNewCardText] = useState('')
@@ -78,20 +86,13 @@ function KanbanColumn({
   const hasColumnColor = Boolean(col.color?.trim())
   const cardIds = col.cards.map((card) => card.id)
 
-  const { setNodeRef: setColumnDropRef } = useDroppable({
-    id: col.id,
-    data: {
-      type: 'column',
-      columnId: col.id,
-    },
-  })
-
   const { setNodeRef: setCardStackDropRef } = useDroppable({
     id: columnCardStackDropId(col.id),
     data: {
       type: 'card-stack',
       columnId: col.id,
     },
+    disabled: isDragOverlay,
   })
 
   const columnStatus = resolveKanbanColumnStatus(col.status)
@@ -118,7 +119,7 @@ function KanbanColumn({
   }
 
   const startAddingCard = () => {
-    if (isAddingCard) return
+    if (isAddingCard || isDragOverlay) return
     setAddingCard(true)
     setCardError(null)
   }
@@ -155,11 +156,38 @@ function KanbanColumn({
 
   return (
     <div
-      ref={setColumnDropRef}
-      className={`${styles.column} ${isDropTarget ? styles.columnDropTarget : ''} ${hasColumnColor ? styles.columnColored : ''}`}
-      style={hasColumnColor ? { '--column-color': col.color } : undefined}
+      ref={setNodeRef}
+      className={`
+        ${styles.column}
+        ${isDropTarget ? styles.columnDropTarget : ''}
+        ${hasColumnColor ? styles.columnColored : ''}
+        ${isDragging ? styles.columnDragging : ''}
+        ${isDragOverlay ? styles.columnDragOverlay : ''}
+      `}
+      data-column-id={col.id}
+      style={{
+        ...(hasColumnColor ? { '--column-color': col.color } : {}),
+        ...style,
+      }}
     >
       <div className={styles.colHeader}>
+        {isDragOverlay ? (
+          <span className={styles.colDragHandle} aria-hidden="true">
+            <GripVertical size={ICON_SIZE_MD} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          </span>
+        ) : (
+          <button
+            type="button"
+            className={styles.colDragHandle}
+            title="Arrastar lista"
+            aria-label={`Arrastar lista ${col.title}`}
+            {...dragHandleAttributes}
+            {...dragHandleListeners}
+          >
+            <GripVertical size={ICON_SIZE_MD} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          </button>
+        )}
+
         <div className={styles.colHeaderLeft}>
           {renaming ? (
             <input
@@ -190,94 +218,159 @@ function KanbanColumn({
           <span className={styles.colCount}>{col.cards.length}</span>
         </div>
 
-        <div className={styles.colHeaderRight}>
-          <div className={styles.colMenuWrap}>
+        {!isDragOverlay ? (
+          <div className={styles.colHeaderRight}>
+            <div className={styles.colMenuWrap}>
+              <button
+                ref={menuAnchorRef}
+                type="button"
+                className={styles.colActionBtn}
+                onClick={() => setShowMenu((value) => !value)}
+                title="Opções da lista"
+                aria-expanded={showMenu}
+                aria-haspopup="menu"
+              >
+                <Ellipsis size={ICON_SIZE_MD} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              </button>
+
+              {showMenu ? (
+                <ColMenu
+                  anchorRef={menuAnchorRef}
+                  currentColor={col.color ?? ''}
+                  currentStatus={col.status ?? ''}
+                  onRename={() => {
+                    setRenaming(true)
+                    setRenameVal(col.title)
+                    setRenameError(null)
+                  }}
+                  onDelete={() => onDeleteCol(col.id)}
+                  onChangeColor={(color) => onChangeColColor(col.id, color)}
+                  onChangeStatus={(status) => onChangeColStatus(col.id, status)}
+                  onClose={() => setShowMenu(false)}
+                  colorOptions={colorOptions}
+                  statusOptions={statusOptions}
+                  styles={styles}
+                />
+              ) : null}
+            </div>
+
             <button
-              ref={menuAnchorRef}
               type="button"
               className={styles.colActionBtn}
-              onClick={() => setShowMenu((value) => !value)}
-              title="Opções da lista"
-              aria-expanded={showMenu}
-              aria-haspopup="menu"
+              onClick={startAddingCard}
+              disabled={isAddingCard}
+              title="Adicionar cartão"
             >
-              <Ellipsis size={ICON_SIZE_MD} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
             </button>
-
-            {showMenu ? (
-              <ColMenu
-                anchorRef={menuAnchorRef}
-                currentColor={col.color ?? ''}
-                currentStatus={col.status ?? ''}
-                onRename={() => {
-                  setRenaming(true)
-                  setRenameVal(col.title)
-                  setRenameError(null)
-                }}
-                onDelete={() => onDeleteCol(col.id)}
-                onChangeColor={(color) => onChangeColColor(col.id, color)}
-                onChangeStatus={(status) => onChangeColStatus(col.id, status)}
-                onClose={() => setShowMenu(false)}
-                colorOptions={colorOptions}
-                statusOptions={statusOptions}
-                styles={styles}
-              />
-            ) : null}
           </div>
-
-          <button
-            type="button"
-            className={styles.colActionBtn}
-            onClick={startAddingCard}
-            disabled={isAddingCard}
-            title="Adicionar cartão"
-          >
-            <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          </button>
-        </div>
+        ) : null}
       </div>
       {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
 
-      <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+      {isDragOverlay ? (
         <div
-          ref={setCardStackDropRef}
-          className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
+          className={`${styles.colCards} ${col.cards.length === 0 ? styles.colCardsEmpty : ''}`}
         >
           {col.cards.map((card) => (
-            <KanbanCard
+            <KanbanCardView
               key={card.uiKey ?? card.id}
               card={card}
-              colId={col.id}
               colTitle={col.title}
-              onClick={onCardClick}
               isConfirmed={Boolean(card.isCompleted)}
-              onToggleConfirmed={onToggleCardCompleted}
               labels={labels}
               members={members}
               styles={styles}
             />
           ))}
         </div>
-      </SortableContext>
+      ) : (
+        <>
+          <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+            <div
+              ref={setCardStackDropRef}
+              className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
+            >
+              {col.cards.map((card) => (
+                <KanbanCard
+                  key={card.uiKey ?? card.id}
+                  card={card}
+                  colId={col.id}
+                  colTitle={col.title}
+                  onClick={onCardClick}
+                  isConfirmed={Boolean(card.isCompleted)}
+                  onToggleConfirmed={onToggleCardCompleted}
+                  labels={labels}
+                  members={members}
+                  styles={styles}
+                />
+              ))}
+            </div>
+          </SortableContext>
 
-      <AddCardComposer
-        addingCard={addingCard}
-        setAddingCard={setAddingCard}
-        newCardText={newCardText}
-        setNewCardText={setNewCardText}
-        onSubmit={submitCard}
-        onDismiss={cancelAddingCard}
-        errorMessage={cardError}
-        isSubmitting={isAddingCard}
-        styles={styles}
-      />
+          <AddCardComposer
+            addingCard={addingCard}
+            setAddingCard={setAddingCard}
+            newCardText={newCardText}
+            setNewCardText={setNewCardText}
+            onSubmit={submitCard}
+            onDismiss={cancelAddingCard}
+            errorMessage={cardError}
+            isSubmitting={isAddingCard}
+            styles={styles}
+          />
+        </>
+      )}
     </div>
   )
+}
+
+function SortableKanbanColumn(props) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: props.col.id,
+    data: {
+      type: 'column',
+      columnId: props.col.id,
+    },
+  })
+
+  return (
+    <KanbanColumnView
+      {...props}
+      setNodeRef={setNodeRef}
+      isDragging={isDragging}
+      dragHandleAttributes={attributes}
+      dragHandleListeners={listeners}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+    />
+  )
+}
+
+function KanbanColumn({
+  isDragOverlay = false,
+  ...props
+}) {
+  if (isDragOverlay) {
+    return <KanbanColumnView {...props} isDragOverlay />
+  }
+
+  return <SortableKanbanColumn {...props} />
 }
 
 function areKanbanColumnPropsEqual(prevProps, nextProps) {
   return prevProps.col === nextProps.col
     && prevProps.isDropTarget === nextProps.isDropTarget
+    && prevProps.isDragOverlay === nextProps.isDragOverlay
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions

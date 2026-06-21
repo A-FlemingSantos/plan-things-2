@@ -132,6 +132,24 @@ export function reorderCardWithinColumn(columns, columnId, activeIndex, overInde
   })
 }
 
+export function reorderColumnsByDrag(columns, activeColumnId, overColumnId) {
+  if (!activeColumnId || !overColumnId || activeColumnId === overColumnId) {
+    return { columns, changed: false }
+  }
+
+  const oldIndex = columns.findIndex((column) => column.id === activeColumnId)
+  const newIndex = columns.findIndex((column) => column.id === overColumnId)
+
+  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
+    return { columns, changed: false }
+  }
+
+  return {
+    columns: arrayMove(columns, oldIndex, newIndex),
+    changed: true,
+  }
+}
+
 export function resolveOverIndex(columns, columnIds, overId, overColumnId) {
   if (columnIds.includes(overId)) {
     const overColumn = columns.find((column) => column.id === overColumnId)

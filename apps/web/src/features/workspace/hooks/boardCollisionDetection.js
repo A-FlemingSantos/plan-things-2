@@ -1,7 +1,8 @@
-import { closestCorners, pointerWithin } from '@dnd-kit/core'
+import { closestCenter, closestCorners, pointerWithin } from '@dnd-kit/core'
 import { columnCardStackDropId, KANBAN_INBOX_DROP_ID } from './boardDnDUtils.js'
 
 const CARD_TYPE = 'card'
+const COLUMN_TYPE = 'column'
 const INBOX_TYPE = 'inbox'
 
 function getContainerType(droppableContainers, id) {
@@ -93,10 +94,31 @@ function pickClosestCardCollisionInColumn(
   return bestCollision ? [bestCollision] : []
 }
 
+function getColumnCollisions(args) {
+  const columnContainers = args.droppableContainers.filter((container) => (
+    getContainerType(args.droppableContainers, container.id) === COLUMN_TYPE
+  ))
+
+  if (columnContainers.length === 0) {
+    return []
+  }
+
+  return closestCenter({
+    ...args,
+    droppableContainers: columnContainers,
+  })
+}
+
 export function createBoardCollisionDetection(columnIds, dragState) {
   const columnIdSet = new Set(columnIds.map(String))
 
   return function boardCollisionDetection(args) {
+    const activeType = args.active?.data?.current?.type
+
+    if (activeType === COLUMN_TYPE) {
+      return getColumnCollisions(args)
+    }
+
     const { droppableContainers, droppableRects, pointerCoordinates } = args
     const stickyColumnId = dragState.getStickyColumnId()
 

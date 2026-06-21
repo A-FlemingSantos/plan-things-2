@@ -1238,6 +1238,45 @@ export function useBoardColumns({
     updateColumns,
   ])
 
+  const reorderColumns = useCallback(async (orderedColumnIds) => {
+    if (!activePlanId) return
+
+    if (!isBackendDriven) {
+      return
+    }
+
+    const boardView = await apiRequest(`/api/plans/${activePlanId}/board/columns/reorder`, {
+      method: 'PUT',
+      token: accessToken,
+      body: {
+        orderedColumnIds,
+      },
+    })
+
+    const persistedColumns = Array.isArray(boardView?.columns)
+      ? mapBoardViewToColumns(boardView, {
+          timeZone,
+          dateFormat,
+        })
+      : null
+
+    if (persistedColumns) {
+      updateColumns(() => persistedColumns)
+    } else {
+      applyBoardView(activePlanId, boardView)
+    }
+
+    return true
+  }, [
+    accessToken,
+    activePlanId,
+    applyBoardView,
+    dateFormat,
+    isBackendDriven,
+    timeZone,
+    updateColumns,
+  ])
+
   const createChecklist = useCallback(async (cardId, title) => {
     if (!activePlanId || !isBackendDriven) return null
 
@@ -1372,6 +1411,7 @@ export function useBoardColumns({
     deleteCard,
     addCardComment,
     moveCard,
+    reorderColumns,
     createChecklist,
     deleteChecklist,
     createChecklistItem,
