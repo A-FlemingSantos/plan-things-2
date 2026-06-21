@@ -2359,22 +2359,9 @@
   flex-shrink: 0;
 }
 
-.addColColorSwatchNone {
-  position: relative;
-  border: 1px solid var(--border-2);
-  background: transparent;
-}
-
-.addColColorSwatchNone::after {
-  content: '';
-  position: absolute;
-  top: 6px;
-  left: 2px;
-  width: 8px;
-  height: 1.5px;
-  border-radius: 999px;
-  background: var(--text-3);
-  transform: rotate(-35deg);
+.addColColorIconNone {
+  flex-shrink: 0;
+  color: var(--text-3);
 }
 
 .addColColorPalette {

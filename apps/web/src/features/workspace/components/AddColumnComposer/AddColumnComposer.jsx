@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { CircleOff, Plus, X } from 'lucide-react'
 
 const ICON_SIZE = 13
 const ICON_STROKE = 1.75
@@ -112,11 +112,20 @@ export default function AddColumnComposer({
                       aria-haspopup="listbox"
                       tabIndex={addingCol ? 0 : -1}
                     >
-                      <span
-                        className={`${styles.addColColorSwatch} ${newColColor ? '' : styles.addColColorSwatchNone}`}
-                        style={newColColor ? { background: newColColor } : undefined}
-                        aria-hidden="true"
-                      />
+                      {newColColor ? (
+                        <span
+                          className={styles.addColColorSwatch}
+                          style={{ background: newColColor }}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <CircleOff
+                          size={14}
+                          strokeWidth={ICON_STROKE}
+                          className={styles.addColColorIconNone}
+                          aria-hidden="true"
+                        />
+                      )}
                     </button>
 
                     {isColorPaletteOpen ? (
@@ -135,10 +144,19 @@ export default function AddColumnComposer({
                               aria-label={color.label ?? color.id}
                               title={color.label ?? color.id}
                             >
-                              <span
-                                className={`${styles.addColColorPaletteDot} ${color.value ? '' : styles.addColColorSwatchNone}`}
-                                style={color.value ? { background: color.value } : undefined}
-                              />
+                              {color.value ? (
+                                <span
+                                  className={styles.addColColorPaletteDot}
+                                  style={{ background: color.value }}
+                                />
+                              ) : (
+                                <CircleOff
+                                  size={14}
+                                  strokeWidth={ICON_STROKE}
+                                  className={styles.addColColorIconNone}
+                                  aria-hidden="true"
+                                />
+                              )}
                             </button>
                           )
                         })}
