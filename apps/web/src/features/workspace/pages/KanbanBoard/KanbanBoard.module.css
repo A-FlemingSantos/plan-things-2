@@ -1667,6 +1667,10 @@
   to   { opacity: 1; transform: translateY(0);   }
 }
 
+.columnColored {
+  background: color-mix(in srgb, var(--column-color) 12%, var(--board-column-bg));
+}
+
 .columnDropTarget {
   border-color: var(--focus-ring);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
@@ -1682,12 +1686,7 @@
   flex-shrink: 0;
   border-radius: 14px 14px 0 0;
   min-height: 0;
-}
-
-.colHeaderColored {
-  background: var(--column-header-color);
-  padding-top: 10px;
-  padding-bottom: 8px;
+  background: transparent;
 }
 
 .colHeaderLeft {
@@ -1749,22 +1748,6 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 .colActionBtn:hover { background: var(--hover); color: var(--text-1); }
-
-.colHeaderColored .colTitle,
-.colHeaderColored .colRenameInput,
-.colHeaderColored .colCount,
-.colHeaderColored .colActionBtn {
-  color: var(--text-on-accent);
-}
-
-.colHeaderColored .colRenameInput {
-  border-bottom-color: currentColor;
-}
-
-.colHeaderColored .colActionBtn:hover {
-  background: color-mix(in srgb, var(--text-on-accent) 16%, transparent);
-  color: var(--text-on-accent);
-}
 
 /* Column menu */
 .colMenuWrap { position: relative; }

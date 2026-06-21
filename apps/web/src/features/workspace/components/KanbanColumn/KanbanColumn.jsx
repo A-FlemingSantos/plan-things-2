@@ -100,7 +100,8 @@ function KanbanColumn({
 
   return (
     <div
-      className={`${styles.column} ${isColDropTarget ? styles.columnDropTarget : ''}`}
+      className={`${styles.column} ${isColDropTarget ? styles.columnDropTarget : ''} ${hasColumnColor ? styles.columnColored : ''}`}
+      style={hasColumnColor ? { '--column-color': col.color } : undefined}
       onDragOver={(event) => {
         event.preventDefault()
         onDragOver({ type: 'col', colId: col.id })
@@ -110,10 +111,7 @@ function KanbanColumn({
         onDrop({ type: 'col', colId: col.id })
       }}
     >
-      <div
-        className={`${styles.colHeader} ${hasColumnColor ? styles.colHeaderColored : ''}`}
-        style={hasColumnColor ? { '--column-header-color': col.color } : undefined}
-      >
+      <div className={styles.colHeader}>
         <div className={styles.colHeaderLeft}>
           {renaming ? (
             <input

@@ -22,7 +22,6 @@ import { getFileTypeFromName } from '../../../files/data/libraryRepository.js'
 import { buildPlannerView, filterPlannerItems } from './plannerFilters.js'
 import {
   KANBAN_ADD_LIST_COLOR_OPTIONS,
-  KANBAN_COLUMN_COLOR_OPTIONS,
   KANBAN_DEFAULT_LABELS,
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
@@ -2043,7 +2042,7 @@ export default function KanbanBoard() {
                     onToggleCardCompleted={togglePlannerCardCompleted}
                     labels={planLabels}
                     members={planMembers}
-                    colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
+                    colorOptions={KANBAN_ADD_LIST_COLOR_OPTIONS}
                     styles={styles}
                   />
                 ))}
