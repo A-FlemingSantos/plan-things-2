@@ -2234,38 +2234,104 @@
 }
 
 .addColForm {
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: 14px;
-  padding: 12px 12px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  animation: fadeUp 0.18s ease both;
+  min-height: 108px;
+  background: var(--board-column-bg);
+  border-radius: 14px;
+  overflow: hidden;
+  animation: colEnter 0.28s ease both;
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
+.addColFormBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .addColInput {
   width: 100%;
-  height: 36px;
-  padding: 0 10px;
+  margin: 0;
+  padding: 0;
   font-family: var(--font-family);
   font-size: 13px;
+  font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  background: var(--surface-2);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
+  letter-spacing: -.02em;
+  line-height: 1.35;
+  background: transparent;
+  border: none;
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: none;
 }
-.addColInput:focus {
-  border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
-  background: var(--surface-1);
+
+.addColInput::placeholder {
+  color: var(--text-3);
+}
+
+.addColInput:focus,
+.addColInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.addColError {
+  margin: 0;
+  font-size: 11px;
+  font-weight: var(--font-weight-light);
+  color: var(--danger-text);
+  line-height: 1.4;
+}
+
+.addColFormFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 10px 14px;
+  flex-shrink: 0;
+}
+
+.addColSubmit {
+  min-height: 28px;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -.01em;
+  color: var(--text-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+.addColSubmit:hover:not(:disabled) { color: var(--text-2); }
+.addColSubmit:disabled {
+  color: var(--text-3);
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.addColDismiss {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-3);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+.addColDismiss:hover {
+  color: var(--text-1);
+  background: color-mix(in srgb, var(--text-1) 6%, transparent);
 }
 
 .inlineComposerError {
@@ -2275,38 +2341,10 @@
   line-height: 1.45;
 }
 
-.addColActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
-
-.addColSubmit {
-  height: 30px;
-  padding: 0 14px;
-  font-family: var(--font-family);
-  font-size: 12px;
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-}
-.addColSubmit:hover:not(:disabled) { opacity: .8; }
-.addColSubmit:disabled { opacity: .35; cursor: not-allowed; }
-
-.addColCancel {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-.addColCancel:hover { background: var(--hover); color: var(--text-1); }
 
 /* ════════════════════════════════════════
    MODAL OVERLAY
