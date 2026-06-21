@@ -157,6 +157,7 @@ function normalizeBoardColumn(column = {}) {
     id: column.id ?? createClientId('col'),
     title: column.title ?? 'Lista sem título',
     color: typeof column.color === 'string' ? column.color : '',
+    status: typeof column.status === 'string' ? column.status : '',
     cards: Array.isArray(column.cards) ? column.cards.map(normalizeBoardCard) : [],
   }
 }

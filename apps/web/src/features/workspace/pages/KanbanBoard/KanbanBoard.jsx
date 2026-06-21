@@ -26,6 +26,10 @@ import {
   resolveKanbanAccentColor,
   resolveKanbanAccentForeground,
 } from '../../data/kanbanColorPalette.js'
+import {
+  KANBAN_COLUMN_STATUS_OPTIONS,
+  KANBAN_DEFAULT_COLUMN_STATUS,
+} from '../../data/kanbanColumnStatusOptions.js'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import IntelligenceConversationThread from '../../../intelligence/components/IntelligenceConversationThread/IntelligenceConversationThread.jsx'
 import { useIntelligenceComposerContext } from '../../../intelligence/hooks/useIntelligenceComposerContext.js'
@@ -437,6 +441,7 @@ export default function KanbanBoard() {
   const [addingCol, setAddingCol] = useState(false)
   const [newColTitle,setNewColTitle] = useState('')
   const [newColColor, setNewColColor] = useState('')
+  const [newColStatus, setNewColStatus] = useState(KANBAN_DEFAULT_COLUMN_STATUS)
   const [addColumnError, setAddColumnError] = useState(null)
   const [boardLoadError, setBoardLoadError] = useState(null)
   const [notification, setNotification] = useState(null)
@@ -644,18 +649,21 @@ export default function KanbanBoard() {
     if (!nextTitle) return
 
     const nextColor = newColColor
+    const nextStatus = newColStatus
 
     setNewColTitle('')
     setNewColColor('')
+    setNewColStatus(KANBAN_DEFAULT_COLUMN_STATUS)
     setAddingCol(false)
     setAddColumnError(null)
 
     try {
-      await createColumn(nextTitle, { color: nextColor })
+      await createColumn(nextTitle, { color: nextColor, status: nextStatus })
     } catch (error) {
       const message = error?.message ?? 'Não foi possível criar a lista.'
       setNewColTitle(nextTitle)
       setNewColColor(nextColor)
+      setNewColStatus(nextStatus)
       setAddingCol(true)
       setAddColumnError(message)
       showNotification(message)
@@ -2051,6 +2059,10 @@ export default function KanbanBoard() {
                   newColColor={newColColor}
                   setNewColColor={setNewColColor}
                   colorOptions={KANBAN_COLUMN_COLOR_OPTIONS}
+                  newColStatus={newColStatus}
+                  setNewColStatus={setNewColStatus}
+                  statusOptions={KANBAN_COLUMN_STATUS_OPTIONS}
+                  defaultColumnStatus={KANBAN_DEFAULT_COLUMN_STATUS}
                   setAddingCol={setAddingCol}
                   addColumn={addColumn}
                   errorMessage={addColumnError}

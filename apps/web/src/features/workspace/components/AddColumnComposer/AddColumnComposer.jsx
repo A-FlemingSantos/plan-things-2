@@ -1,8 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
-import { CircleOff, Plus, X } from 'lucide-react'
+import {
+  Check,
+  CircleCheckBig,
+  CircleDashed,
+  CircleDotDashed,
+  CircleOff,
+  CircleX,
+  Loader,
+  Plus,
+  X,
+} from 'lucide-react'
 
 const ICON_SIZE = 13
 const ICON_STROKE = 1.75
+const STATUS_ICON_SIZE = 14
+
+const STATUS_ICONS = {
+  CircleDashed,
+  CircleDotDashed,
+  Loader,
+  CircleCheckBig,
+  CircleX,
+}
+
+function ColumnStatusIcon({ option, className, size = STATUS_ICON_SIZE }) {
+  const Icon = STATUS_ICONS[option.icon]
+
+  if (!Icon) {
+    return null
+  }
+
+  return (
+    <Icon
+      size={size}
+      strokeWidth={ICON_STROKE}
+      className={className}
+      style={{ color: option.color }}
+      aria-hidden="true"
+    />
+  )
+}
 
 export default function AddColumnComposer({
   addingCol,
@@ -11,6 +48,10 @@ export default function AddColumnComposer({
   newColColor,
   setNewColColor,
   colorOptions,
+  newColStatus,
+  setNewColStatus,
+  statusOptions,
+  defaultColumnStatus,
   setAddingCol,
   addColumn,
   errorMessage,
@@ -18,15 +59,20 @@ export default function AddColumnComposer({
 }) {
   const inputRef = useRef(null)
   const colorFieldRef = useRef(null)
+  const statusFieldRef = useRef(null)
   const [isColorPaletteOpen, setIsColorPaletteOpen] = useState(false)
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false)
 
   const selectedColorLabel = colorOptions.find((color) => color.value === newColColor)?.label ?? 'Sem cor'
+  const selectedStatus = statusOptions.find((status) => status.id === newColStatus) ?? statusOptions[0]
 
   const dismissForm = () => {
     setIsColorPaletteOpen(false)
+    setIsStatusMenuOpen(false)
     setAddingCol(false)
     setNewColTitle('')
     setNewColColor('')
+    setNewColStatus(defaultColumnStatus)
   }
 
   useEffect(() => {
@@ -34,6 +80,7 @@ export default function AddColumnComposer({
       inputRef.current?.focus()
     } else {
       setIsColorPaletteOpen(false)
+      setIsStatusMenuOpen(false)
     }
   }, [addingCol])
 
@@ -61,6 +108,30 @@ export default function AddColumnComposer({
     }
   }, [isColorPaletteOpen])
 
+  useEffect(() => {
+    if (!isStatusMenuOpen) return undefined
+
+    const handlePointerDown = (event) => {
+      if (!statusFieldRef.current?.contains(event.target)) {
+        setIsStatusMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsStatusMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isStatusMenuOpen])
+
   const handleInputKeyDown = (event) => {
     if (event.key === 'Enter') {
       addColumn()
@@ -73,6 +144,13 @@ export default function AddColumnComposer({
         setIsColorPaletteOpen(false)
         return
       }
+
+      if (isStatusMenuOpen) {
+        event.preventDefault()
+        setIsStatusMenuOpen(false)
+        return
+      }
+
       dismissForm()
     }
   }
@@ -80,6 +158,12 @@ export default function AddColumnComposer({
   const handleColorSelect = (colorValue) => {
     setNewColColor(colorValue)
     setIsColorPaletteOpen(false)
+    inputRef.current?.focus()
+  }
+
+  const handleStatusSelect = (statusId) => {
+    setNewColStatus(statusId)
+    setIsStatusMenuOpen(false)
     inputRef.current?.focus()
   }
 
@@ -106,7 +190,10 @@ export default function AddColumnComposer({
                     <button
                       type="button"
                       className={styles.addColColorTrigger}
-                      onClick={() => setIsColorPaletteOpen((open) => !open)}
+                      onClick={() => {
+                        setIsStatusMenuOpen(false)
+                        setIsColorPaletteOpen((open) => !open)
+                      }}
                       aria-label={`Cor da lista: ${selectedColorLabel}`}
                       aria-expanded={isColorPaletteOpen}
                       aria-haspopup="listbox"
@@ -182,12 +269,60 @@ export default function AddColumnComposer({
                     <span className={styles.addColOptionLabel} id="add-col-status-label">
                       Status
                     </span>
-                    <span
-                      className={styles.addColOptionPlaceholder}
-                      aria-labelledby="add-col-status-label"
-                    >
-                      Em breve
-                    </span>
+
+                    <div className={styles.addColStatusField} ref={statusFieldRef}>
+                      <button
+                        type="button"
+                        className={styles.addColStatusTrigger}
+                        onClick={() => {
+                          setIsColorPaletteOpen(false)
+                          setIsStatusMenuOpen((open) => !open)
+                        }}
+                        aria-labelledby="add-col-status-label"
+                        aria-label={`Status da lista: ${selectedStatus.label}`}
+                        aria-expanded={isStatusMenuOpen}
+                        aria-haspopup="listbox"
+                        tabIndex={addingCol ? 0 : -1}
+                      >
+                        <ColumnStatusIcon option={selectedStatus} />
+                        <span className={styles.addColStatusTriggerLabel}>{selectedStatus.label}</span>
+                      </button>
+
+                      {isStatusMenuOpen ? (
+                        <div className={styles.addColStatusMenu} role="listbox" aria-label="Status da lista">
+                          {statusOptions.map((status) => {
+                            const isSelected = newColStatus === status.id
+
+                            return (
+                              <button
+                                key={status.id}
+                                type="button"
+                                className={`${styles.addColStatusMenuOption} ${isSelected ? styles.addColStatusMenuOptionSelected : ''}`}
+                                onClick={() => handleStatusSelect(status.id)}
+                                role="option"
+                                aria-selected={isSelected}
+                              >
+                                <ColumnStatusIcon
+                                  option={status}
+                                  className={styles.addColStatusMenuOptionIcon}
+                                />
+                                <span className={styles.addColStatusMenuOptionLabel}>{status.label}</span>
+                                {isSelected ? (
+                                  <Check
+                                    size={12}
+                                    strokeWidth={ICON_STROKE}
+                                    className={styles.addColStatusMenuOptionCheck}
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <span className={styles.addColStatusMenuOptionCheckPlaceholder} aria-hidden="true" />
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 

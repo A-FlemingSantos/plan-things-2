@@ -527,9 +527,10 @@ export function useBoardColumns({
     updatePlanBoard(activePlanId, updater)
   }, [activePlanId, updatePlanBoard])
 
-  const createColumn = useCallback(async (title, { color = '' } = {}) => {
+  const createColumn = useCallback(async (title, { color = '', status = '' } = {}) => {
     const nextTitle = title.trim()
     const nextColor = typeof color === 'string' ? color : ''
+    const nextStatus = typeof status === 'string' ? status : ''
 
     if (!nextTitle || !activePlanId) {
       return false
@@ -538,7 +539,7 @@ export function useBoardColumns({
     if (!isBackendDriven) {
       updateColumns((prev) => [
         ...prev,
-        { id: uid(), title: nextTitle, color: nextColor, cards: [] },
+        { id: uid(), title: nextTitle, color: nextColor, status: nextStatus, cards: [] },
       ])
       return true
     }
@@ -549,6 +550,7 @@ export function useBoardColumns({
       id: `temp-column-${uid()}`,
       title: nextTitle,
       color: nextColor,
+      status: nextStatus,
       cards: [],
     }
 
@@ -579,6 +581,7 @@ export function useBoardColumns({
           id: persistedColumnView.id,
           title: persistedColumnView.title ?? optimisticColumn.title,
           color: persistedColumnView.color ?? optimisticColumn.color,
+          status: optimisticColumn.status,
           cards: [],
         }))
       } else {
