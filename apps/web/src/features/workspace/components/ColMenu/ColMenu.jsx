@@ -57,13 +57,15 @@ function resolveMenuPosition(anchorRect, menuHeight = 160) {
     return { top: VIEWPORT_GAP, left: VIEWPORT_GAP }
   }
 
+  // Keep the dropdown directly below the trigger, anchored by its left edge.
+  const preferredLeft = anchorRect.left
   const left = clamp(
-    anchorRect.right - MENU_WIDTH,
+    preferredLeft,
     VIEWPORT_GAP,
     window.innerWidth - MENU_WIDTH - VIEWPORT_GAP,
   )
   const top = clamp(
-    anchorRect.bottom + MENU_GAP,
+    anchorRect.bottom,
     VIEWPORT_GAP,
     window.innerHeight - menuHeight - VIEWPORT_GAP,
   )
