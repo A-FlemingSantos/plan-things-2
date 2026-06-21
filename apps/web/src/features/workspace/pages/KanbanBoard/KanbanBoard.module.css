@@ -2219,7 +2219,7 @@
   color: var(--text-3);
   background: var(--surface-2);
   border: 1.5px dashed var(--border-1);
-  border-radius: var(--radius-xl);
+  border-radius: 14px;
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -2228,7 +2228,7 @@
   white-space: nowrap;
 }
 .addColBtn:hover {
-  background: var(--hover);
+  background: var(--surface-3);
   border-color: var(--border-2);
   color: var(--text-1);
 }
@@ -2236,7 +2236,7 @@
 .addColForm {
   background: var(--surface-1);
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-xl);
+  border-radius: 14px;
   padding: 12px 12px 10px;
   display: flex;
   flex-direction: column;
