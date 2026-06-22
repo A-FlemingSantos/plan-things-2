@@ -8,6 +8,7 @@ import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClien
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthenticatedImageUrl.js'
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
@@ -1515,7 +1516,9 @@ export default function KanbanBoard() {
   const hasNoPlan = isBackendDriven && !isLoading && !activePlan
   const isBoardLoading = isBackendDriven && !hasNoPlan && !boardLoadError && (isLoading || !activePlan?.boardLoaded)
   const coverThemeClassName = activePlan?.coverThemeId ? (styles[`theme${activePlan.coverThemeId}`] ?? '') : ''
-  const isImageCover = Boolean(activePlan?.coverImage)
+  const rawCoverImageUrl = activePlan?.coverImage ?? null
+  const isImageCover = Boolean(rawCoverImageUrl)
+  const resolvedCoverImageUrl = useAuthenticatedImageUrl(isImageCover ? rawCoverImageUrl : null)
   const hasPlanCover = Boolean(coverThemeClassName || isImageCover)
   const boardMainClassName = [
     styles.boardMain,
@@ -1527,9 +1530,9 @@ export default function KanbanBoard() {
     ? {
         '--cover-fallback': activePlan.cover,
       }
-    : isImageCover
+    : isImageCover && resolvedCoverImageUrl
       ? {
-          '--cover-bg': `url(${activePlan.coverImage})`,
+          '--cover-bg': `url(${resolvedCoverImageUrl})`,
         }
       : undefined
 

@@ -26,6 +26,7 @@ import { usePlans } from '../../context/PlansContext.jsx'
 import IntelligenceComposer from '../../../../shared/components/IntelligenceComposer/IntelligenceComposer.jsx'
 import { hasComposerContext } from '../../../intelligence/utils/snapshotComposerContext.js'
 import { useIntelligenceComposerContext } from '../../../intelligence/hooks/useIntelligenceComposerContext.js'
+import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthenticatedImageUrl.js'
 import styles from './Workspace.module.css'
 
 /* ═══════════════════════════════════════════
@@ -223,6 +224,40 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
   const popoverRef = useRef(null)
   const coverUploadRef = useRef(null)
   const imageCollectionsRef = useRef(null)
+  const customCoverUrlsRef = useRef([])
+
+  const revokeCustomCoverUrls = () => {
+    customCoverUrlsRef.current.forEach((url) => {
+      if (url?.startsWith('blob:') && typeof URL.revokeObjectURL === 'function') {
+        URL.revokeObjectURL(url)
+      }
+    })
+    customCoverUrlsRef.current = []
+  }
+
+  useEffect(() => () => revokeCustomCoverUrls(), [])
+
+  const handleCoverUploadChange = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file?.type?.startsWith('image/')) return
+
+    revokeCustomCoverUrls()
+    const previewUrl = typeof URL.createObjectURL === 'function'
+      ? URL.createObjectURL(file)
+      : `mock-object-url:${file.name}`
+    customCoverUrlsRef.current = previewUrl.startsWith('blob:') ? [previewUrl] : []
+
+    setSelectedImage({
+      id: `upload:${file.name}:${file.lastModified}`,
+      url: previewUrl,
+      fullUrl: previewUrl,
+      isCustomUpload: true,
+      sourceFile: file,
+    })
+    setSelectedTheme(null)
+    setShowImageCollections(false)
+  }
 
   useEffect(() => {
     nameRef.current?.focus()
@@ -356,8 +391,9 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
         ? {
             ...payload,
             coverImage: selectedImage.fullUrl ?? selectedImage.url,
-            coverImageId: selectedImage.id,
+            coverImageId: selectedImage.isCustomUpload ? null : selectedImage.id,
             coverImageThumb: selectedImage.url,
+            sourceFile: selectedImage.sourceFile ?? null,
           }
         : payload)
     onClose()
@@ -416,6 +452,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
                   type="button"
                   className={`${styles.coverOption} ${selectedTheme?.id === theme.id ? styles.coverOptionActive : ''} ${resolveCoverThemeClass(styles, theme.id)}`}
                   onClick={() => {
+                    revokeCustomCoverUrls()
                     setSelectedTheme(theme)
                     setSelectedImage(null)
                   }}
@@ -427,7 +464,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
               ))}
               <button
                 type="button"
-                className={`${styles.coverOption} ${styles.coverUploadOption}`}
+                className={`${styles.coverOption} ${styles.coverUploadOption} ${selectedImage?.isCustomUpload ? styles.coverOptionActive : ''}`}
                 onClick={() => coverUploadRef.current?.click()}
                 aria-label="Enviar imagem própria"
                 title="Enviar imagem própria"
@@ -450,6 +487,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
               type="file"
               accept="image/*"
               className={styles.coverUploadInput}
+              onChange={handleCoverUploadChange}
             />
           </div>
 
@@ -556,6 +594,7 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
                         type="button"
                         className={`${styles.collectionItem} ${active ? styles.collectionItemActive : ''}`}
                         onClick={() => {
+                          revokeCustomCoverUrls()
                           setSelectedImage(item)
                           setSelectedTheme(null)
                           setShowImageCollections(false)
@@ -853,17 +892,18 @@ function PlanCard({
   }
 
   const coverThemeClassName = resolveCoverThemeClass(styles, plan.coverThemeId)
-  const coverImageUrl = plan.coverImageThumb ?? plan.coverImage ?? null
-  const isImageCover = Boolean(coverImageUrl)
+  const rawCoverImageUrl = plan.coverImageThumb ?? plan.coverImage ?? null
+  const isImageCover = Boolean(rawCoverImageUrl)
+  const resolvedCoverImageUrl = useAuthenticatedImageUrl(isImageCover ? rawCoverImageUrl : null)
   const coverClassName = [
     styles.planCover,
     coverThemeClassName,
     isImageCover ? styles.planCoverImage : '',
   ].filter(Boolean).join(' ')
-  const coverStyle = isImageCover
+  const coverStyle = isImageCover && resolvedCoverImageUrl
     ? {
         '--cover-fallback': plan.cover,
-        '--cover-bg': `url(${coverImageUrl})`,
+        '--cover-bg': `url(${resolvedCoverImageUrl})`,
       }
     : {
         '--cover-fallback': plan.cover,
@@ -1283,7 +1323,30 @@ export default function Workspace() {
 
   const handleNewPlan = async (data) => {
     try {
-      const newPlan = await createPlan(data)
+      let payload = data
+
+      if (data.sourceFile instanceof File && isBackendDriven && accessToken) {
+        const formData = new FormData()
+        formData.append('file', data.sourceFile)
+        const uploaded = await apiRequest('/api/files/upload', {
+          method: 'POST',
+          token: accessToken,
+          body: formData,
+        })
+        const fileId = uploaded?.id
+        if (!fileId) {
+          throw new Error('Não foi possível enviar a imagem de capa.')
+        }
+        payload = {
+          ...data,
+          coverImageId: `files/${fileId}`,
+          coverImage: data.coverImage ?? null,
+          coverImageThumb: data.coverImageThumb ?? data.coverImage ?? null,
+          sourceFile: null,
+        }
+      }
+
+      const newPlan = await createPlan(payload)
       pushNotification(`Plano "${newPlan.name}" criado`)
     } catch (error) {
       setNotification(error.message ?? 'Nao foi possivel criar o plano.')

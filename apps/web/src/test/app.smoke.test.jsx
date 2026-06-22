@@ -620,6 +620,27 @@ describe('App smoke flows', () => {
     expect(screen.getAllByRole('heading', { name: 'Plano Frontend QA' })).not.toHaveLength(0)
   })
 
+  it('accepts a custom cover image when creating a plan', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/workspace', { session: createDemoSession() })
+
+    await user.click((await screen.findAllByRole('button', { name: /novo plano/i }))[0])
+
+    const dialog = await screen.findByRole('dialog', { name: 'Criar novo plano' })
+    const fileInput = dialog.querySelector('input[type="file"]')
+    const file = new File(['cover-image'], 'cover.png', { type: 'image/png' })
+
+    await user.upload(fileInput, file)
+
+    expect(screen.getByRole('button', { name: 'Enviar imagem própria' }).className).toMatch(/coverOptionActive/)
+
+    await user.type(screen.getByRole('textbox', { name: /título do plano/i }), 'Plano com capa')
+    await user.click(screen.getByRole('button', { name: 'Criar' }))
+
+    expect(await screen.findAllByText('Plano com capa')).not.toHaveLength(0)
+  })
+
   it('renders the shared sidebar across product screens', async () => {
     const user = userEvent.setup()
 

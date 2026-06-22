@@ -32,13 +32,24 @@ function canonicalizeCoverImageId(value) {
   if (!value) return null
   const normalized = String(value).trim().replace(/\\/g, '/')
   if (!normalized) return null
+  if (normalized.startsWith('files/')) return normalized
   if (normalized.startsWith('background-collections/')) return normalized
   const [, afterRoot = ''] = normalized.split('/background-collections/')
   if (!afterRoot) return normalized
   return `background-collections/${afterRoot}`
 }
 
+function resolveUploadedCoverImageUrl(coverImageId) {
+  const canonicalId = canonicalizeCoverImageId(coverImageId)
+  if (!canonicalId?.startsWith('files/')) return null
+  const fileId = canonicalId.slice('files/'.length)
+  return fileId ? `/api/files/${fileId}/download` : null
+}
+
 function resolveCoverImageUrl(coverImageId) {
+  const uploadedCoverUrl = resolveUploadedCoverImageUrl(coverImageId)
+  if (uploadedCoverUrl) return uploadedCoverUrl
+
   const canonicalId = canonicalizeCoverImageId(coverImageId)
   if (!canonicalId) return null
   if (canonicalId.startsWith('background-collections/')) {
@@ -48,6 +59,9 @@ function resolveCoverImageUrl(coverImageId) {
 }
 
 function resolveCoverImageThumbUrl(coverImageId) {
+  const uploadedCoverUrl = resolveUploadedCoverImageUrl(coverImageId)
+  if (uploadedCoverUrl) return uploadedCoverUrl
+
   const canonicalId = canonicalizeCoverImageId(coverImageId)
   if (!canonicalId) return null
   if (canonicalId.startsWith('background-collections/')) {

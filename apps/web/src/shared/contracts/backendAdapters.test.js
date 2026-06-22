@@ -5,6 +5,7 @@ import {
   buildCalendarEventPayload,
   mapCalendarEventsToSnapshot,
   mapBoardViewToColumns,
+  mapPlanSummaryToRecord,
 } from './backendAdapters.js'
 
 describe('mapCalendarEventsToSnapshot', () => {
@@ -67,6 +68,22 @@ describe('mapCalendarEventsToSnapshot', () => {
       start: '22:30',
       end: '00:30',
     })
+  })
+})
+
+describe('mapPlanSummaryToRecord cover images', () => {
+  it('resolves uploaded plan cover files to authenticated download urls', () => {
+    const plan = mapPlanSummaryToRecord({
+      id: 'plan-1',
+      name: 'Test',
+      coverImageId: 'files/abc-123',
+      role: 'OWNER',
+      memberCount: 1,
+      taskCount: 0,
+    })
+
+    expect(plan.coverImage).toBe('/api/files/abc-123/download')
+    expect(plan.coverImageThumb).toBe('/api/files/abc-123/download')
   })
 })
 
