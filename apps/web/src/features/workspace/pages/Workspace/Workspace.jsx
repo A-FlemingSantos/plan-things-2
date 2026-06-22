@@ -687,7 +687,9 @@ function resolvePlanBackgroundPickerPosition(anchorRect) {
   return { left, top }
 }
 
-function PlanOptionsMenu({ anchorRect, onAction }) {
+function PlanOptionsMenu({ anchorRect, anchorRef, onAction, onClose }) {
+  const menuRef = useRef(null)
+  const openedAtRef = useRef(0)
   const actions = [
     { id: 'board', label: 'Abrir plano', Icon: AlignStartHorizontal },
     { id: 'rename', label: 'Renomear', Icon: PencilLine },
@@ -697,19 +699,38 @@ function PlanOptionsMenu({ anchorRect, onAction }) {
   const position = resolvePlanOptionsMenuPosition(anchorRect)
   const portalRoot = document.querySelector('[data-app-theme-scope]') ?? document.body
 
+  useEffect(() => {
+    openedAtRef.current = Date.now()
+
+    const handlePointerDown = (event) => {
+      if (Date.now() - openedAtRef.current < 120) return
+      if (menuRef.current?.contains(event.target)) return
+      if (anchorRef?.current?.contains(event.target)) return
+      onClose?.()
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose?.()
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [anchorRef, onClose])
+
+  const handleMenuAction = (actionId) => {
+    onAction?.(actionId)
+  }
+
   return createPortal(
     <div
+      ref={menuRef}
       className={styles.planOptionsMenu}
       role="menu"
       style={position}
-      onMouseDown={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
+      onMouseDown={(event) => event.stopPropagation()}
     >
       {actions.map(({ id, label, Icon, danger }) => (
         <button
@@ -717,7 +738,11 @@ function PlanOptionsMenu({ anchorRect, onAction }) {
           type="button"
           className={`${styles.planOptionsMenuItem} ${danger ? styles.planOptionsMenuItemDanger : ''}`}
           role="menuitem"
-          onClick={() => onAction?.(id)}
+          onMouseDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            handleMenuAction(id)
+          }}
         >
           <Icon size={PLAN_OPTIONS_MENU_ICON_SIZE} strokeWidth={PLAN_OPTIONS_MENU_ICON_STROKE} />
           <span>{label}</span>
@@ -858,10 +883,12 @@ function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, onSelectTheme, 
 
 function PlanRenameInput({ value, busy, onChange, onCommit, onCancel }) {
   const inputRef = useRef(null)
+  const ignoreBlurUntilRef = useRef(0)
 
   useEffect(() => {
     inputRef.current?.focus()
     inputRef.current?.select()
+    ignoreBlurUntilRef.current = Date.now() + 250
   }, [])
 
   return (
@@ -870,6 +897,7 @@ function PlanRenameInput({ value, busy, onChange, onCommit, onCancel }) {
       onClick={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
       onBlur={(event) => {
+        if (Date.now() < ignoreBlurUntilRef.current) return
         if (!event.currentTarget.contains(event.relatedTarget)) {
           onCommit?.()
         }
@@ -926,6 +954,7 @@ function PlanCard({
   menuOpen,
   menuAnchorRect,
   onMenuAction,
+  onMenuClose,
   isRenaming,
   renameDraft,
   renameBusy,
@@ -958,10 +987,12 @@ function PlanCard({
     : {
         '--cover-fallback': plan.cover,
       }
+  const menuAnchorRef = useRef(null)
 
   const actions = (
     <div className={`${styles.planCardActions} ${menuOpen ? styles.planCardActionsOpen : ''}`}>
       <button
+        ref={menuAnchorRef}
         type="button"
         className={`${styles.planCardActionBtn} ${menuOpen ? styles.planCardActionBtnActive : ''}`}
         aria-label="Mais opções"
@@ -980,7 +1011,14 @@ function PlanCard({
       >
         <Ellipsis size={14} strokeWidth={1.75} />
       </button>
-      {menuOpen && <PlanOptionsMenu anchorRect={menuAnchorRect} onAction={onMenuAction} />}
+      {menuOpen && (
+        <PlanOptionsMenu
+          anchorRect={menuAnchorRect}
+          anchorRef={menuAnchorRef}
+          onAction={onMenuAction}
+          onClose={onMenuClose}
+        />
+      )}
     </div>
   )
 
@@ -1528,23 +1566,22 @@ export default function Workspace() {
 
   useEffect(() => {
     if (!openPlanMenuId) return undefined
-    const handlePointerDown = () => {
+    const handleDismiss = () => {
       setOpenPlanMenuId(null)
       setPlanMenuAnchorRect(null)
     }
-    const handleResize = () => {
-      setOpenPlanMenuId(null)
-      setPlanMenuAnchorRect(null)
-    }
-    document.addEventListener('mousedown', handlePointerDown)
-    window.addEventListener('resize', handleResize)
-    window.addEventListener('scroll', handleResize, true)
+    window.addEventListener('resize', handleDismiss)
+    window.addEventListener('scroll', handleDismiss, true)
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('scroll', handleResize, true)
+      window.removeEventListener('resize', handleDismiss)
+      window.removeEventListener('scroll', handleDismiss, true)
     }
   }, [openPlanMenuId])
+
+  const closePlanMenu = () => {
+    setOpenPlanMenuId(null)
+    setPlanMenuAnchorRect(null)
+  }
 
   const openBoard = (planId) => {
     setBackgroundPicker(null)
@@ -1569,6 +1606,7 @@ export default function Workspace() {
       menuOpen={openPlanMenuId === plan.id}
       menuAnchorRect={planMenuAnchorRect}
       onMenuAction={(action) => handlePlanMenuAction(plan, action)}
+      onMenuClose={closePlanMenu}
       isRenaming={renamingPlan?.id === plan.id}
       renameDraft={renameDraft}
       renameBusy={renameBusy}

@@ -658,6 +658,22 @@ describe('App smoke flows', () => {
     expect(await screen.findByText(/Background de "Lançamento do Produto — Q3" atualizado/i)).toBeInTheDocument()
   })
 
+  it('opens inline rename when choosing Renomear from the plan menu', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/workspace', { session: createDemoSession() })
+
+    await user.click((await screen.findAllByRole('button', { name: 'Mais opções' }))[0])
+    await user.click(screen.getByRole('menuitem', { name: 'Renomear' }))
+
+    const input = await screen.findByDisplayValue('Lançamento do Produto — Q3')
+    await user.clear(input)
+    await user.type(input, 'Plano Renomeado QA')
+    await user.click(screen.getByLabelText('Confirmar novo nome'))
+
+    expect(await screen.findAllByText('Plano Renomeado QA')).not.toHaveLength(0)
+  })
+
   it('renders the shared sidebar across product screens', async () => {
     const user = userEvent.setup()
 
