@@ -641,6 +641,23 @@ describe('App smoke flows', () => {
     expect(await screen.findAllByText('Plano com capa')).not.toHaveLength(0)
   })
 
+  it('accepts a custom cover image when changing plan background', async () => {
+    const user = userEvent.setup()
+
+    renderApp('/workspace', { session: createDemoSession() })
+
+    await user.click((await screen.findAllByRole('button', { name: 'Mais opções' }))[0])
+    await user.click(screen.getByRole('menuitem', { name: 'Alterar background' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Alterar background do plano' })
+    const fileInput = dialog.querySelector('input[type="file"]')
+    const file = new File(['cover-image'], 'background.png', { type: 'image/png' })
+
+    await user.upload(fileInput, file)
+
+    expect(await screen.findByText(/Background de "Lançamento do Produto — Q3" atualizado/i)).toBeInTheDocument()
+  })
+
   it('renders the shared sidebar across product screens', async () => {
     const user = userEvent.setup()
 

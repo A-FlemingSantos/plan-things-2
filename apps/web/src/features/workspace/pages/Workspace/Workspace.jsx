@@ -202,6 +202,39 @@ function buildBackgroundCollectionsSnapshot() {
 
 const BACKGROUND_COLLECTIONS = buildBackgroundCollectionsSnapshot()
 
+function buildCustomCoverImageFromFile(file) {
+  const previewUrl = typeof URL.createObjectURL === 'function'
+    ? URL.createObjectURL(file)
+    : `mock-object-url:${file.name}`
+
+  return {
+    id: `upload:${file.name}:${file.lastModified}`,
+    url: previewUrl,
+    fullUrl: previewUrl,
+    isCustomUpload: true,
+    sourceFile: file,
+  }
+}
+
+async function uploadPlanCoverFile(file, accessToken) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const uploaded = await apiRequest('/api/files/upload', {
+    method: 'POST',
+    token: accessToken,
+    body: formData,
+  })
+  const fileId = uploaded?.id
+  if (!fileId) {
+    throw new Error('Não foi possível enviar a imagem de capa.')
+  }
+  return fileId
+}
+
+function isUploadedPlanCoverImageId(coverImageId) {
+  return typeof coverImageId === 'string' && coverImageId.startsWith('files/')
+}
+
 /* ═══════════════════════════════════════════
    NEW PLAN POPOVER
 ═══════════════════════════════════════════ */
@@ -243,18 +276,10 @@ function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }
     if (!file?.type?.startsWith('image/')) return
 
     revokeCustomCoverUrls()
-    const previewUrl = typeof URL.createObjectURL === 'function'
-      ? URL.createObjectURL(file)
-      : `mock-object-url:${file.name}`
-    customCoverUrlsRef.current = previewUrl.startsWith('blob:') ? [previewUrl] : []
+    const uploadedCover = buildCustomCoverImageFromFile(file)
+    customCoverUrlsRef.current = uploadedCover.url.startsWith('blob:') ? [uploadedCover.url] : []
 
-    setSelectedImage({
-      id: `upload:${file.name}:${file.lastModified}`,
-      url: previewUrl,
-      fullUrl: previewUrl,
-      isCustomUpload: true,
-      sourceFile: file,
-    })
+    setSelectedImage(uploadedCover)
     setSelectedTheme(null)
     setShowImageCollections(false)
   }
@@ -705,8 +730,16 @@ function PlanOptionsMenu({ anchorRect, onAction }) {
 
 function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, onSelectTheme, onSelectImage }) {
   const pickerRef = useRef(null)
+  const coverUploadRef = useRef(null)
   const position = resolvePlanBackgroundPickerPosition(anchorRect)
   const portalRoot = document.querySelector('[data-app-theme-scope]') ?? document.body
+
+  const handleCoverUploadChange = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file?.type?.startsWith('image/') || busy) return
+    onSelectImage?.(buildCustomCoverImageFromFile(file))
+  }
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -770,6 +803,23 @@ function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, onSelectTheme, 
                 </button>
               )
             })}
+            <button
+              type="button"
+              className={`${styles.coverOption} ${styles.coverUploadOption} ${isUploadedPlanCoverImageId(plan.coverImageId) ? styles.coverOptionActive : ''}`}
+              onClick={() => coverUploadRef.current?.click()}
+              aria-label="Enviar imagem própria"
+              title="Enviar imagem própria"
+              disabled={busy}
+            >
+              <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
+            </button>
+            <input
+              ref={coverUploadRef}
+              type="file"
+              accept="image/*"
+              className={styles.coverUploadInput}
+              onChange={handleCoverUploadChange}
+            />
           </div>
         </section>
 
@@ -1326,17 +1376,7 @@ export default function Workspace() {
       let payload = data
 
       if (data.sourceFile instanceof File && isBackendDriven && accessToken) {
-        const formData = new FormData()
-        formData.append('file', data.sourceFile)
-        const uploaded = await apiRequest('/api/files/upload', {
-          method: 'POST',
-          token: accessToken,
-          body: formData,
-        })
-        const fileId = uploaded?.id
-        if (!fileId) {
-          throw new Error('Não foi possível enviar a imagem de capa.')
-        }
+        const fileId = await uploadPlanCoverFile(data.sourceFile, accessToken)
         payload = {
           ...data,
           coverImageId: `files/${fileId}`,
@@ -1432,12 +1472,25 @@ export default function Workspace() {
     if (!plan || backgroundBusy) return
     setBackgroundBusy(true)
     try {
+      let coverImageId = image.id
+      const coverImage = image.fullUrl ?? image.url
+      const coverImageThumb = image.url
+
+      if (image.isCustomUpload) {
+        if (image.sourceFile instanceof File && isBackendDriven && accessToken) {
+          const fileId = await uploadPlanCoverFile(image.sourceFile, accessToken)
+          coverImageId = `files/${fileId}`
+        } else {
+          coverImageId = null
+        }
+      }
+
       await updatePlanCover(plan.id, {
         cover: plan.cover ?? null,
         coverThemeId: null,
-        coverImageId: image.id,
-        coverImage: image.fullUrl ?? image.url,
-        coverImageThumb: image.url,
+        coverImageId,
+        coverImage,
+        coverImageThumb,
       })
       setBackgroundPicker(null)
       pushNotification(`Background de "${plan.name}" atualizado`)
