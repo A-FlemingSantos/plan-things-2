@@ -1,19 +1,29 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { ENABLE_DEV_MOCKS } from '../../config/devMocks.js'
 import styles from './GitHubContextBar.module.css'
 
-const REPOS = [
+const DEV_REPOS = [
   'plan-things/web',
   'plan-things/mobile',
   'plan-things/api',
   'plan-things/infra',
 ]
 
-const BRANCHES_BY_REPO = {
+const DEV_BRANCHES_BY_REPO = {
   'plan-things/web':    ['main', 'develop', 'staging', 'feature/ui-improvements', 'fix/auth-redirect'],
   'plan-things/mobile': ['main', 'develop', 'feature/push-notifications'],
   'plan-things/api':    ['main', 'develop', 'staging', 'hotfix/rate-limit'],
   'plan-things/infra':  ['main', 'staging'],
+}
+
+function resolveRepos() {
+  return ENABLE_DEV_MOCKS ? DEV_REPOS : []
+}
+
+function resolveBranches(repo) {
+  if (!ENABLE_DEV_MOCKS || !repo) return []
+  return DEV_BRANCHES_BY_REPO[repo] ?? ['main']
 }
 
 function GitHubIcon() {
@@ -112,8 +122,9 @@ function PortalDropdown({ anchorRef, children }) {
 }
 
 export default function GitHubContextBar({ className }) {
-  const [repo, setRepo] = useState('plan-things/web')
-  const [branch, setBranch] = useState('main')
+  const repos = resolveRepos()
+  const [repo, setRepo] = useState(() => (ENABLE_DEV_MOCKS ? DEV_REPOS[0] : ''))
+  const [branch, setBranch] = useState(() => (ENABLE_DEV_MOCKS ? 'main' : ''))
   const [repoOpen, setRepoOpen] = useState(false)
   const [branchOpen, setBranchOpen] = useState(false)
 
@@ -139,11 +150,13 @@ export default function GitHubContextBar({ className }) {
     return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [repoOpen, branchOpen, closeAll])
 
-  const branches = BRANCHES_BY_REPO[repo] ?? ['main']
+  const branches = resolveBranches(repo)
+  const repoLabel = repo || 'Repositório'
+  const branchLabel = branch || 'Branch'
 
   function handleSelectRepo(r) {
     setRepo(r)
-    setBranch(BRANCHES_BY_REPO[r]?.[0] ?? 'main')
+    setBranch(resolveBranches(r)[0] ?? '')
     setRepoOpen(false)
   }
 
@@ -161,17 +174,17 @@ export default function GitHubContextBar({ className }) {
         className={`${styles.pickerBtn} ${repoOpen ? styles.pickerBtnOpen : ''}`}
         aria-haspopup="listbox"
         aria-expanded={repoOpen}
-        aria-label={`Repositório: ${repo}`}
+        aria-label={`Repositório: ${repoLabel}`}
         onClick={() => { setRepoOpen(o => !o); setBranchOpen(false) }}
       >
         <GitHubIcon />
-        <span className={styles.pickerLabel}>{repo}</span>
+        <span className={styles.pickerLabel}>{repoLabel}</span>
         <ChevronIcon />
       </button>
 
       {repoOpen && (
         <PortalDropdown anchorRef={repoBtnRef}>
-          {REPOS.map(r => (
+          {repos.map(r => (
             <button
               key={r}
               role="option"
@@ -196,11 +209,11 @@ export default function GitHubContextBar({ className }) {
         className={`${styles.pickerBtn} ${branchOpen ? styles.pickerBtnOpen : ''}`}
         aria-haspopup="listbox"
         aria-expanded={branchOpen}
-        aria-label={`Branch: ${branch}`}
+        aria-label={`Branch: ${branchLabel}`}
         onClick={() => { setBranchOpen(o => !o); setRepoOpen(false) }}
       >
         <BranchIcon />
-        <span className={styles.pickerLabel}>{branch}</span>
+        <span className={styles.pickerLabel}>{branchLabel}</span>
         <ChevronIcon />
       </button>
 
