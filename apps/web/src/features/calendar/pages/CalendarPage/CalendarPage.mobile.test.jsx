@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { describe, expect, it, vi } from 'vitest'
-import CalendarPage from './CalendarPage.jsx'
+import { CalendarPage } from './CalendarPage.jsx'
 import { installMatchMediaController } from '../../../../test/matchMedia.js'
 
 const preferencesMock = vi.hoisted(() => ({
