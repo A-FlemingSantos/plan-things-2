@@ -205,7 +205,9 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    const commentField = screen.getByLabelText('Escrever comentário')
+    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+
+    const commentField = await screen.findByLabelText('Escrever comentário')
     expect(screen.getByRole('button', { name: 'Enviar comentário' })).toBeInTheDocument()
     expect(screen.getByLabelText('Anexar ao comentário')).toBeInTheDocument()
 
@@ -217,7 +219,8 @@ describe('CardModal file picker positioning', () => {
     })
   })
 
-  it('keeps the initial assignment history stable when the card props refresh', () => {
+  it('keeps the initial assignment history stable when the card props refresh', async () => {
+    const user = userEvent.setup()
     const baseCard = buildCard({
       memberIds: ['member-1'],
       createdAt: {
@@ -250,7 +253,11 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    expect(screen.getByText(/atribuiu a: Arthur Fleming/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+    const findAssignmentHistoryItems = () => Array.from(document.querySelectorAll('p'))
+      .filter((item) => item.textContent?.includes('atribuiu a:'))
+
+    expect(findAssignmentHistoryItems().some((item) => item.textContent?.includes('Arthur Fleming'))).toBe(true)
 
     rerender(
       <CardModal
@@ -262,11 +269,12 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    expect(screen.getByText(/atribuiu a: Arthur Fleming/i)).toBeInTheDocument()
-    expect(screen.queryByText(/atribuiu a: Beatriz Souza/i)).not.toBeInTheDocument()
+    expect(findAssignmentHistoryItems().some((item) => item.textContent?.includes('Arthur Fleming'))).toBe(true)
+    expect(findAssignmentHistoryItems().some((item) => item.textContent?.includes('Beatriz Souza'))).toBe(false)
   })
 
-  it('renders persisted assignee activity as inline history instead of a comment card', () => {
+  it('renders persisted assignee activity as inline history instead of a comment card', async () => {
+    const user = userEvent.setup()
     render(
       <CardModal
         card={buildCard({
@@ -295,6 +303,8 @@ describe('CardModal file picker positioning', () => {
         libraryFiles={[]}
       />
     )
+
+    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
 
     expect(screen.getByText(/removeu os responsaveis/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Responder' })).not.toBeInTheDocument()

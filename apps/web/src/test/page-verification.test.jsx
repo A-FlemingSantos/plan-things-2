@@ -25,12 +25,11 @@ describe('Page verification flows', () => {
     expect(screen.getAllByRole('link', { name: /começar grátis/i })[0]).toHaveAttribute('href', '/cadastro')
     expect(screen.getByRole('link', { name: /entrar/i })).toHaveAttribute('href', '/login')
 
-    await user.click(screen.getByRole('button', { name: 'Expandir tudo' }))
     expect(screen.getByText(/nosso assistente de ia analisa/i)).toBeInTheDocument()
     expect(screen.getByText(/você pode cancelar quando quiser/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: /falar com nossa equipe/i }))
 
-    await user.click(screen.getByRole('button', { name: 'Recolher tudo' }))
-    expect(screen.queryByText(/nosso assistente de ia analisa/i)).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Central de ajuda' })).toBeInTheDocument()
   }, 15000)
 
   it('verifies login interactions and forgot-password navigation', async () => {
@@ -99,7 +98,7 @@ describe('Page verification flows', () => {
 
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
-    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
+    expect(await screen.findAllByText('Adicionar lista')).not.toHaveLength(0)
 
     await user.click(screen.getByRole('button', { name: /caixa de entrada/i }))
     expect(await screen.findByLabelText('Caixa de entrada')).toBeInTheDocument()
@@ -125,7 +124,7 @@ describe('Page verification flows', () => {
 
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
-    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
+    expect(await screen.findAllByText('Adicionar lista')).not.toHaveLength(0)
     expect(screen.queryByRole('tablist', { name: 'Visões do quadro' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Tarefas' })).not.toBeInTheDocument()
   })

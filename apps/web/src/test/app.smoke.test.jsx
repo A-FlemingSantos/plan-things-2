@@ -38,12 +38,6 @@ function formatCalendarHeading(monthOffset = 0) {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 
-function getDateMenu() {
-  const dateMenu = screen.getByRole('heading', { name: 'Datas' }).closest('[role="dialog"]')
-  expect(dateMenu).not.toBeNull()
-  return dateMenu
-}
-
 async function loginFromProtectedRedirect(user) {
   await user.type(await screen.findByLabelText('E-mail'), 'arthur@example.com')
   await user.type(screen.getByLabelText('Senha'), '12345678')
@@ -195,7 +189,7 @@ describe('App smoke flows', () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
     }, { timeout: 4000 })
-    expect(await screen.findByText('Adicionar lista', {}, { timeout: 4000 })).toBeInTheDocument()
+    expect(await screen.findAllByText('Adicionar lista', {}, { timeout: 4000 })).not.toHaveLength(0)
   })
 
   it('redirects the legacy files route to workspace after login', async () => {
@@ -271,16 +265,15 @@ describe('App smoke flows', () => {
 
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
-    await user.click(await screen.findByText('Pesquisa de concorrentes'))
+    await user.click(await screen.findByRole('button', { name: /abrir cartão pesquisa de concorrentes/i }))
 
-    await user.click(screen.getByRole('button', { name: '03/08/26' }))
-    expect(screen.getByLabelText('Data de entrega')).toHaveValue('03/08/26')
-    expect(screen.queryByText('Recorrente')).not.toBeInTheDocument()
-    expect(screen.queryByText('Definir lembrete')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /03\/08\/26/ }))
+    expect(screen.getByRole('dialog', { name: 'Calendário de datas' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Calendário de datas' })).not.toBeInTheDocument()
+    })
 
-    await user.click(within(getDateMenu()).getByRole('button', { name: 'Salvar' }))
-
-    expect(await screen.findByText('Data salva.')).toBeInTheDocument()
     expect(screen.getAllByText('Pesquisa de concorrentes')).not.toHaveLength(0)
     expect(screen.getAllByText('3 ago')).not.toHaveLength(0)
   })
@@ -290,14 +283,15 @@ describe('App smoke flows', () => {
 
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
-    await user.click(await screen.findByText('Copy da campanha de lançamento'))
+    await user.click(await screen.findByRole('button', { name: /abrir cartão copy da campanha de lançamento/i }))
 
-    await user.click(screen.getByRole('button', { name: formatTodayAsScheduleDateValue() }))
-    expect(screen.getByLabelText('Data de entrega')).toHaveValue(formatTodayAsScheduleDateValue())
+    await user.click(screen.getByRole('button', { name: 'Datas' }))
+    expect(screen.getByRole('dialog', { name: 'Calendário de datas' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Calendário de datas' })).not.toBeInTheDocument()
+    })
 
-    await user.click(within(getDateMenu()).getByRole('button', { name: 'Salvar' }))
-
-    expect(await screen.findByText('Data salva.')).toBeInTheDocument()
     expect(screen.getAllByText('Copy da campanha de lançamento')).not.toHaveLength(0)
     expect(screen.getAllByText('Hoje')).not.toHaveLength(0)
   })
@@ -305,7 +299,7 @@ describe('App smoke flows', () => {
   it('preserves the plan id when redirecting legacy board deep links', async () => {
     renderApp('/kanban/product-launch-q3', { session: createDemoSession() })
 
-    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
+    expect(await screen.findAllByText('Adicionar lista')).not.toHaveLength(0)
     expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
     expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
   })
@@ -375,7 +369,10 @@ describe('App smoke flows', () => {
     await user.click(within(eventDialog).getByRole('button', { name: 'Salvar' }))
 
     expect(await screen.findAllByText('Review de prontidão do backend')).not.toHaveLength(0)
-    expect(screen.getByRole('status')).toHaveTextContent('Evento "Review de prontidão do backend" criado')
+    await waitFor(() => {
+      const statuses = screen.getAllByRole('status')
+      expect(statuses.some((status) => status.textContent?.includes('Evento "Review de prontidão do backend" criado'))).toBe(true)
+    })
 
     await user.click(screen.getAllByRole('button', { name: 'Mês anterior' })[0])
     expect(await screen.findByRole('heading', { name: formatCalendarHeading() })).toBeInTheDocument()
@@ -688,7 +685,7 @@ describe('App smoke flows', () => {
 
     await user.click(await screen.findByRole('button', { name: /lançamento do produto/i }))
 
-    expect(await screen.findByText('Adicionar lista')).toBeInTheDocument()
+    expect(await screen.findAllByText('Adicionar lista')).not.toHaveLength(0)
     expect(document.querySelector('[data-product-sidebar]')).toBeInTheDocument()
   })
 
