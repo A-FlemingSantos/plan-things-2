@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import { ROUTES, normalizePathname } from '../../../shared/config/routes.js'
-import { normalizeKanbanAccentColor } from '../../workspace/data/kanbanColorPalette.js'
+import { normalizeAccentColor } from '../../../shared/config/accentColors.js'
 
 export const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
 export const THEME_STORAGE_PREFIX = 'plan-things:theme:v1:'
@@ -166,7 +166,7 @@ export function readStoredLocalPreferences(userId) {
     confirmDestructiveActions: parsed.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions,
     liquidGlass: parsed.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass,
     showIntelligenceSection: parsed.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection,
-    kanbanAccentColor: normalizeKanbanAccentColor(parsed.kanbanAccentColor),
+    kanbanAccentColor: normalizeAccentColor(parsed.kanbanAccentColor),
   }
 }
 
@@ -180,7 +180,7 @@ function writeStoredLocalPreferences(userId, preferences) {
     confirmDestructiveActions: preferences.confirmDestructiveActions,
     liquidGlass: preferences.liquidGlass,
     showIntelligenceSection: preferences.showIntelligenceSection,
-    kanbanAccentColor: normalizeKanbanAccentColor(preferences.kanbanAccentColor),
+    kanbanAccentColor: normalizeAccentColor(preferences.kanbanAccentColor),
   })
 }
 

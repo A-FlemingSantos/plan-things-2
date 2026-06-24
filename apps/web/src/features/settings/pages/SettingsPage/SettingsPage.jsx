@@ -18,6 +18,7 @@ import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClien
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
+import Toggle from '../../../../shared/components/Toggle/Toggle.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { ROUTES, toRouteString } from '../../../../shared/config/routes.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
@@ -35,37 +36,25 @@ import {
   isKanbanAccentBaseColor,
   resolveKanbanAccentColor,
 } from '../../../workspace/data/kanbanColorPalette.js'
+import DeleteAccountDialog from '../../components/DeleteAccountDialog/DeleteAccountDialog.jsx'
+import {
+  DELETE_CONFIRMATION_PHRASE,
+  isDeletePhraseValid,
+} from '../../components/DeleteAccountDialog/deleteAccountUtils.js'
+import SettingsAccountSection, { AVATAR_ACCEPT } from '../../components/SettingsAccountSection/SettingsAccountSection.jsx'
+import {
+  SettingsAutoSaveStatus,
+  SettingsField,
+  SettingsSectionGroup,
+} from '../../components/settingsForm/index.js'
+import {
+  ChevronIcon,
+  CloseIcon,
+  GmailIcon,
+  GoogleCalendarIcon,
+  UndefinedIcon,
+} from '../../../../shared/components/icons/index.js'
 import styles from './SettingsPage.module.css'
-
-/* ═══════════════════════════════════════════
-   ICONS
-═══════════════════════════════════════════ */
-const Ic = {
-  Logo:     () => <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="2" fill="currentColor"/><rect x="11" y="2" width="7" height="7" rx="2" fill="currentColor" opacity=".35"/><rect x="2" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".55"/><rect x="11" y="11" width="7" height="7" rx="2" fill="currentColor" opacity=".75"/></svg>,
-  Home:     () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 15V9h4v6" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
-  Popover:  () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5H2.5v7H9.5V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 7L9.5 2.5M7 2.5h2.5V5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Calendar: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 1.8v2.8M11 1.8v2.8M2.5 6.5h11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-  Files:    () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M9 1.5H4a1.5 1.5 0 0 0-1.5 1.5v10A1.5 1.5 0 0 0 4 14.5h8A1.5 1.5 0 0 0 13.5 13V6L9 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 1.5V6H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>,
-  Chevron:  () => <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Check:    () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l2.5 2.5 5.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Eye:      () => <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1 7.5S3 3 7.5 3 14 7.5 14 7.5 12 12 7.5 12 1 7.5 1 7.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.3"/></svg>,
-  EyeOff:   () => <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 2l11 11M6.1 6.2A2 2 0 0 0 8.9 8.9M4 4C2.4 5.1 1 7.5 1 7.5s2 4.5 6.5 4.5c1.1 0 2.1-.3 3-.7M6.5 3C7 3 7.3 3 7.5 3c4.5 0 6.5 4.5 6.5 4.5s-.6 1.3-1.8 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Google:   () => <svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.21c0-.64-.06-1.25-.16-1.85H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z" fill="#4285F4"/><path d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z" fill="#34A853"/><path d="M3.96 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.28-1.71V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.04l3-2.33z" fill="#FBBC05"/><path d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z" fill="#EA4335"/></svg>,
-  GoogleCalendar: () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="2" width="14" height="14" rx="2" fill="#fff"/><path d="M4 2h10a2 2 0 0 1 2 2v2H2V4a2 2 0 0 1 2-2z" fill="#1A73E8"/><path d="M2 6h14v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z" fill="#fff"/><path d="M2 12h4v4H4a2 2 0 0 1-2-2v-2z" fill="#34A853"/><path d="M12 12h4v2a2 2 0 0 1-2 2h-2v-4z" fill="#FBBC04"/><path d="M2 6h4v6H2V6z" fill="#EA4335"/><path d="M12 6h4v6h-4V6z" fill="#4285F4"/><path d="M7.4 12.6h3.2v-1H8.7l1.2-1.2c.42-.42.62-.82.62-1.24 0-.82-.66-1.36-1.58-1.36-.78 0-1.39.38-1.72.99l.88.52c.16-.32.42-.5.8-.5.34 0 .56.17.56.45 0 .2-.11.39-.38.66L7.4 11.64v.96z" fill="#3C4043"/></svg>,
-  Gmail: () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="4" width="14" height="10" rx="1.8" fill="#fff"/><path d="M4 4h10c1.1 0 2 .9 2 2v8H2V6c0-1.1.9-2 2-2z" fill="#fff"/><path d="M3.2 5.05 9 9.28l5.8-4.23A2 2 0 0 1 16 6.88V14h-2.4V8.9L9 12.24 4.4 8.9V14H2V6.88c0-.78.46-1.46 1.2-1.83z" fill="#EA4335"/><path d="M2 6.88V14h2.4V8.9L3.2 5.05A2 2 0 0 0 2 6.88z" fill="#C5221F"/><path d="M13.6 8.9V14H16V6.88c0-.78-.46-1.46-1.2-1.83L13.6 8.9z" fill="#F4B400"/><path d="M4.4 8.9 9 12.24l4.6-3.34 1.2-3.85L9 9.28 3.2 5.05 4.4 8.9z" fill="#FBBC04"/></svg>,
-  Outlook:  () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="9" height="9" rx="1" stroke="#0078D4" strokeWidth="1.2"/><path d="M10.5 5.5l4-2v9l-4-2v-5z" stroke="#0078D4" strokeWidth="1.2" strokeLinejoin="round"/><circle cx="5.5" cy="8.5" r="1.5" fill="#0078D4"/></svg>,
-  Upload:   () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 11V5M5.5 7.5L8 5l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-  Close:    () => <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4.5 4.5l9 9M13.5 4.5l-9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-  Undefined: () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.75" stroke="currentColor" strokeWidth="1.3"/><path d="M4 10 10 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-}
-
-function SidebarCollapseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M9 2L5 7l4 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-}
 
 const SECTION_NAV_ICON_SIZE = 16
 const SECTION_NAV_ICON_STROKE = 1.75
@@ -87,9 +76,7 @@ const EMPTY_GMAIL_INTEGRATION = {
   connectedAt: null,
   lastError: null,
 }
-const AVATAR_ACCEPT = 'image/png,image/jpeg,image/webp'
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
-const DELETE_CONFIRMATION_PHRASE = 'EXCLUIR MINHA CONTA'
 const MODAL_CLOSE_DURATION_MS = 220
 
 function validateAvatarFile(file) {
@@ -115,187 +102,6 @@ function normalizeGmailIntegration(source = {}) {
     connectedAt: source.connectedAt ?? null,
     lastError: source.lastError ?? null,
   }
-}
-
-function isDeletePhraseValid(value) {
-  return value.trim() === DELETE_CONFIRMATION_PHRASE
-}
-
-/* ═══════════════════════════════════════════
-   REUSABLE UI PRIMITIVES
-═══════════════════════════════════════════ */
-
-function Toggle({ checked, onChange, id, disabled = false }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      id={id}
-      aria-checked={checked}
-      className={`${styles.toggle} ${checked ? styles.toggleOn : ''} ${disabled ? styles.toggleDisabled : ''}`}
-      onClick={() => {
-        if (!disabled) {
-          onChange(!checked)
-        }
-      }}
-      disabled={disabled}
-    />
-  )
-}
-
-function Field({ label, hint, htmlFor, children, row = true, inlineControl = false }) {
-  const className = [
-    row ? styles.field : styles.fieldBlock,
-    row && inlineControl ? styles.fieldInlineControl : '',
-  ].filter(Boolean).join(' ')
-
-  return (
-    <div className={className}>
-      <div className={styles.fieldMeta}>
-        <label className={styles.fieldLabel} htmlFor={htmlFor}>{label}</label>
-        {hint && <p className={styles.fieldHint}>{hint}</p>}
-      </div>
-      <div className={styles.fieldControl}>{children}</div>
-    </div>
-  )
-}
-
-function SectionGroup({ title, children }) {
-  return (
-    <div className={styles.sectionGroup}>
-      <p className={styles.sectionGroupTitle}>{title}</p>
-      <div className={styles.sectionGroupBody}>{children}</div>
-    </div>
-  )
-}
-
-function SaveButton({ saved, onClick, label = 'Salvar alterações', savedLabel = 'Salvo' }) {
-  return (
-    <button type="button" className={`${styles.btnPrimary} ${saved ? styles.btnSaved : ''}`} onClick={onClick}>
-      {saved ? (
-        <><span className={styles.btnCheckIcon}><Ic.Check /></span>{savedLabel}</>
-      ) : label}
-    </button>
-  )
-}
-
-function AutoSaveStatus({ state = 'idle', errorMessage = '', successMessage = '' }) {
-  if (state === 'saving') {
-    return <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusSaving}`}>Salvando...</p>
-  }
-  if (state === 'saved') {
-    return <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusSaved}`}>{successMessage || 'Salvo automaticamente'}</p>
-  }
-  if (state === 'error') {
-    return (
-      <p className={`${styles.autoSaveStatus} ${styles.autoSaveStatusError}`}>
-        {errorMessage || 'Nao foi possivel salvar automaticamente.'}
-      </p>
-    )
-  }
-  return null
-}
-
-function DeleteAccountDialog({
-  currentUserEmail,
-  deleteConfirmEmail,
-  deleteConfirmPhrase,
-  deleteCurrentPassword,
-  deleteFeedback,
-  deleteState,
-  localPasswordEnabled,
-  onClose,
-  onConfirm,
-  onDeleteConfirmEmailChange,
-  onDeleteConfirmPhraseChange,
-  onDeleteCurrentPasswordChange,
-}) {
-  const deleteActionDisabled = deleteState === 'saving'
-    || deleteConfirmEmail.trim().length === 0
-    || !isDeletePhraseValid(deleteConfirmPhrase)
-    || (localPasswordEnabled && deleteCurrentPassword.trim().length === 0)
-
-  return (
-    <div className={styles.dialogOverlay} role="presentation" onClick={onClose}>
-      <div
-        className={styles.dialogCard}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-account-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className={styles.dialogHeader}>
-          <div>
-            <p className={styles.dialogEyebrow}>Zona de perigo</p>
-            <h3 id="delete-account-title" className={styles.dialogTitle}>Excluir conta</h3>
-          </div>
-          <button type="button" className={styles.btnGhost} onClick={onClose} disabled={deleteState === 'saving'}>
-            Fechar
-          </button>
-        </div>
-        <p className={styles.dialogText}>
-          Para confirmar, digite seu e-mail e a frase <strong>{DELETE_CONFIRMATION_PHRASE}</strong>.
-          {localPasswordEnabled ? ' Sua senha atual tambem sera solicitada.' : ''}
-        </p>
-        <div className={styles.dialogFields}>
-          <div className={styles.fieldBlock}>
-            <label className={styles.fieldLabel} htmlFor="delete-confirm-email">E-mail da conta</label>
-            <input
-              id="delete-confirm-email"
-              type="email"
-              className={styles.input}
-              value={deleteConfirmEmail}
-              onChange={(event) => onDeleteConfirmEmailChange(event.target.value)}
-              placeholder={currentUserEmail ?? 'voce@exemplo.com'}
-              disabled={deleteState === 'saving'}
-            />
-          </div>
-          <div className={styles.fieldBlock}>
-            <label className={styles.fieldLabel} htmlFor="delete-confirm-phrase">Frase de confirmação</label>
-            <input
-              id="delete-confirm-phrase"
-              type="text"
-              className={styles.input}
-              value={deleteConfirmPhrase}
-              onChange={(event) => onDeleteConfirmPhraseChange(event.target.value)}
-              placeholder={DELETE_CONFIRMATION_PHRASE}
-              disabled={deleteState === 'saving'}
-            />
-          </div>
-          {localPasswordEnabled && (
-            <div className={styles.fieldBlock}>
-              <label className={styles.fieldLabel} htmlFor="delete-current-password">Senha atual</label>
-              <input
-                id="delete-current-password"
-                type="password"
-                className={styles.input}
-                value={deleteCurrentPassword}
-                onChange={(event) => onDeleteCurrentPasswordChange(event.target.value)}
-                placeholder="Digite sua senha atual"
-                disabled={deleteState === 'saving'}
-              />
-            </div>
-          )}
-        </div>
-        {(deleteFeedback || deleteState === 'saving') && (
-          <AutoSaveStatus state={deleteState} errorMessage={deleteFeedback} successMessage={deleteFeedback} />
-        )}
-        <div className={styles.dialogActions}>
-          <button type="button" className={styles.btnGhost} onClick={onClose} disabled={deleteState === 'saving'}>
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className={styles.btnDanger}
-            onClick={onConfirm}
-            disabled={deleteActionDisabled}
-          >
-            {deleteState === 'saving' ? 'Excluindo...' : 'Excluir conta permanentemente'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 /* ═══════════════════════════════════════════
@@ -1380,181 +1186,73 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
 
   /* ── Section: Conta ── */
   const renderAccount = () => (
-    <>
-      <SectionGroup title="Perfil">
-        <div className={styles.avatarRow}>
-          <div className={styles.avatarCircle}>
-            {accountAvatarPreview ? (
-              <img className={styles.avatarImage} src={accountAvatarPreview} alt="" />
-            ) : userInitials}
-          </div>
-          <div className={styles.avatarMeta}>
-            <p className={styles.avatarName}>{fullName || 'Usuário'}</p>
-            <p className={styles.avatarHint}>PNG, JPG ou WebP. Máximo 2 MB.</p>
-            <input
-              ref={accountAvatarInputRef}
-              type="file"
-              className={styles.fileInput}
-              accept={AVATAR_ACCEPT}
-              onChange={handleAccountAvatarSelected}
-            />
-            <div className={styles.avatarActions}>
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                onClick={() => accountAvatarInputRef.current?.click()}
-                disabled={accountAvatarState === 'saving'}
-              >
-                <Ic.Upload /> Alterar foto
-              </button>
-              {(accountAvatarPreview || accountAvatarUrl) && (
-                <button
-                  type="button"
-                  className={styles.btnGhost}
-                  onClick={handleRemoveAccountAvatar}
-                  disabled={accountAvatarState === 'saving'}
-                >
-                  Remover
-                </button>
-              )}
-            </div>
-            <AutoSaveStatus state={accountAvatarState} errorMessage={accountAvatarFeedback} successMessage={accountAvatarFeedback} />
-          </div>
-        </div>
-
-        <Field label="Nome completo" htmlFor="full-name">
-          <input
-            id="full-name"
-            type="text"
-            className={styles.input}
-            value={fullName}
-            onChange={(e) => {
-              setFullName(e.target.value)
-              if (accountSaveState !== 'idle') {
-                setAccountSaveState('idle')
-                setAccountFeedback('')
-              }
-            }}
-            placeholder="Seu nome completo"
-          />
-        </Field>
-
-        <Field
-          label="E-mail"
-          hint="Não é possível alterar o e-mail no momento."
-          htmlFor="email"
-        >
-          <input
-            id="email"
-            type="email"
-            className={`${styles.input} ${styles.inputReadonly}`}
-            value={currentUser?.email ?? ''}
-            readOnly
-          />
-        </Field>
-
-        <div className={styles.rowActions}>
-          <SaveButton saved={accountSaved} onClick={handleSaveAccount} />
-          <AutoSaveStatus state={accountSaveState} errorMessage={accountFeedback} />
-        </div>
-      </SectionGroup>
-
-      <SectionGroup title="Acesso">
-        <Field
-          label="Senha"
-          hint={passwordHint}
-        >
-          {!showPassForm ? (
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={() => {
-                setShowPassForm(true)
-                setPasswordFeedback('')
-                setPasswordSaveState('idle')
-              }}
-            >
-              {passwordActionLabel}
-            </button>
-          ) : (
-            <div className={styles.passForm}>
-              {!canSetupPasswordWithoutCurrent && (
-                <div className={styles.passField}>
-                  <input
-                    type={showCurPass ? 'text' : 'password'}
-                    className={styles.input}
-                    placeholder="Senha atual"
-                    value={curPass}
-                    onChange={e => setCurPass(e.target.value)}
-                  />
-                  <button type="button" className={styles.eyeBtn} onClick={() => setShowCurPass(v => !v)}>
-                    {showCurPass ? <Ic.EyeOff /> : <Ic.Eye />}
-                  </button>
-                </div>
-              )}
-              <div className={styles.passField}>
-                <input
-                  type={showNewPass ? 'text' : 'password'}
-                  className={styles.input}
-                  placeholder="Nova senha (mínimo 8 caracteres)"
-                  value={newPass}
-                  onChange={e => setNewPass(e.target.value)}
-                />
-                <button type="button" className={styles.eyeBtn} onClick={() => setShowNewPass(v => !v)}>
-                  {showNewPass ? <Ic.EyeOff /> : <Ic.Eye />}
-                </button>
-              </div>
-              <input
-                type="password"
-                className={styles.input}
-                placeholder="Confirmar nova senha"
-                value={confirmPass}
-                onChange={e => setConfirmPass(e.target.value)}
-              />
-              <div className={styles.rowActions}>
-                <button type="button" className={styles.btnPrimary} onClick={handleSavePassword}>
-                  {canSetupPasswordWithoutCurrent ? 'Salvar senha local' : 'Salvar nova senha'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.btnGhost}
-                  onClick={() => {
-                    setShowPassForm(false)
-                    setCurPass('')
-                    setNewPass('')
-                    setConfirmPass('')
-                    setPasswordFeedback('')
-                    setPasswordSaveState('idle')
-                  }}
-                >
-                  Cancelar
-                </button>
-              </div>
-              {(passwordFeedback || passwordSaveState === 'saving') && (
-                <AutoSaveStatus state={passwordSaveState} errorMessage={passwordFeedback} />
-              )}
-            </div>
-          )}
-          {!showPassForm && (passwordFeedback || passwordSaveState === 'saving') && (
-            <AutoSaveStatus state={passwordSaveState} errorMessage={passwordFeedback} />
-          )}
-        </Field>
-      </SectionGroup>
-    </>
+    <SettingsAccountSection
+      fullName={fullName}
+      currentUserEmail={currentUser?.email}
+      userInitials={userInitials}
+      accountAvatarPreview={accountAvatarPreview}
+      accountAvatarUrl={accountAvatarUrl}
+      accountAvatarState={accountAvatarState}
+      accountAvatarFeedback={accountAvatarFeedback}
+      accountSaveState={accountSaveState}
+      accountFeedback={accountFeedback}
+      accountSaved={accountSaved}
+      showPassForm={showPassForm}
+      curPass={curPass}
+      newPass={newPass}
+      confirmPass={confirmPass}
+      showCurPass={showCurPass}
+      showNewPass={showNewPass}
+      passwordSaveState={passwordSaveState}
+      passwordFeedback={passwordFeedback}
+      canSetupPasswordWithoutCurrent={canSetupPasswordWithoutCurrent}
+      passwordActionLabel={passwordActionLabel}
+      passwordHint={passwordHint}
+      accountAvatarInputRef={accountAvatarInputRef}
+      onFullNameChange={(event) => {
+        setFullName(event.target.value)
+        if (accountSaveState !== 'idle') {
+          setAccountSaveState('idle')
+          setAccountFeedback('')
+        }
+      }}
+      onSaveAccount={handleSaveAccount}
+      onAvatarSelected={handleAccountAvatarSelected}
+      onRemoveAvatar={handleRemoveAccountAvatar}
+      onOpenPasswordForm={() => {
+        setShowPassForm(true)
+        setPasswordFeedback('')
+        setPasswordSaveState('idle')
+      }}
+      onCurPassChange={(event) => setCurPass(event.target.value)}
+      onNewPassChange={(event) => setNewPass(event.target.value)}
+      onConfirmPassChange={(event) => setConfirmPass(event.target.value)}
+      onToggleShowCurPass={() => setShowCurPass((value) => !value)}
+      onToggleShowNewPass={() => setShowNewPass((value) => !value)}
+      onSavePassword={handleSavePassword}
+      onCancelPassword={() => {
+        setShowPassForm(false)
+        setCurPass('')
+        setNewPass('')
+        setConfirmPass('')
+        setPasswordFeedback('')
+        setPasswordSaveState('idle')
+      }}
+    />
   )
 
   /* ── Section: Preferências Gerais ── */
   const renderGeneral = () => (
     <>
-      <SectionGroup title="Configurações regionais">
-        <Field label="Idioma" htmlFor="lang">
+      <SettingsSectionGroup title="Configurações regionais">
+        <SettingsField label="Idioma" htmlFor="lang">
           <select id="lang" className={styles.select} value={language} onChange={e => handleGeneralFieldChange('language', e.target.value)}>
             <option value="pt-BR">Português (Brasil)</option>
             <option value="en-US">English (US)</option>
             <option value="es-ES">Español</option>
           </select>
-        </Field>
-        <Field label="Fuso horário" htmlFor="tz">
+        </SettingsField>
+        <SettingsField label="Fuso horário" htmlFor="tz">
           <select id="tz" className={styles.select} value={timezone} onChange={e => handleGeneralFieldChange('timezone', e.target.value)}>
             <option value="America/Sao_Paulo">América/São Paulo (GMT-3)</option>
             <option value="America/New_York">América/Nova York (GMT-5)</option>
@@ -1562,15 +1260,15 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
             <option value="Europe/Paris">Europa/Paris (GMT+1)</option>
             <option value="Asia/Tokyo">Ásia/Tóquio (GMT+9)</option>
           </select>
-        </Field>
-        <Field label="Formato de data" htmlFor="datefmt">
+        </SettingsField>
+        <SettingsField label="Formato de data" htmlFor="datefmt">
           <select id="datefmt" className={styles.select} value={dateFormat} onChange={e => handleGeneralFieldChange('dateFormat', e.target.value)}>
             <option value="dd/MM/yyyy">DD/MM/AAAA — 31/12/2024</option>
             <option value="MM/dd/yyyy">MM/DD/AAAA — 12/31/2024</option>
             <option value="yyyy-MM-dd">AAAA-MM-DD — 2024-12-31</option>
           </select>
-        </Field>
-        <Field label="Formato de hora">
+        </SettingsField>
+        <SettingsField label="Formato de hora">
           <div className={styles.radioGroup}>
             {[
               { value: '24h', label: '24 horas — 14:30' },
@@ -1589,32 +1287,32 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               </label>
             ))}
           </div>
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
-      <SectionGroup title="Experiência da aplicação">
-        <Field
+      <SettingsSectionGroup title="Experiência da aplicação">
+        <SettingsField
           label="Confirmar ações destrutivas"
           hint="Solicita confirmação antes de excluir itens importantes."
           inlineControl
         >
           <Toggle checked={confirmDestructiveActions} onChange={(value) => handleLocalGeneralFieldChange('confirmDestructiveActions', value)} />
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Abrir no último contexto usado"
           hint="O app lembrará onde você estava ao sair."
           inlineControl
         >
           <Toggle checked={openLastCtx} onChange={(value) => handleLocalGeneralFieldChange('openLastCtx', value)} />
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Liquid-glass"
           hint="Preferência salva para o futuro efeito de vidro líquido no KanbanBoard."
           inlineControl
         >
           <Toggle checked={liquidGlass} onChange={(value) => handleLocalGeneralFieldChange('liquidGlass', value)} />
-        </Field>
-        <Field label="Cor padrão" hint="Define o acento visual usado nos checks, checklist e atalhos do Kanban.">
+        </SettingsField>
+        <SettingsField label="Cor padrão" hint="Define o acento visual usado nos checks, checklist e atalhos do Kanban.">
           <div ref={kanbanAccentPickerRef} className={styles.colorPreferenceControl}>
             <div className={styles.colorSwatchList}>
               {KANBAN_ACCENT_BASE_COLOR_OPTIONS.map((option) => {
@@ -1634,7 +1332,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
                     <span className={`${styles.colorSwatchDot} ${isDefaultOption ? styles.colorSwatchDotDefault : ''}`}>
                       {isDefaultOption ? (
                         <span className={styles.colorSwatchDotDefaultIcon}>
-                          <Ic.Undefined />
+                          <UndefinedIcon />
                         </span>
                       ) : (
                         <span className={styles.colorSwatchDotFill} style={{ background: option.value }} />
@@ -1689,11 +1387,11 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               </div>
             ) : null}
           </div>
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
-      <SectionGroup title="Aparência">
-        <Field label="Tema visual" hint="Define como o app se adapta ao modo claro/escuro.">
+      <SettingsSectionGroup title="Aparência">
+        <SettingsField label="Tema visual" hint="Define como o app se adapta ao modo claro/escuro.">
           <div className={styles.themeGroup}>
             {[
               {
@@ -1732,11 +1430,11 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               </button>
             ))}
           </div>
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
       <div className={styles.rowActions}>
-        <AutoSaveStatus state={generalSaveState} errorMessage={generalError} />
+        <SettingsAutoSaveStatus state={generalSaveState} errorMessage={generalError} />
         <button type="button" className={styles.btnGhost} onClick={handleRestoreLocalDefaults}>Restaurar padrões</button>
       </div>
     </>
@@ -1754,7 +1452,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
 
     return (
       <>
-      <SectionGroup title="Identidade do workspace">
+      <SettingsSectionGroup title="Identidade do workspace">
         <div className={styles.wsIdentityRow}>
           <div className={styles.wsIdentityPickerRow}>
             <div className={styles.wsAvatarBox}>
@@ -1775,7 +1473,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
                   <WorkspaceIconGlyph iconKey={workspaceIconKey} className={styles.workspaceIconTriggerGlyph} />
                 </span>
                 <span className={styles.workspaceIconTriggerText}>Escolher ícone</span>
-                <span className={styles.workspaceIconTriggerChevron}><Ic.Chevron /></span>
+                <span className={styles.workspaceIconTriggerChevron}><ChevronIcon /></span>
               </button>
 
               {isWorkspaceIconPickerOpen ? (
@@ -1806,11 +1504,11 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           <div className={styles.wsIdentityMeta}>
             <p className={styles.wsIdentityLabel}>Ícone do workspace</p>
             <p className={styles.wsIdentityHint}>Escolha um ícone para identificar o workspace em toda a navegação.</p>
-            <AutoSaveStatus state={workspaceIconState} errorMessage={workspaceIconFeedback} successMessage={workspaceIconFeedback} />
+            <SettingsAutoSaveStatus state={workspaceIconState} errorMessage={workspaceIconFeedback} successMessage={workspaceIconFeedback} />
           </div>
         </div>
 
-        <Field label="Nome do workspace" htmlFor="ws-name">
+        <SettingsField label="Nome do workspace" htmlFor="ws-name">
           <input
             id="ws-name"
             type="text"
@@ -1818,7 +1516,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
             value={wsName}
             onChange={e => handleWorkspaceNameChange(e.target.value)}
           />
-        </Field>
+        </SettingsField>
 
         <div className={styles.settingsDisclosure}>
           <button
@@ -1836,7 +1534,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               className={`${styles.settingsDisclosureChevron} ${isWorkspaceIntelligenceSectionOpen ? styles.settingsDisclosureChevronOpen : ''}`}
               aria-hidden="true"
             >
-              <Ic.Chevron />
+              <ChevronIcon />
             </span>
           </button>
 
@@ -1848,7 +1546,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               className={styles.settingsDisclosurePanel}
               aria-hidden={!isWorkspaceIntelligenceSectionOpen}
             >
-              <Field
+              <SettingsField
                 label="Exibir seção do Intelligence"
                 hint="Mostra o painel da IA do Plan Things"
                 inlineControl
@@ -1857,25 +1555,25 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
                   checked={showIntelligenceSection}
                   onChange={(value) => handleLocalGeneralFieldChange('showIntelligenceSection', value)}
                 />
-              </Field>
+              </SettingsField>
 
-              <Field
+              <SettingsField
                 label="Efeito aurora"
                 hint="Placeholder visual para uma ambientação expandida do painel. Em breve."
                 inlineControl
               >
                 <span className={styles.settingsPlaceholderBadge}>Em breve</span>
-              </Field>
+              </SettingsField>
             </div>
           </div>
         </div>
 
         <div className={styles.rowActions}>
-          <AutoSaveStatus state={workspaceSaveState} errorMessage={workspaceError} />
+          <SettingsAutoSaveStatus state={workspaceSaveState} errorMessage={workspaceError} />
         </div>
-      </SectionGroup>
+      </SettingsSectionGroup>
 
-      <SectionGroup title="Uso e plano">
+      <SettingsSectionGroup title="Uso e plano">
         <div className={styles.storageBlock}>
           <div className={styles.storageHeader}>
             <span className={styles.storageName}>Armazenamento</span>
@@ -1924,13 +1622,13 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               )
             })}
           </div>
-          <AutoSaveStatus
+          <SettingsAutoSaveStatus
             state={workspacePlanSaveState}
             errorMessage={workspacePlanError}
             successMessage="Plano atualizado."
           />
         </div>
-      </SectionGroup>
+      </SettingsSectionGroup>
       </>
     )
   }
@@ -1938,7 +1636,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   /* ── Section: Integrações ── */
   const renderIntegrations = () => {
     const calendarIntegrations = [
-      { id: 'google-calendar', name: 'Google Calendar', Icon: Ic.GoogleCalendar, color: '#1a73e8', status: 'Em breve' },
+      { id: 'google-calendar', name: 'Google Calendar', Icon: GoogleCalendarIcon, color: '#1a73e8', status: 'Em breve' },
     ]
     const gmailBusy = gmailActionState === 'saving'
     const gmailStatusText = !backendEnabled
@@ -1953,7 +1651,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
 
     return (
       <>
-        <SectionGroup title="Calendários">
+        <SettingsSectionGroup title="Calendários">
           {calendarIntegrations.map(({ id, name, Icon, color, status }) => (
             <div key={id} className={styles.integrationCard}>
               <div className={styles.integrationIconBox} style={{ color }}>
@@ -1968,12 +1666,12 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               </div>
             </div>
           ))}
-        </SectionGroup>
+        </SettingsSectionGroup>
 
-        <SectionGroup title="E-mail e captura">
+        <SettingsSectionGroup title="E-mail e captura">
           <div className={styles.integrationCard}>
             <div className={styles.integrationIconBox} style={{ color: '#ea4335' }}>
-              <Ic.Gmail />
+              <GmailIcon />
             </div>
             <div className={styles.integrationMeta}>
               <p className={styles.integrationName}>Gmail</p>
@@ -1996,9 +1694,9 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
             </div>
           </div>
           <div className={styles.rowActions}>
-            <AutoSaveStatus state={gmailFeedbackState} errorMessage={gmailFeedback} successMessage={gmailFeedback} />
+            <SettingsAutoSaveStatus state={gmailFeedbackState} errorMessage={gmailFeedback} successMessage={gmailFeedback} />
           </div>
-        </SectionGroup>
+        </SettingsSectionGroup>
       </>
     )
   }
@@ -2006,32 +1704,32 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   /* ── Section: Notificações ── */
   const renderNotifications = () => (
     <>
-      <SectionGroup title="Eventos e prazos">
-        <Field
+      <SettingsSectionGroup title="Eventos e prazos">
+        <SettingsField
           label="Lembretes de eventos"
           hint="Alertas antes de eventos do calendário."
           inlineControl
         >
           <Toggle checked={eventReminders} onChange={(value) => handleNotificationToggle('eventReminders', value)} />
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Alertas de prazo de tarefas"
           hint="Notificação quando tarefas se aproximam do vencimento."
           inlineControl
         >
           <Toggle checked={deadlineAlerts} onChange={(value) => handleNotificationToggle('deadlineAlerts', value)} />
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
-      <SectionGroup title="Comunicação">
-        <Field
+      <SettingsSectionGroup title="Comunicação">
+        <SettingsField
           label="Notificações por e-mail"
           hint="Receba atualizações importantes por e-mail."
           inlineControl
         >
           <Toggle checked={emailNotifs} onChange={(value) => handleNotificationToggle('emailNotifs', value)} />
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Silenciar categorias"
           hint="Escolha quais tipos de atividade não geram notificação."
         >
@@ -2040,28 +1738,28 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               <span key={cat} className={styles.muteChip}>{cat}</span>
             ))}
           </div>
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
-      <SectionGroup title="Resumos">
-        <Field
+      <SettingsSectionGroup title="Resumos">
+        <SettingsField
           label="Resumo diário"
           hint="Disponível em breve."
           inlineControl
         >
           <Toggle checked={dailySummary} onChange={setDailySummary} disabled />
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Resumo semanal"
           hint="Disponível em breve."
           inlineControl
         >
           <Toggle checked={weeklySummary} onChange={setWeeklySummary} disabled />
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
       <div className={styles.rowActions}>
-        <AutoSaveStatus state={notificationsSaveState} errorMessage={notificationsError} />
+        <SettingsAutoSaveStatus state={notificationsSaveState} errorMessage={notificationsError} />
       </div>
     </>
   )
@@ -2069,16 +1767,16 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   /* ── Section: Privacidade e Segurança ── */
   const renderSecurity = () => (
     <>
-      <SectionGroup title="Segurança da conta">
-        <Field
+      <SettingsSectionGroup title="Segurança da conta">
+        <SettingsField
           label="Senha"
           hint="Use uma senha forte com letras, numeros e simbolos."
         >
           <button type="button" className={styles.btnSecondary} onClick={handleOpenPasswordFromSecurity}>
             {localPasswordEnabled ? 'Alterar senha' : 'Criar senha'}
           </button>
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Autenticação em dois fatores"
           hint="Adicione uma camada extra de proteção à sua conta."
         >
@@ -2086,8 +1784,8 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
             <span className={styles.futureBadge}>Em breve</span>
             <span className={styles.futureHint}>Disponivel em uma atualizacao futura.</span>
           </div>
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Sessões ativas"
           hint="Visualize e encerre sessões abertas em outros dispositivos."
         >
@@ -2137,15 +1835,15 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
                 </div>
               )}
               {(sessionsFeedback || sessionsLoadState === 'error') && (
-                <AutoSaveStatus state={sessionsLoadState === 'error' ? 'error' : 'saved'} errorMessage={sessionsFeedback} successMessage={sessionsFeedback} />
+                <SettingsAutoSaveStatus state={sessionsLoadState === 'error' ? 'error' : 'saved'} errorMessage={sessionsFeedback} successMessage={sessionsFeedback} />
               )}
             </div>
           )}
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
-      <SectionGroup title="Dados e privacidade">
-        <Field
+      <SettingsSectionGroup title="Dados e privacidade">
+        <SettingsField
           label="Exportar meus dados"
           hint="Baixe uma cópia completa dos seus dados do Plan Things."
         >
@@ -2159,11 +1857,11 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               {exportState === 'saving' ? 'Preparando...' : 'Exportar dados'}
             </button>
             {(exportFeedback || exportState === 'saving') && (
-              <AutoSaveStatus state={exportState} errorMessage={exportFeedback} successMessage={exportFeedback} />
+              <SettingsAutoSaveStatus state={exportState} errorMessage={exportFeedback} successMessage={exportFeedback} />
             )}
           </div>
-        </Field>
-        <Field
+        </SettingsField>
+        <SettingsField
           label="Encerrar outras sessões"
           hint="Invalida todos os tokens de acesso em outros dispositivos."
         >
@@ -2178,10 +1876,10 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
             </button>
             <p className={styles.securityHint}>Sua sessao atual permanece conectada.</p>
           </div>
-        </Field>
-      </SectionGroup>
+        </SettingsField>
+      </SettingsSectionGroup>
 
-      <SectionGroup title="Zona de perigo">
+      <SettingsSectionGroup title="Zona de perigo">
         <div className={styles.dangerZone}>
           <div className={styles.dangerItem}>
             <div>
@@ -2196,7 +1894,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
             </button>
           </div>
         </div>
-      </SectionGroup>
+      </SettingsSectionGroup>
     </>
   )
 
@@ -2237,7 +1935,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           onClick={closeModal}
           aria-label="Fechar configurações"
         >
-          <Ic.Close />
+          <CloseIcon />
         </button>
       )}
     />
