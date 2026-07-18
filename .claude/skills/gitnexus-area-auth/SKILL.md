@@ -1,0 +1,97 @@
+---
+name: gitnexus-area-auth
+description: "Skill for the Auth area of plan-things-2. 158 symbols across 32 files."
+---
+
+# Auth
+
+158 symbols | 32 files | Cohesion: 76%
+
+## When to Use
+
+- Working with code in `services/`
+- Understanding how Auth, BrandTypewriter, handleOAuth work
+- Modifying auth-related functionality
+
+## Key Files
+
+| File | Symbols |
+|------|---------|
+| `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | createExternalUser, normalizeName, register, loginAndLinkExternalIdentity, requireTrustedAutoLink (+11) |
+| `services/api/src/main/java/com/planthings/api/auth/OAuthLoginCodeEntity.java` | OAuthLoginCodeEntity, getCompletionCode, getRedirectPath, setClient, setCompletionCode (+8) |
+| `services/api/src/main/java/com/planthings/api/auth/OAuthLoginStateEntity.java` | getRedirectPath, OAuthLoginStateEntity, setClient, setNonce, setProvider (+8) |
+| `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | decodeIdToken, exchangeAuthorizationCode, exchangeCode, normalizeProvider, validateCommonClaims (+7) |
+| `services/api/src/test/java/com/planthings/api/auth/DefaultOidcProviderClientTest.java` | baseUrl, providerConfig, shouldParseMicrosoftTenantObjectAndVerifiedPrimaryEmail, shouldRejectExpiredToken, shouldRejectInvalidAudience (+7) |
+| `services/api/src/main/java/com/planthings/api/auth/OAuthLoginService.java` | createCompletionCode, randomToken, sanitizeRedirectPath, start, exchangeCompletionCode (+6) |
+| `services/api/src/main/java/com/planthings/api/auth/UserExternalIdentityEntity.java` | UserExternalIdentityEntity, setProvider, setProviderSubject, setUserId, setAvatarUrl (+4) |
+| `services/api/src/main/java/com/planthings/api/auth/PasswordResetTokenEntity.java` | PasswordResetTokenEntity, getExpiresAt, getToken, setExpiresAt, setToken (+4) |
+| `services/api/src/main/java/com/planthings/api/auth/UserSessionEntity.java` | UserSessionEntity, getClient, getUserAgent, setClient, setDeviceLabel (+2) |
+| `services/api/src/main/java/com/planthings/api/auth/UserSessionService.java` | createSession, describeBrowser, describePlatform, normalizeClient, normalizeUserAgent (+2) |
+
+## Entry Points
+
+Start here when exploring this area:
+
+- **`Auth`** (Function) — `apps/web/src/features/auth/pages/Auth/Auth.jsx:75`
+- **`BrandTypewriter`** (Function) — `apps/web/src/features/auth/pages/Auth/BrandTypewriter.jsx:13`
+- **`handleOAuth`** (Function) — `apps/web/src/features/auth/pages/Auth/Auth.jsx:132`
+- **`persistAuthIntent`** (Function) — `apps/web/src/features/auth/utils/authIntent.js:2`
+- **`getOAuthPopupPosition`** (Function) — `apps/web/src/features/auth/utils/oauthPopup.js:7`
+
+## Key Symbols
+
+| Symbol | Type | File | Line |
+|--------|------|------|------|
+| `UserSessionEntity` | Class | `services/api/src/main/java/com/planthings/api/auth/UserSessionEntity.java` | 9 |
+| `OAuthLoginCodeEntity` | Class | `services/api/src/main/java/com/planthings/api/auth/OAuthLoginCodeEntity.java` | 9 |
+| `OAuthLoginStateEntity` | Class | `services/api/src/main/java/com/planthings/api/auth/OAuthLoginStateEntity.java` | 8 |
+| `UserEntity` | Class | `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | 7 |
+| `UserExternalIdentityEntity` | Class | `services/api/src/main/java/com/planthings/api/auth/UserExternalIdentityEntity.java` | 8 |
+| `PasswordResetTokenEntity` | Class | `services/api/src/main/java/com/planthings/api/auth/PasswordResetTokenEntity.java` | 9 |
+| `DefaultOidcProviderClient` | Class | `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | 19 |
+| `Auth` | Function | `apps/web/src/features/auth/pages/Auth/Auth.jsx` | 75 |
+| `BrandTypewriter` | Function | `apps/web/src/features/auth/pages/Auth/BrandTypewriter.jsx` | 13 |
+| `handleOAuth` | Function | `apps/web/src/features/auth/pages/Auth/Auth.jsx` | 132 |
+| `persistAuthIntent` | Function | `apps/web/src/features/auth/utils/authIntent.js` | 2 |
+| `getOAuthPopupPosition` | Function | `apps/web/src/features/auth/utils/oauthPopup.js` | 7 |
+| `openOAuthPopup` | Function | `apps/web/src/features/auth/utils/oauthPopup.js` | 19 |
+| `waitForOAuthPopup` | Function | `apps/web/src/features/auth/utils/oauthPopup.js` | 58 |
+| `OidcProviderClient` | Interface | `services/api/src/main/java/com/planthings/api/auth/OidcProviderClient.java` | 2 |
+| `decodeIdToken` | Method | `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | 68 |
+| `exchangeAuthorizationCode` | Method | `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | 48 |
+| `exchangeCode` | Method | `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | 29 |
+| `normalizeProvider` | Method | `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | 136 |
+| `validateCommonClaims` | Method | `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | 78 |
+
+## Execution Flows
+
+| Flow | Type | Steps |
+|------|------|-------|
+| `HandleOAuth → NormalizePathname` | cross_community | 7 |
+| `CreateCompletionCode → ApiException` | cross_community | 5 |
+| `ListActiveSessions → GetClient` | cross_community | 5 |
+| `CreateCompletionCode → FindByProviderAndProviderSubject` | cross_community | 3 |
+| `StartOAuth → SetProvider` | intra_community | 3 |
+| `StartOAuth → SetStateToken` | intra_community | 3 |
+| `StartOAuth → SetNonce` | intra_community | 3 |
+| `StartOAuth → SetRedirectPath` | intra_community | 3 |
+
+## Connected Areas
+
+| Area | Connections |
+|------|-------------|
+| Files | 10 calls |
+| Board | 7 calls |
+| Context | 6 calls |
+| Settings | 3 calls |
+| Api | 1 calls |
+| Url | 1 calls |
+| Security | 1 calls |
+| Hooks | 1 calls |
+
+## How to Explore
+
+1. `context({name: "Auth"})` — see callers and callees
+2. `query({search_query: "auth"})` — find related execution flows
+3. Read key files listed above for implementation details
+4. `explain({target: "<file or symbol>"})` — persisted taint findings (source→sink data flows), when indexed with `--pdg`
