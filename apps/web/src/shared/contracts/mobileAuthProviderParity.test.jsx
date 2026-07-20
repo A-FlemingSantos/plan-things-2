@@ -30,7 +30,6 @@ vi.mock('../../../../mobile/src/services/api.js', () => ({
 }))
 
 const { AuthProvider, useAuth } = await import('../../../../mobile/src/providers/AuthProvider.js')
-const { resolveAuthScreenModeFromRedirect } = await import('../../../../mobile/src/providers/authSessionPolicy.js')
 
 function createAccessToken(expiresAtMs) {
   const header = toBase64Url({ alg: 'HS256', typ: 'JWT' })
@@ -254,6 +253,5 @@ describe('mobile auth provider parity', () => {
       to: '/cadastro',
       replace: false,
     })
-    expect(resolveAuthScreenModeFromRedirect(result.current.pendingLogoutRedirect.to)).toBe('register')
   })
 })

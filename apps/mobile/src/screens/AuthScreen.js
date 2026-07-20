@@ -3,20 +3,16 @@ import {
   Alert,
   Animated,
   ImageBackground,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { useAuth } from '../providers/AuthProvider'
-import { resolveAuthScreenModeFromRedirect } from '../providers/authSessionPolicy.js'
 import { theme } from '../theme/tokens'
 import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
 
@@ -53,11 +49,11 @@ function WelcomeFadeBand({ isDark }) {
   )
 }
 
-function SocialRow({ onGoogle, onSoon, loading, iconColor, buttonStyle }) {
+function SocialRow({ onGoogle, onSoon, loading, iconColor }) {
   return (
     <View style={styles.socialRow}>
       <Pressable
-        style={buttonStyle}
+        style={styles.welcomeSocialButton}
         onPress={onGoogle}
         disabled={loading}
         accessibilityRole="button"
@@ -84,7 +80,7 @@ function SocialRow({ onGoogle, onSoon, loading, iconColor, buttonStyle }) {
       </Pressable>
 
       <Pressable
-        style={buttonStyle}
+        style={styles.welcomeSocialButton}
         onPress={onSoon}
         disabled={loading}
         accessibilityRole="button"
@@ -99,7 +95,7 @@ function SocialRow({ onGoogle, onSoon, loading, iconColor, buttonStyle }) {
       </Pressable>
 
       <Pressable
-        style={buttonStyle}
+        style={styles.welcomeSocialButton}
         onPress={onSoon}
         disabled={loading}
         accessibilityRole="button"
@@ -119,48 +115,27 @@ function SocialRow({ onGoogle, onSoon, loading, iconColor, buttonStyle }) {
 export default function AuthScreen() {
   styles = useThemedStyles(createStyles)
   const insets = useSafeAreaInsets()
-  const { isDark, statusBarStyle, theme: activeTheme } = useMobileTheme()
+  const { isDark, theme: activeTheme } = useMobileTheme()
   const {
     clearOAuthError,
     clearPendingLogoutRedirect,
-    login,
     oauthError,
     pendingLogoutRedirect,
-    register,
     startOAuthLogin,
   } = useAuth()
-  const [mode, setMode] = useState('welcome')
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [focusedField, setFocusedField] = useState(null)
   const [loading, setLoading] = useState(false)
-  const isRegister = mode === 'register'
-  const isWelcome = mode === 'welcome'
-  const isForm = mode === 'login' || mode === 'register'
 
   const panelOpacity = useRef(new Animated.Value(0)).current
   const panelTranslateY = useRef(new Animated.Value(28)).current
   const brandOpacity = useRef(new Animated.Value(0)).current
   const actionsOpacity = useRef(new Animated.Value(0)).current
-  const formOpacity = useRef(new Animated.Value(0)).current
-  const formTranslateY = useRef(new Animated.Value(16)).current
-  const prevModeRef = useRef(mode)
 
   useEffect(() => {
     if (!pendingLogoutRedirect) return
-
-    const nextMode = resolveAuthScreenModeFromRedirect(pendingLogoutRedirect?.to)
-    if (nextMode) {
-      setMode(nextMode)
-    }
-
     clearPendingLogoutRedirect()
   }, [clearPendingLogoutRedirect, pendingLogoutRedirect])
 
   useEffect(() => {
-    if (!isWelcome) return
-
     panelOpacity.setValue(0)
     panelTranslateY.setValue(28)
     brandOpacity.setValue(0)
@@ -174,58 +149,11 @@ export default function AuthScreen() {
       Animated.timing(brandOpacity, { toValue: 1, duration: 320, useNativeDriver: true }),
       Animated.timing(actionsOpacity, { toValue: 1, duration: 320, useNativeDriver: true }),
     ]).start()
-  }, [actionsOpacity, brandOpacity, isWelcome, panelOpacity, panelTranslateY])
-
-  useEffect(() => {
-    const previous = prevModeRef.current
-    prevModeRef.current = mode
-
-    if (!isForm) return
-
-    const enteringFromWelcome = previous === 'welcome'
-    if (enteringFromWelcome) {
-      formOpacity.setValue(0)
-      formTranslateY.setValue(16)
-      brandOpacity.setValue(0)
-      actionsOpacity.setValue(0)
-
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(formOpacity, { toValue: 1, duration: 340, useNativeDriver: true }),
-          Animated.timing(formTranslateY, { toValue: 0, duration: 380, useNativeDriver: true }),
-        ]),
-        Animated.timing(brandOpacity, { toValue: 1, duration: 260, useNativeDriver: true }),
-        Animated.timing(actionsOpacity, { toValue: 1, duration: 260, useNativeDriver: true }),
-      ]).start()
-      return
-    }
-
-    brandOpacity.setValue(0.4)
-    actionsOpacity.setValue(0.5)
-    Animated.parallel([
-      Animated.timing(brandOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.timing(actionsOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
-    ]).start()
-  }, [actionsOpacity, brandOpacity, formOpacity, formTranslateY, isForm, mode])
-
-  const submit = async () => {
-    if (loading) return
-    setLoading(true)
-    try {
-      if (isRegister) {
-        await register({ fullName: name, email, password })
-      } else {
-        await login({ email, password })
-      }
-    } catch (error) {
-      notify(error?.message ?? 'Nao foi possivel autenticar.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [actionsOpacity, brandOpacity, panelOpacity, panelTranslateY])
 
   const handleGoogle = async () => {
     if (loading) return
+    if (oauthError) clearOAuthError()
     setLoading(true)
     try {
       await startOAuthLogin('google')
@@ -240,236 +168,71 @@ export default function AuthScreen() {
     notify('Em breve')
   }
 
-  const goToMode = (nextMode) => {
-    if (oauthError) clearOAuthError()
-    setMode(nextMode)
-  }
-
   const bottomPad = Math.max(insets.bottom, 20)
-  const topPad = Math.max(insets.top, 12)
-
-  if (isWelcome) {
-    return (
-      <View style={styles.welcomeRoot}>
-        <StatusBar style="light" translucent backgroundColor="transparent" />
-        <ImageBackground
-          source={WELCOME_BACKGROUND}
-          style={styles.welcomeScreen}
-          imageStyle={styles.welcomeBackgroundImage}
-          resizeMode="cover"
-        >
-          <View style={styles.welcomeImageSpacer} />
-
-          <Animated.View
-            style={[
-              styles.welcomeBottom,
-              {
-                opacity: panelOpacity,
-                transform: [{ translateY: panelTranslateY }],
-              },
-            ]}
-          >
-            <WelcomeFadeBand isDark={isDark} />
-            <View style={[styles.welcomePanel, { paddingBottom: bottomPad }]}>
-              <Animated.View
-                collapsable={false}
-                style={[styles.welcomeBrand, { opacity: brandOpacity }]}
-              >
-                <Text
-                  style={styles.welcomeTitle}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.72}
-                >
-                  Plan Things
-                </Text>
-                <Text style={styles.welcomeSubtitle}>{WELCOME_SUBTITLE}</Text>
-              </Animated.View>
-
-              <Animated.View style={[styles.welcomeActions, { opacity: actionsOpacity }]}>
-                <Pressable
-                  style={styles.welcomePrimaryButton}
-                  onPress={() => goToMode('register')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Cadastrar-se"
-                >
-                  <Text style={styles.welcomePrimaryButtonText}>Cadastrar-se</Text>
-                </Pressable>
-
-                <View style={styles.welcomeDividerRow}>
-                  <View style={styles.welcomeDividerLine} />
-                  <Text style={styles.welcomeDividerText}>ou</Text>
-                  <View style={styles.welcomeDividerLine} />
-                </View>
-
-                <SocialRow
-                  onGoogle={handleGoogle}
-                  onSoon={soon}
-                  loading={loading}
-                  iconColor={activeTheme.colors.text1}
-                  buttonStyle={styles.welcomeSocialButton}
-                />
-
-                <Text style={styles.welcomeLegal}>
-                  Ao continuar, você concorda com os{' '}
-                  <Text style={styles.welcomeLegalLink} onPress={soon}>
-                    Termos de uso
-                  </Text>
-                  {' '}e a{' '}
-                  <Text style={styles.welcomeLegalLink} onPress={soon}>
-                    Política de privacidade
-                  </Text>
-                  .
-                </Text>
-              </Animated.View>
-            </View>
-          </Animated.View>
-        </ImageBackground>
-      </View>
-    )
-  }
 
   return (
-    <View style={styles.formRoot}>
-      <StatusBar style={statusBarStyle} translucent backgroundColor="transparent" />
-      <KeyboardAvoidingView
-        style={styles.formRoot}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 4 : 0}
+    <View style={styles.welcomeRoot}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <ImageBackground
+        source={WELCOME_BACKGROUND}
+        style={styles.welcomeScreen}
+        imageStyle={styles.welcomeBackgroundImage}
+        resizeMode="cover"
       >
+        <View style={styles.welcomeImageSpacer} />
+
         <Animated.View
           style={[
-            styles.formScreen,
+            styles.welcomeBottom,
             {
-              paddingTop: topPad,
-              paddingBottom: bottomPad,
-              opacity: formOpacity,
-              transform: [{ translateY: formTranslateY }],
+              opacity: panelOpacity,
+              transform: [{ translateY: panelTranslateY }],
             },
           ]}
         >
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.formScroll}
-            bounces={false}
-          >
-            <Pressable
-              onPress={() => goToMode('welcome')}
-              hitSlop={12}
-              style={styles.backButton}
-              accessibilityRole="button"
-              accessibilityLabel="Voltar"
-            >
-              <Svg width={18} height={18} viewBox="0 0 16 16">
-                <Path
-                  fill={activeTheme.colors.text1}
-                  d="M10.78 2.22a.75.75 0 0 1 0 1.06L6.06 8l4.72 4.72a.75.75 0 1 1-1.06 1.06l-5.25-5.25a.75.75 0 0 1 0-1.06l5.25-5.25a.75.75 0 0 1 1.06 0Z"
-                />
-              </Svg>
-              <Text style={styles.backText}>Voltar</Text>
-            </Pressable>
-
+          <WelcomeFadeBand isDark={isDark} />
+          <View style={[styles.welcomePanel, { paddingBottom: bottomPad }]}>
             <Animated.View
               collapsable={false}
-              style={[styles.formBrand, { opacity: brandOpacity }]}
+              style={[styles.welcomeBrand, { opacity: brandOpacity }]}
             >
               <Text
-                style={styles.formTitle}
+                style={styles.welcomeTitle}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.72}
               >
                 Plan Things
               </Text>
-              <Text style={styles.formSubtitle}>
-                {isRegister
-                  ? 'Crie sua conta e organize o que importa.'
-                  : 'Entre para retomar suas tarefas e conversas.'}
-              </Text>
+              <Text style={styles.welcomeSubtitle}>{WELCOME_SUBTITLE}</Text>
             </Animated.View>
 
-            {oauthError ? (
-              <View style={styles.oauthError}>
-                <Text style={styles.oauthErrorText}>{oauthErrorMessage(oauthError)}</Text>
-                <Pressable onPress={clearOAuthError} hitSlop={8} accessibilityRole="button">
-                  <Text style={styles.oauthErrorDismiss}>Fechar</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
-            <Animated.View style={[styles.formBody, { opacity: actionsOpacity }]}>
-              <View style={styles.fields}>
-                {isRegister ? (
-                  <TextInput
-                    value={name}
-                    onChangeText={setName}
-                    onFocus={() => setFocusedField('name')}
-                    onBlur={() => setFocusedField(null)}
-                    style={[styles.input, focusedField === 'name' ? styles.inputFocused : null]}
-                    selectionColor={activeTheme.colors.text1}
-                    autoCapitalize="words"
-                    placeholder="Nome completo"
-                    placeholderTextColor={activeTheme.colors.text3}
-                    editable={!loading}
-                  />
-                ) : null}
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  onFocus={() => setFocusedField('email')}
-                  onBlur={() => setFocusedField(null)}
-                  style={[styles.input, focusedField === 'email' ? styles.inputFocused : null]}
-                  selectionColor={activeTheme.colors.text1}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  placeholder="E-mail"
-                  placeholderTextColor={activeTheme.colors.text3}
-                  editable={!loading}
-                />
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                  style={[styles.input, focusedField === 'password' ? styles.inputFocused : null]}
-                  selectionColor={activeTheme.colors.text1}
-                  secureTextEntry
-                  placeholder={isRegister ? 'Senha, mínimo 8 caracteres' : 'Senha'}
-                  placeholderTextColor={activeTheme.colors.text3}
-                  editable={!loading}
-                />
-              </View>
+            <Animated.View style={[styles.welcomeActions, { opacity: actionsOpacity }]}>
+              {oauthError ? (
+                <View style={styles.oauthError}>
+                  <Text style={styles.oauthErrorText}>{oauthErrorMessage(oauthError)}</Text>
+                  <Pressable onPress={clearOAuthError} hitSlop={8} accessibilityRole="button">
+                    <Text style={styles.oauthErrorDismiss}>Fechar</Text>
+                  </Pressable>
+                </View>
+              ) : null}
 
               <Pressable
-                style={[styles.formPrimaryButton, loading ? styles.formPrimaryButtonDisabled : null]}
-                onPress={submit}
+                style={[styles.welcomePrimaryButton, loading ? styles.welcomePrimaryButtonDisabled : null]}
+                onPress={handleGoogle}
                 disabled={loading}
                 accessibilityRole="button"
-                accessibilityLabel={isRegister ? 'Cadastrar-se' : 'Entrar'}
+                accessibilityLabel="Cadastrar-se"
               >
-                <Text style={styles.formPrimaryButtonText}>
-                  {loading ? 'Aguarde…' : isRegister ? 'Cadastrar-se' : 'Entrar'}
+                <Text style={styles.welcomePrimaryButtonText}>
+                  {loading ? 'Aguarde…' : 'Cadastrar-se'}
                 </Text>
               </Pressable>
 
-              <Pressable
-                style={styles.modeSwitch}
-                onPress={() => goToMode(isRegister ? 'login' : 'register')}
-                disabled={loading}
-                accessibilityRole="button"
-              >
-                <Text style={styles.modeSwitchText}>
-                  {isRegister ? 'Já possui uma conta? ' : 'Ainda não possui uma conta? '}
-                  <Text style={styles.modeSwitchLink}>{isRegister ? 'Entrar' : 'Cadastrar-se'}</Text>
-                </Text>
-              </Pressable>
-
-              <View style={styles.formDividerRow}>
-                <View style={styles.formDividerLine} />
-                <Text style={styles.formDividerText}>ou</Text>
-                <View style={styles.formDividerLine} />
+              <View style={styles.welcomeDividerRow}>
+                <View style={styles.welcomeDividerLine} />
+                <Text style={styles.welcomeDividerText}>ou</Text>
+                <View style={styles.welcomeDividerLine} />
               </View>
 
               <SocialRow
@@ -477,12 +240,23 @@ export default function AuthScreen() {
                 onSoon={soon}
                 loading={loading}
                 iconColor={activeTheme.colors.text1}
-                buttonStyle={styles.formSocialButton}
               />
+
+              <Text style={styles.welcomeLegal}>
+                Ao continuar, você concorda com os{' '}
+                <Text style={styles.welcomeLegalLink} onPress={soon}>
+                  Termos de uso
+                </Text>
+                {' '}e a{' '}
+                <Text style={styles.welcomeLegalLink} onPress={soon}>
+                  Política de privacidade
+                </Text>
+                .
+              </Text>
             </Animated.View>
-          </ScrollView>
+          </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </ImageBackground>
     </View>
   )
 }
@@ -562,6 +336,9 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  welcomePrimaryButtonDisabled: {
+    opacity: 0.7,
+  },
   welcomePrimaryButtonText: {
     color: theme.colors.textInverse,
     fontSize: 16,
@@ -581,6 +358,11 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.text2,
     fontSize: 14,
     fontWeight: '500',
+  },
+  socialRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   welcomeSocialButton: {
     flex: 1,
@@ -604,143 +386,6 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.text1,
     textDecorationLine: 'underline',
   },
-
-  formRoot: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    backgroundColor: theme.colors.appBg,
-    ...(Platform.OS === 'web' ? { minHeight: '100dvh' } : null),
-  },
-  formScreen: {
-    flex: 1,
-    paddingHorizontal: 28,
-  },
-  formScroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: 12,
-    maxWidth: 400,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 28,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : null),
-  },
-  backText: {
-    color: theme.colors.text2,
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  formBrand: {
-    alignSelf: 'stretch',
-    alignItems: 'flex-start',
-    marginBottom: 32,
-    gap: 10,
-  },
-  formTitle: {
-    alignSelf: 'stretch',
-    color: theme.colors.text1,
-    fontSize: 40,
-    lineHeight: 48,
-    fontWeight: '700',
-    letterSpacing: -0.6,
-  },
-  formSubtitle: {
-    color: theme.colors.text2,
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '400',
-    maxWidth: 320,
-  },
-  formBody: {
-    gap: 18,
-  },
-  fields: {
-    gap: 12,
-  },
-  input: {
-    height: 54,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: theme.colors.border2,
-    borderRadius: 999,
-    color: theme.colors.text1,
-    backgroundColor: theme.colors.appBg,
-    fontSize: 16,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : null),
-  },
-  inputFocused: {
-    borderColor: theme.colors.text1,
-    ...(Platform.OS === 'web'
-      ? { outlineColor: theme.colors.text1, outlineStyle: 'solid', outlineWidth: 1 }
-      : null),
-  },
-  formPrimaryButton: {
-    width: '100%',
-    height: 54,
-    borderRadius: 999,
-    backgroundColor: theme.colors.text1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  formPrimaryButtonDisabled: {
-    opacity: 0.7,
-  },
-  formPrimaryButtonText: {
-    color: theme.colors.textInverse,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  modeSwitch: {
-    alignItems: 'center',
-    paddingVertical: 2,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : null),
-  },
-  modeSwitchText: {
-    color: theme.colors.text2,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  modeSwitchLink: {
-    color: theme.colors.text1,
-    fontWeight: '700',
-  },
-  formDividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  formDividerLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: theme.colors.border1,
-  },
-  formDividerText: {
-    color: theme.colors.text2,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  socialRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  formSocialButton: {
-    flex: 1,
-    height: 52,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.border2,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   oauthError: {
     gap: 8,
     paddingHorizontal: 16,
@@ -749,7 +394,6 @@ const createStyles = (theme) => StyleSheet.create({
     borderColor: theme.colors.dangerBorder,
     borderRadius: 18,
     backgroundColor: theme.colors.dangerBgSoft,
-    marginBottom: 18,
   },
   oauthErrorText: {
     color: theme.colors.red,

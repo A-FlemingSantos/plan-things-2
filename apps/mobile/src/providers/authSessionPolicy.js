@@ -59,16 +59,6 @@ export function normalizeLogoutRedirect(value) {
   }
 }
 
-export function resolveAuthScreenModeFromRedirect(redirectTo) {
-  const normalized = normalizeLogoutRedirect(redirectTo)
-  if (!normalized) return null
-
-  const pathname = normalizePathname(new URL(normalized, 'https://planthings.local').pathname)
-  if (pathname === '/login') return 'login'
-  if (pathname === '/cadastro' || pathname === '/register' || pathname === '/signup') return 'register'
-  return null
-}
-
 export function decodeBase64Url(value) {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
   const padSize = normalized.length % 4
