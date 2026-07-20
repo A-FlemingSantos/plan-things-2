@@ -79,10 +79,10 @@ function ThemedAppRoot() {
         dark: false,
         colors: {
           ...navigationTheme.colors,
-          background: '#ffffff',
-          card: '#ffffff',
+          background: '#000000',
+          card: '#000000',
           text: '#000000',
-          border: '#ffffff',
+          border: '#000000',
         },
       }
     : navigationTheme
@@ -91,17 +91,17 @@ function ThemedAppRoot() {
     <View
       style={[
         Platform.OS === 'web' ? (isAuthScreen ? styles.webFullscreen : styles.webPreview) : styles.nativeRoot,
-        isAuthScreen ? styles.fullscreenLight : null,
+        isAuthScreen ? styles.fullscreenAuth : null,
       ]}
     >
       <View
         style={[
           Platform.OS === 'web' ? (isAuthScreen ? styles.webFullscreenDevice : styles.webDevice) : styles.nativeRoot,
-          isAuthScreen ? styles.fullscreenLight : null,
+          isAuthScreen ? styles.fullscreenAuth : null,
         ]}
       >
         <SafeAreaProvider>
-          <StatusBar style={isAuthScreen ? 'dark' : statusBarStyle} translucent backgroundColor="transparent" />
+          <StatusBar style={isAuthScreen ? 'light' : statusBarStyle} translucent backgroundColor="transparent" />
           <NavigationContainer linking={linking} theme={containerTheme}>
             <AppContent />
           </NavigationContainer>
@@ -128,15 +128,15 @@ const createStyles = (theme) => StyleSheet.create({
     height: '100%',
     ...(Platform.OS === 'web' ? { minHeight: '100dvh' } : null),
   },
-  fullscreenLight: {
-    backgroundColor: '#ffffff',
+  fullscreenAuth: {
+    backgroundColor: '#000000',
   },
   webFullscreen: {
     flex: 1,
     width: '100%',
     height: '100dvh',
     minHeight: '100dvh',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     ...(Platform.OS === 'web'
       ? {
           position: 'fixed',
@@ -152,7 +152,7 @@ const createStyles = (theme) => StyleSheet.create({
     width: '100%',
     height: '100%',
     minHeight: '100dvh',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
   },
   webPreview: {
     flex: 1,
