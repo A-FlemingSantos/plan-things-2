@@ -57,12 +57,6 @@ function ThemedAppRoot() {
 
     async function syncNavigationBar() {
       try {
-        if (isAuthScreen) {
-          await NavigationBar.setBackgroundColorAsync('#000000')
-          await NavigationBar.setButtonStyleAsync('light')
-          return
-        }
-
         await NavigationBar.setBackgroundColorAsync(isDark ? '#000000' : '#ffffff')
         await NavigationBar.setButtonStyleAsync(isDark ? 'light' : 'dark')
       } catch {
@@ -71,21 +65,7 @@ function ThemedAppRoot() {
     }
 
     syncNavigationBar()
-  }, [isAuthScreen, isDark])
-
-  const containerTheme = isAuthScreen
-    ? {
-        ...navigationTheme,
-        dark: false,
-        colors: {
-          ...navigationTheme.colors,
-          background: '#000000',
-          card: '#000000',
-          text: '#000000',
-          border: '#000000',
-        },
-      }
-    : navigationTheme
+  }, [isDark])
 
   return (
     <View
@@ -101,8 +81,8 @@ function ThemedAppRoot() {
         ]}
       >
         <SafeAreaProvider>
-          <StatusBar style={isAuthScreen ? 'light' : statusBarStyle} translucent backgroundColor="transparent" />
-          <NavigationContainer linking={linking} theme={containerTheme}>
+          <StatusBar style={statusBarStyle} translucent backgroundColor="transparent" />
+          <NavigationContainer linking={linking} theme={navigationTheme}>
             <AppContent />
           </NavigationContainer>
         </SafeAreaProvider>
@@ -129,14 +109,14 @@ const createStyles = (theme) => StyleSheet.create({
     ...(Platform.OS === 'web' ? { minHeight: '100dvh' } : null),
   },
   fullscreenAuth: {
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.appBg,
   },
   webFullscreen: {
     flex: 1,
     width: '100%',
     height: '100dvh',
     minHeight: '100dvh',
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.appBg,
     ...(Platform.OS === 'web'
       ? {
           position: 'fixed',
@@ -152,7 +132,7 @@ const createStyles = (theme) => StyleSheet.create({
     width: '100%',
     height: '100%',
     minHeight: '100dvh',
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.appBg,
   },
   webPreview: {
     flex: 1,
