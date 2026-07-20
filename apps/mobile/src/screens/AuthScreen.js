@@ -398,7 +398,7 @@ const createStyles = (theme) => StyleSheet.create({
   welcomeOutlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#ffffff',
+    borderColor: 'rgba(255, 255, 255, 0.28)',
   },
   welcomeOutlineButtonText: {
     color: '#ffffff',
