@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path, Rect } from 'react-native-svg'
+import WelcomeTypewriter from '../components/WelcomeTypewriter'
 import { useAuth } from '../providers/AuthProvider'
 import { resolveAuthScreenModeFromRedirect } from '../providers/authSessionPolicy.js'
 import { platformShadow } from '../theme/shadowStyles'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
-
-const nextStepsImage = require('../../assets/illustrations/Next steps-pana-graphite.png')
 
 function notify(message) {
   if (Platform.OS === 'web') {
@@ -28,6 +27,7 @@ function oauthErrorMessage(errorCode) {
 
 export default function AuthScreen() {
   styles = useThemedStyles(createStyles)
+  const insets = useSafeAreaInsets()
   const {
     clearOAuthError,
     clearPendingLogoutRedirect,
@@ -90,35 +90,88 @@ export default function AuthScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.page}>
-        {isWelcome ? (
-          <View style={styles.welcomeContent}>
-            <View style={styles.welcomeHero}>
-              <View style={styles.welcomeBrand}>
-                <Text style={styles.welcomeBrandText}>Plan Things</Text>
+    <View style={[styles.root, isWelcome ? styles.rootWelcome : styles.rootAuth]}>
+      {isWelcome ? (
+        <View style={styles.welcomeScreen}>
+          <SafeAreaView style={styles.welcomeSafeArea} edges={['top', 'left', 'right']}>
+            <View style={styles.welcomeContent}>
+              <View style={styles.welcomeHero}>
+                <WelcomeTypewriter />
               </View>
-              <Image source={nextStepsImage} style={styles.heroImage} resizeMode="contain" />
-            </View>
 
-            <View style={styles.welcomeActions}>
-              <Text style={styles.welcomeSlogan}>Acompanhe tarefas e conversas sem perder o ritmo.</Text>
-              <Pressable style={[styles.primaryButton, styles.welcomeButton]} onPress={() => setMode('register')}>
-                <Text style={styles.primaryButtonText}>Cadastrar-se</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.secondaryButton, styles.welcomeButton, styles.welcomeSecondaryButton]}
-                onPress={() => setMode('login')}
-              >
-                <Text style={styles.secondaryButtonText}>Entrar</Text>
-              </Pressable>
+              <View style={[styles.welcomePanel, { paddingBottom: Math.max(insets.bottom, 22) }]}>
+                <View style={styles.welcomeActions}>
+                  <Pressable
+                    style={[styles.welcomeButton, styles.welcomeAppleButton]}
+                    onPress={soon}
+                    accessibilityRole="button"
+                    accessibilityLabel="Continuar com a Apple"
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 16 16">
+                      <Path
+                        fill="#000000"
+                        d="M11.18.01c-.03-.04-1.26.02-2.32 1.17-1.07 1.16-.9 2.48-.88 2.52.02.03 1.52.09 2.47-1.26.96-1.35.76-2.39.73-2.43Zm3.32 11.73c-.05-.1-2.33-1.23-2.11-3.42.21-2.19 1.67-2.79 1.69-2.86.03-.06-.59-.79-1.25-1.15a3.7 3.7 0 0 0-1.56-.44c-.11 0-.48-.09-1.25.12-.51.14-1.65.59-1.97.61-.32.02-1.26-.52-2.27-.67-.64-.12-1.33.13-1.82.33-.49.19-1.42.75-2.07 2.23-.66 1.49-.31 3.83-.07 4.56.24.73.62 1.93 1.27 2.8.58.98 1.34 1.67 1.66 1.9.32.23 1.22.39 1.84.07.5-.31 1.41-.49 1.77-.47.36.01 1.06.15 1.78.54.57.19 1.11.11 1.65-.11.55-.22 1.33-1.06 2.24-2.76.35-.79.51-1.22.47-1.28Z"
+                      />
+                    </Svg>
+                    <Text style={styles.welcomeAppleButtonText}>Continuar com a Apple</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.welcomeButton, styles.welcomeDarkButton]}
+                    onPress={handleGoogle}
+                    accessibilityRole="button"
+                    accessibilityLabel="Continuar com o Google"
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 48 48">
+                      <Path
+                        fill="#FFC107"
+                        d="M43.61 20.08H42V20H24v8h11.3c-1.65 4.66-6.08 8-11.3 8-6.63 0-12-5.37-12-12s5.37-12 12-12c3.06 0 5.84 1.15 7.96 3.04l5.66-5.66C34.05 6.05 29.27 4 24 4 12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20c0-1.34-.14-2.65-.39-3.92Z"
+                      />
+                      <Path
+                        fill="#FF3D00"
+                        d="m6.3 14.69 6.57 4.82C14.65 15.11 18.96 12 24 12c3.06 0 5.84 1.15 7.96 3.04l5.66-5.66C34.05 6.05 29.27 4 24 4 16.32 4 9.66 8.34 6.3 14.69Z"
+                      />
+                      <Path
+                        fill="#4CAF50"
+                        d="M24 44c5.17 0 9.86-1.98 13.41-5.19l-6.19-5.24C29.21 35.1 26.71 36 24 36c-5.2 0-9.62-3.31-11.29-7.94l-6.52 5.02C9.51 39.56 16.24 44 24 44Z"
+                      />
+                      <Path
+                        fill="#1976D2"
+                        d="M43.61 20.08H42V20H24v8h11.3a12.04 12.04 0 0 1-4.09 5.57l6.19 5.24C36.97 39.2 44 34 44 24c0-1.34-.14-2.65-.39-3.92Z"
+                      />
+                    </Svg>
+                    <Text style={styles.welcomeDarkButtonText}>Continuar com o Google</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.welcomeButton, styles.welcomeDarkButton]}
+                    onPress={() => setMode('register')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cadastrar-se"
+                  >
+                    <Text style={styles.welcomeDarkButtonText}>Cadastrar-se</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.welcomeButton, styles.welcomeOutlineButton]}
+                    onPress={() => setMode('login')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Entrar"
+                  >
+                    <Text style={styles.welcomeOutlineButtonText}>Entrar</Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
-          </View>
-        ) : (
-          <View style={styles.authContent}>
-            <Pressable onPress={() => setMode('welcome')} hitSlop={10} style={styles.backButton}>
-              <Text style={styles.switchTop}>Voltar</Text>
-            </Pressable>
+          </SafeAreaView>
+        </View>
+      ) : (
+        <SafeAreaView style={styles.rootAuth} edges={['top', 'bottom', 'left', 'right']}>
+          <View style={styles.page}>
+            <View style={styles.authContent}>
+              <Pressable onPress={() => setMode('welcome')} hitSlop={10} style={styles.backButton}>
+                <Text style={styles.switchTop}>Voltar</Text>
+              </Pressable>
 
             <View style={styles.authBrand}>
               <Text style={styles.authBrandText}>Plan Things</Text>
@@ -253,15 +306,24 @@ export default function AuthScreen() {
               </Pressable>
             </View>
           </View>
-        )}
-
-      </View>
-    </SafeAreaView>
+          </View>
+        </SafeAreaView>
+      )}
+    </View>
   )
 }
 
 const createStyles = (theme) => StyleSheet.create({
-  safe: {
+  root: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    ...(Platform.OS === 'web' ? { minHeight: '100dvh' } : null),
+  },
+  rootWelcome: {
+    backgroundColor: '#ffffff',
+  },
+  rootAuth: {
     flex: 1,
     backgroundColor: theme.colors.appBg,
   },
@@ -273,52 +335,75 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.text2,
     fontSize: 13,
   },
+  welcomeScreen: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#ffffff',
+    ...(Platform.OS === 'web' ? { minHeight: '100dvh' } : null),
+  },
+  welcomeSafeArea: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   welcomeContent: {
     flex: 1,
-    justifyContent: 'flex-start',
-    paddingTop: 52,
-    paddingBottom: 42,
+    justifyContent: 'space-between',
   },
   welcomeHero: {
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  welcomeBrand: {
+    flex: 1,
     justifyContent: 'center',
-    marginBottom: 8,
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.screenX + 6,
+    paddingBottom: 24,
   },
-  welcomeBrandText: {
-    color: theme.colors.text1,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  heroImage: {
-    width: '122%',
-    height: 420,
-    alignSelf: 'center',
+  welcomePanel: {
+    backgroundColor: '#000000',
+    borderTopLeftRadius: 44,
+    borderTopRightRadius: 44,
+    overflow: 'hidden',
+    paddingHorizontal: theme.spacing.screenX + 6,
+    paddingTop: 28,
   },
   welcomeActions: {
     gap: 12,
-    paddingBottom: 48,
-    marginTop: 'auto',
+    paddingBottom: 8,
   },
   welcomeButton: {
-    width: '92%',
-    height: 44,
-    borderRadius: theme.radius.sm,
-    alignSelf: 'center',
+    width: '100%',
+    height: 56,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
-  welcomeSecondaryButton: {
-    borderColor: theme.colors.border2,
+  welcomeAppleButton: {
+    backgroundColor: '#ffffff',
   },
-  welcomeSlogan: {
-    color: theme.colors.text1,
-    fontSize: 17,
-    lineHeight: 24,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingHorizontal: 10,
-    marginBottom: 8,
+  welcomeAppleButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  welcomeDarkButton: {
+    backgroundColor: '#2a2a2a',
+  },
+  welcomeDarkButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  welcomeOutlineButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#ffffff',
+  },
+  welcomeOutlineButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   authContent: {
     flex: 1,
