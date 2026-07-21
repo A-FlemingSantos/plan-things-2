@@ -1,7 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Files, Home, Settings } from 'lucide-react-native'
 import { theme } from '../theme/tokens'
-import { useThemedStyles } from '../theme/ThemeProvider'
+import { useAppTheme, useThemedStyles } from '../theme/ThemeProvider'
+
+export const BOTTOM_TAB_BAR_HEIGHT = 49
 
 const icons = {
   home: Home,
@@ -17,6 +20,8 @@ export const tabs = [
 
 export default function BottomTabs({ activeTab, onChange, state, navigation }) {
   styles = useThemedStyles(createStyles)
+  const activeTheme = useAppTheme()
+  const insets = useSafeAreaInsets()
   const currentTab = state?.routes[state.index]?.name ?? activeTab
   const handleChange = (tabId) => {
     if (navigation) {
@@ -27,19 +32,22 @@ export default function BottomTabs({ activeTab, onChange, state, navigation }) {
   }
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 4) }]}>
       {tabs.map((tab) => {
         const Icon = icons[tab.id]
         const active = currentTab === tab.id
+        const iconColor = active
+          ? activeTheme.colors.text1
+          : activeTheme.colors.text1 + (activeTheme.isDark ? '66' : '59')
         return (
           <Pressable
             key={tab.id}
-            style={[styles.item, active && styles.itemActive]}
+            style={styles.item}
             onPress={() => handleChange(tab.id)}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
           >
-            <Icon size={18} color={active ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
+            <Icon size={16} color={iconColor} strokeWidth={active ? 2 : 1.75} />
             <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
               {tab.label}
             </Text>
@@ -53,29 +61,28 @@ export default function BottomTabs({ activeTab, onChange, state, navigation }) {
 const createStyles = (theme) => StyleSheet.create({
   wrap: {
     flexDirection: 'row',
-    gap: 4,
-    padding: 8,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
+    gap: 2,
+    paddingTop: 4,
+    paddingHorizontal: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.10)',
+    backgroundColor: theme.colors.appBg,
   },
   item: {
     flex: 1,
-    minHeight: 52,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    borderRadius: theme.radius.md,
-  },
-  itemActive: {
-    backgroundColor: theme.colors.surface3,
+    gap: 2,
   },
   label: {
-    color: theme.colors.text3,
-    fontSize: 11,
+    color: theme.colors.text1,
+    opacity: 0.38,
+    fontSize: 10,
+    letterSpacing: 0.1,
   },
   labelActive: {
-    color: theme.colors.text1,
+    opacity: 1,
     fontWeight: '600',
   },
 })

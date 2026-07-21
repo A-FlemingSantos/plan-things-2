@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import BottomTabs from '../components/BottomTabs'
+import BottomTabs, { BOTTOM_TAB_BAR_HEIGHT } from '../components/BottomTabs'
 import HomeScreen from './HomeScreen'
 import FilesScreen from './FilesScreen'
 import SettingsScreen from './SettingsScreen'
@@ -10,7 +10,7 @@ import MobileKanbanBoard from './MobileKanbanBoard'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
 
-const bottomTabsOverlayHeight = 69
+const bottomTabsOverlayHeight = BOTTOM_TAB_BAR_HEIGHT
 const Tab = createBottomTabNavigator()
 const HomeStack = createNativeStackNavigator()
 
