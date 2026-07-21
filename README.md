@@ -162,16 +162,16 @@ npm run mobile:web
 
 Este é o caminho recomendado para testar OAuth e Gmail no Android físico. O APK development build registra o scheme nativo `planthings://`, então o backend não precisa redirecionar para uma URL transitória `exp://...`.
 
-Primeira configuração do EAS/dev build, se ainda não existir no projeto:
+Primeira configuração do EAS/dev build, se ainda não existir no projeto (`eas.json` e `expo-dev-client` já estão no repo):
 
 ```sh
 cd apps/mobile
 npx eas-cli@latest login
 npx eas-cli@latest init
-npx expo install expo-dev-client
-npx eas-cli@latest build:configure
 npx eas-cli@latest build --profile development --platform android
 ```
+
+No Windows local, o atalho é `scripts/powershell/start-mobile-android-eas-build.ps1`.
 
 Instale o APK gerado no Android. Depois, para rodar o app:
 

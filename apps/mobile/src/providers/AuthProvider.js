@@ -2,6 +2,10 @@ import { createContext, createElement, useCallback, useContext, useEffect, useMe
 import { Linking, Platform } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { mobileApiRequest } from '../services/api.js'
+import {
+  isGoogleNativeSignInAvailable,
+  signInWithGoogleNative,
+} from '../services/googleNativeSignIn.js'
 import { resolveMobileCallbackClient } from '../services/mobileClient.js'
 import { parseMobileOAuthCallback } from '../services/mobileLinking.js'
 import {
@@ -311,11 +315,25 @@ export function AuthProvider({ children }) {
 
   const startOAuthLogin = useCallback(async (provider, options = {}) => {
     setOauthError(null)
+    const client = resolveMobileCallbackClient(Platform.OS)
+
+    if (provider === 'google' && await isGoogleNativeSignInAvailable()) {
+      const idToken = await signInWithGoogleNative()
+      const sessionResponse = await mobileApiRequest('/api/auth/oauth/google/native', {
+        method: 'POST',
+        body: {
+          idToken,
+          client,
+        },
+      })
+      return saveSession(sessionResponse)
+    }
+
     const response = await mobileApiRequest(`/api/auth/oauth/${provider}/start`, {
       method: 'POST',
       body: {
         redirectTo: options.redirectTo,
-        client: resolveMobileCallbackClient(Platform.OS),
+        client,
       },
     })
 
@@ -324,7 +342,7 @@ export function AuthProvider({ children }) {
     }
 
     return response
-  }, [])
+  }, [saveSession])
 
   const clearOAuthError = useCallback(() => {
     setOauthError(null)

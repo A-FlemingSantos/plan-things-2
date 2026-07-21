@@ -155,6 +155,19 @@ public class OAuthLoginService {
     return authService.sessionForUserId(codeEntity.getUserId(), codeEntity.getClient(), userAgent);
   }
 
+  @Transactional
+  public AuthService.SessionResponse loginWithIdToken(String provider, String idToken, String client, String userAgent) {
+    String normalizedProvider = normalizeProvider(provider);
+    if (!"google".equals(normalizedProvider)) {
+      throw new BadRequestException("PROVEDOR_OAUTH_INVALIDO", "Login nativo disponivel apenas para Google.");
+    }
+
+    OAuthProperties.Provider providerConfig = requireProviderConfig(normalizedProvider);
+    OAuthIdentity identity = providerClient.verifyIdToken(normalizedProvider, providerConfig, idToken);
+    UserEntity user = authService.loginWithExternalIdentity(identity);
+    return authService.sessionForUserId(user.getId(), normalizeClient(client), userAgent);
+  }
+
   private OAuthLoginStateEntity consumeState(String provider, String state) {
     if (!StringUtils.hasText(state)) {
       throw new BadRequestException("ESTADO_OAUTH_INVALIDO", "A validacao de seguranca do login e invalida.");

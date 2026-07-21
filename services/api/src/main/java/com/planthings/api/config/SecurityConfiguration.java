@@ -46,7 +46,7 @@ public class SecurityConfiguration {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health", "/actuator/info").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/settings/integrations/gmail/callback").permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/oauth/*/start", "/api/auth/oauth/exchange")
+            .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/oauth/*/start", "/api/auth/oauth/*/native", "/api/auth/oauth/exchange")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/auth/oauth/*/callback").permitAll()
             .anyRequest()

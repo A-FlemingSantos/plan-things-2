@@ -158,7 +158,9 @@ export default function AuthScreen() {
     try {
       await startOAuthLogin('google')
     } catch (error) {
-      notify(error?.message ?? 'Nao foi possivel iniciar o login com Google.')
+      if (error?.code !== 'OAUTH_CANCELLED') {
+        notify(error?.message ?? 'Nao foi possivel iniciar o login com Google.')
+      }
     } finally {
       setLoading(false)
     }

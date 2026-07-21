@@ -36,7 +36,25 @@ public class DefaultOidcProviderClient implements OidcProviderClient {
       throw new BadRequestException("OAUTH_ID_TOKEN_AUSENTE", "O provedor nao retornou um token de identidade.");
     }
 
-    Jwt jwt = decodeIdToken(normalizedProvider, config, tokenResponse.idToken());
+    return identityFromIdToken(normalizedProvider, config, tokenResponse.idToken(), expectedNonce);
+  }
+
+  @Override
+  public OAuthIdentity verifyIdToken(String provider, OAuthProperties.Provider config, String idToken) {
+    return identityFromIdToken(normalizeProvider(provider), config, idToken, null);
+  }
+
+  private OAuthIdentity identityFromIdToken(
+      String normalizedProvider,
+      OAuthProperties.Provider config,
+      String idToken,
+      String expectedNonce
+  ) {
+    if (!StringUtils.hasText(idToken)) {
+      throw new BadRequestException("OAUTH_ID_TOKEN_AUSENTE", "O provedor nao retornou um token de identidade.");
+    }
+
+    Jwt jwt = decodeIdToken(normalizedProvider, config, idToken);
     validateCommonClaims(normalizedProvider, config, jwt, expectedNonce);
 
     return switch (normalizedProvider) {
@@ -81,7 +99,7 @@ public class DefaultOidcProviderClient implements OidcProviderClient {
       throw new BadRequestException("OAUTH_AUDIENCE_INVALIDA", "O token de identidade foi emitido para outro cliente.");
     }
 
-    if (!Objects.equals(jwt.getClaimAsString("nonce"), expectedNonce)) {
+    if (expectedNonce != null && !Objects.equals(jwt.getClaimAsString("nonce"), expectedNonce)) {
       throw new BadRequestException("OAUTH_NONCE_INVALIDO", "A validacao de seguranca do login expirou.");
     }
 

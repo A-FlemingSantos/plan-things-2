@@ -98,6 +98,20 @@ public class AuthController {
     return ApiEnvelope.ok(oauthLoginService.exchangeCompletionCode(request.code(), httpRequest.getHeader("User-Agent")));
   }
 
+  @PostMapping("/auth/oauth/{provider}/native")
+  public ApiEnvelope<AuthService.SessionResponse> nativeOAuth(
+      @PathVariable String provider,
+      @Valid @RequestBody OAuthNativeRequest request,
+      HttpServletRequest httpRequest
+  ) {
+    return ApiEnvelope.ok(oauthLoginService.loginWithIdToken(
+        provider,
+        request.idToken(),
+        request.client(),
+        httpRequest.getHeader("User-Agent")
+    ));
+  }
+
   @PostMapping("/auth/refresh")
   public ApiEnvelope<AuthService.SessionResponse> refresh() {
     return ApiEnvelope.ok(authService.refreshSession());
@@ -144,6 +158,12 @@ public class AuthController {
 
   public record OAuthExchangeRequest(
       @NotBlank(message = "O codigo de conclusao e obrigatorio.") String code
+  ) {
+  }
+
+  public record OAuthNativeRequest(
+      @NotBlank(message = "O token de identidade e obrigatorio.") String idToken,
+      String client
   ) {
   }
 }

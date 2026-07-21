@@ -93,6 +93,38 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldCreateSessionFromNativeGoogleIdToken() throws Exception {
+    JsonNode session = readJson(mockMvc.perform(post("/api/auth/oauth/google/native")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "idToken": "google-native",
+                  "client": "mobile"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn());
+
+    assertFalse(session.path("data").path("accessToken").asText().isBlank());
+    assertEquals("oauth-native@example.com", session.path("data").path("user").path("email").asText());
+    assertTrue(session.path("data").path("user").path("externalIdentityLinked").asBoolean());
+  }
+
+  @Test
+  void shouldRejectNativeLoginForUnsupportedProvider() throws Exception {
+    mockMvc.perform(post("/api/auth/oauth/microsoft/native")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "idToken": "anything",
+                  "client": "mobile"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("PROVEDOR_OAUTH_INVALIDO"));
+  }
+
+  @Test
   void shouldAutoLinkVerifiedEmailToExistingPasswordAccount() throws Exception {
     JsonNode registered = readJson(mockMvc.perform(post("/api/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
@@ -487,6 +519,22 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
             null
         );
         default -> throw new IllegalArgumentException("Unexpected fake OAuth code: " + authorizationCode);
+      };
+    }
+
+    @Override
+    public OAuthIdentity verifyIdToken(String provider, OAuthProperties.Provider config, String idToken) {
+      return switch (idToken) {
+        case "google-native" -> new OAuthIdentity(
+            "google",
+            "google-subject-native",
+            "oauth-native@example.com",
+            true,
+            true,
+            "OAuth Native",
+            "https://example.com/native-avatar.png"
+        );
+        default -> throw new IllegalArgumentException("Unexpected fake OAuth id token: " + idToken);
       };
     }
   }

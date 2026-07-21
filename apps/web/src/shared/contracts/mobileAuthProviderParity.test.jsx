@@ -29,6 +29,11 @@ vi.mock('../../../../mobile/src/services/api.js', () => ({
   mobileApiRequest: mobileApiMock.mobileApiRequest,
 }))
 
+vi.mock('../../../../mobile/src/services/googleNativeSignIn.js', () => ({
+  isGoogleNativeSignInAvailable: vi.fn(async () => false),
+  signInWithGoogleNative: vi.fn(),
+}))
+
 const { AuthProvider, useAuth } = await import('../../../../mobile/src/providers/AuthProvider.js')
 
 function createAccessToken(expiresAtMs) {

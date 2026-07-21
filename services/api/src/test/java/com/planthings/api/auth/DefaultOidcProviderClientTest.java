@@ -91,6 +91,29 @@ class DefaultOidcProviderClientTest {
   }
 
   @Test
+  void shouldVerifyNativeGoogleIdTokenWithoutNonce() throws Exception {
+    JWTClaimsSet claims = signedToken("https://accounts.google.com", "google-subject", List.of(CLIENT_ID), null)
+        .claim("email", "person@example.com")
+        .claim("email_verified", true)
+        .claim("name", "Native Person")
+        .build();
+    SignedJWT jwt = new SignedJWT(
+        new JWSHeader.Builder(JWSAlgorithm.RS256)
+            .keyID(rsaKey.getKeyID())
+            .build(),
+        claims
+    );
+    jwt.sign(new RSASSASigner(rsaKey));
+
+    OAuthIdentity identity = client.verifyIdToken("google", providerConfig(), jwt.serialize());
+
+    assertEquals("google", identity.provider());
+    assertEquals("google-subject", identity.providerSubject());
+    assertEquals("person@example.com", identity.email());
+    assertEquals("Native Person", identity.displayName());
+  }
+
+  @Test
   void shouldRejectInvalidAudience() throws Exception {
     tokenResponseBody = tokenResponse(signedToken("https://accounts.google.com", "google-subject", List.of("other-client"), NONCE)
         .claim("email", "person@example.com")
@@ -181,13 +204,18 @@ class DefaultOidcProviderClientTest {
   }
 
   private JWTClaimsSet.Builder signedToken(String issuer, String subject, List<String> audience, String nonce) {
-    return new JWTClaimsSet.Builder()
+    JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
         .issuer(issuer)
         .subject(subject)
         .audience(audience)
         .issueTime(Date.from(Instant.now().minusSeconds(30)))
-        .expirationTime(Date.from(Instant.now().plusSeconds(300)))
-        .claim("nonce", nonce);
+        .expirationTime(Date.from(Instant.now().plusSeconds(300)));
+
+    if (nonce != null) {
+      builder.claim("nonce", nonce);
+    }
+
+    return builder;
   }
 
   private String tokenResponse(JWTClaimsSet claims) throws Exception {

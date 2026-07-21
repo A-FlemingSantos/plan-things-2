@@ -65,6 +65,57 @@ Para visualizar no navegador:
 npm run mobile:web
 ```
 
+## Google Sign-In nativo (seletor de contas)
+
+No Android/iOS, o login com Google usa o seletor nativo de contas (`@react-native-google-signin/google-signin`), nao o navegador.
+
+Isso **nao funciona no Expo Go**. Use um development build via **EAS** (recomendado; nao exige Android Studio local).
+
+### EAS (development build)
+
+Uma vez por projeto (na pasta `apps/mobile`):
+
+```sh
+npx eas-cli@latest login
+npx eas-cli@latest init
+```
+
+Build Android (APK instalavel):
+
+```powershell
+# na raiz do monorepo (Windows)
+powershell -ExecutionPolicy Bypass -File .\scripts\powershell\start-mobile-android-eas-build.ps1
+```
+
+Ou:
+
+```sh
+cd apps/mobile
+npx eas-cli@latest build --profile development --platform android
+```
+
+Depois de instalar o APK, suba o Metro com `PLAN_THINGS_ANDROID_CLIENT=dev-build` e o script `start-mobile-android-expo.ps1`.
+
+Profiles em `eas.json`:
+
+| Profile | Uso |
+|---|---|
+| `development` | Dev client + Metro (Sign-In nativo) |
+| `preview` | APK interno para testes |
+| `production` | AAB para Play Store |
+
+Apos o primeiro build EAS, pegue o SHA-1 do keystore do EAS (`npx eas-cli@latest credentials`) e cadastre no cliente Android do Google Cloud — o SHA-1 do `debug.keystore` local nao cobre o APK da nuvem.
+
+### Credenciais no Google Cloud Console
+
+No mesmo projeto OAuth:
+
+1. Cliente **Web** — copie o Client ID para `GOOGLE_OAUTH_CLIENT_ID` e `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+2. Cliente **Android** — package `com.planthings.mobile` + SHA-1 (EAS e/ou debug local)
+3. Cliente **iOS** — bundle `com.planthings.mobile`; use o "iOS URL scheme" (reversed client id) em `EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME`
+
+Se o Sign-In nativo nao estiver disponivel (Expo Go / sem `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`), o app cai no fluxo OAuth por browser.
+
 ## Google OAuth no `mobile:web` (preview no navegador)
 
 Se voce rodar o app mobile no navegador (`npm run mobile:web`) e tentar entrar/cadastrar com Google, o fluxo precisa voltar para um callback HTTP (ex.: `http://localhost:8081/oauth/callback`).
