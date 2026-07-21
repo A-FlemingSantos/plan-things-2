@@ -4,8 +4,6 @@ import * as SecureStore from 'expo-secure-store'
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || ''
 const LAST_ACCOUNT_KEY = 'plan-things.googleLastAccount'
 
-let configured = false
-
 function isNativePlatform() {
   return Platform.OS === 'ios' || Platform.OS === 'android'
 }
@@ -27,9 +25,7 @@ export async function isGoogleNativeSignInAvailable() {
   }
 }
 
-async function ensureConfigured() {
-  if (configured) return
-
+async function ensureConfigured(accountName) {
   if (!WEB_CLIENT_ID) {
     throw new Error('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID nao configurado.')
   }
@@ -38,8 +34,8 @@ async function ensureConfigured() {
   GoogleSignin.configure({
     webClientId: WEB_CLIENT_ID,
     offlineAccess: false,
+    ...(accountName ? { accountName } : null),
   })
-  configured = true
 }
 
 function cancelledError() {
@@ -133,21 +129,51 @@ export async function getLastGoogleAccount() {
   return readSdkCurrentGoogleAccount()
 }
 
-async function resolveIdTokenFromResponse(response) {
+async function readIdTokenFromSdk(GoogleSignin) {
+  try {
+    const tokens = await GoogleSignin.getTokens()
+    return tokens?.idToken ?? null
+  } catch {
+    return null
+  }
+}
+
+async function persistAccountFromSdk(GoogleSignin, response) {
+  const fromResponse = extractUser(response)
+  if (fromResponse) {
+    await persistLastGoogleAccount(fromResponse)
+    return
+  }
+
+  const currentUser = GoogleSignin.getCurrentUser?.()
+  const fromSdk = extractUser(currentUser) ?? extractUser({ data: currentUser })
+  if (fromSdk) {
+    await persistLastGoogleAccount(fromSdk)
+  }
+}
+
+/**
+ * @returns {Promise<string|null>} idToken, or null when the response has no usable credential
+ */
+async function resolveIdToken(GoogleSignin, response) {
   if (response?.type === 'cancelled') {
     throw cancelledError()
   }
 
-  const idToken = extractIdToken(response)
+  if (response?.type === 'noSavedCredentialFound') {
+    return null
+  }
+
+  let idToken = extractIdToken(response)
   if (!idToken) {
-    throw new Error('O Google nao retornou um token de identidade.')
+    idToken = await readIdTokenFromSdk(GoogleSignin)
   }
 
-  const account = extractUser(response)
-  if (account) {
-    await persistLastGoogleAccount(account)
+  if (!idToken) {
+    return null
   }
 
+  await persistAccountFromSdk(GoogleSignin, response)
   return idToken
 }
 
@@ -158,18 +184,48 @@ async function signInWithAccountPicker(GoogleSignin) {
     // Ignore when there is no previous Google session.
   }
 
-  return resolveIdTokenFromResponse(await GoogleSignin.signIn())
+  const idToken = await resolveIdToken(GoogleSignin, await GoogleSignin.signIn())
+  if (!idToken) {
+    throw new Error('O Google nao retornou um token de identidade.')
+  }
+  return idToken
 }
 
-async function signInWithLastAccount(GoogleSignin) {
+async function signInWithLastAccount(GoogleSignin, preferredEmail) {
+  // Prefer the previous account on Android when prompting interactively.
+  if (preferredEmail) {
+    await ensureConfigured(preferredEmail)
+  }
+
   try {
     const silentResponse = await GoogleSignin.signInSilently()
-    return resolveIdTokenFromResponse(silentResponse)
-  } catch {
+    const silentToken = await resolveIdToken(GoogleSignin, silentResponse)
+    if (silentToken) {
+      return silentToken
+    }
+  } catch (error) {
+    if (error?.code === 'OAUTH_CANCELLED') {
+      throw error
+    }
     // Fall through to interactive sign-in without clearing the cached account.
   }
 
-  return resolveIdTokenFromResponse(await GoogleSignin.signIn())
+  if (typeof GoogleSignin.hasPreviousSignIn === 'function' && GoogleSignin.hasPreviousSignIn()) {
+    const cachedToken = await readIdTokenFromSdk(GoogleSignin)
+    if (cachedToken) {
+      await persistAccountFromSdk(GoogleSignin, null)
+      return cachedToken
+    }
+  }
+
+  const interactiveResponse = await GoogleSignin.signIn(
+    preferredEmail ? { loginHint: preferredEmail } : {},
+  )
+  const interactiveToken = await resolveIdToken(GoogleSignin, interactiveResponse)
+  if (!interactiveToken) {
+    throw new Error('O Google nao retornou um token de identidade.')
+  }
+  return interactiveToken
 }
 
 /**
@@ -191,7 +247,8 @@ export async function signInWithGoogleNative(options = {}) {
       return await signInWithAccountPicker(GoogleSignin)
     }
 
-    return await signInWithLastAccount(GoogleSignin)
+    const preferredAccount = await getLastGoogleAccount()
+    return await signInWithLastAccount(GoogleSignin, preferredAccount?.email)
   } catch (error) {
     if (error?.code === 'OAUTH_CANCELLED') {
       throw error
