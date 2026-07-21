@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Alert,
   Animated,
+  Image,
   ImageBackground,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { useAuth } from '../providers/AuthProvider'
+import { getLastGoogleAccount } from '../services/googleNativeSignIn.js'
 import { theme } from '../theme/tokens'
 import { useMobileTheme, useThemedStyles } from '../theme/ThemeProvider'
 
@@ -33,6 +35,29 @@ function oauthErrorMessage(errorCode) {
   if (errorCode === 'ESTADO_OAUTH_EXPIRADO') return 'A validacao do login expirou. Tente novamente.'
   if (errorCode === 'ESTADO_OAUTH_INVALIDO') return 'Nao foi possivel validar este login. Tente novamente.'
   return 'Nao foi possivel concluir o login com o provedor.'
+}
+
+function GoogleGlyph({ size = 22 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Path
+        fill="#FFC107"
+        d="M43.61 20.08H42V20H24v8h11.3c-1.65 4.66-6.08 8-11.3 8-6.63 0-12-5.37-12-12s5.37-12 12-12c3.06 0 5.84 1.15 7.96 3.04l5.66-5.66C34.05 6.05 29.27 4 24 4 12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20c0-1.34-.14-2.65-.39-3.92Z"
+      />
+      <Path
+        fill="#FF3D00"
+        d="m6.3 14.69 6.57 4.82C14.65 15.11 18.96 12 24 12c3.06 0 5.84 1.15 7.96 3.04l5.66-5.66C34.05 6.05 29.27 4 24 4 16.32 4 9.66 8.34 6.3 14.69Z"
+      />
+      <Path
+        fill="#4CAF50"
+        d="M24 44c5.17 0 9.86-1.98 13.41-5.19l-6.19-5.24C29.21 35.1 26.71 36 24 36c-5.2 0-9.62-3.31-11.29-7.94l-6.52 5.02C9.51 39.56 16.24 44 24 44Z"
+      />
+      <Path
+        fill="#1976D2"
+        d="M43.61 20.08H42V20H24v8h11.3a12.04 12.04 0 0 1-4.09 5.57l6.19 5.24C36.97 39.2 44 34 44 24c0-1.34-.14-2.65-.39-3.92Z"
+      />
+    </Svg>
+  )
 }
 
 function WelcomeFadeBand({ isDark }) {
@@ -59,24 +84,7 @@ function SocialRow({ onGoogle, onSoon, loading, iconColor }) {
         accessibilityRole="button"
         accessibilityLabel="Continuar com o Google"
       >
-        <Svg width={22} height={22} viewBox="0 0 48 48">
-          <Path
-            fill="#FFC107"
-            d="M43.61 20.08H42V20H24v8h11.3c-1.65 4.66-6.08 8-11.3 8-6.63 0-12-5.37-12-12s5.37-12 12-12c3.06 0 5.84 1.15 7.96 3.04l5.66-5.66C34.05 6.05 29.27 4 24 4 12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20c0-1.34-.14-2.65-.39-3.92Z"
-          />
-          <Path
-            fill="#FF3D00"
-            d="m6.3 14.69 6.57 4.82C14.65 15.11 18.96 12 24 12c3.06 0 5.84 1.15 7.96 3.04l5.66-5.66C34.05 6.05 29.27 4 24 4 16.32 4 9.66 8.34 6.3 14.69Z"
-          />
-          <Path
-            fill="#4CAF50"
-            d="M24 44c5.17 0 9.86-1.98 13.41-5.19l-6.19-5.24C29.21 35.1 26.71 36 24 36c-5.2 0-9.62-3.31-11.29-7.94l-6.52 5.02C9.51 39.56 16.24 44 24 44Z"
-          />
-          <Path
-            fill="#1976D2"
-            d="M43.61 20.08H42V20H24v8h11.3a12.04 12.04 0 0 1-4.09 5.57l6.19 5.24C36.97 39.2 44 34 44 24c0-1.34-.14-2.65-.39-3.92Z"
-          />
-        </Svg>
+        <GoogleGlyph size={22} />
       </Pressable>
 
       <Pressable
@@ -112,6 +120,48 @@ function SocialRow({ onGoogle, onSoon, loading, iconColor }) {
   )
 }
 
+function ContinueAccountButton({ account, loading, onPress }) {
+  const initials = (account.name || account.email || 'PT')
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'PT'
+
+  return (
+    <Pressable
+      style={[styles.welcomePrimaryButton, styles.continueAccountButton, loading ? styles.welcomePrimaryButtonDisabled : null]}
+      onPress={onPress}
+      disabled={loading}
+      accessibilityRole="button"
+      accessibilityLabel={`Continuar com ${account.email}`}
+    >
+      <View style={styles.continueAvatarWrap}>
+        {account.photo ? (
+          <Image source={{ uri: account.photo }} style={styles.continueAvatar} />
+        ) : (
+          <View style={styles.continueAvatarFallback}>
+            <Text style={styles.continueAvatarInitials}>{initials}</Text>
+          </View>
+        )}
+        <View style={styles.continueGoogleBadge}>
+          <GoogleGlyph size={12} />
+        </View>
+      </View>
+
+      <View style={styles.continueAccountText}>
+        <Text style={styles.continueAccountTitle} numberOfLines={1}>
+          {loading ? 'Aguarde…' : 'Continuar com esta conta'}
+        </Text>
+        <Text style={styles.continueAccountEmail} numberOfLines={1}>
+          {account.email}
+        </Text>
+      </View>
+    </Pressable>
+  )
+}
+
 export default function AuthScreen() {
   styles = useThemedStyles(createStyles)
   const insets = useSafeAreaInsets()
@@ -124,6 +174,7 @@ export default function AuthScreen() {
     startOAuthLogin,
   } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [lastGoogleAccount, setLastGoogleAccount] = useState(null)
 
   const panelOpacity = useRef(new Animated.Value(0)).current
   const panelTranslateY = useRef(new Animated.Value(28)).current
@@ -134,6 +185,18 @@ export default function AuthScreen() {
     if (!pendingLogoutRedirect) return
     clearPendingLogoutRedirect()
   }, [clearPendingLogoutRedirect, pendingLogoutRedirect])
+
+  useEffect(() => {
+    let active = true
+
+    getLastGoogleAccount().then((account) => {
+      if (active) setLastGoogleAccount(account)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     panelOpacity.setValue(0)
@@ -151,12 +214,14 @@ export default function AuthScreen() {
     ]).start()
   }, [actionsOpacity, brandOpacity, panelOpacity, panelTranslateY])
 
-  const handleGoogle = async () => {
+  const runGoogleLogin = async ({ forceAccountPicker }) => {
     if (loading) return
     if (oauthError) clearOAuthError()
     setLoading(true)
     try {
-      await startOAuthLogin('google')
+      await startOAuthLogin('google', { forceAccountPicker })
+      const account = await getLastGoogleAccount()
+      if (account) setLastGoogleAccount(account)
     } catch (error) {
       if (error?.code !== 'OAUTH_CANCELLED') {
         notify(error?.message ?? 'Nao foi possivel iniciar o login com Google.')
@@ -164,6 +229,19 @@ export default function AuthScreen() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handlePrimary = () => {
+    if (lastGoogleAccount) {
+      void runGoogleLogin({ forceAccountPicker: false })
+      return
+    }
+
+    void runGoogleLogin({ forceAccountPicker: true })
+  }
+
+  const handleGooglePicker = () => {
+    void runGoogleLogin({ forceAccountPicker: true })
   }
 
   const soon = () => {
@@ -219,17 +297,25 @@ export default function AuthScreen() {
                 </View>
               ) : null}
 
-              <Pressable
-                style={[styles.welcomePrimaryButton, loading ? styles.welcomePrimaryButtonDisabled : null]}
-                onPress={handleGoogle}
-                disabled={loading}
-                accessibilityRole="button"
-                accessibilityLabel="Cadastrar-se"
-              >
-                <Text style={styles.welcomePrimaryButtonText}>
-                  {loading ? 'Aguarde…' : 'Cadastrar-se'}
-                </Text>
-              </Pressable>
+              {lastGoogleAccount ? (
+                <ContinueAccountButton
+                  account={lastGoogleAccount}
+                  loading={loading}
+                  onPress={handlePrimary}
+                />
+              ) : (
+                <Pressable
+                  style={[styles.welcomePrimaryButton, loading ? styles.welcomePrimaryButtonDisabled : null]}
+                  onPress={handlePrimary}
+                  disabled={loading}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cadastrar-se"
+                >
+                  <Text style={styles.welcomePrimaryButtonText}>
+                    {loading ? 'Aguarde…' : 'Cadastrar-se'}
+                  </Text>
+                </Pressable>
+              )}
 
               <View style={styles.welcomeDividerRow}>
                 <View style={styles.welcomeDividerLine} />
@@ -238,7 +324,7 @@ export default function AuthScreen() {
               </View>
 
               <SocialRow
-                onGoogle={handleGoogle}
+                onGoogle={handleGooglePicker}
                 onSoon={soon}
                 loading={loading}
                 iconColor={activeTheme.colors.text1}
@@ -346,6 +432,64 @@ const createStyles = (theme) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  continueAccountButton: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 12,
+    paddingHorizontal: 14,
+  },
+  continueAvatarWrap: {
+    width: 36,
+    height: 36,
+  },
+  continueAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.textInverse,
+  },
+  continueAvatarFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.textInverse,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  continueAvatarInitials: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  continueGoogleBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: theme.colors.text1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: theme.colors.text1,
+  },
+  continueAccountText: {
+    flex: 1,
+    gap: 1,
+    paddingRight: 4,
+  },
+  continueAccountTitle: {
+    color: theme.colors.textInverse,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  continueAccountEmail: {
+    color: theme.colors.textInverse,
+    fontSize: 12,
+    fontWeight: '400',
+    opacity: 0.72,
+  },
   welcomeDividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -353,8 +497,8 @@ const createStyles = (theme) => StyleSheet.create({
   },
   welcomeDividerLine: {
     flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: theme.colors.border1,
+    height: 1,
+    backgroundColor: theme.colors.border2,
   },
   welcomeDividerText: {
     color: theme.colors.text2,

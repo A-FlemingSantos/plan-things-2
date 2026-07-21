@@ -31,6 +31,7 @@ vi.mock('../../../../mobile/src/services/api.js', () => ({
 
 vi.mock('../../../../mobile/src/services/googleNativeSignIn.js', () => ({
   isGoogleNativeSignInAvailable: vi.fn(async () => false),
+  getLastGoogleAccount: vi.fn(async () => null),
   signInWithGoogleNative: vi.fn(),
 }))
 

@@ -318,7 +318,9 @@ export function AuthProvider({ children }) {
     const client = resolveMobileCallbackClient(Platform.OS)
 
     if (provider === 'google' && await isGoogleNativeSignInAvailable()) {
-      const idToken = await signInWithGoogleNative()
+      const idToken = await signInWithGoogleNative({
+        forceAccountPicker: options.forceAccountPicker !== false,
+      })
       const sessionResponse = await mobileApiRequest('/api/auth/oauth/google/native', {
         method: 'POST',
         body: {
