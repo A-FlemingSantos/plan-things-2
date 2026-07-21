@@ -6,6 +6,10 @@ import { useAppTheme, useThemedStyles } from '../theme/ThemeProvider'
 
 export const BOTTOM_TAB_BAR_HEIGHT = 49
 
+function mutedLabelColor(theme) {
+  return theme.isDark ? 'rgba(255, 255, 255, 0.38)' : 'rgba(0, 0, 0, 0.38)'
+}
+
 const icons = {
   home: Home,
   inbox: Inbox,
@@ -52,7 +56,13 @@ export default function BottomTabs({ activeTab, onChange, state, navigation }) {
             accessibilityState={{ selected: active }}
           >
             <Icon size={16} color={iconColor} strokeWidth={active ? 2 : 1.75} />
-            <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
+            <Text
+              style={[styles.label, active && styles.labelActive]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.82}
+              allowFontScaling={false}
+            >
               {tab.label}
             </Text>
           </Pressable>
@@ -74,19 +84,21 @@ const createStyles = (theme) => StyleSheet.create({
   },
   item: {
     flex: 1,
+    minWidth: 0,
     minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+    paddingHorizontal: 1,
   },
   label: {
-    color: theme.colors.text1,
-    opacity: 0.38,
-    fontSize: 9,
-    letterSpacing: 0.1,
+    width: '100%',
+    textAlign: 'center',
+    color: mutedLabelColor(theme),
+    fontSize: 10,
   },
   labelActive: {
-    opacity: 1,
+    color: theme.colors.text1,
     fontWeight: '600',
   },
 })
