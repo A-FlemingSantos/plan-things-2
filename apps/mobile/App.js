@@ -20,8 +20,10 @@ const linking = {
       App: {
         screens: {
           home: '',
+          inbox: 'inbox',
           files: 'files',
-          settings: 'settings',
+          docs: 'docs',
+          profile: 'profile',
         },
       },
     },

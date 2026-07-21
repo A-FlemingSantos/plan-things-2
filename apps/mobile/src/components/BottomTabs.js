@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Files, Home, Settings } from 'lucide-react-native'
+import { BookOpen, Home, Inbox, PackageOpen, User } from 'lucide-react-native'
 import { theme } from '../theme/tokens'
 import { useAppTheme, useThemedStyles } from '../theme/ThemeProvider'
 
@@ -8,14 +8,18 @@ export const BOTTOM_TAB_BAR_HEIGHT = 49
 
 const icons = {
   home: Home,
-  files: Files,
-  settings: Settings,
+  inbox: Inbox,
+  files: PackageOpen,
+  docs: BookOpen,
+  profile: User,
 }
 
 export const tabs = [
   { id: 'home', label: 'Home' },
+  { id: 'inbox', label: 'Inbox' },
   { id: 'files', label: 'Arquivos' },
-  { id: 'settings', label: 'Ajustes' },
+  { id: 'docs', label: 'Docs' },
+  { id: 'profile', label: 'Perfil' },
 ]
 
 export default function BottomTabs({ activeTab, onChange, state, navigation }) {
@@ -63,7 +67,7 @@ const createStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
     paddingTop: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.10)',
     backgroundColor: theme.colors.appBg,
@@ -78,7 +82,7 @@ const createStyles = (theme) => StyleSheet.create({
   label: {
     color: theme.colors.text1,
     opacity: 0.38,
-    fontSize: 10,
+    fontSize: 9,
     letterSpacing: 0.1,
   },
   labelActive: {

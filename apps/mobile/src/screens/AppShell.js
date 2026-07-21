@@ -4,7 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import BottomTabs, { BOTTOM_TAB_BAR_HEIGHT } from '../components/BottomTabs'
 import HomeScreen from './HomeScreen'
+import InboxScreen from './InboxScreen'
 import FilesScreen from './FilesScreen'
+import DocsScreen from './DocsScreen'
 import SettingsScreen from './SettingsScreen'
 import MobileKanbanBoard from './MobileKanbanBoard'
 import { theme } from '../theme/tokens'
@@ -36,10 +38,12 @@ export default function AppShell() {
             tabBar={(props) => <BottomTabs {...props} />}
           >
             <Tab.Screen name="home" component={HomeStackScreen} />
+            <Tab.Screen name="inbox" component={InboxScreen} />
             <Tab.Screen name="files">
               {() => <FilesScreen bottomOverlayOffset={bottomTabsOverlayHeight} />}
             </Tab.Screen>
-            <Tab.Screen name="settings" component={SettingsScreen} />
+            <Tab.Screen name="docs" component={DocsScreen} />
+            <Tab.Screen name="profile" component={SettingsScreen} />
           </Tab.Navigator>
         </View>
       </SafeAreaView>
