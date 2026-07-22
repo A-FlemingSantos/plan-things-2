@@ -37,6 +37,7 @@ import {
   Users,
   X,
 } from 'lucide-react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
 import { useFiles } from '../providers/FilesProvider'
@@ -336,6 +337,7 @@ function CardDetailScreen({
   const [activeSheet, setActiveSheet] = useState(null)
   const slideProgress = useRef(new Animated.Value(1)).current
   const { height } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const label = findLabel(labelId)
   const members = findMembers(memberIds)
   const hasDescriptionChanges = descriptionValue !== savedDescription
@@ -628,7 +630,7 @@ function CardDetailScreen({
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={close}>
       <Animated.View style={[styles.detailScreen, { transform: [{ translateY }] }]}>
-        <View style={styles.detailTopbar}>
+        <View style={[styles.detailTopbar, { paddingTop: Math.max(insets.top, 8) }]}>
           <Pressable
             style={({ pressed }) => [styles.detailIconButton, pressed && styles.cardPressed]}
             onPress={close}
@@ -2563,7 +2565,6 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
   },
