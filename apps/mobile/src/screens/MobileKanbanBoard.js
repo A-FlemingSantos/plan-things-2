@@ -1791,24 +1791,21 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
   return (
     <View style={styles.page}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Pressable
-            style={({ pressed }) => [styles.backButton, pressed && styles.cardPressed]}
-            onPress={onBack ?? (() => navigation?.goBack())}
-            accessibilityLabel="Voltar para Home"
-          >
-            <ArrowLeft size={18} color={theme.colors.text1} strokeWidth={1.8} />
-          </Pressable>
-          <View style={styles.headerMeta}>
-            <Users size={14} color={theme.colors.text3} strokeWidth={1.8} />
-            <Text style={styles.headerMetaText}>{boardMembers.length}</Text>
-            <Text style={styles.headerMetaDot}>·</Text>
-            <Text style={styles.headerMetaText}>{totalCards} cartões</Text>
-          </View>
+        <Pressable
+          style={({ pressed }) => [styles.backButton, pressed && styles.cardPressed]}
+          onPress={onBack ?? (() => navigation?.goBack())}
+          accessibilityLabel="Voltar para Home"
+          hitSlop={8}
+        >
+          <ArrowLeft size={18} color={theme.colors.text1} strokeWidth={1.8} />
+        </Pressable>
+        <Text style={styles.headerTitle} numberOfLines={1}>{plan.name}</Text>
+        <View style={styles.headerMeta}>
+          <Users size={14} color={theme.colors.text3} strokeWidth={1.8} />
+          <Text style={styles.headerMetaText}>{boardMembers.length}</Text>
+          <Text style={styles.headerMetaDot}>·</Text>
+          <Text style={styles.headerMetaText}>{totalCards} cartões</Text>
         </View>
-
-        <Text style={styles.eyebrow}>Quadro</Text>
-        <Text style={styles.title} numberOfLines={2}>{plan.name}</Text>
       </View>
 
       {boardView === 'lists' ? (
@@ -2090,31 +2087,34 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.appBg,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 18,
-    paddingBottom: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 18,
+  headerTitle: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.text1,
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: '600',
+    letterSpacing: -0.3,
   },
   backButton: {
-    width: 40,
-    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: theme.radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
+    marginLeft: -2,
+    padding: 2,
   },
   headerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
     gap: 6,
   },
   headerMetaText: {
