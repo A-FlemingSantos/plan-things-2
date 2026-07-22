@@ -51,12 +51,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
+import CardModalRangeCalendar from '../components/CardModalRangeCalendar'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
 import { buildTaskCompletionPatch, isLegacyDoneColumn, isTaskDone } from './mobileTaskCompletion'
 import { interactivePointerEventsStyle, shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
 import { theme } from '../theme/tokens'
 import { useThemedStyles } from '../theme/ThemeProvider'
+import { buildBrazilDateRange, resolveCardScheduleFromRange } from '../utils/calendarDateUtils'
+import { buildCardSchedulePatch, buildInitialCardSchedule } from '../utils/cardModalDateUtils'
 
 let boardLabels = []
 let boardMembers = []
@@ -113,6 +116,17 @@ function findCardEntry(columns = [], cardId) {
   return null
 }
 
+const EMPTY_CARD_SCHEDULE = {
+  selectedCalendarDay: null,
+  startEnabled: false,
+  startDateValue: '',
+  dueEnabled: false,
+  dueDateValue: '',
+  dueTimeValue: '',
+  displayLabel: '',
+  preserveDisplayLabel: false,
+}
+
 function createLocalCard(title) {
   return {
     id: `mobile-card-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -125,7 +139,7 @@ function createLocalCard(title) {
     labelId: null,
     memberIds: [],
     dueDate: '',
-    schedule: normalizeSchedule(),
+    schedule: { ...EMPTY_CARD_SCHEDULE },
     comments: [],
     attachments: [],
     checklists: [],
@@ -140,65 +154,6 @@ function createLocalColumn(title, index = 0) {
     title,
     color: columnColors[index % columnColors.length],
     cards: [],
-  }
-}
-
-function padDatePart(value) {
-  return String(value).padStart(2, '0')
-}
-
-function dateValueFromDate(date) {
-  return `${padDatePart(date.getDate())}/${padDatePart(date.getMonth() + 1)}/${date.getFullYear()}`
-}
-
-function parseDateValue(value) {
-  const match = String(value ?? '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
-  if (!match) return null
-  const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]))
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
-function formatShortDateLabel(value) {
-  const date = parseDateValue(value)
-  if (!date) return ''
-  return `${padDatePart(date.getDate())}/${padDatePart(date.getMonth() + 1)}`
-}
-
-function buildCalendarDays(anchorDate, selectedValue) {
-  const firstOfMonth = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1)
-  const cursor = new Date(firstOfMonth)
-  cursor.setDate(firstOfMonth.getDate() - firstOfMonth.getDay())
-
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(cursor)
-    date.setDate(cursor.getDate() + index)
-    const value = dateValueFromDate(date)
-    return {
-      date,
-      value,
-      day: date.getDate(),
-      muted: date.getMonth() !== anchorDate.getMonth(),
-      selected: selectedValue === value,
-    }
-  })
-}
-
-function normalizeSchedule(source = {}, legacyDueDate = '') {
-  const fallbackDueDate = source.dueDateValue || ''
-  const dueEnabled = Boolean(source.dueEnabled || fallbackDueDate)
-  const startEnabled = Boolean(source.startEnabled || source.startDateValue)
-  const dueDateValue = dueEnabled ? fallbackDueDate : ''
-  const startDateValue = startEnabled ? (source.startDateValue || dueDateValue) : ''
-
-  return {
-    selectedCalendarDay: source.selectedCalendarDay || dueDateValue || startDateValue || null,
-    startEnabled,
-    startDateValue,
-    dueEnabled,
-    dueDateValue,
-    dueTimeValue: source.dueTimeValue ?? '',
-    displayLabel: source.displayLabel || (dueDateValue ? formatShortDateLabel(dueDateValue) : legacyDueDate),
-    preserveDisplayLabel: false,
   }
 }
 
@@ -473,10 +428,9 @@ function CardDetailScreen({
   const [descriptionValue, setDescriptionValue] = useState(savedDescription)
   const [labelId, setLabelId] = useState(card.labelId ?? null)
   const [memberIds, setMemberIds] = useState(card.memberIds ?? [])
-  const [schedule, setSchedule] = useState(() => normalizeSchedule(card.schedule, card.dueDate))
-  const [calendarAnchor, setCalendarAnchor] = useState(() => (
-    parseDateValue(card.schedule?.dueDateValue || card.schedule?.startDateValue) ?? new Date()
-  ))
+  const [schedule, setSchedule] = useState(() => buildInitialCardSchedule(card))
+  const pendingDateRangePersistRef = useRef(null)
+  const dateRangePersistTimeoutRef = useRef(null)
   const [comments, setComments] = useState(Array.isArray(card.comments) ? card.comments : [])
   const [commentValue, setCommentValue] = useState('')
   const [commentFocused, setCommentFocused] = useState(false)
@@ -504,10 +458,9 @@ function CardDetailScreen({
     members: boardMembers,
     createdAtLabel,
   }), [card, comments, createdAtLabel])
-  const selectedCalendarValue = schedule.dueEnabled ? schedule.dueDateValue : schedule.startDateValue
-  const calendarDays = useMemo(
-    () => buildCalendarDays(calendarAnchor, selectedCalendarValue),
-    [calendarAnchor, selectedCalendarValue],
+  const selectedCalendarRange = useMemo(
+    () => buildBrazilDateRange(schedule.startDateValue, schedule.dueDateValue),
+    [schedule.dueDateValue, schedule.startDateValue],
   )
   const availablePlanFiles = useMemo(() => (
     (planFiles ?? []).filter((file) => file.type !== 'folder' && !file.trashed)
@@ -572,15 +525,11 @@ function CardDetailScreen({
   }, [card.id, card.title, detailTranslateX, headerTitleProgress])
 
   useEffect(() => {
-    const nextSchedule = normalizeSchedule(card.schedule, card.dueDate)
-    const nextCalendarAnchor = parseDateValue(nextSchedule.dueDateValue || nextSchedule.startDateValue)
+    const nextSchedule = buildInitialCardSchedule(card)
 
     setLabelId(card.labelId ?? null)
     setMemberIds(card.memberIds ?? [])
     setSchedule(nextSchedule)
-    if (nextCalendarAnchor) {
-      setCalendarAnchor(nextCalendarAnchor)
-    }
     setComments(Array.isArray(card.comments) ? card.comments : [])
     setAttachments(Array.isArray(card.attachments) ? card.attachments.map(normalizeAttachment) : [])
     setChecklists(Array.isArray(card.checklists) ? card.checklists : [])
@@ -706,60 +655,68 @@ function CardDetailScreen({
     setActiveSheet(null)
   }
 
-  const commitSchedule = (nextSchedule) => {
-    const normalized = normalizeSchedule(nextSchedule)
-    setSchedule(normalized)
-    commitCardPatch({
-      dueDate: normalized.dueEnabled ? (normalized.displayLabel || formatShortDateLabel(normalized.dueDateValue)) : '',
-      schedule: normalized,
-    })
+  const saveDateRange = ({ resolvedSchedule, previousSchedule }) => {
+    const patch = buildCardSchedulePatch(resolvedSchedule, previousSchedule)
+    setSchedule(patch.schedule)
+    commitCardPatch(patch)
   }
 
-  const toggleScheduleFlag = (field) => {
-    setSchedule((current) => {
-      const today = dateValueFromDate(new Date())
-      const enabledKey = field === 'start' ? 'startEnabled' : 'dueEnabled'
-      const valueKey = field === 'start' ? 'startDateValue' : 'dueDateValue'
-      const nextEnabled = !current[enabledKey]
-      const next = {
-        ...current,
-        [enabledKey]: nextEnabled,
-        [valueKey]: nextEnabled ? (current[valueKey] || current.dueDateValue || current.startDateValue || today) : '',
+  const handleCalendarRangeChange = (range) => {
+    const resolvedSchedule = resolveCardScheduleFromRange(range)
+    if (!resolvedSchedule) return
+
+    const previousSchedule = schedule
+
+    setSchedule((current) => ({
+      ...current,
+      ...resolvedSchedule,
+    }))
+
+    pendingDateRangePersistRef.current = {
+      resolvedSchedule: {
+        ...resolvedSchedule,
+        dueTimeValue: previousSchedule.dueTimeValue,
+      },
+      previousSchedule,
+    }
+
+    if (dateRangePersistTimeoutRef.current) {
+      clearTimeout(dateRangePersistTimeoutRef.current)
+    }
+
+    dateRangePersistTimeoutRef.current = setTimeout(() => {
+      dateRangePersistTimeoutRef.current = null
+      const pending = pendingDateRangePersistRef.current
+      pendingDateRangePersistRef.current = null
+      if (pending) {
+        saveDateRange(pending)
       }
-
-      if (nextEnabled) {
-        const nextDate = parseDateValue(next[valueKey])
-        if (nextDate) setCalendarAnchor(nextDate)
-      }
-
-      return normalizeSchedule(next)
-    })
+    }, 350)
   }
 
-  const selectCalendarDate = (value) => {
-    setSchedule((current) => {
-      const editingDue = current.dueEnabled || !current.startEnabled
-      return normalizeSchedule({
-        ...current,
-        [editingDue ? 'dueEnabled' : 'startEnabled']: true,
-        [editingDue ? 'dueDateValue' : 'startDateValue']: value,
-        selectedCalendarDay: value,
-        displayLabel: editingDue ? formatShortDateLabel(value) : current.displayLabel,
-      })
-    })
-  }
+  useEffect(() => {
+    if (activeSheet === 'date') return undefined
 
-  const saveSchedule = () => {
-    commitSchedule(schedule)
-    setActiveSheet(null)
-  }
+    const pending = pendingDateRangePersistRef.current
+    if (!pending) return undefined
 
-  const clearSchedule = () => {
-    const emptySchedule = normalizeSchedule()
-    setSchedule(emptySchedule)
-    commitCardPatch({ dueDate: '', schedule: emptySchedule })
-    setActiveSheet(null)
-  }
+    if (dateRangePersistTimeoutRef.current) {
+      clearTimeout(dateRangePersistTimeoutRef.current)
+      dateRangePersistTimeoutRef.current = null
+    }
+
+    pendingDateRangePersistRef.current = null
+    saveDateRange(pending)
+
+    return undefined
+  }, [activeSheet])
+
+  useEffect(() => () => {
+    if (dateRangePersistTimeoutRef.current) {
+      clearTimeout(dateRangePersistTimeoutRef.current)
+      dateRangePersistTimeoutRef.current = null
+    }
+  }, [])
 
   const ensureChecklist = () => {
     if (checklists.length) return checklists
@@ -1268,7 +1225,8 @@ function CardDetailScreen({
         </View>
 
         <BottomSheet visible={Boolean(activeSheet)} onClose={() => setActiveSheet(null)} title={
-          activeSheet === 'more' ? 'Opções do cartão'
+          activeSheet === 'date' ? null
+            : activeSheet === 'more' ? 'Opções do cartão'
             : activeSheet === 'members' ? 'Membros'
               : activeSheet === 'labels' ? 'Etiquetas'
                 : activeSheet === 'date' ? 'Data'
@@ -1375,90 +1333,12 @@ function CardDetailScreen({
           ) : null}
 
           {activeSheet === 'date' ? (
-            <View style={styles.scheduleEditor}>
-              <View style={styles.scheduleToggleList}>
-                <Pressable style={styles.scheduleToggleRow} onPress={() => toggleScheduleFlag('start')} accessibilityRole="checkbox" accessibilityState={{ checked: schedule.startEnabled }}>
-                  <View style={[styles.scheduleCheckbox, schedule.startEnabled && styles.scheduleCheckboxChecked]}>
-                    {schedule.startEnabled ? <Check size={12} color={theme.colors.textInverse} strokeWidth={2.2} /> : null}
-                  </View>
-                  <View style={styles.scheduleToggleText}>
-                    <Text style={styles.scheduleToggleLabel}>Início</Text>
-                    <Text style={styles.scheduleToggleHint}>{schedule.startDateValue || 'Sem data de início'}</Text>
-                  </View>
-                </Pressable>
-                <Pressable style={styles.scheduleToggleRow} onPress={() => toggleScheduleFlag('due')} accessibilityRole="checkbox" accessibilityState={{ checked: schedule.dueEnabled }}>
-                  <View style={[styles.scheduleCheckbox, schedule.dueEnabled && styles.scheduleCheckboxChecked]}>
-                    {schedule.dueEnabled ? <Check size={12} color={theme.colors.textInverse} strokeWidth={2.2} /> : null}
-                  </View>
-                  <View style={styles.scheduleToggleText}>
-                    <Text style={styles.scheduleToggleLabel}>Prazo</Text>
-                    <Text style={styles.scheduleToggleHint}>{schedule.dueDateValue || 'Sem prazo'}</Text>
-                  </View>
-                </Pressable>
-              </View>
-
-              <View style={styles.calendarHeader}>
-                <Pressable
-                  style={styles.calendarNavButton}
-                  onPress={() => setCalendarAnchor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
-                  accessibilityRole="button"
-                  accessibilityLabel="Mês anterior"
-                >
-                  <Text style={styles.calendarNavText}>{'<'}</Text>
-                </Pressable>
-                <Text style={styles.calendarTitle}>
-                  {calendarAnchor.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                </Text>
-                <Pressable
-                  style={styles.calendarNavButton}
-                  onPress={() => setCalendarAnchor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
-                  accessibilityRole="button"
-                  accessibilityLabel="Próximo mês"
-                >
-                  <Text style={styles.calendarNavText}>{'>'}</Text>
-                </Pressable>
-              </View>
-
-              <View style={styles.calendarGrid}>
-                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((weekday, index) => (
-                  <Text key={`${weekday}-${index}`} style={styles.calendarWeekday}>{weekday}</Text>
-                ))}
-                {calendarDays.map((day) => (
-                  <Pressable
-                    key={day.value}
-                    style={[
-                      styles.calendarDay,
-                      day.muted && styles.calendarDayMuted,
-                      day.selected && styles.calendarDaySelected,
-                    ]}
-                    onPress={() => selectCalendarDate(day.value)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: day.selected }}
-                  >
-                    <Text style={[styles.calendarDayText, day.muted && styles.calendarDayTextMuted, day.selected && styles.calendarDayTextSelected]}>
-                      {day.day}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <TextInput
-                value={schedule.dueTimeValue}
-                onChangeText={(value) => setSchedule((current) => normalizeSchedule({ ...current, dueTimeValue: value }))}
-                placeholder="Hora do prazo, ex.: 17:30"
-                placeholderTextColor={theme.colors.text3}
-                style={styles.sheetInput}
-                selectionColor={theme.colors.text1}
-                keyboardType="numbers-and-punctuation"
+            <View style={styles.cmDateMenu}>
+              <CardModalRangeCalendar
+                key={`${card.id}-${schedule.startDateValue}-${schedule.dueDateValue}`}
+                value={selectedCalendarRange}
+                onChange={handleCalendarRangeChange}
               />
-              <View style={styles.sheetButtonRow}>
-                <Pressable style={styles.sheetSecondaryButton} onPress={clearSchedule} accessibilityRole="button">
-                  <Text style={styles.sheetSecondaryButtonText}>Remover</Text>
-                </Pressable>
-                <Pressable style={styles.sheetPrimaryButton} onPress={saveSchedule} accessibilityRole="button">
-                  <Text style={styles.sheetPrimaryButtonText}>Salvar</Text>
-                </Pressable>
-              </View>
             </View>
           ) : null}
 
@@ -3737,115 +3617,9 @@ const createStyles = (theme) => StyleSheet.create({
     height: 8,
     borderRadius: 999,
   },
-  scheduleEditor: {
-    gap: 14,
-  },
-  scheduleToggleList: {
-    gap: 0,
-  },
-  scheduleToggleRow: {
-    minHeight: 52,
-    flexDirection: 'row',
+  cmDateMenu: {
+    paddingVertical: 4,
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border1,
-  },
-  scheduleCheckbox: {
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border2,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.surface1,
-  },
-  scheduleCheckboxChecked: {
-    borderColor: theme.colors.text1,
-    backgroundColor: theme.colors.text1,
-  },
-  scheduleToggleText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  scheduleToggleLabel: {
-    color: theme.colors.text1,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  scheduleToggleHint: {
-    color: theme.colors.text3,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  calendarHeader: {
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  calendarTitle: {
-    flex: 1,
-    color: theme.colors.text1,
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    textTransform: 'capitalize',
-  },
-  calendarNavButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border1,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface2,
-  },
-  calendarNavText: {
-    color: theme.colors.text1,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  calendarWeekday: {
-    width: '13.2%',
-    marginBottom: 2,
-    color: theme.colors.text3,
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  calendarDay: {
-    width: '13.2%',
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radius.sm,
-  },
-  calendarDayMuted: {
-    opacity: 0.4,
-  },
-  calendarDaySelected: {
-    backgroundColor: theme.colors.text1,
-  },
-  calendarDayText: {
-    color: theme.colors.text1,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  calendarDayTextMuted: {
-    color: theme.colors.text3,
-  },
-  calendarDayTextSelected: {
-    color: theme.colors.textInverse,
   },
   sheetChipList: {
     gap: 0,
