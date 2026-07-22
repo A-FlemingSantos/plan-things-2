@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Animated, Easing, FlatList, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Animated, Easing, FlatList, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
 import { getFileSizeBytes, getFileTimestamp } from '@plan-things/shared-client/files'
 import {
@@ -28,10 +28,7 @@ import {
   X,
 } from 'lucide-react-native'
 import { interactivePointerEventsStyle, resolveInteractivePointerEventsStyle, shouldUseNativeDriver, withPlatformPointerEvents } from '../theme/platformRuntime'
-import { platformShadow } from '../theme/shadowStyles'
-import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
-import { useAuth } from '../providers/AuthProvider'
 import { useFiles } from '../providers/FilesProvider'
 import { usePlans } from '../providers/PlansProvider'
 import { theme } from '../theme/tokens'
@@ -79,7 +76,7 @@ function SolidFileIcon({ type = 'doc', size, variant = 'tile' }) {
         {
           width: size,
           height: size,
-          borderRadius: Math.max(7, size * 0.22),
+          borderRadius: Math.max(theme.radius.sm, size * 0.22),
         },
       ]}
     >
@@ -90,7 +87,6 @@ function SolidFileIcon({ type = 'doc', size, variant = 'tile' }) {
 
 export default function FilesScreen({ bottomOverlayOffset = 0 }) {
   styles = useThemedStyles(createStyles)
-  const { session } = useAuth()
   const {
     files: localFiles,
     createFolder,
@@ -334,7 +330,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
             return (
               <View style={[styles.fileRow, index === 0 && styles.fileRowFirst]}>
                 <View style={styles.fileIcon}>
-                  <SolidFileIcon type={file.type} size={32} />
+                  <SolidFileIcon type={file.type} size={40} />
                 </View>
                 <View style={styles.fileBody}>
                   <Text style={styles.fileName} numberOfLines={1}>{file.name}</Text>
@@ -343,28 +339,26 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                       {file.sizeLabel || file.size || '0 KB'} · {file.modified}
                     </Text>
                     {file.shared ? (
-                      <View style={styles.sharedBadge}>
-                        <Text style={styles.sharedBadgeText}>compartilhado</Text>
-                      </View>
+                      <Text style={styles.sharedBadgeText}>compartilhado</Text>
                     ) : null}
                   </View>
                 </View>
                 <View style={styles.fileActions}>
                   <Pressable
-                    style={styles.starButton}
+                    style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}
                     onPress={() => toggleFavorite(file)}
                     accessibilityRole="button"
                     accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
                   >
-                    <Star size={18} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
+                    <Star size={17} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
                   </Pressable>
                   <Pressable
-                    style={styles.moreButton}
+                    style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}
                     onPress={() => openFileMenu(file)}
                     accessibilityRole="button"
                     accessibilityLabel={`Mais opções para ${file.name}`}
                   >
-                    <MoreHorizontal size={20} color={theme.colors.text2} strokeWidth={2} />
+                    <MoreHorizontal size={18} color={theme.colors.text2} strokeWidth={2} />
                   </Pressable>
                 </View>
               </View>
@@ -374,23 +368,23 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           return (
             <View style={styles.gridItem}>
               <View style={styles.gridHero}>
-                <SolidFileIcon type={file.type} size={64} variant="plain" />
+                <SolidFileIcon type={file.type} size={52} variant="plain" />
                 <View style={styles.gridHeroActions}>
                   <Pressable
-                    style={styles.starButton}
+                    style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}
                     onPress={() => toggleFavorite(file)}
                     accessibilityRole="button"
                     accessibilityLabel={file.favorite ? `Remover ${file.name} dos favoritos` : `Favoritar ${file.name}`}
                   >
-                    <Star size={18} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
+                    <Star size={17} color={file.favorite ? theme.colors.amber : theme.colors.text3} strokeWidth={1.9} />
                   </Pressable>
                   <Pressable
-                    style={styles.gridMoreButton}
+                    style={({ pressed }) => [styles.iconAction, pressed && styles.pressed]}
                     onPress={() => openFileMenu(file)}
                     accessibilityRole="button"
                     accessibilityLabel={`Mais opções para ${file.name}`}
                   >
-                    <MoreHorizontal size={20} color={theme.colors.text2} strokeWidth={2} />
+                    <MoreHorizontal size={18} color={theme.colors.text2} strokeWidth={2} />
                   </Pressable>
                 </View>
               </View>
@@ -416,55 +410,46 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           <View>
             <View style={styles.topbar}>
               <View style={styles.topbarText}>
-                <Text style={styles.pageTitle}>Arquivos</Text>
-                <Text style={styles.pageSubtitle} numberOfLines={1}>
-                  {activeSectionLabel} · {filteredFiles.length} itens
-                </Text>
+                <Text style={styles.pageEyebrow}>{activeSectionLabel.toUpperCase()}</Text>
+                <Text style={styles.pageTitle} numberOfLines={1}>Arquivos</Text>
               </View>
-              <View style={styles.topbarActions}>
-                <AuthenticatedAvatar
-                  style={styles.topbarAvatar}
-                  textStyle={styles.topbarAvatarText}
-                  avatarUrl={session?.user?.avatarUrl}
-                  fallback={session?.user?.initials ?? 'PT'}
-                  accessibilityLabel={session?.user?.fullName ? `Avatar de ${session.user.fullName}` : 'Avatar do usuario'}
-                />
-                <Pressable
-                  style={styles.iconButton}
-                  onPress={() => setSortSheetOpen(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ordenar arquivos"
-                >
-                  <ArrowDownUp size={18} color={theme.colors.text1} strokeWidth={1.9} />
-                </Pressable>
-                <Pressable
-                  style={styles.newButton}
-                  onPress={openNewItemSheet}
-                  accessibilityRole="button"
-                  accessibilityLabel="Adicionar arquivo"
-                >
-                  <Plus size={18} color={theme.colors.textInverse} strokeWidth={2} />
-                </Pressable>
-              </View>
+              <Pressable
+                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                onPress={() => setSortSheetOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Ordenar arquivos"
+              >
+                <ArrowDownUp size={17} color={theme.colors.text1} strokeWidth={1.9} />
+              </Pressable>
             </View>
 
-            <View style={styles.searchWrap}>
-              <Search size={15} color={theme.colors.text3} strokeWidth={1.8} />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Buscar na biblioteca..."
-                placeholderTextColor={theme.colors.text3}
-                style={styles.searchInput}
-                selectionColor={theme.colors.text1}
-                autoCorrect={false}
-                autoCapitalize="none"
-              />
-              {query ? (
-                <Pressable style={styles.searchClear} onPress={() => setQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Limpar busca">
-                  <X size={14} color={theme.colors.text2} strokeWidth={1.8} />
-                </Pressable>
-              ) : null}
+            <View style={styles.searchBar}>
+              <View style={styles.searchWrap}>
+                <Search size={16} color={theme.colors.text3} strokeWidth={1.8} />
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Buscar na biblioteca..."
+                  placeholderTextColor={theme.colors.text3}
+                  style={styles.searchInput}
+                  selectionColor={theme.colors.text1}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                />
+                {query ? (
+                  <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Limpar busca">
+                    <X size={15} color={theme.colors.text3} strokeWidth={1.8} />
+                  </Pressable>
+                ) : null}
+              </View>
+              <Pressable
+                style={({ pressed }) => [styles.newButton, pressed && styles.pressed]}
+                onPress={openNewItemSheet}
+                accessibilityRole="button"
+                accessibilityLabel="Adicionar arquivo"
+              >
+                <Plus size={19} color={theme.colors.textInverse} strokeWidth={2} />
+              </Pressable>
             </View>
 
             <ScrollView
@@ -480,54 +465,63 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 return (
                   <Pressable
                     key={section.id}
-                    style={[styles.sectionChip, isActive && styles.sectionChipActive]}
+                    style={({ pressed }) => [
+                      styles.sectionChip,
+                      isActive && styles.sectionChipActive,
+                      pressed && styles.pressed,
+                    ]}
                     onPress={() => setActiveSection(section.id)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isActive }}
                   >
-                    <SectionIcon size={15} color={isActive ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.9} />
+                    <SectionIcon size={14} color={isActive ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.9} />
                     <Text style={[styles.sectionChipLabel, isActive && styles.sectionChipLabelActive]} numberOfLines={1}>
                       {section.label}
                     </Text>
-                    <View style={[styles.sectionChipCount, isActive && styles.sectionChipCountActive]}>
-                      <Text style={[styles.sectionChipCountText, isActive && styles.sectionChipCountTextActive]}>{count}</Text>
-                    </View>
+                    <Text style={[styles.sectionChipCount, isActive && styles.sectionChipCountActive]}>{count}</Text>
                   </Pressable>
                 )
               })}
             </ScrollView>
 
             <View style={styles.toolbar}>
-              <View style={styles.viewToggle}>
-                <Pressable
-                  style={[styles.viewToggleBtn, displayMode === 'grid' && styles.viewToggleBtnActive]}
-                  onPress={() => setDisplayMode('grid')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Visualizacao em grade"
-                >
-                  <Grid2X2 size={15} color={displayMode === 'grid' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
-                </Pressable>
-                <Pressable
-                  style={[styles.viewToggleBtn, displayMode === 'list' && styles.viewToggleBtnActive]}
-                  onPress={() => setDisplayMode('list')}
-                  accessibilityRole="button"
-                  accessibilityLabel="Visualizacao em lista"
-                >
-                  <List size={16} color={displayMode === 'list' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
-                </Pressable>
+              <View style={styles.sectionMeta}>
+                <Text style={styles.sectionMetaCount}>{filteredFiles.length}</Text>
+                <Text style={styles.sectionMetaLabel}>itens</Text>
               </View>
 
-              <Pressable
-                style={styles.sortButton}
-                onPress={() => setSortSheetOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Abrir opções de ordenação"
-              >
-                <Text style={styles.sortButtonText} numberOfLines={1}>
-                  Ordenar: {activeSection === 'recent' ? 'Modificado' : sortKey === 'modified' ? 'Modificado' : sortKey === 'size' ? 'Tamanho' : 'Nome'}
-                </Text>
-                <ArrowDown size={16} color={theme.colors.text3} strokeWidth={1.8} />
-              </Pressable>
+              <View style={styles.toolbarRight}>
+                <View style={styles.viewToggle}>
+                  <Pressable
+                    style={[styles.viewToggleBtn, displayMode === 'grid' && styles.viewToggleBtnActive]}
+                    onPress={() => setDisplayMode('grid')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Visualizacao em grade"
+                  >
+                    <Grid2X2 size={16} color={displayMode === 'grid' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.viewToggleBtn, displayMode === 'list' && styles.viewToggleBtnActive]}
+                    onPress={() => setDisplayMode('list')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Visualizacao em lista"
+                  >
+                    <List size={16} color={displayMode === 'list' ? theme.colors.text1 : theme.colors.text3} strokeWidth={1.8} />
+                  </Pressable>
+                </View>
+
+                <Pressable
+                  style={({ pressed }) => [styles.sortButton, pressed && styles.pressed]}
+                  onPress={() => setSortSheetOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir opções de ordenação"
+                >
+                  <Text style={styles.sortButtonText} numberOfLines={1}>
+                    {activeSection === 'recent' ? 'Modificado' : sortKey === 'modified' ? 'Modificado' : sortKey === 'size' ? 'Tamanho' : 'Nome'}
+                  </Text>
+                  <ArrowDown size={15} color={theme.colors.text3} strokeWidth={1.8} />
+                </Pressable>
+              </View>
             </View>
           </View>
         )}
@@ -569,15 +563,19 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               return (
                 <Pressable
                   key={option.id}
-                  style={[styles.quickCreateButton, option.disabled && styles.quickCreateButtonDisabled]}
+                  style={({ pressed }) => [
+                    styles.quickCreateButton,
+                    option.disabled && styles.quickCreateButtonDisabled,
+                    pressed && !option.disabled && styles.pressed,
+                  ]}
                   onPress={() => openCreateFlow(option)}
                   disabled={option.disabled}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: Boolean(option.disabled) }}
                   accessibilityLabel={option.label}
                 >
-                  <OptionIcon size={24} color={option.disabled ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.55} />
-                  <Text style={styles.quickCreateLabel}>{option.label}</Text>
+                  <OptionIcon size={22} color={option.disabled ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.55} />
+                  <Text style={[styles.quickCreateLabel, option.disabled && styles.quickCreateLabelDisabled]}>{option.label}</Text>
                   {option.disabled ? <Text style={styles.comingSoonText}>Em breve</Text> : null}
                 </Pressable>
               )
@@ -585,12 +583,18 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           </View>
 
           <View style={styles.documentCreateList}>
-            {documentCreateOptions.map((option) => {
+            {documentCreateOptions.map((option, index) => {
               const OptionIcon = option.icon
+              const isLast = index === documentCreateOptions.length - 1
               return (
                 <Pressable
                   key={option.id}
-                  style={[styles.documentCreateRow, option.disabled && styles.documentCreateRowDisabled]}
+                  style={({ pressed }) => [
+                    styles.documentCreateRow,
+                    !isLast && styles.documentCreateRowBorder,
+                    option.disabled && styles.documentCreateRowDisabled,
+                    pressed && !option.disabled && styles.pressed,
+                  ]}
                   onPress={() => openCreateFlow(option)}
                   disabled={option.disabled}
                   accessibilityRole="button"
@@ -598,13 +602,11 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                   accessibilityLabel={option.label}
                 >
                   <View style={styles.documentCreateIcon}>
-                    <OptionIcon size={18} color={theme.colors.textInverse} fill={theme.colors.text1} strokeWidth={1.55} />
+                    <OptionIcon size={17} color={option.disabled ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.55} />
                   </View>
-                  <Text style={styles.documentCreateLabel}>{option.label}</Text>
+                  <Text style={[styles.documentCreateLabel, option.disabled && styles.documentCreateLabelDisabled]}>{option.label}</Text>
                   {option.disabled ? (
-                    <View style={styles.comingSoonBadge}>
-                      <Text style={styles.comingSoonBadgeText}>Em breve</Text>
-                    </View>
+                    <Text style={styles.comingSoonText}>Em breve</Text>
                   ) : null}
                 </Pressable>
               )
@@ -617,20 +619,20 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
         {fileSheetMode === 'menu' ? (
           <View style={styles.fileActionList}>
             <View style={styles.fileActionMeta}>
-              <SolidFileIcon type={selectedFile?.type} size={36} />
+              <SolidFileIcon type={selectedFile?.type} size={40} />
               <View style={styles.fileActionMetaBody}>
                 <Text style={styles.fileActionTitle} numberOfLines={1}>{selectedFile?.name}</Text>
-              <Text style={styles.fileActionSubtitle}>{selectedFile?.sizeLabel || selectedFile?.size || '0 KB'} · {selectedFile?.modified}</Text>
+                <Text style={styles.fileActionSubtitle}>{selectedFile?.sizeLabel || selectedFile?.size || '0 KB'} · {selectedFile?.modified}</Text>
               </View>
             </View>
             {fileError ? <Text style={styles.fileInlineError}>{fileError}</Text> : null}
 
-            <Pressable style={styles.fileActionRow} onPress={() => setFileSheetMode('details')} accessibilityRole="button">
+            <Pressable style={({ pressed }) => [styles.fileActionRow, pressed && styles.pressed]} onPress={() => setFileSheetMode('details')} accessibilityRole="button">
               <FileText size={18} color={theme.colors.text1} strokeWidth={1.8} />
               <Text style={styles.fileActionLabel}>Abrir detalhes</Text>
             </Pressable>
             <Pressable
-              style={styles.fileActionRow}
+              style={({ pressed }) => [styles.fileActionRow, pressed && styles.pressed]}
               onPress={() => {
                 updateSelectedFile({ favorite: !selectedFile?.favorite })
                 closeFileSheet()
@@ -643,12 +645,10 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
             <Pressable style={[styles.fileActionRow, styles.fileActionRowDisabled]} disabled accessibilityRole="button" accessibilityState={{ disabled: true }}>
               <Text style={[styles.fileActionIconText, styles.fileActionIconTextDisabled]}>Aa</Text>
               <Text style={styles.fileActionLabel}>Renomear</Text>
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonBadgeText}>Em breve</Text>
-              </View>
+              <Text style={styles.comingSoonText}>Em breve</Text>
             </Pressable>
             <Pressable
-              style={styles.fileActionRow}
+              style={({ pressed }) => [styles.fileActionRow, pressed && styles.pressed]}
               onPress={() => {
                 updateSelectedFile({ shared: !selectedFile?.shared })
                 closeFileSheet()
@@ -668,19 +668,15 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
               <Download size={18} color={selectedFile?.type === 'folder' ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.8} />
               <Text style={styles.fileActionLabel}>Baixar</Text>
               {selectedFile?.type === 'folder' ? (
-                <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonBadgeText}>Em breve</Text>
-                </View>
+                <Text style={styles.comingSoonText}>Em breve</Text>
               ) : null}
             </Pressable>
             <Pressable style={[styles.fileActionRow, styles.fileActionRowDisabled]} disabled accessibilityRole="button" accessibilityState={{ disabled: true }}>
               <Folder size={18} color={theme.colors.text3} strokeWidth={1.8} />
               <Text style={styles.fileActionLabel}>Mover</Text>
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonBadgeText}>Em breve</Text>
-              </View>
+              <Text style={styles.comingSoonText}>Em breve</Text>
             </Pressable>
-            <Pressable style={[styles.fileActionRow, styles.fileActionDanger]} onPress={deleteSelectedFile} accessibilityRole="button">
+            <Pressable style={({ pressed }) => [styles.fileActionRow, styles.fileActionDanger, pressed && styles.pressed]} onPress={deleteSelectedFile} accessibilityRole="button">
               <Trash2 size={18} color={theme.colors.red} strokeWidth={1.8} />
               <Text style={[styles.fileActionLabel, styles.fileActionDangerText]}>{selectedFile?.trashed ? 'Restaurar' : 'Mover para lixeira'}</Text>
             </Pressable>
@@ -706,18 +702,23 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
             { id: 'name', label: 'Nome' },
             { id: 'modified', label: 'Modificado' },
             { id: 'size', label: 'Tamanho' },
-          ].map((option) => {
+          ].map((option, index, array) => {
             const selected = sortKey === option.id
+            const isLast = index === array.length - 1
             return (
               <Pressable
                 key={option.id}
-                style={[styles.sortOption, selected && styles.sortOptionActive]}
+                style={({ pressed }) => [
+                  styles.sortOption,
+                  !isLast && styles.sortOptionBorder,
+                  pressed && styles.pressed,
+                ]}
                 onPress={() => setSortKey(option.id)}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
               >
                 <View style={styles.sortOptionCheck}>
-                  {selected ? <Check size={20} color={theme.colors.text1} strokeWidth={2} /> : null}
+                  {selected ? <Check size={18} color={theme.colors.text1} strokeWidth={2} /> : null}
                 </View>
                 <Text style={[styles.sortOptionLabel, selected && styles.sortOptionLabelActive]}>{option.label}</Text>
               </Pressable>
@@ -729,25 +730,30 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           {[
             { id: 'asc', label: 'Crescente' },
             { id: 'desc', label: 'Decrescente' },
-          ].map((option) => {
+          ].map((option, index, array) => {
             const selected = sortDirection === option.id
+            const isLast = index === array.length - 1
             return (
               <Pressable
                 key={option.id}
-                style={[styles.sortOption, selected && styles.sortOptionActive]}
+                style={({ pressed }) => [
+                  styles.sortOption,
+                  !isLast && styles.sortOptionBorder,
+                  pressed && styles.pressed,
+                ]}
                 onPress={() => setSortDirection(option.id)}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
               >
                 <View style={styles.sortOptionCheck}>
-                  {selected ? <Check size={20} color={theme.colors.text1} strokeWidth={2} /> : null}
+                  {selected ? <Check size={18} color={theme.colors.text1} strokeWidth={2} /> : null}
                 </View>
                 <Text style={[styles.sortOptionLabel, selected && styles.sortOptionLabelActive]}>{option.label}</Text>
               </Pressable>
             )
           })}
 
-          <Pressable style={styles.sortApply} onPress={() => setSortSheetOpen(false)} accessibilityRole="button">
+          <Pressable style={({ pressed }) => [styles.sortApply, pressed && styles.pressed]} onPress={() => setSortSheetOpen(false)} accessibilityRole="button">
             <Text style={styles.sortApplyText}>Aplicar</Text>
           </Pressable>
         </View>
@@ -758,7 +764,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
           {createFlow ? (
             <>
               <View style={styles.createFlowIcon}>
-                {CreateFlowIcon ? <CreateFlowIcon size={23} color={theme.colors.text1} strokeWidth={1.7} /> : null}
+                {CreateFlowIcon ? <CreateFlowIcon size={22} color={theme.colors.text1} strokeWidth={1.7} /> : null}
               </View>
               <Text style={styles.createFlowTitle}>{createFlow.label}</Text>
               <Text style={styles.createFlowText}>
@@ -776,7 +782,7 @@ export default function FilesScreen({ bottomOverlayOffset = 0 }) {
                 value={createName}
                 onChangeText={setCreateName}
               />
-              <Pressable style={styles.filePrimaryButton} onPress={submitCreateFlow} accessibilityRole="button">
+              <Pressable style={({ pressed }) => [styles.filePrimaryButton, pressed && styles.pressed]} onPress={submitCreateFlow} accessibilityRole="button">
                 <Text style={styles.filePrimaryButtonText}>Concluir</Text>
               </Pressable>
             </>
@@ -798,93 +804,81 @@ const createStyles = (theme) => StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 104,
+  },
+  pressed: {
+    opacity: 0.75,
   },
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 16,
-    marginBottom: 14,
+    marginBottom: 24,
   },
   topbarText: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
+  },
+  pageEyebrow: {
+    color: theme.colors.text3,
+    ...theme.type.eyebrow,
+    textTransform: 'uppercase',
   },
   pageTitle: {
     color: theme.colors.text1,
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '400',
+    ...theme.type.display,
   },
-  pageSubtitle: {
-    color: theme.colors.text3,
-    fontSize: 13,
-    marginTop: 2,
+  iconButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface2,
   },
-  topbarActions: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  topbarAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: theme.colors.surface3,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-  },
-  topbarAvatarText: {
-    color: theme.colors.text1,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  iconButton: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
-    outlineStyle: 'none',
-  },
-  newButton: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-    backgroundColor: theme.colors.text1,
-    outlineStyle: 'none',
+    marginBottom: 20,
   },
   searchWrap: {
-    minHeight: 44,
+    flex: 1,
+    minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    paddingHorizontal: 13,
-    borderWidth: 1,
+    gap: 10,
+    paddingHorizontal: 14,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface1,
-    marginBottom: 14,
   },
-  searchClear: {
-    width: 26,
-    height: 26,
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.text1,
+    fontSize: 15,
+    paddingVertical: 0,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+  },
+  newButton: {
+    width: 46,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface2,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.text1,
   },
   sectionChipsScroller: {
     marginHorizontal: -theme.spacing.screenX,
     paddingHorizontal: theme.spacing.screenX,
-    marginBottom: 14,
+    marginBottom: 18,
   },
   sectionChips: {
     gap: 8,
@@ -893,361 +887,157 @@ const createStyles = (theme) => StyleSheet.create({
   sectionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
     height: 34,
     paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface2,
-    outlineStyle: 'none',
   },
   sectionChipActive: {
     backgroundColor: theme.colors.surface1,
-    borderColor: theme.colors.text1,
+    borderColor: theme.colors.border1,
   },
   sectionChipLabel: {
     color: theme.colors.text2,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   sectionChipLabelActive: {
     color: theme.colors.text1,
+    fontWeight: '600',
   },
   sectionChipCount: {
-    minWidth: 22,
-    height: 22,
-    paddingHorizontal: 7,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.surface3,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
+    color: theme.colors.text3,
+    fontSize: 12,
+    fontWeight: '500',
+    minWidth: 14,
+    textAlign: 'right',
   },
   sectionChipCountActive: {
-    backgroundColor: theme.colors.text1,
-    borderColor: theme.colors.text1,
-  },
-  sectionChipCountText: {
     color: theme.colors.text2,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  sectionChipCountTextActive: {
-    color: theme.colors.textInverse,
   },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+  sectionMeta: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 5,
+  },
+  sectionMetaCount: {
+    color: theme.colors.text1,
+    ...theme.type.heading,
+  },
+  sectionMetaLabel: {
+    color: theme.colors.text3,
+    fontSize: 13,
+  },
+  toolbarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 1,
+    minWidth: 0,
   },
   viewToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 2,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 9,
+    gap: 2,
+    padding: 3,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
   },
   viewToggleBtn: {
-    width: 32,
+    width: 34,
     height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 7,
+    borderRadius: theme.radius.sm,
   },
   viewToggleBtnActive: {
     backgroundColor: theme.colors.surface1,
-    ...platformShadow({
-      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
-      color: theme.colors.black,
-      offset: { width: 0, height: 2 },
-      opacity: 0.08,
-      radius: 5,
-    }),
   },
   sortButton: {
-    flex: 1,
-    minWidth: 0,
-    height: 34,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: theme.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface2,
-    outlineStyle: 'none',
+    maxWidth: 140,
   },
   sortButtonText: {
-    flex: 1,
-    minWidth: 0,
+    flexShrink: 1,
     color: theme.colors.text2,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',
-    padding: 22,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
-    marginBottom: 18,
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 48,
+    paddingHorizontal: 24,
   },
   emptyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface1,
-    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    marginBottom: 10,
+    marginBottom: 4,
   },
   emptyTitle: {
     color: theme.colors.text1,
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   emptyHint: {
-    color: theme.colors.text2,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  header: {
-    marginBottom: 18,
-  },
-  title: {
-    color: theme.colors.text1,
-    fontSize: 32,
-    fontWeight: '400',
-    lineHeight: 38,
-  },
-  meta: {
     color: theme.colors.text3,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  sectionTabs: {
-    gap: 24,
-    paddingRight: 24,
-    paddingBottom: 16,
-  },
-  sectionTabsScroller: {
-    height: 88,
-    flexGrow: 0,
-  },
-  sectionTab: {
-    width: 112,
-    minHeight: 72,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 6,
-  },
-  sectionLabel: {
-    color: theme.colors.text2,
-    fontSize: 15,
-    lineHeight: 18,
-  },
-  sectionLabelActive: {
-    color: theme.colors.text1,
-    fontWeight: '600',
-  },
-  sectionIndicator: {
-    width: 76,
-    height: 3,
-    borderRadius: 999,
-    backgroundColor: 'transparent',
-  },
-  sectionIndicatorActive: {
-    backgroundColor: theme.colors.text1,
-  },
-  controlsWrap: {
-    position: 'relative',
-    zIndex: 3,
-    marginBottom: 18,
-  },
-  controls: {
-    minHeight: 38,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sort: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-  },
-  sortText: {
-    color: theme.colors.text2,
-    fontSize: 21,
-    fontWeight: '400',
-  },
-  filterButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    outlineStyle: 'none',
-  },
-  filterButtonActive: {
-    backgroundColor: theme.colors.surface3,
-  },
-  viewMenu: {
-    position: 'absolute',
-    top: 45,
-    right: 0,
-    width: 222,
-    paddingTop: 18,
-    paddingRight: 18,
-    paddingBottom: 14,
-    paddingLeft: 18,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface1,
-    ...platformShadow({
-      boxShadow: '0 8px 18px rgba(0, 0, 0, 0.13)',
-      color: theme.colors.black,
-      offset: { width: 0, height: 8 },
-      opacity: 0.13,
-      radius: 18,
-      elevation: 8,
-    }),
-  },
-  viewMenuTitle: {
-    color: theme.colors.text1,
-    fontSize: 17,
-    marginBottom: 13,
-  },
-  viewMenuOption: {
-    minHeight: 46,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: -8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    outlineStyle: 'none',
-  },
-  viewMenuOptionActive: {
-    backgroundColor: theme.colors.surface3,
-  },
-  viewMenuCheck: {
-    width: 27,
-    alignItems: 'center',
-  },
-  viewMenuLabel: {
-    flex: 1,
-    color: theme.colors.text1,
-    fontSize: 18,
-  },
-  viewMenuLabelActive: {
-    fontWeight: '500',
-  },
-  floatingWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 16,
-    alignItems: 'center',
-  },
-  floatingControls: {
-    height: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 29,
-    ...platformShadow({
-      boxShadow: '0 4px 9px rgba(0, 0, 0, 0.16)',
-      color: theme.colors.black,
-      offset: { width: 0, height: 4 },
-      opacity: 0.16,
-      radius: 9,
-    }),
-  },
-  search: {
-    height: 58,
-    paddingHorizontal: 18,
-    borderRadius: 29,
-    borderWidth: 1,
-    outlineStyle: 'none',
-    ...platformShadow({
-      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.16)',
-      color: theme.colors.black,
-      offset: { width: 0, height: 4 },
-      opacity: 0.16,
-      radius: 10,
-      elevation: 4,
-    }),
-  },
-  expandedSearchContent: {
-    flex: 1,
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-  },
-  searchIconSlot: {
-    width: 25,
-    height: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compactSearchButton: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    outlineStyle: 'none',
-  },
-  searchInputWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  searchInput: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.text1,
-    fontSize: 14,
-    paddingVertical: 0,
-    outlineStyle: 'none',
-  },
-  list: {
-    zIndex: 1,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border1,
+    fontSize: 13.5,
+    lineHeight: 19,
+    textAlign: 'center',
+    maxWidth: 280,
   },
   fileRow: {
-    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
   },
   fileRowFirst: {
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.colors.border1,
   },
   fileIcon: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fileIconTile: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface2,
   },
   fileBody: {
     flex: 1,
@@ -1257,73 +1047,78 @@ const createStyles = (theme) => StyleSheet.create({
   fileName: {
     color: theme.colors.text1,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   fileMeta: {
-    color: theme.colors.text2,
-    fontSize: 12,
+    color: theme.colors.text3,
+    fontSize: 12.5,
   },
   fileMetaRow: {
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-  },
-  sharedBadge: {
-    flexShrink: 0,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: theme.colors.surface3,
+    gap: 8,
   },
   sharedBadgeText: {
-    color: theme.colors.text1,
+    flexShrink: 0,
+    color: theme.colors.text3,
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   fileActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginLeft: 10,
+    gap: 2,
+    marginLeft: 4,
   },
-  starButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.surface2,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    outlineStyle: 'none',
-  },
-  moreButton: {
+  iconAction: {
     width: 34,
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface2,
-    borderWidth: 1,
+    borderRadius: theme.radius.sm,
+  },
+  gridRow: {
+    gap: 12,
+  },
+  gridItem: {
+    flex: 1,
+    marginBottom: 12,
+    padding: 13,
+    borderRadius: theme.radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    outlineStyle: 'none',
+    backgroundColor: theme.colors.surface1,
   },
-  compactDivider: {
-    width: 1,
-    height: 28,
-    marginLeft: -1,
-    backgroundColor: theme.colors.gray600,
-  },
-  addButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+  gridHero: {
+    height: 88,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.text1,
-    outlineStyle: 'none',
+    marginBottom: 12,
+    position: 'relative',
+  },
+  gridHeroActions: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+  },
+  gridName: {
+    color: theme.colors.text1,
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    minHeight: 38,
+  },
+  gridMeta: {
+    color: theme.colors.text3,
+    fontSize: 12,
+    marginTop: 4,
   },
   sheetLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -1342,208 +1137,112 @@ const createStyles = (theme) => StyleSheet.create({
     bottom: 0,
     left: 0,
     paddingTop: 10,
-    paddingRight: 26,
+    paddingRight: theme.spacing.screenX,
     paddingBottom: 2,
-    paddingLeft: 26,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    paddingLeft: theme.spacing.screenX,
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
     backgroundColor: theme.colors.surface1,
-    ...platformShadow({
-      boxShadow: '0 -5px 18px rgba(0, 0, 0, 0.16)',
-      color: theme.colors.black,
-      offset: { width: 0, height: -5 },
-      opacity: 0.16,
-      radius: 18,
-      elevation: 14,
-    }),
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
   },
   sheetHandle: {
-    width: 48,
-    height: 5,
+    width: 40,
+    height: 4,
     alignSelf: 'center',
-    marginBottom: 10,
-    borderRadius: 999,
-    backgroundColor: theme.colors.gray600,
+    marginBottom: 14,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.border2,
   },
   sheetTitle: {
     color: theme.colors.text1,
-    fontSize: 22,
-    lineHeight: 27,
-    fontWeight: '400',
+    ...theme.type.title,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   quickCreateGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 16,
   },
   quickCreateButton: {
     flex: 1,
-    minHeight: 68,
+    minHeight: 72,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    borderRadius: 8,
+    gap: 6,
+    borderRadius: theme.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface2,
-    outlineStyle: 'none',
   },
   quickCreateButtonDisabled: {
-    opacity: 0.66,
+    opacity: 0.55,
   },
   quickCreateLabel: {
     color: theme.colors.text1,
     fontSize: 13,
     lineHeight: 17,
+    fontWeight: '500',
+  },
+  quickCreateLabelDisabled: {
+    color: theme.colors.text3,
   },
   comingSoonText: {
     color: theme.colors.text3,
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   documentCreateList: {
-    gap: 18,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border1,
   },
   documentCreateRow: {
-    minHeight: 28,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    outlineStyle: 'none',
+    paddingVertical: 10,
+  },
+  documentCreateRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   documentCreateRowDisabled: {
-    opacity: 0.68,
+    opacity: 0.55,
   },
   documentCreateIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.surface2,
-  },
-  fileIconTile: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
   },
   documentCreateLabel: {
     flex: 1,
     color: theme.colors.text1,
-    fontSize: 17,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '500',
   },
-  comingSoonBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
-  },
-  comingSoonBadgeText: {
+  documentCreateLabelDisabled: {
     color: theme.colors.text3,
-    fontSize: 11,
-    lineHeight: 13,
-    fontWeight: '800',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    zIndex: 1,
-  },
-  gridRow: {
-    gap: 12,
-  },
-  gridItem: {
-    flex: 1,
-    minHeight: 138,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
-    marginBottom: 12,
-  },
-  gridHero: {
-    height: 112,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  gridHeroActions: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  gridTop: {
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  gridIcon: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gridActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  gridMoreButton: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface1,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    outlineStyle: 'none',
-  },
-  gridName: {
-    color: theme.colors.text1,
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '700',
-    minHeight: 38,
-  },
-  gridMeta: {
-    color: theme.colors.text2,
-    fontSize: 12,
-    marginTop: 6,
   },
   fileActionList: {
-    gap: 8,
+    gap: 0,
   },
   fileActionMeta: {
-    minHeight: 62,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 11,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface2,
-    marginBottom: 4,
+    paddingBottom: 14,
+    marginBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   fileActionMetaBody: {
     flex: 1,
@@ -1554,23 +1253,23 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.text1,
     fontSize: 15,
     fontWeight: '600',
+    letterSpacing: -0.2,
   },
   fileActionSubtitle: {
-    color: theme.colors.text2,
-    fontSize: 12,
+    color: theme.colors.text3,
+    fontSize: 12.5,
   },
   fileActionRow: {
-    minHeight: 44,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface2,
-    outlineStyle: 'none',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   fileActionRowDisabled: {
-    opacity: 0.72,
+    opacity: 0.5,
   },
   fileActionIconText: {
     width: 18,
@@ -1594,13 +1293,15 @@ const createStyles = (theme) => StyleSheet.create({
     lineHeight: 17,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderWidth: 1,
+    marginBottom: 8,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.red,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface2,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.dangerBg,
   },
   fileActionDanger: {
-    backgroundColor: theme.colors.dangerBg,
+    borderBottomWidth: 0,
+    marginTop: 4,
   },
   fileActionDangerText: {
     color: theme.colors.red,
@@ -1610,45 +1311,27 @@ const createStyles = (theme) => StyleSheet.create({
   },
   fileDetailsLabel: {
     color: theme.colors.text3,
-    fontSize: 11,
-    fontWeight: '700',
+    ...theme.type.eyebrow,
     textTransform: 'uppercase',
-    marginTop: 8,
+    marginTop: 10,
   },
   fileDetailsValue: {
     color: theme.colors.text1,
     fontSize: 16,
-  },
-  fileRenameInput: {
-    minHeight: 46,
-    paddingHorizontal: 13,
-    borderWidth: 1,
-    borderColor: theme.colors.text1,
-    borderRadius: 9,
-    color: theme.colors.text1,
-    fontSize: 15,
-    marginBottom: 12,
-    outlineStyle: 'none',
+    fontWeight: '500',
   },
   filePrimaryButton: {
-    minHeight: 43,
+    minHeight: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.text1,
-  },
-  filePrimaryButtonDisabled: {
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface3,
+    alignSelf: 'stretch',
   },
   filePrimaryButtonText: {
     color: theme.colors.textInverse,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  filePrimaryButtonTextDisabled: {
-    color: theme.colors.text3,
+    fontWeight: '600',
   },
   createFlowPanel: {
     alignItems: 'center',
@@ -1658,91 +1341,84 @@ const createStyles = (theme) => StyleSheet.create({
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surface2,
-    marginBottom: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    marginBottom: 12,
   },
   createFlowTitle: {
     color: theme.colors.text1,
-    fontSize: 17,
-    fontWeight: '600',
+    ...theme.type.heading,
     marginBottom: 6,
   },
   createFlowText: {
-    color: theme.colors.text2,
+    color: theme.colors.text3,
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
+    maxWidth: 300,
   },
   createFlowInput: {
     alignSelf: 'stretch',
     minHeight: 46,
-    paddingHorizontal: 13,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 9,
+    borderRadius: theme.radius.md,
     color: theme.colors.text1,
     fontSize: 15,
-    marginBottom: 12,
-    outlineStyle: 'none',
+    marginBottom: 14,
+    backgroundColor: theme.colors.surface2,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   sortSheet: {
-    gap: 10,
+    gap: 0,
   },
   sortOption: {
-    minHeight: 44,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
-    outlineStyle: 'none',
+    gap: 12,
+    paddingVertical: 10,
   },
-  sortOptionActive: {
-    backgroundColor: theme.colors.surface1,
-    borderColor: theme.colors.text1,
+  sortOptionBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   sortOptionCheck: {
     width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface1,
   },
   sortOptionLabel: {
     flex: 1,
     color: theme.colors.text2,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   sortOptionLabelActive: {
     color: theme.colors.text1,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   sortDivider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     backgroundColor: theme.colors.border1,
-    marginTop: 2,
-    marginBottom: 2,
+    marginVertical: 8,
   },
   sortApply: {
-    minHeight: 44,
+    minHeight: 46,
+    marginTop: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.text1,
   },
   sortApplyText: {
     color: theme.colors.textInverse,
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '600',
   },
 })
 

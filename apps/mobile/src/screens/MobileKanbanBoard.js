@@ -265,7 +265,11 @@ function BoardCard({ card, onPress }) {
 
 function DetailAction({ icon: Icon, label, onPress }) {
   return (
-    <Pressable style={styles.detailAction} onPress={onPress} accessibilityRole="button">
+    <Pressable
+      style={({ pressed }) => [styles.detailAction, pressed && styles.cardPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
       <Icon size={15} color={theme.colors.text1} strokeWidth={1.8} />
       <Text style={styles.detailActionText}>{label}</Text>
     </Pressable>
@@ -281,7 +285,7 @@ function DetailSectionAction({ disabled = false, icon: Icon = Plus, label, onPre
       accessibilityRole="button"
       accessibilityState={{ disabled }}
     >
-      <Icon size={14} color={disabled ? theme.colors.text3 : theme.colors.textInverse} strokeWidth={1.9} />
+      <Icon size={14} color={disabled ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.8} />
       <Text style={[styles.detailSectionActionText, disabled && styles.detailSectionActionTextDisabled]}>{label}</Text>
     </Pressable>
   )
@@ -289,8 +293,12 @@ function DetailSectionAction({ disabled = false, icon: Icon = Plus, label, onPre
 
 function DetailSecondaryAction({ icon: Icon = Plus, label, onPress }) {
   return (
-    <Pressable style={styles.detailSecondaryAction} onPress={onPress} accessibilityRole="button">
-      <Icon size={14} color={theme.colors.text1} strokeWidth={1.8} />
+    <Pressable
+      style={({ pressed }) => [styles.detailSecondaryAction, pressed && styles.cardPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      <Icon size={14} color={theme.colors.text2} strokeWidth={1.8} />
       <Text style={styles.detailSecondaryActionText}>{label}</Text>
     </Pressable>
   )
@@ -622,34 +630,34 @@ function CardDetailScreen({
       <Animated.View style={[styles.detailScreen, { transform: [{ translateY }] }]}>
         <View style={styles.detailTopbar}>
           <Pressable
-            style={styles.detailIconButton}
+            style={({ pressed }) => [styles.detailIconButton, pressed && styles.cardPressed]}
             onPress={close}
             accessibilityRole="button"
             accessibilityLabel="Fechar cartão"
           >
-            <X size={20} color={theme.colors.text1} strokeWidth={1.9} />
+            <X size={18} color={theme.colors.text1} strokeWidth={1.8} />
           </Pressable>
           <Text style={styles.detailTopbarTitle} numberOfLines={1}>Cartão</Text>
           <Pressable
-            style={styles.detailIconButton}
+            style={({ pressed }) => [styles.detailIconButton, pressed && styles.cardPressed]}
             onPress={() => setActiveSheet('more')}
             accessibilityRole="button"
             accessibilityLabel="Mais opções"
           >
-            <MoreHorizontal size={19} color={theme.colors.text1} strokeWidth={1.8} />
+            <MoreHorizontal size={18} color={theme.colors.text1} strokeWidth={1.8} />
           </Pressable>
         </View>
 
         <ScrollView style={styles.detailScroll} contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
           <View style={styles.detailHero}>
+            <Text style={styles.detailEyebrow}>{column.title}</Text>
+            <Text style={styles.detailTitle}>{card.title}</Text>
             {label ? (
-              <View style={[styles.detailLabel, { backgroundColor: label.color }]}>
+              <View style={styles.detailLabelRow}>
+                <View style={[styles.detailLabelDot, { backgroundColor: label.color }]} />
                 <Text style={styles.detailLabelText}>{label.text}</Text>
               </View>
             ) : null}
-
-            <Text style={styles.detailTitle}>{card.title}</Text>
-            <Text style={styles.detailListName}>em {column.title}</Text>
           </View>
 
           <View style={styles.detailMetaGrid}>
@@ -673,10 +681,7 @@ function CardDetailScreen({
 
             <View style={styles.detailMetaItem}>
               <Text style={styles.detailMetaLabel}>Data</Text>
-              <View style={styles.detailDuePill}>
-                <Clock3 size={13} color={theme.colors.text2} strokeWidth={1.8} />
-                <Text style={styles.detailDueText}>{dueDate || 'Sem data'}</Text>
-              </View>
+              <Text style={styles.detailDueText}>{dueDate || 'Sem data'}</Text>
             </View>
           </View>
 
@@ -691,13 +696,13 @@ function CardDetailScreen({
           <View style={styles.detailSection}>
             <View style={styles.detailSectionHeader}>
               <View style={styles.detailSectionTitleWrap}>
-                <AlignLeft size={17} color={theme.colors.text1} strokeWidth={1.8} />
+                <AlignLeft size={16} color={theme.colors.text1} strokeWidth={1.8} />
                 <Text style={styles.detailSectionTitle}>Descrição</Text>
               </View>
               <DetailSectionAction
                 disabled={!hasDescriptionChanges}
                 icon={CheckSquare}
-                label="Concluir"
+                label="Salvar"
                 onPress={concludeDescriptionEdit}
               />
             </View>
@@ -707,7 +712,7 @@ function CardDetailScreen({
               onChangeText={setDescriptionValue}
               multiline
               textAlignVertical="top"
-              placeholder="Adicionar uma descrição para orientar o trabalho deste cartão."
+              placeholder="Adicionar descrição…"
               placeholderTextColor={theme.colors.text3}
               accessibilityLabel="Descrição do cartão"
             />
@@ -1141,7 +1146,11 @@ function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard, ...access
             <Text style={styles.columnTitle}>{column.title}</Text>
             <Text style={styles.columnCount}>{column.cards.length}</Text>
           </View>
-          <Pressable style={styles.columnAction} onPress={() => onAddCard(column.id)} accessibilityLabel="Adicionar cartão">
+          <Pressable
+            style={({ pressed }) => [styles.columnAction, pressed && styles.cardPressed]}
+            onPress={() => onAddCard(column.id)}
+            accessibilityLabel="Adicionar cartão"
+          >
             <Plus size={15} color={theme.colors.text2} strokeWidth={1.8} />
           </Pressable>
         </View>
@@ -1151,7 +1160,11 @@ function BoardColumn({ column, width, onAddCard, onLayout, onOpenCard, ...access
             <BoardCard key={card.id} card={card} onPress={() => onOpenCard(card, column)} />
           ))}
 
-          <Pressable style={styles.addCard} onPress={() => onAddCard(column.id)} accessibilityRole="button">
+          <Pressable
+            style={({ pressed }) => [styles.addCard, pressed && styles.cardPressed]}
+            onPress={() => onAddCard(column.id)}
+            accessibilityRole="button"
+          >
             <Plus size={14} color={theme.colors.text2} strokeWidth={1.8} />
             <Text style={styles.addCardText}>Adicionar cartão</Text>
           </Pressable>
@@ -1779,33 +1792,23 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
     <View style={styles.page}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Pressable style={styles.backButton} onPress={onBack ?? (() => navigation?.goBack())} accessibilityLabel="Voltar para Home">
-            <ArrowLeft size={19} color={theme.colors.text1} strokeWidth={1.9} />
+          <Pressable
+            style={({ pressed }) => [styles.backButton, pressed && styles.cardPressed]}
+            onPress={onBack ?? (() => navigation?.goBack())}
+            accessibilityLabel="Voltar para Home"
+          >
+            <ArrowLeft size={18} color={theme.colors.text1} strokeWidth={1.8} />
           </Pressable>
-          <View style={styles.headerMembers}>
-            {boardMembers.slice(0, 3).map((member, index) => (
-              <MemberAvatar
-                key={member.id}
-                member={member}
-                style={[styles.headerMemberAvatar, index > 0 && styles.headerMemberAvatarOverlap]}
-                textStyle={styles.headerMemberInitials}
-              />
-            ))}
-            <View style={styles.headerMetaPill}>
-              <Users size={13} color={theme.colors.text2} strokeWidth={1.8} />
-              <Text style={styles.headerMetaText}>{boardMembers.length}</Text>
-            </View>
+          <View style={styles.headerMeta}>
+            <Users size={14} color={theme.colors.text3} strokeWidth={1.8} />
+            <Text style={styles.headerMetaText}>{boardMembers.length}</Text>
+            <Text style={styles.headerMetaDot}>·</Text>
+            <Text style={styles.headerMetaText}>{totalCards} cartões</Text>
           </View>
         </View>
 
-        <Text style={styles.breadcrumb}>Início / Quadro</Text>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={2}>{plan.name}</Text>
-          <Text style={styles.totalCount}>{totalCards}</Text>
-        </View>
-        <Text style={styles.subtitle}>
-          Arraste para o lado para navegar pelas listas.
-        </Text>
+        <Text style={styles.eyebrow}>Quadro</Text>
+        <Text style={styles.title} numberOfLines={2}>{plan.name}</Text>
       </View>
 
       {boardView === 'lists' ? (
@@ -1837,13 +1840,12 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
             })}
           </ScrollView>
           <Pressable
-            style={styles.addListButton}
+            style={({ pressed }) => [styles.addListButton, pressed && styles.cardPressed]}
             onPress={openAddListSheet}
             accessibilityRole="button"
             accessibilityLabel="Adicionar lista"
           >
-            <Plus size={16} color={theme.colors.textInverse} strokeWidth={2.2} />
-            <Text style={styles.addListButtonText}>Lista</Text>
+            <Plus size={16} color={theme.colors.textInverse} strokeWidth={2} />
           </Pressable>
         </View>
       ) : null}
@@ -1880,14 +1882,17 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
         ) : (
           <View style={styles.tasksView}>
             <View style={styles.tasksHeader}>
-              <Text style={styles.tasksTitle}>Tarefas</Text>
+              <View style={styles.tasksHeaderText}>
+                <Text style={styles.eyebrow}>Visão</Text>
+                <Text style={styles.tasksTitle}>Tarefas</Text>
+              </View>
               <Pressable
-                style={styles.tasksMoreButton}
+                style={({ pressed }) => [styles.tasksMoreButton, pressed && styles.cardPressed]}
                 onPress={() => setTasksOptionsOpen(true)}
                 accessibilityRole="button"
                 accessibilityLabel="Mais opções"
               >
-                <MoreHorizontal size={18} color={theme.colors.text2} strokeWidth={1.9} />
+                <MoreHorizontal size={18} color={theme.colors.text2} strokeWidth={1.8} />
               </Pressable>
             </View>
 
@@ -1967,9 +1972,9 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
                 accessibilityState={{ selected: isActive }}
               >
                 <Icon
-                  size={18}
-                  color={isActive ? theme.colors.textInverse : theme.colors.text2}
-                  strokeWidth={1.9}
+                  size={17}
+                  color={isActive ? theme.colors.text1 : theme.colors.text3}
+                  strokeWidth={1.8}
                 />
               </Pressable>
             )
@@ -2086,122 +2091,59 @@ const createStyles = (theme) => StyleSheet.create({
   },
   header: {
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 14,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    paddingTop: 18,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
   },
   headerTop: {
-    minHeight: 34,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 7,
+    marginBottom: 18,
   },
   backButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9,
-    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
+    backgroundColor: theme.colors.surface2,
   },
-  headerMembers: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerMemberAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: theme.colors.surface1,
-  },
-  headerMemberAvatarOverlap: {
-    marginLeft: -7,
-  },
-  headerMemberInitials: {
-    color: theme.colors.textInverse,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  headerMetaPill: {
-    minHeight: 30,
+  headerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 999,
-    backgroundColor: theme.colors.surface2,
-    marginLeft: -6,
   },
   headerMetaText: {
-    color: theme.colors.text2,
-    fontSize: 12,
-  },
-  breadcrumb: {
     color: theme.colors.text3,
-    fontSize: 12,
-    marginBottom: 7,
+    fontSize: 13,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
+  headerMetaDot: {
+    color: theme.colors.text3,
+    fontSize: 13,
+  },
+  eyebrow: {
+    color: theme.colors.text3,
+    ...theme.type.eyebrow,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   title: {
-    flex: 1,
-    minWidth: 0,
     color: theme.colors.text1,
-    fontSize: 25,
-    lineHeight: 30,
-    fontWeight: '400',
-  },
-  totalCount: {
-    minWidth: 29,
-    overflow: 'hidden',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: theme.colors.surface3,
-    color: theme.colors.text2,
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: theme.colors.text3,
-    fontSize: 12,
-    marginTop: 7,
+    ...theme.type.display,
   },
   viewToolbar: {
-    minHeight: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    padding: 4,
-    borderWidth: 1,
-    borderBottomColor: theme.colors.border1,
+    gap: 2,
+    padding: 3,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 14,
-    backgroundColor: theme.colors.surface1,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 8px 22px rgba(0, 0, 0, 0.16)',
-        outlineStyle: 'none',
-      },
-      default: {
-        shadowColor: theme.colors.black,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.16,
-        shadowRadius: 12,
-        elevation: 5,
-      },
-    }),
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
   },
   viewToolbarOverlay: {
     position: 'absolute',
@@ -2211,86 +2153,78 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
   },
   viewButton: {
-    width: 42,
-    minWidth: 42,
-    minHeight: 34,
+    width: 40,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 11,
-    backgroundColor: theme.colors.surface2,
+    borderRadius: theme.radius.sm,
   },
   viewButtonActive: {
-    backgroundColor: theme.colors.text1,
+    backgroundColor: theme.colors.surface1,
   },
   columnTabsBar: {
-    height: 54,
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingRight: theme.spacing.screenX,
-    flexGrow: 0,
-    flexShrink: 0,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
   },
   columnTabs: {
     flex: 1,
-    height: 54,
+    height: 52,
   },
   columnTabsContent: {
-    minHeight: 54,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
     paddingHorizontal: theme.spacing.screenX,
   },
   columnTab: {
-    maxWidth: 118,
-    minHeight: 34,
+    maxWidth: 120,
+    minHeight: 32,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    paddingHorizontal: 10,
-    borderRadius: 9,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.sm,
     backgroundColor: theme.colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
   },
   columnTabActive: {
-    backgroundColor: theme.colors.text1,
+    backgroundColor: theme.colors.surface1,
+    borderColor: theme.colors.border2,
   },
   columnTabDot: {
-    width: 7,
-    height: 7,
+    width: 6,
+    height: 6,
     borderRadius: 999,
   },
   columnTabText: {
     flexShrink: 1,
-    color: theme.colors.text2,
-    fontSize: 12,
+    color: theme.colors.text3,
+    fontSize: 13,
+    fontWeight: '500',
   },
   columnTabTextActive: {
-    color: theme.colors.textInverse,
+    color: theme.colors.text1,
   },
   addListButton: {
-    minHeight: 34,
-    flexDirection: 'row',
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    paddingHorizontal: 12,
-    borderRadius: 9,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.text1,
-  },
-  addListButtonText: {
-    color: theme.colors.textInverse,
-    fontSize: 12,
-    fontWeight: '600',
   },
   boardScroll: {
     flex: 1,
   },
   boardScrollContent: {
-    paddingBottom: 92,
+    paddingBottom: 100,
   },
   tasksScrollContent: {
     flexGrow: 1,
@@ -2475,76 +2409,58 @@ const createStyles = (theme) => StyleSheet.create({
   },
   tasksView: {
     minHeight: '100%',
-    paddingHorizontal: 12,
-    paddingTop: 14,
+    paddingHorizontal: theme.spacing.screenX,
+    paddingTop: 18,
     paddingBottom: 116,
-    backgroundColor: theme.colors.surface2,
   },
   tasksHeader: {
-    minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 9,
+    marginBottom: 16,
+  },
+  tasksHeaderText: {
+    gap: 4,
   },
   tasksTitle: {
     color: theme.colors.text1,
-    fontSize: 27,
-    lineHeight: 33,
-    fontWeight: '500',
+    ...theme.type.display,
   },
   tasksMoreButton: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
   },
   taskListGroup: {
-    gap: 6,
+    gap: 0,
   },
   taskListRow: {
-    minHeight: 62,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface1,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
-        outlineStyle: 'none',
-      },
-      default: {
-        shadowColor: theme.colors.black,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        elevation: 1,
-      },
-    }),
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   taskListRowContent: {
     flex: 1,
     minWidth: 0,
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   taskCheck: {
-    width: 28,
-    height: 28,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.text2,
-    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border2,
+    borderRadius: theme.radius.sm,
   },
   taskCheckDone: {
     borderColor: theme.colors.text1,
@@ -2553,20 +2469,20 @@ const createStyles = (theme) => StyleSheet.create({
   taskListBody: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
+    gap: 3,
   },
   taskListTitle: {
     color: theme.colors.text1,
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
-    fontWeight: '400',
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
   taskListTitleDone: {
     color: theme.colors.text3,
     textDecorationLine: 'line-through',
   },
   taskListMetaRow: {
-    minHeight: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -2577,7 +2493,7 @@ const createStyles = (theme) => StyleSheet.create({
     fontSize: 12,
   },
   taskListMetaDone: {
-    color: theme.colors.red,
+    color: theme.colors.text3,
   },
   taskMiniMembers: {
     flexDirection: 'row',
@@ -2585,108 +2501,88 @@ const createStyles = (theme) => StyleSheet.create({
     marginLeft: 2,
   },
   taskMiniAvatar: {
-    width: 14,
-    height: 14,
+    width: 16,
+    height: 16,
     marginLeft: -3,
-    borderWidth: 1,
-    borderColor: theme.colors.surface1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
     borderRadius: 999,
   },
   taskMiniInitials: {
     color: theme.colors.textInverse,
-    fontSize: 5,
-    fontWeight: '800',
+    fontSize: 6,
+    fontWeight: '700',
   },
   taskStarButton: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
   },
   completedTasksBlock: {
-    marginTop: 16,
+    marginTop: 28,
   },
   completedHeader: {
-    minHeight: 30,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 12,
-    marginBottom: 7,
+    marginBottom: 8,
   },
   completedTitle: {
-    color: theme.colors.text2,
-    fontSize: 16,
-    fontWeight: '400',
+    color: theme.colors.text3,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   completedCount: {
-    color: theme.colors.text2,
-    fontSize: 13,
-    fontWeight: '700',
+    color: theme.colors.text3,
+    fontSize: 12,
   },
   tasksFab: {
-    width: 38,
-    height: 38,
+    width: 46,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.text1,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 5px 13px rgba(0, 0, 0, 0.20)',
-        outlineStyle: 'none',
-      },
-      default: {
-        shadowColor: theme.colors.black,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.18,
-        shadowRadius: 8,
-        elevation: 4,
-      },
-    }),
   },
   tasksFabOverlay: {
     position: 'absolute',
-    right: 24,
+    right: theme.spacing.screenX,
     bottom: 80,
   },
   detailScreen: {
     flex: 1,
-    backgroundColor: theme.colors.surface1,
+    backgroundColor: theme.colors.appBg,
   },
   detailTopbar: {
-    minHeight: 58,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 10,
-    borderBottomWidth: 1,
+    paddingTop: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
   },
   detailIconButton: {
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface1,
+    backgroundColor: theme.colors.surface2,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailTopbarTitle: {
     flex: 1,
-    color: theme.colors.text1,
-    fontSize: 15,
-    fontWeight: '600',
+    color: theme.colors.text2,
+    fontSize: 14,
+    fontWeight: '500',
     textAlign: 'center',
   },
   detailScroll: {
@@ -2694,60 +2590,60 @@ const createStyles = (theme) => StyleSheet.create({
   },
   detailContent: {
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 18,
-    paddingBottom: 34,
+    paddingTop: 22,
+    paddingBottom: 40,
   },
   detailHero: {
-    gap: 9,
-    marginBottom: 18,
+    gap: 8,
+    marginBottom: 22,
   },
-  detailLabel: {
-    alignSelf: 'flex-start',
-    overflow: 'hidden',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  detailLabelText: {
-    color: theme.colors.white,
-    fontSize: 11,
-    fontWeight: '700',
+  detailEyebrow: {
+    color: theme.colors.text3,
+    ...theme.type.eyebrow,
+    textTransform: 'uppercase',
   },
   detailTitle: {
     color: theme.colors.text1,
-    fontSize: 26,
-    lineHeight: 32,
-    fontWeight: '500',
+    ...theme.type.display,
   },
-  detailListName: {
+  detailLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 2,
+  },
+  detailLabelDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+  },
+  detailLabelText: {
     color: theme.colors.text2,
     fontSize: 13,
+    fontWeight: '500',
   },
   detailMetaGrid: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
+    gap: 24,
+    marginBottom: 18,
+    paddingBottom: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   detailMetaItem: {
     flex: 1,
-    minHeight: 76,
-    justifyContent: 'space-between',
-    gap: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface2,
+    gap: 8,
   },
   detailMetaLabel: {
     color: theme.colors.text3,
     fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   detailMetaEmpty: {
-    color: theme.colors.text2,
-    fontSize: 13,
+    color: theme.colors.text3,
+    fontSize: 14,
   },
   detailMemberRow: {
     flexDirection: 'row',
@@ -2758,141 +2654,103 @@ const createStyles = (theme) => StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: -7,
-    borderWidth: 2,
-    borderColor: theme.colors.surface2,
+    marginRight: -6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
     borderRadius: 999,
   },
   detailMemberInitials: {
     color: theme.colors.white,
     fontSize: 10,
-    fontWeight: '700',
-  },
-  detailDuePill: {
-    minHeight: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    backgroundColor: theme.colors.surface3,
+    fontWeight: '600',
   },
   detailDueText: {
-    color: theme.colors.text2,
-    fontSize: 12,
+    color: theme.colors.text1,
+    fontSize: 14,
+    fontWeight: '500',
   },
   detailActionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 22,
+    marginBottom: 28,
   },
   detailAction: {
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
-    minHeight: 38,
+    minHeight: 36,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    paddingHorizontal: 11,
-    borderWidth: 1,
+    paddingHorizontal: 12,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 10,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surface2,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailActionText: {
     color: theme.colors.text1,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 12.5,
+    fontWeight: '500',
   },
   detailSection: {
-    marginBottom: 22,
+    marginBottom: 28,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border1,
+    paddingTop: 20,
   },
   detailSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 9,
-    marginBottom: 10,
+    gap: 10,
+    marginBottom: 12,
   },
   detailSectionTitleWrap: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: 8,
   },
   detailSectionTitle: {
     flexShrink: 1,
     color: theme.colors.text1,
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.type.heading,
   },
   detailSectionAction: {
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
-    minHeight: 31,
+    minHeight: 30,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     paddingHorizontal: 10,
-    borderRadius: 9,
-    backgroundColor: theme.colors.text1,
+    borderRadius: theme.radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface2,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailSectionActionDisabled: {
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface3,
+    opacity: 0.45,
   },
   detailSectionActionText: {
-    color: theme.colors.textInverse,
+    color: theme.colors.text1,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   detailSectionActionTextDisabled: {
     color: theme.colors.text3,
   },
-  detailDescriptionBox: {
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
-    minHeight: 86,
-    justifyContent: 'center',
-    padding: 13,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface2,
-  },
-  detailDescriptionText: {
-    color: theme.colors.text2,
-    fontSize: 14,
-    lineHeight: 20,
-  },
   detailDescriptionInput: {
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
-    minHeight: 112,
-    padding: 13,
-    borderWidth: 1,
-    borderColor: theme.colors.text1,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface1,
+    minHeight: 110,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
     color: theme.colors.text1,
     fontSize: 14,
     lineHeight: 20,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailEmptyText: {
     color: theme.colors.text3,
@@ -2900,13 +2758,7 @@ const createStyles = (theme) => StyleSheet.create({
     lineHeight: 19,
   },
   detailInfoRow: {
-    minHeight: 46,
-    justifyContent: 'center',
-    paddingHorizontal: 13,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface2,
+    paddingVertical: 4,
   },
   detailInfoText: {
     color: theme.colors.text2,
@@ -2916,84 +2768,78 @@ const createStyles = (theme) => StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 9,
+    marginTop: 12,
   },
   detailSecondaryAction: {
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
-    minHeight: 36,
+    minHeight: 34,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 11,
-    borderWidth: 1,
+    gap: 6,
+    paddingHorizontal: 10,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface1,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailSecondaryActionText: {
-    color: theme.colors.text1,
+    color: theme.colors.text2,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   detailComposer: {
     minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    padding: 5,
-    borderWidth: 1,
+    paddingLeft: 14,
+    paddingRight: 5,
+    paddingVertical: 5,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 13,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surface2,
   },
   detailCommentInput: {
     flex: 1,
     minHeight: 36,
-    paddingHorizontal: 10,
     color: theme.colors.text1,
-    fontSize: 13,
+    fontSize: 14,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailSendButton: {
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: theme.radius.sm,
     backgroundColor: theme.colors.text1,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailSendButtonDisabled: {
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface3,
   },
   detailActivityList: {
-    gap: 12,
-    marginTop: 14,
+    gap: 16,
+    marginTop: 18,
   },
   detailActivityItem: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   detailActivityAvatar: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
   },
   detailActivityInitials: {
     color: theme.colors.white,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   detailActivityBody: {
     flex: 1,
@@ -3002,82 +2848,74 @@ const createStyles = (theme) => StyleSheet.create({
   },
   detailActivityText: {
     color: theme.colors.text2,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 13.5,
+    lineHeight: 19,
   },
   detailActivityAuthor: {
     color: theme.colors.text1,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   detailActivityTime: {
     color: theme.colors.text3,
-    fontSize: 11,
+    fontSize: 11.5,
   },
   detailAttachmentList: {
-    gap: 7,
-    marginTop: 9,
+    gap: 0,
+    marginTop: 8,
   },
   detailAttachmentItem: {
-    minHeight: 34,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    borderRadius: 9,
-    backgroundColor: theme.colors.surface2,
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   detailAttachmentRemove: {
-    width: 26,
-    height: 26,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface1,
   },
   detailAttachmentName: {
     flex: 1,
     minWidth: 0,
     color: theme.colors.text1,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13.5,
+    fontWeight: '500',
   },
   detailAttachmentTime: {
     color: theme.colors.text3,
-    fontSize: 11,
+    fontSize: 12,
   },
   detailInlineError: {
     color: theme.colors.red,
-    fontSize: 12,
+    fontSize: 12.5,
     lineHeight: 17,
     marginTop: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.red,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface2,
   },
   detailChecklistList: {
-    gap: 7,
-    marginTop: 9,
+    gap: 0,
+    marginTop: 8,
   },
   detailChecklistItem: {
-    minHeight: 34,
+    minHeight: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    paddingHorizontal: 10,
-    borderRadius: 9,
-    backgroundColor: theme.colors.surface2,
+    gap: 10,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   detailChecklistCheck: {
     width: 20,
     height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: theme.colors.text2,
-    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border2,
+    borderRadius: theme.radius.sm,
   },
   detailChecklistCheckDone: {
     borderColor: theme.colors.text1,
@@ -3087,66 +2925,64 @@ const createStyles = (theme) => StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: theme.colors.text1,
-    fontSize: 13,
+    fontSize: 14,
   },
   detailChecklistTextDone: {
     color: theme.colors.text3,
     textDecorationLine: 'line-through',
   },
   sheetActionList: {
-    gap: 8,
+    gap: 0,
   },
   sheetActionRow: {
-    minHeight: 44,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface2,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   sheetActionText: {
     flex: 1,
     color: theme.colors.text1,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   sheetActionDanger: {
-    backgroundColor: theme.colors.dangerBg,
+    borderBottomWidth: 0,
   },
   sheetActionDangerText: {
     color: theme.colors.red,
   },
   sheetColorDot: {
-    width: 10,
-    height: 10,
+    width: 8,
+    height: 8,
     borderRadius: 999,
   },
   scheduleEditor: {
-    gap: 12,
+    gap: 14,
   },
   scheduleToggleList: {
-    gap: 8,
+    gap: 0,
   },
   scheduleToggleRow: {
-    minHeight: 50,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface2,
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   scheduleCheckbox: {
     width: 22,
     height: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: theme.colors.text2,
-    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border2,
+    borderRadius: theme.radius.sm,
     backgroundColor: theme.colors.surface1,
   },
   scheduleCheckboxChecked: {
@@ -3160,15 +2996,15 @@ const createStyles = (theme) => StyleSheet.create({
   scheduleToggleLabel: {
     color: theme.colors.text1,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   scheduleToggleHint: {
-    color: theme.colors.text2,
+    color: theme.colors.text3,
     fontSize: 12,
     marginTop: 2,
   },
   calendarHeader: {
-    minHeight: 38,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -3177,25 +3013,25 @@ const createStyles = (theme) => StyleSheet.create({
   calendarTitle: {
     flex: 1,
     color: theme.colors.text1,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     textAlign: 'center',
     textTransform: 'capitalize',
   },
   calendarNavButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 9,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surface2,
   },
   calendarNavText: {
     color: theme.colors.text1,
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '600',
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -3207,7 +3043,7 @@ const createStyles = (theme) => StyleSheet.create({
     marginBottom: 2,
     color: theme.colors.text3,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '600',
     textAlign: 'center',
   },
   calendarDay: {
@@ -3215,19 +3051,18 @@ const createStyles = (theme) => StyleSheet.create({
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9,
-    backgroundColor: theme.colors.surface2,
+    borderRadius: theme.radius.sm,
   },
   calendarDayMuted: {
-    opacity: 0.48,
+    opacity: 0.4,
   },
   calendarDaySelected: {
     backgroundColor: theme.colors.text1,
   },
   calendarDayText: {
     color: theme.colors.text1,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '500',
   },
   calendarDayTextMuted: {
     color: theme.colors.text3,
@@ -3236,76 +3071,71 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.textInverse,
   },
   sheetChipList: {
-    gap: 9,
+    gap: 0,
   },
   sheetMemberRow: {
     minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 11,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface2,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   sheetMemberRowActive: {
-    borderColor: theme.colors.text1,
-    backgroundColor: theme.colors.surface1,
+    opacity: 1,
   },
   sheetLabelOption: {
-    minHeight: 42,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    paddingHorizontal: 13,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    borderRadius: theme.radius.md,
+    marginBottom: 8,
   },
   sheetLabelText: {
     color: theme.colors.white,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
   },
   sheetInput: {
     minHeight: 46,
-    paddingHorizontal: 13,
-    borderWidth: 1,
-    borderColor: theme.colors.text1,
-    borderRadius: 9,
+    paddingHorizontal: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
     color: theme.colors.text1,
     fontSize: 15,
     marginBottom: 12,
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   attachmentPickerScroll: {
     maxHeight: 420,
   },
   attachmentPickerContent: {
-    gap: 8,
+    gap: 0,
     paddingBottom: 6,
   },
   attachmentPickerSectionTitle: {
     color: theme.colors.text3,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '600',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
-    marginTop: 4,
+    marginTop: 12,
+    marginBottom: 4,
   },
   attachmentPickerRow: {
     minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface2,
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
   },
   attachmentPickerBody: {
     flex: 1,
@@ -3313,12 +3143,12 @@ const createStyles = (theme) => StyleSheet.create({
   },
   attachmentPickerName: {
     color: theme.colors.text1,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
   },
   attachmentPickerMeta: {
-    color: theme.colors.text2,
-    fontSize: 11,
+    color: theme.colors.text3,
+    fontSize: 12,
     marginTop: 2,
   },
   sheetButtonRow: {
@@ -3326,40 +3156,38 @@ const createStyles = (theme) => StyleSheet.create({
     gap: 10,
   },
   sheetPrimaryButton: {
-    minHeight: 43,
+    minHeight: 44,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.text1,
   },
   sheetPrimaryButtonDisabled: {
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
     backgroundColor: theme.colors.surface3,
   },
   sheetPrimaryButtonText: {
     color: theme.colors.textInverse,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   sheetPrimaryButtonTextDisabled: {
     color: theme.colors.text3,
   },
   sheetSecondaryButton: {
-    minHeight: 43,
+    minHeight: 44,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 9,
-    backgroundColor: theme.colors.surface1,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
   },
   sheetSecondaryButtonText: {
     color: theme.colors.text1,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   addCardColumnChoices: {
     gap: 8,
@@ -3372,23 +3200,23 @@ const createStyles = (theme) => StyleSheet.create({
     alignItems: 'center',
     gap: 7,
     paddingHorizontal: 10,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border1,
-    borderRadius: 9,
+    borderRadius: theme.radius.sm,
     backgroundColor: theme.colors.surface2,
   },
   addCardColumnChoiceActive: {
     borderColor: theme.colors.text1,
-    backgroundColor: theme.colors.text1,
+    backgroundColor: theme.colors.surface1,
   },
   addCardColumnChoiceText: {
     flexShrink: 1,
-    color: theme.colors.text2,
+    color: theme.colors.text3,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   addCardColumnChoiceTextActive: {
-    color: theme.colors.textInverse,
+    color: theme.colors.text1,
   },
 })
 
