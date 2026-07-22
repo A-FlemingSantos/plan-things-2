@@ -630,12 +630,13 @@ function CardDetailScreen({
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={close}>
       <Animated.View style={[styles.detailScreen, { transform: [{ translateY }] }]}>
-        <View style={[styles.detailTopbar, { paddingTop: Math.max(insets.top, 8) }]}>
+        <View style={[styles.detailTopbar, { paddingTop: Math.max(insets.top, 12) }]}>
           <Pressable
             style={({ pressed }) => [styles.detailIconButton, pressed && styles.cardPressed]}
             onPress={close}
             accessibilityRole="button"
             accessibilityLabel="Fechar cartão"
+            hitSlop={8}
           >
             <X size={18} color={theme.colors.text1} strokeWidth={1.8} />
           </Pressable>
@@ -645,6 +646,7 @@ function CardDetailScreen({
             onPress={() => setActiveSheet('more')}
             accessibilityRole="button"
             accessibilityLabel="Mais opções"
+            hitSlop={8}
           >
             <MoreHorizontal size={18} color={theme.colors.text1} strokeWidth={1.8} />
           </Pressable>
@@ -2565,18 +2567,16 @@ const createStyles = (theme) => StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     paddingHorizontal: theme.spacing.screenX,
+    paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
   },
   detailIconButton: {
-    width: 40,
-    height: 40,
+    minWidth: 40,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: theme.radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
+    padding: 8,
     ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailTopbarTitle: {
