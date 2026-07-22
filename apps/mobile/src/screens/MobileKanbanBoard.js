@@ -336,6 +336,10 @@ function CardDetailScreen({
   const [attachmentError, setAttachmentError] = useState(null)
   const [activeSheet, setActiveSheet] = useState(null)
   const slideProgress = useRef(new Animated.Value(1)).current
+  const headerTitleProgress = useRef(new Animated.Value(0)).current
+  const headerTitleVisibleRef = useRef(false)
+  const titleRevealScrollY = useRef(Number.POSITIVE_INFINITY)
+  const heroOffsetY = useRef(0)
   const { height } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const label = findLabel(labelId)
@@ -358,6 +362,37 @@ function CardDetailScreen({
     inputRange: [0, 1],
     outputRange: [0, height],
   })
+  const headerTitleTranslateX = headerTitleProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-28, 0],
+  })
+
+  const updateHeaderTitleVisibility = (scrollY) => {
+    const shouldShow = scrollY >= titleRevealScrollY.current
+    if (headerTitleVisibleRef.current === shouldShow) return
+
+    headerTitleVisibleRef.current = shouldShow
+    Animated.timing(headerTitleProgress, {
+      toValue: shouldShow ? 1 : 0,
+      duration: shouldShow ? 240 : 180,
+      easing: shouldShow ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+      useNativeDriver: shouldUseNativeDriver,
+    }).start()
+  }
+
+  const handleDetailScroll = (event) => {
+    updateHeaderTitleVisibility(event.nativeEvent.contentOffset.y)
+  }
+
+  const handleHeroLayout = (event) => {
+    heroOffsetY.current = event.nativeEvent.layout.y
+  }
+
+  const handleTitleLayout = (event) => {
+    const { y, height: titleHeight } = event.nativeEvent.layout
+    const contentPaddingTop = 22
+    titleRevealScrollY.current = Math.max(0, contentPaddingTop + heroOffsetY.current + y + titleHeight - 12)
+  }
 
   useEffect(() => {
     const nextDescription = card.description ?? ''
@@ -367,7 +402,11 @@ function CardDetailScreen({
     setChecklistInput('')
     setAttachmentError(null)
     setActiveSheet(null)
-  }, [card.id])
+    headerTitleProgress.setValue(0)
+    headerTitleVisibleRef.current = false
+    titleRevealScrollY.current = Number.POSITIVE_INFINITY
+    heroOffsetY.current = 0
+  }, [card.id, card.title, headerTitleProgress])
 
   useEffect(() => {
     const nextSchedule = normalizeSchedule(card.schedule, card.dueDate)
@@ -640,7 +679,21 @@ function CardDetailScreen({
           >
             <X size={18} color={theme.colors.text1} strokeWidth={1.8} />
           </Pressable>
-          <Text style={styles.detailTopbarTitle} numberOfLines={1}>Cartão</Text>
+          <View style={styles.detailTopbarTitleWrap}>
+            <Animated.Text
+              style={[
+                styles.detailTopbarTitle,
+                {
+                  opacity: headerTitleProgress,
+                  transform: [{ translateX: headerTitleTranslateX }],
+                },
+              ]}
+              numberOfLines={1}
+              pointerEvents="none"
+            >
+              {card.title}
+            </Animated.Text>
+          </View>
           <Pressable
             style={({ pressed }) => [styles.detailIconButton, pressed && styles.cardPressed]}
             onPress={() => setActiveSheet('more')}
@@ -652,10 +705,16 @@ function CardDetailScreen({
           </Pressable>
         </View>
 
-        <ScrollView style={styles.detailScroll} contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.detailHero}>
+        <ScrollView
+          style={styles.detailScroll}
+          contentContainerStyle={styles.detailContent}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={handleDetailScroll}
+        >
+          <View style={styles.detailHero} onLayout={handleHeroLayout}>
             <Text style={styles.detailEyebrow}>{column.title}</Text>
-            <Text style={styles.detailTitle}>{card.title}</Text>
+            <Text style={styles.detailTitle} onLayout={handleTitleLayout}>{card.title}</Text>
             {label ? (
               <View style={styles.detailLabelRow}>
                 <View style={[styles.detailLabelDot, { backgroundColor: label.color }]} />
@@ -2579,11 +2638,17 @@ const createStyles = (theme) => StyleSheet.create({
     padding: 8,
     ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
-  detailTopbarTitle: {
+  detailTopbarTitleWrap: {
     flex: 1,
-    color: theme.colors.text2,
-    fontSize: 14,
-    fontWeight: '500',
+    minWidth: 0,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  detailTopbarTitle: {
+    color: theme.colors.text1,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
     textAlign: 'center',
   },
   detailScroll: {
