@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   Keyboard,
+  KeyboardAvoidingView,
   Modal,
   PanResponder,
   Platform,
@@ -16,23 +17,33 @@ import {
 } from 'react-native'
 import * as DocumentPicker from 'expo-document-picker'
 import {
-  AlignLeft,
   ArrowLeft,
+  Calendar,
+  CalendarPlus,
   Check,
   CheckSquare,
   ChevronDown,
+  ChevronRight,
   Clock3,
   Copy,
   FileText,
+  Flag,
+  Goal,
+  Hourglass,
+  Kanban,
+  Link,
+  List,
+  ListChecks,
   MessageCircle,
   MoreHorizontal,
-  Kanban,
-  ListChecks,
+  MoveRight,
   Paperclip,
   Plus,
-  Send,
+  SendHorizontal,
+  Sparkles,
   Star,
   Tag,
+  TimerReset,
   Trash2,
   Users,
   X,
@@ -204,6 +215,180 @@ function isUserComment(comment = {}) {
   return comment.kind !== 'ASSIGNEE_ACTIVITY'
 }
 
+function getMemberDisplayName(member) {
+  if (!member) return 'Membro'
+  return member.name ?? member.email ?? member.initials ?? 'Membro'
+}
+
+function getTimestampMs(value) {
+  if (value == null) return null
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  if (typeof value === 'object' && value.iso) {
+    const parsed = Date.parse(value.iso)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+function formatCardCreatedLabel(createdAt) {
+  if (!createdAt) return 'agora'
+  if (typeof createdAt === 'string') return createdAt
+  return createdAt.text ?? 'agora'
+}
+
+function buildActivityFeedItems({
+  card,
+  comments = [],
+  members = [],
+  createdAtLabel,
+  currentUserName = 'Você',
+}) {
+  const cardCreatedMs = getTimestampMs(card.createdAt) ?? getTimestampMs(card.created) ?? 0
+  const items = [{
+    id: 'activity-created',
+    type: 'history',
+    sortAt: cardCreatedMs,
+    actor: currentUserName,
+    text: `criou esta tarefa · ${createdAtLabel}`,
+  }]
+
+  const initialMemberIds = Array.isArray(card.memberIds) ? card.memberIds : []
+  if (initialMemberIds.length > 0) {
+    const initialSummary = initialMemberIds
+      .map((memberId) => members.find((member) => member.id === memberId))
+      .filter(Boolean)
+      .map(getMemberDisplayName)
+      .join(', ')
+
+    items.push({
+      id: 'activity-initial-assignment',
+      type: 'history',
+      sortAt: cardCreatedMs + 1,
+      actor: currentUserName,
+      text: `atribuiu a: ${initialSummary || 'Você'} · ${createdAtLabel}`,
+    })
+  }
+
+  comments.forEach((comment, index) => {
+    const sortAt = getTimestampMs(comment.createdAtIso)
+      ?? getTimestampMs(comment.createdAt)
+      ?? cardCreatedMs + 1000 + index
+
+    if (!isUserComment(comment)) {
+      items.push({
+        id: comment.id,
+        type: 'history',
+        sortAt,
+        actor: comment.authorName ?? currentUserName,
+        text: comment.time ? `${comment.text} · ${comment.time}` : comment.text,
+      })
+      return
+    }
+
+    items.push({
+      id: comment.id,
+      type: 'comment',
+      sortAt,
+      comment,
+    })
+  })
+
+  return items.sort((left, right) => {
+    if (left.sortAt !== right.sortAt) return left.sortAt - right.sortAt
+    return String(left.id).localeCompare(String(right.id))
+  })
+}
+
+function getCommentPresenter(comment, members = []) {
+  const authorId = comment.authorId ?? comment.author
+  const author = members.find((member) => member.id === authorId)
+  return author ?? {
+    id: authorId ?? comment.id,
+    name: comment.authorName ?? comment.author ?? 'Membro',
+    initials: comment.authorName?.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'PT',
+    avatarUrl: comment.authorAvatarUrl ?? null,
+    color: theme.colors.black,
+  }
+}
+
+function DetailPropertyRow({ icon: Icon, label, onPressLabel, children }) {
+  return (
+    <View style={styles.cmPropertyRow}>
+      <Pressable
+        style={styles.cmPropertyLabelBtn}
+        onPress={onPressLabel}
+        disabled={!onPressLabel}
+        accessibilityRole={onPressLabel ? 'button' : 'text'}
+      >
+        <Icon size={14} color={theme.colors.text3} strokeWidth={1.75} />
+        <Text style={styles.cmPropertyLabelText}>{label}</Text>
+      </Pressable>
+      <View style={styles.cmPropertyValue}>{children}</View>
+    </View>
+  )
+}
+
+function DetailPropertyDatesSummary({ schedule }) {
+  const hasStart = Boolean(schedule.startEnabled && schedule.startDateValue)
+  const hasDue = Boolean(schedule.dueEnabled && schedule.dueDateValue)
+
+  return (
+    <View style={styles.cmPropertyDatesSummary}>
+      <View style={styles.cmPropertyDatesPart}>
+        <CalendarPlus size={14} color={theme.colors.text2} strokeWidth={1.75} />
+        <Text style={styles.cmPropertyDatesPartText}>{hasStart ? schedule.startDateValue : 'Início'}</Text>
+      </View>
+      <Text style={styles.cmPropertyDatesSep}>→</Text>
+      <View style={styles.cmPropertyDatesPart}>
+        <CalendarPlus size={14} color={theme.colors.text2} strokeWidth={1.75} />
+        <Text style={styles.cmPropertyDatesPartText}>{hasDue ? schedule.dueDateValue : 'Vencimento'}</Text>
+      </View>
+    </View>
+  )
+}
+
+function DetailActionItem({ icon: Icon, label, onPress, disabled = false }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.cmActionItem, pressed && styles.cardPressed, disabled && styles.cmActionItemDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+    >
+      <View style={styles.cmActionItemIcon}>
+        <Icon size={15} color={theme.colors.text2} strokeWidth={1.75} />
+      </View>
+      <Text style={styles.cmActionItemText}>{label}</Text>
+    </Pressable>
+  )
+}
+
+function ActivityCommentCard({ comment, members }) {
+  const presenter = getCommentPresenter(comment, members)
+
+  return (
+    <View style={styles.cmCommentCard}>
+      <View style={styles.cmCommentCardHeader}>
+        <MemberAvatar
+          member={presenter}
+          style={styles.cmCommentAvatar}
+          textStyle={styles.cmCommentAvatarText}
+        />
+        <View style={styles.cmCommentCardMeta}>
+          <Text style={styles.cmCommentAuthor} numberOfLines={1}>{presenter.name}</Text>
+          <Text style={styles.cmCommentTime}>{comment.time ?? 'agora'}</Text>
+        </View>
+      </View>
+      <Text style={styles.cmCommentCardText}>{comment.text}</Text>
+    </View>
+  )
+}
+
 function BoardCard({ card, onPress }) {
   const label = findLabel(card.labelId)
   const members = findMembers(card.memberIds)
@@ -264,62 +449,26 @@ function BoardCard({ card, onPress }) {
   )
 }
 
-function DetailAction({ icon: Icon, label, onPress }) {
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.detailAction, pressed && styles.cardPressed]}
-      onPress={onPress}
-      accessibilityRole="button"
-    >
-      <Icon size={15} color={theme.colors.text1} strokeWidth={1.8} />
-      <Text style={styles.detailActionText}>{label}</Text>
-    </Pressable>
-  )
-}
-
-function DetailSectionAction({ disabled = false, icon: Icon = Plus, label, onPress }) {
-  return (
-    <Pressable
-      style={[styles.detailSectionAction, disabled && styles.detailSectionActionDisabled]}
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-    >
-      <Icon size={14} color={disabled ? theme.colors.text3 : theme.colors.text1} strokeWidth={1.8} />
-      <Text style={[styles.detailSectionActionText, disabled && styles.detailSectionActionTextDisabled]}>{label}</Text>
-    </Pressable>
-  )
-}
-
-function DetailSecondaryAction({ icon: Icon = Plus, label, onPress }) {
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.detailSecondaryAction, pressed && styles.cardPressed]}
-      onPress={onPress}
-      accessibilityRole="button"
-    >
-      <Icon size={14} color={theme.colors.text2} strokeWidth={1.8} />
-      <Text style={styles.detailSecondaryActionText}>{label}</Text>
-    </Pressable>
-  )
-}
-
 function CardDetailScreen({
   card,
   column,
   columns,
   files,
   planFiles,
+  canMoveToNextColumn = false,
   onAttachFile,
   onClose,
   onDeleteCard,
   onDuplicateCard,
   onMoveCard,
+  onMoveToNextColumn,
   onRemoveAttachment,
+  onToggleComplete,
   onUpdateCard,
   onUploadFile,
 }) {
+  const [savedTitle, setSavedTitle] = useState(card.title ?? '')
+  const [titleValue, setTitleValue] = useState(savedTitle)
   const [savedDescription, setSavedDescription] = useState(card.description ?? '')
   const [descriptionValue, setDescriptionValue] = useState(savedDescription)
   const [labelId, setLabelId] = useState(card.labelId ?? null)
@@ -330,22 +479,31 @@ function CardDetailScreen({
   ))
   const [comments, setComments] = useState(Array.isArray(card.comments) ? card.comments : [])
   const [commentValue, setCommentValue] = useState('')
+  const [commentFocused, setCommentFocused] = useState(false)
   const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments.map(normalizeAttachment) : [])
   const [checklists, setChecklists] = useState(Array.isArray(card.checklists) ? card.checklists : [])
   const [checklistInput, setChecklistInput] = useState('')
   const [attachmentError, setAttachmentError] = useState(null)
   const [activeSheet, setActiveSheet] = useState(null)
+  const [activeDetailPage, setActiveDetailPage] = useState(0)
   const slideProgress = useRef(new Animated.Value(1)).current
+  const detailTranslateX = useRef(new Animated.Value(0)).current
   const headerTitleProgress = useRef(new Animated.Value(0)).current
   const headerTitleVisibleRef = useRef(false)
   const titleRevealScrollY = useRef(Number.POSITIVE_INFINITY)
   const heroOffsetY = useRef(0)
-  const { height } = useWindowDimensions()
+  const { height, width: pageWidth } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const label = findLabel(labelId)
   const members = findMembers(memberIds)
-  const hasDescriptionChanges = descriptionValue !== savedDescription
-  const dueDate = schedule.dueEnabled ? (schedule.displayLabel || formatShortDateLabel(schedule.dueDateValue)) : ''
+  const isCompleted = isTaskDone(card, column)
+  const createdAtLabel = formatCardCreatedLabel(card.createdAt ?? card.created)
+  const activityFeedItems = useMemo(() => buildActivityFeedItems({
+    card,
+    comments,
+    members: boardMembers,
+    createdAtLabel,
+  }), [card, comments, createdAtLabel])
   const selectedCalendarValue = schedule.dueEnabled ? schedule.dueDateValue : schedule.startDateValue
   const calendarDays = useMemo(
     () => buildCalendarDays(calendarAnchor, selectedCalendarValue),
@@ -357,7 +515,6 @@ function CardDetailScreen({
   const availableLibraryFiles = useMemo(() => (
     (files ?? []).filter((file) => file.type !== 'folder' && !file.trashed)
   ), [files])
-  const visibleComments = useMemo(() => comments.filter(isUserComment), [comments])
   const translateY = slideProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, height],
@@ -390,23 +547,29 @@ function CardDetailScreen({
 
   const handleTitleLayout = (event) => {
     const { y, height: titleHeight } = event.nativeEvent.layout
-    const contentPaddingTop = 22
+    const contentPaddingTop = 16
     titleRevealScrollY.current = Math.max(0, contentPaddingTop + heroOffsetY.current + y + titleHeight - 12)
   }
 
   useEffect(() => {
+    const nextTitle = card.title ?? ''
     const nextDescription = card.description ?? ''
+    setSavedTitle(nextTitle)
+    setTitleValue(nextTitle)
     setSavedDescription(nextDescription)
     setDescriptionValue(nextDescription)
     setCommentValue('')
+    setCommentFocused(false)
     setChecklistInput('')
     setAttachmentError(null)
     setActiveSheet(null)
+    setActiveDetailPage(0)
+    detailTranslateX.setValue(0)
     headerTitleProgress.setValue(0)
     headerTitleVisibleRef.current = false
     titleRevealScrollY.current = Number.POSITIVE_INFINITY
     heroOffsetY.current = 0
-  }, [card.id, card.title, headerTitleProgress])
+  }, [card.id, card.title, detailTranslateX, headerTitleProgress])
 
   useEffect(() => {
     const nextSchedule = normalizeSchedule(card.schedule, card.dueDate)
@@ -445,7 +608,80 @@ function CardDetailScreen({
     })
   }
 
+  const animateToDetailPage = (page) => {
+    const safePage = Math.max(0, Math.min(page, 1))
+    setActiveDetailPage(safePage)
+    Animated.timing(detailTranslateX, {
+      toValue: -safePage * pageWidth,
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: shouldUseNativeDriver,
+    }).start()
+  }
+
+  const cancelDetailPageDrag = () => {
+    Animated.spring(detailTranslateX, {
+      toValue: -activeDetailPage * pageWidth,
+      damping: 22,
+      stiffness: 210,
+      mass: 0.8,
+      useNativeDriver: shouldUseNativeDriver,
+    }).start()
+  }
+
+  const detailSwipeResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gestureState) => (
+      !activeSheet
+        && Math.abs(gestureState.dx) > 8
+        && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.1
+    ),
+    onMoveShouldSetPanResponderCapture: (_, gestureState) => (
+      !activeSheet
+        && Math.abs(gestureState.dx) > 8
+        && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.1
+    ),
+    onPanResponderGrant: () => {
+      detailTranslateX.stopAnimation()
+    },
+    onPanResponderMove: (_, gestureState) => {
+      let nextX = gestureState.dx
+      if ((activeDetailPage === 0 && nextX > 0) || (activeDetailPage === 1 && nextX < 0)) {
+        nextX *= 0.22
+      }
+      detailTranslateX.setValue((-activeDetailPage * pageWidth) + nextX)
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      const shouldAdvance = gestureState.dx < -pageWidth * 0.22 || gestureState.vx < -0.55
+      const shouldGoBack = gestureState.dx > pageWidth * 0.22 || gestureState.vx > 0.55
+
+      if (shouldAdvance && activeDetailPage < 1) {
+        animateToDetailPage(1)
+        return
+      }
+
+      if (shouldGoBack && activeDetailPage > 0) {
+        animateToDetailPage(0)
+        return
+      }
+
+      cancelDetailPageDrag()
+    },
+    onPanResponderTerminate: cancelDetailPageDrag,
+  }), [activeDetailPage, activeSheet, detailTranslateX, pageWidth])
+
+  const saveTitle = () => {
+    const nextTitle = titleValue.trim()
+    if (!nextTitle) {
+      setTitleValue(savedTitle)
+      return
+    }
+    if (nextTitle === savedTitle) return
+    setSavedTitle(nextTitle)
+    commitCardPatch({ title: nextTitle })
+  }
+
   const concludeDescriptionEdit = () => {
+    if (descriptionValue === savedDescription) return
     setSavedDescription(descriptionValue)
     onUpdateCard(card.id, { description: descriptionValue })
     Keyboard.dismiss()
@@ -680,19 +916,23 @@ function CardDetailScreen({
             <X size={18} color={theme.colors.text1} strokeWidth={1.8} />
           </Pressable>
           <View style={styles.detailTopbarTitleWrap}>
-            <Animated.Text
-              style={[
-                styles.detailTopbarTitle,
-                {
-                  opacity: headerTitleProgress,
-                  transform: [{ translateX: headerTitleTranslateX }],
-                },
-              ]}
-              numberOfLines={1}
-              pointerEvents="none"
-            >
-              {card.title}
-            </Animated.Text>
+            {activeDetailPage === 1 ? (
+              <Text style={styles.detailTopbarTitle} numberOfLines={1}>Activity</Text>
+            ) : (
+              <Animated.Text
+                style={[
+                  styles.detailTopbarTitle,
+                  {
+                    opacity: headerTitleProgress,
+                    transform: [{ translateX: headerTitleTranslateX }],
+                  },
+                ]}
+                numberOfLines={1}
+                pointerEvents="none"
+              >
+                {titleValue}
+              </Animated.Text>
+            )}
           </View>
           <Pressable
             style={({ pressed }) => [styles.detailIconButton, pressed && styles.cardPressed]}
@@ -705,230 +945,327 @@ function CardDetailScreen({
           </Pressable>
         </View>
 
-        <ScrollView
-          style={styles.detailScroll}
-          contentContainerStyle={styles.detailContent}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={handleDetailScroll}
-        >
-          <View style={styles.detailHero} onLayout={handleHeroLayout}>
-            <Text style={styles.detailEyebrow}>{column.title}</Text>
-            <Text style={styles.detailTitle} onLayout={handleTitleLayout}>{card.title}</Text>
-            {label ? (
-              <View style={styles.detailLabelRow}>
-                <View style={[styles.detailLabelDot, { backgroundColor: label.color }]} />
-                <Text style={styles.detailLabelText}>{label.text}</Text>
-              </View>
-            ) : null}
-          </View>
+        <View style={styles.detailPageIndicator}>
+          <Pressable
+            style={[styles.detailPageDot, activeDetailPage === 0 && styles.detailPageDotActive]}
+            onPress={() => animateToDetailPage(0)}
+            accessibilityRole="button"
+            accessibilityLabel="Detalhes do cartão"
+            accessibilityState={{ selected: activeDetailPage === 0 }}
+          />
+          <Pressable
+            style={[styles.detailPageDot, activeDetailPage === 1 && styles.detailPageDotActive]}
+            onPress={() => animateToDetailPage(1)}
+            accessibilityRole="button"
+            accessibilityLabel="Atividade e comentários"
+            accessibilityState={{ selected: activeDetailPage === 1 }}
+          />
+        </View>
 
-          <View style={styles.detailMetaGrid}>
-            <View style={styles.detailMetaItem}>
-              <Text style={styles.detailMetaLabel}>Membros</Text>
-              {members.length ? (
-                <View style={styles.detailMemberRow}>
-                  {members.map((member) => (
-                    <MemberAvatar
-                      key={member.id}
-                      member={member}
-                      style={styles.detailMemberAvatar}
-                      textStyle={styles.detailMemberInitials}
-                    />
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.detailMetaEmpty}>Sem membros</Text>
-              )}
-            </View>
-
-            <View style={styles.detailMetaItem}>
-              <Text style={styles.detailMetaLabel}>Data</Text>
-              <Text style={styles.detailDueText}>{dueDate || 'Sem data'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailActionGrid}>
-            <DetailAction icon={Users} label="Membros" onPress={() => setActiveSheet('members')} />
-            <DetailAction icon={Tag} label="Etiquetas" onPress={() => setActiveSheet('labels')} />
-            <DetailAction icon={Clock3} label="Data" onPress={() => setActiveSheet('date')} />
-            <DetailAction icon={CheckSquare} label="Checklist" onPress={() => setActiveSheet('checklist')} />
-            <DetailAction icon={Paperclip} label="Anexo" onPress={() => setActiveSheet('attachments')} />
-          </View>
-
-          <View style={styles.detailSection}>
-            <View style={styles.detailSectionHeader}>
-              <View style={styles.detailSectionTitleWrap}>
-                <AlignLeft size={16} color={theme.colors.text1} strokeWidth={1.8} />
-                <Text style={styles.detailSectionTitle}>Descrição</Text>
-              </View>
-              <DetailSectionAction
-                disabled={!hasDescriptionChanges}
-                icon={CheckSquare}
-                label="Salvar"
-                onPress={concludeDescriptionEdit}
-              />
-            </View>
-            <TextInput
-              style={styles.detailDescriptionInput}
-              value={descriptionValue}
-              onChangeText={setDescriptionValue}
-              multiline
-              textAlignVertical="top"
-              placeholder="Adicionar descrição…"
-              placeholderTextColor={theme.colors.text3}
-              accessibilityLabel="Descrição do cartão"
-            />
-          </View>
-
-          <View style={styles.detailSection}>
-            <View style={styles.detailSectionHeader}>
-              <View style={styles.detailSectionTitleWrap}>
-                <Paperclip size={17} color={theme.colors.text1} strokeWidth={1.8} />
-                <Text style={styles.detailSectionTitle}>Anexos</Text>
-              </View>
-              <DetailSectionAction icon={Paperclip} label="Adicionar" onPress={() => setActiveSheet('attachments')} />
-            </View>
-            <View style={styles.detailInfoRow}>
-              <Text style={styles.detailInfoText}>
-                {attachments.length ? `${attachments.length} arquivo(s) anexado(s)` : 'Nenhum arquivo anexado a este cartão.'}
-              </Text>
-            </View>
-            {attachmentError ? <Text style={styles.detailInlineError}>{attachmentError}</Text> : null}
-            {attachments.length ? (
-              <View style={styles.detailAttachmentList}>
-                {attachments.map((attachment) => (
-                  <View key={attachment.id} style={styles.detailAttachmentItem}>
-                    <FileText size={14} color={theme.colors.text1} strokeWidth={1.8} />
-                    <Text style={styles.detailAttachmentName} numberOfLines={1}>{attachment.name}</Text>
-                    <Text style={styles.detailAttachmentTime}>{attachment.addedAt ?? 'agora'}</Text>
-                    {attachment.canRemove !== false ? (
-                      <Pressable
-                        style={styles.detailAttachmentRemove}
-                        onPress={() => removeAttachmentItem(attachment)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remover anexo ${attachment.name}`}
-                      >
-                        <X size={13} color={theme.colors.text2} strokeWidth={2} />
-                      </Pressable>
-                    ) : null}
-                  </View>
-                ))}
-              </View>
-            ) : null}
-            <View style={styles.detailSecondaryActions}>
-              <DetailSecondaryAction icon={Paperclip} label="Biblioteca" onPress={() => setActiveSheet('attachment-library')} />
-              <DetailSecondaryAction icon={Plus} label="Meu dispositivo" onPress={uploadDeviceAttachment} />
-            </View>
-          </View>
-
-          <View style={styles.detailSection}>
-            <View style={styles.detailSectionHeader}>
-              <View style={styles.detailSectionTitleWrap}>
-                <CheckSquare size={17} color={theme.colors.text1} strokeWidth={1.8} />
-                <Text style={styles.detailSectionTitle}>Checklist</Text>
-              </View>
-              <DetailSectionAction icon={CheckSquare} label="Adicionar" onPress={() => setActiveSheet('checklist')} />
-            </View>
-            <View style={styles.detailInfoRow}>
-              <Text style={styles.detailInfoText}>
-                {checklists.length ? `${checklists.length} checklist(s) neste cartão` : 'Nenhum checklist criado ainda.'}
-              </Text>
-            </View>
-            {checklists.length ? (
-              <View style={styles.detailChecklistList}>
-                {checklists[0].items?.length ? checklists[0].items.map((item) => {
-                  const done = Boolean(item.checked ?? item.completed)
-                  return (
-                    <Pressable
-                      key={item.id}
-                      style={styles.detailChecklistItem}
-                      onPress={() => toggleChecklistItem(item.id)}
-                      accessibilityRole="button"
-                    >
-                      <View style={[styles.detailChecklistCheck, done && styles.detailChecklistCheckDone]}>
-                        {done ? <Check size={11} color={theme.colors.textInverse} strokeWidth={2.1} /> : null}
-                      </View>
-                      <Text style={[styles.detailChecklistText, done && styles.detailChecklistTextDone]} numberOfLines={1}>
-                        {item.text ?? item.title}
-                      </Text>
-                    </Pressable>
-                  )
-                }) : (
-                  <Text style={styles.detailEmptyText}>Checklist criado. Adicione o primeiro item.</Text>
-                )}
-              </View>
-            ) : null}
-            <View style={styles.detailSecondaryActions}>
-              <DetailSecondaryAction icon={CheckSquare} label="Criar checklist" onPress={addChecklistItem} />
-              <DetailSecondaryAction icon={Plus} label="Adicionar item" onPress={() => setActiveSheet('checklist')} />
-            </View>
-          </View>
-
-          <View style={styles.detailSection}>
-            <View style={styles.detailSectionHeader}>
-              <View style={styles.detailSectionTitleWrap}>
-                <MessageCircle size={17} color={theme.colors.text1} strokeWidth={1.8} />
-                <Text style={styles.detailSectionTitle}>Comentários e atividade</Text>
-              </View>
-            </View>
-
-            <View style={styles.detailComposer}>
-              <TextInput
-                style={styles.detailCommentInput}
-                value={commentValue}
-                onChangeText={setCommentValue}
-                placeholder="Escrever comentário..."
-                placeholderTextColor={theme.colors.text3}
-              />
-              <Pressable
-                style={[styles.detailSendButton, !commentValue.trim() && styles.detailSendButtonDisabled]}
-                onPress={sendComment}
-                disabled={!commentValue.trim()}
-                accessibilityRole="button"
-                accessibilityLabel="Enviar comentário"
-                accessibilityState={{ disabled: !commentValue.trim() }}
+        <View style={styles.detailPagerShell} {...detailSwipeResponder.panHandlers}>
+          <Animated.View
+            style={[
+              styles.detailPager,
+              {
+                width: pageWidth * 2,
+                transform: [{ translateX: detailTranslateX }],
+              },
+            ]}
+          >
+            <View style={[styles.detailPage, { width: pageWidth }]}>
+              <ScrollView
+                style={styles.detailScroll}
+                contentContainerStyle={styles.detailContent}
+                showsVerticalScrollIndicator={false}
+                scrollEventThrottle={16}
+                onScroll={handleDetailScroll}
+                keyboardShouldPersistTaps="handled"
               >
-                <Send size={15} color={commentValue.trim() ? theme.colors.textInverse : theme.colors.text3} strokeWidth={1.9} />
-              </Pressable>
-            </View>
+                <View style={styles.cmBreadcrumbs}>
+                  <Text style={styles.cmBreadcrumbText}>Quadro</Text>
+                  <Text style={styles.cmBreadcrumbSep}>/</Text>
+                  <Text style={styles.cmBreadcrumbCurrent} numberOfLines={1}>{column.title}</Text>
+                </View>
 
-            <View style={styles.detailActivityList}>
-              {visibleComments.length ? (
-                visibleComments.map((comment) => {
-                  const authorId = comment.authorId ?? comment.author
-                  const author = boardMembers.find((member) => member.id === authorId)
-                  const presenter = author ?? {
-                    id: authorId ?? comment.id,
-                    name: comment.authorName ?? comment.author ?? 'Membro',
-                    initials: comment.authorName?.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'PT',
-                    avatarUrl: comment.authorAvatarUrl ?? null,
-                    color: theme.colors.black,
-                  }
+                <View style={styles.cmTaskTypeRow}>
+                  <View style={styles.cmTaskTypePill}>
+                    <List size={14} color={theme.colors.text3} strokeWidth={1.75} />
+                    <Text style={styles.cmTaskTypeText}>Tarefa</Text>
+                    <ChevronRight size={11} color={theme.colors.text3} strokeWidth={1.75} />
+                  </View>
+                </View>
 
-                  return (
-                    <View key={comment.id} style={styles.detailActivityItem}>
-                      <MemberAvatar
-                        member={presenter}
-                        style={styles.detailActivityAvatar}
-                        textStyle={styles.detailActivityInitials}
-                      />
-                      <View style={styles.detailActivityBody}>
-                        <Text style={styles.detailActivityText}>
-                          <Text style={styles.detailActivityAuthor}>{presenter.initials ?? 'Membro'} </Text>
-                          {comment.text}
-                        </Text>
-                        <Text style={styles.detailActivityTime}>{comment.time}</Text>
+                <View style={styles.cmTitleRow} onLayout={handleHeroLayout}>
+                  <TextInput
+                    style={styles.cmTitle}
+                    value={titleValue}
+                    onChangeText={setTitleValue}
+                    onBlur={saveTitle}
+                    onSubmitEditing={saveTitle}
+                    multiline
+                    placeholder="Título do cartão"
+                    placeholderTextColor={theme.colors.text3}
+                    accessibilityLabel="Título do cartão"
+                    onLayout={handleTitleLayout}
+                  />
+                </View>
+
+                <View style={styles.cmAiBar}>
+                  <View style={styles.cmAiBarIcon}>
+                    <Sparkles size={11} color={theme.colors.white} strokeWidth={1.75} />
+                  </View>
+                  <Text style={styles.cmAiBarText}>
+                    Peça ao Intelligence para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes
+                  </Text>
+                </View>
+
+                <View style={styles.cmPropertiesGrid}>
+                  <DetailPropertyRow icon={Goal} label="Status">
+                    <View style={styles.cmStatusSplit}>
+                      <View style={styles.cmStatusSplitMain}>
+                        <View style={styles.cmStatusSplitMainLeft}>
+                          <Text style={styles.cmStatusSplitLabel}>{column.title}</Text>
+                        </View>
+                        <View style={styles.cmStatusSplitDivider} />
+                        <Pressable
+                          style={styles.cmStatusSplitToggle}
+                          onPress={onMoveToNextColumn}
+                          disabled={!canMoveToNextColumn}
+                          accessibilityRole="button"
+                          accessibilityLabel="Mover para a próxima coluna"
+                        >
+                          <MoveRight size={12} color={theme.colors.text2} strokeWidth={1.75} />
+                        </Pressable>
                       </View>
+                      <Pressable
+                        style={[styles.cmStatusSplitAction, isCompleted && styles.cmStatusSplitActionChecked]}
+                        onPress={onToggleComplete}
+                        accessibilityRole="button"
+                        accessibilityLabel={isCompleted ? 'Desmarcar tarefa concluída' : 'Concluir tarefa'}
+                        accessibilityState={{ selected: isCompleted }}
+                      >
+                        <Check size={16} color={isCompleted ? theme.colors.textInverse : theme.colors.text2} strokeWidth={1.75} />
+                      </Pressable>
                     </View>
-                  )
-                })
-              ) : (
-                <Text style={styles.detailEmptyText}>Nenhum comentário registrado neste cartão ainda.</Text>
-              )}
+                  </DetailPropertyRow>
+
+                  <DetailPropertyRow icon={Calendar} label="Datas" onPressLabel={() => setActiveSheet('date')}>
+                    <Pressable style={styles.cmPropertyBtn} onPress={() => setActiveSheet('date')} accessibilityRole="button">
+                      <DetailPropertyDatesSummary schedule={schedule} />
+                    </Pressable>
+                  </DetailPropertyRow>
+
+                  <DetailPropertyRow icon={Hourglass} label="Estimativa de tempo">
+                    <Text style={styles.cmPropertyEmpty}>Vazio</Text>
+                  </DetailPropertyRow>
+
+                  <DetailPropertyRow icon={Tag} label="Etiquetas" onPressLabel={() => setActiveSheet('labels')}>
+                    <Pressable style={styles.cmPropertyBtn} onPress={() => setActiveSheet('labels')} accessibilityRole="button">
+                      {label ? (
+                        <View style={[styles.cmLabelChip, { backgroundColor: `${label.color}33` }]}>
+                          <Text style={[styles.cmLabelChipText, { color: label.color }]} numberOfLines={1}>{label.text}</Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.cmPropertyEmpty}>Vazio</Text>
+                      )}
+                    </Pressable>
+                  </DetailPropertyRow>
+
+                  <DetailPropertyRow icon={Users} label="Responsáveis" onPressLabel={() => setActiveSheet('members')}>
+                    <Pressable style={styles.cmAssigneeChip} onPress={() => setActiveSheet('members')} accessibilityRole="button">
+                      {members.length ? (
+                        <>
+                          <MemberAvatar
+                            member={members[0]}
+                            style={styles.cmAssigneeAvatar}
+                            textStyle={styles.cmAssigneeAvatarText}
+                          />
+                          <Text style={styles.cmAssigneeName} numberOfLines={1}>
+                            {members.map(getMemberDisplayName).join(', ')}
+                          </Text>
+                        </>
+                      ) : (
+                        <Text style={styles.cmPropertyEmpty}>Vazio</Text>
+                      )}
+                    </Pressable>
+                  </DetailPropertyRow>
+
+                  <DetailPropertyRow icon={Flag} label="Prioridade">
+                    <Text style={styles.cmPropertyEmpty}>Vazio</Text>
+                  </DetailPropertyRow>
+
+                  <DetailPropertyRow icon={TimerReset} label="Rastrear tempo">
+                    <Text style={styles.cmPropertyEmpty}>Start</Text>
+                  </DetailPropertyRow>
+                </View>
+
+                <View style={[styles.cmDescSection, descriptionValue.trim() ? styles.cmDescSectionHasValue : null]}>
+                  <TextInput
+                    style={styles.cmDesc}
+                    value={descriptionValue}
+                    onChangeText={setDescriptionValue}
+                    onBlur={concludeDescriptionEdit}
+                    multiline
+                    textAlignVertical="top"
+                    placeholder="Adicione uma descrição ou escreva com IA"
+                    placeholderTextColor={theme.colors.text3}
+                    accessibilityLabel="Descrição do cartão"
+                  />
+                </View>
+
+                <View style={styles.cmActionList}>
+                  <DetailActionItem icon={Plus} label="Adicione os campos" />
+                  <DetailActionItem icon={Plus} label="Adicionar subtarefa" />
+                  <DetailActionItem icon={Link} label="Vincular itens ou adicionar dependências" />
+                  <DetailActionItem
+                    icon={Check}
+                    label="Criar checklist"
+                    onPress={() => setActiveSheet('checklist')}
+                    disabled={Boolean(checklists.length)}
+                  />
+                  <DetailActionItem icon={Paperclip} label="Anexar arquivo" onPress={() => setActiveSheet('attachments')} />
+                </View>
+
+                {attachments.length ? (
+                  <View style={styles.cmInlineAttachments}>
+                    {attachments.map((attachment) => (
+                      <View key={attachment.id} style={styles.detailAttachmentItem}>
+                        <FileText size={14} color={theme.colors.text1} strokeWidth={1.8} />
+                        <Text style={styles.detailAttachmentName} numberOfLines={1}>{attachment.name}</Text>
+                        <Text style={styles.detailAttachmentTime}>{attachment.addedAt ?? 'agora'}</Text>
+                        {attachment.canRemove !== false ? (
+                          <Pressable
+                            style={styles.detailAttachmentRemove}
+                            onPress={() => removeAttachmentItem(attachment)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remover anexo ${attachment.name}`}
+                          >
+                            <X size={13} color={theme.colors.text2} strokeWidth={2} />
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                {attachmentError ? <Text style={styles.detailInlineError}>{attachmentError}</Text> : null}
+
+                {checklists.length ? (
+                  <View style={styles.cmChecklistBlock}>
+                    <Text style={styles.cmChecklistTitle}>Checklist</Text>
+                    <View style={styles.detailChecklistList}>
+                      {checklists[0].items?.length ? checklists[0].items.map((item) => {
+                        const done = Boolean(item.checked ?? item.completed)
+                        return (
+                          <Pressable
+                            key={item.id}
+                            style={styles.detailChecklistItem}
+                            onPress={() => toggleChecklistItem(item.id)}
+                            accessibilityRole="button"
+                          >
+                            <View style={[styles.detailChecklistCheck, done && styles.detailChecklistCheckDone]}>
+                              {done ? <Check size={11} color={theme.colors.textInverse} strokeWidth={2.1} /> : null}
+                            </View>
+                            <Text style={[styles.detailChecklistText, done && styles.detailChecklistTextDone]} numberOfLines={2}>
+                              {item.text ?? item.title}
+                            </Text>
+                          </Pressable>
+                        )
+                      }) : (
+                        <Text style={styles.detailEmptyText}>Checklist criado. Adicione o primeiro item.</Text>
+                      )}
+                    </View>
+                  </View>
+                ) : null}
+
+                <Pressable
+                  style={styles.detailActivityHint}
+                  onPress={() => animateToDetailPage(1)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver atividade e comentários"
+                >
+                  <MessageCircle size={15} color={theme.colors.text2} strokeWidth={1.75} />
+                  <Text style={styles.detailActivityHintText}>Deslize para ver Activity</Text>
+                  <ChevronRight size={14} color={theme.colors.text3} strokeWidth={1.75} />
+                </Pressable>
+              </ScrollView>
             </View>
-          </View>
-        </ScrollView>
+
+            <View style={[styles.detailPage, styles.detailActivityPage, { width: pageWidth }]}>
+              <KeyboardAvoidingView
+                style={styles.detailActivityShell}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Math.max(insets.top, 12) + 72}
+              >
+                <View style={styles.cmActivityHeader}>
+                  <MessageCircle size={16} color={theme.colors.text2} strokeWidth={1.75} />
+                  <Text style={styles.cmActivityHeaderTitle}>Activity</Text>
+                </View>
+
+                <ScrollView
+                  style={styles.cmActivityFeed}
+                  contentContainerStyle={styles.cmActivityFeedContent}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {activityFeedItems.map((item) => {
+                    if (item.type === 'history') {
+                      return (
+                        <Text key={item.id} style={styles.cmHistoryItem}>
+                          <Text style={styles.cmHistoryActor}>{item.actor}</Text>
+                          {' '}(você) {item.text}
+                        </Text>
+                      )
+                    }
+
+                    return (
+                      <ActivityCommentCard
+                        key={item.id}
+                        comment={item.comment}
+                        members={boardMembers}
+                      />
+                    )
+                  })}
+                </ScrollView>
+
+                <View style={styles.cmCommentDock}>
+                  <View style={[styles.cmCommentComposerBox, commentFocused && styles.cmCommentComposerBoxActive]}>
+                    <TextInput
+                      style={styles.cmCommentTextarea}
+                      value={commentValue}
+                      onChangeText={setCommentValue}
+                      onFocus={() => setCommentFocused(true)}
+                      onBlur={() => {
+                        if (!commentValue.trim()) setCommentFocused(false)
+                      }}
+                      placeholder="Escreva um comentário..."
+                      placeholderTextColor={theme.colors.text3}
+                      multiline
+                      accessibilityLabel="Escrever comentário"
+                    />
+                    <View style={styles.cmCommentComposerFooter}>
+                      <View style={styles.cmCommentComposerFooterLeft}>
+                        <Pressable style={styles.cmCommentAddBtn} accessibilityRole="button" accessibilityLabel="Adicionar bloco">
+                          <Plus size={14} color={theme.colors.text2} strokeWidth={1.75} />
+                        </Pressable>
+                        <View style={styles.cmComposerDivider} />
+                        <Text style={styles.cmCommentTypeText}>Comentário</Text>
+                      </View>
+                      <Pressable
+                        style={[styles.cmCommentSendBtn, !commentValue.trim() && styles.cmCommentSendBtnDisabled]}
+                        onPress={sendComment}
+                        disabled={!commentValue.trim()}
+                        accessibilityRole="button"
+                        accessibilityLabel="Enviar comentário"
+                      >
+                        <SendHorizontal size={15} color={commentValue.trim() ? theme.colors.textInverse : theme.colors.text3} strokeWidth={1.75} />
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </View>
+          </Animated.View>
+        </View>
 
         <BottomSheet visible={Boolean(activeSheet)} onClose={() => setActiveSheet(null)} title={
           activeSheet === 'more' ? 'Opções do cartão'
@@ -1754,6 +2091,11 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
           : column
       ))
     })
+    setSelectedCardEntry((entry) => {
+      if (entry?.card.id !== cardId) return entry
+      const targetColumn = boardColumnsState.find((column) => column.id === targetColumnId)
+      return targetColumn ? { card: movingCard ?? entry.card, column: targetColumn } : entry
+    })
     if (planId) {
       const targetColumn = boardColumnsState.find((column) => column.id === targetColumnId)
       void persistMoveCard(planId, cardId, targetColumnId, targetColumn?.cards.length ?? 0)
@@ -2049,12 +2391,24 @@ export default function MobileKanbanBoard({ route, navigation, plan: propPlan, c
           columns={boardColumnsState}
           files={files}
           planFiles={planFiles}
+          canMoveToNextColumn={(() => {
+            const index = boardColumnsState.findIndex((item) => item.id === selectedCardEntry.column.id)
+            return index >= 0 && index < boardColumnsState.length - 1
+          })()}
           onAttachFile={attachCardFile}
           onClose={() => setSelectedCardEntry(null)}
           onDeleteCard={deleteCard}
           onDuplicateCard={duplicateCard}
           onMoveCard={moveCard}
+          onMoveToNextColumn={() => {
+            const index = boardColumnsState.findIndex((item) => item.id === selectedCardEntry.column.id)
+            const nextColumn = boardColumnsState[index + 1]
+            if (nextColumn) {
+              moveCard(selectedCardEntry.card.id, nextColumn.id)
+            }
+          }}
           onRemoveAttachment={removeCardAttachment}
+          onToggleComplete={() => toggleTaskDone(selectedCardEntry.card, selectedCardEntry.column)}
           onUpdateCard={updateCard}
           onUploadFile={uploadCardFile}
         />
@@ -2651,69 +3005,514 @@ const createStyles = (theme) => StyleSheet.create({
     letterSpacing: -0.2,
     textAlign: 'center',
   },
+  detailPageIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingBottom: 10,
+    paddingHorizontal: theme.spacing.screenX,
+  },
+  detailPageDot: {
+    width: 28,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: theme.colors.surface3,
+  },
+  detailPageDotActive: {
+    backgroundColor: theme.colors.text1,
+  },
+  detailPagerShell: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  detailPager: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  detailPage: {
+    flex: 1,
+  },
+  detailActivityPage: {
+    backgroundColor: theme.colors.surface2,
+  },
+  detailActivityShell: {
+    flex: 1,
+  },
   detailScroll: {
     flex: 1,
   },
   detailContent: {
     paddingHorizontal: theme.spacing.screenX,
-    paddingTop: 22,
+    paddingTop: 16,
     paddingBottom: 40,
+    gap: 18,
   },
-  detailHero: {
-    gap: 8,
-    marginBottom: 22,
-  },
-  detailEyebrow: {
-    color: theme.colors.text3,
-    ...theme.type.eyebrow,
-    textTransform: 'uppercase',
-  },
-  detailTitle: {
-    color: theme.colors.text1,
-    ...theme.type.display,
-  },
-  detailLabelRow: {
+  cmBreadcrumbs: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    marginTop: 2,
+    gap: 6,
+    minWidth: 0,
   },
-  detailLabelDot: {
-    width: 7,
-    height: 7,
+  cmBreadcrumbText: {
+    color: theme.colors.text3,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  cmBreadcrumbSep: {
+    color: theme.colors.text3,
+    fontSize: 12,
+  },
+  cmBreadcrumbCurrent: {
+    flex: 1,
+    color: theme.colors.text2,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  cmTaskTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cmTaskTypePill: {
+    minHeight: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface2,
+  },
+  cmTaskTypeText: {
+    color: theme.colors.text2,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  cmTitleRow: {
+    minWidth: 0,
+  },
+  cmTitle: {
+    color: theme.colors.text1,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    padding: 0,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+  },
+  cmAiBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface2,
+  },
+  cmAiBarIcon: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 999,
+    backgroundColor: '#0a2f6b',
   },
-  detailLabelText: {
+  cmAiBarText: {
+    flex: 1,
+    color: theme.colors.text3,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  cmPropertiesGrid: {
+    gap: 4,
+  },
+  cmPropertyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 36,
+  },
+  cmPropertyLabelBtn: {
+    width: 132,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  cmPropertyLabelText: {
+    color: theme.colors.text3,
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  cmPropertyValue: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cmPropertyBtn: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: theme.colors.surface3,
+  },
+  cmPropertyEmpty: {
+    color: theme.colors.text3,
+    fontSize: 13,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  cmPropertyDatesSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  cmPropertyDatesPart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  cmPropertyDatesPartText: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  cmPropertyDatesSep: {
+    color: theme.colors.text3,
+    fontSize: 12,
+  },
+  cmStatusSplit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '100%',
+  },
+  cmStatusSplitMain: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    minHeight: 28,
+    borderRadius: 999,
+    backgroundColor: theme.colors.surface3,
+    overflow: 'hidden',
+  },
+  cmStatusSplitMainLeft: {
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  cmStatusSplitLabel: {
+    color: theme.colors.text1,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+  },
+  cmStatusSplitDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'center',
+    height: 14,
+    backgroundColor: theme.colors.border2,
+  },
+  cmStatusSplitToggle: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cmStatusSplitAction: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    backgroundColor: theme.colors.surface3,
+  },
+  cmStatusSplitActionChecked: {
+    backgroundColor: theme.colors.text1,
+  },
+  cmLabelChip: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  cmLabelChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cmAssigneeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: theme.colors.surface3,
+  },
+  cmAssigneeAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+  },
+  cmAssigneeAvatarText: {
+    color: theme.colors.white,
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  cmAssigneeName: {
+    flex: 1,
+    color: theme.colors.text1,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  cmDescSection: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border1,
+    paddingTop: 16,
+  },
+  cmDescSectionHasValue: {
+    backgroundColor: theme.colors.surface2,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  cmDesc: {
+    minHeight: 96,
+    color: theme.colors.text1,
+    fontSize: 14,
+    lineHeight: 20,
+    padding: 0,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+  },
+  cmActionList: {
+    gap: 2,
+  },
+  cmActionItem: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 6,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+  },
+  cmActionItemDisabled: {
+    opacity: 0.45,
+  },
+  cmActionItemIcon: {
+    width: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cmActionItemText: {
+    flex: 1,
     color: theme.colors.text2,
     fontSize: 13,
     fontWeight: '500',
   },
-  detailMetaGrid: {
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 18,
-    paddingBottom: 18,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border1,
+  cmInlineAttachments: {
+    gap: 0,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border1,
+    paddingTop: 8,
   },
-  detailMetaItem: {
-    flex: 1,
+  cmChecklistBlock: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border1,
+    paddingTop: 16,
     gap: 8,
   },
-  detailMetaLabel: {
-    color: theme.colors.text3,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  detailMetaEmpty: {
-    color: theme.colors.text3,
+  cmChecklistTitle: {
+    color: theme.colors.text1,
     fontSize: 14,
+    fontWeight: '600',
   },
-  detailMemberRow: {
+  detailActivityHint: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+  },
+  detailActivityHintText: {
+    flex: 1,
+    color: theme.colors.text2,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  cmActivityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: theme.spacing.screenX,
+    paddingTop: 12,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
+  },
+  cmActivityHeaderTitle: {
+    color: theme.colors.text1,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cmActivityFeed: {
+    flex: 1,
+    backgroundColor: theme.colors.surface3,
+  },
+  cmActivityFeedContent: {
+    paddingHorizontal: theme.spacing.screenX,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 10,
+  },
+  cmHistoryItem: {
+    color: theme.colors.text3,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  cmHistoryActor: {
+    color: theme.colors.text2,
+    fontWeight: '600',
+  },
+  cmCommentCard: {
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
+  },
+  cmCommentCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
+  },
+  cmCommentCardMeta: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    minWidth: 0,
+  },
+  cmCommentAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+  },
+  cmCommentAvatarText: {
+    color: theme.colors.white,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  cmCommentAuthor: {
+    flexShrink: 1,
+    color: theme.colors.text1,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  cmCommentTime: {
+    color: theme.colors.text3,
+    fontSize: 11,
+  },
+  cmCommentCardText: {
+    color: theme.colors.text1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  cmCommentDock: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
+    paddingHorizontal: theme.spacing.screenX,
+    paddingTop: 10,
+    paddingBottom: 12,
+  },
+  cmCommentComposerBox: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.border1,
+    borderRadius: 10,
+    backgroundColor: theme.colors.surface2,
+    overflow: 'hidden',
+  },
+  cmCommentComposerBoxActive: {
+    borderColor: theme.colors.focus,
+  },
+  cmCommentTextarea: {
+    minHeight: 40,
+    maxHeight: 120,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
+    color: theme.colors.text1,
+    fontSize: 14,
+    lineHeight: 20,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
+  },
+  cmCommentComposerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border1,
+  },
+  cmCommentComposerFooterLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minWidth: 0,
+  },
+  cmCommentAddBtn: {
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+  cmComposerDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 16,
+    backgroundColor: theme.colors.border1,
+    marginHorizontal: 4,
+  },
+  cmCommentTypeText: {
+    color: theme.colors.text2,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  cmCommentSendBtn: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    backgroundColor: theme.colors.text1,
+  },
+  cmCommentSendBtnDisabled: {
+    backgroundColor: theme.colors.surface3,
   },
   detailMemberAvatar: {
     width: 28,
@@ -2729,94 +3528,6 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.white,
     fontSize: 10,
     fontWeight: '600',
-  },
-  detailDueText: {
-    color: theme.colors.text1,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  detailActionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 28,
-  },
-  detailAction: {
-    minHeight: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border1,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface2,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
-  },
-  detailActionText: {
-    color: theme.colors.text1,
-    fontSize: 12.5,
-    fontWeight: '500',
-  },
-  detailSection: {
-    marginBottom: 28,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border1,
-    paddingTop: 20,
-  },
-  detailSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginBottom: 12,
-  },
-  detailSectionTitleWrap: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  detailSectionTitle: {
-    flexShrink: 1,
-    color: theme.colors.text1,
-    ...theme.type.heading,
-  },
-  detailSectionAction: {
-    minHeight: 30,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    borderRadius: theme.radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
-  },
-  detailSectionActionDisabled: {
-    opacity: 0.45,
-  },
-  detailSectionActionText: {
-    color: theme.colors.text1,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  detailSectionActionTextDisabled: {
-    color: theme.colors.text3,
-  },
-  detailDescriptionInput: {
-    minHeight: 110,
-    padding: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border1,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface2,
-    color: theme.colors.text1,
-    fontSize: 14,
-    lineHeight: 20,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
   },
   detailEmptyText: {
     color: theme.colors.text3,
