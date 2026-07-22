@@ -23,7 +23,13 @@ const linking = {
           inbox: 'inbox',
           files: 'files',
           docs: 'docs',
-          profile: 'profile',
+          profile: {
+            path: 'profile',
+            screens: {
+              ProfileMain: '',
+              Settings: 'settings',
+            },
+          },
         },
       },
     },

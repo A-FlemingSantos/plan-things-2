@@ -7,6 +7,7 @@ import HomeScreen from './HomeScreen'
 import InboxScreen from './InboxScreen'
 import FilesScreen from './FilesScreen'
 import DocsScreen from './DocsScreen'
+import ProfileScreen from './ProfileScreen'
 import SettingsScreen from './SettingsScreen'
 import MobileKanbanBoard from './MobileKanbanBoard'
 import { theme } from '../theme/tokens'
@@ -15,6 +16,7 @@ import { useThemedStyles } from '../theme/ThemeProvider'
 const bottomTabsOverlayHeight = BOTTOM_TAB_BAR_HEIGHT
 const Tab = createBottomTabNavigator()
 const HomeStack = createNativeStackNavigator()
+const ProfileStack = createNativeStackNavigator()
 
 function HomeStackScreen() {
   return (
@@ -22,6 +24,15 @@ function HomeStackScreen() {
       <HomeStack.Screen name="HomeList" component={HomeScreen} />
       <HomeStack.Screen name="Board" component={MobileKanbanBoard} />
     </HomeStack.Navigator>
+  )
+}
+
+function ProfileStackScreen() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+    </ProfileStack.Navigator>
   )
 }
 
@@ -43,7 +54,7 @@ export default function AppShell() {
               {() => <FilesScreen bottomOverlayOffset={bottomTabsOverlayHeight} />}
             </Tab.Screen>
             <Tab.Screen name="docs" component={DocsScreen} />
-            <Tab.Screen name="profile" component={SettingsScreen} />
+            <Tab.Screen name="profile" component={ProfileStackScreen} />
           </Tab.Navigator>
         </View>
       </SafeAreaView>

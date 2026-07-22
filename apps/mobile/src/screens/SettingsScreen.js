@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system'
 import * as Sharing from 'expo-sharing'
 import {
   AlarmClock,
+  ArrowLeft,
   AtSign,
   BellRing,
   Building2,
@@ -23,9 +24,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react-native'
-import AuthenticatedAvatar from '../components/AuthenticatedAvatar'
 import BottomSheet from '../components/BottomSheet'
-import WorkspaceIconBadge from '../components/WorkspaceIconBadge'
 import { useAuth } from '../providers/AuthProvider'
 import { isMobileSettingsReturnUrl } from '../services/mobileLinking'
 import { resolveMobileCallbackClient } from '../services/mobileClient'
@@ -147,7 +146,7 @@ const themeLabels = {
   dark: 'Escuro',
 }
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation }) {
   styles = useThemedStyles(createStyles)
   const { session, accessToken, logout, patchSession } = useAuth()
   const { effectiveTheme, setThemePreference, themePreference } = useMobileTheme()
@@ -508,35 +507,22 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.backBar}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation?.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar para o perfil"
+        >
+          <ArrowLeft size={19} color={theme.colors.text1} strokeWidth={1.9} />
+        </Pressable>
+      </View>
+
       <View style={styles.topbar}>
         <View style={styles.topbarText}>
           <Text style={styles.pageTitle}>Ajustes</Text>
           <Text style={styles.pageSubtitle}>Olá, {firstName}. Personalize sua experiência.</Text>
         </View>
-      </View>
-
-      <View style={styles.identityCard}>
-        <AuthenticatedAvatar
-          style={styles.identityAvatar}
-          textStyle={styles.identityAvatarText}
-          avatarUrl={session.user.avatarUrl}
-          fallback={session.user.initials}
-          accessibilityLabel={`Avatar de ${session.user.fullName}`}
-        />
-        <View style={styles.identityBody}>
-          <Text style={styles.identityName} numberOfLines={1}>{session.user.fullName}</Text>
-          <Text style={styles.identityEmail} numberOfLines={1}>{session.user.email}</Text>
-          <View style={styles.identityMetaRow}>
-            <WorkspaceIconBadge
-              style={styles.workspaceBadge}
-              color={theme.colors.text2}
-              iconKey={session.workspace.iconKey}
-              accessibilityLabel={`Icone do workspace ${session.workspace.name}`}
-            />
-            <Text style={styles.identityWorkspace} numberOfLines={1}>{session.workspace.name}</Text>
-          </View>
-        </View>
-        <Pill label="real" />
       </View>
 
       <SectionCard
@@ -1050,6 +1036,19 @@ const createStyles = (theme) => StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 98,
   },
+  backBar: {
+    marginBottom: 10,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: theme.colors.border1,
+    backgroundColor: theme.colors.surface1,
+  },
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1071,67 +1070,6 @@ const createStyles = (theme) => StyleSheet.create({
     color: theme.colors.text3,
     fontSize: 13,
     marginTop: 2,
-  },
-  identityCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
-    marginBottom: theme.spacing.section,
-  },
-  identityAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.text1,
-  },
-  identityAvatarText: {
-    color: theme.colors.textInverse,
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  identityBody: {
-    flex: 1,
-    minWidth: 0,
-    gap: 3,
-  },
-  identityName: {
-    color: theme.colors.text1,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  identityEmail: {
-    color: theme.colors.text2,
-    fontSize: 13,
-  },
-  identityMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 2,
-  },
-  workspaceBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.surface3,
-    borderWidth: 1,
-    borderColor: theme.colors.border1,
-  },
-  identityWorkspace: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.text3,
-    fontSize: 12,
   },
   card: {
     borderWidth: 1,
