@@ -55,7 +55,7 @@ export default function BottomTabs({ activeTab, onChange, state, navigation }) {
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
           >
-            <Icon size={16} color={iconColor} strokeWidth={active ? 2 : 1.75} />
+            <Icon size={19} color={iconColor} strokeWidth={active ? 2 : 1.6} />
             <Text
               style={[styles.label, active && styles.labelActive]}
               numberOfLines={1}
@@ -76,26 +76,27 @@ const createStyles = (theme) => StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     gap: 2,
-    paddingTop: 4,
+    paddingTop: 8,
     paddingHorizontal: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.10)',
+    borderTopColor: theme.colors.border1,
     backgroundColor: theme.colors.appBg,
   },
   item: {
     flex: 1,
     minWidth: 0,
-    minHeight: 40,
+    minHeight: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 4,
     paddingHorizontal: 1,
   },
   label: {
     width: '100%',
     textAlign: 'center',
     color: mutedLabelColor(theme),
-    fontSize: 10,
+    fontSize: 10.5,
+    letterSpacing: 0.1,
   },
   labelActive: {
     color: theme.colors.text1,

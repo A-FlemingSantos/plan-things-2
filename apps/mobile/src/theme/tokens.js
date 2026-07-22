@@ -18,14 +18,27 @@ export const colors = {
 
 const baseTheme = {
   radius: {
-    sm: 6,
+    sm: 8,
     md: 12,
-    lg: 20,
-    xl: 28,
+    lg: 16,
+    xl: 22,
+    card: 18,
+    pill: 999,
   },
   spacing: {
-    screenX: 18,
-    section: 22,
+    screenX: 20,
+    section: 26,
+    gutter: 14,
+  },
+  type: {
+    // Refined type scale — lighter weights + tighter tracking for a cleaner, less "raw" feel.
+    display: { fontSize: 29, lineHeight: 34, fontWeight: '600', letterSpacing: -0.6 },
+    title: { fontSize: 21, lineHeight: 26, fontWeight: '600', letterSpacing: -0.4 },
+    heading: { fontSize: 16, lineHeight: 21, fontWeight: '600', letterSpacing: -0.2 },
+    section: { fontSize: 13, lineHeight: 16, fontWeight: '600', letterSpacing: -0.1 },
+    body: { fontSize: 15, lineHeight: 21, fontWeight: '400', letterSpacing: -0.1 },
+    meta: { fontSize: 12.5, lineHeight: 17, fontWeight: '400', letterSpacing: 0 },
+    eyebrow: { fontSize: 11, lineHeight: 14, fontWeight: '600', letterSpacing: 1.2 },
   },
 }
 

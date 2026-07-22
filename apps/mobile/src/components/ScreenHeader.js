@@ -52,9 +52,7 @@ const createStyles = (theme) => StyleSheet.create({
   title: {
     flex: 1,
     color: theme.colors.text1,
-    fontSize: 30,
-    fontWeight: '400',
-    lineHeight: 34,
+    ...theme.type.display,
   },
   meta: {
     color: theme.colors.text3,

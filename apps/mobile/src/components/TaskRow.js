@@ -28,20 +28,20 @@ export default function TaskRow({ task }) {
 const createStyles = (theme) => StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: 12,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    gap: 13,
+    paddingVertical: 15,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border1,
   },
   status: {
-    width: 4,
+    width: 3,
     alignSelf: 'stretch',
     borderRadius: 999,
   },
   body: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: 5,
   },
   top: {
     flexDirection: 'row',
@@ -55,6 +55,7 @@ const createStyles = (theme) => StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '500',
+    letterSpacing: -0.2,
   },
   due: {
     flexDirection: 'row',
@@ -64,11 +65,11 @@ const createStyles = (theme) => StyleSheet.create({
   },
   dueText: {
     color: theme.colors.text3,
-    fontSize: 11,
+    fontSize: 11.5,
   },
   meta: {
     color: theme.colors.text2,
-    fontSize: 12,
+    fontSize: 12.5,
   },
   note: {
     color: theme.colors.text3,
