@@ -1688,33 +1688,7 @@
   pointer-events: none;
 }
 
-.columnDragOverlay .colDragHandle {
-  cursor: grabbing;
-  color: var(--text-2);
-}
-
-.colDragHandle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 24px;
-  margin-right: 2px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-3);
-  cursor: grab;
-  flex-shrink: 0;
-  padding: 0;
-}
-
-.colDragHandle:hover {
-  color: var(--text-2);
-  background: color-mix(in srgb, var(--text-1) 6%, transparent);
-}
-
-.colDragHandle:active {
+.columnDragOverlay .colHeader {
   cursor: grabbing;
 }
 
@@ -1723,12 +1697,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px 8px 8px;
+  padding: 10px 14px 8px;
   gap: 6px;
   flex-shrink: 0;
   border-radius: 14px 14px 0 0;
   min-height: 0;
   background: transparent;
+}
+
+.colHeaderDraggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.colHeaderDraggable:active {
+  cursor: grabbing;
+}
+
+.columnDragging .colHeaderDraggable {
+  cursor: grabbing;
 }
 
 .colHeaderLeft {

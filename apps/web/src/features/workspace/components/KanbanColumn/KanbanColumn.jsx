@@ -9,7 +9,6 @@ import {
   CircleDotDashed,
   CircleX,
   Ellipsis,
-  GripVertical,
   Loader,
   Plus,
 } from 'lucide-react'
@@ -170,24 +169,16 @@ export function KanbanColumnView({
         ...style,
       }}
     >
-      <div className={styles.colHeader}>
-        {isDragOverlay ? (
-          <span className={styles.colDragHandle} aria-hidden="true">
-            <GripVertical size={ICON_SIZE_MD} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          </span>
-        ) : (
-          <button
-            type="button"
-            className={styles.colDragHandle}
-            title="Arrastar lista"
-            aria-label={`Arrastar lista ${col.title}`}
-            {...dragHandleAttributes}
-            {...dragHandleListeners}
-          >
-            <GripVertical size={ICON_SIZE_MD} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          </button>
-        )}
-
+      <div
+        className={`
+          ${styles.colHeader}
+          ${!isDragOverlay && !renaming ? styles.colHeaderDraggable : ''}
+        `}
+        title={!isDragOverlay && !renaming ? 'Arrastar lista' : undefined}
+        aria-label={!isDragOverlay && !renaming ? `Arrastar lista ${col.title}` : undefined}
+        {...(!isDragOverlay && !renaming ? dragHandleAttributes : {})}
+        {...(!isDragOverlay && !renaming ? dragHandleListeners : {})}
+      >
         <div className={styles.colHeaderLeft}>
           {renaming ? (
             <input
@@ -219,7 +210,10 @@ export function KanbanColumnView({
         </div>
 
         {!isDragOverlay ? (
-          <div className={styles.colHeaderRight}>
+          <div
+            className={styles.colHeaderRight}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
             <div className={styles.colMenuWrap}>
               <button
                 ref={menuAnchorRef}
