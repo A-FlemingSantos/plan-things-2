@@ -16,6 +16,7 @@ import {
 } from '../../../preferences/context/PreferencesContext.jsx'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import Toggle from '../../../../shared/components/Toggle/Toggle.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
@@ -1923,22 +1924,28 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   }
 
   const settingsHeader = modal ? (
-    <div className={styles.settingsModalHeader}>
-      <div className={styles.settingsModalHeaderCopy}>
-        <h1 className={styles.settingsModalTitle}>Configurações</h1>
-      </div>
-      <button
-        type="button"
-        className={styles.settingsModalCloseButton}
-        onClick={closeModal}
-        aria-label="Fechar configurações"
-      >
-        <CloseIcon />
-      </button>
-    </div>
-  ) : (
-    <h1 className={styles.settingsPageTitle}>Configurações</h1>
-  )
+    <PlanPageHeader
+      title="Configurações"
+      tone="solid"
+      titleSize="medium"
+      actions={(
+        <button
+          type="button"
+          className={styles.settingsModalCloseButton}
+          onClick={closeModal}
+          aria-label="Fechar configurações"
+        >
+          <CloseIcon />
+        </button>
+      )}
+    />
+  ) : !isMobile ? (
+    <PlanPageHeader
+      title="Configurações"
+      tone="solid"
+      titleSize="medium"
+    />
+  ) : null
 
   const settingsNavButtons = SECTIONS.map(({ id, label, Icon }) => (
     <button
