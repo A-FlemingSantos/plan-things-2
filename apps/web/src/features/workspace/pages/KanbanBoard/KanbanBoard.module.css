@@ -5072,17 +5072,25 @@
   border-left: 1px solid var(--border-1);
   min-width: 140px;
   display: flex;
+  min-height: 0;
+  max-height: 292px;
+}
+
+.cmDateScheduleTimeScroll {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  max-height: 292px;
 }
 
 .cmDateScheduleTimeList {
   width: 100%;
   max-height: 292px;
-  overflow-y: auto;
   padding: 12px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  scrollbar-width: thin;
 }
 
 .cmDateScheduleTimeSlot {

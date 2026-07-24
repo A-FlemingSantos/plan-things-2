@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { RangeCalendar as DateRangeCalendar } from '../../../../../shared/components/Calendar/Calendar.jsx'
 import { resolveCardScheduleFromRange } from '../../../../../shared/components/Calendar/calendarDateUtils.js'
+import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import {
   buildCardScheduleTimeSlots,
   formatCardScheduleSummary,
@@ -52,10 +53,15 @@ export default function CardModalDateSchedulePicker({
         </div>
 
         <div className={styles.cmDateScheduleTimePane}>
-          <div
-            className={styles.cmDateScheduleTimeList}
-            role="listbox"
-            aria-label="Horários disponíveis"
+          <CustomScrollArea
+            enabled
+            refreshKey={selectedTime}
+            className={styles.cmDateScheduleTimeScroll}
+            viewportClassName={styles.cmDateScheduleTimeList}
+            viewportProps={{
+              role: 'listbox',
+              'aria-label': 'Horários disponíveis',
+            }}
           >
             {TIME_SLOTS.map((slot) => {
               const isSelected = slot === selectedTime
@@ -74,7 +80,7 @@ export default function CardModalDateSchedulePicker({
                 </button>
               )
             })}
-          </div>
+          </CustomScrollArea>
         </div>
       </div>
 
