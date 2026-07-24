@@ -4,12 +4,11 @@
 
 .positioner {
   position: fixed;
-  left: 50%;
+  inset-inline: 0;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   z-index: var(--z-app-dock);
-  width: max-content;
-  max-width: calc(100vw - 24px);
-  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
   pointer-events: none;
 }
 
@@ -18,8 +17,7 @@
 }
 
 .link,
-.accountButton,
-.notificationButton {
+.accountButton {
   display: flex;
   width: 100%;
   height: 100%;
@@ -35,63 +33,16 @@
 }
 
 .link:hover,
-.accountButton:hover,
-.notificationButton:hover {
+.accountButton:hover {
   color: var(--text-1);
 }
 
 .link:focus-visible,
-.accountButton:focus-visible,
-.notificationButton:focus-visible {
+.accountButton:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px var(--app-bg),
     0 0 0 4px var(--focus-ring);
-}
-
-.notificationWrap {
-  position: relative;
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-}
-
-.notificationBadge {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  min-width: 12px;
-  height: 12px;
-  padding: 0 3px;
-  border: 1px solid var(--app-bg);
-  border-radius: 999px;
-  background: var(--text-1);
-  color: var(--text-inverse);
-  font-size: 8px;
-  line-height: 12px;
-  text-align: center;
-  box-shadow: none;
-}
-
-.notificationsPanel {
-  top: auto;
-  bottom: calc(100% + 10px);
-  right: 50%;
-  left: auto;
-  transform: translateX(50%);
-}
-
-.notificationWrap :global(button),
-.notificationButton {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  border-radius: inherit;
-  background: transparent;
-  color: inherit;
-  box-shadow: none;
 }
 
 .avatar {

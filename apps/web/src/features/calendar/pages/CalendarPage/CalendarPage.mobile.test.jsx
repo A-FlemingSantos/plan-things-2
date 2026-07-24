@@ -46,10 +46,6 @@ vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () 
   default: ({ children }) => <div>{children}</div>,
 }))
 
-vi.mock('../../../workspace/components/InviteNotifications/InviteNotifications.jsx', () => ({
-  default: () => null,
-}))
-
 vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () => ({
   default: ({ children }) => <>{children}</>,
 }))

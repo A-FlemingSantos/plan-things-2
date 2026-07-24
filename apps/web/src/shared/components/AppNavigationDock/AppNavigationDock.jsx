@@ -1,7 +1,6 @@
-import { House, KanbanSquare, Settings, Sparkles } from 'lucide-react'
+import { BookOpen, House, KanbanSquare, Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
-import InviteNotifications from '../../../features/workspace/components/InviteNotifications/InviteNotifications.jsx'
 import { normalizePathname, ROUTES } from '../../config/routes.js'
 import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import { Dock, DockItem, DockSeparator } from '../Dock/Dock.jsx'
@@ -10,10 +9,15 @@ import styles from './AppNavigationDock.module.css'
 
 const NAV_ITEMS = [
   { id: 'home', label: 'Início', to: ROUTES.workspace, Icon: House },
-  { id: 'intelligence', label: 'Intelligence', to: ROUTES.workspaceChat, Icon: Sparkles },
+  { id: 'intelligence', label: 'Intelligence', to: ROUTES.workspaceChat, Icon: BookOpen },
   { id: 'boards', label: 'Quadros', to: ROUTES.workspaceBoard, Icon: KanbanSquare },
-  { id: 'settings', label: 'Configurações', to: ROUTES.settings, Icon: Settings },
 ]
+
+const SETTINGS_ITEM = {
+  id: 'settings',
+  label: 'Configurações',
+  to: ROUTES.settings,
+}
 
 function isRouteActive(pathname, route) {
   const normalizedPathname = normalizePathname(pathname)
@@ -31,6 +35,7 @@ function isRouteActive(pathname, route) {
 
 export default function AppNavigationDock() {
   const location = useLocation()
+  const settingsActive = isRouteActive(location.pathname, SETTINGS_ITEM.to)
 
   return (
     <AppThemeScope className={styles.themeScope}>
@@ -55,13 +60,15 @@ export default function AppNavigationDock() {
 
           <DockSeparator />
 
-          <DockItem>
-            <InviteNotifications
-              wrapClassName={styles.notificationWrap}
-              triggerClassName={styles.notificationButton}
-              badgeClassName={styles.notificationBadge}
-              panelClassName={styles.notificationsPanel}
-            />
+          <DockItem active={settingsActive}>
+            <Link
+              to={SETTINGS_ITEM.to}
+              className={styles.link}
+              aria-label={SETTINGS_ITEM.label}
+              aria-current={settingsActive ? 'page' : undefined}
+            >
+              <Settings size={16} strokeWidth={1.75} aria-hidden="true" />
+            </Link>
           </DockItem>
 
           <DockItem>

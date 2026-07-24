@@ -163,10 +163,6 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
   default: ({ children }) => <>{children}</>,
 }))
 
-vi.mock('../../components/InviteNotifications/InviteNotifications.jsx', () => ({
-  default: () => null,
-}))
-
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
   default: ({ col }) => (
     <section aria-label={col.title}>

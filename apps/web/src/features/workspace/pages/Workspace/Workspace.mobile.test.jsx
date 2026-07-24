@@ -80,10 +80,6 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
   default: ({ children }) => <>{children}</>,
 }))
 
-vi.mock('../../components/InviteNotifications/InviteNotifications.jsx', () => ({
-  default: () => <button type="button" aria-label="Notificações">Notificações</button>,
-}))
-
 function renderWorkspace(initialEntries = ['/workspace']) {
   return render(
     <TestMemoryRouter initialEntries={initialEntries}>
@@ -114,7 +110,6 @@ describe('Workspace mobile layout', () => {
     expect(screen.getByRole('region', { name: 'Seção do Intelligence' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /novo plano/i }).length).toBeGreaterThan(0)
     expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Notificações' })).toBeInTheDocument()
     expect(screen.getByText('Recentes')).toBeInTheDocument()
     expect(screen.getByText('Workspaces')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Planos' })).toBeInTheDocument()
