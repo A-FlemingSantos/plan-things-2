@@ -5140,22 +5140,27 @@
 
 .cmDateScheduleConfirm {
   flex: 0 0 auto;
+  height: 34px;
   min-height: 34px;
   padding: 0 14px;
-  border: 1px solid var(--border-2);
+  border: 1px solid var(--kanban-accent-color, var(--focus-ring));
   border-radius: 10px;
-  background: var(--surface-1);
-  color: var(--text-1);
+  background: var(--kanban-accent-color, var(--focus-ring));
+  color: var(--kanban-accent-foreground, var(--text-on-accent));
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
 }
 
 .cmDateScheduleConfirm:hover:not(:disabled) {
-  background: var(--hover);
-  border-color: var(--text-3);
+  background: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 88%, var(--text-1));
+  border-color: color-mix(in srgb, var(--kanban-accent-color, var(--focus-ring)) 88%, var(--text-1));
 }
 
 .cmDateScheduleConfirm:disabled {
