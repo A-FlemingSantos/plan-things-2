@@ -21,19 +21,21 @@ import menuStyles from './SidebarAccountMenu.module.css'
 const COLLAPSED_MENU_WIDTH = 220
 const EXPANDED_MENU_HORIZONTAL_INSET = 10
 const MENU_FALLBACK_HEIGHT = 320
+const DOCK_MENU_FALLBACK_HEIGHT = 32
 const MENU_MARGIN = 12
 const MENU_VERTICAL_OFFSET = 6
-const DOCK_MENU_GAP = 14
-const DOCK_MENU_MIN_WIDTH = 300
-const SUBMENU_FALLBACK_WIDTH = 280
+const DOCK_MENU_GAP = 10
+const SUBMENU_FALLBACK_WIDTH = 240
 const SUBMENU_FALLBACK_HEIGHT = 160
 const SUBMENU_OVERLAP = 10
 const SUBMENU_MARGIN = 12
+const DOCK_SUBMENU_GAP = 8
 
 const MENU_ITEM_ICON_SIZE = 14
 const MENU_ITEM_ICON_STROKE = 1.75
+const DOCK_ICON_SIZE = 14
 
-const MENU_ITEMS = [
+const SIDEBAR_MENU_ITEMS = [
   { id: 'profile', label: 'Meu perfil', Icon: User, danger: false },
   { id: 'upgrade', label: 'Upgrade', Icon: CircleFadingArrowUp, danger: false },
   { id: 'settings', label: 'Configurações', Icon: Settings, danger: false },
@@ -83,6 +85,7 @@ export default function SidebarAccountMenu({
     ? currentUser.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
     : initials
   const resolvedPlanLabel = workspace?.subscriptionPlan ? getWorkspacePlanLabel(workspace.subscriptionPlan) : plan
+  const isDockMenu = menuPresentation === 'dock'
   const portalRoot = containerRef.current?.closest('[data-app-theme-scope]') ?? document.body
   const orderedAccounts = useMemo(() => {
     const accounts = Array.isArray(savedAccounts) ? [...savedAccounts] : []
@@ -99,15 +102,15 @@ export default function SidebarAccountMenu({
     const viewportHeight = window.innerHeight
     const menuRect = menuRef.current?.getBoundingClientRect()
 
-    if (menuPresentation === 'dock') {
+    if (isDockMenu) {
       const dockRect = dockAnchorRef?.current?.getBoundingClientRect?.()
       if (!dockRect) return
 
       const menuWidth = Math.min(
-        Math.max(DOCK_MENU_MIN_WIDTH, Math.round(dockRect.width)),
+        menuRect?.width || dockRect.width,
         viewportWidth - (MENU_MARGIN * 2),
       )
-      const menuHeight = menuRect?.height || MENU_FALLBACK_HEIGHT
+      const menuHeight = menuRect?.height || DOCK_MENU_FALLBACK_HEIGHT
       const centerX = Math.round(dockRect.left + (dockRect.width / 2))
       const preferredTop = Math.round(dockRect.top - menuHeight - DOCK_MENU_GAP)
       const maxTop = Math.max(MENU_MARGIN, viewportHeight - menuHeight - MENU_MARGIN)
@@ -160,7 +163,7 @@ export default function SidebarAccountMenu({
       width: menuWidth,
       transform: undefined,
     })
-  }, [collapsed, dockAnchorRef, menuPlacement, menuPresentation])
+  }, [collapsed, dockAnchorRef, isDockMenu, menuPlacement])
 
   const updateAccountsMenuPosition = useCallback((anchorRectOverride = null) => {
     const anchorRect = anchorRectOverride
@@ -173,9 +176,32 @@ export default function SidebarAccountMenu({
     const submenuRect = accountsMenuRef.current?.getBoundingClientRect?.()
     const menuWidth = submenuRect?.width || SUBMENU_FALLBACK_WIDTH
     const menuHeight = submenuRect?.height || SUBMENU_FALLBACK_HEIGHT
-    const availableHeight = Math.max(160, viewportHeight - (SUBMENU_MARGIN * 2))
+    const availableHeight = Math.max(120, viewportHeight - (SUBMENU_MARGIN * 2))
     const visibleHeight = Math.min(menuHeight, availableHeight)
     const width = Math.min(menuWidth, viewportWidth - (SUBMENU_MARGIN * 2))
+
+    if (isDockMenu) {
+      const preferredLeft = Math.round(anchorRect.left)
+      const left = Math.max(
+        SUBMENU_MARGIN,
+        Math.min(preferredLeft, viewportWidth - width - SUBMENU_MARGIN),
+      )
+      const preferredTop = Math.round(anchorRect.top - visibleHeight - DOCK_SUBMENU_GAP)
+      const top = Math.max(
+        SUBMENU_MARGIN,
+        Math.min(preferredTop, viewportHeight - visibleHeight - SUBMENU_MARGIN),
+      )
+
+      setAccountsMenuPosition({
+        position: 'fixed',
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${width}px`,
+        maxHeight: `${availableHeight}px`,
+      })
+      return
+    }
+
     const rightAlignedLeft = anchorRect.right - SUBMENU_OVERLAP
     const leftAlignedLeft = anchorRect.left - width + SUBMENU_OVERLAP
     const preferredLeft = rightAlignedLeft + width <= viewportWidth - SUBMENU_MARGIN
@@ -199,7 +225,7 @@ export default function SidebarAccountMenu({
       width: `${width}px`,
       maxHeight: `${availableHeight}px`,
     })
-  }, [])
+  }, [isDockMenu])
 
   useEffect(() => {
     const handlePointerDown = (event) => {
@@ -250,7 +276,7 @@ export default function SidebarAccountMenu({
     window.addEventListener('scroll', handleViewportChange, true)
 
     let dockObserver = null
-    const dockElement = menuPresentation === 'dock' ? dockAnchorRef?.current : null
+    const dockElement = isDockMenu ? dockAnchorRef?.current : null
     if (dockElement && typeof ResizeObserver === 'function') {
       dockObserver = new ResizeObserver(() => updateMenuPosition())
       dockObserver.observe(dockElement)
@@ -261,7 +287,7 @@ export default function SidebarAccountMenu({
       window.removeEventListener('scroll', handleViewportChange, true)
       dockObserver?.disconnect()
     }
-  }, [collapsed, dockAnchorRef, menuPresentation, open, updateMenuPosition])
+  }, [collapsed, dockAnchorRef, isDockMenu, open, updateMenuPosition])
 
   useLayoutEffect(() => {
     if (!open || !accountsOpen) return
@@ -283,7 +309,7 @@ export default function SidebarAccountMenu({
     setOpen((currentOpen) => {
       const nextOpen = !currentOpen
 
-      if (nextOpen && (collapsed || menuPresentation === 'dock')) {
+      if (nextOpen && (collapsed || isDockMenu)) {
         setMenuPosition(null)
       }
 
@@ -303,7 +329,7 @@ export default function SidebarAccountMenu({
         position: menuPosition.position,
         left: menuPosition.left,
         top: `${menuPosition.top}px`,
-        width: `${menuPosition.width}px`,
+        width: isDockMenu ? undefined : `${menuPosition.width}px`,
         transform: menuPosition.transform,
       }
     : undefined
@@ -421,6 +447,61 @@ export default function SidebarAccountMenu({
     'aria-controls': menuIdRef.current,
   }
 
+  const renderAccountsSubmenu = () => (
+    orderedAccounts.map((account) => {
+      const accountInitials = account.user?.fullName
+        ? account.user.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+        : 'PT'
+      const isActive = account.accountId === activeAccountId
+      const isBusy = switchingAccountId === account.accountId
+
+      return (
+        <button
+          key={account.accountId}
+          type="button"
+          className={[
+            menuStyles.accountItem,
+            isDockMenu ? menuStyles.accountItemDock : '',
+            isActive ? menuStyles.accountItemActive : '',
+            isBusy ? menuStyles.accountItemBusy : '',
+          ].filter(Boolean).join(' ')}
+          role="menuitemradio"
+          aria-checked={isActive}
+          disabled={switchingAccountId !== null}
+          onClick={() => handleSwitchAccount(account.accountId)}
+        >
+          <span className={menuStyles.accountMain}>
+            <AuthenticatedAvatar
+              className={isDockMenu ? menuStyles.dockAvatar : [menuStyles.avatar, menuStyles.accountAvatar].join(' ')}
+              imageClassName={isDockMenu ? menuStyles.dockAvatarImage : 'authenticatedAvatarImage'}
+              avatarUrl={account.user?.avatarUrl ?? null}
+              fallback={isDockMenu ? (
+                <span className={menuStyles.dockAvatarFallback}>
+                  {accountInitials}
+                </span>
+              ) : accountInitials}
+              title={account.user?.fullName ?? 'Conta'}
+            />
+            <span className={menuStyles.accountIdentity}>
+              <span className={menuStyles.accountNameRow}>
+                <span className={menuStyles.accountName}>{account.user?.fullName ?? 'Conta sem nome'}</span>
+              </span>
+            </span>
+          </span>
+          <span
+            className={[
+              menuStyles.accountCheck,
+              isActive ? menuStyles.accountCheckVisible : '',
+            ].filter(Boolean).join(' ')}
+            aria-hidden="true"
+          >
+            <Check size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
+          </span>
+        </button>
+      )
+    })
+  )
+
   return (
     <div ref={containerRef} className={menuStyles.container}>
       {typeof renderTrigger === 'function'
@@ -453,70 +534,134 @@ export default function SidebarAccountMenu({
             id={menuIdRef.current}
             className={[
               menuStyles.menu,
-              menuPresentation === 'dock' ? menuStyles.menuDock : '',
-              collapsed && menuPresentation !== 'dock' ? menuStyles.menuCollapsed : '',
+              isDockMenu ? menuStyles.menuDock : '',
+              collapsed && !isDockMenu ? menuStyles.menuCollapsed : '',
             ].filter(Boolean).join(' ')}
             role="menu"
             style={resolvedMenuStyle}
           >
-            <button
-              ref={accountsTriggerRef}
-              type="button"
-              className={[
-                menuStyles.headerButton,
-                accountsOpen ? menuStyles.headerButtonActive : '',
-              ].filter(Boolean).join(' ')}
-              onMouseEnter={handleAccountsMouseEnter}
-              onClick={handleAccountsToggle}
-              aria-label={`Contas salvas de ${resolvedName}`}
-              aria-expanded={accountsOpen}
-              aria-haspopup="menu"
-              aria-controls={accountsMenuIdRef.current}
-            >
-              <div className={menuStyles.header}>
-                <AuthenticatedAvatar
-                  className={menuStyles.avatar}
-                  imageClassName="authenticatedAvatarImage"
-                  avatarUrl={resolvedAvatarUrl}
-                  fallback={resolvedInitials}
-                  title={resolvedName}
-                />
-                <div className={menuStyles.identity}>
-                  <p className={menuStyles.name}>{resolvedName}</p>
-                  <p className={menuStyles.email}>{resolvedEmail}</p>
-                </div>
+            {isDockMenu ? (
+              <div className={menuStyles.dockBar}>
+                <button
+                  ref={accountsTriggerRef}
+                  type="button"
+                  className={[
+                    menuStyles.dockAccountTrigger,
+                    accountsOpen ? menuStyles.dockAccountTriggerActive : '',
+                  ].filter(Boolean).join(' ')}
+                  onMouseEnter={handleAccountsMouseEnter}
+                  onClick={handleAccountsToggle}
+                  aria-label={`Contas salvas de ${resolvedName}`}
+                  aria-expanded={accountsOpen}
+                  aria-haspopup="menu"
+                  aria-controls={accountsMenuIdRef.current}
+                >
+                  <AuthenticatedAvatar
+                    className={menuStyles.dockAvatar}
+                    imageClassName={menuStyles.dockAvatarImage}
+                    avatarUrl={resolvedAvatarUrl}
+                    fallback={(
+                      <span className={menuStyles.dockAvatarFallback}>
+                        {resolvedInitials}
+                      </span>
+                    )}
+                    title={resolvedName}
+                  />
+                  <span className={menuStyles.dockUserName}>{resolvedName}</span>
+                  <span
+                    className={[
+                      menuStyles.dockChevron,
+                      accountsOpen ? menuStyles.dockChevronOpen : '',
+                    ].filter(Boolean).join(' ')}
+                    aria-hidden="true"
+                  >
+                    <ChevronRight size={12} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
+                  </span>
+                </button>
+
+                <span className={menuStyles.dockSeparator} aria-hidden="true" />
+
+                <button
+                  type="button"
+                  className={menuStyles.dockAction}
+                  role="menuitem"
+                  onClick={() => handleItemClick('upgrade')}
+                >
+                  <CircleFadingArrowUp size={DOCK_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
+                  Upgrade
+                </button>
+
+                <button
+                  type="button"
+                  className={[menuStyles.dockAction, menuStyles.dockActionDanger].join(' ')}
+                  role="menuitem"
+                  onClick={() => handleItemClick('logout')}
+                >
+                  Sair
+                </button>
               </div>
-              <span
-                className={[
-                  menuStyles.headerChevron,
-                  accountsOpen ? menuStyles.headerChevronOpen : '',
-                ].filter(Boolean).join(' ')}
-                aria-hidden="true"
-              >
-                <ChevronRight size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
-              </span>
-            </button>
+            ) : (
+              <>
+                <button
+                  ref={accountsTriggerRef}
+                  type="button"
+                  className={[
+                    menuStyles.headerButton,
+                    accountsOpen ? menuStyles.headerButtonActive : '',
+                  ].filter(Boolean).join(' ')}
+                  onMouseEnter={handleAccountsMouseEnter}
+                  onClick={handleAccountsToggle}
+                  aria-label={`Contas salvas de ${resolvedName}`}
+                  aria-expanded={accountsOpen}
+                  aria-haspopup="menu"
+                  aria-controls={accountsMenuIdRef.current}
+                >
+                  <div className={menuStyles.header}>
+                    <AuthenticatedAvatar
+                      className={menuStyles.avatar}
+                      imageClassName="authenticatedAvatarImage"
+                      avatarUrl={resolvedAvatarUrl}
+                      fallback={resolvedInitials}
+                      title={resolvedName}
+                    />
+                    <div className={menuStyles.identity}>
+                      <p className={menuStyles.name}>{resolvedName}</p>
+                      <p className={menuStyles.email}>{resolvedEmail}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={[
+                      menuStyles.headerChevron,
+                      accountsOpen ? menuStyles.headerChevronOpen : '',
+                    ].filter(Boolean).join(' ')}
+                    aria-hidden="true"
+                  >
+                    <ChevronRight size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
+                  </span>
+                </button>
 
-            <div className={menuStyles.divider} />
+                <div className={menuStyles.divider} />
 
-            {MENU_ITEMS.map(({ id, label, Icon, danger }, index) => (
-              <button
-                key={id}
-                type="button"
-                className={[
-                  menuStyles.item,
-                  danger ? menuStyles.itemDanger : '',
-                ].filter(Boolean).join(' ')}
-                role="menuitem"
-                style={{ animationDelay: `${index * 28}ms` }}
-                onClick={() => handleItemClick(id)}
-              >
-                <span className={menuStyles.icon}>
-                  <Icon size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
-                </span>
-                {label}
-              </button>
-            ))}
+                {SIDEBAR_MENU_ITEMS.map(({ id, label, Icon, danger }, index) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={[
+                      menuStyles.item,
+                      danger ? menuStyles.itemDanger : '',
+                    ].filter(Boolean).join(' ')}
+                    role="menuitem"
+                    style={{ animationDelay: `${index * 28}ms` }}
+                    onClick={() => handleItemClick(id)}
+                  >
+                    <span className={menuStyles.icon}>
+                      <Icon size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
+                    </span>
+                    {label}
+                  </button>
+                ))}
+              </>
+            )}
           </div>,
           portalRoot,
         )
@@ -529,65 +674,23 @@ export default function SidebarAccountMenu({
               id={accountsMenuIdRef.current}
               className={[
                 menuStyles.submenu,
-                menuPresentation === 'dock' ? menuStyles.submenuDock : '',
+                isDockMenu ? menuStyles.submenuDock : '',
               ].filter(Boolean).join(' ')}
               role="menu"
               aria-label="Contas salvas"
               style={accountsMenuPosition ?? undefined}
             >
-              {orderedAccounts.map((account) => {
-                const accountInitials = account.user?.fullName
-                  ? account.user.fullName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
-                  : 'PT'
-                const isActive = account.accountId === activeAccountId
-                const isBusy = switchingAccountId === account.accountId
-
-                return (
-                  <button
-                    key={account.accountId}
-                    type="button"
-                    className={[
-                      menuStyles.accountItem,
-                      isActive ? menuStyles.accountItemActive : '',
-                      isBusy ? menuStyles.accountItemBusy : '',
-                    ].filter(Boolean).join(' ')}
-                    role="menuitemradio"
-                    aria-checked={isActive}
-                    disabled={switchingAccountId !== null}
-                    onClick={() => handleSwitchAccount(account.accountId)}
-                  >
-                    <span className={menuStyles.accountMain}>
-                      <AuthenticatedAvatar
-                        className={[menuStyles.avatar, menuStyles.accountAvatar].join(' ')}
-                        imageClassName="authenticatedAvatarImage"
-                        avatarUrl={account.user?.avatarUrl ?? null}
-                        fallback={accountInitials}
-                        title={account.user?.fullName ?? 'Conta'}
-                      />
-                      <span className={menuStyles.accountIdentity}>
-                        <span className={menuStyles.accountNameRow}>
-                          <span className={menuStyles.accountName}>{account.user?.fullName ?? 'Conta sem nome'}</span>
-                        </span>
-                      </span>
-                    </span>
-                    <span
-                      className={[
-                        menuStyles.accountCheck,
-                        isActive ? menuStyles.accountCheckVisible : '',
-                      ].filter(Boolean).join(' ')}
-                      aria-hidden="true"
-                    >
-                      <Check size={MENU_ITEM_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
-                    </span>
-                  </button>
-                )
-              })}
+              {renderAccountsSubmenu()}
 
               <div className={[menuStyles.divider, menuStyles.submenuDivider].join(' ')} />
 
               <button
                 type="button"
-                className={[menuStyles.item, menuStyles.addAccountItem].join(' ')}
+                className={[
+                  menuStyles.item,
+                  isDockMenu ? menuStyles.dockSubmenuAction : '',
+                  menuStyles.addAccountItem,
+                ].filter(Boolean).join(' ')}
                 role="menuitem"
                 disabled={switchingAccountId !== null}
                 onClick={handleOpenAddAccount}

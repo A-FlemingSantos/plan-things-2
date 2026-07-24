@@ -19,13 +19,218 @@
 }
 
 .menuDock {
+  --dock-row-size: 28px;
+  --dock-avatar-size: 18px;
   z-index: calc(var(--z-app-dock) + 4);
   transform-origin: center bottom;
   animation: menuDockEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 2px 4px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--border-1);
+  box-shadow:
+    0 16px 36px color-mix(in srgb, var(--color-black) 18%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-black) 8%, transparent);
+}
+
+.menuDock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  pointer-events: none;
 }
 
 .submenuDock {
+  --dock-row-size: 28px;
+  --dock-avatar-size: 18px;
   z-index: calc(var(--z-app-dock) + 6);
+  position: relative;
+  isolation: isolate;
+  width: max-content;
+  min-width: 180px;
+  max-width: min(260px, calc(100vw - 24px));
+  padding: 2px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid var(--border-1);
+  box-shadow:
+    0 16px 36px color-mix(in srgb, var(--color-black) 18%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-black) 8%, transparent);
+  animation: submenuDockEnter 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: left bottom;
+}
+
+.submenuDock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  pointer-events: none;
+}
+
+.dockBar {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  height: var(--dock-row-size);
+}
+
+.dockAccountTrigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 200px;
+  height: var(--dock-row-size);
+  margin: 0;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-1);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.dockAccountTrigger:hover,
+.dockAccountTriggerActive {
+  background: var(--hover);
+}
+
+.dockUserName {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dockChevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.dockAccountTrigger:hover .dockChevron,
+.dockAccountTriggerActive .dockChevron {
+  color: var(--text-2);
+}
+
+.dockChevronOpen {
+  transform: translateX(2px);
+}
+
+.dockSeparator {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  width: 1px;
+  height: 14px;
+  margin: 0 2px;
+  flex-shrink: 0;
+  background: var(--border-1);
+}
+
+.dockAction {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: var(--dock-row-size);
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  color: var(--text-2);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.dockAction:focus-visible,
+.dockAccountTrigger:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--app-bg),
+    0 0 0 4px var(--focus-ring);
+}
+
+.dockAction:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.dockActionDanger {
+  color: var(--danger-text);
+}
+
+.dockActionDanger:hover {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.dockAvatar {
+  width: var(--dock-avatar-size);
+  height: var(--dock-avatar-size);
+  min-width: var(--dock-avatar-size);
+  min-height: var(--dock-avatar-size);
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface-3);
+  color: var(--text-1);
+  line-height: 1;
+}
+
+.dockAvatarImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dockAvatarFallback {
+  font-size: 8px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 @keyframes menuDockEnter {
@@ -37,6 +242,18 @@
   to {
     opacity: 1;
     transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes submenuDockEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -186,6 +403,8 @@
 }
 
 .accountItem {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -195,6 +414,12 @@
   text-align: left;
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.accountItemDock {
+  height: var(--dock-row-size);
+  padding: 0 8px;
+  border-radius: 9px;
 }
 
 .accountItem:hover {
@@ -216,6 +441,15 @@
   align-items: center;
   gap: 12px;
   flex: 1;
+}
+
+.accountItemDock .accountMain {
+  gap: 6px;
+}
+
+.accountItemDock .accountName {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .accountAvatar {
@@ -264,9 +498,27 @@
   margin: 6px 14px;
 }
 
+.submenuDock .submenuDivider {
+  margin: 1px 6px;
+}
+
 .addAccountItem {
   padding-top: 8px;
   padding-bottom: 12px;
+}
+
+.submenuDock .addAccountItem {
+  height: var(--dock-row-size);
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 9px;
+}
+
+.dockSubmenuAction {
+  position: relative;
+  z-index: 1;
+  animation: none;
 }
 
 .addAccountIcon {
@@ -274,10 +526,18 @@
 }
 
 .submenuError {
+  position: relative;
+  z-index: 1;
   padding: 10px 14px 12px;
   font-size: 11px;
   color: var(--danger-text);
   background: color-mix(in srgb, var(--danger-bg) 45%, transparent);
+}
+
+.submenuDock .submenuError {
+  margin: 2px 6px 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
 }
 
 @keyframes itemSlide {

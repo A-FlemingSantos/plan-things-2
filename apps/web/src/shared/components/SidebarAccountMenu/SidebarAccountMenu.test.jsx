@@ -147,8 +147,12 @@ describe('SidebarAccountMenu', () => {
       expect(menu.className).toContain('menuDock')
       expect(menu.style.left).toBe('620px')
       expect(menu.style.transform).toBe('translateX(-50%)')
-      expect(menu.style.width).toBe('300px')
     })
+
+    expect(screen.getByRole('button', { name: /contas salvas de arthur santos/i })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Upgrade' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Meu perfil' })).not.toBeInTheDocument()
 
     expect(container.querySelector('[data-testid="dock-anchor"]')).toBeTruthy()
   })
