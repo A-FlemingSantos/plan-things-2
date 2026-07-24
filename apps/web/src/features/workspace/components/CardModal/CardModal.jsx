@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   Calendar,
   Check,
@@ -25,7 +25,6 @@ import {
   X,
 } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
-import { RangeCalendar as DateRangeCalendar } from '../../../../shared/components/Calendar/Calendar.jsx'
 import {
   buildBrazilDateRange,
   resolveCardScheduleFromRange,
@@ -33,6 +32,7 @@ import {
 import { buildInlineAssignmentText } from './utils/activityUtils.js'
 import { createCardModalUid } from './utils/cardModalCommon.js'
 import { buildInitialCardSchedule, formatDueDateLabelFromValue } from './utils/cardModalDateUtils.js'
+import { snapCardScheduleTimeToSlot } from './utils/cardModalScheduleUtils.js'
 import { CardModalAttachmentAction, CardModalInlineAttachments } from './components/CardModalAttachmentControls.jsx'
 import CardModalActivitySidebar from './components/CardModalActivitySidebar.jsx'
 import CardModalChecklist from './components/CardModalChecklist.jsx'
@@ -41,6 +41,7 @@ import {
   CardModalChecklistCreateMenu,
   CardModalChecklistDueMenu,
 } from './components/CardModalChecklistMenus.jsx'
+import CardModalDateSchedulePicker from './components/CardModalDateSchedulePicker.jsx'
 import CardModalFilePicker from './components/CardModalFilePicker.jsx'
 import PropertyDatesSummary from './components/PropertyDatesSummary.jsx'
 import useCardModalActivity from './hooks/useCardModalActivity.js'
@@ -111,6 +112,13 @@ export default function CardModal({
   const [dueTimeValue, setDueTimeValue] = useState(initialSchedule.dueTimeValue)
   const [displayLabel, setDisplayLabel] = useState(initialSchedule.displayLabel)
   const [preserveDisplayLabel, setPreserveDisplayLabel] = useState(initialSchedule.preserveDisplayLabel)
+  const [draftCalendarRange, setDraftCalendarRange] = useState(() => (
+    buildBrazilDateRange(initialSchedule.startDateValue, initialSchedule.dueDateValue)
+  ))
+  const [draftDueTimeValue, setDraftDueTimeValue] = useState(() => (
+    snapCardScheduleTimeToSlot(initialSchedule.dueTimeValue)
+  ))
+  const [isConfirmingSchedule, setIsConfirmingSchedule] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isMovingToNextColumn, setIsMovingToNextColumn] = useState(false)
@@ -135,8 +143,6 @@ export default function CardModal({
   const insertMenuRef = useRef(null)
   const insertMenuButtonRef = useRef(null)
   const saveStatusTimeoutRef = useRef(null)
-  const dateRangePersistTimeoutRef = useRef(null)
-  const pendingDateRangePersistRef = useRef(null)
   const persistCardChangesRef = useRef(async () => false)
   const dialogTitleId = `card-modal-title-${card.id}`
 
@@ -478,15 +484,15 @@ export default function CardModal({
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
   const selectedMembersSummary = selectedMembers.map(getMemberName).join(', ')
   const selectedLabelSummary = label?.text ?? ''
-  const selectedCalendarRange = useMemo(
-    () => buildBrazilDateRange(startDateValue, dueDateValue),
-    [startDateValue, dueDateValue],
-  )
+  const syncDraftScheduleFromCommitted = () => {
+    setDraftCalendarRange(buildBrazilDateRange(startDateValue, dueDateValue))
+    setDraftDueTimeValue(snapCardScheduleTimeToSlot(dueTimeValue))
+  }
   const saveDateRange = async ({
     resolvedSchedule,
     previousDateState,
   }) => {
-    if (isMutating || !resolvedSchedule) return
+    if (isMutating || !resolvedSchedule) return false
 
     const {
       startEnabled: nextStartEnabled,
@@ -494,13 +500,15 @@ export default function CardModal({
       dueEnabled: nextDueEnabled,
       dueDateValue: nextDueDateValue,
       selectedCalendarDay: nextSelectedCalendarDay,
+      dueTimeValue: nextDueTimeValue = previousDateState.dueTimeValue,
     } = resolvedSchedule
 
     const shouldPreserveDisplayLabel =
       previousDateState.dueEnabled &&
       previousDateState.preserveDisplayLabel &&
       nextDueDateValue === previousDateState.dueDateValue &&
-      nextSelectedCalendarDay === previousDateState.selectedCalendarDay
+      nextSelectedCalendarDay === previousDateState.selectedCalendarDay &&
+      nextDueTimeValue === previousDateState.dueTimeValue
 
     const nextDueDate = formatDueDateLabelFromValue(nextDueDateValue, nextSelectedCalendarDay)
     const nextSchedule = {
@@ -509,7 +517,7 @@ export default function CardModal({
       startDateValue: nextStartDateValue,
       dueEnabled: nextDueEnabled,
       dueDateValue: nextDueDateValue,
-      dueTimeValue: previousDateState.dueTimeValue,
+      dueTimeValue: nextDueTimeValue,
       displayLabel: nextDueDate,
       preserveDisplayLabel: shouldPreserveDisplayLabel,
     }
@@ -518,6 +526,7 @@ export default function CardModal({
     setStartDateValue(nextStartDateValue)
     setDueEnabled(nextDueEnabled)
     setDueDateValue(nextDueDateValue)
+    setDueTimeValue(nextDueTimeValue)
     setSelectedCalendarDay(nextSelectedCalendarDay)
     setDueDate(nextDueDate)
     setDisplayLabel(nextDueDate)
@@ -545,21 +554,16 @@ export default function CardModal({
       setDisplayLabel(previousDateState.displayLabel)
       setPreserveDisplayLabel(previousDateState.preserveDisplayLabel)
     }
-  }
-  const flushPendingDateRangePersist = () => {
-    const pending = pendingDateRangePersistRef.current
-    if (!pending) return
 
-    if (dateRangePersistTimeoutRef.current) {
-      clearTimeout(dateRangePersistTimeoutRef.current)
-      dateRangePersistTimeoutRef.current = null
-    }
-
-    pendingDateRangePersistRef.current = null
-    void saveDateRange(pending)
+    return saved
   }
-  const handleCalendarRangeChange = (range) => {
-    const resolvedSchedule = resolveCardScheduleFromRange(range)
+  const handleDraftCalendarRangeChange = (range) => {
+    setDraftCalendarRange(range ?? null)
+  }
+  const handleConfirmSchedule = async () => {
+    if (isMutating || isConfirmingSchedule) return
+
+    const resolvedSchedule = resolveCardScheduleFromRange(draftCalendarRange)
     if (!resolvedSchedule) return
 
     const previousDateState = {
@@ -574,29 +578,35 @@ export default function CardModal({
       selectedCalendarDay,
     }
 
-    setStartEnabled(resolvedSchedule.startEnabled)
-    setStartDateValue(resolvedSchedule.startDateValue)
-    setDueEnabled(resolvedSchedule.dueEnabled)
-    setDueDateValue(resolvedSchedule.dueDateValue)
-    setSelectedCalendarDay(resolvedSchedule.selectedCalendarDay)
+    setIsConfirmingSchedule(true)
 
-    pendingDateRangePersistRef.current = {
-      resolvedSchedule,
-      previousDateState,
-    }
+    try {
+      const saved = await saveDateRange({
+        resolvedSchedule: {
+          ...resolvedSchedule,
+          dueTimeValue: snapCardScheduleTimeToSlot(draftDueTimeValue),
+        },
+        previousDateState,
+      })
 
-    if (dateRangePersistTimeoutRef.current) {
-      clearTimeout(dateRangePersistTimeoutRef.current)
-    }
-
-    dateRangePersistTimeoutRef.current = setTimeout(() => {
-      dateRangePersistTimeoutRef.current = null
-      const pending = pendingDateRangePersistRef.current
-      pendingDateRangePersistRef.current = null
-      if (pending) {
-        void saveDateRange(pending)
+      if (saved) {
+        setShowDateMenu(false)
       }
-    }, 350)
+    } finally {
+      setIsConfirmingSchedule(false)
+    }
+  }
+  const openDateMenu = () => {
+    syncDraftScheduleFromCommitted()
+    setShowDateMenu(true)
+  }
+  const toggleDateMenu = () => {
+    if (showDateMenu) {
+      setShowDateMenu(false)
+      return
+    }
+
+    openDateMenu()
   }
   const handleLabelSelect = async (nextLabelId) => {
     if (isMutating) return
@@ -713,30 +723,6 @@ export default function CardModal({
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [showDateMenu])
-
-  useEffect(() => {
-    if (showDateMenu) return undefined
-
-    const pending = pendingDateRangePersistRef.current
-    if (!pending) return undefined
-
-    if (dateRangePersistTimeoutRef.current) {
-      clearTimeout(dateRangePersistTimeoutRef.current)
-      dateRangePersistTimeoutRef.current = null
-    }
-
-    pendingDateRangePersistRef.current = null
-    void saveDateRange(pending)
-
-    return undefined
-  }, [showDateMenu])
-
-  useEffect(() => () => {
-    if (dateRangePersistTimeoutRef.current) {
-      clearTimeout(dateRangePersistTimeoutRef.current)
-      dateRangePersistTimeoutRef.current = null
-    }
-  }, [])
 
   useEffect(() => {
     if (!showTextMenu) return
@@ -1093,7 +1079,7 @@ export default function CardModal({
                     ref={dateMenuLabelRef}
                     type="button"
                     className={styles.cmPropertyLabelBtn}
-                    onClick={() => setShowDateMenu((value) => !value)}
+                    onClick={toggleDateMenu}
                     aria-expanded={showDateMenu}
                     aria-haspopup="dialog"
                     disabled={isMutating}
@@ -1105,7 +1091,7 @@ export default function CardModal({
                       ref={dateMenuButtonRef}
                       type="button"
                       className={`${styles.cmPropertyBtn} ${showDateMenu ? styles.cmPropertyBtnActive : ''}`}
-                      onClick={() => setShowDateMenu((value) => !value)}
+                      onClick={toggleDateMenu}
                       aria-expanded={showDateMenu}
                       aria-haspopup="dialog"
                       disabled={isMutating}
@@ -1520,11 +1506,19 @@ export default function CardModal({
           style={{ top: `${dateMenuPosition.top}px`, left: `${dateMenuPosition.left}px` }}
           onClick={(event) => event.stopPropagation()}
           role="dialog"
-          aria-label="Calendário de datas"
+          aria-label="Agendar data e horário"
         >
-          <DateRangeCalendar
-            value={selectedCalendarRange ?? undefined}
-            onChange={handleCalendarRangeChange}
+          <CardModalDateSchedulePicker
+            styles={styles}
+            calendarRange={draftCalendarRange}
+            dueTimeValue={draftDueTimeValue}
+            onCalendarRangeChange={handleDraftCalendarRangeChange}
+            onTimeChange={setDraftDueTimeValue}
+            onConfirm={() => {
+              void handleConfirmSchedule()
+            }}
+            confirmDisabled={isMutating}
+            isConfirming={isConfirmingSchedule}
           />
         </div>
       )}
