@@ -86,7 +86,7 @@ export default function PlanRoleSelect({
   }, [isOpen])
 
   return (
-    <div className={styles.wrap} ref={fieldRef}>
+    <div className={`${styles.wrap} ${isOpen ? styles.wrapOpen : ''}`} ref={fieldRef}>
       <button
         type="button"
         id={menuId}

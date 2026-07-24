@@ -3,6 +3,10 @@
   min-width: 0;
 }
 
+.wrapOpen {
+  z-index: 20;
+}
+
 .trigger {
   all: unset;
   box-sizing: border-box;
