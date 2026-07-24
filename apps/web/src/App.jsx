@@ -17,6 +17,7 @@ import IntelligenceChat from './features/intelligence/pages/IntelligenceChat/Int
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
+import AppNavigationDock from './shared/components/AppNavigationDock/AppNavigationDock.jsx'
 import {
   buildWorkspaceBoardPath,
   isInternalAppPath,
@@ -127,6 +128,7 @@ export default function App() {
     : null
   const renderedLocation = modalBackgroundLocation ?? location
   const routeTransitionKey = resolveRouteTransitionKey(renderedLocation.pathname)
+  const showAppDock = sessionMode !== 'anonymous' && isInternalAppPath(renderedLocation.pathname)
 
   useEffect(() => {
     if (sessionMode !== 'anonymous') {
@@ -288,6 +290,8 @@ export default function App() {
             </Routes>
           </motion.div>
         </AnimatePresence>
+
+        {showAppDock ? <AppNavigationDock /> : null}
       </LayoutGroup>
 
       {normalizePathname(location.pathname) === ROUTES.settings ? (

@@ -75,10 +75,6 @@ vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () 
   default: ({ children }) => <div>{children}</div>,
 }))
 
-vi.mock('../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx', () => ({
-  default: ({ title }) => <h2>{title}</h2>,
-}))
-
 vi.mock('../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx', () => ({
   default: () => null,
 }))
@@ -120,14 +116,14 @@ describe('SettingsPage mobile layout', () => {
     preferencesMock.updateNotifications.mockReset()
   })
 
-  it('uses a single shell title on mobile and keeps the section query in sync', async () => {
+  it('keeps section navigation in sync on mobile', async () => {
     installMatchMediaController(390)
     const user = userEvent.setup()
 
     renderSettings('/settings?section=integrations')
 
     expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeInTheDocument()
-    expect(screen.queryByText('Configurações')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
 

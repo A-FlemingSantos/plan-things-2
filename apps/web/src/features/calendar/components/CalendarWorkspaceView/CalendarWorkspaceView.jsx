@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTransientNotification } from '../../../../shared/hooks/useTransientNotification.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import PlanPageHeader from '../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx'
 import {
   addDays,
   addMonths,
@@ -29,7 +28,6 @@ import {
 } from '../../../../shared/utils/dateTime/index.js'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents.js'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
-import InviteNotifications from '../../../workspace/components/InviteNotifications/InviteNotifications.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import {
   CalendarIcon,
@@ -507,7 +505,6 @@ export function CalendarWorkspaceView({ embedded = false }) {
         <button type="button" className={styles.commandButton} onClick={() => showNotification('Filtros avançados em breve')}><FilterIcon />Filtro<ChevDownIcon /></button>
         <button type="button" className={styles.commandButton} onClick={() => showNotification('Link do calendário copiado')}><ShareIcon />Compartilhar<ChevDownIcon /></button>
         <button type="button" className={styles.commandButton} onClick={handlePrint}><PrintIcon />Imprimir</button>
-        {!embedded ? <InviteNotifications /> : null}
       </div>
     </div>
   )
@@ -619,16 +616,8 @@ export function CalendarWorkspaceView({ embedded = false }) {
       <ProductAppShell
         contentClassName={styles.main}
         contentTag="main"
-        mobileTitle="Calendário"
       >
-        <PlanPageHeader
-          title="Calendário"
-          icon={<CalendarIcon />}
-          sticky
-          tone="solid"
-          titleSize="medium"
-          actions={commandHeaderActions}
-        />
+        {commandHeaderActions}
 
         {calendarWorkspace}
       </ProductAppShell>

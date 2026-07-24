@@ -5,7 +5,6 @@ import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
@@ -450,9 +449,7 @@ export default function KanbanBoard() {
       <div className={styles.boardAccentScope} style={boardAccentStyle}>
       <ProductAppShell
         contentClassName={styles.boardPageShell}
-        mobileTitle="Quadros"
       >
-        <WorkspaceHeader compact />
         <DndContext
           sensors={sensors}
           collisionDetection={collisionDetection}

@@ -36,6 +36,7 @@ vi.mock('framer-motion', async () => {
   return {
     AnimatePresence: ({ children }) => React.createElement(React.Fragment, null, children),
     LayoutGroup: ({ children }) => React.createElement(React.Fragment, null, children),
+    useReducedMotion: () => false,
     motion: new Proxy({}, {
       get: (_, tag) => {
         if (!motionComponents.has(tag)) {

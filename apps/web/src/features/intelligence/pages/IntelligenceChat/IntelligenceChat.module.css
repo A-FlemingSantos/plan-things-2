@@ -20,6 +20,15 @@
   overflow: hidden;
 }
 
+.toolbarArea {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 8px 12px 0;
+}
+
 /* ── Chat area (scrollable) ── */
 .chatArea {
   flex: 1 1 0;

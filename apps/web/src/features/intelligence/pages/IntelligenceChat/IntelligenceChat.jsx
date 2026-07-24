@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
@@ -22,14 +21,6 @@ import {
 import { useIntelligenceComposerContext } from '../../hooks/useIntelligenceComposerContext.js'
 import { useAiConversation } from '../../hooks/useAiConversation.js'
 import styles from './IntelligenceChat.module.css'
-
-function SparkleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8.7 1.8 4.9 7.3h2.5l-.7 6.1 4-5.6H8.2l.5-6z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 const VOICE_INPUT_ERROR_MESSAGES = {
   'audio-capture': 'Nenhum microfone disponível foi encontrado.',
@@ -551,28 +542,22 @@ export default function IntelligenceChat() {
 
   return (
     <AppThemeScope>
-      <ProductAppShell contentClassName={styles.main} contentTag="main" mobileTitle="Intelligence">
-        <WorkspaceHeader
-          title="Intelligence"
-          icon={<SparkleIcon />}
-          compact
-          sticky
-          centerContent={(
-            <ConversationToolbar
-              conversationTitle={displayedToolbarPresentation.conversationTitle}
-              activeConversationId={displayedToolbarPresentation.activeConversationId}
-              recentConversations={recentConversations}
-              onSelectConversation={handleSelectConversation}
-              onNewConversation={handleNewConversation}
-              onArchiveConversation={handleArchiveConversation}
-              planId={displayedToolbarPresentation.planId}
-              planName={displayedToolbarPresentation.planName}
-              cardId={displayedToolbarPresentation.cardId}
-              cardTitle={displayedToolbarPresentation.cardTitle}
-              activeConnectors={activeConnectors}
-            />
-          )}
-        />
+      <ProductAppShell contentClassName={styles.main} contentTag="main">
+        <div className={styles.toolbarArea}>
+          <ConversationToolbar
+            conversationTitle={displayedToolbarPresentation.conversationTitle}
+            activeConversationId={displayedToolbarPresentation.activeConversationId}
+            recentConversations={recentConversations}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+            onArchiveConversation={handleArchiveConversation}
+            planId={displayedToolbarPresentation.planId}
+            planName={displayedToolbarPresentation.planName}
+            cardId={displayedToolbarPresentation.cardId}
+            cardTitle={displayedToolbarPresentation.cardTitle}
+            activeConnectors={activeConnectors}
+          />
+        </div>
 
         <div className={styles.chatArea}>
           {shouldHoldConversationRender ? null : hasConversation ? (

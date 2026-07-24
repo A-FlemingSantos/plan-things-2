@@ -126,7 +126,7 @@ describe('App smoke flows', () => {
 
     renderApp('/app', { session })
 
-    expect(await screen.findByRole('heading', { name: 'Intelligence' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Intelligence' })).toHaveAttribute('aria-current', 'page')
     expect(window.location.pathname).toBe('/workspace/chat')
 
     await act(async () => {
@@ -144,7 +144,7 @@ describe('App smoke flows', () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe('/workspace/chat')
     })
-    expect(await screen.findByRole('heading', { name: 'Intelligence' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Intelligence' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('resolves /app to homePage when openLastCtx is disabled', async () => {
@@ -268,10 +268,10 @@ describe('App smoke flows', () => {
     await user.click(await screen.findByRole('button', { name: /abrir cartão pesquisa de concorrentes/i }))
 
     await user.click(screen.getByRole('button', { name: /03\/08\/26/ }))
-    expect(screen.getByRole('dialog', { name: 'Calendário de datas' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Agendar data e horário' })).toBeInTheDocument()
     await user.keyboard('{Escape}')
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Calendário de datas' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog', { name: 'Agendar data e horário' })).not.toBeInTheDocument()
     })
 
     expect(screen.getAllByText('Pesquisa de concorrentes')).not.toHaveLength(0)
@@ -286,10 +286,10 @@ describe('App smoke flows', () => {
     await user.click(await screen.findByRole('button', { name: /abrir cartão copy da campanha de lançamento/i }))
 
     await user.click(screen.getByRole('button', { name: 'Datas' }))
-    expect(screen.getByRole('dialog', { name: 'Calendário de datas' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Agendar data e horário' })).toBeInTheDocument()
     await user.keyboard('{Escape}')
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Calendário de datas' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog', { name: 'Agendar data e horário' })).not.toBeInTheDocument()
     })
 
     expect(screen.getAllByText('Copy da campanha de lançamento')).not.toHaveLength(0)
@@ -307,7 +307,7 @@ describe('App smoke flows', () => {
   it('redirects the authenticated legacy files library route to workspace', async () => {
     renderApp('/files', { session: createDemoSession() })
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
     expect(window.location.pathname).toBe('/workspace')
     expect(screen.queryByPlaceholderText('Buscar arquivos...')).not.toBeInTheDocument()
   })
@@ -383,7 +383,7 @@ describe('App smoke flows', () => {
     expect(await screen.findByText('Checkpoint do release')).toBeInTheDocument()
   }, 20000)
 
-  it('opens the workspace header account menu', async () => {
+  it('opens the dock account menu', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
@@ -397,7 +397,7 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
   })
 
-  it('opens the saved accounts submenu from the workspace header account menu', async () => {
+  it('opens the saved accounts submenu from the dock account menu', async () => {
     const user = userEvent.setup()
     const primarySession = createDemoSession({
       user: {
@@ -430,7 +430,7 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('menuitem', { name: 'Adicionar conta' })).toBeInTheDocument()
   })
 
-  it('switches accounts from the workspace header account submenu', async () => {
+  it('switches accounts from the dock account submenu', async () => {
     const user = userEvent.setup()
     const primarySession = createDemoSession({
       user: {
@@ -464,7 +464,7 @@ describe('App smoke flows', () => {
     })
   })
 
-  it('opens the login screen in add-account mode from the workspace header account submenu', async () => {
+  it('opens the login screen in add-account mode from the dock account submenu', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
@@ -479,7 +479,7 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/login')
   })
 
-  it('opens the account section from Meu perfil in the workspace header account menu', async () => {
+  it('opens the account section from Meu perfil in the dock account menu', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
@@ -493,10 +493,10 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/settings')
     expect(window.location.search).toBe('?section=account')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('opens the workspace section from Upgrade in the workspace header account menu', async () => {
+  it('opens the workspace section from Upgrade in the dock account menu', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
@@ -510,10 +510,10 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/settings')
     expect(window.location.search).toBe('?section=workspace')
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('returns to the login route after logging out from the workspace header account menu', async () => {
+  it('returns to the login route after logging out from the dock account menu', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', {
@@ -536,12 +536,12 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('button', { name: /continuar com e-mail/i })).toBeInTheDocument()
   })
 
-  it('opens the settings panel as an overlay from the workspace header account menu', async () => {
+  it('opens the settings panel as an overlay from the dock account menu', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
     const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
     expect(accountMenuTrigger).not.toBeNull()
@@ -551,7 +551,7 @@ describe('App smoke flows', () => {
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
 
@@ -563,6 +563,8 @@ describe('App smoke flows', () => {
       expect(window.location.pathname).toBe('/workspace')
       expect(screen.queryByRole('dialog', { name: 'Configurações' })).not.toBeInTheDocument()
     })
+
+    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('reopens settings over the original page after a Gmail callback redirect', async () => {
@@ -573,7 +575,7 @@ describe('App smoke flows', () => {
     })
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByText('Gmail conectado com sucesso.')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Fechar configurações' }))
@@ -590,7 +592,7 @@ describe('App smoke flows', () => {
     renderApp('/settings', { session: createDemoSession() })
 
     const settingsDialog = await screen.findByRole('dialog', { name: 'Configurações' })
-    expect(screen.getByRole('heading', { name: 'Início' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getAllByRole('button', { name: 'Salvar alterações' })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /salvar preferências/i })).not.toBeInTheDocument()
 
@@ -671,22 +673,22 @@ describe('App smoke flows', () => {
     expect(await screen.findAllByText('Plano Renomeado QA')).not.toHaveLength(0)
   })
 
-  it('renders the shared sidebar across product screens', async () => {
+  it('renders the shared bottom dock across product screens', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
 
-    expect(await screen.findByRole('heading', { name: 'Início' })).toBeInTheDocument()
-    const sidebar = document.querySelector('[data-product-sidebar]')
-    expect(sidebar).toBeInTheDocument()
-    expect(within(sidebar).getByRole('button', { name: 'Início' })).toBeInTheDocument()
-    expect(within(sidebar).getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument()
-    expect(sidebar.querySelector('[data-sidebar-collapse-button]')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    const dock = document.querySelector('[data-app-navigation-dock]')
+    expect(dock).toBeInTheDocument()
+    expect(within(dock).getByRole('link', { name: 'Início' })).toBeInTheDocument()
+    expect(within(dock).getByRole('link', { name: 'Quadros' })).toBeInTheDocument()
+    expect(within(dock).getByRole('button', { name: 'Abrir menu da conta' })).toBeInTheDocument()
 
     await user.click(await screen.findByRole('button', { name: /lançamento do produto/i }))
 
     expect(await screen.findAllByText('Adicionar lista')).not.toHaveLength(0)
-    expect(document.querySelector('[data-product-sidebar]')).toBeInTheDocument()
+    expect(document.querySelector('[data-app-navigation-dock]')).toBeInTheDocument()
   })
 
   it('shows the liquid-glass preference in general settings', async () => {

@@ -6,7 +6,6 @@ import { WorkspaceIconGlyph } from '../../../../shared/components/WorkspaceIconB
 import { readRecentPlanIds } from '../../data/recentPlansStorage.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import WorkspaceHeader from '../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -511,16 +510,12 @@ export default function Workspace() {
       <ProductAppShell
         contentClassName={styles.main}
         contentTag="main"
-        mobileTitle="Início"
       >
         <CustomScrollArea
           className={styles.mainScrollArea}
           viewportClassName={styles.mainScrollViewport}
           refreshKey={`workspace:${view}:${showIntelligenceSection ? 'intelligence' : 'plans'}:${isLoading ? 'loading' : 'ready'}`}
         >
-          <WorkspaceHeader title="Início" compact sticky className={styles.workspaceTopHeaderGlass} />
-
-          {/* Content */}
           <div className={`${styles.content} ${showIntelligenceSection ? styles.contentFramed : ''}`}>
             {isBackendDriven && isLoading ? (
               showIntelligenceSection ? (

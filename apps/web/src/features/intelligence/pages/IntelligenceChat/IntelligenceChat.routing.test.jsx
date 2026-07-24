@@ -55,15 +55,6 @@ vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () 
   default: ({ children }) => <div>{children}</div>,
 }))
 
-vi.mock('../../../../shared/components/WorkspaceHeader/WorkspaceHeader.jsx', () => ({
-  default: ({ centerContent }) => (
-    <header>
-      <h1>Intelligence</h1>
-      {centerContent}
-    </header>
-  ),
-}))
-
 vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () => ({
   default: ({ children }) => <>{children}</>,
 }))

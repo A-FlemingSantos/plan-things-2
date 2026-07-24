@@ -27,6 +27,15 @@
   background: var(--app-bg);
 }
 
+.settingsPageTitle {
+  margin: 0;
+  padding: 28px 28px 0;
+  font-size: clamp(1.6rem, 2vw, 2rem);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  color: var(--text-1);
+}
+
 [data-theme='dark'] .settingsWrapper {
   --settings-neutral-accent: var(--color-white);
 }
@@ -34,7 +43,7 @@
 .settingsModalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 35;
+  z-index: var(--z-app-modal);
   display: flex;
   align-items: center;
   justify-content: center;

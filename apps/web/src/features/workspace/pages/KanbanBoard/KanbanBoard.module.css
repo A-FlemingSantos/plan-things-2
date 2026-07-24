@@ -44,16 +44,6 @@
   background: var(--app-bg);
 }
 
-.boardPageShell > :first-child {
-  flex-shrink: 0;
-  width: 100%;
-  box-sizing: border-box;
-  padding-top: 8px !important;
-  padding-bottom: 8px !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
-}
-
 /* ════════════════════════════════════════
    BOARD WRAPPER
 ════════════════════════════════════════ */
@@ -6265,11 +6255,6 @@
 }
 
 @media (max-width: 1024px) {
-  .boardPageShell > :first-child {
-    padding-top: 8px !important;
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-  }
   .boardWrapper { padding: 0 10px 10px; }
   .boardWrapperWithPlanner { gap: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }
@@ -6304,11 +6289,6 @@
   .shell, .shellCollapsed { grid-template-columns: 1fr; }
   .boardWrapperPlannerMounted {
     flex-direction: column;
-  }
-  .boardPageShell > :first-child {
-    padding-top: 8px !important;
-    padding-left: 10px !important;
-    padding-right: 10px !important;
   }
   .boardWrapper {
     padding: 0 10px 10px;

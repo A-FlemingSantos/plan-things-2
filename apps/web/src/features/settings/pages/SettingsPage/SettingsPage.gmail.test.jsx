@@ -76,10 +76,6 @@ vi.mock('../../../../shared/components/ProductAppShell/ProductAppShell.jsx', () 
   default: ({ children }) => <div>{children}</div>,
 }))
 
-vi.mock('../../../../shared/components/PlanPageHeader/PlanPageHeader.jsx', () => ({
-  default: ({ title }) => <h1>{title}</h1>,
-}))
-
 vi.mock('../../../../shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx', () => ({
   default: () => null,
 }))

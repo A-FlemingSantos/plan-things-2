@@ -1,31 +1,15 @@
 .shell {
+  --app-dock-clearance: calc(56px + env(safe-area-inset-bottom, 0px));
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--app-bg);
   color: var(--text-1);
 }
 
-.shellCollapsed {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.shellMobile {
-  grid-template-columns: minmax(0, 1fr);
-  min-height: 100dvh;
-  background: var(--app-bg);
-  overflow-x: hidden;
-  align-content: start;
-}
-
 .content {
   min-width: 0;
-}
-
-@media (max-width: 768px) {
-  .shell,
-  .shellCollapsed {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  box-sizing: border-box;
+  padding-bottom: var(--app-dock-clearance);
 }
