@@ -18,6 +18,28 @@
   width: 220px;
 }
 
+.menuDock {
+  z-index: calc(var(--z-app-dock) + 4);
+  transform-origin: center bottom;
+  animation: menuDockEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.submenuDock {
+  z-index: calc(var(--z-app-dock) + 6);
+}
+
+@keyframes menuDockEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 @keyframes menuEnter {
   from { opacity: 0; transform: translateY(6px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }

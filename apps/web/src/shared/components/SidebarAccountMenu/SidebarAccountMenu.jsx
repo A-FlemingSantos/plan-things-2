@@ -23,6 +23,8 @@ const EXPANDED_MENU_HORIZONTAL_INSET = 10
 const MENU_FALLBACK_HEIGHT = 320
 const MENU_MARGIN = 12
 const MENU_VERTICAL_OFFSET = 6
+const DOCK_MENU_GAP = 14
+const DOCK_MENU_MIN_WIDTH = 300
 const SUBMENU_FALLBACK_WIDTH = 280
 const SUBMENU_FALLBACK_HEIGHT = 160
 const SUBMENU_OVERLAP = 10
@@ -46,6 +48,9 @@ export default function SidebarAccountMenu({
   plan = 'Professional',
   initials = 'AS',
   menuPlacement = 'above',
+  menuPresentation = 'avatar',
+  dockAnchorRef = null,
+  onOpenChange = null,
   renderTrigger = null,
 }) {
   const location = useLocation()
@@ -90,15 +95,39 @@ export default function SidebarAccountMenu({
   }, [activeAccountId, savedAccounts])
 
   const updateMenuPosition = useCallback((anchorRectOverride = null) => {
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const menuRect = menuRef.current?.getBoundingClientRect()
+
+    if (menuPresentation === 'dock') {
+      const dockRect = dockAnchorRef?.current?.getBoundingClientRect?.()
+      if (!dockRect) return
+
+      const menuWidth = Math.min(
+        Math.max(DOCK_MENU_MIN_WIDTH, Math.round(dockRect.width)),
+        viewportWidth - (MENU_MARGIN * 2),
+      )
+      const menuHeight = menuRect?.height || MENU_FALLBACK_HEIGHT
+      const centerX = Math.round(dockRect.left + (dockRect.width / 2))
+      const preferredTop = Math.round(dockRect.top - menuHeight - DOCK_MENU_GAP)
+      const maxTop = Math.max(MENU_MARGIN, viewportHeight - menuHeight - MENU_MARGIN)
+      const nextTop = Math.min(Math.max(preferredTop, MENU_MARGIN), maxTop)
+
+      setMenuPosition({
+        position: 'fixed',
+        left: `${centerX}px`,
+        top: nextTop,
+        width: menuWidth,
+        transform: 'translateX(-50%)',
+      })
+      return
+    }
+
     const anchorRect = anchorRectOverride
       ?? containerRef.current?.querySelector('[data-sidebar-user-button]')?.getBoundingClientRect()
     const containerRect = containerRef.current?.getBoundingClientRect()
 
     if (!anchorRect || !containerRect) return
-
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-    const menuRect = menuRef.current?.getBoundingClientRect()
     const preferredWidth = collapsed
       ? COLLAPSED_MENU_WIDTH
       : Math.max(180, containerRect.width - (EXPANDED_MENU_HORIZONTAL_INSET * 2))
@@ -129,8 +158,9 @@ export default function SidebarAccountMenu({
       left: `${nextLeft}px`,
       top: nextTop,
       width: menuWidth,
+      transform: undefined,
     })
-  }, [collapsed, menuPlacement])
+  }, [collapsed, dockAnchorRef, menuPlacement, menuPresentation])
 
   const updateAccountsMenuPosition = useCallback((anchorRectOverride = null) => {
     const anchorRect = anchorRectOverride
@@ -205,6 +235,10 @@ export default function SidebarAccountMenu({
     }
   }, [])
 
+  useEffect(() => {
+    onOpenChange?.(open)
+  }, [onOpenChange, open])
+
   useLayoutEffect(() => {
     if (!open) return
 
@@ -215,11 +249,19 @@ export default function SidebarAccountMenu({
     window.addEventListener('resize', handleViewportChange)
     window.addEventListener('scroll', handleViewportChange, true)
 
+    let dockObserver = null
+    const dockElement = menuPresentation === 'dock' ? dockAnchorRef?.current : null
+    if (dockElement && typeof ResizeObserver === 'function') {
+      dockObserver = new ResizeObserver(() => updateMenuPosition())
+      dockObserver.observe(dockElement)
+    }
+
     return () => {
       window.removeEventListener('resize', handleViewportChange)
       window.removeEventListener('scroll', handleViewportChange, true)
+      dockObserver?.disconnect()
     }
-  }, [collapsed, open, updateMenuPosition])
+  }, [collapsed, dockAnchorRef, menuPresentation, open, updateMenuPosition])
 
   useLayoutEffect(() => {
     if (!open || !accountsOpen) return
@@ -241,7 +283,7 @@ export default function SidebarAccountMenu({
     setOpen((currentOpen) => {
       const nextOpen = !currentOpen
 
-      if (nextOpen && collapsed) {
+      if (nextOpen && (collapsed || menuPresentation === 'dock')) {
         setMenuPosition(null)
       }
 
@@ -262,6 +304,7 @@ export default function SidebarAccountMenu({
         left: menuPosition.left,
         top: `${menuPosition.top}px`,
         width: `${menuPosition.width}px`,
+        transform: menuPosition.transform,
       }
     : undefined
 
@@ -410,7 +453,8 @@ export default function SidebarAccountMenu({
             id={menuIdRef.current}
             className={[
               menuStyles.menu,
-              collapsed ? menuStyles.menuCollapsed : '',
+              menuPresentation === 'dock' ? menuStyles.menuDock : '',
+              collapsed && menuPresentation !== 'dock' ? menuStyles.menuCollapsed : '',
             ].filter(Boolean).join(' ')}
             role="menu"
             style={resolvedMenuStyle}
@@ -483,7 +527,10 @@ export default function SidebarAccountMenu({
             <div
               ref={accountsMenuRef}
               id={accountsMenuIdRef.current}
-              className={menuStyles.submenu}
+              className={[
+                menuStyles.submenu,
+                menuPresentation === 'dock' ? menuStyles.submenuDock : '',
+              ].filter(Boolean).join(' ')}
               role="menu"
               aria-label="Contas salvas"
               style={accountsMenuPosition ?? undefined}

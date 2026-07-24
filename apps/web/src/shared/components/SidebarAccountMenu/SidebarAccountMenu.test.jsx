@@ -1,3 +1,4 @@
+import { createRef } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../test/testRouter.jsx'
@@ -97,6 +98,59 @@ describe('SidebarAccountMenu', () => {
     expect(menu.style.left).toBe('12px')
     expect(menu.style.top).toBe('350px')
     expect(menu.style.width).toBe('220px')
+  })
+
+  it('anchors the dock account menu above and centered on the navigation dock', async () => {
+    const user = userEvent.setup()
+    const dockAnchorRef = createRef()
+
+    const { container } = render(
+      <TestMemoryRouter>
+        <div>
+          <div
+            ref={dockAnchorRef}
+            data-testid="dock-anchor"
+            style={{ position: 'fixed', left: '500px', bottom: '12px', width: '240px', height: '42px' }}
+          />
+          <SidebarAccountMenu
+            styles={styles}
+            collapsed
+            menuPresentation="dock"
+            dockAnchorRef={dockAnchorRef}
+            renderTrigger={({ triggerProps }) => (
+              <button type="button" {...triggerProps} aria-label="Abrir menu da conta">
+                Conta
+              </button>
+            )}
+          />
+        </div>
+      </TestMemoryRouter>,
+    )
+
+    dockAnchorRef.current.getBoundingClientRect = () => ({
+      x: 500,
+      y: 838,
+      left: 500,
+      top: 838,
+      right: 740,
+      bottom: 880,
+      width: 240,
+      height: 42,
+      toJSON: () => ({}),
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Abrir menu da conta' }))
+
+    const menu = screen.getByRole('menu', { name: '' })
+
+    await waitFor(() => {
+      expect(menu.className).toContain('menuDock')
+      expect(menu.style.left).toBe('620px')
+      expect(menu.style.transform).toBe('translateX(-50%)')
+      expect(menu.style.width).toBe('300px')
+    })
+
+    expect(container.querySelector('[data-testid="dock-anchor"]')).toBeTruthy()
   })
 
   it('reopens the collapsed avatar menu after closing it with an outside click', async () => {

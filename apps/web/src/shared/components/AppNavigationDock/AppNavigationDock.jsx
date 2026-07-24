@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import { BookOpen, House, KanbanSquare, Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { SiGithub } from 'react-icons/si'
@@ -48,13 +49,16 @@ function isRouteActive(pathname, route) {
 
 export default function AppNavigationDock() {
   const location = useLocation()
+  const dockAnchorRef = useRef(null)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
 
   return (
     <AppThemeScope className={styles.themeScope}>
       <nav className={styles.positioner} data-app-navigation-dock aria-label="Navegação principal">
-        <Dock className={styles.navigationDock} size={34}>
+        <div ref={dockAnchorRef} className={styles.dockAnchor}>
+          <Dock className={styles.navigationDock} size={34}>
           {NAV_ITEMS.map(({ id, label, to, Icon }) => {
             const active = isRouteActive(location.pathname, to)
 
@@ -96,10 +100,13 @@ export default function AppNavigationDock() {
             </Link>
           </DockItem>
 
-          <DockItem>
+          <DockItem active={accountMenuOpen}>
             <SidebarAccountMenu
               styles={styles}
               collapsed
+              menuPresentation="dock"
+              dockAnchorRef={dockAnchorRef}
+              onOpenChange={setAccountMenuOpen}
               menuPlacement="above"
               renderTrigger={({ resolvedName, resolvedAvatarUrl, resolvedInitials, triggerProps }) => (
                 <button
@@ -125,6 +132,7 @@ export default function AppNavigationDock() {
             />
           </DockItem>
         </Dock>
+        </div>
       </nav>
     </AppThemeScope>
   )

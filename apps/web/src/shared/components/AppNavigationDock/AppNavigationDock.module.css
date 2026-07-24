@@ -16,6 +16,11 @@
   pointer-events: auto;
 }
 
+.dockAnchor {
+  display: inline-flex;
+  pointer-events: auto;
+}
+
 .link,
 .accountButton {
   display: flex;
