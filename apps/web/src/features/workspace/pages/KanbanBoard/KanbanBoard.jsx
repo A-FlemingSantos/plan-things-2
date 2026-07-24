@@ -62,6 +62,7 @@ export default function KanbanBoard() {
     loadPlanBoard,
     applyBoardView,
     ensurePlanDetails,
+    refreshPlanDetails,
     isLoading,
   } = usePlans()
   const { activePlan } = useResolvedPlanRoute({
@@ -468,12 +469,18 @@ export default function KanbanBoard() {
           <div className={styles.boardBodyContent}>
             <BoardHeader
               planName={activePlan?.name ?? 'Plano'}
+              plan={activePlan}
               viewMode={boardViewMode === 'calendar' ? 'kanban' : boardViewMode}
               onViewModeChange={(nextViewMode) => {
                 setBoardViewMode(nextViewMode)
                 closeFloatingPanelWithCleanup()
               }}
               members={planMembers}
+              isMembersLoading={isPlanMembersLoading}
+              isBackendDriven={isBackendDriven}
+              accessToken={accessToken}
+              onRefreshPlanDetails={refreshPlanDetails}
+              onNotify={showNotification}
             />
 
             {isBoardLoading ? (

@@ -110,6 +110,15 @@ public class PlanController {
     return ApiEnvelope.ok(planService.removeMember(planId, memberUserId));
   }
 
+  @PatchMapping("/{planId}/members/{memberUserId}")
+  public ApiEnvelope<PlanService.MemberSummary> updateMemberRole(
+      @PathVariable UUID planId,
+      @PathVariable UUID memberUserId,
+      @Valid @RequestBody UpdateMemberRoleRequest request
+  ) {
+    return ApiEnvelope.ok(planService.updateMemberRole(planId, memberUserId, request.role()));
+  }
+
   @GetMapping("/{planId}/labels")
   public ApiEnvelope<List<PlanService.LabelSummary>> listLabels(@PathVariable UUID planId) {
     return ApiEnvelope.ok(planService.listLabels(planId));
@@ -133,6 +142,9 @@ public class PlanController {
       @NotBlank(message = "O e-mail e obrigatorio.")
       @Email(message = "Informe um e-mail valido.") String email
   ) {
+  }
+
+  public record UpdateMemberRoleRequest(PlanMemberRole role) {
   }
 
   public record CreateLabelRequest(

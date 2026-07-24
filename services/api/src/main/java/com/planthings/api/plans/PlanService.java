@@ -406,6 +406,30 @@ public class PlanService {
     return new MessageResponse("Membro removido com sucesso.");
   }
 
+  @Transactional
+  public MemberSummary updateMemberRole(UUID planId, UUID memberUserId, PlanMemberRole role) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+
+    if (role == null || role == PlanMemberRole.OWNER) {
+      throw new BadRequestException("CARGO_INVALIDO", "Nao e possivel atribuir o cargo de proprietario por este fluxo.");
+    }
+
+    PlanMemberEntity member = planMemberRepository.findByPlanIdAndUserId(planId, memberUserId)
+        .orElseThrow(() -> new NotFoundException("MEMBRO_NAO_ENCONTRADO", "Nao encontramos este membro no plano."));
+
+    if (member.getRole() == PlanMemberRole.OWNER) {
+      throw new BadRequestException("OWNER_NAO_PODE_SER_ALTERADO", "O cargo do proprietario nao pode ser alterado.");
+    }
+
+    member.setRole(role);
+    planMemberRepository.save(member);
+
+    UserEntity user = userRepository.findById(memberUserId)
+        .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos os dados de um membro do plano."));
+    return toMemberSummary(member, List.of(user));
+  }
+
   public List<LabelSummary> listLabels(UUID planId) {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanMember(planId, currentUserId);

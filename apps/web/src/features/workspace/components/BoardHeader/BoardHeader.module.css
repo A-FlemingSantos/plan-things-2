@@ -273,6 +273,12 @@
   outline-offset: 2px;
 }
 
+.shareMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .shareButton {
   all: unset;
   box-sizing: border-box;
@@ -293,7 +299,8 @@
   transition: background var(--transition-fast);
 }
 
-.shareButton:hover {
+.shareButton:hover,
+.shareButtonOpen {
   background: var(--border-2);
 }
 

@@ -12,6 +12,7 @@ import {
   Share,
 } from 'lucide-react'
 import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
+import PlanSharePopover from '../PlanSharePopover/PlanSharePopover.jsx'
 import styles from './BoardHeader.module.css'
 
 const ICON_SIZE = 15
@@ -36,25 +37,36 @@ const TRAILING_ACTION_ITEMS = [
 
 export default function BoardHeader({
   planName = 'Plano',
+  plan = null,
   viewMode = 'kanban',
   onViewModeChange,
   members = [],
+  isMembersLoading = false,
+  isBackendDriven = false,
+  accessToken,
+  onRefreshPlanDetails,
+  onNotify,
 }) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
+  const [isShareOpen, setIsShareOpen] = useState(false)
   const viewMenuId = useId()
   const viewMenuWrapRef = useRef(null)
+  const shareMenuWrapRef = useRef(null)
 
   useEffect(() => {
-    if (!isViewMenuOpen) return undefined
+    if (!isViewMenuOpen && !isShareOpen) return undefined
 
     const handlePointerDown = (event) => {
       if (viewMenuWrapRef.current?.contains(event.target)) return
+      if (shareMenuWrapRef.current?.contains(event.target)) return
       setIsViewMenuOpen(false)
+      setIsShareOpen(false)
     }
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsViewMenuOpen(false)
+        setIsShareOpen(false)
       }
     }
 
@@ -65,7 +77,7 @@ export default function BoardHeader({
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isViewMenuOpen])
+  }, [isShareOpen, isViewMenuOpen])
 
   const activeViewMode = BOARD_VIEW_MODES.find((mode) => mode.id === viewMode) ?? BOARD_VIEW_MODES[0]
   const ActiveViewIcon = activeViewMode.Icon
@@ -73,7 +85,15 @@ export default function BoardHeader({
   const handleSelectViewMode = (nextViewMode) => {
     onViewModeChange?.(nextViewMode)
     setIsViewMenuOpen(false)
+    setIsShareOpen(false)
   }
+
+  const toggleSharePopover = () => {
+    setIsShareOpen((open) => !open)
+    setIsViewMenuOpen(false)
+  }
+
+  const sharePlan = plan ?? { name: planName }
 
   return (
     <header className={styles.header}>
@@ -86,7 +106,10 @@ export default function BoardHeader({
             aria-controls={viewMenuId}
             aria-expanded={isViewMenuOpen}
             aria-label={`Alterar visualização (${activeViewMode.label})`}
-            onClick={() => setIsViewMenuOpen((open) => !open)}
+            onClick={() => {
+              setIsShareOpen(false)
+              setIsViewMenuOpen((open) => !open)
+            }}
           >
             <span className={styles.viewIconButtonIcon} aria-hidden="true">
               <ActiveViewIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
@@ -151,10 +174,29 @@ export default function BoardHeader({
             <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
           </button>
         ))}
-        <button type="button" className={styles.shareButton}>
-          <Share size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          <span>Compartilhar</span>
-        </button>
+        <div ref={shareMenuWrapRef} className={styles.shareMenuWrap}>
+          <button
+            type="button"
+            className={`${styles.shareButton} ${isShareOpen ? styles.shareButtonOpen : ''}`}
+            aria-haspopup="dialog"
+            aria-expanded={isShareOpen}
+            onClick={toggleSharePopover}
+          >
+            <Share size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            <span>Compartilhar</span>
+          </button>
+
+          <PlanSharePopover
+            open={isShareOpen}
+            plan={sharePlan}
+            members={members}
+            isMembersLoading={isMembersLoading}
+            isBackendDriven={isBackendDriven}
+            accessToken={accessToken}
+            onRefreshPlanDetails={onRefreshPlanDetails}
+            onNotify={onNotify}
+          />
+        </div>
         {TRAILING_ACTION_ITEMS.map(({ id, Icon, label }) => (
           <button
             key={id}

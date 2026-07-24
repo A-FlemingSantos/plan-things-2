@@ -1,0 +1,269 @@
+.popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(400px, calc(100vw - 24px));
+  max-height: min(560px, calc(100vh - 96px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-1) 92%, transparent);
+  border-radius: 14px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+}
+
+.planHeader {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 104px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.planHeader::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--surface-1) 38%, transparent) 0%,
+    transparent 68%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.planCover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 13px 13px 0 0;
+  border: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, .22), transparent 30%),
+    var(--cover-bg, var(--cover-fallback, var(--surface-3)));
+  background-position: 50% 50%, 20% 25%, 50% 50%;
+  background-size: 160% 160%, 200% 200%, cover;
+  flex-shrink: 0;
+  z-index: 0;
+}
+
+.planCoverImage {
+  background: var(--cover-bg, var(--cover-fallback, var(--surface-3)));
+  background-position: 50% 50%;
+  background-size: cover;
+}
+
+.planName {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  padding: 10px 14px 12px;
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: color-mix(in srgb, var(--surface-1) 42%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.inviteSection {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-1);
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.inviteRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px 34px;
+  gap: 8px;
+  align-items: center;
+}
+
+.emailInput {
+  height: 34px;
+  width: 100%;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 13px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.emailInput::placeholder {
+  color: var(--text-3);
+}
+
+.emailInput:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--focus-ring) 70%, var(--border-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.copyLinkButton {
+  all: unset;
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.copyLinkButton:hover:not(:disabled) {
+  color: var(--text-1);
+  border-color: var(--border-2);
+  background: var(--hover);
+}
+
+.copyLinkButton:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.inviteError {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-red);
+}
+
+.inviteHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.membersSection {
+  padding: 12px 14px 14px;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.membersList {
+  display: grid;
+  gap: 4px;
+  overflow: auto;
+  min-height: 0;
+}
+
+.memberRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 108px;
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 4px;
+  border-radius: 10px;
+}
+
+.memberRoleCell {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
+.memberRow:hover {
+  background: var(--hover);
+}
+
+.membersTitle {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.memberAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-inverse);
+  flex-shrink: 0;
+}
+
+.memberAvatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.memberInfo {
+  min-width: 0;
+}
+
+.memberName {
+  margin: 0;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memberEmail {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.membersState {
+  margin: 0;
+  padding: 8px 4px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+@media (max-width: 520px) {
+  .popover {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(360px, calc(100vw - 16px));
+  }
+
+  .inviteRow {
+    grid-template-columns: minmax(0, 1fr) 96px 34px;
+  }
+}
