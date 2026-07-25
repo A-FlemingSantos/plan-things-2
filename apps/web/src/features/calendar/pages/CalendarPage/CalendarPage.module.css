@@ -802,7 +802,8 @@
 .calendarLoading {
   flex: 1;
   min-height: 0;
-  background: var(--surface-1);
+  display: grid;
+  place-items: center;
 }
 
 .calendarLoadingGrid {

@@ -520,10 +520,10 @@ export default function Workspace() {
             {isBackendDriven && isLoading ? (
               showIntelligenceSection ? (
                 <section className={styles.plansGalleryPanel} aria-label="Carregando planos do workspace">
-                  <WorkspaceLoadingState view={view} />
+                  <WorkspaceLoadingState />
                 </section>
               ) : (
-                <WorkspaceLoadingState view={view} />
+                <WorkspaceLoadingState />
               )
             ) : (
               <>

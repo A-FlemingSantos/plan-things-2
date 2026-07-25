@@ -18,6 +18,7 @@ import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import AppNavigationDock from './shared/components/AppNavigationDock/AppNavigationDock.jsx'
+import LoadingScreen from './shared/components/Loader/LoadingScreen.jsx'
 import {
   buildWorkspaceBoardPath,
   isInternalAppPath,
@@ -64,21 +65,10 @@ function AppBootstrapScreen() {
 
   return (
     <AppThemeScope preference={isInternalPath ? null : 'system'}>
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'grid',
-          placeItems: 'center',
-          padding: '32px',
-          background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--app-bg) 100%)',
-          color: 'var(--text-1)',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Carregando sua sessão...</p>
-          <p style={{ margin: '8px 0 0', color: 'var(--text-2)' }}>Preparando a aplicação com os dados mais recentes.</p>
-        </div>
-      </div>
+      <LoadingScreen
+        variant="fullscreen"
+        label="Carregando sua sessão"
+      />
     </AppThemeScope>
   )
 }

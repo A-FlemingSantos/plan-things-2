@@ -1,23 +1,11 @@
-export default function BoardLoadingState({ styles }) {
+import LoadingScreen from '../../../../../shared/components/Loader/LoadingScreen.jsx'
+import styles from '../KanbanBoard.module.css'
+
+export default function BoardLoadingState() {
   return (
-    <div className={styles.board} aria-hidden="true">
-      {Array.from({ length: 4 }, (_, columnIndex) => (
-        <div key={`board-loading-${columnIndex}`} className={styles.boardLoadingColumn}>
-          <div className={styles.boardLoadingColumnHeader}>
-            <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingColumnTitle}`} />
-            <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingColumnMeta}`} />
-          </div>
-          <div className={styles.boardLoadingCards}>
-            {Array.from({ length: 3 }, (_, cardIndex) => (
-              <div key={`board-loading-${columnIndex}-${cardIndex}`} className={styles.boardLoadingCard}>
-                <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingCardTitle}`} />
-                <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingCardText}`} />
-                <span className={`${styles.boardLoadingBlock} ${styles.boardLoadingCardTextShort}`} />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    <LoadingScreen
+      className={styles.boardLoadingScreen}
+      label="Carregando quadro"
+    />
   )
 }

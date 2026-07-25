@@ -65,7 +65,7 @@ describe('Theme preference bootstrap', () => {
 
     const { rerender } = render(createUi())
 
-    expect(screen.getByText('Carregando sua sessão...')).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Carregando sua sessão' })).toBeInTheDocument()
     expect(document.documentElement.dataset.appColorScheme).toBe('dark')
     expect(document.body.dataset.appColorScheme).toBe('dark')
     expect(document.querySelector('[data-app-theme-scope]')).toHaveAttribute('data-theme', 'dark')

@@ -475,7 +475,7 @@ export default function KanbanBoard() {
             />
 
             {isBoardLoading ? (
-              <BoardLoadingState styles={styles} />
+              <BoardLoadingState />
             ) : hasNoPlan ? (
               <section className={styles.boardStatusPanel} role="status" aria-live="polite">
                 <p className={styles.boardStatusTitle}>Nenhum plano ativo no momento</p>

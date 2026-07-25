@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTransientNotification } from '../../../../shared/hooks/useTransientNotification.js'
+import LoadingScreen from '../../../../shared/components/Loader/LoadingScreen.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import {
   addDays,
@@ -229,17 +230,10 @@ function AgendaList({
 
 function CalendarLoadingState({ styles }) {
   return (
-    <section className={styles.calendarLoading} aria-hidden="true">
-      <div className={styles.calendarLoadingGrid}>
-        {Array.from({ length: 35 }, (_, index) => (
-          <div key={`calendar-loading-${index}`} className={styles.calendarLoadingCell}>
-            <span className={`${styles.calendarLoadingBlock} ${styles.calendarLoadingDay}`} />
-            <span className={`${styles.calendarLoadingBlock} ${styles.calendarLoadingEvent}`} />
-            <span className={`${styles.calendarLoadingBlock} ${styles.calendarLoadingEventShort}`} />
-          </div>
-        ))}
-      </div>
-    </section>
+    <LoadingScreen
+      className={styles.calendarLoading}
+      label="Carregando calendário"
+    />
   )
 }
 

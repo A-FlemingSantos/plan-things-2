@@ -230,6 +230,12 @@
 .board::-webkit-scrollbar-track { background: transparent; }
 .board::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
 
+.boardLoadingScreen {
+  flex: 1 1 0;
+  min-height: 0;
+  align-self: stretch;
+}
+
 .boardLoadingBlock {
   display: block;
   border-radius: 999px;
