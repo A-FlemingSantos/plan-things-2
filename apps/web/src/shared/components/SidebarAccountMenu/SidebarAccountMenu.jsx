@@ -372,11 +372,6 @@ export default function SidebarAccountMenu({
     setSwitchError('')
   }
 
-  const handleAccountsMouseEnter = () => {
-    setAccountsOpen(true)
-    setSwitchError('')
-  }
-
   const handleSwitchAccount = async (accountId) => {
     const targetAccountId = accountId ? String(accountId) : null
 
@@ -521,7 +516,6 @@ export default function SidebarAccountMenu({
             menuStyles.dockAccountTrigger,
             accountsOpen ? menuStyles.dockAccountTriggerActive : '',
           ].filter(Boolean).join(' ')}
-          onMouseEnter={handleAccountsMouseEnter}
           onClick={handleAccountsToggle}
           aria-label={`Contas salvas de ${resolvedName}`}
           aria-expanded={accountsOpen}
@@ -662,7 +656,6 @@ export default function SidebarAccountMenu({
                 menuStyles.headerButton,
                 accountsOpen ? menuStyles.headerButtonActive : '',
               ].filter(Boolean).join(' ')}
-              onMouseEnter={handleAccountsMouseEnter}
               onClick={handleAccountsToggle}
               aria-label={`Contas salvas de ${resolvedName}`}
               aria-expanded={accountsOpen}

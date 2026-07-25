@@ -276,7 +276,7 @@ describe('SidebarAccountMenu', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
-    await user.hover(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
 
     expect(await screen.findByRole('menu', { name: 'Contas salvas' })).toBeInTheDocument()
     expect(screen.getByRole('menuitemradio', { name: /arthur santos/i })).toBeInTheDocument()
@@ -310,7 +310,7 @@ describe('SidebarAccountMenu', () => {
       toJSON: () => ({}),
     })
 
-    await user.hover(accountsTrigger)
+    await user.click(accountsTrigger)
 
     const submenu = await screen.findByRole('menu', { name: 'Contas salvas' })
 
@@ -348,7 +348,7 @@ describe('SidebarAccountMenu', () => {
       toJSON: () => ({}),
     })
 
-    await user.hover(accountsTrigger)
+    await user.click(accountsTrigger)
 
     const submenu = await screen.findByRole('menu', { name: 'Contas salvas' })
     submenu.getBoundingClientRect = () => ({
@@ -387,7 +387,7 @@ describe('SidebarAccountMenu', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
-    await user.hover(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
     await user.click(await screen.findByRole('menuitemradio', { name: /bruna costa/i }))
 
     await waitFor(() => {
@@ -405,7 +405,7 @@ describe('SidebarAccountMenu', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
-    await user.hover(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
     await user.click(await screen.findByRole('menuitemradio', { name: /arthur santos/i }))
 
     expect(authState.switchAccount).not.toHaveBeenCalled()
@@ -414,7 +414,7 @@ describe('SidebarAccountMenu', () => {
     })
   })
 
-  it('opens the accounts submenu on click when hover is not used', async () => {
+  it('opens the accounts submenu on click', async () => {
     const user = userEvent.setup()
 
     render(
@@ -424,7 +424,7 @@ describe('SidebarAccountMenu', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /arthur santos/i }))
-    fireEvent.click(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(screen.getByRole('button', { name: /contas salvas de arthur santos/i }))
 
     expect(await screen.findByRole('menu', { name: 'Contas salvas' })).toBeInTheDocument()
   })
