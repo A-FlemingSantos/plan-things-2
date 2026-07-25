@@ -98,7 +98,7 @@ export default function AppNavigationDock() {
             </Link>
           </DockItem>
 
-          <DockItem active={accountMenuOpen} expanded={accountMenuOpen}>
+          <DockItem expanded={accountMenuOpen}>
             <SidebarAccountMenu
               styles={styles}
               collapsed
