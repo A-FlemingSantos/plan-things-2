@@ -552,6 +552,7 @@ export default function SidebarAccountMenu({
           role="menuitem"
           onClick={() => handleItemClick('logout')}
         >
+          <LogOut size={DOCK_ICON_SIZE} strokeWidth={MENU_ITEM_ICON_STROKE} aria-hidden="true" />
           Sair
         </button>
       </div>
