@@ -204,7 +204,7 @@ export default function SidebarAccountMenu({
   }, [isDockMenu])
 
   useEffect(() => {
-    const handlePointerDown = (event) => {
+    const handleOutsideClick = (event) => {
       const clickedInsideContainer = containerRef.current?.contains(event.target) ?? false
       const clickedInsideMenu = menuRef.current?.contains(event.target) ?? false
       const clickedInsideAccountsMenu = accountsMenuRef.current?.contains(event.target) ?? false
@@ -228,11 +228,11 @@ export default function SidebarAccountMenu({
       }
     }
 
-    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('click', handleOutsideClick)
     document.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('click', handleOutsideClick)
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [])

@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { TestMemoryRouter } from '../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Dock, DockItem } from '../Dock/Dock.jsx'
 import SidebarAccountMenu from './SidebarAccountMenu.jsx'
 
 const authState = vi.hoisted(() => ({
@@ -133,6 +135,54 @@ describe('SidebarAccountMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'Upgrade' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Meu perfil' })).not.toBeInTheDocument()
+  })
+
+  it('closes the expanded dock account menu without blocking dock navigation clicks', async () => {
+    const user = userEvent.setup()
+    const onNavClick = vi.fn((event) => event.preventDefault())
+
+    function DockHarness() {
+      const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+
+      return (
+        <Dock>
+          <DockItem>
+            <a href="/boards" onClick={onNavClick}>
+              Quadros
+            </a>
+          </DockItem>
+          <DockItem expanded={accountMenuOpen}>
+            <SidebarAccountMenu
+              styles={styles}
+              collapsed
+              menuPresentation="dock"
+              onOpenChange={setAccountMenuOpen}
+              renderTrigger={({ triggerProps }) => (
+                <button type="button" {...triggerProps} aria-label="Abrir menu da conta">
+                  Conta
+                </button>
+              )}
+            />
+          </DockItem>
+        </Dock>
+      )
+    }
+
+    render(
+      <TestMemoryRouter>
+        <DockHarness />
+      </TestMemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Abrir menu da conta' }))
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('link', { name: 'Quadros' }))
+
+    expect(onNavClick).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
   })
 
   it('reopens the collapsed avatar menu after closing it with an outside click', async () => {
