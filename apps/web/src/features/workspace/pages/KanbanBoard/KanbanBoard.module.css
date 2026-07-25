@@ -22,6 +22,30 @@
   --board-base-bg: #ffffff;
   --board-canvas-bg: var(--board-base-bg);
   --board-column-bg: #fafafa;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.boardAccentScope :global([data-app-shell]) {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.boardAccentScope :global([data-app-shell-content]) {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  /* Board is full-bleed under the fixed dock; clearance lives in .board padding. */
+  padding-bottom: 0;
 }
 
 [data-theme='dark'] .boardAccentScope {
@@ -37,11 +61,24 @@
 ════════════════════════════════════════ */
 .boardPageShell {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 0;
+  height: 100%;
   min-width: 0;
   width: 100%;
-  background: var(--app-bg);
+  overflow: hidden;
+  padding-bottom: 0;
+  background: var(--board-canvas-bg);
+}
+
+.boardPageLayout {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ════════════════════════════════════════
@@ -51,14 +88,14 @@
   display: flex;
   align-items: stretch;
   gap: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
+  height: 100%;
   min-width: 0;
-  overflow-x: hidden;
-  overflow-y: visible;
-  padding: 0 12px 12px;
-  background: var(--app-bg);
-  transition: gap 220ms ease, padding 220ms ease;
+  overflow: hidden;
+  padding: 0;
+  background: var(--board-canvas-bg);
+  transition: gap 220ms ease;
 }
 
 .boardWrapper > .boardMain,
@@ -70,15 +107,13 @@
 .boardMain {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
+  height: 100%;
   min-width: 0;
-  overflow: visible;
+  overflow: hidden;
   position: relative;
-  border: 1px solid var(--border-1);
-  border-radius: 8px;
   background: var(--board-canvas-bg);
-  transition: border-radius 180ms ease, border-color 180ms ease;
 }
 
 .boardBody {
@@ -88,10 +123,11 @@
   --board-canvas-top-padding: calc(var(--board-section-padding) + var(--board-canvas-top-inset));
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
+  height: 100%;
   min-width: 0;
-  overflow: visible;
+  overflow: hidden;
   border-radius: inherit;
   background: var(--board-canvas-bg);
   transition: border-radius 180ms ease, border-color 180ms ease;
@@ -99,12 +135,13 @@
 
 .boardBodyContent {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
+  height: 100%;
   min-width: 0;
   flex-direction: column;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   background: var(--board-canvas-bg);
 }
 
@@ -151,7 +188,8 @@
   gap: 14px;
   padding: var(--board-canvas-top-padding) var(--board-inline-padding) 112px;
   overflow-x: auto;
-  flex: 1;
+  overflow-y: auto;
+  flex: 1 1 0;
   align-items: flex-start;
   background: transparent;
   min-height: 0;
@@ -6255,7 +6293,6 @@
 }
 
 @media (max-width: 1024px) {
-  .boardWrapper { padding: 0 10px 10px; }
   .boardWrapperWithPlanner { gap: 10px; }
   .plannerPanel { flex-basis: 380px; width: 380px; }
   .plannerPanelClosing { flex-basis: 0; width: 0; }
@@ -6289,9 +6326,6 @@
   .shell, .shellCollapsed { grid-template-columns: 1fr; }
   .boardWrapperPlannerMounted {
     flex-direction: column;
-  }
-  .boardWrapper {
-    padding: 0 10px 10px;
   }
   .boardWrapperWithPlanner {
     gap: 10px;

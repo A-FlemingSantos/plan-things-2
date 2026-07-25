@@ -458,6 +458,7 @@ export default function KanbanBoard() {
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
+        <div className={styles.boardPageLayout}>
         <div
           className={`${styles.boardWrapper} ${isPlannerPanelMounted || isInboxPanelMounted ? styles.boardWrapperPlannerMounted : ''} ${isPlannerOpen || isInboxOpen ? styles.boardWrapperWithPlanner : ''}`}
         >
@@ -677,6 +678,7 @@ export default function KanbanBoard() {
             onShowCalendarView={showCalendarView}
           />
         ) : null}
+        </div>
         </div>
         <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
           {activeDragCard ? (
