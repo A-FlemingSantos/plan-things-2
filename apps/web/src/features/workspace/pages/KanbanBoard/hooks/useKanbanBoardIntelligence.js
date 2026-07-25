@@ -8,10 +8,8 @@ export function useKanbanBoardIntelligence({
   columns,
   isIntelligenceOpen,
   isIntelligencePanelMounted,
-  boardViewToolbarRef,
   boardAccentColor,
   boardAccentForeground,
-  toolbarMetrics,
   closeIntelligence,
 }) {
   const [intelligenceDraft, setIntelligenceDraft] = useState('')
@@ -47,8 +45,7 @@ export function useKanbanBoardIntelligence({
 
     const handleMouseDown = (event) => {
       const panel = intelligencePanelRef.current
-      const toolbar = boardViewToolbarRef.current
-      if (panel?.contains(event.target) || toolbar?.contains(event.target)) {
+      if (panel?.contains(event.target)) {
         return
       }
       closeIntelligence()
@@ -65,7 +62,7 @@ export function useKanbanBoardIntelligence({
       document.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [boardViewToolbarRef, closeIntelligence, isIntelligencePanelMounted])
+  }, [closeIntelligence, isIntelligencePanelMounted])
 
   const intelligenceThemeStyle = useMemo(() => ({
     '--intelligence-accent': boardAccentColor,
@@ -74,11 +71,8 @@ export function useKanbanBoardIntelligence({
   }), [boardAccentColor, boardAccentForeground])
 
   const intelligencePanelStyle = useMemo(() => ({
-    left: toolbarMetrics.left ? `${toolbarMetrics.left}px` : undefined,
-    width: toolbarMetrics.width ? `${toolbarMetrics.width}px` : undefined,
-    bottom: `${toolbarMetrics.bottom + toolbarMetrics.height + 14}px`,
     ...intelligenceThemeStyle,
-  }), [intelligenceThemeStyle, toolbarMetrics])
+  }), [intelligenceThemeStyle])
 
   return {
     intelligenceDraft,

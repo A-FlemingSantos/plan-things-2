@@ -155,8 +155,7 @@ describe('KanbanBoard intelligence', () => {
       },
     ]
 
-    renderBoard()
-    await userEvent.click(await screen.findByRole('button', { name: 'Intelligence' }))
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openIntelligence: true } })
 
     expect(await screen.findByLabelText('Chat de IA')).toBeInTheDocument()
     expect(screen.queryByLabelText('Repositório: plan-things/web')).toBeNull()
@@ -172,12 +171,10 @@ describe('KanbanBoard intelligence', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Chat de IA')).toBeInTheDocument()
     })
-    expect(screen.getByRole('button', { name: 'Intelligence' })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('renders the internal composer inside the panel composer area', async () => {
-    renderBoard()
-    await userEvent.click(await screen.findByRole('button', { name: 'Intelligence' }))
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openIntelligence: true } })
 
     const composerArea = await screen.findByTestId('board-intelligence-composer-area')
     const composerForm = (await screen.findByLabelText('Prompt do Intelligence')).closest('form')
@@ -187,8 +184,7 @@ describe('KanbanBoard intelligence', () => {
 
   it('does not reserve overlay padding inside the chat thread above the composer', async () => {
     const user = userEvent.setup()
-    renderBoard()
-    await user.click(await screen.findByRole('button', { name: 'Intelligence' }))
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openIntelligence: true } })
 
     await user.type(await screen.findByLabelText('Prompt do Intelligence'), 'Resuma este quadro')
     await user.click(screen.getByRole('button', { name: 'Enviar mensagem' }))

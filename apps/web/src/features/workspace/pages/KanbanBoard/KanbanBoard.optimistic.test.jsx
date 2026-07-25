@@ -284,8 +284,7 @@ describe('KanbanBoard optimistic feedback', () => {
     const deferred = createDeferred()
     boardState.updateCard.mockReturnValue(deferred.promise)
 
-    renderBoard()
-    await userEvent.click(await screen.findByRole('button', { name: /planejador/i }))
+    renderBoard({ pathname: '/workspace/plan-1/board', state: { openPlanner: true } })
     await userEvent.click(await screen.findByRole('button', { name: 'Marcar com estrela' }))
 
     expect(boardState.columns[0].cards[0].starred).toBe(true)
@@ -347,8 +346,7 @@ describe('KanbanBoard optimistic feedback', () => {
       },
     ]
 
-    renderBoard()
-    await userEvent.click(await screen.findByRole('button', { name: 'Intelligence' }))
+    renderBoard({ pathname: '/workspace/plan-1/board', state: { openIntelligence: true } })
 
     expect(await screen.findByLabelText('Chat de IA')).toBeInTheDocument()
     expect(screen.queryByLabelText('Repositório: plan-things/web')).toBeNull()
@@ -356,9 +354,9 @@ describe('KanbanBoard optimistic feedback', () => {
   })
 })
 
-function renderBoard() {
+function renderBoard(route = { pathname: '/workspace/plan-1/board' }) {
   return render(
-    <TestMemoryRouter initialEntries={['/workspace/plan-1/board']}>
+    <TestMemoryRouter initialEntries={[route]}>
       <KanbanBoard />
     </TestMemoryRouter>,
   )

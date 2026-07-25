@@ -32,10 +32,8 @@ import BoardLoadingState from './components/BoardLoadingState.jsx'
 import KanbanBoardInboxPanel from './components/KanbanBoardInboxPanel.jsx'
 import KanbanBoardPlannerPanel from './components/KanbanBoardPlannerPanel.jsx'
 import KanbanBoardIntelligencePanel from './components/KanbanBoardIntelligencePanel.jsx'
-import { KanbanBoardIcons as Icon } from './components/KanbanBoardIcons.jsx'
 import { useKanbanBoardNotification } from './hooks/useKanbanBoardNotification.js'
 import { useKanbanBoardFloatingPanels } from './hooks/useKanbanBoardFloatingPanels.js'
-import { useKanbanBoardToolbarMetrics } from './hooks/useKanbanBoardToolbarMetrics.js'
 import { useKanbanBoardCardActions } from './hooks/useKanbanBoardCardActions.js'
 import { useKanbanBoardFiles } from './hooks/useKanbanBoardFiles.js'
 import { useKanbanBoardInbox } from './hooks/useKanbanBoardInbox.js'
@@ -94,9 +92,7 @@ export default function KanbanBoard() {
     closePlanner: closePlannerPanel,
     openIntelligence: openIntelligencePanel,
     closeIntelligence,
-    toggleIntelligence: toggleIntelligencePanel,
   } = useKanbanBoardFloatingPanels()
-  const { toolbarMetrics, boardViewToolbarRef } = useKanbanBoardToolbarMetrics()
 
   const { generalPreferences, localPreferences, formatClockTime } = usePreferences()
   const timeZone = generalPreferences.timezone
@@ -257,10 +253,8 @@ export default function KanbanBoard() {
     columns,
     isIntelligenceOpen,
     isIntelligencePanelMounted,
-    boardViewToolbarRef,
     boardAccentColor,
     boardAccentForeground,
-    toolbarMetrics,
     closeIntelligence,
   })
 
@@ -279,17 +273,9 @@ export default function KanbanBoard() {
     closePlannerPanel()
   }, [closePlannerPanel, setIsPlannerFilterOpen])
 
-  const openPlanner = useCallback(() => {
-    openPlannerPanel(() => setIsPlannerFilterOpen(false))
-  }, [openPlannerPanel, setIsPlannerFilterOpen])
-
   const openIntelligence = useCallback(() => {
     openIntelligencePanel(() => setIsPlannerFilterOpen(false))
   }, [openIntelligencePanel, setIsPlannerFilterOpen])
-
-  const toggleIntelligence = useCallback(() => {
-    toggleIntelligencePanel(() => setIsPlannerFilterOpen(false))
-  }, [setIsPlannerFilterOpen, toggleIntelligencePanel])
 
   const {
     sensors,
@@ -402,6 +388,18 @@ export default function KanbanBoard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.openIntelligence])
 
+  useEffect(() => {
+    if (!location.state?.openInbox) return
+    openInboxPanel()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.openInbox])
+
+  useEffect(() => {
+    if (!location.state?.openPlanner) return
+    openPlannerPanel(() => setIsPlannerFilterOpen(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.openPlanner])
+
   const closeFloatingPanelWithCleanup = useCallback(() => {
     resetInboxRecipientState()
     closeInboxPanel()
@@ -409,11 +407,6 @@ export default function KanbanBoard() {
     closePlannerPanel()
     closeIntelligence()
   }, [closeInboxPanel, closeIntelligence, closePlannerPanel, resetInboxRecipientState, setIsPlannerFilterOpen])
-
-  const showBoardView = () => {
-    setBoardViewMode('kanban')
-    closeFloatingPanelWithCleanup()
-  }
 
   const showCalendarView = () => {
     setBoardViewMode('calendar')
@@ -586,55 +579,6 @@ export default function KanbanBoard() {
             intelligenceActiveConnectors={intelligenceActiveConnectors}
           />
         ) : null}
-
-        <div ref={boardViewToolbarRef} className={styles.boardViewToolbar} aria-label="Atalhos do quadro">
-          <button
-            type="button"
-            className={`${styles.boardViewToolbarItem} ${isInboxOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-expanded={isInboxOpen}
-            aria-controls="board-inbox-panel"
-            title="Caixa de entrada"
-            onClick={openInboxPanel}
-          >
-            <Icon.Inbox />
-            <span>Caixa de entrada</span>
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.boardViewToolbarItem} ${isPlannerOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-expanded={isPlannerOpen}
-            aria-controls="board-planner-panel"
-            title="Planejador"
-            onClick={openPlanner}
-          >
-            <Icon.Calendar />
-            <span>Planejador</span>
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.boardViewToolbarItem} ${boardViewMode === 'kanban' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-current={boardViewMode === 'kanban' && !isPlannerOpen && !isInboxOpen && !isIntelligenceOpen ? 'page' : undefined}
-            title="Quadro"
-            onClick={showBoardView}
-          >
-            <Icon.Board />
-            <span>Quadro</span>
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.boardViewToolbarItem} ${isIntelligenceOpen ? styles.boardViewToolbarItemActive : ''}`}
-            aria-expanded={isIntelligenceOpen}
-            aria-controls="board-intelligence-panel"
-            title="Intelligence"
-            onClick={toggleIntelligence}
-          >
-            <Icon.Bolt />
-            <span>Intelligence</span>
-          </button>
-        </div>
         </div>
 
         {isInboxPanelMounted ? (

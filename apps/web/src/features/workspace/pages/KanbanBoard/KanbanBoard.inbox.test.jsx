@@ -246,7 +246,7 @@ describe('KanbanBoard Inbox Gmail flow', () => {
       },
     })
 
-    renderBoard()
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openInbox: true } })
     await openInboxAndDropCard('Enviar resumo')
 
     expect(await screen.findByText('Destinatários')).toBeInTheDocument()
@@ -284,8 +284,7 @@ describe('KanbanBoard Inbox Gmail flow', () => {
       },
     ]
 
-    renderBoard()
-    await userEvent.click(screen.getByRole('button', { name: /Caixa de entrada/i }))
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openInbox: true } })
 
     expect(await screen.findByLabelText('Cartões enviados pela Inbox')).toHaveTextContent('Enviar resumo')
     expect(screen.getByText('Inbox Member')).toBeInTheDocument()
@@ -312,8 +311,7 @@ describe('KanbanBoard Inbox Gmail flow', () => {
       },
     ]
 
-    renderBoard()
-    await userEvent.click(screen.getByRole('button', { name: /Caixa de entrada/i }))
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openInbox: true } })
     await userEvent.click(await screen.findByRole('button', { name: 'Limpar envios da Inbox' }))
 
     await waitFor(() => {
@@ -336,7 +334,7 @@ describe('KanbanBoard Inbox Gmail flow', () => {
       sentTo: ['member@example.com'],
     })
 
-    renderBoard()
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openInbox: true } })
     await openInboxAndDropCard('Enviar resumo')
 
     expect(await screen.findByText('Destinatários')).toBeInTheDocument()
@@ -363,7 +361,7 @@ describe('KanbanBoard Inbox Gmail flow', () => {
       status: 400,
     }))
 
-    renderBoard()
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openInbox: true } })
     await openInboxAndDropCard('Enviar resumo')
     await userEvent.click(screen.getByLabelText(/Inbox Member/i))
     await userEvent.click(screen.getByRole('button', { name: 'Enviar e-mail' }))
@@ -373,7 +371,7 @@ describe('KanbanBoard Inbox Gmail flow', () => {
 })
 
 async function openInboxAndDropCard(cardName) {
-  await userEvent.click(screen.getByRole('button', { name: /Caixa de entrada/i }))
+  expect(await screen.findByLabelText('Cartões enviados pela Inbox')).toBeInTheDocument()
   const card = boardState.columns
     .flatMap((column) => column.cards)
     .find((item) => item.title === cardName)
@@ -382,9 +380,9 @@ async function openInboxAndDropCard(cardName) {
   dndMock.onInboxDrop?.(card.id)
 }
 
-function renderBoard() {
+function renderBoard(route = { pathname: '/workspace/board/plan-1' }) {
   return render(
-    <TestMemoryRouter initialEntries={['/workspace/board/plan-1']}>
+    <TestMemoryRouter initialEntries={[route]}>
       <KanbanBoard />
     </TestMemoryRouter>,
   )
