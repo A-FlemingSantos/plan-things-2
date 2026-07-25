@@ -1,10 +1,9 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { BookOpen, House, KanbanSquare, Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { SiGithub } from 'react-icons/si'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { normalizePathname, ROUTES } from '../../config/routes.js'
-import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import { Dock, DockItem, DockSeparator } from '../Dock/Dock.jsx'
 import SidebarAccountMenu from '../SidebarAccountMenu/SidebarAccountMenu.jsx'
 import styles from './AppNavigationDock.module.css'
@@ -49,7 +48,6 @@ function isRouteActive(pathname, route) {
 
 export default function AppNavigationDock() {
   const location = useLocation()
-  const dockAnchorRef = useRef(null)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
@@ -57,7 +55,7 @@ export default function AppNavigationDock() {
   return (
     <AppThemeScope className={styles.themeScope}>
       <nav className={styles.positioner} data-app-navigation-dock aria-label="Navegação principal">
-        <div ref={dockAnchorRef} className={styles.dockAnchor}>
+        <div className={styles.dockAnchor}>
           <Dock className={styles.navigationDock} size={34}>
           {NAV_ITEMS.map(({ id, label, to, Icon }) => {
             const active = isRouteActive(location.pathname, to)
@@ -100,35 +98,12 @@ export default function AppNavigationDock() {
             </Link>
           </DockItem>
 
-          <DockItem active={accountMenuOpen}>
+          <DockItem active={accountMenuOpen} expanded={accountMenuOpen}>
             <SidebarAccountMenu
               styles={styles}
               collapsed
               menuPresentation="dock"
-              dockAnchorRef={dockAnchorRef}
               onOpenChange={setAccountMenuOpen}
-              menuPlacement="above"
-              renderTrigger={({ resolvedName, resolvedAvatarUrl, resolvedInitials, triggerProps }) => (
-                <button
-                  {...triggerProps}
-                  type="button"
-                  className={styles.accountButton}
-                  aria-label="Abrir menu da conta"
-                >
-                  <AuthenticatedAvatar
-                    avatarUrl={resolvedAvatarUrl}
-                    className={styles.avatar}
-                    imageClassName={styles.avatarImage}
-                    alt=""
-                    title={resolvedName}
-                    fallback={(
-                      <span className={styles.avatarFallback}>
-                        {resolvedInitials}
-                      </span>
-                    )}
-                  />
-                </button>
-              )}
             />
           </DockItem>
         </Dock>

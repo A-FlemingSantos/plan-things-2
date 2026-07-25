@@ -1,4 +1,3 @@
-import { createRef } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../test/testRouter.jsx'
@@ -100,61 +99,40 @@ describe('SidebarAccountMenu', () => {
     expect(menu.style.width).toBe('220px')
   })
 
-  it('anchors the dock account menu above and centered on the navigation dock', async () => {
+  it('expands the dock account menu inline to the right of the avatar trigger', async () => {
     const user = userEvent.setup()
-    const dockAnchorRef = createRef()
 
-    const { container } = render(
+    render(
       <TestMemoryRouter>
-        <div>
-          <div
-            ref={dockAnchorRef}
-            data-testid="dock-anchor"
-            style={{ position: 'fixed', left: '500px', bottom: '12px', width: '240px', height: '42px' }}
-          />
-          <SidebarAccountMenu
-            styles={styles}
-            collapsed
-            menuPresentation="dock"
-            dockAnchorRef={dockAnchorRef}
-            renderTrigger={({ triggerProps }) => (
-              <button type="button" {...triggerProps} aria-label="Abrir menu da conta">
-                Conta
-              </button>
-            )}
-          />
-        </div>
+        <SidebarAccountMenu
+          styles={styles}
+          collapsed
+          menuPresentation="dock"
+          renderTrigger={({ triggerProps }) => (
+            <button type="button" {...triggerProps} aria-label="Abrir menu da conta">
+              Conta
+            </button>
+          )}
+        />
       </TestMemoryRouter>,
     )
 
-    dockAnchorRef.current.getBoundingClientRect = () => ({
-      x: 500,
-      y: 838,
-      left: 500,
-      top: 838,
-      right: 740,
-      bottom: 880,
-      width: 240,
-      height: 42,
-      toJSON: () => ({}),
-    })
+    const root = screen.getByRole('button', { name: 'Abrir menu da conta' }).parentElement
+    expect(root?.className).toContain('containerDock')
+    expect(root?.className).not.toContain('containerDockOpen')
 
     await user.click(screen.getByRole('button', { name: 'Abrir menu da conta' }))
 
-    const menu = screen.getByRole('menu', { name: '' })
+    expect(root?.className).toContain('containerDockOpen')
 
-    await waitFor(() => {
-      expect(menu.className).toContain('menuDock')
-      expect(menu.style.left).toBe('620px')
-      expect(menu.style.transform).toBe('translateX(-50%)')
-    })
+    const menu = screen.getByRole('menu')
+    expect(menu.className).toContain('dockExpandInner')
+    expect(menu.style.position).not.toBe('fixed')
 
     expect(screen.getByRole('button', { name: /contas salvas de arthur santos/i })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Upgrade' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Meu perfil' })).not.toBeInTheDocument()
-
-    expect(container.querySelector('[data-testid="dock-anchor"]')).toBeTruthy()
   })
 
   it('reopens the collapsed avatar menu after closing it with an outside click', async () => {

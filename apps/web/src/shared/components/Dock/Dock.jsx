@@ -35,6 +35,7 @@ export function DockItem({
   className = '',
   onClick,
   active = false,
+  expanded = false,
   'aria-label': ariaLabel,
 }) {
   const dock = useContext(DockContext)
@@ -51,8 +52,14 @@ export function DockItem({
     />
   ) : null
 
-  const sharedStyle = { width: size, height: size }
-  const sharedClassName = [styles.item, className].filter(Boolean).join(' ')
+  const sharedStyle = expanded
+    ? { height: size, minWidth: size, width: 'max-content' }
+    : { width: size, height: size }
+  const sharedClassName = [
+    styles.item,
+    expanded ? styles.itemExpanded : '',
+    className,
+  ].filter(Boolean).join(' ')
 
   if (onClick) {
     return (

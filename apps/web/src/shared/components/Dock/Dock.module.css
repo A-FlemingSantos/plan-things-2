@@ -40,6 +40,11 @@
   color: var(--text-1);
 }
 
+.itemExpanded {
+  justify-content: flex-start;
+  overflow: visible;
+}
+
 .itemButton {
   margin: 0;
   padding: 0;

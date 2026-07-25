@@ -18,37 +18,73 @@
   width: 220px;
 }
 
-.menuDock {
+.containerDock {
   --dock-row-size: 28px;
-  --dock-avatar-size: 18px;
-  z-index: calc(var(--z-app-dock) + 4);
-  transform-origin: center bottom;
-  animation: menuDockEnter 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --dock-avatar-size: 22px;
   position: relative;
-  isolation: isolate;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   width: max-content;
-  max-width: calc(100vw - 24px);
-  padding: 2px 4px;
-  border-radius: 12px;
-  background: transparent;
-  border: 1px solid var(--border-1);
-  box-shadow:
-    0 16px 36px color-mix(in srgb, var(--color-black) 18%, transparent),
-    0 2px 8px color-mix(in srgb, var(--color-black) 8%, transparent);
+  height: 34px;
+  flex: 0 0 auto;
 }
 
-.menuDock::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+.containerDockOpen {
+  gap: 0;
+}
+
+.dockLeadingSeparator {
+  width: 1px;
+  height: 14px;
+  margin: 0 2px;
+  flex-shrink: 0;
+  background: var(--border-1);
+}
+
+.dockAvatarTrigger {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
   border-radius: inherit;
-  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dockAvatarTrigger:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--app-bg),
+    0 0 0 4px var(--focus-ring);
+}
+
+.dockExpand {
+  display: grid;
+  grid-template-columns: 0fr;
+  min-width: 0;
   pointer-events: none;
+  transition: grid-template-columns 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.containerDockOpen .dockExpand {
+  grid-template-columns: 1fr;
+  pointer-events: auto;
+}
+
+.dockExpandInner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .submenuDock {
@@ -83,27 +119,16 @@
   pointer-events: none;
 }
 
-.dockBar {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  width: max-content;
-  max-width: 100%;
-  height: var(--dock-row-size);
-}
-
 .dockAccountTrigger {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
-  max-width: 200px;
+  max-width: 168px;
   height: var(--dock-row-size);
   margin: 0;
-  padding: 0 8px 0 4px;
+  padding: 0 6px 0 4px;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -231,18 +256,6 @@
   font-weight: var(--font-weight-regular);
   letter-spacing: 0.04em;
   line-height: 1;
-}
-
-@keyframes menuDockEnter {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 6px) scale(0.97);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1);
-  }
 }
 
 @keyframes submenuDockEnter {
