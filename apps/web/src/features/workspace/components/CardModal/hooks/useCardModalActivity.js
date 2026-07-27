@@ -137,6 +137,16 @@ export default function useCardModalActivity({
     writeSidebarPanelState(sidebarPanelStorageKey, panel)
   }
 
+  const openSidebarPanel = (panel) => {
+    setIsActivitySidebarOpen(true)
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(activitySidebarStorageKey, 'true')
+      } catch {}
+    }
+    selectSidebarPanel(panel)
+  }
+
   const clearSidebarPanel = () => {
     setSidebarPanel(null)
     writeSidebarPanelState(sidebarPanelStorageKey, null)
@@ -247,6 +257,7 @@ export default function useCardModalActivity({
     activityFeedItems,
     toggleActivitySidebar,
     selectSidebarPanel,
+    openSidebarPanel,
     clearSidebarPanel,
     appendActivityEvent,
     getCommentPresenter,

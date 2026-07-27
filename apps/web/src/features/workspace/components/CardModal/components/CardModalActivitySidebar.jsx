@@ -19,6 +19,7 @@ import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/
 import CardModalChecklist from './CardModalChecklist.jsx'
 import { CardModalInlineAttachments } from './CardModalAttachmentControls.jsx'
 import CardModalSidebarPicker from './CardModalSidebarPicker.jsx'
+import CardModalSidebarRail from './CardModalSidebarRail.jsx'
 
 const SIDEBAR_PANEL_LABELS = {
   github: 'GitHub',
@@ -386,6 +387,7 @@ export default function CardModalActivitySidebar({
   isActivitySidebarOpen,
   sidebarPanel,
   selectSidebarPanel,
+  openSidebarPanel,
   clearSidebarPanel,
   isMutating,
   toggleActivitySidebar,
@@ -419,21 +421,37 @@ export default function CardModalActivitySidebar({
 }) {
   return (
     <div className={`${styles.cmSidebarShell} ${!isActivitySidebarOpen ? styles.cmSidebarShellCollapsed : ''}`}>
-      <button
-        type="button"
-        className={styles.cmSidebarToggleBtn}
-        title={isActivitySidebarOpen ? 'Recolher painel lateral' : 'Expandir painel lateral'}
-        aria-label={isActivitySidebarOpen ? 'Recolher painel lateral' : 'Expandir painel lateral'}
-        aria-expanded={isActivitySidebarOpen}
-        onClick={toggleActivitySidebar}
-        disabled={isMutating}
+      <div
+        className={styles.cmSidebarControls}
+        role="toolbar"
+        aria-label="Atalhos dos painéis laterais"
       >
-        {isActivitySidebarOpen ? (
-          <ChevronsRight size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
-        ) : (
-          <ChevronsLeft size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
-        )}
-      </button>
+        <CardModalSidebarRail
+          styles={styles}
+          iconSize={iconSize}
+          iconStroke={iconStroke}
+          isMutating={isMutating}
+          isActivitySidebarOpen={isActivitySidebarOpen}
+          sidebarPanel={sidebarPanel}
+          onSelectPanel={openSidebarPanel}
+        />
+
+        <button
+          type="button"
+          className={styles.cmSidebarToggleBtn}
+          title={isActivitySidebarOpen ? 'Recolher painel lateral' : 'Expandir painel lateral'}
+          aria-label={isActivitySidebarOpen ? 'Recolher painel lateral' : 'Expandir painel lateral'}
+          aria-expanded={isActivitySidebarOpen}
+          onClick={toggleActivitySidebar}
+          disabled={isMutating}
+        >
+          {isActivitySidebarOpen ? (
+            <ChevronsRight size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+          ) : (
+            <ChevronsLeft size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+          )}
+        </button>
+      </div>
 
       {isActivitySidebarOpen ? (
         <div className={styles.cmSidebar}>

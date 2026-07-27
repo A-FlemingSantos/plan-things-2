@@ -234,6 +234,7 @@ export default function CardModal({
     isActivitySidebarOpen,
     sidebarPanel,
     selectSidebarPanel,
+    openSidebarPanel,
     clearSidebarPanel,
     ...activitySidebarUi
   } = activity
@@ -1313,6 +1314,7 @@ export default function CardModal({
             isActivitySidebarOpen={isActivitySidebarOpen}
             sidebarPanel={sidebarPanel}
             selectSidebarPanel={selectSidebarPanel}
+            openSidebarPanel={openSidebarPanel}
             clearSidebarPanel={clearSidebarPanel}
             isBackendDriven={isBackendDriven}
             activeChecklist={activeChecklist}

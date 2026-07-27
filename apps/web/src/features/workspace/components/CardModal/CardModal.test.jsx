@@ -14,12 +14,7 @@ vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.j
 const styles = new Proxy({}, { get: (_, key) => String(key) })
 
 async function openSidebarPanel(user, panelLabel = 'Activity') {
-  await user.click(screen.getByRole('button', { name: 'Expandir painel lateral' }))
-
-  const panelButton = screen.queryByRole('button', { name: panelLabel })
-  if (panelButton) {
-    await user.click(panelButton)
-  }
+  await user.click(screen.getByRole('button', { name: `Painel ${panelLabel}` }))
 }
 
 function buildCard(overrides = {}) {
@@ -644,7 +639,7 @@ describe('CardModal file picker positioning', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Expandir painel lateral' }))
-    await user.click(screen.getByRole('button', { name: 'Activity' }))
+    await user.click(screen.getByRole('button', { name: 'Painel Activity' }))
 
     expect(window.localStorage.getItem('plan-things:card-modal-sidebar-panel:v1:user-1')).toBe('activity')
     expect(screen.getByRole('button', { name: 'Voltar às opções' })).toBeInTheDocument()
