@@ -9,6 +9,7 @@ import {
   Paperclip,
   Search,
 } from 'lucide-react'
+import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import { formatFileSize } from '../../../../files/data/libraryRepository.js'
 import { FILE_TYPE_OPTIONS, getFileCategory } from '../utils/attachmentUtils.js'
 
@@ -136,7 +137,12 @@ export default function CardModalFilePicker({
       {fileActionError ? <p className={styles.cmFilePickerError}>{fileActionError}</p> : null}
       {filesError ? <p className={styles.cmFilePickerError}>{filesError}</p> : null}
 
-      <div className={styles.cmFilePickerList}>
+      <CustomScrollArea
+        className={styles.cmFilePickerListScroll}
+        viewportClassName={styles.cmFilePickerList}
+        enabled
+        refreshKey={`file-picker:${filePickerFilter}:${filePickerTypeFilter}:${fileSearch}:${pickerFiles.length}:${isFilePickerLoading ? 'loading' : 'ready'}`}
+      >
         {isFilePickerLoading ? (
           Array.from({ length: 5 }, (_, index) => (
             <div key={`picker-loading-${index}`} className={styles.cmFilePickerSkeleton} />
@@ -193,7 +199,7 @@ export default function CardModalFilePicker({
             <p>{filePickerFilter === 'plan' ? 'Nenhum arquivo compartilhado com este plano.' : 'Nenhum arquivo disponível na sua biblioteca.'}</p>
           </div>
         )}
-      </div>
+      </CustomScrollArea>
     </div>
   )
 }

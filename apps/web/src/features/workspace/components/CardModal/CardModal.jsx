@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import {
   buildBrazilDateRange,
   resolveCardScheduleFromRange,
@@ -966,7 +967,12 @@ export default function CardModal({
         </div>
 
         <div className={`${styles.cmBody} ${!isActivitySidebarOpen ? styles.cmBodyActivityCollapsed : ''}`}>
-          <div className={styles.cmMain}>
+          <CustomScrollArea
+            className={styles.cmMainScrollArea}
+            viewportClassName={styles.cmMain}
+            enabled
+            refreshKey={`card-main:${card.id}`}
+          >
             <div className={styles.cmTaskTypeRow}>
               <button type="button" className={styles.cmTaskTypePill} aria-label="Tipo de tarefa">
                 <span className={styles.cmTaskTypeIcon}><List size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
@@ -1314,7 +1320,7 @@ export default function CardModal({
                   <p className={styles.cmSubmitSuccess} role="status" aria-live="polite">{saveStatus}</p>
                 </div>
               ) : null}
-          </div>
+          </CustomScrollArea>
 
           <CardModalActivitySidebar
             styles={styles}

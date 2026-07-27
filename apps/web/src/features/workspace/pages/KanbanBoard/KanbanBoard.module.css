@@ -3065,7 +3065,7 @@
   grid-template-columns: minmax(0, 1fr) 0;
 }
 
-.cmBodyActivityCollapsed .cmMain {
+.cmBodyActivityCollapsed .cmMainScrollArea {
   width: 100%;
   max-width: var(--cm-main-solo-max-width);
   margin-inline: auto;
@@ -3122,13 +3122,17 @@
   cursor: not-allowed;
 }
 
+.cmMainScrollArea {
+  min-width: 0;
+  min-height: 0;
+}
+
 .cmMain {
   padding: 20px var(--cm-main-padding-inline) 28px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 0;
-  overflow-y: auto;
 }
 
 .cmTaskTypeRow {
@@ -3624,10 +3628,8 @@
   overflow: hidden;
 }
 
-.cmActivityPreviewPanelExpanded .cmActivityPreviewFeed {
+.cmActivityPreviewFeedScroll {
   max-height: min(320px, 42vh);
-  overflow-y: auto;
-  scrollbar-width: thin;
 }
 
 .cmActivityPreviewFade {
@@ -4515,10 +4517,14 @@
   color: var(--text-1);
 }
 
+.cmActivityFeedScrollArea {
+  flex: 1;
+  min-height: 0;
+}
+
 .cmActivityFeed {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding: 16px;
@@ -4970,6 +4976,12 @@
   min-height: 38px;
   max-height: 120px;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cmCommentTextarea::-webkit-scrollbar {
+  display: none;
 }
 
 .cmCommentTextarea::placeholder { color: var(--text-3); }
@@ -6303,6 +6315,11 @@
   font-size: 12px;
 }
 
+.cmFilePickerListScroll {
+  flex: 1;
+  min-height: 0;
+}
+
 .cmFilePickerList {
   flex: 1;
   display: flex;
@@ -6310,7 +6327,6 @@
   gap: 8px;
   min-height: 0;
   padding: 10px 12px 12px;
-  overflow-y: auto;
 }
 
 .cmFilePickerItem {

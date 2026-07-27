@@ -1,9 +1,20 @@
-import { memo } from 'react'
+import { memo, useCallback } from 'react'
 import useCustomScrollbar from '../../hooks/useCustomScrollbar.js'
 import styles from './CustomScrollArea.module.css'
 
 const DEFAULT_INSET_PX = 0
 const DEFAULT_MIN_THUMB_PX = 18
+
+function assignRef(ref, value) {
+  if (typeof ref === 'function') {
+    ref(value)
+    return
+  }
+
+  if (ref) {
+    ref.current = value
+  }
+}
 
 function CustomScrollArea({
   children,
@@ -15,6 +26,7 @@ function CustomScrollArea({
   viewportClassName = '',
   viewportTag = 'div',
   viewportProps = null,
+  viewportRef = null,
 }) {
   const scrollbar = useCustomScrollbar({
     enabled,
@@ -32,11 +44,16 @@ function CustomScrollArea({
     scrollbar.thumbVisible ? '' : styles.trackHidden,
   ].filter(Boolean).join(' ')
 
+  const setViewportRef = useCallback((node) => {
+    assignRef(scrollbar.viewportRef, node)
+    assignRef(viewportRef, node)
+  }, [scrollbar.viewportRef, viewportRef])
+
   return (
     <div className={rootClassName}>
       <ViewportTag
         {...viewportRest}
-        ref={scrollbar.viewportRef}
+        ref={setViewportRef}
         className={viewportCombinedClassName}
       >
         {children}

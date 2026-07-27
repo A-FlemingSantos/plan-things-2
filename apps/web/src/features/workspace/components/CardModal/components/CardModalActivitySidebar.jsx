@@ -14,6 +14,7 @@ import {
   ThumbsUp,
 } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 
 export default function CardModalActivitySidebar({
   styles,
@@ -70,7 +71,13 @@ export default function CardModalActivitySidebar({
           </div>
 
           <div className={styles.cmSidebarContent}>
-            <div ref={activityFeedRef} className={styles.cmActivityFeed}>
+            <CustomScrollArea
+              className={styles.cmActivityFeedScrollArea}
+              viewportClassName={styles.cmActivityFeed}
+              viewportRef={activityFeedRef}
+              enabled
+              refreshKey={`activity-feed:${activityFeedItems.length}`}
+            >
               <div className={styles.cmActivitySpacer} aria-hidden="true" />
               <div className={styles.cmActivityTimeline}>
                 {activityFeedItems.map((item) => {
@@ -146,7 +153,7 @@ export default function CardModalActivitySidebar({
                   )
                 })}
               </div>
-            </div>
+            </CustomScrollArea>
 
             <div className={styles.cmCommentDock}>
               <div ref={commentComposerRef} className={styles.cmCommentComposer}>

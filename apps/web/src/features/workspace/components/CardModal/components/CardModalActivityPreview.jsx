@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 
 const COLLAPSED_ITEM_LIMIT = 3
 
@@ -62,6 +63,12 @@ export default function CardModalActivityPreview({
     ? activityFeedItems
     : activityFeedItems.slice(-COLLAPSED_ITEM_LIMIT)
 
+  const feedContent = visibleItems.length === 0 ? (
+    <p className={styles.cmActivityPreviewEmpty}>Nenhuma atividade ainda.</p>
+  ) : (
+    visibleItems.map((item) => renderActivityItem(item, styles, getCommentPresenter))
+  )
+
   return (
     <section className={styles.cmActivityPreview} aria-label="Recentes">
       <div
@@ -72,13 +79,20 @@ export default function CardModalActivityPreview({
         </header>
 
         <div className={styles.cmActivityPreviewBody}>
-          <div className={styles.cmActivityPreviewFeed}>
-            {visibleItems.length === 0 ? (
-              <p className={styles.cmActivityPreviewEmpty}>Nenhuma atividade ainda.</p>
-            ) : (
-              visibleItems.map((item) => renderActivityItem(item, styles, getCommentPresenter))
-            )}
-          </div>
+          {expanded ? (
+            <CustomScrollArea
+              className={styles.cmActivityPreviewFeedScroll}
+              viewportClassName={styles.cmActivityPreviewFeed}
+              enabled
+              refreshKey={`activity-preview:${cardId}:${visibleItems.length}`}
+            >
+              {feedContent}
+            </CustomScrollArea>
+          ) : (
+            <div className={styles.cmActivityPreviewFeed}>
+              {feedContent}
+            </div>
+          )}
 
           {!expanded && canExpand ? (
             <div className={styles.cmActivityPreviewFade} aria-hidden="true" />
