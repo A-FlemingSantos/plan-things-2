@@ -4493,6 +4493,118 @@
   flex-shrink: 0;
 }
 
+.cmSidebarHeaderLeading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cmSidebarPicker {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  min-height: 0;
+}
+
+.cmSidebarPickerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.cmSidebarPickerOption {
+  aspect-ratio: 1;
+  min-height: 108px;
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.cmSidebarPickerOption:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.cmSidebarPickerOption:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.cmSidebarPickerOptionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+
+.cmSidebarPickerOptionLabel {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.cmSidebarPanelScroll {
+  flex: 1;
+  min-height: 0;
+}
+
+.cmSidebarPanelBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-height: 0;
+}
+
+.cmSidebarPanelEmpty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-3);
+}
+
+.cmSidebarPanelActionBtn {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.cmSidebarPanelActionBtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+  border-color: var(--border-2);
+}
+
+.cmSidebarPanelActionBtn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 .cmSidebarHeaderActions {
   display: flex;
   align-items: center;

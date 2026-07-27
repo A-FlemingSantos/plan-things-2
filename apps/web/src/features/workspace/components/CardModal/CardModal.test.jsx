@@ -13,6 +13,15 @@ vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.j
 
 const styles = new Proxy({}, { get: (_, key) => String(key) })
 
+async function openSidebarPanel(user, panelLabel = 'Activity') {
+  await user.click(screen.getByRole('button', { name: 'Expandir painel lateral' }))
+
+  const panelButton = screen.queryByRole('button', { name: panelLabel })
+  if (panelButton) {
+    await user.click(panelButton)
+  }
+}
+
 function buildCard(overrides = {}) {
   return {
     id: 'card-1',
@@ -55,6 +64,7 @@ describe('CardModal file picker positioning', () => {
   let rectSpy
 
   beforeEach(() => {
+    window.localStorage.clear()
     originalInnerWidth = window.innerWidth
     originalInnerHeight = window.innerHeight
     window.innerWidth = 800
@@ -143,7 +153,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+    await openSidebarPanel(user)
     await user.click(screen.getByLabelText('Aplicativos'))
     await user.click(screen.getByRole('button', { name: /Anexe um arquivo/i }))
 
@@ -305,7 +315,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+    await openSidebarPanel(user)
 
     const commentField = await screen.findByLabelText('Escrever comentário')
     expect(screen.getByRole('button', { name: 'Enviar comentário' })).toBeInTheDocument()
@@ -353,7 +363,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+    await openSidebarPanel(user)
     const findAssignmentHistoryItems = () => Array.from(document.querySelectorAll('p'))
       .filter((item) => item.textContent?.includes('atribuiu a:'))
 
@@ -404,7 +414,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+    await openSidebarPanel(user)
 
     expect(screen.getByText(/removeu os responsaveis/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Responder' })).not.toBeInTheDocument()
@@ -450,6 +460,8 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
+    await openSidebarPanel(user, 'Checklist')
+
     const itemRow = screen.getByText('Enviar briefing').closest('label')
     const toggleButton = within(itemRow).getByRole('button')
 
@@ -472,7 +484,8 @@ describe('CardModal file picker positioning', () => {
     expect(screen.getByText('Falha ao atualizar item')).toBeInTheDocument()
   })
 
-  it('does not expose checklist creation when the card already has one', () => {
+  it('does not expose checklist creation when the card already has one', async () => {
+    const user = userEvent.setup()
     const deleteChecklist = vi.fn()
 
     render(
@@ -504,9 +517,10 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
+    await openSidebarPanel(user, 'Checklist')
+
     expect(screen.queryByRole('button', { name: /criar checklist/i })).not.toBeInTheDocument()
-    const deleteButtons = screen.getAllByRole('button', { name: /excluir/i })
-    expect(deleteButtons[deleteButtons.length - 1]).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Excluir' })).toBeEnabled()
   })
 
   it('filters legacy member ids that no longer belong to the plan before saving another change', async () => {
@@ -570,11 +584,69 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: 'Expandir Activity' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Expandir painel lateral' })).toHaveAttribute('aria-expanded', 'false')
 
-    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+    await user.click(screen.getByRole('button', { name: 'Expandir painel lateral' }))
 
-    expect(screen.getByRole('button', { name: 'Recolher Activity' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Recolher painel lateral' })).toHaveAttribute('aria-expanded', 'true')
     expect(window.localStorage.getItem('plan-things:card-modal-activity-sidebar-open:v1:user-1')).toBe('true')
+  })
+
+  it('shows the sidebar picker on first open before a panel is selected', async () => {
+    const user = userEvent.setup()
+    window.localStorage.clear()
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Expandir painel lateral' }))
+
+    expect(screen.getByRole('group', { name: 'Painéis laterais' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'GitHub' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Activity' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Arquivos' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Checklist' })).toBeInTheDocument()
+  })
+
+  it('persists the selected sidebar panel in localStorage', async () => {
+    const user = userEvent.setup()
+    window.localStorage.clear()
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Expandir painel lateral' }))
+    await user.click(screen.getByRole('button', { name: 'Activity' }))
+
+    expect(window.localStorage.getItem('plan-things:card-modal-sidebar-panel:v1:user-1')).toBe('activity')
+    expect(screen.getByRole('button', { name: 'Voltar às opções' })).toBeInTheDocument()
   })
 })

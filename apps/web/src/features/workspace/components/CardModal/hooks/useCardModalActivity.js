@@ -5,10 +5,13 @@ import {
   buildActivitySidebarStorageKey,
   buildInitialActivitySnapshot,
   buildInitials,
+  buildSidebarPanelStorageKey,
   formatCardCreatedLabel,
   isUserComment,
   readActivitySidebarOpenState,
+  readSidebarPanelState,
   USER_COMMENT_KIND,
+  writeSidebarPanelState,
 } from '../utils/activityUtils.js'
 
 export default function useCardModalActivity({
@@ -26,6 +29,10 @@ export default function useCardModalActivity({
     () => buildActivitySidebarStorageKey(currentUser?.id),
     [currentUser?.id],
   )
+  const sidebarPanelStorageKey = useMemo(
+    () => buildSidebarPanelStorageKey(currentUser?.id),
+    [currentUser?.id],
+  )
 
   const [comment, setComment] = useState('')
   const [comments, setComments] = useState(card.comments)
@@ -33,6 +40,9 @@ export default function useCardModalActivity({
   const [activityEvents, setActivityEvents] = useState([])
   const [isActivitySidebarOpen, setIsActivitySidebarOpen] = useState(() => (
     readActivitySidebarOpenState(buildActivitySidebarStorageKey(currentUser?.id))
+  ))
+  const [sidebarPanel, setSidebarPanel] = useState(() => (
+    readSidebarPanelState(buildSidebarPanelStorageKey(currentUser?.id))
   ))
   const [commentFocused, setCommentFocused] = useState(false)
   const [commentFollow, setCommentFollow] = useState(false)
@@ -64,6 +74,10 @@ export default function useCardModalActivity({
   useEffect(() => {
     setIsActivitySidebarOpen(readActivitySidebarOpenState(activitySidebarStorageKey))
   }, [activitySidebarStorageKey])
+
+  useEffect(() => {
+    setSidebarPanel(readSidebarPanelState(sidebarPanelStorageKey))
+  }, [sidebarPanelStorageKey])
 
   useEffect(() => {
     setActivityBase(buildInitialActivitySnapshot(card))
@@ -116,6 +130,16 @@ export default function useCardModalActivity({
       }
       return next
     })
+  }
+
+  const selectSidebarPanel = (panel) => {
+    setSidebarPanel(panel)
+    writeSidebarPanelState(sidebarPanelStorageKey, panel)
+  }
+
+  const clearSidebarPanel = () => {
+    setSidebarPanel(null)
+    writeSidebarPanelState(sidebarPanelStorageKey, null)
   }
 
   const appendActivityEvent = (event) => {
@@ -205,6 +229,8 @@ export default function useCardModalActivity({
     activityBase,
     activityEvents,
     isActivitySidebarOpen,
+    sidebarPanel,
+    sidebarPanelStorageKey,
     commentFocused,
     setCommentFocused,
     expandedComments,
@@ -220,6 +246,8 @@ export default function useCardModalActivity({
     visibleComments,
     activityFeedItems,
     toggleActivitySidebar,
+    selectSidebarPanel,
+    clearSidebarPanel,
     appendActivityEvent,
     getCommentPresenter,
     addComment,

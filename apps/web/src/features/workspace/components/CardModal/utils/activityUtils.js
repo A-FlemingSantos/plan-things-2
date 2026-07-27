@@ -1,9 +1,15 @@
 export const ACTIVITY_SIDEBAR_STORAGE_PREFIX = 'plan-things:card-modal-activity-sidebar-open:v1:'
+export const SIDEBAR_PANEL_STORAGE_PREFIX = 'plan-things:card-modal-sidebar-panel:v1:'
+export const SIDEBAR_PANELS = ['github', 'activity', 'files', 'checklist']
 export const USER_COMMENT_KIND = 'USER_COMMENT'
 export const ASSIGNEE_ACTIVITY_KIND = 'ASSIGNEE_ACTIVITY'
 
 export function buildActivitySidebarStorageKey(userId) {
   return `${ACTIVITY_SIDEBAR_STORAGE_PREFIX}${userId || 'anonymous'}`
+}
+
+export function buildSidebarPanelStorageKey(userId) {
+  return `${SIDEBAR_PANEL_STORAGE_PREFIX}${userId || 'anonymous'}`
 }
 
 export function readActivitySidebarOpenState(storageKey) {
@@ -13,6 +19,26 @@ export function readActivitySidebarOpenState(storageKey) {
   if (stored === 'false') return false
   if (stored === 'true') return true
   return false
+}
+
+export function readSidebarPanelState(storageKey) {
+  if (typeof window === 'undefined') return null
+
+  const stored = window.localStorage.getItem(storageKey)
+  return SIDEBAR_PANELS.includes(stored) ? stored : null
+}
+
+export function writeSidebarPanelState(storageKey, panel) {
+  if (typeof window === 'undefined') return
+
+  try {
+    if (panel && SIDEBAR_PANELS.includes(panel)) {
+      window.localStorage.setItem(storageKey, panel)
+      return
+    }
+
+    window.localStorage.removeItem(storageKey)
+  } catch {}
 }
 
 export function buildInitials(fullName = '') {

@@ -34,10 +34,8 @@ import { buildInlineAssignmentText } from './utils/activityUtils.js'
 import { createCardModalUid } from './utils/cardModalCommon.js'
 import { buildInitialCardSchedule, formatDueDateLabelFromValue } from './utils/cardModalDateUtils.js'
 import { snapCardScheduleTimeToSlot } from './utils/cardModalScheduleUtils.js'
-import { CardModalInlineAttachments } from './components/CardModalAttachmentControls.jsx'
 import CardModalActivityPreview from './components/CardModalActivityPreview.jsx'
 import CardModalActivitySidebar from './components/CardModalActivitySidebar.jsx'
-import CardModalChecklist from './components/CardModalChecklist.jsx'
 import {
   CardModalChecklistAssignMenu,
   CardModalChecklistCreateMenu,
@@ -224,6 +222,7 @@ export default function CardModal({
     showChecklistMenu,
     setShowChecklistMenu,
     isChecklistMutating,
+    handleChecklistCreate,
     ...checklistBlockUi
   } = checklist
 
@@ -233,6 +232,9 @@ export default function CardModal({
     createdAtLabel,
     isSendingComment,
     isActivitySidebarOpen,
+    sidebarPanel,
+    selectSidebarPanel,
+    clearSidebarPanel,
     ...activitySidebarUi
   } = activity
 
@@ -1290,26 +1292,6 @@ export default function CardModal({
               getCommentPresenter={activitySidebarUi.getCommentPresenter}
             />
 
-            <CardModalInlineAttachments
-              styles={styles}
-              iconSize={ICON_SIZE}
-              iconStroke={ICON_STROKE}
-              attachments={attachments}
-              onDownloadFile={onDownloadFile}
-              {...attachmentUi}
-            />
-
-            <CardModalChecklist
-              styles={styles}
-              iconSize={ICON_SIZE}
-              iconSizeSm={ICON_SIZE_SM}
-              iconStroke={ICON_STROKE}
-              isBackendDriven={isBackendDriven}
-              activeChecklist={activeChecklist}
-              checklistReadOnly={checklistReadOnly}
-              {...checklistBlockUi}
-            />
-
               {submitError ? (
                 <div className={styles.cmSaveRow}>
                   <p className={styles.cmSubmitError}>{submitError}</p>
@@ -1325,9 +1307,23 @@ export default function CardModal({
           <CardModalActivitySidebar
             styles={styles}
             iconSize={ICON_SIZE}
+            iconSizeSm={ICON_SIZE_SM}
             iconStroke={ICON_STROKE}
             isMutating={isMutating}
             isActivitySidebarOpen={isActivitySidebarOpen}
+            sidebarPanel={sidebarPanel}
+            selectSidebarPanel={selectSidebarPanel}
+            clearSidebarPanel={clearSidebarPanel}
+            isBackendDriven={isBackendDriven}
+            activeChecklist={activeChecklist}
+            checklistReadOnly={checklistReadOnly}
+            checklistBlockUi={checklistBlockUi}
+            isChecklistMutating={isChecklistMutating}
+            handleChecklistCreate={handleChecklistCreate}
+            attachments={attachments}
+            openFilePicker={openFilePicker}
+            attachmentUi={attachmentUi}
+            onDownloadFile={onDownloadFile}
             insertMenuButtonRef={insertMenuButtonRef}
             showInsertMenu={showInsertMenu}
             setShowInsertMenu={setShowInsertMenu}
