@@ -63,12 +63,12 @@ export default function CardModalActivityPreview({
     : activityFeedItems.slice(-COLLAPSED_ITEM_LIMIT)
 
   return (
-    <section className={styles.cmActivityPreview} aria-label="Activity">
+    <section className={styles.cmActivityPreview} aria-label="Recentes">
       <div
         className={`${styles.cmActivityPreviewPanel} ${expanded ? styles.cmActivityPreviewPanelExpanded : ''}`}
       >
         <header className={styles.cmActivityPreviewHeader}>
-          <p className={styles.cmActivityPreviewTitle}>Activity</p>
+          <p className={styles.cmActivityPreviewTitle}>Recentes</p>
         </header>
 
         <div className={styles.cmActivityPreviewBody}>

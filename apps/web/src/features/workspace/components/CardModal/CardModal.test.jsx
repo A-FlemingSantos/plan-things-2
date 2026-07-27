@@ -210,7 +210,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    expect(screen.getByLabelText('Activity')).toBeInTheDocument()
+    expect(screen.getByLabelText('Recentes')).toBeInTheDocument()
     expect(screen.getByText('Ultima mensagem')).toBeInTheDocument()
     expect(screen.queryByText('Primeira mensagem')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ver mais activity' })).toBeInTheDocument()
