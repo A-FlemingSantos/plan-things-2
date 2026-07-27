@@ -3566,6 +3566,199 @@
   padding-top: 4px;
 }
 
+.cmActivityPreview {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-1);
+}
+
+.cmActivityPreviewPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-2);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--surface-1) 72%, transparent),
+    0 1px 2px color-mix(in srgb, var(--text-1) 5%, transparent),
+    0 8px 24px color-mix(in srgb, var(--text-1) 4%, transparent);
+  overflow: hidden;
+}
+
+.cmActivityPreviewPanelExpanded {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--surface-1) 72%, transparent),
+    0 2px 8px color-mix(in srgb, var(--text-1) 6%, transparent);
+}
+
+.cmActivityPreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 10px 14px 0;
+}
+
+.cmActivityPreviewTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+}
+
+.cmActivityPreviewBody {
+  position: relative;
+}
+
+.cmActivityPreviewFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px 12px;
+}
+
+.cmActivityPreviewPanel:not(.cmActivityPreviewPanelExpanded) .cmActivityPreviewFeed {
+  max-height: 128px;
+  overflow: hidden;
+}
+
+.cmActivityPreviewPanelExpanded .cmActivityPreviewFeed {
+  max-height: min(320px, 42vh);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.cmActivityPreviewFade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--surface-2) 0%, transparent) 0%,
+    color-mix(in srgb, var(--surface-2) 72%, transparent) 42%,
+    var(--surface-2) 100%
+  );
+  box-shadow: inset 0 -10px 16px color-mix(in srgb, var(--text-1) 5%, transparent);
+}
+
+.cmActivityPreviewToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 9px 14px 11px;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border-1) 85%, transparent);
+  border-radius: 0 0 12px 12px;
+  background: color-mix(in srgb, var(--surface-3) 55%, var(--surface-2));
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.cmActivityPreviewToggleBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--surface-3) 75%, var(--surface-2));
+  color: var(--text-1);
+}
+
+.cmActivityPreviewToggleBtn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.cmActivityPreviewEmpty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+.cmActivityPreviewHistory {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+.cmActivityPreviewHistory strong {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.cmActivityPreviewComment {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cmActivityPreviewAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--text-on-accent);
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: .03em;
+  font-weight: var(--font-weight-regular);
+  overflow: hidden;
+}
+
+.cmActivityPreviewCommentBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cmActivityPreviewCommentMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cmActivityPreviewCommentMeta strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmActivityPreviewCommentMeta span {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cmActivityPreviewCommentText {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+}
+
 .cmActionItem {
   width: 100%;
   min-height: 34px;

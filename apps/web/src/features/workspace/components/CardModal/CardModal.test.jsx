@@ -61,6 +61,20 @@ describe('CardModal file picker positioning', () => {
     window.innerHeight = 600
 
     rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function mockRect() {
+      if (this.getAttribute?.('aria-label') === 'Aplicativos') {
+        return {
+          x: 120,
+          y: 500,
+          top: 500,
+          left: 120,
+          right: 240,
+          bottom: 540,
+          width: 120,
+          height: 40,
+          toJSON() {},
+        }
+      }
+
       if (this.getAttribute?.('aria-label') === 'Anexar arquivo') {
         return {
           x: 120,
@@ -129,8 +143,9 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await user.click(screen.getByRole('button', { name: /adicionar anexo/i }))
-    await user.click(screen.getByRole('menuitem', { name: /biblioteca/i }))
+    await user.click(screen.getByRole('button', { name: 'Expandir Activity' }))
+    await user.click(screen.getByLabelText('Aplicativos'))
+    await user.click(screen.getByRole('button', { name: /Anexe um arquivo/i }))
 
     const picker = await screen.findByRole('dialog', { name: 'Anexar arquivo' })
 
@@ -139,47 +154,132 @@ describe('CardModal file picker positioning', () => {
     })
   })
 
-  it('creates a checklist through backend handlers', async () => {
-    const user = userEvent.setup()
-    const createChecklist = vi.fn().mockResolvedValue({
-      id: 'checklist-1',
-      title: 'Entrega',
-      items: [],
-    })
-
+  it('shows recent activity messages in the compact preview', () => {
     render(
       <CardModal
-        card={buildCard()}
+        card={buildCard({
+          comments: [
+            {
+              id: 'comment-1',
+              authorId: 'user-1',
+              authorName: 'Arthur Fleming',
+              kind: 'USER_COMMENT',
+              text: 'Primeira mensagem',
+              time: 'Ontem',
+            },
+            {
+              id: 'comment-2',
+              authorId: 'user-2',
+              authorName: 'Beatriz Souza',
+              kind: 'USER_COMMENT',
+              text: 'Segunda mensagem',
+              time: 'Hoje',
+            },
+            {
+              id: 'comment-3',
+              authorId: 'user-1',
+              authorName: 'Arthur Fleming',
+              kind: 'USER_COMMENT',
+              text: 'Terceira mensagem',
+              time: 'Agora',
+            },
+            {
+              id: 'comment-4',
+              authorId: 'user-2',
+              authorName: 'Beatriz Souza',
+              kind: 'USER_COMMENT',
+              text: 'Ultima mensagem',
+              time: 'Agora',
+            },
+          ],
+        })}
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
         onDelete={async () => {}}
         labels={[]}
-        members={[]}
+        members={[
+          { id: 'user-1', name: 'Arthur Fleming', initials: 'AF', color: '#4290da', email: 'arthur@example.com' },
+          { id: 'user-2', name: 'Beatriz Souza', initials: 'BS', color: '#ff6766', email: 'beatriz@example.com' },
+        ]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
         styles={styles}
         isBackendDriven
-        onCreateChecklist={createChecklist}
-        onCreateChecklistItem={async () => {}}
-        onUpdateChecklistItem={async () => {}}
         planFiles={[]}
         libraryFiles={[]}
       />
     )
 
-    await user.click(screen.getByRole('button', { name: /checklist/i }))
+    expect(screen.getByLabelText('Activity')).toBeInTheDocument()
+    expect(screen.getByText('Ultima mensagem')).toBeInTheDocument()
+    expect(screen.queryByText('Primeira mensagem')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver mais activity' })).toBeInTheDocument()
+  })
 
-    const titleInput = screen.getByLabelText('Título do checklist')
-    await user.clear(titleInput)
-    await user.type(titleInput, 'Entrega')
+  it('expands the compact activity preview when clicking Ver mais', async () => {
+    const user = userEvent.setup()
 
-    const dialogs = screen.getAllByRole('dialog')
-    const checklistDialog = dialogs[dialogs.length - 1]
-    await user.click(within(checklistDialog).getByRole('button', { name: /^Adicionar$/i }))
+    render(
+      <CardModal
+        card={buildCard({
+          comments: [
+            {
+              id: 'comment-1',
+              authorId: 'user-1',
+              authorName: 'Arthur Fleming',
+              kind: 'USER_COMMENT',
+              text: 'Primeira mensagem',
+              time: 'Ontem',
+            },
+            {
+              id: 'comment-2',
+              authorId: 'user-2',
+              authorName: 'Beatriz Souza',
+              kind: 'USER_COMMENT',
+              text: 'Segunda mensagem',
+              time: 'Hoje',
+            },
+            {
+              id: 'comment-3',
+              authorId: 'user-1',
+              authorName: 'Arthur Fleming',
+              kind: 'USER_COMMENT',
+              text: 'Terceira mensagem',
+              time: 'Agora',
+            },
+            {
+              id: 'comment-4',
+              authorId: 'user-2',
+              authorName: 'Beatriz Souza',
+              kind: 'USER_COMMENT',
+              text: 'Quarta mensagem',
+              time: 'Agora',
+            },
+          ],
+        })}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[
+          { id: 'user-1', name: 'Arthur Fleming', initials: 'AF', color: '#4290da', email: 'arthur@example.com' },
+          { id: 'user-2', name: 'Beatriz Souza', initials: 'BS', color: '#ff6766', email: 'beatriz@example.com' },
+        ]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[]}
+      />
+    )
 
-    await waitFor(() => {
-      expect(createChecklist).toHaveBeenCalledWith('card-1', 'Entrega')
-    })
+    expect(screen.queryByText('Primeira mensagem')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Ver mais activity' }))
+
+    expect(screen.getByText('Primeira mensagem')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Recolher activity' })).toBeInTheDocument()
   })
 
   it('opens the comment editor actions on focus and saves the comment through the footer button', async () => {
@@ -310,52 +410,6 @@ describe('CardModal file picker positioning', () => {
     expect(screen.queryByRole('button', { name: 'Responder' })).not.toBeInTheDocument()
   })
 
-  it('shows a new checklist immediately while the backend request is still pending', async () => {
-    const user = userEvent.setup()
-    const deferred = createDeferred()
-    const createChecklist = vi.fn(() => deferred.promise)
-
-    render(
-      <CardModal
-        card={buildCard()}
-        colTitle="Backlog"
-        onClose={() => {}}
-        onUpdate={async () => {}}
-        onDelete={async () => {}}
-        labels={[]}
-        members={[]}
-        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
-        styles={styles}
-        isBackendDriven
-        onCreateChecklist={createChecklist}
-        onCreateChecklistItem={async () => {}}
-        onUpdateChecklistItem={async () => {}}
-        planFiles={[]}
-        libraryFiles={[]}
-      />
-    )
-
-    await user.click(screen.getByRole('button', { name: /checklist/i }))
-    await user.clear(screen.getByLabelText('Título do checklist'))
-    await user.type(screen.getByLabelText('Título do checklist'), 'Entrega')
-
-    const dialogs = screen.getAllByRole('dialog')
-    const checklistDialog = dialogs[dialogs.length - 1]
-    await user.click(within(checklistDialog).getByRole('button', { name: /^Adicionar$/i }))
-
-    expect(screen.getByText('Entrega')).toBeInTheDocument()
-
-    deferred.resolve({
-      id: 'checklist-1',
-      title: 'Entrega',
-      items: [],
-    })
-
-    await waitFor(() => {
-      expect(createChecklist).toHaveBeenCalledWith('card-1', 'Entrega')
-    })
-  })
-
   it('reverts checklist item toggles when the backend update fails', async () => {
     const user = userEvent.setup()
     const deferred = createDeferred()
@@ -418,7 +472,7 @@ describe('CardModal file picker positioning', () => {
     expect(screen.getByText('Falha ao atualizar item')).toBeInTheDocument()
   })
 
-  it('disables checklist creation when the card already has one', () => {
+  it('does not expose checklist creation when the card already has one', () => {
     const deleteChecklist = vi.fn()
 
     render(
@@ -450,7 +504,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: /checklist/i })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /criar checklist/i })).not.toBeInTheDocument()
     const deleteButtons = screen.getAllByRole('button', { name: /excluir/i })
     expect(deleteButtons[deleteButtons.length - 1]).toBeEnabled()
   })

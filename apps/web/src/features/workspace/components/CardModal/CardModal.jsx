@@ -33,7 +33,8 @@ import { buildInlineAssignmentText } from './utils/activityUtils.js'
 import { createCardModalUid } from './utils/cardModalCommon.js'
 import { buildInitialCardSchedule, formatDueDateLabelFromValue } from './utils/cardModalDateUtils.js'
 import { snapCardScheduleTimeToSlot } from './utils/cardModalScheduleUtils.js'
-import { CardModalAttachmentAction, CardModalInlineAttachments } from './components/CardModalAttachmentControls.jsx'
+import { CardModalInlineAttachments } from './components/CardModalAttachmentControls.jsx'
+import CardModalActivityPreview from './components/CardModalActivityPreview.jsx'
 import CardModalActivitySidebar from './components/CardModalActivitySidebar.jsx'
 import CardModalChecklist from './components/CardModalChecklist.jsx'
 import {
@@ -213,6 +214,7 @@ export default function CardModal({
     onRemoveAttachment,
     onCloseInsertMenu: () => setShowInsertMenu(false),
     onSubmitError: setSubmitError,
+    filePickerAnchorRef: insertMenuButtonRef,
   })
 
   const {
@@ -221,7 +223,6 @@ export default function CardModal({
     showChecklistMenu,
     setShowChecklistMenu,
     isChecklistMutating,
-    checklistMenuButtonRef,
     ...checklistBlockUi
   } = checklist
 
@@ -1272,48 +1273,16 @@ export default function CardModal({
               </div>
             </div>
 
-            <div className={styles.cmActionList}>
-              <button type="button" className={styles.cmActionItem}>
-                <span className={styles.cmActionItemIcon}><Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
-                Adicione os campos
-              </button>
-              <button type="button" className={styles.cmActionItem}>
-                <span className={styles.cmActionItemIcon}><Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
-                Adicionar subtarefa
-              </button>
-              <button type="button" className={styles.cmActionItem}>
-                <span className={styles.cmActionItemIcon}><Link size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
-                Vincular itens ou adicionar dependências
-              </button>
-              <button
-                ref={checklistMenuButtonRef}
-                type="button"
-                className={styles.cmActionItem}
-                onClick={() => {
-                  if (!checklistReadOnly && !activeChecklist) setShowChecklistMenu(v => !v)
-                }}
-                aria-expanded={showChecklistMenu}
-                aria-haspopup="dialog"
-                disabled={checklistReadOnly || Boolean(activeChecklist) || isChecklistMutating}
-                title={
-                  checklistReadOnly
-                    ? 'Checklist indisponível para edição neste modo.'
-                    : activeChecklist
-                      ? 'Este cartão já possui uma checklist.'
-                      : undefined
-                }
-              >
-                <span className={styles.cmActionItemIcon}><Check size={ICON_SIZE_SM} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
-                Criar checklist
-              </button>
-              <CardModalAttachmentAction
-                styles={styles}
-                iconSize={ICON_SIZE}
-                iconStroke={ICON_STROKE}
-                openFilePicker={openFilePicker}
-                {...attachmentUi}
-              />
-            </div>
+            <CardModalActivityPreview
+              styles={styles}
+              iconSize={ICON_SIZE}
+              iconStroke={ICON_STROKE}
+              cardId={card.id}
+              isActivitySidebarOpen={isActivitySidebarOpen}
+              isMutating={isMutating}
+              activityFeedItems={activitySidebarUi.activityFeedItems}
+              getCommentPresenter={activitySidebarUi.getCommentPresenter}
+            />
 
             <CardModalInlineAttachments
               styles={styles}

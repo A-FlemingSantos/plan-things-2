@@ -19,6 +19,7 @@ export default function useCardModalAttachments({
   onRemoveAttachment,
   onCloseInsertMenu,
   onSubmitError,
+  filePickerAnchorRef,
 }) {
   const [attachments, setAttachments] = useState(Array.isArray(card.attachments) ? card.attachments : [])
   const [showFilePicker, setShowFilePicker] = useState(false)
@@ -53,6 +54,7 @@ export default function useCardModalAttachments({
 
   const updateFilePickerPosition = () => {
     const rect = attachmentAddButtonRef.current?.getBoundingClientRect()
+      ?? filePickerAnchorRef?.current?.getBoundingClientRect()
     const pickerHeight = filePickerRef.current?.getBoundingClientRect?.().height ?? FILE_PICKER_FALLBACK_HEIGHT
     const nextPosition = computeFilePickerPosition({ anchorRect: rect, pickerHeight })
 
