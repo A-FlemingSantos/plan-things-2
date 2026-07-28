@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import Loader from './Loader.jsx'
+import { useAppChrome } from '../../context/AppChromeContext.jsx'
 import styles from './LoadingScreen.module.css'
 
 export default function LoadingScreen({
@@ -7,6 +9,10 @@ export default function LoadingScreen({
   size = 36,
   className = '',
 }) {
+  const { registerLoadingScreen } = useAppChrome()
+
+  useEffect(() => registerLoadingScreen(), [registerLoadingScreen])
+
   const rootClassName = [
     styles.root,
     variant === 'fullscreen' ? styles.fullscreen : styles.embedded,

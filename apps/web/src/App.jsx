@@ -19,6 +19,7 @@ import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.j
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import AppNavigationDock from './shared/components/AppNavigationDock/AppNavigationDock.jsx'
 import LoadingScreen from './shared/components/Loader/LoadingScreen.jsx'
+import { AppChromeProvider, useAppChrome } from './shared/context/AppChromeContext.jsx'
 import {
   buildWorkspaceBoardPath,
   isInternalAppPath,
@@ -85,7 +86,16 @@ export function resolveRouteTransitionKey(pathname) {
 }
 
 export default function App() {
+  return (
+    <AppChromeProvider>
+      <AppShell />
+    </AppChromeProvider>
+  )
+}
+
+function AppShell() {
   const auth = useAuth()
+  const { isLoadingScreenActive } = useAppChrome()
   const isReady = auth.isReady
   const pendingLogoutRedirect = auth.pendingLogoutRedirect ?? null
   const clearPendingLogoutRedirect = auth.clearPendingLogoutRedirect ?? (() => {})
@@ -121,7 +131,9 @@ export default function App() {
     : null
   const renderedLocation = modalBackgroundLocation ?? location
   const routeTransitionKey = resolveRouteTransitionKey(renderedLocation.pathname)
-  const showAppDock = sessionMode !== 'anonymous' && isInternalAppPath(renderedLocation.pathname)
+  const showAppDock = sessionMode !== 'anonymous'
+    && isInternalAppPath(renderedLocation.pathname)
+    && !isLoadingScreenActive
 
   useEffect(() => {
     if (sessionMode !== 'anonymous') {
