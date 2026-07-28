@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-1);
+  color: currentColor;
 }
 
 .glyph {
@@ -10,6 +10,10 @@
   font-variant-numeric: tabular-nums;
   line-height: 1;
   user-select: none;
+  color: currentColor;
+  display: inline-block;
+  min-width: 1ch;
+  text-align: center;
 }
 
 .srOnly {

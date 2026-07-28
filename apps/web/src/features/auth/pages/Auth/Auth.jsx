@@ -6,6 +6,7 @@ import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/aut
 import { clearAuthIntent, persistAuthIntent } from '../../utils/authIntent.js'
 import { openOAuthPopup, waitForOAuthPopup } from '../../utils/oauthPopup.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
+import Loader from '../../../../shared/components/Loader/Loader.jsx'
 import BrandTypewriter from './BrandTypewriter.jsx'
 import styles from './Auth.module.css'
 
@@ -222,10 +223,18 @@ export default function Auth({ initialMode = 'login' }) {
                 onClick={() => handleOAuth(id)}
                 disabled={!!loading}
               >
-                {loading === id
-                  ? <span className={styles.spinnerSmall} />
-                  : <span className={styles.oauthIcon}><Icon /></span>}
-                <span>{`Continuar com ${label}`}</span>
+                {loading === id ? (
+                  <Loader
+                    size={18}
+                    label={`Continuar com ${label}`}
+                    className={styles.oauthBtnLoader}
+                  />
+                ) : (
+                  <>
+                    <span className={styles.oauthIcon}><Icon /></span>
+                    <span>{`Continuar com ${label}`}</span>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -338,9 +347,15 @@ export default function Auth({ initialMode = 'login' }) {
               className={`${styles.submitBtn} ${loading === 'email' ? styles.submitLoading : ''}`}
               disabled={!!loading || (isRegister && !agree)}
             >
-              {loading === 'email'
-                ? <span className={styles.spinner} />
-                : (isRegister ? 'Criar conta' : 'Continuar com e-mail')}
+              {loading === 'email' ? (
+                <Loader
+                  size={18}
+                  label={isRegister ? 'Criar conta' : 'Continuar com e-mail'}
+                  className={styles.submitBtnLoader}
+                />
+              ) : (
+                isRegister ? 'Criar conta' : 'Continuar com e-mail'
+              )}
             </button>
           </form>
 

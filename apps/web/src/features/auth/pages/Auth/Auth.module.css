@@ -191,6 +191,10 @@
   cursor: not-allowed;
 }
 
+.oauthBtn.oauthLoading:disabled {
+  opacity: 1;
+}
+
 .oauthLoading {
   transform: none;
 }
@@ -415,6 +419,9 @@
   width: 100%;
   min-height: 48px;
   margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 6px;
   background: var(--text-1);
   color: var(--text-inverse);
@@ -435,6 +442,10 @@
 .submitBtn:disabled {
   opacity: 0.44;
   cursor: not-allowed;
+}
+
+.submitBtn.submitLoading:disabled {
+  opacity: 1;
 }
 
 .submitLoading {
@@ -486,25 +497,19 @@
   color: var(--text-3);
 }
 
-.spinner,
-.spinnerSmall {
-  display: block;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+.oauthBtn .oauthBtnLoader,
+.submitBtn .submitBtnLoader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid color-mix(in srgb, var(--text-inverse) 18%, transparent);
-  border-top-color: var(--text-inverse);
+.oauthBtn .oauthBtnLoader {
+  color: var(--text-1);
 }
 
-.spinnerSmall {
-  width: 15px;
-  height: 15px;
-  border: 1.5px solid var(--border-2);
-  border-top-color: var(--text-1);
+.submitBtn .submitBtnLoader {
+  color: var(--text-inverse);
 }
 
 @keyframes fadeUp {
@@ -516,12 +521,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 

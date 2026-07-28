@@ -6,6 +6,7 @@ import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/aut
 import { clearAuthIntent, readAuthIntent } from '../../utils/authIntent.js'
 import { isOAuthPopupContext, postOAuthPopupResult } from '../../utils/oauthPopup.js'
 import { ROUTES } from '../../../../shared/config/routes.js'
+import LoadingScreen from '../../../../shared/components/Loader/LoadingScreen.jsx'
 
 export default function OAuthCallback() {
   const location = useLocation()
@@ -88,25 +89,32 @@ export default function OAuthCallback() {
     })
   }, [completeOAuthLogin, location.search, navigate, resolveInitialRoute])
 
-  return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        padding: '32px',
-        background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--app-bg) 100%)',
-        color: 'var(--text-1)',
-      }}
-    >
-      <section style={{ maxWidth: '420px', textAlign: 'center' }}>
-        <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{message}</p>
-        {failed && (
+  if (failed) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          padding: '32px',
+          background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--app-bg) 100%)',
+          color: 'var(--text-1)',
+        }}
+      >
+        <section style={{ maxWidth: '420px', textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{message}</p>
           <p style={{ margin: '16px 0 0' }}>
             <Link to={ROUTES.login}>Voltar ao login</Link>
           </p>
-        )}
-      </section>
-    </main>
+        </section>
+      </main>
+    )
+  }
+
+  return (
+    <LoadingScreen
+      variant="fullscreen"
+      label={message}
+    />
   )
 }

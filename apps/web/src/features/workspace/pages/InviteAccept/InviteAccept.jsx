@@ -4,6 +4,8 @@ import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
 import { buildWorkspaceBoardPath, ROUTES } from '../../../../shared/config/routes.js'
+import Loader from '../../../../shared/components/Loader/Loader.jsx'
+import LoadingScreen from '../../../../shared/components/Loader/LoadingScreen.jsx'
 import styles from './InviteAccept.module.css'
 
 function LogoMark() {
@@ -132,71 +134,80 @@ export default function InviteAccept() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.topBar}>
-        <Link to={ROUTES.home} className={styles.logo}>
-          <span className={styles.logoMark}><LogoMark /></span>
-          <span className={styles.logoText}>Plan Things</span>
-        </Link>
-      </header>
+      {status === 'loading' ? (
+        <LoadingScreen
+          variant="fullscreen"
+          label="Carregando convite..."
+        />
+      ) : (
+        <>
+          <header className={styles.topBar}>
+            <Link to={ROUTES.home} className={styles.logo}>
+              <span className={styles.logoMark}><LogoMark /></span>
+              <span className={styles.logoText}>Plan Things</span>
+            </Link>
+          </header>
 
-      <main className={styles.center}>
-        <section className={styles.card} aria-live="polite">
-          <p className={styles.eyebrow}>Convite</p>
-          <h1 className={styles.title}>
-            {status === 'loading'
-              ? 'Carregando...'
-              : status === 'ready'
-                ? invite?.planName ?? 'Entrar no plano'
-                : status === 'declined'
-                  ? 'Convite recusado'
-                  : status === 'accepted'
-                    ? 'Convite aceito'
-                    : 'Não foi possível'}
-          </h1>
-          <p className={styles.description}>{message}</p>
+          <main className={styles.center}>
+            <section className={styles.card} aria-live="polite">
+              <p className={styles.eyebrow}>Convite</p>
+              <h1 className={styles.title}>
+                {status === 'ready'
+                  ? invite?.planName ?? 'Entrar no plano'
+                  : status === 'declined'
+                    ? 'Convite recusado'
+                    : status === 'accepted'
+                      ? 'Convite aceito'
+                      : 'Não foi possível'}
+              </h1>
+              <p className={styles.description}>{message}</p>
 
-          {status === 'ready' ? (
-            <div className={styles.inviteDetails}>
-              <div>
-                <span>Plano</span>
-                <strong>{invite?.planName ?? 'Plano compartilhado'}</strong>
-              </div>
-              <div>
-                <span>Enviado para</span>
-                <strong>{invite?.invitedEmail}</strong>
-              </div>
-              {invite?.expiresAt?.text ? (
-                <div>
-                  <span>Expira em</span>
-                  <strong>{invite.expiresAt.text}</strong>
+              {status === 'ready' ? (
+                <div className={styles.inviteDetails}>
+                  <div>
+                    <span>Plano</span>
+                    <strong>{invite?.planName ?? 'Plano compartilhado'}</strong>
+                  </div>
+                  <div>
+                    <span>Enviado para</span>
+                    <strong>{invite?.invitedEmail}</strong>
+                  </div>
+                  {invite?.expiresAt?.text ? (
+                    <div>
+                      <span>Expira em</span>
+                      <strong>{invite.expiresAt.text}</strong>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
-            </div>
-          ) : null}
 
-          {status === 'ready' ? (
-            <div className={styles.actions}>
-              <button type="button" className={styles.primary} onClick={acceptInvite} disabled={Boolean(submittingAction)}>
-                {submittingAction === 'accept' ? 'Aceitando...' : 'Aceitar convite'}
-              </button>
-              <button type="button" className={styles.secondary} onClick={declineInvite} disabled={Boolean(submittingAction)}>
-                {submittingAction === 'decline' ? 'Recusando...' : 'Recusar'}
-              </button>
-            </div>
-          ) : status === 'error' || status === 'declined' ? (
-            <div className={styles.actions}>
-              <button type="button" className={styles.primary} onClick={() => navigate(ROUTES.workspace, { replace: true })}>
-                Ir para o workspace
-              </button>
-              <Link to={ROUTES.login} className={styles.link}>
-                Trocar conta
-              </Link>
-            </div>
-          ) : (
-            <div className={styles.loadingBar} aria-hidden="true" />
-          )}
-        </section>
-      </main>
+              {status === 'ready' ? (
+                <div className={styles.actions}>
+                  <button type="button" className={`${styles.primary} ${submittingAction === 'accept' ? styles.primaryLoading : ''}`} onClick={acceptInvite} disabled={Boolean(submittingAction)}>
+                    {submittingAction === 'accept' ? (
+                      <Loader size={16} label="Aceitar convite" className={styles.primaryBtnLoader} />
+                    ) : 'Aceitar convite'}
+                  </button>
+                  <button type="button" className={`${styles.secondary} ${submittingAction === 'decline' ? styles.secondaryLoading : ''}`} onClick={declineInvite} disabled={Boolean(submittingAction)}>
+                    {submittingAction === 'decline' ? (
+                      <Loader size={16} label="Recusar" className={styles.secondaryBtnLoader} />
+                    ) : 'Recusar'}
+                  </button>
+                </div>
+              ) : status === 'error' || status === 'declined' ? (
+                <div className={styles.actions}>
+                  <button type="button" className={styles.primary} onClick={() => navigate(ROUTES.workspace, { replace: true })}>
+                    Ir para o workspace
+                  </button>
+                  <Link to={ROUTES.login} className={styles.link}>
+                    Trocar conta
+                  </Link>
+                </div>
+              ) : null}
+            </section>
+          </main>
+        </>
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { ROUTES } from '../../../../shared/config/routes.js'
+import Loader from '../../../../shared/components/Loader/Loader.jsx'
 import styles from './PasswordRecovery.module.css'
 
 function LogoMark() {
@@ -181,12 +182,18 @@ export default function PasswordRecovery({ mode = 'forgot' }) {
 
             <button
               type="submit"
-              className={styles.submit}
+              className={`${styles.submit} ${isSubmitting ? styles.submitLoading : ''}`}
               disabled={isSubmitting || (isForgot ? !email.trim() : (!token.trim() || !newPassword || !confirmPassword))}
             >
-              {isSubmitting
-                ? (isForgot ? 'Gerando token...' : 'Redefinindo senha...')
-                : (isForgot ? 'Continuar' : 'Salvar nova senha')}
+              {isSubmitting ? (
+                <Loader
+                  size={16}
+                  label={isForgot ? 'Continuar' : 'Salvar nova senha'}
+                  className={styles.submitLoader}
+                />
+              ) : (
+                isForgot ? 'Continuar' : 'Salvar nova senha'
+              )}
             </button>
           </form>
 
