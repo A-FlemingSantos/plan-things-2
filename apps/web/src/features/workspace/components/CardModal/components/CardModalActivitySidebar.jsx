@@ -7,6 +7,8 @@ import {
   Ellipsis,
   Funnel,
   LayoutGrid,
+  ListChecks,
+  MessageSquareText,
   Paperclip,
   Plus,
   Search,
@@ -14,10 +16,12 @@ import {
   SmilePlus,
   ThumbsUp,
 } from 'lucide-react'
+import { SiGithub } from 'react-icons/si'
 import AuthenticatedAvatar from '../../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import CardModalChecklist from './CardModalChecklist.jsx'
 import { CardModalInlineAttachments } from './CardModalAttachmentControls.jsx'
+import CardModalSidebarEmptyState from './CardModalSidebarEmptyState.jsx'
 import CardModalSidebarPicker from './CardModalSidebarPicker.jsx'
 import CardModalSidebarRail from './CardModalSidebarRail.jsx'
 
@@ -54,10 +58,14 @@ function CardModalSidebarPanelHeader({
 
 function CardModalSidebarGitHubPanel({ styles }) {
   return (
-    <div className={styles.cmSidebarPanelBody}>
-      <p className={styles.cmSidebarPanelEmpty}>
-        Vincule repositórios e pull requests do GitHub a este cartão.
-      </p>
+    <div className={styles.cmSidebarPanelFill}>
+      <CardModalSidebarEmptyState
+        styles={styles}
+        icon={SiGithub}
+        iconSize={24}
+        title="Nenhuma integração GitHub"
+        message="Vincule repositórios e pull requests do GitHub a este cartão."
+      />
     </div>
   )
 }
@@ -72,6 +80,32 @@ function CardModalSidebarFilesPanel({
   attachmentUi,
   onDownloadFile,
 }) {
+  if (attachments.length === 0) {
+    return (
+      <div className={styles.cmSidebarPanelFill}>
+        <CardModalSidebarEmptyState
+          styles={styles}
+          icon={Paperclip}
+          iconSize={iconSize}
+          iconStroke={iconStroke}
+          title="Nenhum arquivo"
+          message="Anexe documentos, imagens e outros arquivos a este cartão."
+          action={(
+            <button
+              type="button"
+              className={styles.cmSidebarPanelActionBtn}
+              onClick={() => { void openFilePicker() }}
+              disabled={isMutating}
+            >
+              <Paperclip size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+              Anexar arquivo
+            </button>
+          )}
+        />
+      </div>
+    )
+  }
+
   return (
     <CustomScrollArea
       className={styles.cmSidebarPanelScroll}
@@ -89,18 +123,14 @@ function CardModalSidebarFilesPanel({
         Anexar arquivo
       </button>
 
-      {attachments.length === 0 ? (
-        <p className={styles.cmSidebarPanelEmpty}>Nenhum arquivo anexado ainda.</p>
-      ) : (
-        <CardModalInlineAttachments
-          styles={styles}
-          iconSize={iconSize}
-          iconStroke={iconStroke}
-          attachments={attachments}
-          onDownloadFile={onDownloadFile}
-          {...attachmentUi}
-        />
-      )}
+      <CardModalInlineAttachments
+        styles={styles}
+        iconSize={iconSize}
+        iconStroke={iconStroke}
+        attachments={attachments}
+        onDownloadFile={onDownloadFile}
+        {...attachmentUi}
+      />
     </CustomScrollArea>
   )
 }
@@ -119,17 +149,26 @@ function CardModalSidebarChecklistPanel({
 }) {
   if (!activeChecklist) {
     return (
-      <div className={styles.cmSidebarPanelBody}>
-        <p className={styles.cmSidebarPanelEmpty}>Nenhuma checklist neste cartão.</p>
-        <button
-          type="button"
-          className={styles.cmSidebarPanelActionBtn}
-          onClick={handleChecklistCreate}
-          disabled={isChecklistMutating}
-        >
-          <Plus size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
-          {isChecklistMutating ? 'Adicionando...' : 'Criar checklist'}
-        </button>
+      <div className={styles.cmSidebarPanelFill}>
+        <CardModalSidebarEmptyState
+          styles={styles}
+          icon={ListChecks}
+          iconSize={iconSize}
+          iconStroke={iconStroke}
+          title="Nenhuma checklist"
+          message="Organize subtarefas e acompanhe o progresso deste cartão."
+          action={(
+            <button
+              type="button"
+              className={styles.cmSidebarPanelActionBtn}
+              onClick={handleChecklistCreate}
+              disabled={isChecklistMutating}
+            >
+              <Plus size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+              {isChecklistMutating ? 'Adicionando...' : 'Criar checklist'}
+            </button>
+          )}
+        />
       </div>
     )
   }
@@ -208,81 +247,94 @@ function CardModalSidebarActivityPanel({
           enabled
           refreshKey={`activity-feed:${activityFeedItems.length}`}
         >
-          <div className={styles.cmActivitySpacer} aria-hidden="true" />
-          <div className={styles.cmActivityTimeline}>
-            {activityFeedItems.map((item) => {
-              if (item.type === 'history') {
-                return (
-                  <p key={item.id} className={styles.cmHistoryItem}>
-                    <strong>{item.actor}</strong> (você) {item.text}
-                  </p>
-                )
-              }
+          {activityFeedItems.length === 0 ? (
+            <CardModalSidebarEmptyState
+              styles={styles}
+              icon={MessageSquareText}
+              iconSize={iconSize}
+              iconStroke={iconStroke}
+              title="Nenhuma atividade"
+              message="Comentários e histórico de alterações aparecerão aqui."
+            />
+          ) : (
+            <>
+              <div className={styles.cmActivitySpacer} aria-hidden="true" />
+              <div className={styles.cmActivityTimeline}>
+                {activityFeedItems.map((item) => {
+                  if (item.type === 'history') {
+                    return (
+                      <p key={item.id} className={styles.cmHistoryItem}>
+                        <strong>{item.actor}</strong> (você) {item.text}
+                      </p>
+                    )
+                  }
 
-              const c = item.comment
-              const presenter = getCommentPresenter(c)
-              const isExpanded = expandedComments[c.id]
-              const isOverflowing = overflowingComments[c.id]
-              return (
-                <article key={c.id} className={styles.cmCommentCard}>
-                  <header className={styles.cmCommentCardHeader}>
-                    <AuthenticatedAvatar
-                      className={styles.cmCommentAvatar}
-                      imageClassName={styles.avatarImage}
-                      style={{ background: presenter.color }}
-                      avatarUrl={presenter.avatarUrl}
-                      fallback={presenter.initials}
-                      title={presenter.name}
-                    />
-                    <div className={styles.cmCommentCardMeta}>
-                      <strong className={styles.cmCommentAuthor}>{presenter.name}</strong>
-                      <span className={styles.cmCommentTime}>{c.time}</span>
-                    </div>
-                  </header>
-                  <div className={styles.cmCommentCardBody}>
-                    <p
-                      ref={element => {
-                        if (element) {
-                          commentTextRefs.current[c.id] = element
-                        } else {
-                          delete commentTextRefs.current[c.id]
-                        }
-                      }}
-                      className={`${styles.cmCommentCardText} ${!isExpanded ? styles.cmCommentCardTextClamped : ''}`}
-                    >
-                      {c.text}
-                    </p>
-                    {isOverflowing && (
-                      <button
-                        type="button"
-                        className={styles.cmCommentCardToggle}
-                        onMouseDown={e => e.stopPropagation()}
-                        onClick={e => {
-                          e.stopPropagation()
-                          setExpandedComments(prev => ({ ...prev, [c.id]: !prev[c.id] }))
-                        }}
-                      >
-                        {isExpanded ? 'Ver menos' : 'Ver mais'}
-                      </button>
-                    )}
-                  </div>
-                  <footer className={styles.cmCommentCardFooter}>
-                    <div className={styles.cmCommentCardActions}>
-                      <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Curtir comentário">
-                        <ThumbsUp size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
-                      </button>
-                      <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Adicionar reação">
-                        <SmilePlus size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
-                      </button>
-                    </div>
-                    <button type="button" className={styles.cmCommentReplyBtn}>
-                      Responder
-                    </button>
-                  </footer>
-                </article>
-              )
-            })}
-          </div>
+                  const c = item.comment
+                  const presenter = getCommentPresenter(c)
+                  const isExpanded = expandedComments[c.id]
+                  const isOverflowing = overflowingComments[c.id]
+                  return (
+                    <article key={c.id} className={styles.cmCommentCard}>
+                      <header className={styles.cmCommentCardHeader}>
+                        <AuthenticatedAvatar
+                          className={styles.cmCommentAvatar}
+                          imageClassName={styles.avatarImage}
+                          style={{ background: presenter.color }}
+                          avatarUrl={presenter.avatarUrl}
+                          fallback={presenter.initials}
+                          title={presenter.name}
+                        />
+                        <div className={styles.cmCommentCardMeta}>
+                          <strong className={styles.cmCommentAuthor}>{presenter.name}</strong>
+                          <span className={styles.cmCommentTime}>{c.time}</span>
+                        </div>
+                      </header>
+                      <div className={styles.cmCommentCardBody}>
+                        <p
+                          ref={element => {
+                            if (element) {
+                              commentTextRefs.current[c.id] = element
+                            } else {
+                              delete commentTextRefs.current[c.id]
+                            }
+                          }}
+                          className={`${styles.cmCommentCardText} ${!isExpanded ? styles.cmCommentCardTextClamped : ''}`}
+                        >
+                          {c.text}
+                        </p>
+                        {isOverflowing && (
+                          <button
+                            type="button"
+                            className={styles.cmCommentCardToggle}
+                            onMouseDown={e => e.stopPropagation()}
+                            onClick={e => {
+                              e.stopPropagation()
+                              setExpandedComments(prev => ({ ...prev, [c.id]: !prev[c.id] }))
+                            }}
+                          >
+                            {isExpanded ? 'Ver menos' : 'Ver mais'}
+                          </button>
+                        )}
+                      </div>
+                      <footer className={styles.cmCommentCardFooter}>
+                        <div className={styles.cmCommentCardActions}>
+                          <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Curtir comentário">
+                            <ThumbsUp size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+                          </button>
+                          <button type="button" className={styles.cmCommentCardActionBtn} aria-label="Adicionar reação">
+                            <SmilePlus size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
+                          </button>
+                        </div>
+                        <button type="button" className={styles.cmCommentReplyBtn}>
+                          Responder
+                        </button>
+                      </footer>
+                    </article>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </CustomScrollArea>
 
         <div className={styles.cmCommentDock}>
