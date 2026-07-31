@@ -82,6 +82,7 @@ export default function CardModal({
   onUpdateChecklistItem,
   timeZone = 'America/Sao_Paulo',
   dateFormat = 'dd/MM/yyyy',
+  githubIntegration = null,
 }) {
   const initialSchedule = buildInitialCardSchedule(card)
   const [title,    setTitle]    = useState(card.title)
@@ -1329,6 +1330,7 @@ export default function CardModal({
             insertMenuButtonRef={insertMenuButtonRef}
             showInsertMenu={showInsertMenu}
             setShowInsertMenu={setShowInsertMenu}
+            githubIntegration={githubIntegration}
             {...activitySidebarUi}
           />
         </div>

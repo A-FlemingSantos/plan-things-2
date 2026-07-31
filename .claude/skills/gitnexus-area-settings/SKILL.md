@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-settings
-description: "Skill for the Settings area of plan-things-2. 132 symbols across 28 files."
+description: "Skill for the Settings area of plan-things-2. 134 symbols across 29 files."
 ---
 
 # Settings
 
-132 symbols | 28 files | Cohesion: 70%
+134 symbols | 29 files | Cohesion: 70%
 
 ## When to Use
 
@@ -84,7 +84,7 @@ Start here when exploring this area:
 |------|-------------|
 | Files | 21 calls |
 | Board | 6 calls |
-| Auth | 4 calls |
+| Auth | 2 calls |
 | Url | 1 calls |
 
 ## How to Explore

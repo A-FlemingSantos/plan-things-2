@@ -56,6 +56,23 @@ public class AccountDeletionService {
     jdbcTemplate.update("delete from board_card_assignees where user_id = :userId", params);
     jdbcTemplate.update("update board_checklist_items set assignee_user_id = null where assignee_user_id = :userId", params);
     jdbcTemplate.update("""
+        delete from board_card_github_links
+        where plan_github_repo_id in (
+          select id from plan_github_repos where connection_user_id = :userId
+        )
+        """, params);
+    jdbcTemplate.update("delete from plan_github_repos where connection_user_id = :userId", params);
+    jdbcTemplate.update("""
+        update plan_github_repos
+        set connected_by_user_id = :tombstoneUserId
+        where connected_by_user_id = :userId
+        """, params);
+    jdbcTemplate.update("""
+        update board_card_github_links
+        set linked_by_user_id = :tombstoneUserId
+        where linked_by_user_id = :userId
+        """, params);
+    jdbcTemplate.update("""
         update board_cards
         set author_user_id = :tombstoneUserId
         where author_user_id = :userId

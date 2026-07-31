@@ -111,3 +111,19 @@ app:
         - profile
         - email
         - https://www.googleapis.com/auth/gmail.send
+    github:
+      client-id: ${GITHUB_INTEGRATION_CLIENT_ID:}
+      client-secret: ${GITHUB_INTEGRATION_CLIENT_SECRET:}
+      redirect-uri: ${GITHUB_INTEGRATION_REDIRECT_URI:http://localhost:8080/api/settings/integrations/github/callback}
+      frontend-return-url: ${GITHUB_INTEGRATION_FRONTEND_RETURN_URL:http://localhost:5173/settings}
+      web-return-url: ${GITHUB_INTEGRATION_WEB_RETURN_URL:${GITHUB_INTEGRATION_FRONTEND_RETURN_URL:http://localhost:5173/settings}}
+      mobile-return-url: ${GITHUB_INTEGRATION_MOBILE_RETURN_URL:planthings://settings}
+      mobile-web-return-url: ${GITHUB_INTEGRATION_MOBILE_WEB_RETURN_URL:}
+      state-minutes: ${GITHUB_INTEGRATION_STATE_MINUTES:10}
+      polling-interval-minutes: ${GITHUB_INTEGRATION_POLLING_INTERVAL_MINUTES:5}
+      polling-interval-ms: ${GITHUB_INTEGRATION_POLLING_INTERVAL_MS:300000}
+      polling-batch-size: ${GITHUB_INTEGRATION_POLLING_BATCH_SIZE:50}
+      api-version: ${GITHUB_INTEGRATION_API_VERSION:2022-11-28}
+      user-agent: ${GITHUB_INTEGRATION_USER_AGENT:PlanThings-API}
+      scopes:
+        - repo

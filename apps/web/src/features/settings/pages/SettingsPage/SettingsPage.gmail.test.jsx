@@ -386,6 +386,44 @@ describe('SettingsPage Gmail integration', () => {
     expect(await screen.findByText('A exportacao foi iniciada.')).toBeInTheDocument()
   })
 
+  it('renders and starts the GitHub OAuth integration', async () => {
+    const githubStart = createDeferred()
+    apiMock.apiRequest.mockImplementation((path, options = {}) => {
+      if (path === '/api/settings/integrations/github/start' && options.method === 'POST') {
+        return githubStart.promise
+      }
+      return Promise.resolve(settingsSnapshot(
+        { connected: false },
+        { connected: false, scopes: [] },
+      ))
+    })
+
+    renderSettings('/settings?section=integrations')
+    const githubCard = await findIntegrationCard('GitHub')
+    expect(within(githubCard).getByText('GitHub não conectado')).toBeInTheDocument()
+    await userEvent.click(within(githubCard).getByRole('button', { name: 'Conectar' }))
+
+    await waitFor(() => {
+      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/settings/integrations/github/start', {
+        method: 'POST',
+        token: 'test-token',
+        body: { client: 'web' },
+      })
+    })
+  })
+
+  it('shows the GitHub callback success message without crashing', async () => {
+    apiMock.apiRequest.mockResolvedValue(settingsSnapshot(
+      { connected: false },
+      { connected: true, login: 'arthur', scopes: ['repo'] },
+    ))
+
+    renderSettings('/settings?section=integrations&github=connected')
+
+    expect(await screen.findByText('GitHub conectado com sucesso.')).toBeInTheDocument()
+    expect(screen.getByText('Conectado · @arthur')).toBeInTheDocument()
+  })
+
   it('deletes the account after confirmation and logs out locally', async () => {
     apiMock.apiRequest.mockImplementation((path, options = {}) => {
       if (path === '/api/settings/account/delete' && options.method === 'POST') {
@@ -424,7 +462,7 @@ function mockSettingsSnapshot(gmail) {
   apiMock.apiRequest.mockResolvedValue(settingsSnapshot(gmail))
 }
 
-function settingsSnapshot(gmail) {
+function settingsSnapshot(gmail, github = {}) {
   return {
     account: {
       localPasswordEnabled: gmail?.account?.localPasswordEnabled ?? true,
@@ -439,6 +477,15 @@ function settingsSnapshot(gmail) {
         lastError: null,
         ...gmail,
         account: undefined,
+      },
+      github: {
+        connected: false,
+        login: null,
+        avatarUrl: null,
+        scopes: [],
+        connectedAt: null,
+        lastError: null,
+        ...github,
       },
     },
   }

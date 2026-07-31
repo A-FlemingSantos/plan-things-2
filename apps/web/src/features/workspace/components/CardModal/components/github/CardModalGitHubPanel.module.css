@@ -1,0 +1,752 @@
+/* ============================================================
+   CardModalGitHubPanel.module.css
+   Self-contained styles for the CardModal GitHub sidebar panel.
+   Uses the same design tokens as the rest of the app (surfaces,
+   text, border, focus-ring) so it drops into the existing card
+   modal chrome without extra theming work.
+   ============================================================ */
+
+.root {
+  --gh-state-open: #1f883d;
+  --gh-state-closed: #cf222e;
+  --gh-state-merged: #8250df;
+  --gh-state-draft: var(--text-3);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px 18px;
+  min-height: 0;
+}
+
+.root[data-theme='dark'] {
+  --gh-state-open: #3fb950;
+  --gh-state-closed: #f85149;
+  --gh-state-merged: #a371f7;
+}
+
+/* ── Generic state view (loading / empty / error / disconnected / permission) ── */
+.stateView {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 12px;
+  text-align: center;
+}
+
+.stateIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
+.stateIconSpinning {
+  animation: ghSpin 0.9s linear infinite;
+}
+
+.stateTitle {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.stateMessage {
+  margin: 0;
+  max-width: 260px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.stateAction {
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.stateAction:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--border-2);
+}
+
+.stateAction:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.statePrimaryAction {
+  background: var(--text-1);
+  color: var(--surface-1);
+  border-color: transparent;
+}
+
+.statePrimaryAction:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-1) 88%, transparent);
+}
+
+/* ── Section shell (URL input / search) ── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.managerNotice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ── URL input row ── */
+.urlRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.urlInput {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 12.5px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.urlInput::placeholder {
+  color: var(--text-3);
+}
+
+.urlInput:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--focus-ring) 70%, var(--border-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.urlSubmitBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.urlSubmitBtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.urlSubmitBtn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.urlError {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--color-red, var(--gh-state-closed));
+}
+
+/* ── Search bar ── */
+.searchTabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+
+.searchTab {
+  flex: 1;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.searchTab:hover {
+  color: var(--text-1);
+}
+
+.searchTabActive {
+  background: var(--surface-1);
+  color: var(--text-1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.searchControlsRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.searchInputWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchInputIcon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.searchInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 28px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 12.5px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.searchInput::placeholder {
+  color: var(--text-3);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--focus-ring) 70%, var(--border-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.repoFilterSelect {
+  flex-shrink: 0;
+  max-width: 132px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.repoFilterSelect:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.searchResultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+  max-height: 260px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.searchResultsList > * {
+  flex-shrink: 0;
+}
+
+.searchStatusRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.searchErrorRow {
+  color: var(--gh-state-closed);
+}
+
+/* ── Linked items list ── */
+.linkedList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.linkedEmpty {
+  margin: 0;
+  padding: 10px 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* ── Link item (shared base layout for search results + linked items) ── */
+.item {
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  background: var(--surface-1);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast);
+}
+
+.itemExpanded {
+  border-color: var(--border-2);
+}
+
+.itemHeader {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemHeaderStatic {
+  cursor: default;
+}
+
+.itemHeader:hover {
+  background: var(--hover);
+}
+
+.itemTypeIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+
+.itemTypeIconOpen { color: var(--gh-state-open); }
+.itemTypeIconClosed { color: var(--gh-state-closed); }
+.itemTypeIconMerged { color: var(--gh-state-merged); }
+.itemTypeIconDraft { color: var(--gh-state-draft); }
+
+.itemBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.itemTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.itemNumber {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.itemMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.itemMetaRepo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemMetaSep {
+  flex-shrink: 0;
+  opacity: .6;
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.itemActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.itemActionBtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.itemActionBtn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.itemActionDanger:hover:not(:disabled) {
+  color: var(--gh-state-closed);
+}
+
+.itemLinkBtn {
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.itemLinkBtn:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--border-2);
+}
+
+.itemLinkBtn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.itemChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: transform var(--transition-fast);
+}
+
+.itemChevronOpen {
+  transform: rotate(90deg);
+}
+
+.statusBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.statusBadgeOpen {
+  color: var(--gh-state-open);
+  background: color-mix(in srgb, var(--gh-state-open) 14%, transparent);
+}
+
+.statusBadgeClosed {
+  color: var(--gh-state-closed);
+  background: color-mix(in srgb, var(--gh-state-closed) 14%, transparent);
+}
+
+.statusBadgeMerged {
+  color: var(--gh-state-merged);
+  background: color-mix(in srgb, var(--gh-state-merged) 14%, transparent);
+}
+
+.statusBadgeDraft {
+  color: var(--gh-state-draft);
+  background: var(--surface-2);
+}
+
+/* ── Expandable body (Issue / PR / Branch / Commit) ── */
+.itemExpandedBody {
+  padding: 0 12px 12px 38px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.itemDescription {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.itemDescription > :first-child {
+  margin-top: 0;
+}
+
+.itemDescription > :last-child {
+  margin-bottom: 0;
+}
+
+.itemDescription pre,
+.itemDescription code {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+.detailList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detailListTitle {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.detailListItem {
+  margin: 0;
+  padding: 5px 7px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.detailLoading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--text-3);
+  font-size: 11.5px;
+}
+
+.itemLabelRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.itemLabelChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.itemFactsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+}
+
+.itemFact {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.itemFactLabel {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.itemFactValue {
+  font-size: 12px;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diffStatRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+.diffAdditions { color: var(--gh-state-open); }
+.diffDeletions { color: var(--gh-state-closed); }
+.diffFiles { color: var(--text-3); }
+
+.commitDiffSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-1);
+}
+
+.commitDiffLoadBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.commitDiffLoadBtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.commitDiffLoadBtn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.commitDiffPatch {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1.5;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.commitDiffHtml {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  font-size: 11px;
+  color-scheme: light dark;
+}
+
+.commitDiffError {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--gh-state-closed);
+}
+
+.itemFooterLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.itemFooterLink:hover {
+  color: var(--text-1);
+}
+
+@keyframes ghSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stateIconSpinning {
+    animation: none;
+  }
+}

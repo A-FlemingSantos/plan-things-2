@@ -1,49 +1,47 @@
 ---
 name: gitnexus-area-providers
-description: "Skill for the Providers area of plan-things-2. 99 symbols across 16 files."
+description: "Skill for the Providers area of plan-things-2. 92 symbols across 15 files."
 ---
 
 # Providers
 
-99 symbols | 16 files | Cohesion: 79%
+92 symbols | 15 files | Cohesion: 76%
 
 ## When to Use
 
 - Working with code in `apps/`
-- Understanding how useAuth, FilesProvider, createFolder work
+- Understanding how createFolder, loadFiles, request work
 - Modifying providers-related functionality
 
 ## Key Files
 
 | File | Symbols |
 |------|---------|
-| `apps/mobile/src/providers/AuthProvider.js` | useAuth, bootstrap, completeOAuthLogin, getSessionAccountId, login (+18) |
-| `apps/mobile/src/providers/PlansProvider.js` | usePlans, PlansProvider, addComment, attachFileToCard, createCard (+17) |
-| `apps/mobile/src/providers/FilesProvider.js` | FilesProvider, createFolder, loadFiles, request, restoreFile (+8) |
-| `apps/mobile/src/providers/authSessionPolicy.js` | isAuthFailure, shouldClearSessionAfterRefreshFailure, decodeBase64, decodeBase64Url, readAccessTokenExpiresAt (+4) |
+| `apps/mobile/src/providers/AuthProvider.js` | bootstrap, completeOAuthLogin, getSessionAccountId, login, normalizeSession (+18) |
+| `apps/mobile/src/providers/PlansProvider.js` | addComment, attachFileToCard, createChecklist, createChecklistItem, deleteCard (+15) |
+| `apps/mobile/src/providers/FilesProvider.js` | createFolder, loadFiles, request, restoreFile, shareToPlan (+8) |
 | `apps/mobile/src/screens/FilesScreen.js` | FilesScreen, closeFileSheet, deleteSelectedFile, downloadSelectedFile, openCreateFlow (+3) |
+| `apps/mobile/src/providers/authSessionPolicy.js` | isAuthFailure, shouldClearSessionAfterRefreshFailure, decodeBase64, decodeBase64Url, readAccessTokenExpiresAt (+3) |
 | `apps/mobile/src/screens/MobileKanbanBoard.js` | attachCardFile, removeCardAttachment, toggleTaskPinned, updateCard, uploadCardFile |
-| `packages/shared-client/src/board.js` | buildBoardCardPayload, mapBoardViewToColumns, mergeBoardIntoPlan |
 | `apps/mobile/src/screens/SettingsScreen.js` | exportData, sanitizeFilename, triggerWebDownload |
 | `packages/shared-client/src/plans.js` | buildInitials, buildPlanCreatePayload, mergePlanDetails |
-| `apps/mobile/src/screens/HomeScreen.js` | HomeScreen, openPlan |
+| `apps/mobile/src/services/api.js` | mobileApiRequest, mobileApiUrl |
+| `packages/shared-client/src/board.js` | mapBoardViewToColumns, mergeBoardIntoPlan |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`useAuth`** (Function) — `apps/mobile/src/providers/AuthProvider.js:388`
-- **`FilesProvider`** (Function) — `apps/mobile/src/providers/FilesProvider.js:25`
 - **`createFolder`** (Function) — `apps/mobile/src/providers/FilesProvider.js:53`
 - **`loadFiles`** (Function) — `apps/mobile/src/providers/FilesProvider.js:34`
 - **`request`** (Function) — `apps/mobile/src/providers/FilesProvider.js:29`
+- **`restoreFile`** (Function) — `apps/mobile/src/providers/FilesProvider.js:112`
+- **`shareToPlan`** (Function) — `apps/mobile/src/providers/FilesProvider.js:117`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `useAuth` | Function | `apps/mobile/src/providers/AuthProvider.js` | 388 |
-| `FilesProvider` | Function | `apps/mobile/src/providers/FilesProvider.js` | 25 |
 | `createFolder` | Function | `apps/mobile/src/providers/FilesProvider.js` | 53 |
 | `loadFiles` | Function | `apps/mobile/src/providers/FilesProvider.js` | 34 |
 | `request` | Function | `apps/mobile/src/providers/FilesProvider.js` | 29 |
@@ -53,15 +51,17 @@ Start here when exploring this area:
 | `trashFile` | Function | `apps/mobile/src/providers/FilesProvider.js` | 107 |
 | `unshareFromPlan` | Function | `apps/mobile/src/providers/FilesProvider.js` | 123 |
 | `uploadFile` | Function | `apps/mobile/src/providers/FilesProvider.js` | 61 |
-| `usePlans` | Function | `apps/mobile/src/providers/PlansProvider.js` | 224 |
-| `FilesScreen` | Function | `apps/mobile/src/screens/FilesScreen.js` | 90 |
-| `closeFileSheet` | Function | `apps/mobile/src/screens/FilesScreen.js` | 241 |
-| `deleteSelectedFile` | Function | `apps/mobile/src/screens/FilesScreen.js` | 265 |
-| `downloadSelectedFile` | Function | `apps/mobile/src/screens/FilesScreen.js` | 274 |
-| `openCreateFlow` | Function | `apps/mobile/src/screens/FilesScreen.js` | 193 |
-| `openFileMenu` | Function | `apps/mobile/src/screens/FilesScreen.js` | 235 |
-| `submitCreateFlow` | Function | `apps/mobile/src/screens/FilesScreen.js` | 285 |
-| `updateSelectedFile` | Function | `apps/mobile/src/screens/FilesScreen.js` | 247 |
+| `FilesScreen` | Function | `apps/mobile/src/screens/FilesScreen.js` | 87 |
+| `closeFileSheet` | Function | `apps/mobile/src/screens/FilesScreen.js` | 237 |
+| `deleteSelectedFile` | Function | `apps/mobile/src/screens/FilesScreen.js` | 261 |
+| `downloadSelectedFile` | Function | `apps/mobile/src/screens/FilesScreen.js` | 270 |
+| `openCreateFlow` | Function | `apps/mobile/src/screens/FilesScreen.js` | 189 |
+| `openFileMenu` | Function | `apps/mobile/src/screens/FilesScreen.js` | 231 |
+| `submitCreateFlow` | Function | `apps/mobile/src/screens/FilesScreen.js` | 281 |
+| `updateSelectedFile` | Function | `apps/mobile/src/screens/FilesScreen.js` | 243 |
+| `resolveInteractivePointerEventsStyle` | Function | `apps/mobile/src/theme/platformRuntime.js` | 7 |
+| `addComment` | Function | `apps/mobile/src/providers/PlansProvider.js` | 135 |
+| `attachFileToCard` | Function | `apps/mobile/src/providers/PlansProvider.js` | 175 |
 
 ## Execution Flows
 
@@ -75,17 +75,16 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Cluster_302 | 3 calls |
-| Components | 3 calls |
-| Screens | 3 calls |
-| Cluster_300 | 2 calls |
+| Screens | 5 calls |
+| Cluster_331 | 3 calls |
+| Components | 2 calls |
 | Contracts | 1 calls |
 | Services | 1 calls |
-| Cluster_301 | 1 calls |
+| Cluster_329 | 1 calls |
 
 ## How to Explore
 
-1. `context({name: "useAuth"})` — see callers and callees
+1. `context({name: "createFolder"})` — see callers and callees
 2. `query({search_query: "providers"})` — find related execution flows
 3. Read key files listed above for implementation details
 4. `explain({target: "<file or symbol>"})` — persisted taint findings (source→sink data flows), when indexed with `--pdg`

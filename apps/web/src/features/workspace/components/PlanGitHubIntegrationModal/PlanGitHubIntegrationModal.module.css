@@ -1,0 +1,489 @@
+/* ============================================================
+   PlanGitHubIntegrationModal.module.css
+   Portal-rendered popover for the Plan-level GitHub integration
+   (multi-repo search, connect/remove, connection state, manager
+   permission gating). Anchored below its trigger button, same
+   visual language as PlanSharePopover / GitHubContextBar.
+   ============================================================ */
+
+.panel {
+  --gh-state-open: #1f883d;
+  --gh-state-closed: #cf222e;
+  z-index: 9999;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(560px, calc(100vh - 96px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-1) 80%, rgba(255, 255, 255, 0.06));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-1) 97%, var(--surface-2));
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--text-1) 4%, transparent),
+    0 14px 36px rgba(10, 15, 30, 0.18);
+  backdrop-filter: blur(20px) saturate(1.1);
+  animation: ghPanelIn 0.14s ease both;
+}
+
+.panel[data-theme='dark'] {
+  --gh-state-open: #3fb950;
+  --gh-state-closed: #f85149;
+  background: color-mix(in srgb, var(--surface-2) 96%, rgba(10, 10, 14, 0.98));
+}
+
+@keyframes ghPanelIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--border-1);
+  flex-shrink: 0;
+}
+
+.headerTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-1);
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+
+.headerSubtitle {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.closeBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+/* ── Body ── */
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Generic state view ── */
+.stateView {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.stateIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
+.stateIconSpinning {
+  animation: ghModalSpin 0.9s linear infinite;
+}
+
+.stateTitle {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.stateMessage {
+  margin: 0;
+  max-width: 280px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.stateAction {
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--text-1);
+  color: var(--surface-1);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.stateAction:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-1) 88%, transparent);
+}
+
+.stateAction:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* ── Search section ── */
+.searchSection {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-1);
+  flex-shrink: 0;
+}
+
+.searchInputWrap {
+  position: relative;
+}
+
+.searchInputIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.searchInput {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px 0 30px;
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 13px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.searchInput::placeholder {
+  color: var(--text-3);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--focus-ring) 70%, var(--border-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.searchResultsList {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.searchStatusRow {
+  padding: 8px 4px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.searchErrorRow {
+  color: var(--gh-state-closed);
+}
+
+/* ── Manager notice ── */
+.managerNotice {
+  margin: 12px 14px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ── Connected repos list ── */
+.repoListSection {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 14px;
+  overflow: hidden;
+}
+
+.repoListLabel {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.repoList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.repoListEmpty {
+  margin: 0;
+  padding: 8px 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* ── Repo row (shared between search results and connected list) ── */
+.repoRow {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 6px 6px 4px;
+  border-radius: 10px;
+  transition: background var(--transition-fast);
+}
+
+.repoRow:hover {
+  background: var(--hover);
+}
+
+.repoAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.repoAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.repoInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.repoNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.repoFullName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.repoPrivateBadge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.repoDescription {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.repoMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.repoMetaError {
+  color: var(--gh-state-closed);
+}
+
+.repoActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.connectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border-1);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.connectBtn:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--border-2);
+}
+
+.connectBtn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.connectedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gh-state-open) 14%, transparent);
+  color: var(--gh-state-open);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.removeBtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--gh-state-closed);
+}
+
+.removeBtn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.reconnectBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.reconnectBtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+@keyframes ghModalSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stateIconSpinning {
+    animation: none;
+  }
+  .panel {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel {
+    width: min(340px, calc(100vw - 16px));
+  }
+}

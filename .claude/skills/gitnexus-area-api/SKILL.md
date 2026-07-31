@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-api
-description: "Skill for the Api area of plan-things-2. 161 symbols across 28 files."
+description: "Skill for the Api area of plan-things-2. 162 symbols across 28 files."
 ---
 
 # Api
 
-161 symbols | 28 files | Cohesion: 76%
+162 symbols | 28 files | Cohesion: 76%
 
 ## When to Use
 
@@ -17,7 +17,7 @@ description: "Skill for the Api area of plan-things-2. 161 symbols across 28 fil
 
 | File | Symbols |
 |------|---------|
-| `services/api/src/test/java/com/planthings/api/OAuthApiIntegrationTest.java` | OAuthApiIntegrationTest, completeProviderCallbackLocation, queryParam, shouldPreserveMobileCallbackWhenFailureHappensAfterStateConsumption, shouldPreserveOnlyAllowedRedirectPaths (+14) |
+| `services/api/src/test/java/com/planthings/api/OAuthApiIntegrationTest.java` | shouldCreateSessionFromNativeGoogleIdToken, OAuthApiIntegrationTest, completeProviderCallbackLocation, queryParam, shouldPreserveMobileCallbackWhenFailureHappensAfterStateConsumption (+15) |
 | `services/api/src/test/java/com/planthings/api/BoardInboxGmailIntegrationTest.java` | BoardInboxGmailIntegrationTest, addMember, createCard, decodeBase64Part, register (+12) |
 | `services/api/src/test/java/com/planthings/api/IntelligenceApiIntegrationTest.java` | createCard, shouldValidateCardScopeWhenCreatingConversation, functionCallNode, postMessage, reasoningItemNode (+10) |
 | `services/api/src/test/java/com/planthings/api/PlanInviteGmailIntegrationTest.java` | decodeBase64Part, register, shouldKeepDuplicatePendingInviteConflict, shouldRejectInviteWhenGmailSendFailsAndNotCreatePendingInvite, shouldRejectInviteWhenRefreshTokenFailsAndRememberLastError (+8) |

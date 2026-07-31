@@ -16,6 +16,8 @@ import com.planthings.api.files.CardAttachmentRepository;
 import com.planthings.api.files.FileEntryEntity;
 import com.planthings.api.files.FileEntryRepository;
 import com.planthings.api.files.FileEntryType;
+import com.planthings.api.github.BoardCardGitHubLinkRepository;
+import com.planthings.api.github.GitHubLinkMapper;
 import com.planthings.api.plans.PlanAccessService;
 import com.planthings.api.plans.PlanEntity;
 import com.planthings.api.plans.PlanLabelEntity;
@@ -60,6 +62,8 @@ public class BoardService {
   private final CalendarService calendarService;
   private final BoardCardInboxEmailSender boardCardInboxEmailSender;
   private final AvatarImageService avatarImageService;
+  private final BoardCardGitHubLinkRepository boardCardGitHubLinkRepository;
+  private final GitHubLinkMapper gitHubLinkMapper;
 
   public BoardService(
       PlanAccessService planAccessService,
@@ -80,7 +84,9 @@ public class BoardService {
       BrazilDateTimeMapper brazilDateTimeMapper,
       CalendarService calendarService,
       BoardCardInboxEmailSender boardCardInboxEmailSender,
-      AvatarImageService avatarImageService
+      AvatarImageService avatarImageService,
+      BoardCardGitHubLinkRepository boardCardGitHubLinkRepository,
+      GitHubLinkMapper gitHubLinkMapper
   ) {
     this.planAccessService = planAccessService;
     this.planLabelRepository = planLabelRepository;
@@ -101,6 +107,8 @@ public class BoardService {
     this.calendarService = calendarService;
     this.boardCardInboxEmailSender = boardCardInboxEmailSender;
     this.avatarImageService = avatarImageService;
+    this.boardCardGitHubLinkRepository = boardCardGitHubLinkRepository;
+    this.gitHubLinkMapper = gitHubLinkMapper;
   }
 
   public BoardView getBoard(UUID planId) {
@@ -556,6 +564,10 @@ public class BoardService {
         .map(attachment -> toAttachmentView(attachment, currentUserId, currentRole))
         .filter(Objects::nonNull)
         .toList();
+    List<GitHubLinkMapper.GitHubLinkedItemView> githubLinks = boardCardGitHubLinkRepository
+        .findByCardIdOrderByCreatedAtAsc(card.getId()).stream()
+        .map(gitHubLinkMapper::toLinkedItemView)
+        .toList();
 
     return new BoardCardView(
         card.getId(),
@@ -572,6 +584,7 @@ public class BoardService {
         comments,
         checklists,
         attachments,
+        githubLinks,
         brazilDateTimeMapper.toDateTime(card.getStartAt()),
         brazilDateTimeMapper.toDateTime(card.getDueAt()),
         brazilDateTimeMapper.toDateTime(card.getCreatedAt()),
@@ -906,6 +919,7 @@ public class BoardService {
       List<CommentView> comments,
       List<ChecklistView> checklists,
       List<AttachmentView> attachments,
+      List<GitHubLinkMapper.GitHubLinkedItemView> githubLinks,
       ApiDateTimeDto startAt,
       ApiDateTimeDto dueAt,
       ApiDateTimeDto createdAt,

@@ -70,7 +70,7 @@ Start here when exploring this area:
 | Area | Connections |
 |------|-------------|
 | SettingsPage | 1 calls |
-| Hooks | 1 calls |
+| Components | 1 calls |
 | UserChatMessage | 1 calls |
 | ComposerAttachmentStrip | 1 calls |
 

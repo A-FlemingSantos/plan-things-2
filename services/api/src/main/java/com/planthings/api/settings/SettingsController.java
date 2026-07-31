@@ -33,19 +33,22 @@ public class SettingsController {
   private final SecuritySettingsService securitySettingsService;
   private final SettingsExportService settingsExportService;
   private final AccountDeletionService accountDeletionService;
+  private final GitHubIntegrationService githubIntegrationService;
 
   public SettingsController(
       SettingsService settingsService,
       GmailIntegrationService gmailIntegrationService,
       SecuritySettingsService securitySettingsService,
       SettingsExportService settingsExportService,
-      AccountDeletionService accountDeletionService
+      AccountDeletionService accountDeletionService,
+      GitHubIntegrationService githubIntegrationService
   ) {
     this.settingsService = settingsService;
     this.gmailIntegrationService = gmailIntegrationService;
     this.securitySettingsService = securitySettingsService;
     this.settingsExportService = settingsExportService;
     this.accountDeletionService = accountDeletionService;
+    this.githubIntegrationService = githubIntegrationService;
   }
 
   @GetMapping
@@ -165,6 +168,38 @@ public class SettingsController {
     return ApiEnvelope.ok(gmailIntegrationService.disconnectGmail());
   }
 
+  @PostMapping("/integrations/github/start")
+  public ApiEnvelope<GitHubIntegrationService.AuthorizationStartResponse> startGitHubIntegration(
+      @RequestBody(required = false) GitHubStartRequest request
+  ) {
+    return ApiEnvelope.ok(githubIntegrationService.startAuthorization(
+        request == null ? null : request.client(),
+        request == null ? null : request.redirectTo()
+    ));
+  }
+
+  @GetMapping("/integrations/github/callback")
+  public ResponseEntity<Void> githubCallback(
+      @RequestParam(required = false) String state,
+      @RequestParam(required = false) String code,
+      @RequestParam(required = false) String error
+  ) {
+    URI redirectUri = githubIntegrationService.completeProviderCallback(state, code, error);
+    return ResponseEntity.status(302).location(redirectUri).build();
+  }
+
+  @DeleteMapping("/integrations/github")
+  public ApiEnvelope<GitHubIntegrationService.GitHubDisconnectResponse> disconnectGitHubIntegration() {
+    return ApiEnvelope.ok(githubIntegrationService.disconnectGitHubWrapped());
+  }
+
+  @GetMapping("/integrations/github/repositories")
+  public ApiEnvelope<List<GitHubIntegrationService.GitHubRepoOption>> searchGitHubRepositories(
+      @RequestParam(required = false) String q
+  ) {
+    return ApiEnvelope.ok(githubIntegrationService.searchAccessibleRepositories(q));
+  }
+
   public record UpdateAccountRequest(
       @NotBlank(message = "O nome completo e obrigatorio.") String fullName
   ) {
@@ -207,5 +242,8 @@ public class SettingsController {
   }
 
   public record GmailStartRequest(String client, String redirectTo) {
+  }
+
+  public record GitHubStartRequest(String client, String redirectTo) {
   }
 }

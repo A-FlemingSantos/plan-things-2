@@ -38,6 +38,7 @@ public class SettingsService {
   private final UserRepository userRepository;
   private final UserSettingsRepository userSettingsRepository;
   private final GmailIntegrationService gmailIntegrationService;
+  private final GitHubIntegrationService githubIntegrationService;
   private final UserExternalIdentityRepository externalIdentityRepository;
   private final PasswordEncoder passwordEncoder;
   private final AvatarImageService avatarImageService;
@@ -48,6 +49,7 @@ public class SettingsService {
       UserRepository userRepository,
       UserSettingsRepository userSettingsRepository,
       GmailIntegrationService gmailIntegrationService,
+      GitHubIntegrationService githubIntegrationService,
       UserExternalIdentityRepository externalIdentityRepository,
       PasswordEncoder passwordEncoder,
       AvatarImageService avatarImageService,
@@ -57,6 +59,7 @@ public class SettingsService {
     this.userRepository = userRepository;
     this.userSettingsRepository = userSettingsRepository;
     this.gmailIntegrationService = gmailIntegrationService;
+    this.githubIntegrationService = githubIntegrationService;
     this.externalIdentityRepository = externalIdentityRepository;
     this.passwordEncoder = passwordEncoder;
     this.avatarImageService = avatarImageService;
@@ -82,7 +85,10 @@ public class SettingsService {
             userSettings.isEventReminders(),
             userSettings.isDeadlineAlerts()
         ),
-        gmailIntegrationService.getIntegrationsForUser(user.getId())
+        new IntegrationsSettings(
+            gmailIntegrationService.getIntegrationsForUser(user.getId()).gmail(),
+            githubIntegrationService.getIntegrationForUser(user.getId())
+        )
     );
   }
 
@@ -334,7 +340,13 @@ public class SettingsService {
       AccountSettings account,
       PreferencesSettings preferences,
       NotificationSettings notifications,
-      GmailIntegrationService.IntegrationsSettings integrations
+      IntegrationsSettings integrations
+  ) {
+  }
+
+  public record IntegrationsSettings(
+      GmailIntegrationService.GmailIntegrationSettings gmail,
+      GitHubIntegrationService.GitHubIntegrationSettings github
   ) {
   }
 

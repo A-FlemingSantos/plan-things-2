@@ -39,6 +39,7 @@ import { useKanbanBoardFiles } from './hooks/useKanbanBoardFiles.js'
 import { useKanbanBoardInbox } from './hooks/useKanbanBoardInbox.js'
 import { useKanbanBoardPlanner } from './hooks/useKanbanBoardPlanner.js'
 import { useKanbanBoardIntelligence } from './hooks/useKanbanBoardIntelligence.js'
+import useKanbanGitHubIntegration from './hooks/useKanbanGitHubIntegration.js'
 import styles from './KanbanBoard.module.css'
 
 const MEMBERS = [
@@ -77,6 +78,7 @@ export default function KanbanBoard() {
   const [newColStatus, setNewColStatus] = useState(KANBAN_DEFAULT_COLUMN_STATUS)
   const [addColumnError, setAddColumnError] = useState(null)
   const [boardLoadError, setBoardLoadError] = useState(null)
+  const [isGitHubIntegrationOpen, setIsGitHubIntegrationOpen] = useState(false)
 
   const { notification, showNotification } = useKanbanBoardNotification()
   const {
@@ -111,6 +113,23 @@ export default function KanbanBoard() {
   const planMembers = isBackendDriven
     ? backendPlanMembers
     : (activePlan ? (activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS) : [])
+  const isPlanManager = !isBackendDriven || ['OWNER', 'ADMIN'].includes(activePlan?.role)
+  const canManageGitHub = Boolean(isBackendDriven && isPlanManager)
+
+  const refreshBoardAfterGitHubSync = useCallback(async () => {
+    if (isBackendDriven && activePlan?.id) {
+      await loadPlanBoard(activePlan.id)
+    }
+  }, [activePlan?.id, isBackendDriven, loadPlanBoard])
+
+  const github = useKanbanGitHubIntegration({
+    planId: activePlan?.id,
+    cardId: activeCard?.card?.id,
+    accessToken,
+    enabled: Boolean(isBackendDriven && activePlan?.id),
+    isManager: canManageGitHub,
+    onBoardRefresh: refreshBoardAfterGitHubSync,
+  })
 
   const {
     columns,
@@ -472,6 +491,29 @@ export default function KanbanBoard() {
               accessToken={accessToken}
               onRefreshPlanDetails={refreshPlanDetails}
               onNotify={showNotification}
+              githubOpen={isGitHubIntegrationOpen}
+              onGitHubOpenChange={setIsGitHubIntegrationOpen}
+              githubIntegration={{
+                status: github.status,
+                statusErrorMessage: github.statusMessage,
+                isManager: canManageGitHub,
+                onConnectGitHubAccount: () => {
+                  void github.startOAuth(`${location.pathname}${location.search}`)
+                    .catch((error) => showNotification(error?.message ?? 'Não foi possível conectar o GitHub.'))
+                },
+                onRetry: github.reload,
+                connectedRepos: github.connectedRepos,
+                onRemoveRepo: github.removeRepo,
+                pendingRemoveRepoIds: github.pendingRemoveRepoIds,
+                onReconnectRepo: github.reload,
+                searchQuery: github.repoSearchQuery,
+                onSearchQueryChange: github.setRepoSearchQuery,
+                searchStatus: github.repoSearchStatus,
+                searchResults: github.repoSearchResults,
+                searchErrorMessage: github.repoSearchError,
+                onConnectRepo: github.connectRepo,
+                pendingConnectRepoIds: github.pendingConnectRepoIds,
+              }}
             />
 
             {isBoardLoading ? (
@@ -688,6 +730,40 @@ export default function KanbanBoard() {
           onUpdateChecklistItem={updateChecklistItem}
           timeZone={timeZone}
           dateFormat={dateFormat}
+          githubIntegration={{
+            status: github.connection.connected && github.connectedRepos.length === 0 ? 'disconnected' : github.status,
+            statusMessage: github.statusMessage,
+            isManager: canManageGitHub,
+            onOpenIntegrationSetup: () => setIsGitHubIntegrationOpen(true),
+            onRetry: github.reload,
+            linkedItems: github.linkedItems,
+            expandedItemId: github.expandedItemId,
+            onExpandedItemIdChange: github.setExpandedItemId,
+            onLoadItemDetails: github.loadItemDetails,
+            onLoadMoreItemDetails: github.loadMoreItemDetails,
+            onUnlinkItem: github.unlinkItem,
+            pendingUnlinkItemIds: github.pendingUnlinkItemIds,
+            urlInputValue: github.urlInputValue,
+            onUrlInputChange: github.setUrlInputValue,
+            onSubmitUrl: github.linkByUrl,
+            urlSubmitStatus: github.urlSubmitStatus,
+            urlSubmitErrorMessage: github.urlSubmitError,
+            searchType: github.searchType,
+            onSearchTypeChange: github.setSearchType,
+            searchRepoFilter: github.searchRepoFilter,
+            onSearchRepoFilterChange: github.setSearchRepoFilter,
+            availableRepoFullNames: github.availableRepoFullNames,
+            searchQuery: github.searchQuery,
+            onSearchQueryChange: github.setSearchQuery,
+            searchStatus: github.searchStatus,
+            searchResults: github.searchResults,
+            searchErrorMessage: github.searchError,
+            onLinkItem: github.linkItem,
+            pendingLinkItemIds: github.pendingLinkItemIds,
+            commitDiffStateById: github.commitDiffStateById,
+            commitDiffById: github.commitDiffById,
+            onLoadCommitDiff: github.loadCommitDiff,
+          }}
         />
       )}
 

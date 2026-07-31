@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-board
-description: "Skill for the Board area of plan-things-2. 179 symbols across 39 files."
+description: "Skill for the Board area of plan-things-2. 180 symbols across 39 files."
 ---
 
 # Board
 
-179 symbols | 39 files | Cohesion: 55%
+180 symbols | 39 files | Cohesion: 55%
 
 ## When to Use
 
@@ -55,8 +55,8 @@ Start here when exploring this area:
 | `BoardChecklistItemEntity` | Class | `services/api/src/main/java/com/planthings/api/board/BoardChecklistItemEntity.java` | 9 |
 | `BoardCardInboxEmailSender` | Class | `services/api/src/main/java/com/planthings/api/board/BoardCardInboxEmailSender.java` | 17 |
 | `login` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthController.java` | 46 |
-| `me` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthController.java` | 105 |
-| `refresh` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthController.java` | 100 |
+| `me` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthController.java` | 119 |
+| `refresh` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthController.java` | 114 |
 | `addComment` | Method | `services/api/src/main/java/com/planthings/api/board/BoardController.java` | 90 |
 | `createCard` | Method | `services/api/src/main/java/com/planthings/api/board/BoardController.java` | 55 |
 | `createColumn` | Method | `services/api/src/main/java/com/planthings/api/board/BoardController.java` | 35 |
@@ -82,7 +82,7 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Files | 61 calls |
+| Files | 62 calls |
 | Plans | 8 calls |
 | Persistence | 7 calls |
 | Api | 5 calls |

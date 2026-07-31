@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-files
-description: "Skill for the Files area of plan-things-2. 249 symbols across 62 files."
+description: "Skill for the Files area of plan-things-2. 250 symbols across 62 files."
 ---
 
 # Files
 
-249 symbols | 62 files | Cohesion: 78%
+250 symbols | 62 files | Cohesion: 77%
 
 ## When to Use
 
@@ -82,9 +82,9 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Board | 38 calls |
+| Board | 39 calls |
+| Plans | 13 calls |
 | Settings | 12 calls |
-| Plans | 11 calls |
 | Blocks | 10 calls |
 | Auth | 7 calls |
 | Avatar | 5 calls |

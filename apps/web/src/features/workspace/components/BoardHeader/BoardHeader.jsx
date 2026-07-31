@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import PlanSharePopover from '../PlanSharePopover/PlanSharePopover.jsx'
+import PlanGitHubIntegrationModal from '../PlanGitHubIntegrationModal/PlanGitHubIntegrationModal.jsx'
 import styles from './BoardHeader.module.css'
 
 const ICON_SIZE = 15
@@ -46,19 +47,31 @@ export default function BoardHeader({
   accessToken,
   onRefreshPlanDetails,
   onNotify,
+  githubIntegration = null,
+  githubOpen: controlledGitHubOpen,
+  onGitHubOpenChange,
 }) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isGitHubOpen, setIsGitHubOpen] = useState(false)
   const viewMenuId = useId()
   const viewMenuWrapRef = useRef(null)
   const shareMenuWrapRef = useRef(null)
+  const githubButtonRef = useRef(null)
+  const githubOpen = controlledGitHubOpen ?? isGitHubOpen
+  const setGitHubOpen = (next) => {
+    const value = typeof next === 'function' ? next(githubOpen) : next
+    if (controlledGitHubOpen === undefined) setIsGitHubOpen(value)
+    onGitHubOpenChange?.(value)
+  }
 
   useEffect(() => {
-    if (!isViewMenuOpen && !isShareOpen) return undefined
+    if (!isViewMenuOpen && !isShareOpen && !githubOpen) return undefined
 
     const handlePointerDown = (event) => {
       if (viewMenuWrapRef.current?.contains(event.target)) return
       if (shareMenuWrapRef.current?.contains(event.target)) return
+      if (githubButtonRef.current?.contains(event.target)) return
       setIsViewMenuOpen(false)
       setIsShareOpen(false)
     }
@@ -67,6 +80,7 @@ export default function BoardHeader({
       if (event.key === 'Escape') {
         setIsViewMenuOpen(false)
         setIsShareOpen(false)
+        setGitHubOpen(false)
       }
     }
 
@@ -77,7 +91,7 @@ export default function BoardHeader({
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isShareOpen, isViewMenuOpen])
+  }, [githubOpen, isShareOpen, isViewMenuOpen])
 
   const activeViewMode = BOARD_VIEW_MODES.find((mode) => mode.id === viewMode) ?? BOARD_VIEW_MODES[0]
   const ActiveViewIcon = activeViewMode.Icon
@@ -86,11 +100,13 @@ export default function BoardHeader({
     onViewModeChange?.(nextViewMode)
     setIsViewMenuOpen(false)
     setIsShareOpen(false)
+    setGitHubOpen(false)
   }
 
   const toggleSharePopover = () => {
     setIsShareOpen((open) => !open)
     setIsViewMenuOpen(false)
+    setGitHubOpen(false)
   }
 
   const sharePlan = plan ?? { name: planName }
@@ -167,13 +183,28 @@ export default function BoardHeader({
         {LEADING_ACTION_ITEMS.map(({ id, Icon, label }) => (
           <button
             key={id}
+            ref={id === 'blocks' ? githubButtonRef : undefined}
             type="button"
             className={styles.iconButton}
-            aria-label={label}
+            aria-label={id === 'blocks' ? 'Integrações do GitHub' : label}
+            aria-haspopup={id === 'blocks' ? 'dialog' : undefined}
+            aria-expanded={id === 'blocks' ? githubOpen : undefined}
+            onClick={id === 'blocks' ? () => {
+              setGitHubOpen((open) => !open)
+              setIsViewMenuOpen(false)
+              setIsShareOpen(false)
+            } : undefined}
           >
             <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
           </button>
         ))}
+        <PlanGitHubIntegrationModal
+          open={githubOpen}
+          onClose={() => setGitHubOpen(false)}
+          anchorRef={githubButtonRef}
+          planName={planName}
+          {...githubIntegration}
+        />
         <div ref={shareMenuWrapRef} className={styles.shareMenuWrap}>
           <button
             type="button"

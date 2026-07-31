@@ -499,6 +499,7 @@ export function mapBoardCard(card, options = {}) {
       preserveDisplayLabel: false,
     },
     checklists: card.checklists ?? [],
+    githubLinks: Array.isArray(card.githubLinks) ? card.githubLinks : [],
     raw: card,
   }
 }

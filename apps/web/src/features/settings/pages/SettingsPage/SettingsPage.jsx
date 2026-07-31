@@ -8,6 +8,7 @@ import {
   User,
 } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { SiGithub } from 'react-icons/si'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import { readSessionModeFromAuthState } from '../../../auth/utils/sessionMode.js'
 import {
@@ -76,6 +77,14 @@ const EMPTY_GMAIL_INTEGRATION = {
   connectedAt: null,
   lastError: null,
 }
+const EMPTY_GITHUB_INTEGRATION = {
+  connected: false,
+  login: null,
+  avatarUrl: null,
+  scopes: [],
+  connectedAt: null,
+  lastError: null,
+}
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 const MODAL_CLOSE_DURATION_MS = 220
 
@@ -98,6 +107,17 @@ function normalizeGmailIntegration(source = {}) {
   return {
     connected: Boolean(source.connected),
     email: source.email ?? null,
+    scopes: Array.isArray(source.scopes) ? source.scopes : [],
+    connectedAt: source.connectedAt ?? null,
+    lastError: source.lastError ?? null,
+  }
+}
+
+function normalizeGitHubIntegration(source = {}) {
+  return {
+    connected: Boolean(source.connected),
+    login: source.login ?? null,
+    avatarUrl: source.avatarUrl ?? null,
     scopes: Array.isArray(source.scopes) ? source.scopes : [],
     connectedAt: source.connectedAt ?? null,
     lastError: source.lastError ?? null,
@@ -183,10 +203,14 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
 
   // ── Integrations state
   const [gmailIntegration, setGmailIntegration] = useState(EMPTY_GMAIL_INTEGRATION)
+  const [githubIntegration, setGitHubIntegration] = useState(EMPTY_GITHUB_INTEGRATION)
   const [integrationsLoadState, setIntegrationsLoadState] = useState('idle')
   const [gmailActionState, setGmailActionState] = useState('idle')
   const [gmailFeedbackState, setGmailFeedbackState] = useState('idle')
   const [gmailFeedback, setGmailFeedback] = useState('')
+  const [githubActionState, setGitHubActionState] = useState('idle')
+  const [githubFeedbackState, setGitHubFeedbackState] = useState('idle')
+  const [githubFeedback, setGitHubFeedback] = useState('')
 
   // ── Security state
   const [activeSessions, setActiveSessions] = useState([])
@@ -331,6 +355,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     const params = new URLSearchParams(location.search)
     const section = params.get('section')
     const gmail = params.get('gmail')
+    const github = params.get('github')
     const gmailError = params.get('error')
 
     if (SECTION_IDS.has(section)) {
@@ -344,11 +369,20 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       setGmailFeedbackState('error')
       setGmailFeedback(gmailError ? `Nao foi possivel conectar o Gmail (${gmailError}).` : 'Nao foi possivel conectar o Gmail.')
     }
+
+    if (github === 'connected') {
+      setGitHubFeedbackState('saved')
+      setGitHubFeedback('GitHub conectado com sucesso.')
+    } else if (github === 'error') {
+      setGitHubFeedbackState('error')
+      setGitHubFeedback(gmailError ? `Não foi possível conectar o GitHub (${gmailError}).` : 'Não foi possível conectar o GitHub.')
+    }
   }, [location.search])
 
   useEffect(() => {
     if (!backendEnabled || !accessToken) {
       setGmailIntegration(EMPTY_GMAIL_INTEGRATION)
+      setGitHubIntegration(EMPTY_GITHUB_INTEGRATION)
       setIntegrationsLoadState('idle')
       return
     }
@@ -367,6 +401,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
         setLocalPasswordEnabled(snapshot?.account?.localPasswordEnabled ?? currentUser?.localPasswordEnabled ?? true)
         setExternalIdentityLinked(snapshot?.account?.externalIdentityLinked ?? currentUser?.externalIdentityLinked ?? false)
         setGmailIntegration(normalizeGmailIntegration(snapshot?.integrations?.gmail))
+        setGitHubIntegration(normalizeGitHubIntegration(snapshot?.integrations?.github))
         setIntegrationsLoadState('saved')
       } catch (error) {
         if (!active) return
@@ -934,6 +969,54 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       setGmailActionState('error')
       setGmailFeedbackState('error')
       setGmailFeedback(error?.message ?? 'Nao foi possivel desconectar o Gmail.')
+    }
+  }
+
+  const handleConnectGitHub = async () => {
+    if (!backendEnabled || !accessToken) {
+      setGitHubFeedbackState('error')
+      setGitHubFeedback('Entre com uma conta real para conectar o GitHub.')
+      return
+    }
+
+    setGitHubActionState('saving')
+    setGitHubFeedbackState('saving')
+    setGitHubFeedback('Abrindo autorização do GitHub...')
+
+    try {
+      const redirectTo = toRouteString(modalBackgroundLocation)
+      const response = await apiRequest('/api/settings/integrations/github/start', {
+        method: 'POST',
+        token: accessToken,
+        body: redirectTo ? { client: 'web', redirectTo } : { client: 'web' },
+      })
+      window.location.assign(response.authorizationUrl)
+    } catch (error) {
+      setGitHubActionState('error')
+      setGitHubFeedbackState('error')
+      setGitHubFeedback(error?.message ?? 'Não foi possível iniciar a conexão GitHub.')
+    }
+  }
+
+  const handleDisconnectGitHub = async () => {
+    if (!backendEnabled || !accessToken) return
+    setGitHubActionState('saving')
+    setGitHubFeedbackState('saving')
+    setGitHubFeedback('Desconectando GitHub...')
+
+    try {
+      const response = await apiRequest('/api/settings/integrations/github', {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      setGitHubIntegration(normalizeGitHubIntegration(response?.github))
+      setGitHubActionState('idle')
+      setGitHubFeedbackState('saved')
+      setGitHubFeedback('GitHub desconectado. Os vínculos existentes foram preservados.')
+    } catch (error) {
+      setGitHubActionState('error')
+      setGitHubFeedbackState('error')
+      setGitHubFeedback(error?.message ?? 'Não foi possível desconectar o GitHub.')
     }
   }
 
@@ -1639,6 +1722,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       { id: 'google-calendar', name: 'Google Calendar', Icon: GoogleCalendarIcon, color: '#1a73e8', status: 'Em breve' },
     ]
     const gmailBusy = gmailActionState === 'saving'
+    const githubBusy = githubActionState === 'saving'
     const gmailStatusText = !backendEnabled
       ? 'Disponível ao entrar com uma conta real'
       : gmailBusy
@@ -1648,6 +1732,15 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           : gmailIntegration.lastError
             ? 'Falha na conexão · tente novamente'
             : 'Não conectado'
+    const githubStatusText = !backendEnabled
+      ? 'Disponível ao entrar com uma conta real'
+      : githubBusy
+        ? 'Conectando...'
+        : githubIntegration.connected
+          ? `Conectado · @${githubIntegration.login}`
+          : githubIntegration.lastError
+            ? 'Falha na conexão · tente novamente'
+            : 'GitHub não conectado'
 
     return (
       <>
@@ -1666,6 +1759,49 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               </div>
             </div>
           ))}
+        </SettingsSectionGroup>
+
+        <SettingsSectionGroup title="Desenvolvimento">
+          <div className={styles.integrationCard}>
+            <div className={styles.integrationIconBox} style={{ color: 'var(--text-1)' }}>
+              <SiGithub size={22} aria-hidden="true" />
+            </div>
+            <div className={styles.integrationMeta}>
+              <p className={styles.integrationName}>GitHub</p>
+              <p className={styles.integrationStatus}>{githubStatusText}</p>
+              {githubIntegration.connectedAt?.text ? (
+                <p className={styles.integrationStatus}>Conectado em {githubIntegration.connectedAt.text}</p>
+              ) : null}
+              <p className={styles.integrationStatus}>Repositórios privados exigem o escopo OAuth amplo “repo”.</p>
+            </div>
+            <div className={styles.integrationActions}>
+              {githubIntegration.connected ? (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={handleConnectGitHub}
+                  disabled={!backendEnabled || githubBusy || integrationsLoadState === 'saving'}
+                >
+                  Reconectar
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={githubIntegration.connected ? styles.btnGhost : styles.btnSecondary}
+                onClick={githubIntegration.connected ? handleDisconnectGitHub : handleConnectGitHub}
+                disabled={!backendEnabled || githubBusy || integrationsLoadState === 'saving'}
+              >
+                {githubBusy ? 'Aguarde' : githubIntegration.connected ? 'Desconectar' : 'Conectar'}
+              </button>
+            </div>
+          </div>
+          <div className={styles.rowActions}>
+            <SettingsAutoSaveStatus
+              state={githubFeedbackState}
+              errorMessage={githubFeedback}
+              successMessage={githubFeedback}
+            />
+          </div>
         </SettingsSectionGroup>
 
         <SettingsSectionGroup title="E-mail e captura">

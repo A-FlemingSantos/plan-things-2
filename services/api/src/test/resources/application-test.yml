@@ -32,3 +32,12 @@ app:
     compact-threshold: 120000
   integrations:
     token-key-base64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    github:
+      client-id: test-github-client
+      client-secret: test-github-secret
+      redirect-uri: http://localhost/api/settings/integrations/github/callback
+      frontend-return-url: http://localhost/settings
+      polling-interval-ms: 60000
+      polling-batch-size: 10
+      scopes:
+        - repo

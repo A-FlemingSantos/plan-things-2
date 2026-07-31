@@ -16,11 +16,11 @@ import {
   SmilePlus,
   ThumbsUp,
 } from 'lucide-react'
-import { SiGithub } from 'react-icons/si'
 import AuthenticatedAvatar from '../../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import CardModalChecklist from './CardModalChecklist.jsx'
 import { CardModalInlineAttachments } from './CardModalAttachmentControls.jsx'
+import CardModalGitHubPanel from './github/CardModalGitHubPanel.jsx'
 import CardModalSidebarEmptyState from './CardModalSidebarEmptyState.jsx'
 import CardModalSidebarPicker from './CardModalSidebarPicker.jsx'
 import CardModalSidebarRail from './CardModalSidebarRail.jsx'
@@ -52,20 +52,6 @@ function CardModalSidebarPanelHeader({
         </button>
         <p className={styles.cmSidebarTitle}>{SIDEBAR_PANEL_LABELS[panel]}</p>
       </div>
-    </div>
-  )
-}
-
-function CardModalSidebarGitHubPanel({ styles }) {
-  return (
-    <div className={styles.cmSidebarPanelFill}>
-      <CardModalSidebarEmptyState
-        styles={styles}
-        icon={SiGithub}
-        iconSize={24}
-        title="Nenhuma integração GitHub"
-        message="Vincule repositórios e pull requests do GitHub a este cartão."
-      />
     </div>
   )
 }
@@ -470,6 +456,7 @@ export default function CardModalActivitySidebar({
   insertMenuButtonRef,
   showInsertMenu,
   setShowInsertMenu,
+  githubIntegration,
 }) {
   return (
     <div className={`${styles.cmSidebarShell} ${!isActivitySidebarOpen ? styles.cmSidebarShellCollapsed : ''}`}>
@@ -551,7 +538,14 @@ export default function CardModalActivitySidebar({
               />
 
               {sidebarPanel === 'github' ? (
-                <CardModalSidebarGitHubPanel styles={styles} />
+                <CustomScrollArea
+                  className={styles.cmSidebarPanelScroll}
+                  viewportClassName={styles.cmSidebarPanelBody}
+                  enabled
+                  refreshKey={`sidebar-github:${githubIntegration?.linkedItems?.length ?? 0}:${githubIntegration?.status ?? 'idle'}`}
+                >
+                  <CardModalGitHubPanel {...githubIntegration} />
+                </CustomScrollArea>
               ) : null}
 
               {sidebarPanel === 'files' ? (
