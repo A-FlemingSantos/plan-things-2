@@ -662,8 +662,13 @@
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 }
 
-.diffAdditions { color: var(--gh-state-open, #1f883d); }
-.diffDeletions { color: var(--gh-state-closed, #cf222e); }
+.diffAdditions {
+  color: var(--text-1);
+}
+
+.diffDeletions {
+  color: var(--text-3);
+}
 .diffFiles { color: var(--text-3); }
 
 .commitDiffSection {
