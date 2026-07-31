@@ -3597,6 +3597,11 @@
   border-top: 1px solid var(--border-1);
 }
 
+.cmGitHubPreview {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-1);
+}
+
 .cmActivityPreviewPanel {
   position: relative;
   display: flex;

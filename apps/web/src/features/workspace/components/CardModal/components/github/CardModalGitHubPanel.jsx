@@ -4,6 +4,7 @@ import CardModalGitHubStateView from './components/CardModalGitHubStateView.jsx'
 import CardModalGitHubUrlInput from './components/CardModalGitHubUrlInput.jsx'
 import CardModalGitHubSearchBar from './components/CardModalGitHubSearchBar.jsx'
 import CardModalGitHubLinkItem from './components/CardModalGitHubLinkItem.jsx'
+import CardModalGitHubLinkedItems from './CardModalGitHubLinkedItems.jsx'
 import styles from './CardModalGitHubPanel.module.css'
 
 /**
@@ -82,7 +83,7 @@ export default function CardModalGitHubPanel({
 
   if (status === 'loading') {
     return (
-      <div className={styles.root}>
+      <div className={`${styles.root} ${styles.themeScope}`}>
         <CardModalGitHubStateView
           styles={styles}
           spinning
@@ -95,7 +96,7 @@ export default function CardModalGitHubPanel({
 
   if (status === 'permission_denied') {
     return (
-      <div className={styles.root}>
+      <div className={`${styles.root} ${styles.themeScope}`}>
         <CardModalGitHubStateView
           styles={styles}
           icon={Lock}
@@ -108,7 +109,7 @@ export default function CardModalGitHubPanel({
 
   if (status === 'disconnected') {
     return (
-      <div className={styles.root}>
+      <div className={`${styles.root} ${styles.themeScope}`}>
         <CardModalGitHubStateView
           styles={styles}
           icon={SiGithub}
@@ -128,7 +129,7 @@ export default function CardModalGitHubPanel({
 
   if (status === 'error') {
     return (
-      <div className={styles.root}>
+      <div className={`${styles.root} ${styles.themeScope}`}>
         <CardModalGitHubStateView
           styles={styles}
           icon={CircleAlert}
@@ -142,7 +143,7 @@ export default function CardModalGitHubPanel({
   }
 
   return (
-    <div className={styles.root}>
+    <div className={`${styles.root} ${styles.themeScope}`}>
       {!isManager ? (
         <p className={styles.managerNotice}>
           Somente gerentes do plano podem vincular ou remover itens do GitHub. Você pode visualizar os itens já vinculados.
@@ -198,26 +199,14 @@ export default function CardModalGitHubPanel({
         </>
       )}
 
-      <div className={styles.section}>
-        <p className={styles.sectionLabel}>Vinculados a este cartão</p>
-        {linkedItems.length === 0 ? (
-          <p className={styles.linkedEmpty}>Nenhum item do GitHub vinculado a este cartão ainda.</p>
-        ) : (
-          <div className={styles.linkedList}>
-            {linkedItems.map((item) => (
-              <CardModalGitHubLinkItem
-                key={item.id}
-                styles={styles}
-                item={item}
-                variant="linked"
-                canManage={isManager}
-                onUnlinkItem={onUnlinkItem}
-                isUnlinking={pendingUnlinkItemIds.includes(item.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      <CardModalGitHubLinkedItems
+        styles={styles}
+        linkedItems={linkedItems}
+        isManager={isManager}
+        onUnlinkItem={onUnlinkItem}
+        pendingUnlinkItemIds={pendingUnlinkItemIds}
+        showSectionLabel
+      />
     </div>
   )
 }

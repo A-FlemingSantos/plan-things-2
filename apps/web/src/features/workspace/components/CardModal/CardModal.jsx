@@ -35,6 +35,7 @@ import { createCardModalUid } from './utils/cardModalCommon.js'
 import { buildInitialCardSchedule, formatDueDateLabelFromValue } from './utils/cardModalDateUtils.js'
 import { snapCardScheduleTimeToSlot } from './utils/cardModalScheduleUtils.js'
 import CardModalActivityPreview from './components/CardModalActivityPreview.jsx'
+import CardModalGitHubMainPreview from './components/github/CardModalGitHubMainPreview.jsx'
 import CardModalActivitySidebar from './components/CardModalActivitySidebar.jsx'
 import {
   CardModalChecklistAssignMenu,
@@ -1282,6 +1283,13 @@ export default function CardModal({
                 />
               </div>
             </div>
+
+            <CardModalGitHubMainPreview
+              styles={styles}
+              cardId={card.id}
+              isActivitySidebarOpen={isActivitySidebarOpen}
+              githubIntegration={githubIntegration}
+            />
 
             <CardModalActivityPreview
               styles={styles}

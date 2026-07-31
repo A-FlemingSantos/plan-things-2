@@ -6,22 +6,27 @@
    modal chrome without extra theming work.
    ============================================================ */
 
-.root {
+.root,
+.themeScope {
   --gh-state-open: #1f883d;
   --gh-state-closed: #cf222e;
   --gh-state-merged: #8250df;
   --gh-state-draft: var(--text-3);
+}
+
+.root[data-theme='dark'],
+:global([data-theme='dark']) .themeScope {
+  --gh-state-open: #3fb950;
+  --gh-state-closed: #f85149;
+  --gh-state-merged: #a371f7;
+}
+
+.root {
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 14px 16px 18px;
   min-height: 0;
-}
-
-.root[data-theme='dark'] {
-  --gh-state-open: #3fb950;
-  --gh-state-closed: #f85149;
-  --gh-state-merged: #a371f7;
 }
 
 /* ── Generic state view (loading / empty / error / disconnected / permission) ── */
@@ -657,8 +662,8 @@
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 }
 
-.diffAdditions { color: var(--gh-state-open); }
-.diffDeletions { color: var(--gh-state-closed); }
+.diffAdditions { color: var(--gh-state-open, #1f883d); }
+.diffDeletions { color: var(--gh-state-closed, #cf222e); }
 .diffFiles { color: var(--text-3); }
 
 .commitDiffSection {
