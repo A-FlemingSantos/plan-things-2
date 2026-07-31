@@ -9,7 +9,7 @@
   max-width: calc(100vw - 24px);
   padding: 3px 6px;
   border: 1px solid var(--border-1);
-  border-radius: 12px;
+  border-radius: 9999px;
   background: transparent;
   color: var(--text-1);
   box-shadow:
@@ -36,7 +36,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 50%;
   color: var(--text-1);
 }
 
@@ -64,7 +64,7 @@
   position: absolute;
   inset: 1px;
   z-index: -1;
-  border-radius: 12px;
+  border-radius: 50%;
   background: var(--active);
 }
 
