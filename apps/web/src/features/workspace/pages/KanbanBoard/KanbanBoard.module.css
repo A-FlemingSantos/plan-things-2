@@ -3675,6 +3675,23 @@
   box-shadow: inset 0 -10px 16px color-mix(in srgb, var(--text-1) 5%, transparent);
 }
 
+[data-theme='dark'] .cmActivityPreviewPanel {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme='dark'] .cmActivityPreviewPanelExpanded {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.32);
+}
+
+[data-theme='dark'] .cmActivityPreviewFade {
+  box-shadow: inset 0 -10px 16px rgba(0, 0, 0, 0.28);
+}
+
 .cmActivityPreviewToggleBtn {
   display: inline-flex;
   align-items: center;
