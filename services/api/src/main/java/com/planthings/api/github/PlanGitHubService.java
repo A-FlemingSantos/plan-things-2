@@ -168,6 +168,7 @@ public class PlanGitHubService {
   }
 
   @Transactional(readOnly = true)
+  // CardModal GitHub tab no longer calls this; keep for now or delete if unused elsewhere.
   public GitHubApiClient.GitHubCommitDiff getCommitDiff(UUID planId, String repoFullName, String sha) {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanMember(planId, currentUserId);

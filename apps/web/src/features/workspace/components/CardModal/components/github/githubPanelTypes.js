@@ -3,9 +3,8 @@
  *
  * These typedefs describe the read-only GitHub objects the panel can render
  * (issue / pull request / branch / commit) and the link between a card and
- * one of those objects. Real API wiring (search, linking, diff fetching)
- * happens later; every handler here is a plain callback prop so the panel
- * stays presentational.
+ * one of those objects. Link/unlink and search are wired via props; summaries
+ * use persisted link snapshots rather than live detail/diff fetches.
  */
 
 /**
@@ -48,27 +47,7 @@
  * @property {string} [lastCommitMessage] - branch only.
  * @property {string} [sha] - commit only, short SHA (7+ chars).
  * @property {string} [message] - commit only, commit message (first line = title).
- * @property {Array<{filename?: string, name?: string, status?: string}>} [files]
- * @property {boolean} [detailsLoaded]
- * @property {boolean} [detailsLoading]
- * @property {string} [detailsError]
- * @property {number} [detailsPage]
- * @property {boolean} [hasMoreDetails]
- */
-
-/**
- * @typedef {'idle'|'loading'|'loaded'|'error'} GitHubDiffLoadState
- * Drives the lazy commit-diff affordance. Wiring to a real diff fetch is out
- * of scope for this pass; the panel only exposes the trigger + state slots.
- */
-
-/**
- * @typedef {Object} GitHubCommitDiffSummary
- * @property {number} additions
- * @property {number} deletions
- * @property {number} changedFiles
- * @property {string} [patchPreview] - Optional truncated unified-diff text.
- * @property {string} [renderedHtml] - HTML generated lazily by diff2html.
+ * @property {string} [body] - Full description from link snapshot (issues/PRs).
  */
 
 export const GITHUB_LINK_TYPE_OPTIONS = [

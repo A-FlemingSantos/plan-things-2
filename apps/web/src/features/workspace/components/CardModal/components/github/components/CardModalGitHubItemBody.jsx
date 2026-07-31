@@ -1,16 +1,18 @@
-import { CircleAlert, Loader } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
-import { GitHubExternalLinkGlyph } from '../githubIcons.jsx'
 import { formatGitHubDiffStat } from '../githubPanelFormat.js'
 
 function ItemDescription({ styles, item }) {
-  if (!item.bodyPreview) return null
+  const body = item.body ?? item.bodyPreview ?? (item.type === 'commit' ? item.message : null)
+  if (!body) return null
+  if (item.type === 'commit') {
+    return <p className={styles.itemDescription}>{body}</p>
+  }
   return (
     <div className={styles.itemDescription}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-        {item.bodyPreview}
+        {body}
       </ReactMarkdown>
     </div>
   )
@@ -100,135 +102,40 @@ function PullRequestBody({ styles, item }) {
         ) : null}
       </div>
       <DiffStatRow styles={styles} diffStat={item.diffStat} />
-      {item.reviewers?.length ? (
-        <DetailList
-          styles={styles}
-          title="Reviews"
-          items={item.reviewers.map((review) => `${review.login ?? review.name ?? 'Reviewer'} · ${review.state ?? review.status ?? 'pendente'}`)}
-        />
-      ) : null}
-      {item.commits?.length ? (
-        <DetailList
-          styles={styles}
-          title="Commits"
-          items={item.commits.map((commit) => `${commit.sha?.slice(0, 7) ?? ''} ${commit.message ?? commit.title ?? ''}`.trim())}
-        />
-      ) : null}
-      {item.checks?.length ? (
-        <DetailList
-          styles={styles}
-          title="Checks"
-          items={item.checks.map((check) => `${check.name ?? check.context ?? 'Check'} · ${check.conclusion ?? check.state ?? check.status ?? 'pending'}`)}
-        />
-      ) : null}
     </>
   )
 }
 
 function BranchBody({ styles, item }) {
   return (
-    <>
-      <div className={styles.itemFactsGrid}>
-        {item.lastCommitMessage ? (
-          <div className={styles.itemFact} style={{ gridColumn: '1 / -1' }}>
-            <span className={styles.itemFactLabel}>Último commit</span>
-            <span className={styles.itemFactValue}>{item.lastCommitMessage}</span>
-          </div>
-        ) : null}
-        {typeof item.aheadBy === 'number' ? (
-          <div className={styles.itemFact}>
-            <span className={styles.itemFactLabel}>À frente</span>
-            <span className={styles.itemFactValue}>{item.aheadBy} commit{item.aheadBy === 1 ? '' : 's'}</span>
-          </div>
-        ) : null}
-        {typeof item.behindBy === 'number' ? (
-          <div className={styles.itemFact}>
-            <span className={styles.itemFactLabel}>Atrás</span>
-            <span className={styles.itemFactValue}>{item.behindBy} commit{item.behindBy === 1 ? '' : 's'}</span>
-          </div>
-        ) : null}
-      </div>
-      {item.commits?.length ? (
-        <DetailList
-          styles={styles}
-          title="Timeline de commits"
-          items={item.commits.map((commit) => `${commit.sha?.slice(0, 7) ?? ''} ${commit.message ?? commit.title ?? ''} · ${commit.authorName ?? commit.author?.login ?? ''}`.trim())}
-        />
+    <div className={styles.itemFactsGrid}>
+      {item.lastCommitMessage ? (
+        <div className={styles.itemFact} style={{ gridColumn: '1 / -1' }}>
+          <span className={styles.itemFactLabel}>Último commit</span>
+          <span className={styles.itemFactValue}>{item.lastCommitMessage}</span>
+        </div>
       ) : null}
-    </>
-  )
-}
-
-function DetailList({ styles, title, items }) {
-  return (
-    <div className={styles.detailList}>
-      <p className={styles.detailListTitle}>{title}</p>
-      {items.map((value, index) => <p key={`${value}:${index}`} className={styles.detailListItem}>{value}</p>)}
+      {typeof item.aheadBy === 'number' ? (
+        <div className={styles.itemFact}>
+          <span className={styles.itemFactLabel}>À frente</span>
+          <span className={styles.itemFactValue}>{item.aheadBy} commit{item.aheadBy === 1 ? '' : 's'}</span>
+        </div>
+      ) : null}
+      {typeof item.behindBy === 'number' ? (
+        <div className={styles.itemFact}>
+          <span className={styles.itemFactLabel}>Atrás</span>
+          <span className={styles.itemFactValue}>{item.behindBy} commit{item.behindBy === 1 ? '' : 's'}</span>
+        </div>
+      ) : null}
     </div>
   )
 }
 
-/**
- * Commit body owns the lazy-diff affordance: the diff itself is not fetched
- * by this UI pass, it only exposes the trigger + idle/loading/loaded/error
- * slots the wiring step will drive.
- */
-function CommitBody({
-  styles,
-  item,
-  diffState = 'idle',
-  diffSummary,
-  onLoadDiff,
-}) {
+function CommitBody({ styles, item }) {
   return (
     <>
-      {item.message ? <p className={styles.itemDescription}>{item.message}</p> : null}
-      {item.files?.length ? (
-        <DetailList
-          styles={styles}
-          title="Arquivos alterados"
-          items={item.files.map((file) => `${file.filename ?? file.name} · ${file.status ?? 'modified'}`)}
-        />
-      ) : null}
-
-      <div className={styles.commitDiffSection}>
-        {diffState === 'idle' && onLoadDiff ? (
-          <button
-            type="button"
-            className={styles.commitDiffLoadBtn}
-            onClick={onLoadDiff}
-          >
-            Carregar diff
-          </button>
-        ) : null}
-
-        {diffState === 'loading' ? (
-          <button type="button" className={styles.commitDiffLoadBtn} disabled>
-            <Loader size={13} strokeWidth={1.75} className={styles.stateIconSpinning} aria-hidden="true" />
-            Carregando diff...
-          </button>
-        ) : null}
-
-        {diffState === 'error' ? (
-          <p className={styles.commitDiffError} role="alert">
-            <CircleAlert size={13} strokeWidth={1.75} aria-hidden="true" /> Não foi possível carregar o diff.
-          </p>
-        ) : null}
-
-        {diffState === 'loaded' && diffSummary ? (
-          <>
-            <DiffStatRow styles={styles} diffStat={diffSummary} />
-            {diffSummary.renderedHtml ? (
-              <div
-                className={styles.commitDiffHtml}
-                dangerouslySetInnerHTML={{ __html: diffSummary.renderedHtml }}
-              />
-            ) : diffSummary.patchPreview ? (
-              <pre className={styles.commitDiffPatch}>{diffSummary.patchPreview}</pre>
-            ) : null}
-          </>
-        ) : null}
-      </div>
+      <ItemDescription styles={styles} item={item} />
+      <DiffStatRow styles={styles} diffStat={item.diffStat} />
     </>
   )
 }
@@ -241,55 +148,20 @@ const BODY_BY_TYPE = {
 }
 
 /**
- * Dispatches to the correct read-only expandable body for the item's type.
+ * Read-only summary body for a linked GitHub object. Intentionally lightweight:
+ * no diffs, commit timelines, reviews or checks — those belong on GitHub.
  *
  * @param {{
  *   styles: Record<string, string>,
  *   item: import('../githubPanelTypes.js').GitHubLinkedItem,
- *   diffState?: import('../githubPanelTypes.js').GitHubDiffLoadState,
- *   diffSummary?: import('../githubPanelTypes.js').GitHubCommitDiffSummary,
- *   onLoadDiff?: () => void,
  * }} props
  */
-export default function CardModalGitHubItemBody({
-  styles,
-  item,
-  diffState,
-  diffSummary,
-  onLoadDiff,
-  onLoadMoreDetails,
-}) {
+export default function CardModalGitHubItemBody({ styles, item }) {
   const BodyComponent = BODY_BY_TYPE[item.type] ?? IssueBody
 
   return (
     <div className={styles.itemExpandedBody}>
-      {item.detailsLoading ? (
-        <p className={styles.detailLoading}>
-          <Loader size={13} strokeWidth={1.75} className={styles.stateIconSpinning} aria-hidden="true" />
-          Carregando detalhes...
-        </p>
-      ) : null}
-      {item.detailsError ? <p className={styles.commitDiffError}>{item.detailsError}</p> : null}
-      <BodyComponent styles={styles} item={item} diffState={diffState} diffSummary={diffSummary} onLoadDiff={onLoadDiff} />
-      {item.hasMoreDetails && onLoadMoreDetails ? (
-        <button
-          type="button"
-          className={styles.commitDiffLoadBtn}
-          onClick={onLoadMoreDetails}
-          disabled={item.detailsLoading}
-        >
-          {item.detailsLoading ? 'Carregando...' : 'Carregar mais'}
-        </button>
-      ) : null}
-      <a
-        className={styles.itemFooterLink}
-        href={item.url}
-        target="_blank"
-        rel="noreferrer"
-      >
-        <GitHubExternalLinkGlyph />
-        Abrir no GitHub
-      </a>
+      <BodyComponent styles={styles} item={item} />
     </div>
   )
 }

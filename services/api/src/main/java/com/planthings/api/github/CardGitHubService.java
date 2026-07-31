@@ -138,6 +138,8 @@ public class CardGitHubService {
   }
 
   @Transactional(readOnly = true)
+  // CardModal GitHub tab no longer calls this; summaries come from link snapshots.
+  // Keep for now; remove or repurpose if no other client needs live PR/branch timelines.
   public GitHubLinkDetailsView getDetails(UUID planId, UUID cardId, UUID linkId) {
     return getDetails(planId, cardId, linkId, 1, 30);
   }
@@ -166,6 +168,8 @@ public class CardGitHubService {
   }
 
   @Transactional(readOnly = true)
+  // CardModal GitHub tab no longer renders commit diffs inline.
+  // Keep for now; delete if nothing else consumes it.
   public GitHubApiClient.GitHubCommitDiff getCommitDiff(UUID planId, UUID cardId, UUID linkId) {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanMember(planId, currentUserId);
@@ -281,6 +285,7 @@ public class CardGitHubService {
     }
   }
 
+  // Only used by getDetails above (currently unused by web CardModal).
   private JsonNode fetchDetails(
       String accessToken,
       BoardCardGitHubLinkEntity link,

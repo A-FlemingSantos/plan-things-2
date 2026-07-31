@@ -65,6 +65,8 @@ public class CardGitHubController {
   }
 
   @GetMapping("/{linkId}/details")
+  // CardModal GitHub tab no longer calls this (summaries use link snapshots).
+  // Keep for now; remove or repurpose if no other client needs live PR/branch timelines.
   public ApiEnvelope<CardGitHubService.GitHubLinkDetailsView> getDetails(
       @PathVariable UUID planId,
       @PathVariable UUID cardId,
@@ -76,6 +78,8 @@ public class CardGitHubController {
   }
 
   @GetMapping("/{linkId}/diff")
+  // CardModal GitHub tab no longer renders commit diffs inline.
+  // Keep for now; delete if nothing else consumes it.
   public ApiEnvelope<GitHubApiClient.GitHubCommitDiff> getCommitDiff(
       @PathVariable UUID planId,
       @PathVariable UUID cardId,

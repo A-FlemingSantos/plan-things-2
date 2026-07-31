@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { CircleAlert, Lock } from 'lucide-react'
 import { SiGithub } from 'react-icons/si'
 import CardModalGitHubStateView from './components/CardModalGitHubStateView.jsx'
@@ -10,16 +9,13 @@ import styles from './CardModalGitHubPanel.module.css'
 /**
  * @typedef {import('./githubPanelTypes.js').GitHubLinkedItem} GitHubLinkedItem
  * @typedef {import('./githubPanelTypes.js').GitHubLinkType} GitHubLinkType
- * @typedef {import('./githubPanelTypes.js').GitHubDiffLoadState} GitHubDiffLoadState
- * @typedef {import('./githubPanelTypes.js').GitHubCommitDiffSummary} GitHubCommitDiffSummary
  */
 
 /**
  * Content for the CardModal "GitHub" sidebar panel. Fully presentational
  * and read-only with respect to GitHub object data: it only exposes
- * link/unlink actions plus a lazy commit-diff trigger, everything else is
- * driven by props so this component has no fixed/mock data on the
- * production path.
+ * link/unlink actions; summaries come from link snapshots, not live GitHub
+ * detail/diff fetches.
  *
  * @param {{
  *   status?: 'loading'|'disconnected'|'permission_denied'|'error'|'ready',
@@ -29,10 +25,6 @@ import styles from './CardModalGitHubPanel.module.css'
  *   onRetry?: () => void,
  *
  *   linkedItems?: GitHubLinkedItem[],
- *   expandedItemId?: string|null,
- *   onExpandedItemIdChange?: (id: string|null) => void,
- *   onLoadItemDetails?: (item: GitHubLinkedItem) => void,
- *   onLoadMoreItemDetails?: (item: GitHubLinkedItem) => void,
  *   onUnlinkItem?: (item: GitHubLinkedItem) => void,
  *   pendingUnlinkItemIds?: string[],
  *
@@ -54,10 +46,6 @@ import styles from './CardModalGitHubPanel.module.css'
  *   searchErrorMessage?: string,
  *   onLinkItem?: (item: GitHubLinkedItem) => void,
  *   pendingLinkItemIds?: string[],
- *
- *   commitDiffStateById?: Record<string, GitHubDiffLoadState>,
- *   commitDiffById?: Record<string, GitHubCommitDiffSummary>,
- *   onLoadCommitDiff?: (item: GitHubLinkedItem) => void,
  * }} props
  */
 export default function CardModalGitHubPanel({
@@ -68,10 +56,6 @@ export default function CardModalGitHubPanel({
   onRetry,
 
   linkedItems = [],
-  expandedItemId = null,
-  onExpandedItemIdChange,
-  onLoadItemDetails,
-  onLoadMoreItemDetails,
   onUnlinkItem,
   pendingUnlinkItemIds = [],
 
@@ -93,28 +77,7 @@ export default function CardModalGitHubPanel({
   searchErrorMessage,
   onLinkItem,
   pendingLinkItemIds = [],
-
-  commitDiffStateById = {},
-  commitDiffById = {},
-  onLoadCommitDiff,
 }) {
-  const [internalExpandedId, setInternalExpandedId] = useState(null)
-  const isExpandedControlled = typeof onExpandedItemIdChange === 'function'
-  const effectiveExpandedId = isExpandedControlled ? expandedItemId : internalExpandedId
-
-  const handleToggleExpanded = (id) => {
-    const next = effectiveExpandedId === id ? null : id
-    if (isExpandedControlled) {
-      onExpandedItemIdChange(next)
-    } else {
-      setInternalExpandedId(next)
-    }
-    if (next && linkedItemIds.has(next)) {
-      const item = [...linkedItems, ...searchResults].find((entry) => entry.id === next)
-      if (item && !item.detailsLoaded && !item.detailsLoading) onLoadItemDetails?.(item)
-    }
-  }
-
   const linkedItemIds = new Set(linkedItems.map((item) => item.id))
 
   if (status === 'loading') {
@@ -223,16 +186,10 @@ export default function CardModalGitHubPanel({
                     styles={styles}
                     item={item}
                     variant="result"
-                    expanded={effectiveExpandedId === item.id}
-                    onToggleExpanded={handleToggleExpanded}
                     canManage={isManager}
                     onLinkItem={onLinkItem}
                     isLinking={pendingLinkItemIds.includes(item.id)}
                     isAlreadyLinked={linkedItemIds.has(item.id)}
-                    diffState={commitDiffStateById[item.id]}
-                    diffSummary={commitDiffById[item.id]}
-                    onLoadCommitDiff={onLoadCommitDiff}
-                    onLoadMoreDetails={onLoadMoreItemDetails}
                   />
                 )) : null}
               </div>
@@ -253,15 +210,9 @@ export default function CardModalGitHubPanel({
                 styles={styles}
                 item={item}
                 variant="linked"
-                expanded={effectiveExpandedId === item.id}
-                onToggleExpanded={handleToggleExpanded}
                 canManage={isManager}
                 onUnlinkItem={onUnlinkItem}
                 isUnlinking={pendingUnlinkItemIds.includes(item.id)}
-                diffState={commitDiffStateById[item.id]}
-                diffSummary={commitDiffById[item.id]}
-                onLoadCommitDiff={onLoadCommitDiff}
-                onLoadMoreDetails={onLoadMoreItemDetails}
               />
             ))}
           </div>

@@ -12,7 +12,7 @@ const issue = {
   number: '#42',
   status: 'open',
   url: 'https://github.com/plan-things/app/issues/42',
-  bodyPreview: '**Descrição** da issue',
+  body: '**Descrição** da issue',
   assignees: [{ login: 'arthur' }],
   milestone: { title: 'MVP' },
 }
@@ -25,7 +25,7 @@ const commit = {
   message: 'Implement GitHub panel\n\nDetails',
   sha: 'abcdef123456',
   url: 'https://github.com/plan-things/app/commit/abcdef123456',
-  files: [{ filename: 'src/App.jsx', status: 'modified' }],
+  diffStat: { additions: 2, deletions: 1, changedFiles: 1 },
 }
 
 function buildSearchResults(count) {
@@ -58,7 +58,7 @@ describe('CardModalGitHubPanel', () => {
     expect(onSetup).toHaveBeenCalledOnce()
   })
 
-  it('renders detailed issue metadata and unlinks it', async () => {
+  it('renders issue metadata inline and unlinks it', async () => {
     const user = userEvent.setup()
     const onUnlink = vi.fn()
     render(
@@ -70,7 +70,6 @@ describe('CardModalGitHubPanel', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Expandir detalhes de Corrigir sincronização' }))
     expect(screen.getByText('Descrição')).toBeInTheDocument()
     expect(screen.getByText('arthur')).toBeInTheDocument()
     expect(screen.getByText('MVP')).toBeInTheDocument()
@@ -79,42 +78,20 @@ describe('CardModalGitHubPanel', () => {
     expect(onUnlink).toHaveBeenCalledWith(issue)
   })
 
-  it('requests and displays a lazy commit diff', async () => {
-    const user = userEvent.setup()
-    const onLoadDiff = vi.fn()
-    const { rerender } = render(
+  it('shows commit summary inline with diff stats and external link', () => {
+    render(
       <CardModalGitHubPanel
         status="ready"
         isManager
         linkedItems={[commit]}
-        onLoadCommitDiff={onLoadDiff}
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Expandir detalhes de Implement GitHub panel' }))
-    await user.click(screen.getByRole('button', { name: 'Carregar diff' }))
-    expect(onLoadDiff).toHaveBeenCalledWith(commit)
-
-    rerender(
-      <CardModalGitHubPanel
-        status="ready"
-        isManager
-        linkedItems={[commit]}
-        expandedItemId="commit-1"
-        onExpandedItemIdChange={() => {}}
-        commitDiffStateById={{ 'commit-1': 'loaded' }}
-        commitDiffById={{
-          'commit-1': {
-            additions: 2,
-            deletions: 1,
-            changedFiles: 1,
-            patchPreview: 'diff --git a/src/App.jsx b/src/App.jsx',
-          },
-        }}
-      />,
-    )
     expect(screen.getByText('+2')).toBeInTheDocument()
-    expect(screen.getByText(/diff --git/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Abrir Implement GitHub panel no GitHub' })).toHaveAttribute(
+      'href',
+      commit.url,
+    )
   })
 
   it('renders many search results inside the bounded results list container', () => {
@@ -136,7 +113,7 @@ describe('CardModalGitHubPanel', () => {
     const list = screen.getByTestId('github-search-results-list')
     expect(list.className).toContain(styles.searchResultsList)
     expect(list.children).toHaveLength(12)
-    expect(screen.getAllByRole('button', { name: /Issue \d+ with a longer title/ })).toHaveLength(12)
+    expect(screen.getAllByRole('link', { name: /Abrir Issue \d+ with a longer title to verify natural row height no GitHub/ })).toHaveLength(12)
     list.childNodes.forEach((node) => {
       expect(node.className).toContain(styles.item)
     })

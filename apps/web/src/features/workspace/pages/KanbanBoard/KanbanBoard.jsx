@@ -737,10 +737,6 @@ export default function KanbanBoard() {
             onOpenIntegrationSetup: () => setIsGitHubIntegrationOpen(true),
             onRetry: github.reload,
             linkedItems: github.linkedItems,
-            expandedItemId: github.expandedItemId,
-            onExpandedItemIdChange: github.setExpandedItemId,
-            onLoadItemDetails: github.loadItemDetails,
-            onLoadMoreItemDetails: github.loadMoreItemDetails,
             onUnlinkItem: github.unlinkItem,
             pendingUnlinkItemIds: github.pendingUnlinkItemIds,
             urlInputValue: github.urlInputValue,
@@ -760,9 +756,6 @@ export default function KanbanBoard() {
             searchErrorMessage: github.searchError,
             onLinkItem: github.linkItem,
             pendingLinkItemIds: github.pendingLinkItemIds,
-            commitDiffStateById: github.commitDiffStateById,
-            commitDiffById: github.commitDiffById,
-            onLoadCommitDiff: github.loadCommitDiff,
           }}
         />
       )}

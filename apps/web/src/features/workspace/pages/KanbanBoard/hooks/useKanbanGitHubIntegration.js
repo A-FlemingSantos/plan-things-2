@@ -44,6 +44,20 @@ function normalizeGitHubItem(item) {
     ? undefined
     : String(source.number).startsWith('#') ? String(source.number) : `#${source.number}`
 
+  const labelNames = source.labelNames?.length
+    ? source.labelNames
+    : source.labels?.map((label) => label?.name ?? label).filter(Boolean) ?? []
+
+  const diffStat = source.diffStat ?? (
+    source.additions != null || source.deletions != null || source.changedFiles != null
+      ? {
+          additions: source.additions ?? 0,
+          deletions: source.deletions ?? 0,
+          changedFiles: source.changedFiles ?? 0,
+        }
+      : undefined
+  )
+
   return {
     ...source,
     id: String(source.id ?? source.htmlUrl ?? source.url ?? `${type}:${source.repoFullName}:${number ?? source.ref ?? source.sha}`),
@@ -53,129 +67,30 @@ function normalizeGitHubItem(item) {
     url: source.url ?? source.htmlUrl ?? source.html_url ?? '#',
     number,
     status: source.status ?? source.state,
-    updatedAt: source.updatedAt ?? source.updated_at,
+    updatedAt: source.updatedAt ?? source.updated_at ?? source.committedAt,
     createdAt: source.createdAt ?? source.created_at,
-    authorName: source.authorName ?? source.author?.login ?? source.user?.login,
+    authorName: source.authorName ?? source.author?.login ?? source.author?.name ?? source.user?.login,
     authorAvatarUrl: source.authorAvatarUrl ?? source.author?.avatar_url ?? source.user?.avatar_url,
-    labelNames: source.labelNames?.length
-      ? source.labelNames
-      : source.labels?.map((label) => label?.name ?? label).filter(Boolean) ?? [],
+    labelNames,
+    body: source.body,
     bodyPreview: source.bodyPreview ?? source.body,
-    sha: source.sha,
-    message: source.message ?? source.commit?.message,
+    sha: source.sha ?? source.lastCommitSha,
+    message: source.message ?? source.commit?.message ?? source.lastCommitMessage,
     assignees: source.assignees,
     milestone: source.milestone,
-    reviewers: source.reviewers ?? source.requestedReviewers,
-    commits: Array.isArray(source.commits) ? source.commits : [],
-    checks: source.checks,
-    files: source.files,
+    baseBranch: source.baseBranch ?? source.base?.ref,
+    headBranch: source.headBranch ?? source.head?.ref,
+    commentsCount: source.commentsCount ?? source.comments,
     aheadBy: source.aheadBy,
     behindBy: source.behindBy,
     lastCommitSha: source.lastCommitSha,
     lastCommitMessage: source.lastCommitMessage,
-  }
-}
-
-function mapCommitSummary(commit) {
-  return {
-    sha: commit?.sha,
-    message: commit?.message ?? commit?.commit?.message,
-    authorName: commit?.authorName ?? commit?.author?.login ?? commit?.commit?.author?.name,
-    committedAt: commit?.committedAt ?? commit?.commit?.author?.date,
-  }
-}
-
-function mergeGitHubDetails(item, response, append = false) {
-  const details = response?.details ?? response ?? {}
-  const common = {
-    ...item,
-    detailsLoaded: true,
-    detailsLoading: false,
-    detailsError: null,
-    detailsPage: Number(details.page ?? 1),
-    hasMoreDetails: Boolean(details.hasMore),
-  }
-
-  if (item.type === 'issue') {
-    return {
-      ...common,
-      bodyPreview: details.body ?? item.bodyPreview,
-      labelNames: details.labels?.map((label) => label?.name ?? label).filter(Boolean) ?? item.labelNames,
-      assignees: details.assignees ?? item.assignees,
-      milestone: details.milestone ?? item.milestone,
-      commentsCount: details.comments ?? item.commentsCount,
-      authorName: details.user?.login ?? item.authorName,
-      updatedAt: details.updatedAt ?? item.updatedAt,
-      createdAt: details.createdAt ?? item.createdAt,
-    }
-  }
-
-  if (item.type === 'pull_request') {
-    const pullRequest = details.pullRequest ?? {}
-    const nextCommits = Array.isArray(details.commits) ? details.commits.map(mapCommitSummary) : []
-    const statuses = details.combinedStatus?.statuses ?? []
-    const checkRuns = details.checkRuns?.check_runs ?? details.checkRuns?.checkRuns ?? []
-    return {
-      ...common,
-      bodyPreview: pullRequest.body ?? item.bodyPreview,
-      labelNames: pullRequest.labels?.map((label) => label?.name ?? label).filter(Boolean) ?? item.labelNames,
-      baseBranch: pullRequest.base?.ref ?? item.baseBranch,
-      headBranch: pullRequest.head?.ref ?? item.headBranch,
-      reviewers: details.reviews ?? pullRequest.requestedReviewers ?? item.reviewers,
-      commits: append ? [...(item.commits ?? []), ...nextCommits] : nextCommits,
-      checks: [
-        ...statuses.map((status) => ({ name: status.context, state: status.state })),
-        ...checkRuns.map((check) => ({ name: check.name, status: check.status, conclusion: check.conclusion })),
-      ],
-      diffStat: {
-        additions: pullRequest.additions ?? item.diffStat?.additions ?? 0,
-        deletions: pullRequest.deletions ?? item.diffStat?.deletions ?? 0,
-        changedFiles: pullRequest.changedFiles ?? item.diffStat?.changedFiles ?? 0,
-      },
-    }
-  }
-
-  if (item.type === 'branch') {
-    const nextCommits = Array.isArray(details.commits) ? details.commits.map(mapCommitSummary) : []
-    return {
-      ...common,
-      aheadBy: details.aheadBy ?? item.aheadBy,
-      behindBy: details.behindBy ?? item.behindBy,
-      lastCommitSha: details.lastCommitSha ?? item.lastCommitSha,
-      lastCommitMessage: details.lastCommitMessage ?? item.lastCommitMessage,
-      commits: append ? [...(item.commits ?? []), ...nextCommits] : nextCommits,
-    }
-  }
-
-  return {
-    ...common,
-    message: details.message ?? item.message,
-    authorName: details.author?.name ?? item.authorName,
-    updatedAt: details.committedAt ?? item.updatedAt,
-    files: details.files ?? item.files,
-    diffStat: {
-      additions: details.additions ?? item.diffStat?.additions ?? 0,
-      deletions: details.deletions ?? item.diffStat?.deletions ?? 0,
-      changedFiles: details.changedFiles ?? item.diffStat?.changedFiles ?? 0,
-    },
+    diffStat,
   }
 }
 
 function errorMessage(error, fallback) {
   return error?.message ?? fallback
-}
-
-function isLinkedGitHubItemId(id) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id ?? ''))
-}
-
-function commitDiffRequestPath(planId, cardId, item) {
-  if (isLinkedGitHubItemId(item.id)) {
-    return `/api/plans/${planId}/board/cards/${cardId}/github-links/${item.id}/diff`
-  }
-  const sha = item.sha ?? item.id
-  const repo = item.repoFullName ?? ''
-  return `/api/plans/${planId}/github/commit-diff?repo=${encodeURIComponent(repo)}&sha=${encodeURIComponent(sha)}`
 }
 
 export default function useKanbanGitHubIntegration({
@@ -208,9 +123,6 @@ export default function useKanbanGitHubIntegration({
   const [searchError, setSearchError] = useState('')
   const [pendingLinkItemIds, setPendingLinkItemIds] = useState([])
   const [pendingUnlinkItemIds, setPendingUnlinkItemIds] = useState([])
-  const [commitDiffStateById, setCommitDiffStateById] = useState({})
-  const [commitDiffById, setCommitDiffById] = useState({})
-  const [expandedItemId, setExpandedItemId] = useState(null)
 
   const request = useCallback((path, options = {}) => {
     if (!accessToken) throw new Error('Entre com uma conta real para usar o GitHub.')
@@ -418,64 +330,6 @@ export default function useKanbanGitHubIntegration({
     }
   }, [cardId, planId, refreshLinksAndBoard, request])
 
-  const loadCommitDiff = useCallback(async (item) => {
-    setCommitDiffStateById((state) => ({ ...state, [item.id]: 'loading' }))
-    try {
-      const response = await request(commitDiffRequestPath(planId, cardId, item))
-      const patch = response?.patch ?? response?.diff ?? ''
-      const [{ html }] = await Promise.all([
-        import('diff2html'),
-        import('diff2html/bundles/css/diff2html.min.css'),
-      ])
-      setCommitDiffById((state) => ({
-        ...state,
-        [item.id]: {
-          additions: response?.additions ?? 0,
-          deletions: response?.deletions ?? 0,
-          changedFiles: response?.changedFiles ?? response?.files?.length ?? 0,
-          patchPreview: patch,
-          renderedHtml: html(patch, {
-            drawFileList: false,
-            matching: 'lines',
-            outputFormat: 'line-by-line',
-          }),
-        },
-      }))
-      setCommitDiffStateById((state) => ({ ...state, [item.id]: 'loaded' }))
-    } catch {
-      setCommitDiffStateById((state) => ({ ...state, [item.id]: 'error' }))
-    }
-  }, [cardId, planId, request])
-
-  const loadItemDetails = useCallback(async (item, page = 1, append = false) => {
-    const updateItem = (entry) => entry.id === item.id
-      ? { ...entry, detailsLoading: true, detailsError: null }
-      : entry
-    setLinkedItems((items) => items.map(updateItem))
-    try {
-      const response = await request(
-        `/api/plans/${planId}/board/cards/${cardId}/github-links/${item.id}/details?page=${page}&perPage=30`,
-      )
-      setLinkedItems((items) => items.map((entry) => (
-        entry.id === item.id ? mergeGitHubDetails(entry, response, append) : entry
-      )))
-    } catch (error) {
-      setLinkedItems((items) => items.map((entry) => (
-        entry.id === item.id
-          ? {
-              ...entry,
-              detailsLoading: false,
-              detailsError: errorMessage(error, 'Não foi possível carregar os detalhes.'),
-            }
-          : entry
-      )))
-    }
-  }, [cardId, planId, request])
-
-  const loadMoreItemDetails = useCallback((item) => {
-    void loadItemDetails(item, (item.detailsPage ?? 1) + 1, true)
-  }, [loadItemDetails])
-
   const availableRepoFullNames = useMemo(
     () => connectedRepos.map((repo) => repo.fullName).filter(Boolean),
     [connectedRepos],
@@ -523,12 +377,5 @@ export default function useKanbanGitHubIntegration({
     unlinkItem,
     pendingLinkItemIds,
     pendingUnlinkItemIds,
-    commitDiffStateById,
-    commitDiffById,
-    loadCommitDiff,
-    expandedItemId,
-    setExpandedItemId,
-    loadItemDetails,
-    loadMoreItemDetails,
   }
 }

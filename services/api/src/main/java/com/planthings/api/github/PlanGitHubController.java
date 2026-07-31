@@ -58,6 +58,8 @@ public class PlanGitHubController {
   }
 
   @GetMapping("/commit-diff")
+  // Was used by CardModal search-result commit previews; panel now links out to GitHub.
+  // Keep for now; delete if nothing else consumes it.
   public ApiEnvelope<GitHubApiClient.GitHubCommitDiff> getCommitDiff(
       @PathVariable UUID planId,
       @RequestParam String repo,

@@ -1,5 +1,5 @@
-import { Check, ChevronRight, Loader, Plus, Trash2 } from 'lucide-react'
-import GitHubObjectIcon from '../githubIcons.jsx'
+import { Check, Loader, Plus, Trash2 } from 'lucide-react'
+import GitHubObjectIcon, { GitHubExternalLinkGlyph } from '../githubIcons.jsx'
 import {
   getGitHubItemIdentifier,
   getGitHubItemStatusLabel,
@@ -30,44 +30,32 @@ function StatusBadge({ styles, item }) {
 }
 
 /**
- * Common base layout for every linked/result GitHub object: icon, title,
- * repo + author + time meta row, a trailing action (link or unlink) and an
- * expand toggle that reveals the type-specific read-only body.
+ * Compact row for a GitHub object. Linked items show an inline summary below
+ * the header; search results stay header-only so the panel does not mirror
+ * GitHub's full object views.
  *
  * @param {{
  *   styles: Record<string, string>,
  *   item: import('../githubPanelTypes.js').GitHubLinkedItem,
  *   variant: 'linked'|'result',
- *   expanded?: boolean,
- *   onToggleExpanded?: (id: string) => void,
  *   canManage?: boolean,
  *   onLinkItem?: (item: import('../githubPanelTypes.js').GitHubLinkedItem) => void,
  *   isLinking?: boolean,
  *   isAlreadyLinked?: boolean,
  *   onUnlinkItem?: (item: import('../githubPanelTypes.js').GitHubLinkedItem) => void,
  *   isUnlinking?: boolean,
- *   diffState?: import('../githubPanelTypes.js').GitHubDiffLoadState,
- *   diffSummary?: import('../githubPanelTypes.js').GitHubCommitDiffSummary,
- *   onLoadCommitDiff?: (item: import('../githubPanelTypes.js').GitHubLinkedItem) => void,
- *   onLoadMoreDetails?: (item: import('../githubPanelTypes.js').GitHubLinkedItem) => void,
  * }} props
  */
 export default function CardModalGitHubLinkItem({
   styles,
   item,
   variant,
-  expanded = false,
-  onToggleExpanded,
   canManage = true,
   onLinkItem,
   isLinking = false,
   isAlreadyLinked = false,
   onUnlinkItem,
   isUnlinking = false,
-  diffState,
-  diffSummary,
-  onLoadCommitDiff,
-  onLoadMoreDetails,
 }) {
   const identifier = getGitHubItemIdentifier(item)
   const titleLine = getGitHubItemTitleLine(item)
@@ -75,10 +63,8 @@ export default function CardModalGitHubLinkItem({
   const iconClass = item.status ? styles[TYPE_ICON_CLASS[item.status]] : ''
 
   return (
-    <div className={`${styles.item} ${expanded ? styles.itemExpanded : ''}`}>
-      <div
-        className={styles.itemHeader}
-      >
+    <div className={styles.item}>
+      <div className={styles.itemHeader}>
         <GitHubObjectIcon
           type={item.type}
           status={item.status}
@@ -109,6 +95,17 @@ export default function CardModalGitHubLinkItem({
 
         <span className={styles.itemActions}>
           <StatusBadge styles={styles} item={item} />
+
+          <a
+            className={styles.itemActionBtn}
+            href={item.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Abrir ${titleLine} no GitHub`}
+            title="Abrir no GitHub"
+          >
+            <GitHubExternalLinkGlyph />
+          </a>
 
           {variant === 'linked' && canManage ? (
             <button
@@ -145,30 +142,11 @@ export default function CardModalGitHubLinkItem({
               )}
             </button>
           ) : null}
-
-          <button
-            type="button"
-            className={styles.itemActionBtn}
-            onClick={() => onToggleExpanded?.(item.id)}
-            aria-expanded={expanded}
-            aria-label={`${expanded ? 'Recolher' : 'Expandir'} detalhes de ${titleLine}`}
-          >
-            <span className={`${styles.itemChevron} ${expanded ? styles.itemChevronOpen : ''}`} aria-hidden="true">
-              <ChevronRight size={14} strokeWidth={1.75} />
-            </span>
-          </button>
         </span>
       </div>
 
-      {expanded ? (
-        <CardModalGitHubItemBody
-          styles={styles}
-          item={item}
-          diffState={diffState}
-          diffSummary={diffSummary}
-          onLoadDiff={onLoadCommitDiff ? () => onLoadCommitDiff(item) : undefined}
-          onLoadMoreDetails={onLoadMoreDetails ? () => onLoadMoreDetails(item) : undefined}
-        />
+      {variant === 'linked' ? (
+        <CardModalGitHubItemBody styles={styles} item={item} />
       ) : null}
     </div>
   )

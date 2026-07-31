@@ -197,6 +197,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
   }
 
   @Override
+  // Still used when linking commits; CardModal no longer renders the returned patch inline.
   public GitHubCommitDiff getCommitDiff(String accessToken, String owner, String repo, String sha) {
     JsonNode node = restExecutor.getJson(accessToken, repoPath(owner, repo) + "/commits/" + sha);
     StringBuilder patchPreview = new StringBuilder();
@@ -309,6 +310,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
   }
 
   @Override
+  // Only consumed by CardGitHubService.getDetails (unused by web CardModal since 2026-07).
   public JsonNode fetchPullRequestDetailsPage(
       String accessToken,
       String owner,
@@ -337,6 +339,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
   }
 
   @Override
+  // Only consumed by CardGitHubService.getDetails (unused by web CardModal since 2026-07).
   public JsonNode fetchBranchDetails(
       String accessToken,
       String owner,
