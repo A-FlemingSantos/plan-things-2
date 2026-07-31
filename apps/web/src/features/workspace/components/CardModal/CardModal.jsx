@@ -25,7 +25,7 @@ import {
   X,
 } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
-import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
+import SectionScrollArea from '../../../../shared/components/SectionScrollArea/SectionScrollArea.jsx'
 import {
   buildBrazilDateRange,
   resolveCardScheduleFromRange,
@@ -129,6 +129,7 @@ export default function CardModal({
   const [saveStatus, setSaveStatus] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const titleTextareaRef = useRef(null)
+  const titleRowRef = useRef(null)
   const textMenuRef = useRef(null)
   const textMenuButtonRef = useRef(null)
   const membersMenuRef = useRef(null)
@@ -245,6 +246,10 @@ export default function CardModal({
   } = activity
 
   const isMutating = isInteractionBlocked || isSendingComment
+  const showGitHubMainPreview = !isActivitySidebarOpen
+    && githubIntegration?.status === 'ready'
+    && (githubIntegration.linkedItems?.length ?? 0) > 0
+  const showRecentesPreview = !isActivitySidebarOpen
 
   const label = labels.find(l => l.id === labelId)
   const currentUserName = currentUser?.fullName ?? currentUser?.email ?? 'Você'
@@ -975,12 +980,14 @@ export default function CardModal({
         </div>
 
         <div className={`${styles.cmBody} ${!isActivitySidebarOpen ? styles.cmBodyActivityCollapsed : ''}`}>
-          <CustomScrollArea
+          <SectionScrollArea
             className={styles.cmMainScrollArea}
             viewportClassName={styles.cmMain}
             enabled
             refreshKey={`card-main:${card.id}`}
+            indicatorAnchorRef={titleRowRef}
           >
+            <SectionScrollArea.Section id="overview" label="Visão geral">
             <div className={styles.cmTaskTypeRow}>
               <button type="button" className={styles.cmTaskTypePill} aria-label="Tipo de tarefa">
                 <span className={styles.cmTaskTypeIcon}><List size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
@@ -989,7 +996,7 @@ export default function CardModal({
               </button>
             </div>
 
-            <div className={styles.cmTitleRow}>
+            <div ref={titleRowRef} className={styles.cmTitleRow}>
               <div className={styles.cmTitleEditor}>
                 <textarea
                   ref={titleTextareaRef}
@@ -1232,7 +1239,9 @@ export default function CardModal({
                 </div>
               </div>
             </div>
+            </SectionScrollArea.Section>
 
+            <SectionScrollArea.Section id="description" label="Descrição">
             <div className={`${styles.cmDescSection} ${desc.trim() ? styles.cmDescSectionHasValue : ''}`}>
               <div className={styles.cmDescToolbar}>
                 <button
@@ -1286,14 +1295,21 @@ export default function CardModal({
                 />
               </div>
             </div>
+            </SectionScrollArea.Section>
 
+            {showGitHubMainPreview ? (
+            <SectionScrollArea.Section id="github" label="GitHub">
             <CardModalGitHubMainPreview
               styles={styles}
               cardId={card.id}
               isActivitySidebarOpen={isActivitySidebarOpen}
               githubIntegration={githubIntegration}
             />
+            </SectionScrollArea.Section>
+            ) : null}
 
+            {showRecentesPreview ? (
+            <SectionScrollArea.Section id="recentes" label="Recentes">
             <CardModalActivityPreview
               styles={styles}
               iconSize={ICON_SIZE}
@@ -1304,6 +1320,8 @@ export default function CardModal({
               activityFeedItems={activitySidebarUi.activityFeedItems}
               getCommentPresenter={activitySidebarUi.getCommentPresenter}
             />
+            </SectionScrollArea.Section>
+            ) : null}
 
               {submitError ? (
                 <div className={styles.cmSaveRow}>
@@ -1315,7 +1333,7 @@ export default function CardModal({
                   <p className={styles.cmSubmitSuccess} role="status" aria-live="polite">{saveStatus}</p>
                 </div>
               ) : null}
-          </CustomScrollArea>
+          </SectionScrollArea>
 
           <CardModalActivitySidebar
             styles={styles}

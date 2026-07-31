@@ -1,0 +1,96 @@
+.root {
+  --section-scroll-bar-color: var(--text-1);
+  --section-scroll-bar-min-width: 6px;
+  --section-scroll-bar-max-width: 22px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-top: var(--section-scroll-indicator-offset-top, 20px);
+  padding-left: 2px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.indicatorHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.indicatorGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  pointer-events: auto;
+}
+
+.barButton {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 24px;
+  min-height: 8px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.barButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.bar {
+  display: block;
+  height: 2px;
+  min-width: var(--section-scroll-bar-min-width);
+  max-width: var(--section-scroll-bar-max-width);
+  background: color-mix(in srgb, var(--section-scroll-bar-color) 72%, transparent);
+  border-radius: 999px;
+  transition:
+    width 160ms ease,
+    background 160ms ease,
+    height 160ms ease;
+}
+
+.barButton:hover .bar,
+.barButton:focus-visible .bar {
+  height: 3px;
+  background: var(--section-scroll-bar-color);
+}
+
+.section {
+  min-width: 0;
+}
