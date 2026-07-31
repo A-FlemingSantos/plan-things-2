@@ -24,6 +24,7 @@ import CardModalGitHubPanel from './github/CardModalGitHubPanel.jsx'
 import CardModalSidebarEmptyState from './CardModalSidebarEmptyState.jsx'
 import CardModalSidebarPicker from './CardModalSidebarPicker.jsx'
 import CardModalSidebarRail from './CardModalSidebarRail.jsx'
+import CardModalActivityGitHubLink from './CardModalActivityGitHubLink.jsx'
 
 const SIDEBAR_PANEL_LABELS = {
   github: 'GitHub',
@@ -252,6 +253,17 @@ function CardModalSidebarActivityPanel({
                       <p key={item.id} className={styles.cmHistoryItem}>
                         <strong>{item.actor}</strong> (você) {item.text}
                       </p>
+                    )
+                  }
+
+                  if (item.type === 'github_link') {
+                    return (
+                      <CardModalActivityGitHubLink
+                        key={item.id}
+                        styles={styles}
+                        item={item.githubItem}
+                        actor={item.actor}
+                      />
                     )
                   }
 

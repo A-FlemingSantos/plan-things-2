@@ -97,6 +97,8 @@ function normalizeGitHubItem(item) {
     lastCommitSha: source.lastCommitSha,
     lastCommitMessage: source.lastCommitMessage,
     diffStat,
+    linkedAt: item.linkedAt ?? item.linked_at,
+    linkedByUserId: item.linkedByUserId ?? item.linked_by_user_id ?? null,
   }
 }
 

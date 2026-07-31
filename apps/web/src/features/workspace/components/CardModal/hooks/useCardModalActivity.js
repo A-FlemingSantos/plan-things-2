@@ -24,6 +24,7 @@ export default function useCardModalActivity({
   persistCardChangesRef,
   updateSaveStatus,
   setSubmitError,
+  githubLinkedItems = [],
 }) {
   const activitySidebarStorageKey = useMemo(
     () => buildActivitySidebarStorageKey(currentUser?.id),
@@ -67,8 +68,9 @@ export default function useCardModalActivity({
       createdAtLabel,
       members,
       getMemberName,
+      githubLinkedItems,
     }),
-    [activityBase, comments, activityEvents, currentUserName, createdAtLabel, members, getMemberName],
+    [activityBase, comments, activityEvents, currentUserName, createdAtLabel, members, getMemberName, githubLinkedItems],
   )
 
   useEffect(() => {

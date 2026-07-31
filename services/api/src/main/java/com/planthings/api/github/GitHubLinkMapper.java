@@ -51,7 +51,9 @@ public class GitHubLinkMapper {
         link.getTitle(),
         snapshot,
         Boolean.TRUE.equals(link.getUnavailable()),
-        Boolean.TRUE.equals(link.getCompletionAnchor())
+        Boolean.TRUE.equals(link.getCompletionAnchor()),
+        formatUpdatedAt(link.getCreatedAt()),
+        link.getLinkedByUserId() == null ? null : link.getLinkedByUserId().toString()
     );
   }
 
@@ -87,7 +89,9 @@ public class GitHubLinkMapper {
         item.message(),
         snapshot.isEmpty() ? null : snapshot,
         false,
-        false
+        false,
+        null,
+        null
     );
   }
 
@@ -286,7 +290,9 @@ public class GitHubLinkMapper {
       String message,
       JsonNode snapshot,
       boolean unavailable,
-      boolean completionAnchor
+      boolean completionAnchor,
+      String linkedAt,
+      String linkedByUserId
   ) {
   }
 

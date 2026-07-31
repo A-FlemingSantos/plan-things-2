@@ -32,6 +32,8 @@
  * @property {string} [updatedAt] - ISO 8601 GitHub last-update timestamp.
  * @property {string} [committedAt] - commit only.
  * @property {string} [lastCommitAt] - branch only.
+ * @property {string} [linkedAt] - ISO 8601 timestamp for when the item was linked to the card.
+ * @property {string} [linkedByUserId] - Workspace member who created the link.
  * @property {string[]} [labelNames] - Rendered as plain chips, no fixed colors assumed.
  * @property {string} [bodyPreview] - Short plain-text preview of the description.
  * @property {number} [commentsCount]

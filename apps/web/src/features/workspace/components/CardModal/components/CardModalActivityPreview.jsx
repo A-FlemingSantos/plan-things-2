@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
+import CardModalActivityGitHubLink from './CardModalActivityGitHubLink.jsx'
 
 const COLLAPSED_ITEM_LIMIT = 3
 
@@ -11,6 +12,18 @@ function renderActivityItem(item, styles, getCommentPresenter) {
       <p key={item.id} className={styles.cmActivityPreviewHistory}>
         <strong>{item.actor}</strong> {item.text}
       </p>
+    )
+  }
+
+  if (item.type === 'github_link') {
+    return (
+      <CardModalActivityGitHubLink
+        key={item.id}
+        styles={styles}
+        item={item.githubItem}
+        actor={item.actor}
+        variant="preview"
+      />
     )
   }
 

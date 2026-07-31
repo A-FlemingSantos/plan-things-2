@@ -196,6 +196,9 @@ export default function CardModal({
     updateSaveStatus,
     setSubmitError,
     isInteractionBlocked,
+    githubLinkedItems: githubIntegration?.status === 'ready'
+      ? (githubIntegration.linkedItems ?? [])
+      : [],
   })
 
   const {

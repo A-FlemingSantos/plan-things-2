@@ -106,7 +106,9 @@ class PlanGitHubServiceTest {
         null,
         null,
         false,
-        false
+        false,
+        null,
+        null
     );
 
     when(authenticatedUserService.requireUserId()).thenReturn(userId);

@@ -96,6 +96,29 @@ export function buildInlineAssignmentText(memberNames = []) {
   return `atribuiu a: ${memberNames.join(', ')} · Agora`
 }
 
+export function buildGitHubLinkActivityItems({
+  linkedItems = [],
+  members = [],
+  getMemberName,
+  currentUserName,
+}) {
+  return linkedItems.map((item) => {
+    const sortAt = getTimestampMs(item.linkedAt) ?? 0
+    const linker = item.linkedByUserId
+      ? members.find((member) => member.id === item.linkedByUserId)
+      : null
+    const actor = linker ? getMemberName(linker) : currentUserName
+
+    return {
+      id: `github-link-${item.id}`,
+      type: 'github_link',
+      sortAt,
+      actor,
+      githubItem: item,
+    }
+  })
+}
+
 export function buildActivityFeedItems({
   activityBase,
   comments,
@@ -104,6 +127,7 @@ export function buildActivityFeedItems({
   createdAtLabel,
   members,
   getMemberName,
+  githubLinkedItems = [],
 }) {
   const cardCreatedMs = getTimestampMs(activityBase.createdAt) ?? getTimestampMs(activityBase.created) ?? 0
   const items = [
@@ -135,6 +159,15 @@ export function buildActivityFeedItems({
 
   activityEvents.forEach((event) => {
     items.push(event)
+  })
+
+  buildGitHubLinkActivityItems({
+    linkedItems: githubLinkedItems,
+    members,
+    getMemberName,
+    currentUserName,
+  }).forEach((item) => {
+    items.push(item)
   })
 
   comments.forEach((comment, index) => {
