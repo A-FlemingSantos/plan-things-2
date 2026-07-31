@@ -56,4 +56,13 @@ public class PlanGitHubController {
   ) {
     return ApiEnvelope.ok(planGitHubService.searchObjects(planId, type, repo, q));
   }
+
+  @GetMapping("/commit-diff")
+  public ApiEnvelope<GitHubApiClient.GitHubCommitDiff> getCommitDiff(
+      @PathVariable UUID planId,
+      @RequestParam String repo,
+      @RequestParam String sha
+  ) {
+    return ApiEnvelope.ok(planGitHubService.getCommitDiff(planId, repo, sha));
+  }
 }

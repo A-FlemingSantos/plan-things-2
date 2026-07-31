@@ -3,12 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import useKanbanGitHubIntegration from './useKanbanGitHubIntegration.js'
 
 const apiMock = vi.hoisted(() => ({ apiRequest: vi.fn() }))
+const diff2htmlMock = vi.hoisted(() => ({ html: vi.fn(() => '<div>diff</div>') }))
 
 vi.mock('../../../../../shared/api/apiClient.js', () => apiMock)
+vi.mock('diff2html', () => diff2htmlMock)
+vi.mock('diff2html/bundles/css/diff2html.min.css', () => ({}))
 
 describe('useKanbanGitHubIntegration', () => {
   beforeEach(() => {
     apiMock.apiRequest.mockReset()
+    diff2htmlMock.html.mockClear()
   })
 
   it('loads and paginates detailed branch commits', async () => {
@@ -125,5 +129,72 @@ describe('useKanbanGitHubIntegration', () => {
       title: 'Recent issue',
       repoFullName: 'acme/repo',
     })
+  })
+
+  it('loads commit diffs for search results via plan endpoint and linked commits via link endpoint', async () => {
+    const requestedPaths = []
+    apiMock.apiRequest.mockImplementation((path) => {
+      requestedPaths.push(path)
+      if (path === '/api/settings') {
+        return Promise.resolve({ integrations: { github: { connected: true, login: 'arthur', scopes: ['repo'] } } })
+      }
+      if (path === '/api/plans/plan-1/github/repositories') {
+        return Promise.resolve([{ id: 'repo-link-1', fullName: 'acme/repo', connectionStatus: 'connected' }])
+      }
+      if (path === '/api/plans/plan-1/board/cards/card-1/github-links') {
+        return Promise.resolve([{
+          id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          type: 'commit',
+          repoFullName: 'acme/repo',
+          title: 'Linked commit',
+          sha: '1111111111111111111111111111111111111111',
+          url: 'https://github.com/acme/repo/commit/1111111111111111111111111111111111111111',
+        }])
+      }
+      if (path.startsWith('/api/plans/plan-1/github/objects?')) {
+        return Promise.resolve([])
+      }
+      if (path.includes('/github/commit-diff?')) {
+        return Promise.resolve({ additions: 2, deletions: 1, changedFiles: 1, patch: 'diff --git a/a b/a\n' })
+      }
+      if (path.includes('/github-links/') && path.endsWith('/diff')) {
+        return Promise.resolve({ additions: 3, deletions: 0, changedFiles: 1, patch: 'diff --git a/b b/b\n' })
+      }
+      return Promise.reject(new Error(`Unexpected request: ${path}`))
+    })
+
+    const { result } = renderHook(() => useKanbanGitHubIntegration({
+      planId: 'plan-1',
+      cardId: 'card-1',
+      accessToken: 'token',
+      enabled: true,
+      isManager: true,
+    }))
+
+    await waitFor(() => expect(result.current.linkedItems).toHaveLength(1))
+
+    await act(async () => {
+      await result.current.loadCommitDiff({
+        id: '56ac34d46c0ad31c324fca767ebfce60bf2fb29b',
+        type: 'commit',
+        repoFullName: 'acme/repo',
+        sha: '56ac34d46c0ad31c324fca767ebfce60bf2fb29b',
+        title: 'Unlinked commit',
+      })
+    })
+
+    expect(requestedPaths.some((path) => (
+      path === '/api/plans/plan-1/github/commit-diff?repo=acme%2Frepo&sha=56ac34d46c0ad31c324fca767ebfce60bf2fb29b'
+    ))).toBe(true)
+    expect(result.current.commitDiffStateById['56ac34d46c0ad31c324fca767ebfce60bf2fb29b']).toBe('loaded')
+
+    await act(async () => {
+      await result.current.loadCommitDiff(result.current.linkedItems[0])
+    })
+
+    expect(requestedPaths.some((path) => (
+      path === '/api/plans/plan-1/board/cards/card-1/github-links/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/diff'
+    ))).toBe(true)
+    expect(result.current.commitDiffStateById['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee']).toBe('loaded')
   })
 })

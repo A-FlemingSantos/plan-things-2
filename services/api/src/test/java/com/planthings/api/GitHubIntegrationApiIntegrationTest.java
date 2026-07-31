@@ -244,6 +244,33 @@ class GitHubIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
+  void shouldFetchCommitDiffForPlanRepositoryWithoutCardLink() throws Exception {
+    FakeGitHubApiClient.reset();
+    String token = registerAndGetToken("Plan Owner", "plan-owner-commit-diff@example.com", "12345678");
+    connectGitHub(token);
+    JsonNode plan = createPlan(token, "GitHub Commit Diff Plan");
+    String planId = plan.path("plan").path("id").asText();
+
+    mockMvc.perform(post("/api/plans/" + planId + "/github/repositories")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"fullName":"acme/repo"}
+                """))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(get("/api/plans/" + planId + "/github/commit-diff")
+            .queryParam("repo", "acme/repo")
+            .queryParam("sha", "56ac34d46c0ad31c324fca767ebfce60bf2fb29b")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.additions").value(1))
+        .andExpect(jsonPath("$.data.patch").value("diff --git a/file b/file\n"));
+
+    assertEquals("56ac34d46c0ad31c324fca767ebfce60bf2fb29b", FakeGitHubApiClient.lastCommitDiffSha);
+  }
+
+  @Test
   void shouldPromoteOldestEligibleAnchorOnRemoval() throws Exception {
     String token = registerAndGetToken("Plan Owner", "plan-owner-anchor@example.com", "12345678");
     connectGitHub(token);
@@ -369,11 +396,13 @@ class GitHubIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
     static String lastIssueSearchQuery = "";
     static String lastBranchSearchQuery = "";
     static String lastCommitSearchQuery = "";
+    static String lastCommitDiffSha = "";
 
     static void reset() {
       lastIssueSearchQuery = "";
       lastBranchSearchQuery = "";
       lastCommitSearchQuery = "";
+      lastCommitDiffSha = "";
     }
 
     @Override
@@ -490,7 +519,8 @@ class GitHubIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
 
     @Override
     public GitHubCommitDiff getCommitDiff(String accessToken, String owner, String repo, String sha) {
-      return new GitHubCommitDiff(1, 1, 1, "patch");
+      lastCommitDiffSha = sha;
+      return new GitHubCommitDiff(1, 1, 1, "diff --git a/file b/file\n");
     }
 
     @Override

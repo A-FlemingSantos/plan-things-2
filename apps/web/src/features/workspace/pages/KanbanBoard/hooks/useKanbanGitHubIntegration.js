@@ -165,6 +165,19 @@ function errorMessage(error, fallback) {
   return error?.message ?? fallback
 }
 
+function isLinkedGitHubItemId(id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id ?? ''))
+}
+
+function commitDiffRequestPath(planId, cardId, item) {
+  if (isLinkedGitHubItemId(item.id)) {
+    return `/api/plans/${planId}/board/cards/${cardId}/github-links/${item.id}/diff`
+  }
+  const sha = item.sha ?? item.id
+  const repo = item.repoFullName ?? ''
+  return `/api/plans/${planId}/github/commit-diff?repo=${encodeURIComponent(repo)}&sha=${encodeURIComponent(sha)}`
+}
+
 export default function useKanbanGitHubIntegration({
   planId,
   cardId,
@@ -408,7 +421,7 @@ export default function useKanbanGitHubIntegration({
   const loadCommitDiff = useCallback(async (item) => {
     setCommitDiffStateById((state) => ({ ...state, [item.id]: 'loading' }))
     try {
-      const response = await request(`/api/plans/${planId}/board/cards/${cardId}/github-links/${item.id}/diff`)
+      const response = await request(commitDiffRequestPath(planId, cardId, item))
       const patch = response?.patch ?? response?.diff ?? ''
       const [{ html }] = await Promise.all([
         import('diff2html'),

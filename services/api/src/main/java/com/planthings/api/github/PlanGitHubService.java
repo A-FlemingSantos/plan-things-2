@@ -167,6 +167,24 @@ public class PlanGitHubService {
     return results.stream().map(linkMapper::toSearchItemView).toList();
   }
 
+  @Transactional(readOnly = true)
+  public GitHubApiClient.GitHubCommitDiff getCommitDiff(UUID planId, String repoFullName, String sha) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, currentUserId);
+
+    if (!StringUtils.hasText(repoFullName)) {
+      throw new BadRequestException("GITHUB_REPO_OBRIGATORIO", "Selecione um repositorio do plano.");
+    }
+    if (!StringUtils.hasText(sha)) {
+      throw new BadRequestException("GITHUB_SHA_OBRIGATORIO", "Informe o SHA do commit.");
+    }
+
+    PlanGitHubRepoEntity planRepo = requireActivePlanRepo(planId, repoFullName);
+    String accessToken = accessTokenService.requireActiveAccessToken(planRepo.getConnectionUserId());
+    String[] parts = repoFullName.split("/", 2);
+    return githubApiClient.getCommitDiff(accessToken, parts[0], parts[1], sha.trim());
+  }
+
   @Transactional
   public ConnectedGitHubRepoView removeRepository(UUID planId, UUID repoLinkId) {
     UUID currentUserId = authenticatedUserService.requireUserId();
