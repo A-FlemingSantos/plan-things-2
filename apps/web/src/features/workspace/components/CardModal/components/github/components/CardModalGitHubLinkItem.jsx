@@ -1,4 +1,4 @@
-import { ChevronRight, Link2, Loader, Trash2 } from 'lucide-react'
+import { Check, ChevronRight, Loader, Plus, Trash2 } from 'lucide-react'
 import GitHubObjectIcon from '../githubIcons.jsx'
 import {
   getGitHubItemIdentifier,
@@ -133,15 +133,15 @@ export default function CardModalGitHubLinkItem({
               className={styles.itemLinkBtn}
               onClick={() => onLinkItem?.(item)}
               disabled={isLinking || isAlreadyLinked}
+              aria-label={isAlreadyLinked ? `Já vinculado: ${titleLine}` : `Vincular ${titleLine}`}
+              title={isAlreadyLinked ? 'Vinculado' : 'Vincular'}
             >
               {isAlreadyLinked ? (
-                'Vinculado'
+                <Check size={13} strokeWidth={1.75} aria-hidden="true" />
               ) : isLinking ? (
-                <Loader size={12} strokeWidth={1.75} className={styles.stateIconSpinning} aria-hidden="true" />
+                <Loader size={13} strokeWidth={1.75} className={styles.stateIconSpinning} aria-hidden="true" />
               ) : (
-                <>
-                  <Link2 size={11} strokeWidth={1.75} aria-hidden="true" /> Vincular
-                </>
+                <Plus size={13} strokeWidth={1.75} aria-hidden="true" />
               )}
             </button>
           ) : null}

@@ -470,14 +470,16 @@
 
 .itemLinkBtn {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
   height: 26px;
-  padding: 0 10px;
+  padding: 0;
   border: 1px solid var(--border-1);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--surface-2);
   color: var(--text-1);
-  font-size: 11.5px;
-  font-weight: 600;
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }
