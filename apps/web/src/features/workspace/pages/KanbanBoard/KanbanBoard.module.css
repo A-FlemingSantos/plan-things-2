@@ -4104,20 +4104,20 @@
   flex: 1 1 auto;
   min-width: 0;
   font-family: var(--font-family);
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 30px;
+  font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  letter-spacing: -.03em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
   border: none;
   outline: none;
   resize: none;
   padding: 0;
   background: transparent;
   transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
-  border-bottom: 1.5px solid transparent;
-  padding-bottom: 2px;
-  min-height: 48px;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 3px;
+  min-height: 44px;
   max-height: 120px;
   overflow: hidden;
 }
@@ -6804,7 +6804,7 @@
   }
   .cmHeaderLeft { min-width: 0; }
   .cmTitleRow { align-items: flex-start; }
-  .cmTitle { font-size: 22px; min-height: 36px; max-height: 72px; }
+  .cmTitle { font-size: 24px; min-height: 38px; max-height: 72px; letter-spacing: -0.01em; }
   .cmSaveRow { flex-direction: column; align-items: flex-start; }
   .cmToolbar { margin-left: -10px; padding-left: 32px; }
   .cmToolbarBtn {
