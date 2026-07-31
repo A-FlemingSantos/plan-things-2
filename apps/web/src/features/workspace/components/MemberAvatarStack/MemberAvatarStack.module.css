@@ -50,9 +50,14 @@
   position: static;
 }
 
-.tooltip {
+.tooltipHost {
   position: fixed;
   z-index: calc(var(--z-app-shell-header, 30) + 2);
+  pointer-events: none;
+}
+
+.tooltip {
+  display: inline-block;
   padding: 4px 8px;
   border-radius: 4px;
   background: var(--text-1);
@@ -60,7 +65,6 @@
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  pointer-events: none;
   box-shadow: var(--shadow-lg);
 }
 

@@ -95,49 +95,53 @@ function useTooltipPosition(anchorEl, active, tooltipEl) {
 
 function AvatarTooltipPortal({ rootRef, anchorEl, label, visible }) {
   const [tooltipEl, setTooltipEl] = useState(null)
-  const position = useTooltipPosition(anchorEl, visible, tooltipEl)
+  const active = Boolean(visible && label && anchorEl)
+  const position = useTooltipPosition(anchorEl, active, tooltipEl)
   const theme = resolveTheme(rootRef.current)
   const placement = position.placement ?? 'top'
 
-  if (!visible || !label || typeof document === 'undefined') return null
+  if (typeof document === 'undefined') return null
 
   return createPortal(
     <div data-theme={theme} className={styles.tooltipLayer}>
       <AnimatePresence>
-        <motion.div
-          ref={setTooltipEl}
-          key="tooltip"
-          className={styles.tooltip}
-          initial={{
-            x: '-50%',
-            y: placement === 'top' ? '-90%' : 8,
-            opacity: 0,
-            scale: 0.7,
-          }}
-          animate={{
-            x: '-50%',
-            y: placement === 'top' ? '-100%' : 0,
-            opacity: 1,
-            scale: 1,
-          }}
-          exit={{
-            x: '-50%',
-            y: placement === 'top' ? '-90%' : 8,
-            opacity: 0,
-            scale: 0.7,
-          }}
-          transition={{
-            type: 'spring',
-            stiffness: 400,
-            damping: 24,
-          }}
-          style={{
-            top: position.top,
-            left: position.left,
-          }}
-        >
-          {label}
-        </motion.div>
+        {active ? (
+          <motion.div
+            key="tooltip"
+            className={styles.tooltipHost}
+            initial={{
+              x: '-50%',
+              y: placement === 'top' ? '-90%' : 8,
+              opacity: 0,
+              scale: 0.7,
+            }}
+            animate={{
+              x: '-50%',
+              y: placement === 'top' ? '-100%' : 0,
+              opacity: 1,
+              scale: 1,
+            }}
+            exit={{
+              x: '-50%',
+              y: placement === 'top' ? '-90%' : 8,
+              opacity: 0,
+              scale: 0.7,
+            }}
+            transition={{
+              type: 'spring',
+              stiffness: 400,
+              damping: 24,
+            }}
+            style={{
+              top: position.top,
+              left: position.left,
+            }}
+          >
+            <span ref={setTooltipEl} className={styles.tooltip}>
+              {label}
+            </span>
+          </motion.div>
+        ) : null}
       </AnimatePresence>
     </div>,
     document.body,
