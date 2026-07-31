@@ -71,10 +71,11 @@ export default function CardModalActivityPreview({
     return null
   }
 
-  const canExpand = activityFeedItems.length > COLLAPSED_ITEM_LIMIT
+  const previewItems = [...activityFeedItems].reverse()
+  const canExpand = previewItems.length > COLLAPSED_ITEM_LIMIT
   const visibleItems = expanded
-    ? activityFeedItems
-    : activityFeedItems.slice(-COLLAPSED_ITEM_LIMIT)
+    ? previewItems
+    : previewItems.slice(0, COLLAPSED_ITEM_LIMIT)
 
   const feedContent = visibleItems.length === 0 ? (
     <p className={styles.cmActivityPreviewEmpty}>Nenhuma atividade ainda.</p>
