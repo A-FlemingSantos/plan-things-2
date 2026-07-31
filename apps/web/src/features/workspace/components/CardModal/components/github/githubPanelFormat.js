@@ -33,6 +33,27 @@ export function formatGitHubRelativeTime(isoDate) {
 }
 
 /**
+ * Returns the GitHub-native origin timestamp for relative display in linked items.
+ * Uses creation/commit time from the item or its persisted snapshot — never link sync time.
+ * @param {{ type?: string, createdAt?: string, updatedAt?: string, committedAt?: string, lastCommitAt?: string } | undefined} item
+ */
+export function getGitHubItemOriginTime(item) {
+  if (!item) return null
+
+  switch (item.type) {
+    case 'commit':
+      return item.committedAt ?? item.createdAt ?? null
+    case 'branch':
+      return item.lastCommitAt ?? item.createdAt ?? null
+    case 'issue':
+    case 'pull_request':
+      return item.createdAt ?? item.updatedAt ?? null
+    default:
+      return item.createdAt ?? item.committedAt ?? item.lastCommitAt ?? null
+  }
+}
+
+/**
  * @param {{ additions?: number, deletions?: number, changedFiles?: number } | undefined} diffStat
  */
 export function formatGitHubDiffStat(diffStat) {

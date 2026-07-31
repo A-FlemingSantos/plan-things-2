@@ -96,6 +96,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
         compare.path("behind_by").asInt(0),
         commit.path("sha").asText(""),
         commit.path("commit").path("message").asText(""),
+        commit.path("commit").path("committer").path("date").asText(null),
         objectMapper.createArrayNode()
     );
   }
@@ -144,6 +145,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
           "https://github.com/" + owner + "/" + repo + "/tree/" + name,
           null,
           "open",
+          null,
           null,
           null,
           commit.path("commit").path("author").path("date").asText(null),
@@ -409,6 +411,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
         node.path("changed_files").asInt(0),
         node.path("additions").asInt(0),
         node.path("deletions").asInt(0),
+        node.path("created_at").asText(null),
         node.path("updated_at").asText(null),
         node.path("statuses_url")
     );
@@ -444,6 +447,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
         status,
         node.path("user").path("login").asText(null),
         node.path("user").path("avatar_url").asText(null),
+        node.path("created_at").asText(null),
         node.path("updated_at").asText(null),
         labelNames(node.path("labels")),
         preview(node.path("body").asText(null)),
@@ -473,6 +477,7 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
         null,
         node.path("commit").path("author").path("name").asText(null),
         node.path("author").path("avatar_url").asText(null),
+        node.path("commit").path("author").path("date").asText(null),
         node.path("commit").path("author").path("date").asText(null),
         List.of(),
         preview(node.path("commit").path("message").asText(null)),

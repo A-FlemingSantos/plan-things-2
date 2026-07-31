@@ -5,7 +5,7 @@ import {
   getGitHubItemStatusLabel,
   getGitHubItemTitleLine,
 } from '../githubPanelTypes.js'
-import { formatGitHubRelativeTime } from '../githubPanelFormat.js'
+import { formatGitHubRelativeTime, getGitHubItemOriginTime } from '../githubPanelFormat.js'
 import CardModalGitHubItemBody from './CardModalGitHubItemBody.jsx'
 
 const STATUS_BADGE_CLASS = {
@@ -59,7 +59,7 @@ export default function CardModalGitHubLinkItem({
 }) {
   const identifier = getGitHubItemIdentifier(item)
   const titleLine = getGitHubItemTitleLine(item)
-  const relativeTime = formatGitHubRelativeTime(item.updatedAt)
+  const relativeTime = formatGitHubRelativeTime(getGitHubItemOriginTime(item))
   const iconClass = item.status ? styles[TYPE_ICON_CLASS[item.status]] : ''
 
   return (

@@ -28,7 +28,10 @@
  * @property {GitHubLinkStatus} [status] - Required for issue/pull_request.
  * @property {string} [authorName]
  * @property {string} [authorAvatarUrl]
- * @property {string} [updatedAt] - ISO 8601 timestamp.
+ * @property {string} [createdAt] - ISO 8601 GitHub creation timestamp.
+ * @property {string} [updatedAt] - ISO 8601 GitHub last-update timestamp.
+ * @property {string} [committedAt] - commit only.
+ * @property {string} [lastCommitAt] - branch only.
  * @property {string[]} [labelNames] - Rendered as plain chips, no fixed colors assumed.
  * @property {string} [bodyPreview] - Short plain-text preview of the description.
  * @property {number} [commentsCount]

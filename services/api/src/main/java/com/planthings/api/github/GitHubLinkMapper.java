@@ -24,6 +24,7 @@ public class GitHubLinkMapper {
   }
 
   public GitHubLinkedItemView toLinkedItemView(BoardCardGitHubLinkEntity link) {
+    JsonNode snapshot = parseSnapshot(link.getSnapshotJson());
     return new GitHubLinkedItemView(
         link.getId().toString(),
         link.getLinkType().toApiValue(),
@@ -34,7 +35,7 @@ public class GitHubLinkMapper {
         link.getStatus(),
         null,
         null,
-        formatUpdatedAt(link.getLastSyncedAt()),
+        extractSnapshotUpdatedAt(link.getLinkType(), snapshot),
         List.of(),
         extractBodyPreview(link.getSnapshotJson()),
         null,
@@ -48,13 +49,14 @@ public class GitHubLinkMapper {
         null,
         link.getGithubSha(),
         link.getTitle(),
-        parseSnapshot(link.getSnapshotJson()),
+        snapshot,
         Boolean.TRUE.equals(link.getUnavailable()),
         Boolean.TRUE.equals(link.getCompletionAnchor())
     );
   }
 
   public GitHubLinkedItemView toSearchItemView(GitHubApiClient.GitHubSearchItem item) {
+    ObjectNode snapshot = buildSearchSnapshot(item);
     return new GitHubLinkedItemView(
         item.id(),
         item.type().toApiValue(),
@@ -83,7 +85,7 @@ public class GitHubLinkMapper {
         item.lastCommitMessage(),
         item.sha(),
         item.message(),
-        null,
+        snapshot.isEmpty() ? null : snapshot,
         false,
         false
     );
@@ -115,6 +117,7 @@ public class GitHubLinkMapper {
     node.put("deletions", pullRequest.deletions());
     node.put("draft", pullRequest.draft());
     node.put("merged", pullRequest.merged());
+    node.put("createdAt", pullRequest.createdAt());
     node.put("updatedAt", pullRequest.updatedAt());
     return write(node);
   }
@@ -126,6 +129,7 @@ public class GitHubLinkMapper {
     node.put("behindBy", branch.behindBy());
     node.put("lastCommitSha", branch.lastCommitSha());
     node.put("lastCommitMessage", branch.lastCommitMessage());
+    node.put("lastCommitAt", branch.lastCommitAt());
     return write(node);
   }
 
@@ -168,6 +172,43 @@ public class GitHubLinkMapper {
     }
     ApiDateTimeDto dto = dateTimeMapper.toDateTime(value);
     return dto == null ? null : dto.iso();
+  }
+
+  private String extractSnapshotUpdatedAt(GitHubLinkType linkType, JsonNode snapshot) {
+    if (snapshot == null) {
+      return null;
+    }
+    String updatedAt = snapshotText(snapshot, "updatedAt");
+    if (StringUtils.hasText(updatedAt)) {
+      return updatedAt;
+    }
+    return switch (linkType) {
+      case COMMIT -> snapshotText(snapshot, "committedAt");
+      case BRANCH -> snapshotText(snapshot, "lastCommitAt");
+      case ISSUE, PULL_REQUEST -> null;
+    };
+  }
+
+  private ObjectNode buildSearchSnapshot(GitHubApiClient.GitHubSearchItem item) {
+    ObjectNode snapshot = objectMapper.createObjectNode();
+    if (StringUtils.hasText(item.createdAt())) {
+      snapshot.put("createdAt", item.createdAt());
+    }
+    if (item.type() == GitHubLinkType.COMMIT && StringUtils.hasText(item.updatedAt())) {
+      snapshot.put("committedAt", item.updatedAt());
+    }
+    if (item.type() == GitHubLinkType.BRANCH && StringUtils.hasText(item.updatedAt())) {
+      snapshot.put("lastCommitAt", item.updatedAt());
+    }
+    return snapshot;
+  }
+
+  private static String snapshotText(JsonNode snapshot, String field) {
+    if (snapshot == null || !snapshot.hasNonNull(field)) {
+      return null;
+    }
+    String value = snapshot.path(field).asText(null);
+    return StringUtils.hasText(value) ? value : null;
   }
 
   private String extractBodyPreview(String snapshotJson) {

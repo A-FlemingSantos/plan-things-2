@@ -460,6 +460,7 @@ class GitHubIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
           1,
           1,
           1,
+          "2025-12-31T00:00:00Z",
           "2026-01-01T00:00:00Z",
           null
       );
@@ -467,7 +468,17 @@ class GitHubIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
 
     @Override
     public GitHubBranch getBranch(String accessToken, String owner, String repo, String branchName) {
-      return new GitHubBranch(branchName, "https://github.com/" + owner + "/" + repo + "/tree/" + branchName, false, 0, 0, "sha", "message", null);
+      return new GitHubBranch(
+          branchName,
+          "https://github.com/" + owner + "/" + repo + "/tree/" + branchName,
+          false,
+          0,
+          0,
+          "sha",
+          "message",
+          "2026-01-01T00:00:00Z",
+          null
+      );
     }
 
     @Override
@@ -488,6 +499,7 @@ class GitHubIntegrationApiIntegrationTest extends ApiIntegrationTestSupport {
           "open",
           "github-owner",
           "https://avatars.example/github.png",
+          "2025-12-31T00:00:00Z",
           "2026-01-01T00:00:00Z",
           List.of(),
           "Body",

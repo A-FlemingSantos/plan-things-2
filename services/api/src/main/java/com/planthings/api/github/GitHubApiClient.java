@@ -121,6 +121,7 @@ public interface GitHubApiClient {
       int changedFiles,
       int additions,
       int deletions,
+      String createdAt,
       String updatedAt,
       JsonNode statusesUrl
   ) {
@@ -134,6 +135,7 @@ public interface GitHubApiClient {
       int behindBy,
       String lastCommitSha,
       String lastCommitMessage,
+      String lastCommitAt,
       JsonNode commits
   ) {
   }
@@ -162,6 +164,7 @@ public interface GitHubApiClient {
       String status,
       String authorName,
       String authorAvatarUrl,
+      String createdAt,
       String updatedAt,
       List<String> labelNames,
       String bodyPreview,

@@ -38,7 +38,7 @@ function normalizeLinkType(type) {
 
 function normalizeGitHubItem(item) {
   const snapshot = item?.snapshot && typeof item.snapshot === 'object' ? item.snapshot : {}
-  const source = { ...snapshot, ...item }
+  const source = { ...item, ...snapshot }
   const type = normalizeLinkType(source.type)
   const number = source.number == null
     ? undefined
@@ -58,6 +58,15 @@ function normalizeGitHubItem(item) {
       : undefined
   )
 
+  const createdAt = snapshot.createdAt ?? snapshot.created_at ?? item.createdAt ?? item.created_at
+  const committedAt = snapshot.committedAt ?? snapshot.committed_at
+  const lastCommitAt = snapshot.lastCommitAt ?? snapshot.last_commit_at
+  const updatedAt = snapshot.updatedAt ?? snapshot.updated_at
+    ?? committedAt
+    ?? lastCommitAt
+    ?? item.updatedAt
+    ?? item.updated_at
+
   return {
     ...source,
     id: String(source.id ?? source.htmlUrl ?? source.url ?? `${type}:${source.repoFullName}:${number ?? source.ref ?? source.sha}`),
@@ -67,8 +76,10 @@ function normalizeGitHubItem(item) {
     url: source.url ?? source.htmlUrl ?? source.html_url ?? '#',
     number,
     status: source.status ?? source.state,
-    updatedAt: source.updatedAt ?? source.updated_at ?? source.committedAt,
-    createdAt: source.createdAt ?? source.created_at,
+    createdAt,
+    updatedAt,
+    committedAt,
+    lastCommitAt,
     authorName: source.authorName ?? source.author?.login ?? source.author?.name ?? source.user?.login,
     authorAvatarUrl: source.authorAvatarUrl ?? source.author?.avatar_url ?? source.user?.avatar_url,
     labelNames,

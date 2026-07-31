@@ -26,10 +26,12 @@ describe('useKanbanGitHubIntegration', () => {
           repoFullName: 'acme/repo',
           title: 'feature/github',
           url: 'https://github.com/acme/repo/tree/feature/github',
+          updatedAt: '2026-07-31T12:00:00Z',
           snapshot: {
             aheadBy: 2,
             behindBy: 0,
             lastCommitMessage: 'Latest work',
+            lastCommitAt: '2025-01-15T10:00:00Z',
           },
         }])
       }
@@ -49,6 +51,8 @@ describe('useKanbanGitHubIntegration', () => {
       aheadBy: 2,
       behindBy: 0,
       lastCommitMessage: 'Latest work',
+      lastCommitAt: '2025-01-15T10:00:00Z',
+      updatedAt: '2025-01-15T10:00:00Z',
     })
   })
 
