@@ -28,8 +28,6 @@ const plansMock = vi.hoisted(() => ({
   currentUser: { id: 'user-1', fullName: 'Arthur Fleming' },
   isBackendDriven: false,
   isLoading: false,
-  aiChips: [],
-  setAiChips: vi.fn(),
 }))
 
 const apiClientMock = vi.hoisted(() => ({
@@ -40,7 +38,6 @@ const apiClientMock = vi.hoisted(() => ({
 const preferencesMock = vi.hoisted(() => ({
   localPreferences: {
     confirmDestructiveActions: true,
-    showIntelligenceSection: true,
   },
 }))
 
@@ -62,9 +59,7 @@ vi.mock('../../context/PlansContext.jsx', () => ({
 }))
 
 vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
-  DEFAULT_LOCAL_PREFERENCES: {
-    showIntelligenceSection: true,
-  },
+  DEFAULT_LOCAL_PREFERENCES: {},
   usePreferences: () => preferencesMock,
 }))
 
@@ -94,10 +89,7 @@ describe('Workspace mobile layout', () => {
       'plan-things:recent-plans:v1:user-1',
       JSON.stringify(['plan-1']),
     )
-    preferencesMock.localPreferences.showIntelligenceSection = true
-    plansMock.aiChips = []
     plansMock.isBackendDriven = false
-    plansMock.setAiChips.mockClear()
     apiClientMock.apiRequest.mockReset()
     apiClientMock.triggerBlobDownload.mockReset()
   })
@@ -107,7 +99,6 @@ describe('Workspace mobile layout', () => {
 
     renderWorkspace()
 
-    expect(screen.getByRole('region', { name: 'Seção do Intelligence' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /novo plano/i }).length).toBeGreaterThan(0)
     expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
     expect(screen.getByText('Recentes')).toBeInTheDocument()
@@ -118,50 +109,6 @@ describe('Workspace mobile layout', () => {
     expect(screen.getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visualização em grade' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visualização em lista' })).toBeInTheDocument()
-  })
-
-  it('hides the intelligence section when the workspace preference is disabled', () => {
-    preferencesMock.localPreferences.showIntelligenceSection = false
-
-    renderWorkspace()
-
-    expect(screen.queryByRole('region', { name: 'Seção do Intelligence' })).not.toBeInTheDocument()
-    expect(screen.getByText('Recentes')).toBeInTheDocument()
-    expect(screen.getByText('Workspaces')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Planos' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Membros' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument()
-  })
-
-  it('has a prompt input and send button in the intelligence section', () => {
-    renderWorkspace()
-
-    expect(screen.getByLabelText('Prompt do Intelligence')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeInTheDocument()
-  })
-
-  it('renders composer context and voice controls in the intelligence section', () => {
-    renderWorkspace()
-
-    expect(screen.getByRole('button', { name: 'Adicionar contexto ao chat' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Gravar áudio para o Intelligence' })).toBeInTheDocument()
-  })
-
-  it('disables the send button when the prompt is empty', () => {
-    renderWorkspace()
-
-    expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeDisabled()
-  })
-
-  it('enables the send button when the prompt has text', async () => {
-    const user = userEvent.setup()
-
-    renderWorkspace()
-
-    await user.type(screen.getByLabelText('Prompt do Intelligence'), 'Planejar algo')
-
-    expect(screen.getByRole('button', { name: 'Enviar prompt ao Intelligence' })).toBeEnabled()
   })
 
   it('handles workspace file deep links with an authenticated download', async () => {

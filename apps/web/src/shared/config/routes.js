@@ -5,7 +5,6 @@ export const ROUTES = {
   oauthCallback: '/oauth/callback',
   workspace: '/workspace',
   workspaceBoard: '/workspace/board',
-  workspaceChat: '/workspace/chat',
   calendar: '/calendar',
   files: '/files',
   settings: '/settings',
@@ -138,10 +137,6 @@ export function buildWorkspaceBoardPath(planId) {
 export function buildWorkspaceBoardCardPath(planId, cardId) {
   if (!planId || !cardId) return buildWorkspaceBoardPath(planId)
   return `${buildWorkspaceBoardPath(planId)}?card=${cardId}`
-}
-
-export function buildWorkspaceChatPath(conversationId) {
-  return conversationId ? `${ROUTES.workspaceChat}/${conversationId}` : ROUTES.workspaceChat
 }
 
 export function buildWorkspaceFilePath(fileId) {

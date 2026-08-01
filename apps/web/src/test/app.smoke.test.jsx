@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { normalizePlanRecord } from '../shared/contracts/planContracts.js'
@@ -108,45 +108,6 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/workspace')
   })
 
-  it('restores the dedicated chat from last context and browser history', async () => {
-    const session = createDemoSession({
-      user: {
-        id: 'route-chat-last-context-user',
-      },
-    })
-    const userId = session.user.id
-    window.localStorage.setItem(
-      `plan-things:settings:v1:${userId}`,
-      JSON.stringify({
-        homePage: 'workspace',
-        openLastCtx: true,
-      }),
-    )
-    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/workspace/chat')
-
-    renderApp('/app', { session })
-
-    expect(await screen.findByRole('link', { name: 'Intelligence' })).toHaveAttribute('aria-current', 'page')
-    expect(window.location.pathname).toBe('/workspace/chat')
-
-    await act(async () => {
-      window.history.pushState({}, '', '/workspace')
-      window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }))
-    })
-
-    await expectWorkspaceHomeShell()
-    expect(window.location.pathname).toBe('/workspace')
-
-    await act(async () => {
-      window.history.back()
-    })
-
-    await waitFor(() => {
-      expect(window.location.pathname).toBe('/workspace/chat')
-    })
-    expect(await screen.findByRole('link', { name: 'Intelligence' })).toHaveAttribute('aria-current', 'page')
-  })
-
   it('resolves /app to homePage when openLastCtx is disabled', async () => {
     const session = createDemoSession({
       user: {
@@ -237,27 +198,6 @@ describe('App smoke flows', () => {
     }, { timeout: 4000 })
     expect(await screen.findByRole('dialog', { name: 'Configurações' }, { timeout: 4000 })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
-  })
-
-  it('opens the Intelligence suspended chat from the board toolbar', async () => {
-    const user = userEvent.setup()
-
-    renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
-
-    const boardButton = await screen.findByRole('button', { name: 'Quadro' })
-    const toolbar = boardButton.closest('div[aria-label="Atalhos do quadro"]')
-    expect(toolbar).not.toBeNull()
-    const intelligenceButton = within(toolbar).getByRole('button', { name: 'Intelligence' })
-
-    expect(boardButton).toHaveAttribute('aria-current', 'page')
-    expect(intelligenceButton).toHaveAttribute('aria-expanded', 'false')
-    expect(intelligenceButton).toHaveAttribute('aria-controls', 'board-intelligence-panel')
-
-    await user.click(intelligenceButton)
-
-    expect(screen.getByLabelText('Chat de IA')).toBeInTheDocument()
-    expect(intelligenceButton).toHaveAttribute('aria-expanded', 'true')
-    expect(boardButton).not.toHaveAttribute('aria-current')
   })
 
   it('keeps legacy seeded due dates in pt-BR after opening and saving the date modal', async () => {

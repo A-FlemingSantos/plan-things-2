@@ -53,10 +53,6 @@ vi.mock('./features/settings/pages/SettingsPage/SettingsPage.jsx', () => ({
   default: () => <main>Settings</main>,
 }))
 
-vi.mock('./features/intelligence/pages/IntelligenceChat/IntelligenceChat.jsx', () => ({
-  default: () => <main>Intelligence</main>,
-}))
-
 vi.mock('./features/workspace/pages/InviteAccept/InviteAccept.jsx', () => ({
   default: () => <main>Invite</main>,
 }))

@@ -16,7 +16,7 @@ const GAP = 8
 /**
  * Positions the panel below (or above, when clipped) the anchor element and
  * renders it into document.body so it is never clipped by ancestor
- * overflow, mirroring the GitHubContextBar dropdown pattern.
+ * overflow via a fixed-position portal dropdown.
  */
 function usePanelPosition(anchorRef, panelRef, open) {
   const [style, setStyle] = useState({ position: 'fixed', top: 0, left: 0, visibility: 'hidden' })

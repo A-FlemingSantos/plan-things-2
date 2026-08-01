@@ -184,7 +184,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const [workspaceError, setWorkspaceError] = useState('')
   const [workspaceIconState, setWorkspaceIconState] = useState('idle')
   const [workspaceIconFeedback, setWorkspaceIconFeedback] = useState('')
-  const [isWorkspaceIntelligenceSectionOpen, setIsWorkspaceIntelligenceSectionOpen] = useState(true)
+  const [isWorkspaceAssistantPanelOpen, setIsWorkspaceAssistantPanelOpen] = useState(true)
   const kanbanAccentPickerRef = useRef(null)
   const workspaceIconPickerRef = useRef(null)
   const [workspacePlan, setWorkspacePlan] = useState(() => workspace?.subscriptionPlan ?? 'BASIC')
@@ -236,7 +236,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const openLastCtx = localPreferences.openLastCtx
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? DEFAULT_LOCAL_PREFERENCES.confirmDestructiveActions
   const liquidGlass = localPreferences.liquidGlass ?? DEFAULT_LOCAL_PREFERENCES.liquidGlass
-  const showIntelligenceSection = localPreferences.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection
   const kanbanAccentColor = localPreferences.kanbanAccentColor ?? DEFAULT_LOCAL_PREFERENCES.kanbanAccentColor
   const settingsToggleAccentColor = kanbanAccentColor
     ? resolveKanbanAccentColor(kanbanAccentColor)
@@ -1605,16 +1604,16 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           <button
             type="button"
             className={styles.settingsDisclosureTrigger}
-            aria-expanded={isWorkspaceIntelligenceSectionOpen}
-            aria-controls="workspace-intelligence-settings"
-            onClick={() => setIsWorkspaceIntelligenceSectionOpen((value) => !value)}
+            aria-expanded={isWorkspaceAssistantPanelOpen}
+            aria-controls="workspace-assistant-settings"
+            onClick={() => setIsWorkspaceAssistantPanelOpen((value) => !value)}
           >
             <span className={styles.settingsDisclosureCopy}>
-              <span className={styles.settingsDisclosureLabel}>Seção do Intelligence</span>
-              <span className={styles.settingsDisclosureHint}>Configura a exibição e os efeitos visuais do painel de Intelligence.</span>
+              <span className={styles.settingsDisclosureLabel}>Painel do assistente</span>
+              <span className={styles.settingsDisclosureHint}>Configura a exibição e os efeitos visuais do painel do assistente no workspace.</span>
             </span>
             <span
-              className={`${styles.settingsDisclosureChevron} ${isWorkspaceIntelligenceSectionOpen ? styles.settingsDisclosureChevronOpen : ''}`}
+              className={`${styles.settingsDisclosureChevron} ${isWorkspaceAssistantPanelOpen ? styles.settingsDisclosureChevronOpen : ''}`}
               aria-hidden="true"
             >
               <ChevronIcon />
@@ -1622,22 +1621,19 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
           </button>
 
           <div
-            className={`${styles.settingsDisclosurePanelShell} ${isWorkspaceIntelligenceSectionOpen ? styles.settingsDisclosurePanelShellOpen : ''}`}
+            className={`${styles.settingsDisclosurePanelShell} ${isWorkspaceAssistantPanelOpen ? styles.settingsDisclosurePanelShellOpen : ''}`}
           >
             <div
-              id="workspace-intelligence-settings"
+              id="workspace-assistant-settings"
               className={styles.settingsDisclosurePanel}
-              aria-hidden={!isWorkspaceIntelligenceSectionOpen}
+              aria-hidden={!isWorkspaceAssistantPanelOpen}
             >
               <SettingsField
-                label="Exibir seção do Intelligence"
-                hint="Mostra o painel da IA do Plan Things"
+                label="Exibir painel do assistente"
+                hint="Mostra o painel do assistente na página do workspace."
                 inlineControl
               >
-                <Toggle
-                  checked={showIntelligenceSection}
-                  onChange={(value) => handleLocalGeneralFieldChange('showIntelligenceSection', value)}
-                />
+                <span className={styles.settingsPlaceholderBadge}>Em breve</span>
               </SettingsField>
 
               <SettingsField

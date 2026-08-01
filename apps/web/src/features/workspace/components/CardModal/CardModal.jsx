@@ -16,7 +16,6 @@ import {
   Maximize2,
   PencilLine,
   Plus,
-  Sparkles,
   Star,
   Tag,
   TimerReset,
@@ -1047,16 +1046,6 @@ export default function CardModal({
                   </>
                 )}
               </div>
-            </div>
-
-            <div className={styles.cmAiBar}>
-              <span className={styles.cmAiBarIcon} aria-hidden="true">
-                <span className={styles.cmAiBarIconGlow} aria-hidden="true" />
-                <span className={styles.cmAiBarIconMark}>
-                  <Sparkles size={11} strokeWidth={ICON_STROKE} aria-hidden="true" />
-                </span>
-              </span>
-              <span className={styles.cmAiBarText}>Peça ao Intelligence para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes</span>
             </div>
 
             <div className={styles.cmPropertiesGrid}>

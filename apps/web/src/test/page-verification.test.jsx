@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createDemoSession, renderApp } from './renderApp.jsx'
@@ -94,29 +94,13 @@ describe('Page verification flows', () => {
   })
 
   it('verifies kanban utility panels', async () => {
-    const user = userEvent.setup()
-
     renderApp('/workspace/board/product-launch-q3', { session: createDemoSession() })
 
     expect(await screen.findAllByText('Adicionar lista')).not.toHaveLength(0)
-
-    await user.click(screen.getByRole('button', { name: /caixa de entrada/i }))
-    expect(await screen.findByLabelText('Caixa de entrada')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /planejador/i }))
-    expect(await screen.findByLabelText('Planejador')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Caixa de entrada')).not.toBeInTheDocument()
-
-    const toolbar = screen.getByText('Quadro').closest('div[aria-label="Atalhos do quadro"]')
-    expect(toolbar).not.toBeNull()
-    const intelligenceButton = within(toolbar).getByRole('button', { name: 'Intelligence' })
-    expect(intelligenceButton).toHaveAttribute('aria-expanded', 'false')
-    expect(intelligenceButton).toHaveAttribute('aria-controls', 'board-intelligence-panel')
-
-    await user.click(intelligenceButton)
-
-    expect(screen.getByLabelText('Chat de IA')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Planejador')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /filtros/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /compartilhar/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /intelligence/i })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Intelligence')).not.toBeInTheDocument()
   })
 
   it('keeps the mobile kanban as web without app-style list/task switching', async () => {

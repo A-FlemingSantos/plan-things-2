@@ -40,7 +40,6 @@ import {
   Paperclip,
   Plus,
   SendHorizontal,
-  Sparkles,
   Star,
   Tag,
   TimerReset,
@@ -965,15 +964,6 @@ function CardDetailScreen({
                     accessibilityLabel="Título do cartão"
                     onLayout={handleTitleLayout}
                   />
-                </View>
-
-                <View style={styles.cmAiBar}>
-                  <View style={styles.cmAiBarIcon}>
-                    <Sparkles size={11} color={theme.colors.white} strokeWidth={1.75} />
-                  </View>
-                  <Text style={styles.cmAiBarText}>
-                    Peça ao Intelligence para escrever uma descrição, gerar subtarefas ou encontrar tarefas semelhantes
-                  </Text>
                 </View>
 
                 <View style={styles.cmPropertiesGrid}>
@@ -2981,32 +2971,6 @@ const createStyles = (theme) => StyleSheet.create({
     letterSpacing: -0.5,
     padding: 0,
     ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
-  },
-  cmAiBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    minHeight: 40,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border1,
-    backgroundColor: theme.colors.surface2,
-  },
-  cmAiBarIcon: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-    backgroundColor: '#0a2f6b',
-  },
-  cmAiBarText: {
-    flex: 1,
-    color: theme.colors.text3,
-    fontSize: 13,
-    lineHeight: 18,
   },
   cmPropertiesGrid: {
     gap: 4,

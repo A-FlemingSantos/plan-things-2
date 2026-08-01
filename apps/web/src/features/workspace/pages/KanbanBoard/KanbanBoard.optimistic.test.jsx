@@ -37,8 +37,6 @@ const plansMock = vi.hoisted(() => ({
   applyBoardView: vi.fn(),
   isBackendDriven: true,
   isLoading: false,
-  aiChips: [],
-  setAiChips: vi.fn(),
 }))
 
 vi.mock('../../../../shared/api/apiClient.js', async () => {
@@ -238,7 +236,6 @@ describe('KanbanBoard optimistic feedback', () => {
     plansMock.ensurePlanDetails.mockReset()
     plansMock.refreshPlanDetails.mockReset()
     plansMock.loadPlanBoard.mockReset()
-    plansMock.setAiChips.mockReset()
     boardState.updateColumns.mockReset()
     boardState.updateCard.mockReset()
     boardActions.createColumn.mockReset()
@@ -250,7 +247,6 @@ describe('KanbanBoard optimistic feedback', () => {
     plansMock.ensurePlanDetails.mockResolvedValue(activePlan)
     plansMock.refreshPlanDetails.mockResolvedValue(activePlan)
     plansMock.loadPlanBoard.mockImplementation(() => Promise.resolve(boardState.columns))
-    plansMock.aiChips = []
     boardState.updateColumns.mockImplementation((updater) => {
       boardState.columns = typeof updater === 'function' ? updater(boardState.columns) : updater
     })
@@ -333,24 +329,6 @@ describe('KanbanBoard optimistic feedback', () => {
 
     expect(await screen.findByRole('button', { name: 'Excluir cartão' })).toBeInTheDocument()
     expect(screen.getByText('Falha ao excluir cartão')).toBeInTheDocument()
-  })
-
-  it('keeps board intelligence context isolated from workspace chat chips', async () => {
-    plansMock.aiChips = [
-      {
-        id: 'ctx-github',
-        type: 'github',
-        label: 'GitHub',
-        kind: 'connector',
-        ChipIcon: () => null,
-      },
-    ]
-
-    renderBoard({ pathname: '/workspace/plan-1/board', state: { openIntelligence: true } })
-
-    expect(await screen.findByLabelText('Chat de IA')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Repositório: plan-things/web')).toBeNull()
-    expect(screen.queryByLabelText('Remover GitHub do contexto')).toBeNull()
   })
 })
 

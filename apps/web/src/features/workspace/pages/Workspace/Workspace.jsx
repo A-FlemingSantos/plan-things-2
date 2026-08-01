@@ -7,18 +7,13 @@ import { readRecentPlanIds } from '../../data/recentPlansStorage.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
-import { DEFAULT_LOCAL_PREFERENCES, usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
+import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
-import {
-  resolveKanbanAccentColor,
-  resolveKanbanAccentForeground,
-} from '../../data/kanbanColorPalette.js'
 import { usePlans } from '../../context/PlansContext.jsx'
 import { useTransientNotification } from '../../../../shared/hooks/useTransientNotification.js'
 import NewPlanPopover from '../../components/NewPlanPopover/NewPlanPopover.jsx'
 import PlanBackgroundPicker from '../../components/PlanBackgroundPicker/PlanBackgroundPicker.jsx'
 import PlanCard from '../../components/PlanCard/PlanCard.jsx'
-import WorkspaceIntelligenceSection from '../../components/WorkspaceIntelligenceSection/WorkspaceIntelligenceSection.jsx'
 import WorkspaceLoadingState from '../../components/WorkspaceLoadingState/WorkspaceLoadingState.jsx'
 import WorkspaceSectionActions from '../../components/WorkspaceSectionActions/WorkspaceSectionActions.jsx'
 import {
@@ -50,12 +45,6 @@ export default function Workspace() {
   const { plans, activePlan, activePlanId, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
-  const showIntelligenceSection = localPreferences.showIntelligenceSection ?? DEFAULT_LOCAL_PREFERENCES.showIntelligenceSection
-  const intelligenceAccentStyle = {
-    '--intelligence-theme-accent': resolveKanbanAccentColor(localPreferences?.kanbanAccentColor),
-    '--intelligence-theme-accent-foreground': resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor),
-  }
-  const userFirstName = currentUser?.fullName?.split(' ')[0] ?? 'Arthur'
   const userId = authUser?.id ?? currentUser?.id ?? null
   const [recentPlanIds, setRecentPlanIds] = useState(() => readRecentPlanIds(userId))
 
@@ -514,34 +503,13 @@ export default function Workspace() {
         <CustomScrollArea
           className={styles.mainScrollArea}
           viewportClassName={styles.mainScrollViewport}
-          refreshKey={`workspace:${view}:${showIntelligenceSection ? 'intelligence' : 'plans'}:${isLoading ? 'loading' : 'ready'}`}
+          refreshKey={`workspace:${view}:${isLoading ? 'loading' : 'ready'}`}
         >
-          <div className={`${styles.content} ${showIntelligenceSection ? styles.contentFramed : ''}`}>
+          <div className={styles.content}>
             {isBackendDriven && isLoading ? (
-              showIntelligenceSection ? (
-                <section className={styles.plansGalleryPanel} aria-label="Carregando planos do workspace">
-                  <WorkspaceLoadingState />
-                </section>
-              ) : (
-                <WorkspaceLoadingState />
-              )
+              <WorkspaceLoadingState />
             ) : (
-              <>
-                {showIntelligenceSection ? (
-                  <WorkspaceIntelligenceSection
-                    firstName={userFirstName}
-                    accentStyle={intelligenceAccentStyle}
-                  />
-                ) : null}
-
-                {showIntelligenceSection ? (
-                  <section className={styles.plansGalleryPanel} aria-labelledby="workspace-workspaces-title">
-                    {plansSectionContent}
-                  </section>
-                ) : (
-                  plansSectionContent
-                )}
-              </>
+              plansSectionContent
             )}
           </div>
         </CustomScrollArea>

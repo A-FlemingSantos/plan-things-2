@@ -38,7 +38,6 @@ const preferencesMock = vi.hoisted(() => ({
     openLastCtx: true,
     confirmDestructiveActions: true,
     liquidGlass: false,
-    showIntelligenceSection: true,
   },
   notificationPreferences: {
     emailNotifs: true,
@@ -61,7 +60,6 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', () => ({
     openLastCtx: true,
     confirmDestructiveActions: true,
     liquidGlass: false,
-    showIntelligenceSection: true,
   },
   usePreferences: () => preferencesMock,
 }))
@@ -132,15 +130,10 @@ describe('SettingsPage mobile layout', () => {
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
 
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
-    expect(screen.getByText('Seção do Intelligence')).toBeInTheDocument()
-    expect(screen.getByText('Exibir seção do Intelligence')).toBeInTheDocument()
+    expect(screen.getByText('Painel do assistente')).toBeInTheDocument()
+    expect(screen.getByText('Exibir painel do assistente')).toBeInTheDocument()
     expect(screen.getByText('Efeito aurora')).toBeInTheDocument()
-
-    await user.click(screen.getAllByRole('switch')[0])
-
-    expect(preferencesMock.updateLocal).toHaveBeenCalledWith(expect.objectContaining({
-      showIntelligenceSection: false,
-    }))
+    expect(screen.getAllByText('Em breve')).toHaveLength(2)
     expect(screen.getByTestId('location-search')).toHaveTextContent('?section=workspace')
   })
 })

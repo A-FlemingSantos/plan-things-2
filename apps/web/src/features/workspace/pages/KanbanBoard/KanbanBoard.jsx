@@ -31,14 +31,12 @@ import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthentica
 import BoardLoadingState from './components/BoardLoadingState.jsx'
 import KanbanBoardInboxPanel from './components/KanbanBoardInboxPanel.jsx'
 import KanbanBoardPlannerPanel from './components/KanbanBoardPlannerPanel.jsx'
-import KanbanBoardIntelligencePanel from './components/KanbanBoardIntelligencePanel.jsx'
 import { useKanbanBoardNotification } from './hooks/useKanbanBoardNotification.js'
 import { useKanbanBoardFloatingPanels } from './hooks/useKanbanBoardFloatingPanels.js'
 import { useKanbanBoardCardActions } from './hooks/useKanbanBoardCardActions.js'
 import { useKanbanBoardFiles } from './hooks/useKanbanBoardFiles.js'
 import { useKanbanBoardInbox } from './hooks/useKanbanBoardInbox.js'
 import { useKanbanBoardPlanner } from './hooks/useKanbanBoardPlanner.js'
-import { useKanbanBoardIntelligence } from './hooks/useKanbanBoardIntelligence.js'
 import useKanbanGitHubIntegration from './hooks/useKanbanGitHubIntegration.js'
 import styles from './KanbanBoard.module.css'
 
@@ -86,14 +84,10 @@ export default function KanbanBoard() {
     isInboxPanelMounted,
     isPlannerOpen,
     isPlannerPanelMounted,
-    isIntelligenceOpen,
-    isIntelligencePanelMounted,
     openInbox: openInboxPanel,
     closeInbox: closeInboxPanel,
     openPlanner: openPlannerPanel,
     closePlanner: closePlannerPanel,
-    openIntelligence: openIntelligencePanel,
-    closeIntelligence,
   } = useKanbanBoardFloatingPanels()
 
   const { generalPreferences, localPreferences, formatClockTime } = usePreferences()
@@ -251,32 +245,6 @@ export default function KanbanBoard() {
     showNotification,
   })
 
-  const {
-    intelligenceDraft,
-    setIntelligenceDraft,
-    kanbanAiChips,
-    setKanbanAiChips,
-    intelligenceActiveConnectors,
-    intelligenceMessages,
-    isIntelligenceThinking,
-    hasIntelligenceConversation,
-    submitIntelligenceMessage,
-    canSubmitIntelligenceMessage,
-    composerContext,
-    intelligencePanelRef,
-    intelligenceComposerInputRef,
-    intelligencePanelStyle,
-  } = useKanbanBoardIntelligence({
-    accessToken,
-    activePlan,
-    columns,
-    isIntelligenceOpen,
-    isIntelligencePanelMounted,
-    boardAccentColor,
-    boardAccentForeground,
-    closeIntelligence,
-  })
-
   const inboxAssignedMemberIds = new Set(inboxRecipientCard?.memberIds ?? [])
   const inboxSelectableMembers = planMembers.length
     ? planMembers.filter((member) => !inboxAssignedMemberIds.has(member.id))
@@ -291,10 +259,6 @@ export default function KanbanBoard() {
     setIsPlannerFilterOpen(false)
     closePlannerPanel()
   }, [closePlannerPanel, setIsPlannerFilterOpen])
-
-  const openIntelligence = useCallback(() => {
-    openIntelligencePanel(() => setIsPlannerFilterOpen(false))
-  }, [openIntelligencePanel, setIsPlannerFilterOpen])
 
   const {
     sensors,
@@ -402,12 +366,6 @@ export default function KanbanBoard() {
   }
 
   useEffect(() => {
-    if (!location.state?.openIntelligence) return
-    openIntelligence()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state?.openIntelligence])
-
-  useEffect(() => {
     if (!location.state?.openInbox) return
     openInboxPanel()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -424,8 +382,7 @@ export default function KanbanBoard() {
     closeInboxPanel()
     setIsPlannerFilterOpen(false)
     closePlannerPanel()
-    closeIntelligence()
-  }, [closeInboxPanel, closeIntelligence, closePlannerPanel, resetInboxRecipientState, setIsPlannerFilterOpen])
+  }, [closeInboxPanel, closePlannerPanel, resetInboxRecipientState, setIsPlannerFilterOpen])
 
   const showCalendarView = () => {
     setBoardViewMode('calendar')
@@ -601,26 +558,6 @@ export default function KanbanBoard() {
           </div>
         </section>
 
-        {isIntelligencePanelMounted ? (
-          <KanbanBoardIntelligencePanel
-            styles={styles}
-            isIntelligenceOpen={isIntelligenceOpen}
-            hasIntelligenceConversation={hasIntelligenceConversation}
-            intelligencePanelRef={intelligencePanelRef}
-            intelligencePanelStyle={intelligencePanelStyle}
-            intelligenceMessages={intelligenceMessages}
-            isIntelligenceThinking={isIntelligenceThinking}
-            intelligenceDraft={intelligenceDraft}
-            setIntelligenceDraft={setIntelligenceDraft}
-            intelligenceComposerInputRef={intelligenceComposerInputRef}
-            submitIntelligenceMessage={submitIntelligenceMessage}
-            canSubmitIntelligenceMessage={canSubmitIntelligenceMessage}
-            kanbanAiChips={kanbanAiChips}
-            setKanbanAiChips={setKanbanAiChips}
-            composerContext={composerContext}
-            intelligenceActiveConnectors={intelligenceActiveConnectors}
-          />
-        ) : null}
         </div>
 
         {isInboxPanelMounted ? (

@@ -39,7 +39,6 @@ export function PlansProvider({ children }) {
   const [plans, setPlans] = useState([])
   const [activePlanId, setActivePlanId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [aiChips, setAiChips] = useState([])
   const boardMappingOptions = useMemo(() => ({
     locale: generalPreferences.language,
     timeZone: generalPreferences.timezone,
@@ -68,8 +67,6 @@ export function PlansProvider({ children }) {
   }, [backendEnabled, demoEnabled])
 
   useLayoutEffect(() => {
-    setAiChips([])
-
     if (sessionMode === 'boot') {
       setPlans([])
       setActivePlanId(null)
@@ -432,8 +429,6 @@ export function PlansProvider({ children }) {
     workspace,
     isLoading,
     isBackendDriven: backendEnabled,
-    aiChips,
-    setAiChips,
     createPlan,
     deletePlan,
     renamePlan,
@@ -450,7 +445,6 @@ export function PlansProvider({ children }) {
   }), [
     activePlan,
     activePlanId,
-    aiChips,
     applyBoardView,
     backendEnabled,
     createPlan,
