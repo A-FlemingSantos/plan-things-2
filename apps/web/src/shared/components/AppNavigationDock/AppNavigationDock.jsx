@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { House, KanbanSquare, Settings } from 'lucide-react'
+import { BookOpen, House, KanbanSquare, Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { SiGithub } from 'react-icons/si'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -12,6 +12,12 @@ const NAV_ITEMS = [
   { id: 'home', label: 'Início', to: ROUTES.workspace, Icon: House },
   { id: 'boards', label: 'Quadros', to: ROUTES.workspaceBoard, Icon: KanbanSquare },
 ]
+
+const PLACEHOLDER_ITEM = {
+  id: 'placeholder',
+  label: 'Em breve',
+  Icon: BookOpen,
+}
 
 const GITHUB_ITEM = {
   id: 'github',
@@ -45,33 +51,50 @@ function isRouteActive(pathname, route) {
   )
 }
 
+function NavLinkItem({ label, to, Icon, pathname }) {
+  const active = isRouteActive(pathname, to)
+
+  return (
+    <DockItem active={active}>
+      <Link
+        to={to}
+        className={styles.link}
+        aria-label={label}
+        aria-current={active ? 'page' : undefined}
+      >
+        <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+      </Link>
+    </DockItem>
+  )
+}
+
 export default function AppNavigationDock() {
   const location = useLocation()
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
+  const PlaceholderIcon = PLACEHOLDER_ITEM.Icon
+  const [homeItem, boardsItem] = NAV_ITEMS
 
   return (
     <AppThemeScope className={styles.themeScope}>
       <nav className={styles.positioner} data-app-navigation-dock aria-label="Navegação principal">
         <div className={styles.dockAnchor}>
           <Dock className={styles.navigationDock} size={34}>
-          {NAV_ITEMS.map(({ id, label, to, Icon }) => {
-            const active = isRouteActive(location.pathname, to)
+          <NavLinkItem {...homeItem} pathname={location.pathname} />
 
-            return (
-              <DockItem key={id} active={active}>
-                <Link
-                  to={to}
-                  className={styles.link}
-                  aria-label={label}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
-                </Link>
-              </DockItem>
-            )
-          })}
+          <DockItem>
+            <button
+              type="button"
+              className={styles.link}
+              aria-label={PLACEHOLDER_ITEM.label}
+              disabled
+            >
+              <PlaceholderIcon size={16} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </DockItem>
+
+          <NavLinkItem {...boardsItem} pathname={location.pathname} />
 
           <DockSeparator />
 
