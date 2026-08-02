@@ -127,9 +127,9 @@ describe('SettingsPage mobile layout', () => {
     expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeInTheDocument()
     expect(screen.queryByText('Configurações')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Área de trabalho' }))
+    await user.click(screen.getByRole('button', { name: 'Workspace' }))
 
-    expect(await screen.findByRole('heading', { name: 'Área de trabalho' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
     expect(screen.getByText('Painel do assistente')).toBeInTheDocument()
     expect(screen.getByText('Exibir painel do assistente')).toBeInTheDocument()
     expect(screen.getByText('Efeito aurora')).toBeInTheDocument()

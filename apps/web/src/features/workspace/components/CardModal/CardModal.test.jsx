@@ -13,7 +13,7 @@ vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.j
 
 const styles = new Proxy({}, { get: (_, key) => String(key) })
 
-async function openSidebarPanel(user, panelLabel = 'Atividade') {
+async function openSidebarPanel(user, panelLabel = 'Activity') {
   await user.click(screen.getByRole('button', { name: `Painel ${panelLabel}` }))
 }
 
@@ -455,7 +455,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await openSidebarPanel(user, 'Lista')
+    await openSidebarPanel(user, 'Checklist')
 
     const itemRow = screen.getByText('Enviar briefing').closest('label')
     const toggleButton = within(itemRow).getByRole('button')
@@ -512,7 +512,7 @@ describe('CardModal file picker positioning', () => {
       />
     )
 
-    await openSidebarPanel(user, 'Lista')
+    await openSidebarPanel(user, 'Checklist')
 
     expect(screen.queryByRole('button', { name: /criar checklist/i })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Excluir' })).toBeEnabled()
@@ -612,9 +612,9 @@ describe('CardModal file picker positioning', () => {
 
     expect(screen.getByRole('group', { name: 'Painéis laterais' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'GitHub' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Atividade' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Activity' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Arquivos' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Lista' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Checklist' })).toBeInTheDocument()
   })
 
   it('persists the selected sidebar panel in localStorage', async () => {
@@ -639,7 +639,7 @@ describe('CardModal file picker positioning', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Expandir painel lateral' }))
-    await user.click(screen.getByRole('button', { name: 'Painel Atividade' }))
+    await user.click(screen.getByRole('button', { name: 'Painel Activity' }))
 
     expect(window.localStorage.getItem('plan-things:card-modal-sidebar-panel:v1:user-1')).toBe('activity')
     expect(screen.getByRole('button', { name: 'Voltar às opções' })).toBeInTheDocument()

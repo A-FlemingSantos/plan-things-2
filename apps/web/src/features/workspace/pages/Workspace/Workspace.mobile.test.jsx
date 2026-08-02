@@ -102,7 +102,7 @@ describe('Workspace mobile layout', () => {
     expect(screen.getAllByRole('button', { name: /novo plano/i }).length).toBeGreaterThan(0)
     expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
     expect(screen.getByText('Recentes')).toBeInTheDocument()
-    expect(screen.getByText('Áreas de trabalho')).toBeInTheDocument()
+    expect(screen.getByText('Workspaces')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Planos' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Membros' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()

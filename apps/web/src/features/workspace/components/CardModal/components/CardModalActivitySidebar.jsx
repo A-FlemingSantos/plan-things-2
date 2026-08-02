@@ -28,9 +28,9 @@ import CardModalActivityGitHubLink from './CardModalActivityGitHubLink.jsx'
 
 const SIDEBAR_PANEL_LABELS = {
   github: 'GitHub',
-  activity: 'Atividade',
+  activity: 'Activity',
   files: 'Arquivos',
-  checklist: 'Lista',
+  checklist: 'Checklist',
 }
 
 function CardModalSidebarPanelHeader({
@@ -217,7 +217,7 @@ function CardModalSidebarActivityPanel({
           >
             <ChevronLeft size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
           </button>
-          <p className={styles.cmSidebarTitle}>Atividade</p>
+          <p className={styles.cmSidebarTitle}>Activity</p>
         </div>
         <div className={styles.cmSidebarHeaderActions}>
           <button type="button" className={styles.cmSidebarHeaderBtn} aria-label="Buscar atividade"><Search size={iconSize} strokeWidth={iconStroke} aria-hidden="true" /></button>

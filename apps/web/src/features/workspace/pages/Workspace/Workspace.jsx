@@ -418,7 +418,7 @@ export default function Workspace() {
   const renderWorkspacesSectionHeader = (withControls = false) => (
     <div className={styles.sectionHeader}>
       <div className={styles.sectionLeft}>
-        <h2 id="workspace-workspaces-title" className={styles.sectionTitle}>Áreas de trabalho</h2>
+        <h2 id="workspace-workspaces-title" className={styles.sectionTitle}>Workspaces</h2>
         <span className={styles.planCount}>{workspaceGroups.length}</span>
       </div>
       <div className={styles.sectionHeaderRight}>

@@ -4,7 +4,7 @@ export default function SidebarUserCard({
   styles,
   collapsed,
   name = 'Arthur Santos',
-  plan = 'Profissional',
+  plan = 'Professional',
   initials = 'AS',
   avatarUrl = null,
   active = false,

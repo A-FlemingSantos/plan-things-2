@@ -452,7 +452,7 @@ describe('App smoke flows', () => {
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
     expect(window.location.search).toBe('?section=workspace')
-    expect(await screen.findByRole('heading', { name: 'Área de trabalho' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -494,9 +494,9 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
-    await user.click(screen.getByRole('button', { name: 'Área de trabalho' }))
+    await user.click(screen.getByRole('button', { name: 'Workspace' }))
 
-    expect(await screen.findByRole('heading', { name: 'Área de trabalho' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Fechar configurações' }))
 

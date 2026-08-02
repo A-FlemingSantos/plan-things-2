@@ -37,7 +37,7 @@ describe('OAuth auth flow', () => {
       ]),
     })
 
-    await screen.findByRole('heading', { name: 'Áreas de trabalho' })
+    await screen.findByRole('heading', { name: 'Workspaces' })
     expect(window.location.pathname).toBe('/workspace')
     expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 

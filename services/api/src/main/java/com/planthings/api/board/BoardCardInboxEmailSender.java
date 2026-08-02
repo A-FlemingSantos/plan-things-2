@@ -142,7 +142,7 @@ public class BoardCardInboxEmailSender {
   private String normalizeFrontendBaseUrl(String value) {
     String normalized = value == null ? "" : value.trim();
     if (normalized.isBlank()) {
-      throw new IllegalArgumentException("app.frontend-base-url precisa estar configurado.");
+      throw new IllegalArgumentException("app.frontend-base-url must be configured.");
     }
     return normalized.replaceAll("/+$", "");
   }
@@ -177,7 +177,7 @@ public class BoardCardInboxEmailSender {
       return new ClassPathResource("templates/email/board-card-inbox.html")
           .getContentAsString(StandardCharsets.UTF_8);
     } catch (IOException exception) {
-      throw new UncheckedIOException("Nao foi possivel carregar o template de e-mail da tarefa.", exception);
+      throw new UncheckedIOException("Could not load board card inbox email template.", exception);
     }
   }
 

@@ -21,9 +21,9 @@ const ICON_STROKE = 1.75
 
 export const BOARD_VIEW_MODES = [
   { id: 'kanban', label: 'Kanban', Icon: AlignStartHorizontal },
-  { id: 'timeline', label: 'Linha do tempo', Icon: AlignStartVertical },
-  { id: 'bugtrack', label: 'Rastreamento de bugs', Icon: Bug },
-  { id: 'actions', label: 'Ações', Icon: Route },
+  { id: 'timeline', label: 'Timeline', Icon: AlignStartVertical },
+  { id: 'bugtrack', label: 'Bugtrack', Icon: Bug },
+  { id: 'actions', label: 'Actions', Icon: Route },
 ]
 
 const LEADING_ACTION_ITEMS = [

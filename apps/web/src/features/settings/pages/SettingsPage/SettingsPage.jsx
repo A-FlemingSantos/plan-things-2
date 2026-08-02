@@ -63,7 +63,7 @@ const SECTION_NAV_ICON_STROKE = 1.75
 const SECTIONS = [
   { id: 'account',       label: 'Conta',                   Icon: User         },
   { id: 'general',       label: 'Preferências gerais',      Icon: Settings2    },
-  { id: 'workspace',     label: 'Área de trabalho',         Icon: LayoutDashboard },
+  { id: 'workspace',     label: 'Workspace',                Icon: LayoutDashboard },
   { id: 'integrations',  label: 'Integrações',              Icon: Blocks       },
   { id: 'notifications', label: 'Notificações',             Icon: BellRing     },
   { id: 'security',      label: 'Privacidade e segurança',  Icon: ShieldCheck  },
