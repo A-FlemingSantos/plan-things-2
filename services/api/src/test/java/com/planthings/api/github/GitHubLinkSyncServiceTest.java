@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,9 +38,6 @@ class GitHubLinkSyncServiceTest {
   @Mock
   private GitHubIntegrationProperties properties;
 
-  @InjectMocks
-  private GitHubLinkSyncService syncService;
-
   private final Clock clock = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
 
   @Test
@@ -55,7 +51,8 @@ class GitHubLinkSyncServiceTest {
         linkMapper,
         anchorService,
         properties,
-        clock
+        clock,
+        300_000L
     );
 
     UUID cardId = UUID.randomUUID();
@@ -88,7 +85,8 @@ class GitHubLinkSyncServiceTest {
         linkMapper,
         anchorService,
         properties,
-        clock
+        clock,
+        300_000L
     );
 
     BoardCardGitHubLinkEntity anchor = new BoardCardGitHubLinkEntity();

@@ -875,11 +875,11 @@
 }
 
 .planRenameConfirm:hover:not(:disabled) {
-  color: #16a34a;
+  color: var(--color-green);
 }
 
 .planRenameCancel:hover:not(:disabled) {
-  color: #dc2626;
+  color: var(--color-red);
 }
 
 .cardTaskCount {

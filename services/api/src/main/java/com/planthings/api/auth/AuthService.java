@@ -201,13 +201,6 @@ public class AuthService {
     return new MessageResponse("Senha redefinida com sucesso.");
   }
 
-  public CurrentUserResponse me() {
-    UserEntity user = authenticatedUserService.requireUser();
-    WorkspaceEntity workspace = personalWorkspaceService.getOrCreate(user);
-
-    return new CurrentUserResponse(toUserSummary(user), toWorkspaceSummary(workspace));
-  }
-
   private SessionResponse buildSessionResponse(UserEntity user, WorkspaceEntity workspace, String client, String userAgent) {
     UserSessionEntity session = userSessionService.createSession(user.getId(), client, userAgent);
     return buildSessionResponse(user, workspace, session.getId());
@@ -376,12 +369,6 @@ public class AuthService {
 
   public record SessionResponse(
       String accessToken,
-      UserSummary user,
-      WorkspaceSummary workspace
-  ) {
-  }
-
-  public record CurrentUserResponse(
       UserSummary user,
       WorkspaceSummary workspace
   ) {

@@ -240,7 +240,7 @@ function AppShell() {
                 )}
               />
               <Route
-                path="/plans/invites/:token"
+                path={ROUTES.planInvite}
                 element={(
                   <RequireSession notice="Faça login para aceitar o convite.">
                     <AppThemeScope preference="system">

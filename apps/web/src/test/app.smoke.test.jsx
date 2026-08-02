@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { normalizePlanRecord } from '../shared/contracts/planContracts.js'
+import { ROUTES } from '../shared/config/routes.js'
 import {
   createAccountStore,
   createDemoSession,
@@ -100,12 +101,14 @@ describe('App smoke flows', () => {
         openLastCtx: true,
       }),
     )
-    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
+    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/workspace/board/product-launch-q3')
 
     renderApp('/app', { session })
 
-    await expectWorkspaceHomeShell()
-    expect(window.location.pathname).toBe('/workspace')
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
+    }, { timeout: 4000 })
+    expect(await screen.findAllByText('Adicionar lista', {}, { timeout: 4000 })).not.toHaveLength(0)
   })
 
   it('resolves /app to homePage when openLastCtx is disabled', async () => {
@@ -122,7 +125,7 @@ describe('App smoke flows', () => {
         openLastCtx: false,
       }),
     )
-    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/files')
+    window.localStorage.setItem(`plan-things:last-context:v1:${userId}`, '/workspace/board/product-launch-q3')
 
     renderApp('/app', { session })
 
@@ -177,7 +180,7 @@ describe('App smoke flows', () => {
   })
 
   it('redirects anonymous invite access to login with the invite notice', async () => {
-    renderApp('/plans/invites/token-123')
+    renderApp(`${ROUTES.planInvite.replace(':token', 'token-123')}`)
 
     expect(await screen.findByRole('button', { name: /continuar com e-mail/i })).toBeInTheDocument()
     expect(screen.getByText('Faça login para aceitar o convite.')).toBeInTheDocument()
@@ -449,7 +452,7 @@ describe('App smoke flows', () => {
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
     expect(window.location.search).toBe('?section=workspace')
-    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Área de trabalho' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -491,9 +494,9 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
-    await user.click(screen.getByRole('button', { name: 'Workspace' }))
+    await user.click(screen.getByRole('button', { name: 'Área de trabalho' }))
 
-    expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Área de trabalho' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Fechar configurações' }))
 

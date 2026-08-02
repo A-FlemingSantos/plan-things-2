@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { apiRequest } from '../../../shared/api/apiClient.js'
-import { ROUTES, normalizePathname } from '../../../shared/config/routes.js'
+import { isLegacyFilesPath, ROUTES, normalizePathname } from '../../../shared/config/routes.js'
 import { normalizeAccentColor } from '../../../shared/config/accentColors.js'
 
 export const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
@@ -90,8 +90,16 @@ function isTrackableContextPath(pathname) {
   return TRACKABLE_CONTEXT_PREFIXES.some((prefix) => isPathInside(prefix, normalized))
 }
 
-function isValidLastContextPath(pathname) {
+function normalizeLastContextPath(pathname) {
   const normalized = normalizePathname(pathname)
+  if (isLegacyFilesPath(normalized)) {
+    return ROUTES.workspace
+  }
+  return normalized
+}
+
+function isValidLastContextPath(pathname) {
+  const normalized = normalizeLastContextPath(pathname)
   return TRACKABLE_CONTEXT_PREFIXES.some((prefix) => isPathInside(prefix, normalized))
 }
 
@@ -188,7 +196,7 @@ function readStoredLastContext(userId) {
   const raw = window.localStorage.getItem(key)
   if (!raw) return null
 
-  const normalized = normalizePathname(raw)
+  const normalized = normalizeLastContextPath(raw)
   return isValidLastContextPath(normalized) ? normalized : null
 }
 
@@ -213,7 +221,10 @@ export function resolveInitialRouteForState({
 }) {
   const preferredHomeRoute = mapHomePageToRoute(localPreferences.homePage)
   if (!localPreferences.openLastCtx) return preferredHomeRoute
-  if (lastContext && isValidLastContextPath(lastContext)) return normalizePathname(lastContext)
+  const normalizedLastContext = lastContext ? normalizeLastContextPath(lastContext) : null
+  if (normalizedLastContext && isValidLastContextPath(normalizedLastContext)) {
+    return normalizedLastContext
+  }
   return preferredHomeRoute
 }
 

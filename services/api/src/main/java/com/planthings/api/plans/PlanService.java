@@ -7,9 +7,9 @@ import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.board.BoardCardAssigneeRepository;
 import com.planthings.api.board.BoardCardEntity;
 import com.planthings.api.board.BoardCardInboxDeliveryRepository;
+import com.planthings.api.board.BoardChecklistItemRepository;
 import com.planthings.api.board.BoardColumnEntity;
 import com.planthings.api.board.BoardColumnRepository;
-import com.planthings.api.board.BoardChecklistItemRepository;
 import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.calendar.CalendarEventRepository;
 import com.planthings.api.common.api.ApiDateTimeDto;
@@ -275,45 +275,6 @@ public class PlanService {
   }
 
   @Transactional
-  public List<InviteResponse> listInvites(UUID planId) {
-    UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanManager(planId, currentUserId);
-
-    OffsetDateTime now = OffsetDateTime.now(clock);
-    List<PlanInviteEntity> invites = planInviteRepository.findByPlanIdOrderByCreatedAtDesc(planId);
-    List<PlanInviteEntity> expiredInvites = invites.stream()
-        .filter(invite -> invite.getStatus() == PlanInviteStatus.PENDING)
-        .filter(invite -> invite.getExpiresAt().isBefore(now))
-        .peek(invite -> invite.setStatus(PlanInviteStatus.EXPIRED))
-        .toList();
-    if (!expiredInvites.isEmpty()) {
-      planInviteRepository.saveAll(expiredInvites);
-    }
-
-    return invites.stream().map(this::toInviteResponse).toList();
-  }
-
-  @Transactional
-  public List<InvitePreviewResponse> listPendingInvitesForCurrentUser() {
-    UserEntity currentUser = authenticatedUserService.requireUser();
-    OffsetDateTime now = OffsetDateTime.now(clock);
-    List<PlanInviteEntity> invites = planInviteRepository
-        .findByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc(currentUser.getEmail(), PlanInviteStatus.PENDING);
-    List<PlanInviteEntity> expiredInvites = invites.stream()
-        .filter(invite -> invite.getExpiresAt().isBefore(now))
-        .peek(invite -> invite.setStatus(PlanInviteStatus.EXPIRED))
-        .toList();
-    if (!expiredInvites.isEmpty()) {
-      planInviteRepository.saveAll(expiredInvites);
-    }
-
-    return invites.stream()
-        .filter(invite -> invite.getStatus() == PlanInviteStatus.PENDING)
-        .map(this::toInvitePreviewResponse)
-        .toList();
-  }
-
-  @Transactional
   public InvitePreviewResponse getInvitePreview(String token) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     PlanInviteEntity invite = planInviteRepository.findByToken(token)
@@ -329,32 +290,6 @@ public class PlanService {
     }
 
     return toInvitePreviewResponse(invite);
-  }
-
-  @Transactional
-  public MessageResponse revokeInvite(UUID planId, UUID inviteId) {
-    UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanManager(planId, currentUserId);
-
-    PlanInviteEntity invite = planInviteRepository.findById(inviteId)
-        .filter(candidate -> candidate.getPlanId().equals(planId))
-        .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos este convite para o plano informado."));
-
-    if (invite.getStatus() != PlanInviteStatus.PENDING) {
-      throw new BadRequestException("CONVITE_INVALIDO", "Este convite nao esta mais disponivel para revogacao.");
-    }
-
-    OffsetDateTime now = OffsetDateTime.now(clock);
-    if (invite.getExpiresAt().isBefore(now)) {
-      invite.setStatus(PlanInviteStatus.EXPIRED);
-      planInviteRepository.save(invite);
-      throw new BadRequestException("CONVITE_EXPIRADO", "Este convite expirou.");
-    }
-
-    invite.setStatus(PlanInviteStatus.REVOKED);
-    invite.setRespondedAt(now);
-    planInviteRepository.save(invite);
-    return new MessageResponse("Convite revogado com sucesso.");
   }
 
   @Transactional

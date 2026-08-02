@@ -136,7 +136,7 @@ vi.mock('../../../calendar/hooks/useCalendarEvents.js', () => ({
   useCalendarEvents: () => ({ filteredEvents: [] }),
 }))
 
-vi.mock('../../../calendar/pages/CalendarPage/CalendarPage.jsx', () => ({
+vi.mock('../../../calendar/components/CalendarWorkspaceView/CalendarWorkspaceView.jsx', () => ({
   CalendarWorkspaceView: () => <section aria-label="Calendário do quadro">Calendário do quadro</section>,
   default: () => null,
 }))

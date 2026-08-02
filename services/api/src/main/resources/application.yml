@@ -44,8 +44,6 @@ app:
     issuer: plan-things-api
     access-token-minutes: 180
     password-reset-minutes: 30
-  locale:
-    tag: pt-BR
   time:
     zone-id: America/Sao_Paulo
   oauth:
@@ -120,7 +118,6 @@ app:
       mobile-return-url: ${GITHUB_INTEGRATION_MOBILE_RETURN_URL:planthings://settings}
       mobile-web-return-url: ${GITHUB_INTEGRATION_MOBILE_WEB_RETURN_URL:}
       state-minutes: ${GITHUB_INTEGRATION_STATE_MINUTES:10}
-      polling-interval-minutes: ${GITHUB_INTEGRATION_POLLING_INTERVAL_MINUTES:5}
       polling-interval-ms: ${GITHUB_INTEGRATION_POLLING_INTERVAL_MS:300000}
       polling-batch-size: ${GITHUB_INTEGRATION_POLLING_BATCH_SIZE:50}
       api-version: ${GITHUB_INTEGRATION_API_VERSION:2022-11-28}

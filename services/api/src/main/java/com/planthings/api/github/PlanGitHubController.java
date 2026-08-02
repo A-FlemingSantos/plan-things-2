@@ -57,14 +57,4 @@ public class PlanGitHubController {
     return ApiEnvelope.ok(planGitHubService.searchObjects(planId, type, repo, q));
   }
 
-  @GetMapping("/commit-diff")
-  // Was used by CardModal search-result commit previews; panel now links out to GitHub.
-  // Keep for now; delete if nothing else consumes it.
-  public ApiEnvelope<GitHubApiClient.GitHubCommitDiff> getCommitDiff(
-      @PathVariable UUID planId,
-      @RequestParam String repo,
-      @RequestParam String sha
-  ) {
-    return ApiEnvelope.ok(planGitHubService.getCommitDiff(planId, repo, sha));
-  }
 }

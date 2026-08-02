@@ -63,7 +63,7 @@ public class BoardCardInboxEmailSender {
   ) {
     String boundary = "planthings-card-" + UUID.randomUUID();
     String subject = "[Plan Things] Tarefa atribuída: " + card.getTitle();
-    String cardUrl = frontendBaseUrl + "/workspace/board/" + plan.getId();
+    String cardUrl = frontendBaseUrl + "/workspace/board/" + plan.getId() + "?card=" + card.getId();
     String senderName = sender.getFullName();
     String kindLabel = kindLabel(kind);
     String assigneeNames = recipients.stream().map(UserEntity::getFullName).distinct().reduce((left, right) -> left + ", " + right).orElse("Sem responsáveis");
@@ -142,7 +142,7 @@ public class BoardCardInboxEmailSender {
   private String normalizeFrontendBaseUrl(String value) {
     String normalized = value == null ? "" : value.trim();
     if (normalized.isBlank()) {
-      throw new IllegalArgumentException("app.frontend-base-url must be configured.");
+      throw new IllegalArgumentException("app.frontend-base-url precisa estar configurado.");
     }
     return normalized.replaceAll("/+$", "");
   }
@@ -177,7 +177,7 @@ public class BoardCardInboxEmailSender {
       return new ClassPathResource("templates/email/board-card-inbox.html")
           .getContentAsString(StandardCharsets.UTF_8);
     } catch (IOException exception) {
-      throw new UncheckedIOException("Could not load board card inbox email template.", exception);
+      throw new UncheckedIOException("Nao foi possivel carregar o template de e-mail da tarefa.", exception);
     }
   }
 

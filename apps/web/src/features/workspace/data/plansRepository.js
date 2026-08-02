@@ -6,7 +6,7 @@ const PLAN_TAGS = {
   marketing: { label: 'Marketing', color: 'var(--color-blue)' },
   engineering: { label: 'Engenharia', color: 'var(--color-green)' },
   design: { label: 'Design', color: '#d4aef1' },
-  growth: { label: 'Growth', color: 'var(--color-red)' },
+  growth: { label: 'Crescimento', color: 'var(--color-red)' },
 }
 
 const PLAN_MEMBER_STYLES = {

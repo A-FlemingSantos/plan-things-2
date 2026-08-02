@@ -5,10 +5,12 @@ import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.settings.GitHubIntegrationProperties;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class GitHubLinkSyncService {
   private final GitHubAnchorService anchorService;
   private final GitHubIntegrationProperties properties;
   private final Clock clock;
+  private final long pollingIntervalMs;
 
   public GitHubLinkSyncService(
       BoardCardGitHubLinkRepository linkRepository,
@@ -38,7 +41,8 @@ public class GitHubLinkSyncService {
       GitHubLinkMapper linkMapper,
       GitHubAnchorService anchorService,
       GitHubIntegrationProperties properties,
-      Clock clock
+      Clock clock,
+      @Value("${app.integrations.github.polling-interval-ms:300000}") long pollingIntervalMs
   ) {
     this.linkRepository = linkRepository;
     this.planGitHubRepoRepository = planGitHubRepoRepository;
@@ -49,11 +53,12 @@ public class GitHubLinkSyncService {
     this.anchorService = anchorService;
     this.properties = properties;
     this.clock = clock;
+    this.pollingIntervalMs = pollingIntervalMs;
   }
 
   @Transactional
   public int syncDueLinks() {
-    OffsetDateTime syncBefore = OffsetDateTime.now(clock).minusMinutes(properties.getPollingIntervalMinutes());
+    OffsetDateTime syncBefore = OffsetDateTime.now(clock).minus(Duration.ofMillis(pollingIntervalMs));
     List<BoardCardGitHubLinkEntity> dueLinks = linkRepository.findDueForSync(
         syncBefore,
         PageRequest.of(0, properties.getPollingBatchSize())

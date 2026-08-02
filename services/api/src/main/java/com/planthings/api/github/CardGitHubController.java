@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Validated
@@ -62,30 +61,6 @@ public class CardGitHubController {
   ) {
     cardGitHubService.unlink(planId, cardId, linkId);
     return ApiEnvelope.ok(new CardGitHubService.MessageResponse("Link GitHub removido."));
-  }
-
-  @GetMapping("/{linkId}/details")
-  // CardModal GitHub tab no longer calls this (summaries use link snapshots).
-  // Keep for now; remove or repurpose if no other client needs live PR/branch timelines.
-  public ApiEnvelope<CardGitHubService.GitHubLinkDetailsView> getDetails(
-      @PathVariable UUID planId,
-      @PathVariable UUID cardId,
-      @PathVariable UUID linkId,
-      @RequestParam(defaultValue = "1") int page,
-      @RequestParam(defaultValue = "30") int perPage
-  ) {
-    return ApiEnvelope.ok(cardGitHubService.getDetails(planId, cardId, linkId, page, perPage));
-  }
-
-  @GetMapping("/{linkId}/diff")
-  // CardModal GitHub tab no longer renders commit diffs inline.
-  // Keep for now; delete if nothing else consumes it.
-  public ApiEnvelope<GitHubApiClient.GitHubCommitDiff> getCommitDiff(
-      @PathVariable UUID planId,
-      @PathVariable UUID cardId,
-      @PathVariable UUID linkId
-  ) {
-    return ApiEnvelope.ok(cardGitHubService.getCommitDiff(planId, cardId, linkId));
   }
 
   public record CreateLinkRequest(

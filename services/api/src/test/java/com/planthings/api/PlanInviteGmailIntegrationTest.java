@@ -108,10 +108,7 @@ class PlanInviteGmailIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error.code").value("GMAIL_NAO_CONECTADO"));
 
-    mockMvc.perform(get("/api/plans/" + planId + "/invites")
-            .header("Authorization", "Bearer " + ownerToken))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data").isEmpty());
+    assertEquals(0, planInviteRepository.findByPlanIdOrderByCreatedAtDesc(java.util.UUID.fromString(planId)).size());
   }
 
   @Test

@@ -3,7 +3,7 @@ export const PLAN_TAGS = [
   { label: 'Design',      color: '#d4aef1'             },
   { label: 'Marketing',   color: 'var(--color-blue)'   },
   { label: 'Pesquisa',    color: '#f5a623'             },
-  { label: 'Growth',      color: 'var(--color-red)'    },
+  { label: 'Crescimento', color: 'var(--color-red)'    },
   { label: 'Operações',   color: '#a0a0a0'             },
 ]
 

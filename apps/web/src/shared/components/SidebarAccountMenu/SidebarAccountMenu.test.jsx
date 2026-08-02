@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { TestMemoryRouter } from '../../../test/testRouter.jsx'
+import { ROUTES } from '../../../shared/config/routes.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Dock, DockItem } from '../Dock/Dock.jsx'
 import SidebarAccountMenu from './SidebarAccountMenu.jsx'
@@ -147,7 +148,7 @@ describe('SidebarAccountMenu', () => {
       return (
         <Dock>
           <DockItem>
-            <a href="/boards" onClick={onNavClick}>
+            <a href={ROUTES.workspaceBoard} onClick={onNavClick}>
               Quadros
             </a>
           </DockItem>

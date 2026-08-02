@@ -145,13 +145,16 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.iconKey").value("ROCKET"));
 
-    mockMvc.perform(get("/api/me")
+    mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.user.fullName").value("Arthur Fleming"))
-        .andExpect(jsonPath("$.data.workspace.name").value("Workspace Produto"))
-        .andExpect(jsonPath("$.data.workspace.iconKey").value("ROCKET"))
-        .andExpect(jsonPath("$.data.workspace.avatarUrl").doesNotExist());
+        .andExpect(jsonPath("$.data.account.fullName").value("Arthur Fleming"));
+
+    mockMvc.perform(get("/api/workspace")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.name").value("Workspace Produto"))
+        .andExpect(jsonPath("$.data.iconKey").value("ROCKET"));
 
     mockMvc.perform(patch("/api/settings/password")
             .header("Authorization", "Bearer " + token)
@@ -204,10 +207,10 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_PNG))
         .andExpect(content().bytes(PNG_AVATAR));
 
-    mockMvc.perform(get("/api/me")
+    mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.user.avatarUrl").value(org.hamcrest.Matchers.matchesPattern("/api/avatars/users/.+\\?v=.+")));
+        .andExpect(jsonPath("$.data.account.avatarUrl").value(org.hamcrest.Matchers.matchesPattern("/api/avatars/users/.+\\?v=.+")));
 
     mockMvc.perform(delete("/api/settings/account/avatar")
             .header("Authorization", "Bearer " + token))
@@ -345,15 +348,15 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.message").value("Sessao encerrada com sucesso."));
 
-    mockMvc.perform(get("/api/me")
+    mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + originalToken))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.error.code").value("SESSAO_REVOGADA"));
 
-    mockMvc.perform(get("/api/me")
+    mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + currentToken))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.user.email").value("arthur-sessions@example.com"));
+        .andExpect(jsonPath("$.data.account.email").value("arthur-sessions@example.com"));
   }
 
   @Test
@@ -395,7 +398,7 @@ class SettingsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.message").value("Conta excluida com sucesso."));
 
-    mockMvc.perform(get("/api/me")
+    mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isUnauthorized());
 

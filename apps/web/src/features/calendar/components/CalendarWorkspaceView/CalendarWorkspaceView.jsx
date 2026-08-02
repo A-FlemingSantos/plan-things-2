@@ -41,7 +41,7 @@ import {
   ShareIcon,
   XIcon,
 } from '../../../../shared/components/icons/index.js'
-import styles from '../../pages/CalendarPage/CalendarPage.module.css'
+import styles from './CalendarWorkspaceView.module.css'
 
 const VIEW_OPTIONS = [
   { id: 'day', label: 'Dia', status: 'Vista diária' },

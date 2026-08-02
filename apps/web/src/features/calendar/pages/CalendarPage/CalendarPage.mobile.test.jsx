@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { describe, expect, it, vi } from 'vitest'
-import { CalendarPage } from './CalendarPage.jsx'
+import { CalendarWorkspaceView } from '../../components/CalendarWorkspaceView/CalendarWorkspaceView.jsx'
 import { installMatchMediaController } from '../../../../test/matchMedia.js'
 
 const preferencesMock = vi.hoisted(() => ({
@@ -53,12 +53,12 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 function renderCalendar() {
   return render(
     <TestMemoryRouter>
-      <CalendarPage />
+      <CalendarWorkspaceView />
     </TestMemoryRouter>,
   )
 }
 
-describe('CalendarPage mobile month view', () => {
+describe('CalendarWorkspaceView mobile month view', () => {
   it('keeps the month view selected after tapping Mês on mobile', async () => {
     installMatchMediaController(390)
     const user = userEvent.setup()

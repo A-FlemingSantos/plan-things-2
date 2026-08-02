@@ -24,8 +24,6 @@ public interface GitHubApiClient {
 
   List<GitHubSearchItem> searchCommits(String accessToken, String owner, String repo, String query, int page, int perPage);
 
-  GitHubCommitDiff getCommitDiff(String accessToken, String owner, String repo, String sha);
-
   GitHubUser getAuthenticatedUser(String accessToken);
 
   GitHubRefreshResult<GitHubIssue> refreshIssue(String accessToken, String owner, String repo, int number, String ifNoneMatch);
@@ -47,30 +45,6 @@ public interface GitHubApiClient {
   );
 
   GitHubRefreshResult<GitHubCommit> refreshCommit(String accessToken, String owner, String repo, String sha, String ifNoneMatch);
-
-  JsonNode fetchPullRequestDetails(String accessToken, String owner, String repo, int number);
-
-  default JsonNode fetchPullRequestDetailsPage(
-      String accessToken,
-      String owner,
-      String repo,
-      int number,
-      int page,
-      int perPage
-  ) {
-    return fetchPullRequestDetails(accessToken, owner, repo, number);
-  }
-
-  default JsonNode fetchBranchDetails(
-      String accessToken,
-      String owner,
-      String repo,
-      String branchName,
-      int page,
-      int perPage
-  ) {
-    throw new UnsupportedOperationException("Branch details are not available.");
-  }
 
   record GitHubRefreshResult<T>(boolean notModified, String etag, T payload) {
   }

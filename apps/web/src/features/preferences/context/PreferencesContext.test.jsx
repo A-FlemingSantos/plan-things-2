@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ROUTES } from '../../../shared/config/routes.js'
 import {
   formatClockTimeWithPreferences,
   formatCompactDayMonthWithPreferences,
@@ -16,19 +17,31 @@ describe('PreferencesContext helpers', () => {
         homePage: 'workspace',
         openLastCtx: true,
       },
-      lastContext: '/calendar',
+      lastContext: ROUTES.calendar,
     })
 
-    expect(nextRoute).toBe('/calendar')
+    expect(nextRoute).toBe(ROUTES.calendar)
+  })
+
+  it('resolveInitialRouteForState normalizes legacy files last context to workspace', () => {
+    const nextRoute = resolveInitialRouteForState({
+      localPreferences: {
+        homePage: 'workspace',
+        openLastCtx: true,
+      },
+      lastContext: ROUTES.files,
+    })
+
+    expect(nextRoute).toBe(ROUTES.workspace)
   })
 
   it('resolveInitialRouteForState falls back to homePage when last context is invalid or disabled', () => {
     const withInvalidContext = resolveInitialRouteForState({
       localPreferences: {
-        homePage: 'files',
+        homePage: 'workspace',
         openLastCtx: true,
       },
-      lastContext: '/help',
+      lastContext: ROUTES.help,
     })
 
     const withDisabledLastContext = resolveInitialRouteForState({
@@ -36,11 +49,32 @@ describe('PreferencesContext helpers', () => {
         homePage: 'workspace',
         openLastCtx: false,
       },
-      lastContext: '/calendar',
+      lastContext: ROUTES.calendar,
     })
 
-    expect(withInvalidContext).toBe('/workspace')
-    expect(withDisabledLastContext).toBe('/workspace')
+    const withLegacyHomePage = resolveInitialRouteForState({
+      localPreferences: {
+        homePage: 'files',
+        openLastCtx: true,
+      },
+      lastContext: ROUTES.help,
+    })
+
+    expect(withInvalidContext).toBe(ROUTES.workspace)
+    expect(withDisabledLastContext).toBe(ROUTES.workspace)
+    expect(withLegacyHomePage).toBe(ROUTES.workspace)
+  })
+
+  it('resolveInitialRouteForState honors calendar homePage when last context is disabled', () => {
+    const nextRoute = resolveInitialRouteForState({
+      localPreferences: {
+        homePage: 'calendar',
+        openLastCtx: false,
+      },
+      lastContext: ROUTES.files,
+    })
+
+    expect(nextRoute).toBe(ROUTES.calendar)
   })
 
   it('formatDateWithPreferences respects configured date formats', () => {

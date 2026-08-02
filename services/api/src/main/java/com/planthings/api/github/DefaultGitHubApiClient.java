@@ -2,7 +2,6 @@ package com.planthings.api.github;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.planthings.api.common.error.BadRequestException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -199,34 +198,6 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
   }
 
   @Override
-  // Still used when linking commits; CardModal no longer renders the returned patch inline.
-  public GitHubCommitDiff getCommitDiff(String accessToken, String owner, String repo, String sha) {
-    JsonNode node = restExecutor.getJson(accessToken, repoPath(owner, repo) + "/commits/" + sha);
-    StringBuilder patchPreview = new StringBuilder();
-    for (JsonNode file : node.path("files")) {
-      if (patchPreview.length() > 8000) {
-        break;
-      }
-      String patch = file.path("patch").asText("");
-      if (StringUtils.hasText(patch)) {
-        String filename = file.path("filename").asText("file");
-        String previousFilename = file.path("previous_filename").asText(filename);
-        patchPreview
-            .append("diff --git a/").append(previousFilename).append(" b/").append(filename).append('\n')
-            .append("--- a/").append(previousFilename).append('\n')
-            .append("+++ b/").append(filename).append('\n')
-            .append(patch).append('\n');
-      }
-    }
-    return new GitHubCommitDiff(
-        node.path("stats").path("additions").asInt(0),
-        node.path("stats").path("deletions").asInt(0),
-        node.path("files").size(),
-        patchPreview.length() > 8000 ? patchPreview.substring(0, 8000) : patchPreview.toString()
-    );
-  }
-
-  @Override
   public GitHubRefreshResult<GitHubIssue> refreshIssue(
       String accessToken,
       String owner,
@@ -304,62 +275,6 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
       return new GitHubRefreshResult<>(true, response.etag(), null);
     }
     return new GitHubRefreshResult<>(false, response.etag(), mapCommit(response.requireBody()));
-  }
-
-  @Override
-  public JsonNode fetchPullRequestDetails(String accessToken, String owner, String repo, int number) {
-    return fetchPullRequestDetailsPage(accessToken, owner, repo, number, 1, 30);
-  }
-
-  @Override
-  // Only consumed by CardGitHubService.getDetails (unused by web CardModal since 2026-07).
-  public JsonNode fetchPullRequestDetailsPage(
-      String accessToken,
-      String owner,
-      String repo,
-      int number,
-      int page,
-      int perPage
-  ) {
-    GitHubPullRequest pullRequest = getPullRequest(accessToken, owner, repo, number);
-    String headSha = pullRequest.head().path("sha").asText("");
-    ObjectNode details = objectMapper.createObjectNode();
-    details.set("pullRequest", objectMapper.valueToTree(pullRequest));
-    JsonNode commits = restExecutor.getJson(
-        accessToken,
-        repoPath(owner, repo) + "/pulls/" + number + "/commits?per_page=" + perPage + "&page=" + page
-    );
-    details.set("commits", commits);
-    details.set("reviews", restExecutor.getJson(accessToken, repoPath(owner, repo) + "/pulls/" + number + "/reviews?per_page=100"));
-    details.put("page", page);
-    details.put("hasMore", commits.isArray() && commits.size() == perPage);
-    if (StringUtils.hasText(headSha)) {
-      details.set("combinedStatus", restExecutor.getJson(accessToken, repoPath(owner, repo) + "/commits/" + headSha + "/status"));
-      details.set("checkRuns", restExecutor.getJson(accessToken, repoPath(owner, repo) + "/commits/" + headSha + "/check-runs?per_page=100"));
-    }
-    return details;
-  }
-
-  @Override
-  // Only consumed by CardGitHubService.getDetails (unused by web CardModal since 2026-07).
-  public JsonNode fetchBranchDetails(
-      String accessToken,
-      String owner,
-      String repo,
-      String branchName,
-      int page,
-      int perPage
-  ) {
-    GitHubBranch branch = getBranch(accessToken, owner, repo, branchName);
-    JsonNode commits = restExecutor.getJson(
-        accessToken,
-        repoPath(owner, repo) + "/commits?sha=" + encodeRef(branchName) + "&per_page=" + perPage + "&page=" + page
-    );
-    ObjectNode details = objectMapper.valueToTree(branch);
-    details.set("commits", commits);
-    details.put("page", page);
-    details.put("hasMore", commits.isArray() && commits.size() == perPage);
-    return details;
   }
 
   private GitHubRepository mapRepository(JsonNode node) {

@@ -1,7 +1,5 @@
 package com.planthings.api.github;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.planthings.api.board.BoardCardEntity;
 import com.planthings.api.board.BoardCardRepository;
 import com.planthings.api.common.error.BadRequestException;
@@ -31,7 +29,6 @@ public class CardGitHubService {
   private final GitHubLinkMapper linkMapper;
   private final GitHubAnchorService anchorService;
   private final GitHubLinkSyncService linkSyncService;
-  private final ObjectMapper objectMapper;
   private final Clock clock;
 
   public CardGitHubService(
@@ -47,7 +44,6 @@ public class CardGitHubService {
       GitHubLinkMapper linkMapper,
       GitHubAnchorService anchorService,
       GitHubLinkSyncService linkSyncService,
-      ObjectMapper objectMapper,
       Clock clock
   ) {
     this.planAccessService = planAccessService;
@@ -62,7 +58,6 @@ public class CardGitHubService {
     this.linkMapper = linkMapper;
     this.anchorService = anchorService;
     this.linkSyncService = linkSyncService;
-    this.objectMapper = objectMapper;
     this.clock = clock;
   }
 
@@ -135,61 +130,6 @@ public class CardGitHubService {
     if (wasAnchor) {
       anchorService.promoteNextAnchor(cardId);
     }
-  }
-
-  @Transactional(readOnly = true)
-  // CardModal GitHub tab no longer calls this; summaries come from link snapshots.
-  // Keep for now; remove or repurpose if no other client needs live PR/branch timelines.
-  public GitHubLinkDetailsView getDetails(UUID planId, UUID cardId, UUID linkId) {
-    return getDetails(planId, cardId, linkId, 1, 30);
-  }
-
-  @Transactional(readOnly = true)
-  public GitHubLinkDetailsView getDetails(UUID planId, UUID cardId, UUID linkId, int page, int perPage) {
-    UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, currentUserId);
-    requireCard(planId, cardId);
-
-    BoardCardGitHubLinkEntity link = linkRepository.findByIdAndCardId(linkId, cardId)
-        .orElseThrow(() -> new NotFoundException("GITHUB_LINK_NAO_ENCONTRADO", "Nao encontramos este link GitHub."));
-
-    if (Boolean.TRUE.equals(link.getUnavailable())) {
-      return new GitHubLinkDetailsView(linkMapper.toLinkedItemView(link), null, true);
-    }
-
-    PlanGitHubRepoEntity planRepo = planGitHubRepoRepository.findById(link.getPlanGithubRepoId())
-        .orElseThrow(() -> new NotFoundException("GITHUB_REPO_NAO_ENCONTRADO", "Nao encontramos o repositorio deste link."));
-    String accessToken = accessTokenService.requireActiveAccessToken(planRepo.getConnectionUserId());
-    String[] parts = link.getRepoFullName().split("/", 2);
-    int safePage = Math.max(1, page);
-    int safePerPage = Math.max(1, Math.min(100, perPage));
-    JsonNode details = fetchDetails(accessToken, link, parts[0], parts[1], safePage, safePerPage);
-    return new GitHubLinkDetailsView(linkMapper.toLinkedItemView(link), details, false);
-  }
-
-  @Transactional(readOnly = true)
-  // CardModal GitHub tab no longer renders commit diffs inline.
-  // Keep for now; delete if nothing else consumes it.
-  public GitHubApiClient.GitHubCommitDiff getCommitDiff(UUID planId, UUID cardId, UUID linkId) {
-    UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, currentUserId);
-    requireCard(planId, cardId);
-
-    BoardCardGitHubLinkEntity link = linkRepository.findByIdAndCardId(linkId, cardId)
-        .orElseThrow(() -> new NotFoundException("GITHUB_LINK_NAO_ENCONTRADO", "Nao encontramos este link GitHub."));
-
-    if (link.getLinkType() != GitHubLinkType.COMMIT || !StringUtils.hasText(link.getGithubSha())) {
-      throw new BadRequestException("GITHUB_DIFF_INDISPONIVEL", "O diff so esta disponivel para commits.");
-    }
-    if (Boolean.TRUE.equals(link.getUnavailable())) {
-      throw new BadRequestException("GITHUB_LINK_INDISPONIVEL", "Este link GitHub esta indisponivel.");
-    }
-
-    PlanGitHubRepoEntity planRepo = planGitHubRepoRepository.findById(link.getPlanGithubRepoId())
-        .orElseThrow(() -> new NotFoundException("GITHUB_REPO_NAO_ENCONTRADO", "Nao encontramos o repositorio deste link."));
-    String accessToken = accessTokenService.requireActiveAccessToken(planRepo.getConnectionUserId());
-    String[] parts = link.getRepoFullName().split("/", 2);
-    return githubApiClient.getCommitDiff(accessToken, parts[0], parts[1], link.getGithubSha());
   }
 
   private GitHubLinkMapper.GitHubLinkedItemView createLink(
@@ -285,37 +225,6 @@ public class CardGitHubService {
     }
   }
 
-  // Only used by getDetails above (currently unused by web CardModal).
-  private JsonNode fetchDetails(
-      String accessToken,
-      BoardCardGitHubLinkEntity link,
-      String owner,
-      String repo,
-      int page,
-      int perPage
-  ) {
-    return switch (link.getLinkType()) {
-      case ISSUE -> objectMapper.valueToTree(githubApiClient.getIssue(accessToken, owner, repo, link.getGithubNumber()));
-      case PULL_REQUEST -> githubApiClient.fetchPullRequestDetailsPage(
-          accessToken,
-          owner,
-          repo,
-          link.getGithubNumber(),
-          page,
-          perPage
-      );
-      case BRANCH -> githubApiClient.fetchBranchDetails(
-          accessToken,
-          owner,
-          repo,
-          link.getGithubRef(),
-          page,
-          perPage
-      );
-      case COMMIT -> objectMapper.valueToTree(githubApiClient.getCommit(accessToken, owner, repo, link.getGithubSha()));
-    };
-  }
-
   private BoardCardEntity requireCard(UUID planId, UUID cardId) {
     BoardCardEntity card = boardCardRepository.findById(cardId)
         .orElseThrow(() -> new NotFoundException("CARTAO_NAO_ENCONTRADO", "Nao encontramos o cartao informado."));
@@ -331,13 +240,6 @@ public class CardGitHubService {
       boolean planHasRepos,
       List<String> availableRepoFullNames,
       List<GitHubLinkMapper.GitHubLinkedItemView> linkedItems
-  ) {
-  }
-
-  public record GitHubLinkDetailsView(
-      GitHubLinkMapper.GitHubLinkedItemView item,
-      JsonNode details,
-      boolean unavailable
   ) {
   }
 

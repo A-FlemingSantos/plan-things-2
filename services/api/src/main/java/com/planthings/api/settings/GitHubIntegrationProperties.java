@@ -24,7 +24,6 @@ public class GitHubIntegrationProperties {
   private URI apiBaseUrl = URI.create("https://api.github.com");
   private URI authorizationUri = URI.create("https://github.com/login/oauth/authorize");
   private URI tokenUri = URI.create("https://github.com/login/oauth/access_token");
-  private long pollingIntervalMinutes = 5;
   private int pollingBatchSize = 50;
   private String apiVersion = "2022-11-28";
   private String userAgent = "PlanThings-API";
@@ -123,14 +122,6 @@ public class GitHubIntegrationProperties {
 
   public void setTokenUri(URI tokenUri) {
     this.tokenUri = tokenUri;
-  }
-
-  public long getPollingIntervalMinutes() {
-    return pollingIntervalMinutes;
-  }
-
-  public void setPollingIntervalMinutes(long pollingIntervalMinutes) {
-    this.pollingIntervalMinutes = pollingIntervalMinutes;
   }
 
   public int getPollingBatchSize() {

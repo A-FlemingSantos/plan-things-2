@@ -45,7 +45,7 @@ export default function SidebarAccountMenu({
   collapsed,
   name = 'Arthur Santos',
   email = 'arthur@planthings.com',
-  plan = 'Professional',
+  plan = 'Profissional',
   initials = 'AS',
   menuPlacement = 'above',
   menuPresentation = 'avatar',

@@ -492,17 +492,17 @@ export default function KanbanBoard() {
               <CalendarWorkspaceView embedded />
             ) : boardViewMode === 'timeline' ? (
               <section className={styles.boardStatusPanel} role="status" aria-live="polite">
-                <p className={styles.boardStatusTitle}>Timeline</p>
+                <p className={styles.boardStatusTitle}>Linha do tempo</p>
                 <p className={styles.boardStatusText}>Este modo de visualização estará disponível em breve.</p>
               </section>
             ) : boardViewMode === 'bugtrack' ? (
               <section className={styles.boardStatusPanel} role="status" aria-live="polite">
-                <p className={styles.boardStatusTitle}>Bugtrack</p>
+                <p className={styles.boardStatusTitle}>Rastreamento de bugs</p>
                 <p className={styles.boardStatusText}>Este modo de visualização estará disponível em breve.</p>
               </section>
             ) : boardViewMode === 'actions' ? (
               <section className={styles.boardStatusPanel} role="status" aria-live="polite">
-                <p className={styles.boardStatusTitle}>Actions</p>
+                <p className={styles.boardStatusTitle}>Ações</p>
                 <p className={styles.boardStatusText}>Este modo de visualização estará disponível em breve.</p>
               </section>
             ) : (

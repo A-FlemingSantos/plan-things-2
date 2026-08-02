@@ -117,11 +117,6 @@ public class AuthController {
     return ApiEnvelope.ok(authService.refreshSession());
   }
 
-  @GetMapping("/me")
-  public ApiEnvelope<AuthService.CurrentUserResponse> me() {
-    return ApiEnvelope.ok(authService.me());
-  }
-
   public record RegisterRequest(
       @NotBlank(message = "O nome completo e obrigatorio.") String fullName,
       @NotBlank(message = "O e-mail e obrigatorio.")

@@ -101,7 +101,7 @@ vi.mock('../../../calendar/hooks/useCalendarEvents.js', () => ({
   useCalendarEvents: () => ({ filteredEvents: [] }),
 }))
 
-vi.mock('../../../calendar/pages/CalendarPage/CalendarPage.jsx', () => ({
+vi.mock('../../../calendar/components/CalendarWorkspaceView/CalendarWorkspaceView.jsx', () => ({
   CalendarWorkspaceView: () => <section aria-label="Calendário do quadro">Calendário do quadro</section>,
   default: () => null,
 }))
@@ -280,7 +280,7 @@ describe('KanbanBoard optimistic feedback', () => {
     const deferred = createDeferred()
     boardState.updateCard.mockReturnValue(deferred.promise)
 
-    renderBoard({ pathname: '/workspace/plan-1/board', state: { openPlanner: true } })
+    renderBoard({ pathname: '/workspace/board/plan-1', state: { openPlanner: true } })
     await userEvent.click(await screen.findByRole('button', { name: 'Marcar com estrela' }))
 
     expect(boardState.columns[0].cards[0].starred).toBe(true)
@@ -332,7 +332,7 @@ describe('KanbanBoard optimistic feedback', () => {
   })
 })
 
-function renderBoard(route = { pathname: '/workspace/plan-1/board' }) {
+function renderBoard(route = { pathname: '/workspace/board/plan-1' }) {
   return render(
     <TestMemoryRouter initialEntries={[route]}>
       <KanbanBoard />

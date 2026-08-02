@@ -23,7 +23,7 @@ import Toggle from '../../../../shared/components/Toggle/Toggle.jsx'
 import { useResponsiveViewport } from '../../../../shared/hooks/useResponsiveViewport.js'
 import { ROUTES, toRouteString } from '../../../../shared/config/routes.js'
 import { formatBytes } from '../../../../shared/utils/formatBytes.js'
-import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
+import { WORKSPACE_SUBSCRIPTION_PLANS, getWorkspacePlanLabel, getWorkspacePlanQuotaBytes } from '../../../../shared/utils/workspaceSubscriptionPlans.js'
 import {
   getWorkspaceIconOption,
   normalizeWorkspaceIconKey,
@@ -63,7 +63,7 @@ const SECTION_NAV_ICON_STROKE = 1.75
 const SECTIONS = [
   { id: 'account',       label: 'Conta',                   Icon: User         },
   { id: 'general',       label: 'Preferências gerais',      Icon: Settings2    },
-  { id: 'workspace',     label: 'Workspace',                Icon: LayoutDashboard },
+  { id: 'workspace',     label: 'Área de trabalho',         Icon: LayoutDashboard },
   { id: 'integrations',  label: 'Integrações',              Icon: Blocks       },
   { id: 'notifications', label: 'Notificações',             Icon: BellRing     },
   { id: 'security',      label: 'Privacidade e segurança',  Icon: ShieldCheck  },
@@ -1674,7 +1674,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
               <p className={styles.planBlockName}>Plano do workspace</p>
               <p className={styles.planBlockRenewal}>A cota e compartilhada por todos os arquivos ativos.</p>
             </div>
-            <span className={styles.planActiveBadge}>{workspacePlan}</span>
+            <span className={styles.planActiveBadge}>{getWorkspacePlanLabel(workspacePlan)}</span>
           </div>
           <div className={styles.planOptions} role="radiogroup" aria-label="Plano de assinatura do workspace">
             {WORKSPACE_SUBSCRIPTION_PLANS.map((planOption) => {
@@ -1694,7 +1694,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
                 >
                   <span className={styles.planOptionRadio} aria-hidden="true" />
                   <span className={styles.planOptionBody}>
-                    <span className={styles.planOptionName}>{planOption.label}</span>
+                    <span className={styles.planOptionName}>{getWorkspacePlanLabel(planOption.id)}</span>
                     <span className={styles.planOptionQuota}>{formatBytes(planOption.quotaBytes)} de armazenamento</span>
                   </span>
                 </button>
