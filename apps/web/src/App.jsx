@@ -290,7 +290,9 @@ function AppShell() {
           </motion.div>
         </AnimatePresence>
 
-        {showAppDock ? <AppNavigationDock /> : null}
+        {showAppDock ? (
+          <AppNavigationDock navigationPathname={normalizePathname(renderedLocation.pathname)} />
+        ) : null}
       </LayoutGroup>
 
       {normalizePathname(location.pathname) === ROUTES.settings ? (

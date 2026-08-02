@@ -68,9 +68,10 @@ function NavLinkItem({ label, to, Icon, pathname }) {
   )
 }
 
-export default function AppNavigationDock() {
+export default function AppNavigationDock({ navigationPathname = null } = {}) {
   const location = useLocation()
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const contentPathname = navigationPathname ?? location.pathname
   const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
   const PlaceholderIcon = PLACEHOLDER_ITEM.Icon
@@ -81,7 +82,7 @@ export default function AppNavigationDock() {
       <nav className={styles.positioner} data-app-navigation-dock aria-label="Navegação principal">
         <div className={styles.dockAnchor}>
           <Dock className={styles.navigationDock} size={34}>
-          <NavLinkItem {...homeItem} pathname={location.pathname} />
+          <NavLinkItem {...homeItem} pathname={contentPathname} />
 
           <DockItem>
             <button
@@ -94,7 +95,7 @@ export default function AppNavigationDock() {
             </button>
           </DockItem>
 
-          <NavLinkItem {...boardsItem} pathname={location.pathname} />
+          <NavLinkItem {...boardsItem} pathname={contentPathname} />
 
           <DockSeparator />
 

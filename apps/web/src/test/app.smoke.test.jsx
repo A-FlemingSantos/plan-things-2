@@ -333,8 +333,11 @@ describe('App smoke flows', () => {
     await user.click(accountMenuTrigger)
 
     expect(await screen.findByRole('menu')).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /contas salvas de arthur santos/i })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Upgrade' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Meu perfil' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Configurações' })).not.toBeInTheDocument()
   })
 
   it('opens the saved accounts submenu from the dock account menu', async () => {
@@ -362,7 +365,7 @@ describe('App smoke flows', () => {
     const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
     expect(accountMenuTrigger).not.toBeNull()
     await user.click(accountMenuTrigger)
-    await user.hover(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
 
     expect(await screen.findByRole('menu', { name: 'Contas salvas' })).toBeInTheDocument()
     expect(screen.getByRole('menuitemradio', { name: /arthur santos/i })).toBeInTheDocument()
@@ -395,7 +398,7 @@ describe('App smoke flows', () => {
     const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
     expect(accountMenuTrigger).not.toBeNull()
     await user.click(accountMenuTrigger)
-    await user.hover(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
     await user.click(await screen.findByRole('menuitemradio', { name: /bruna costa/i }))
 
     await waitFor(() => {
@@ -412,28 +415,25 @@ describe('App smoke flows', () => {
     const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
     expect(accountMenuTrigger).not.toBeNull()
     await user.click(accountMenuTrigger)
-    await user.hover(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
+    await user.click(await screen.findByRole('button', { name: /contas salvas de arthur santos/i }))
     await user.click(await screen.findByRole('menuitem', { name: 'Adicionar conta' }))
 
     expect(await screen.findByRole('heading', { name: 'Entre com outra conta' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/login')
   })
 
-  it('opens the account section from Meu perfil in the dock account menu', async () => {
+  it('opens the account section from the dock settings link', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
 
-    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
-    expect(accountMenuTrigger).not.toBeNull()
-    await user.click(accountMenuTrigger)
-    await user.click(await screen.findByRole('menuitem', { name: 'Meu perfil' }))
+    await user.click(await screen.findByRole('link', { name: 'Configurações' }))
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
-    expect(window.location.search).toBe('?section=account')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('opens the workspace section from Upgrade in the dock account menu', async () => {
@@ -476,22 +476,20 @@ describe('App smoke flows', () => {
     expect(screen.getByRole('button', { name: /continuar com e-mail/i })).toBeInTheDocument()
   })
 
-  it('opens the settings panel as an overlay from the dock account menu', async () => {
+  it('opens the settings panel as an overlay from the dock settings link', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
 
     expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
-    const accountMenuTrigger = document.querySelector('[data-sidebar-user-button]')
-    expect(accountMenuTrigger).not.toBeNull()
-    await user.click(accountMenuTrigger)
-    await user.click(await screen.findByRole('menuitem', { name: 'Configurações' }))
+    await user.click(await screen.findByRole('link', { name: 'Configurações' }))
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
 

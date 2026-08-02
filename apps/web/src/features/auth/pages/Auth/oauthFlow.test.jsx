@@ -37,8 +37,9 @@ describe('OAuth auth flow', () => {
       ]),
     })
 
-    await screen.findByRole('heading', { name: 'Início' })
+    await screen.findByRole('heading', { name: 'Workspaces' })
     expect(window.location.pathname).toBe('/workspace')
+    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
     const sessionStore = readStoredSessionValue()
     expect(sessionStore.activeAccountId).toBe('demo-user-google-example-com')
