@@ -97,6 +97,9 @@ describe('Workspace mobile layout', () => {
 
     expect(screen.getAllByRole('button', { name: /novo plano/i }).length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: 'Planos' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Gráficos' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Membros' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Área de trabalho pessoal' })).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('Buscar planos...')).not.toBeInTheDocument()
     expect(screen.queryByText('Recentes')).not.toBeInTheDocument()
     expect(screen.queryByText('Workspaces')).not.toBeInTheDocument()

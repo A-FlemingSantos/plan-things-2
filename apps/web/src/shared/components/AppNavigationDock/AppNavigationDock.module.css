@@ -3,13 +3,13 @@
 }
 
 .themeScope[data-theme='dark'].workspaceHomeTheme {
-  --app-bg: #1a1a1a;
-  --surface-1: #1a1a1a;
+  --app-bg: #0d0d0d;
+  --surface-1: #0d0d0d;
 }
 
 .themeScope[data-theme='light'].workspaceHomeTheme {
-  --app-bg: #f8f9fa;
-  --surface-1: #f8f9fa;
+  --app-bg: #ffffff;
+  --surface-1: #ffffff;
 }
 
 .positioner {
