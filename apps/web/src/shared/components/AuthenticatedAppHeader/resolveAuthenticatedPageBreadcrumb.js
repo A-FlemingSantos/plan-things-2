@@ -1,5 +1,13 @@
 import { normalizePathname, ROUTES } from '../../config/routes.js'
 
+function createItem(label, { to = null, current = false } = {}) {
+  return {
+    label,
+    to,
+    current,
+  }
+}
+
 export function resolveAuthenticatedPageBreadcrumb({
   pathname,
   workspaceName = 'Workspace',
@@ -7,24 +15,30 @@ export function resolveAuthenticatedPageBreadcrumb({
 } = {}) {
   const normalized = normalizePathname(pathname)
   const resolvedWorkspaceName = String(workspaceName ?? '').trim() || 'Workspace'
-  let pageTitle = null
 
   if (normalized === ROUTES.workspace) {
-    pageTitle = null
-  } else if (normalized === ROUTES.workspaceBoard) {
-    pageTitle = 'Quadros'
+    return {
+      items: [createItem(resolvedWorkspaceName, { current: true })],
+    }
+  }
+
+  const items = [createItem(resolvedWorkspaceName, { to: ROUTES.workspace })]
+
+  if (normalized === ROUTES.workspaceBoard) {
+    items.push(createItem('Quadros', { current: true }))
   } else if (normalized.startsWith(`${ROUTES.workspaceBoard}/`)) {
     const planId = normalized.slice(`${ROUTES.workspaceBoard}/`.length).split('/')[0]
     const plan = plans.find((entry) => entry.id === planId)
-    pageTitle = plan?.name?.trim() || 'Plano'
+
+    items.push(createItem('Quadros', { to: ROUTES.workspaceBoard }))
+    items.push(createItem(plan?.name?.trim() || 'Plano', { current: true }))
   } else if (normalized === ROUTES.settings) {
-    pageTitle = 'Configurações'
+    items.push(createItem('Configurações', { current: true }))
   } else if (normalized === ROUTES.calendar) {
-    pageTitle = 'Calendário'
+    items.push(createItem('Calendário', { current: true }))
+  } else {
+    items.push(createItem('Página', { current: true }))
   }
 
-  return {
-    workspaceName: resolvedWorkspaceName,
-    pageTitle,
-  }
+  return { items }
 }

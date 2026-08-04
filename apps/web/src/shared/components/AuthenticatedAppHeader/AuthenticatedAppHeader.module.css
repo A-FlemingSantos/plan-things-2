@@ -41,14 +41,33 @@
   letter-spacing: -0.02em;
 }
 
-.workspaceName {
+.breadcrumbSegment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.breadcrumbLink {
   color: var(--text-2);
+  text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color var(--transition-fast);
 }
 
-.pageTitle {
+.breadcrumbLink:hover {
+  color: var(--text-1);
+}
+
+.breadcrumbLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.breadcrumbCurrent {
   color: var(--text-1);
   font-weight: var(--font-weight-regular);
   white-space: nowrap;

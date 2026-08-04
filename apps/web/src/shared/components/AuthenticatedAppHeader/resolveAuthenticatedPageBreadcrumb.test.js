@@ -9,19 +9,23 @@ describe('resolveAuthenticatedPageBreadcrumb', () => {
       workspaceName: 'Área de trabalho pessoal',
       plans: [],
     })).toEqual({
-      workspaceName: 'Área de trabalho pessoal',
-      pageTitle: null,
+      items: [
+        { label: 'Área de trabalho pessoal', to: null, current: true },
+      ],
     })
   })
 
-  it('returns the plan name for board routes', () => {
+  it('returns navigable segments for board routes', () => {
     expect(resolveAuthenticatedPageBreadcrumb({
       pathname: `${ROUTES.workspaceBoard}/plan-1`,
       workspaceName: 'Workspace',
       plans: [{ id: 'plan-1', name: 'Lancamento Q3' }],
     })).toEqual({
-      workspaceName: 'Workspace',
-      pageTitle: 'Lancamento Q3',
+      items: [
+        { label: 'Workspace', to: ROUTES.workspace, current: false },
+        { label: 'Quadros', to: ROUTES.workspaceBoard, current: false },
+        { label: 'Lancamento Q3', to: null, current: true },
+      ],
     })
   })
 
@@ -31,8 +35,10 @@ describe('resolveAuthenticatedPageBreadcrumb', () => {
       workspaceName: 'Workspace',
       plans: [],
     })).toEqual({
-      workspaceName: 'Workspace',
-      pageTitle: 'Configurações',
+      items: [
+        { label: 'Workspace', to: ROUTES.workspace, current: false },
+        { label: 'Configurações', to: null, current: true },
+      ],
     })
   })
 })

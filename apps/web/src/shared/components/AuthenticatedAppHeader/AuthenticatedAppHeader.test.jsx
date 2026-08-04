@@ -20,15 +20,15 @@ vi.mock('../../../features/preferences/components/AppThemeScope/AppThemeScope.js
 }))
 
 describe('AuthenticatedAppHeader', () => {
-  it('renders a breadcrumb with the workspace name and page title', () => {
+  it('renders navigable breadcrumb links for nested routes', () => {
     render(
       <TestMemoryRouter initialEntries={['/workspace/board/plan-1']}>
         <AuthenticatedAppHeader pathname="/workspace/board/plan-1" />
       </TestMemoryRouter>,
     )
 
-    expect(screen.getByRole('navigation', { name: 'Localização atual' })).toHaveTextContent('Área de trabalho pessoal')
-    expect(screen.getByRole('navigation', { name: 'Localização atual' })).toHaveTextContent('Lancamento Q3')
-    expect(screen.getByText('/')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Área de trabalho pessoal' })).toHaveAttribute('href', '/workspace')
+    expect(screen.getByRole('link', { name: 'Quadros' })).toHaveAttribute('href', '/workspace/board')
+    expect(screen.getByText('Lancamento Q3')).toHaveAttribute('aria-current', 'page')
   })
 })
