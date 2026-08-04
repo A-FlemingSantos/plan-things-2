@@ -3,6 +3,16 @@
    All CSS variables from globals.css are available.
    ============================================================ */
 
+.themeScope {
+  --workspace-shell-header-height: 0px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--workspace-shell-header-height));
+  max-height: calc(100dvh - var(--workspace-shell-header-height));
+  min-height: 0;
+  overflow: hidden;
+}
+
 .themeScope[data-theme='dark'] {
   --app-bg: #0d0d0d;
   --surface-1: #0d0d0d;
@@ -19,6 +29,24 @@
   --workspace-accent: #4290da;
   --workspace-success: #0f703a;
   --workspace-success-bg: rgba(15, 112, 58, 0.1);
+}
+
+.themeScope :global([data-app-shell]) {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.themeScope :global([data-app-shell-content]) {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── Shell ── */
@@ -38,12 +66,14 @@
    MAIN
 ════════════════════════════════════════ */
 .main {
-  --workspace-shell-header-height: 0px;
   --workspace-page-header-height: 57px;
   --workspace-content-top-padding: 28px;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   min-width: 0;
   background: var(--app-bg);
   position: relative;
@@ -51,12 +81,13 @@
 }
 
 .mainScrollArea {
-  height: calc(100dvh - var(--workspace-shell-header-height));
-  min-height: calc(100dvh - var(--workspace-shell-header-height));
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .mainScrollViewport {
   min-height: 0;
+  height: 100%;
 }
 
 /* Topbar */
@@ -474,6 +505,12 @@
   border: 1px solid var(--border-1);
   border-radius: 12px;
   background: var(--surface-2);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.membersTableWrap::-webkit-scrollbar {
+  display: none;
 }
 
 .membersTable {
@@ -2032,8 +2069,11 @@
 }
 
 @media (max-width: 768px) {
-  .main {
+  .themeScope {
     --workspace-shell-header-height: var(--mobile-app-header-offset);
+  }
+
+  .main {
     --workspace-page-header-height: 52px;
     --workspace-content-top-padding: 18px;
   }
