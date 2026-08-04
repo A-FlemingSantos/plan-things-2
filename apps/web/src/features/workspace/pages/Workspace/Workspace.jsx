@@ -1,9 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
-import { WorkspaceIconGlyph } from '../../../../shared/components/WorkspaceIconBadge/WorkspaceIconBadge.jsx'
-import { readRecentPlanIds } from '../../data/recentPlansStorage.js'
 import { apiRequest, triggerBlobDownload } from '../../../../shared/api/apiClient.js'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
@@ -15,13 +13,10 @@ import NewPlanPopover from '../../components/NewPlanPopover/NewPlanPopover.jsx'
 import PlanBackgroundPicker from '../../components/PlanBackgroundPicker/PlanBackgroundPicker.jsx'
 import PlanCard from '../../components/PlanCard/PlanCard.jsx'
 import WorkspaceLoadingState from '../../components/WorkspaceLoadingState/WorkspaceLoadingState.jsx'
-import WorkspaceSectionActions from '../../components/WorkspaceSectionActions/WorkspaceSectionActions.jsx'
 import {
   GridIcon,
   ListIcon,
   PlusIcon,
-  SearchIcon,
-  XIcon,
 } from '../../components/WorkspaceIcons/WorkspaceIcons.jsx'
 import { uploadPlanCoverFile } from '../../components/workspaceCover/workspaceCoverUtils.js'
 import styles from './Workspace.module.css'
@@ -29,9 +24,8 @@ import styles from './Workspace.module.css'
 export default function Workspace() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { accessToken, currentUser: authUser, workspace } = useAuth()
+  const { accessToken } = useAuth()
   const [view,         setView]         = useState('grid')
-  const [search,       setSearch]       = useState('')
   const [newPlanAnchor, setNewPlanAnchor] = useState(null)
   const { notification, pushNotification, setNotification } = useTransientNotification()
   const [openPlanMenuId, setOpenPlanMenuId] = useState(null)
@@ -42,53 +36,14 @@ export default function Workspace() {
   const [backgroundPicker, setBackgroundPicker] = useState(null)
   const [backgroundBusy, setBackgroundBusy] = useState(false)
   const handledFileDeepLinkRef = useRef('')
-  const { plans, activePlan, activePlanId, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, currentUser, isBackendDriven, isLoading } = usePlans()
+  const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
-  const userId = authUser?.id ?? currentUser?.id ?? null
-  const [recentPlanIds, setRecentPlanIds] = useState(() => readRecentPlanIds(userId))
-
-  useEffect(() => {
-    setRecentPlanIds(readRecentPlanIds(userId))
-  }, [userId, activePlanId])
-
-  const matchesSearch = (plan) => {
-    const query = search.trim().toLowerCase()
-    if (!query) return true
-    return (
-      plan.name.toLowerCase().includes(query)
-      || plan.tag.toLowerCase().includes(query)
-    )
-  }
-
-  const filtered = plans.filter(matchesSearch)
-  const plansById = useMemo(() => new Map(plans.map((plan) => [plan.id, plan])), [plans])
-  const recentPlans = useMemo(
-    () => recentPlanIds
-      .map((planId) => plansById.get(planId))
-      .filter(Boolean)
-      .filter(matchesSearch),
-    [plansById, recentPlanIds, search],
-  )
-  const workspaceGroups = useMemo(() => ([
-    {
-      id: workspace?.id ?? 'current-workspace',
-      name: workspace?.name?.trim() || 'Área de trabalho pessoal',
-      iconKey: workspace?.iconKey,
-      plans: filtered,
-    },
-  ]), [filtered, workspace?.iconKey, workspace?.id, workspace?.name])
-  const hasVisiblePlans = recentPlans.length > 0 || workspaceGroups.some((group) => group.plans.length > 0)
+  const hasVisiblePlans = plans.length > 0
   const backgroundPickerPlan = backgroundPicker?.planId
     ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
     : null
   const fileIdFromUrl = String(searchParams.get('file') ?? '').trim()
-
-  const clearSearch = (event) => {
-    event?.preventDefault?.()
-    event?.stopPropagation?.()
-    setSearch('')
-  }
 
   useEffect(() => {
     if (!fileIdFromUrl) {
@@ -370,26 +325,6 @@ export default function Workspace() {
 
   const sectionControls = (
     <div className={styles.sectionControls}>
-      <label className={styles.searchWrap}>
-        <span className={styles.searchIcon} aria-hidden="true"><SearchIcon /></span>
-        <input
-          className={styles.searchInput}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar planos..."
-        />
-        {search ? (
-          <button
-            type="button"
-            className={styles.searchClear}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={clearSearch}
-            aria-label="Limpar busca de planos"
-          >
-            <XIcon />
-          </button>
-        ) : null}
-      </label>
       <div className={styles.viewToggle}>
         <button
           className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
@@ -405,93 +340,34 @@ export default function Workspace() {
     </div>
   )
 
-  const renderSectionHeader = (titleId, title, count, { withControls = false } = {}) => (
-    <div className={styles.sectionHeader}>
-      <div className={styles.sectionLeft}>
-        <h2 id={titleId} className={styles.sectionTitle}>{title}</h2>
-        <span className={styles.planCount}>{count}</span>
-      </div>
-      {withControls ? sectionControls : null}
-    </div>
-  )
-
-  const renderWorkspacesSectionHeader = (withControls = false) => (
-    <div className={styles.sectionHeader}>
-      <div className={styles.sectionLeft}>
-        <h2 id="workspace-workspaces-title" className={styles.sectionTitle}>Workspaces</h2>
-        <span className={styles.planCount}>{workspaceGroups.length}</span>
-      </div>
-      <div className={styles.sectionHeaderRight}>
-        <WorkspaceSectionActions />
-        {withControls ? sectionControls : null}
-      </div>
-    </div>
-  )
-
   const plansSectionContent = (
-    <>
+    <div className={styles.plansGalleryBody}>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionLeft}>
+          <h2 id="workspace-plans-title" className={styles.sectionTitle}>Planos</h2>
+          <span className={styles.planCount}>{plans.length}</span>
+        </div>
+        {sectionControls}
+      </div>
+
       {!hasVisiblePlans ? (
-        <div className={styles.plansGalleryBody}>
-          {renderWorkspacesSectionHeader(true)}
-          <div className={styles.emptyState}>
-              <span className={styles.emptyStateIcon}><SearchIcon /></span>
-              <p className={styles.emptyStateTitle}>Nenhum plano encontrado</p>
-              <p className={styles.emptyStateHint}>
-                {search
-                  ? `Tente outro termo ou limpe "${search}" para ver tudo.`
-                  : 'Crie seu primeiro plano para organizar o trabalho no quadro.'}
-              </p>
-              <div className={styles.emptyStateActions}>
-                {search && (
-                  <button type="button" className={styles.emptyStateBtn} onClick={clearSearch}>
-                    Limpar busca
-                  </button>
-                )}
-                <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
-                  <PlusIcon />
-                  Novo plano
-                </button>
-              </div>
-            </div>
+        <div className={styles.emptyState}>
+          <span className={styles.emptyStateIcon}><PlusIcon /></span>
+          <p className={styles.emptyStateTitle}>Nenhum plano ainda</p>
+          <p className={styles.emptyStateHint}>
+            Crie seu primeiro plano para organizar o trabalho no quadro.
+          </p>
+          <div className={styles.emptyStateActions}>
+            <button type="button" className={styles.emptyStateBtnPrimary} onClick={openNewPlan}>
+              <PlusIcon />
+              Novo plano
+            </button>
+          </div>
         </div>
       ) : (
-        <div className={styles.plansGalleryBody}>
-          {recentPlans.length > 0 ? (
-            <section className={styles.recentSection} aria-labelledby="workspace-recent-title">
-              {renderSectionHeader('workspace-recent-title', 'Recentes', recentPlans.length, { withControls: true })}
-              {renderPlanCollection(recentPlans, {
-                gridClassName: `${styles.grid} ${styles.recentGrid}`,
-              })}
-            </section>
-          ) : null}
-
-          <section className={styles.workspacesSection} aria-labelledby="workspace-workspaces-title">
-            {renderWorkspacesSectionHeader(recentPlans.length === 0)}
-
-            <div className={styles.workspaceGroups}>
-              {workspaceGroups.map((group) => (
-                <div key={group.id} className={styles.workspaceGroup}>
-                  <div className={styles.workspaceGroupHeader}>
-                    <span className={styles.workspaceGroupIcon} aria-hidden="true">
-                      <WorkspaceIconGlyph iconKey={group.iconKey} className={styles.workspaceGroupIconGlyph} />
-                    </span>
-                    <h3 className={styles.workspaceGroupTitle}>{group.name}</h3>
-                    <span className={styles.planCount}>{group.plans.length}</span>
-                  </div>
-                  {group.plans.length === 0 ? (
-                    <p className={styles.workspaceGroupEmpty}>
-                      {search ? 'Nenhum plano corresponde à busca neste workspace.' : 'Nenhum plano neste workspace ainda.'}
-                    </p>
-                  ) : (
-                    renderPlanCollection(group.plans, { includeNewPlanCard: view === 'grid' })
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+        renderPlanCollection(plans, { includeNewPlanCard: view === 'grid' })
       )}
-    </>
+    </div>
   )
 
   return (

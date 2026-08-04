@@ -85,10 +85,6 @@ function renderWorkspace(initialEntries = ['/workspace']) {
 
 describe('Workspace mobile layout', () => {
   beforeEach(() => {
-    window.localStorage.setItem(
-      'plan-things:recent-plans:v1:user-1',
-      JSON.stringify(['plan-1']),
-    )
     plansMock.isBackendDriven = false
     apiClientMock.apiRequest.mockReset()
     apiClientMock.triggerBlobDownload.mockReset()
@@ -100,13 +96,10 @@ describe('Workspace mobile layout', () => {
     renderWorkspace()
 
     expect(screen.getAllByRole('button', { name: /novo plano/i }).length).toBeGreaterThan(0)
-    expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
-    expect(screen.getByText('Recentes')).toBeInTheDocument()
-    expect(screen.getByText('Workspaces')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Planos' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Membros' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Biblioteca' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Planos' })).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Buscar planos...')).not.toBeInTheDocument()
+    expect(screen.queryByText('Recentes')).not.toBeInTheDocument()
+    expect(screen.queryByText('Workspaces')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visualização em grade' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visualização em lista' })).toBeInTheDocument()
   })
