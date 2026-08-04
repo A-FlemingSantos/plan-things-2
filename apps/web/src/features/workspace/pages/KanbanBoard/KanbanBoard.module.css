@@ -1128,9 +1128,9 @@
 }
 
 .inboxPrimaryButton {
-  border: 1px solid #111827;
-  background: #111827;
-  color: #fff;
+  border: 1px solid var(--text-1);
+  background: var(--text-1);
+  color: var(--text-inverse);
 }
 
 .inboxPrimaryButton:disabled {
@@ -2582,7 +2582,7 @@
 }
 
 [data-theme='dark'] .cardModal {
-  --cm-activity-feed-bg: #090909;
+  --cm-activity-feed-bg: #0a0a0a;
   --cm-comment-card-bg: var(--surface-2);
   --cm-comment-card-border: var(--border-2);
 }

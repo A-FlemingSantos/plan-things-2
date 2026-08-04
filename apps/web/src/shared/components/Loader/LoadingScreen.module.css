@@ -1,8 +1,8 @@
 .root {
   display: grid;
   place-items: center;
-  background: #000;
-  color: #fff;
+  background: var(--app-bg);
+  color: var(--text-1);
 }
 
 .fullscreen {
@@ -19,5 +19,5 @@
 }
 
 .loader {
-  color: #fff;
+  color: var(--text-1);
 }

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePlans } from '../../../features/workspace/context/PlansContext.jsx'
-import { normalizePathname, ROUTES } from '../../config/routes.js'
 import { resolveAuthenticatedPageBreadcrumb } from './resolveAuthenticatedPageBreadcrumb.js'
 import styles from './AuthenticatedAppHeader.module.css'
 
@@ -26,8 +25,6 @@ function BreadcrumbItem({ item }) {
 export default function AuthenticatedAppHeader({ pathname }) {
   const { workspace } = useAuth()
   const { plans } = usePlans()
-  const normalizedPathname = normalizePathname(pathname)
-  const isWorkspaceHome = normalizedPathname === ROUTES.workspace
   const { items } = resolveAuthenticatedPageBreadcrumb({
     pathname,
     workspaceName: workspace?.name,
@@ -35,12 +32,7 @@ export default function AuthenticatedAppHeader({ pathname }) {
   })
 
   return (
-    <AppThemeScope
-      className={[
-        styles.themeScope,
-        isWorkspaceHome ? styles.workspaceHomeTheme : '',
-      ].filter(Boolean).join(' ')}
-    >
+    <AppThemeScope className={styles.themeScope}>
       <header className={styles.header} data-authenticated-app-header>
         <nav className={styles.breadcrumb} aria-label="Localização atual">
           {items.map((item, index) => (

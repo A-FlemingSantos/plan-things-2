@@ -2,16 +2,6 @@
   display: contents;
 }
 
-.themeScope[data-theme='dark'].workspaceHomeTheme {
-  --app-bg: #0d0d0d;
-  --surface-1: #0d0d0d;
-}
-
-.themeScope[data-theme='light'].workspaceHomeTheme {
-  --app-bg: #f8f9fb;
-  --surface-1: #f8f9fb;
-}
-
 .header {
   position: fixed;
   top: 0;

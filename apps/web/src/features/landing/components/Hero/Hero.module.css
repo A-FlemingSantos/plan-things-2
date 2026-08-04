@@ -83,7 +83,7 @@
 
 .ctaPrimary {
   background: var(--text-1);
-  color: var(--app-bg);
+  color: var(--text-inverse);
 }
 
 .ctaPrimary:hover {

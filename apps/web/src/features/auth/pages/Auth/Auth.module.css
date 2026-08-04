@@ -34,13 +34,8 @@
 .brandPanel {
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  color: #000000;
-}
-
-[data-theme='light'] .brandPanel {
-  background: #000000;
-  color: #ffffff;
+  background: var(--text-1);
+  color: var(--text-inverse);
 }
 
 .brandBadge {

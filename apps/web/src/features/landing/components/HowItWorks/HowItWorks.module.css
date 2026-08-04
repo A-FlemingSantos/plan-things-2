@@ -98,7 +98,7 @@
   font-size: 15px;
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.01em;
-  color: var(--app-bg);
+  color: var(--text-inverse);
   background: var(--text-1);
   border-radius: var(--radius-sm);
   transition: opacity var(--transition-fast);
@@ -126,14 +126,14 @@
   background:
     radial-gradient(ellipse 90% 80% at 18% 28%, rgba(14, 107, 61, 0.95) 0%, transparent 55%),
     radial-gradient(ellipse 75% 70% at 82% 72%, rgba(8, 48, 28, 0.9) 0%, transparent 50%),
-    linear-gradient(135deg, #0e6b3d 0%, #1a1a1a 52%, #000000 100%);
+    linear-gradient(135deg, #0e6b3d 0%, #1a1a1a 52%, #0d0d0d 100%);
 }
 
 .featureVisual[data-tone='blue'] {
   background:
     radial-gradient(ellipse 90% 80% at 22% 32%, rgba(17, 105, 238, 0.95) 0%, transparent 55%),
     radial-gradient(ellipse 75% 70% at 78% 68%, rgba(8, 40, 100, 0.9) 0%, transparent 50%),
-    linear-gradient(135deg, #1169ee 0%, #1a1a1a 52%, #000000 100%);
+    linear-gradient(135deg, #1169ee 0%, #1a1a1a 52%, #0d0d0d 100%);
 }
 
 .featureVisualImage {

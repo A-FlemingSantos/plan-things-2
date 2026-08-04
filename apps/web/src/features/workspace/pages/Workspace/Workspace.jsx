@@ -371,7 +371,7 @@ export default function Workspace() {
   )
 
   return (
-    <AppThemeScope className={styles.themeScope}>
+    <AppThemeScope>
       <ProductAppShell
         contentClassName={styles.main}
         contentTag="main"
