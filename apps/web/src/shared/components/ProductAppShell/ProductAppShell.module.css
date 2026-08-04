@@ -2,7 +2,6 @@
   --app-dock-clearance: calc(56px + env(safe-area-inset-bottom, 0px));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  min-height: 100vh;
   min-height: 100dvh;
   background: var(--app-bg);
   color: var(--text-1);
@@ -11,5 +10,7 @@
 .content {
   min-width: 0;
   box-sizing: border-box;
+  min-height: calc(100dvh - var(--authenticated-app-header-offset, 0px));
+  padding-top: var(--authenticated-app-header-offset, 0px);
   padding-bottom: var(--app-dock-clearance);
 }

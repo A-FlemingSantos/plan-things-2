@@ -5,6 +5,7 @@ import App from './App.jsx'
 
 const workspaceState = vi.hoisted(() => ({
   showLoading: true,
+  useFullscreenLoading: false,
 }))
 
 vi.mock('./features/auth/context/AuthContext.jsx', () => ({
@@ -61,13 +62,22 @@ vi.mock('./features/workspace/pages/KanbanBoard/KanbanBoard.jsx', () => ({
   default: () => <main>Board</main>,
 }))
 
+vi.mock('./shared/components/AuthenticatedAppHeader/AuthenticatedAppHeader.jsx', () => ({
+  default: () => null,
+}))
+
 vi.mock('./features/workspace/pages/Workspace/Workspace.jsx', async () => {
   const { default: LoadingScreen } = await import('./shared/components/Loader/LoadingScreen.jsx')
 
   return {
     default: function WorkspaceMock() {
       if (workspaceState.showLoading) {
-        return <LoadingScreen label="Carregando planos" />
+        return (
+          <LoadingScreen
+            label="Carregando planos"
+            variant={workspaceState.useFullscreenLoading ? 'fullscreen' : 'embedded'}
+          />
+        )
       }
 
       return <main>Workspace ready</main>
@@ -78,9 +88,24 @@ vi.mock('./features/workspace/pages/Workspace/Workspace.jsx', async () => {
 describe('App navigation dock visibility', () => {
   beforeEach(() => {
     workspaceState.showLoading = true
+    workspaceState.useFullscreenLoading = false
   })
 
-  it('hides the authenticated navigation dock while a loading screen is active', () => {
+  it('keeps the authenticated navigation dock visible during embedded loading', () => {
+    render(
+      <MemoryRouter initialEntries={['/workspace']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('status', { name: 'Carregando planos' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeInTheDocument()
+  })
+
+  it('hides the authenticated navigation dock during fullscreen loading', () => {
+    workspaceState.showLoading = true
+    workspaceState.useFullscreenLoading = true
+
     render(
       <MemoryRouter initialEntries={['/workspace']}>
         <App />

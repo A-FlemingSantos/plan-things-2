@@ -1,0 +1,62 @@
+.themeScope {
+  display: contents;
+}
+
+.themeScope[data-theme='dark'].workspaceHomeTheme {
+  --app-bg: #0d0d0d;
+  --surface-1: #0d0d0d;
+}
+
+.themeScope[data-theme='light'].workspaceHomeTheme {
+  --app-bg: #ffffff;
+  --surface-1: #ffffff;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-app-shell-header);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(var(--authenticated-app-header-height, 40px) + env(safe-area-inset-top, 0px));
+  padding:
+    env(safe-area-inset-top, 0px)
+    clamp(16px, 2.4vw, 24px)
+    0;
+  background: var(--surface-1, var(--app-bg));
+  border-bottom: 1px solid var(--border-1);
+  color: var(--text-1);
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.workspaceName {
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pageTitle {
+  color: var(--text-1);
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.separator {
+  color: var(--text-3);
+  flex-shrink: 0;
+}

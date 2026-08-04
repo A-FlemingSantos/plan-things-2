@@ -10,11 +10,20 @@ function LoadingProbe() {
 }
 
 describe('AppChromeContext', () => {
-  it('tracks active loading screens via register/unregister', () => {
+  it('tracks only fullscreen loading screens', () => {
     const { rerender } = render(
       <AppChromeProvider>
         <LoadingProbe />
         <LoadingScreen label="Carregando planos" />
+      </AppChromeProvider>,
+    )
+
+    expect(screen.getByTestId('loading-active')).toHaveTextContent('false')
+
+    rerender(
+      <AppChromeProvider>
+        <LoadingProbe />
+        <LoadingScreen variant="fullscreen" label="Carregando sessão" />
       </AppChromeProvider>,
     )
 

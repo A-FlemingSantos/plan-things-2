@@ -2071,12 +2071,6 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
         </button>
       )}
     />
-  ) : !isMobile ? (
-    <PlanPageHeader
-      title="Configurações"
-      tone="solid"
-      titleSize="medium"
-    />
   ) : null
 
   const settingsNavButtons = SECTIONS.map(({ id, label, Icon }) => (

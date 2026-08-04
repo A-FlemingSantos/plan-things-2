@@ -4,13 +4,13 @@
    ============================================================ */
 
 .themeScope[data-theme='dark'] {
-  --app-bg: #1a1a1a;
-  --surface-1: #1a1a1a;
+  --app-bg: #0d0d0d;
+  --surface-1: #0d0d0d;
 }
 
 .themeScope[data-theme='light'] {
-  --app-bg: #f8f9fa;
-  --surface-1: #f8f9fa;
+  --app-bg: #ffffff;
+  --surface-1: #ffffff;
 }
 
 /* ── Shell ── */
@@ -35,7 +35,9 @@
   --workspace-content-top-padding: 28px;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
   min-width: 0;
   background: var(--app-bg);
   position: relative;
@@ -43,8 +45,8 @@
 }
 
 .mainScrollArea {
-  height: calc(100dvh - var(--workspace-shell-header-height));
-  min-height: calc(100dvh - var(--workspace-shell-header-height));
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .mainScrollViewport {

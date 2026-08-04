@@ -11,7 +11,13 @@ export default function LoadingScreen({
 }) {
   const { registerLoadingScreen } = useAppChrome()
 
-  useEffect(() => registerLoadingScreen(), [registerLoadingScreen])
+  useEffect(() => {
+    if (variant !== 'fullscreen') {
+      return undefined
+    }
+
+    return registerLoadingScreen()
+  }, [registerLoadingScreen, variant])
 
   const rootClassName = [
     styles.root,

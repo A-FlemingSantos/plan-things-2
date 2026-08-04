@@ -17,6 +17,7 @@ import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
 import Workspace from './features/workspace/pages/Workspace/Workspace.jsx'
 import AppNavigationDock from './shared/components/AppNavigationDock/AppNavigationDock.jsx'
+import AuthenticatedAppHeader from './shared/components/AuthenticatedAppHeader/AuthenticatedAppHeader.jsx'
 import LoadingScreen from './shared/components/Loader/LoadingScreen.jsx'
 import { AppChromeProvider, useAppChrome } from './shared/context/AppChromeContext.jsx'
 import {
@@ -127,9 +128,9 @@ function AppShell() {
     : null
   const renderedLocation = modalBackgroundLocation ?? location
   const routeTransitionKey = resolveRouteTransitionKey(renderedLocation.pathname)
-  const showAppDock = sessionMode !== 'anonymous'
+  const showAuthenticatedChrome = sessionMode !== 'anonymous'
     && isInternalAppPath(renderedLocation.pathname)
-    && !isLoadingScreenActive
+  const showAppDock = showAuthenticatedChrome && !isLoadingScreenActive
 
   useEffect(() => {
     if (sessionMode !== 'anonymous') {
@@ -289,6 +290,10 @@ function AppShell() {
             </Routes>
           </motion.div>
         </AnimatePresence>
+
+        {showAuthenticatedChrome ? (
+          <AuthenticatedAppHeader pathname={renderedLocation.pathname} />
+        ) : null}
 
         {showAppDock ? (
           <AppNavigationDock navigationPathname={normalizePathname(renderedLocation.pathname)} />
