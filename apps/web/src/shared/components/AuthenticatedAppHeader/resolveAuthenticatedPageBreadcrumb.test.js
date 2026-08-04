@@ -23,7 +23,6 @@ describe('resolveAuthenticatedPageBreadcrumb', () => {
     })).toEqual({
       items: [
         { label: 'Workspace', to: ROUTES.workspace, current: false },
-        { label: 'Quadros', to: ROUTES.workspaceBoard, current: false },
         { label: 'Lancamento Q3', to: null, current: true },
       ],
     })

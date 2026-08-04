@@ -24,13 +24,12 @@ export function resolveAuthenticatedPageBreadcrumb({
 
   const items = [createItem(resolvedWorkspaceName, { to: ROUTES.workspace })]
 
-  if (normalized === ROUTES.workspaceBoard) {
-    items.push(createItem('Quadros', { current: true }))
-  } else if (normalized.startsWith(`${ROUTES.workspaceBoard}/`)) {
-    const planId = normalized.slice(`${ROUTES.workspaceBoard}/`.length).split('/')[0]
-    const plan = plans.find((entry) => entry.id === planId)
+  if (normalized === ROUTES.workspaceBoard || normalized.startsWith(`${ROUTES.workspaceBoard}/`)) {
+    const planId = normalized.startsWith(`${ROUTES.workspaceBoard}/`)
+      ? normalized.slice(`${ROUTES.workspaceBoard}/`.length).split('/')[0]
+      : null
+    const plan = planId ? plans.find((entry) => entry.id === planId) : null
 
-    items.push(createItem('Quadros', { to: ROUTES.workspaceBoard }))
     items.push(createItem(plan?.name?.trim() || 'Plano', { current: true }))
   } else if (normalized === ROUTES.settings) {
     items.push(createItem('Configurações', { current: true }))

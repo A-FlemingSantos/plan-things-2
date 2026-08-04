@@ -28,7 +28,7 @@ describe('AuthenticatedAppHeader', () => {
     )
 
     expect(screen.getByRole('link', { name: 'Área de trabalho pessoal' })).toHaveAttribute('href', '/workspace')
-    expect(screen.getByRole('link', { name: 'Quadros' })).toHaveAttribute('href', '/workspace/board')
     expect(screen.getByText('Lancamento Q3')).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByRole('link', { name: 'Quadros' })).not.toBeInTheDocument()
   })
 })
