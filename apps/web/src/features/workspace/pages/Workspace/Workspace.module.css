@@ -3,6 +3,16 @@
    All CSS variables from globals.css are available.
    ============================================================ */
 
+.themeScope[data-theme='dark'] {
+  --app-bg: #1a1a1a;
+  --surface-1: #1a1a1a;
+}
+
+.themeScope[data-theme='light'] {
+  --app-bg: #f8f9fa;
+  --surface-1: #f8f9fa;
+}
+
 /* ── Shell ── */
 .shell {
   display: grid;

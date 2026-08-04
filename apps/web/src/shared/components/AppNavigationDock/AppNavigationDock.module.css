@@ -2,6 +2,16 @@
   display: contents;
 }
 
+.themeScope[data-theme='dark'].workspaceHomeTheme {
+  --app-bg: #1a1a1a;
+  --surface-1: #1a1a1a;
+}
+
+.themeScope[data-theme='light'].workspaceHomeTheme {
+  --app-bg: #f8f9fa;
+  --surface-1: #f8f9fa;
+}
+
 .positioner {
   position: fixed;
   inset-inline: 0;

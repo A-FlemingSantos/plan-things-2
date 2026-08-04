@@ -76,9 +76,15 @@ export default function AppNavigationDock({ navigationPathname = null } = {}) {
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
   const PlaceholderIcon = PLACEHOLDER_ITEM.Icon
   const [homeItem, boardsItem] = NAV_ITEMS
+  const isWorkspaceHome = isRouteActive(contentPathname, ROUTES.workspace)
 
   return (
-    <AppThemeScope className={styles.themeScope}>
+    <AppThemeScope
+      className={[
+        styles.themeScope,
+        isWorkspaceHome ? styles.workspaceHomeTheme : '',
+      ].filter(Boolean).join(' ')}
+    >
       <nav className={styles.positioner} data-app-navigation-dock aria-label="Navegação principal">
         <div className={styles.dockAnchor}>
           <Dock className={styles.navigationDock} size={34}>
