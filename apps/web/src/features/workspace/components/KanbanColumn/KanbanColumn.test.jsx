@@ -18,6 +18,7 @@ function buildColumnProps(props = {}) {
     onRenameCol: vi.fn(),
     onChangeColColor: vi.fn(),
     onChangeColStatus: vi.fn(),
+    onToggleCompactView: vi.fn(),
     statusOptions: [
       { id: '', label: 'Sem status', icon: 'CircleOff', color: 'var(--text-3)' },
       { id: 'in_progress', label: 'Em Progresso', icon: 'Loader', color: '#e8b923' },
@@ -175,6 +176,19 @@ describe('KanbanColumn card composer', () => {
     )
 
     expect(container.querySelector('.colStatusIcon')).toBeNull()
+  })
+
+  it('renders the controlled compact view and requests its restoration from the column menu', () => {
+    const onToggleCompactView = vi.fn()
+    renderColumn({ isCompact: true, onToggleCompactView })
+
+    expect(document.querySelector('.columnCompact')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /adicionar cartão/i })).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: /opções da lista/i }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Expandir lista' }))
+
+    expect(onToggleCompactView).toHaveBeenCalledWith('col-1')
   })
 
   it('renders due date metadata on cards with due dates', () => {

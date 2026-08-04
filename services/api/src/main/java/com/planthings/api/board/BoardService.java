@@ -47,6 +47,7 @@ public class BoardService {
   private final PlanLabelRepository planLabelRepository;
   private final PlanMemberRepository planMemberRepository;
   private final BoardColumnRepository boardColumnRepository;
+  private final BoardColumnViewPreferenceRepository boardColumnViewPreferenceRepository;
   private final BoardCardRepository boardCardRepository;
   private final BoardCardCommentRepository boardCardCommentRepository;
   private final BoardChecklistRepository boardChecklistRepository;
@@ -70,6 +71,7 @@ public class BoardService {
       PlanLabelRepository planLabelRepository,
       PlanMemberRepository planMemberRepository,
       BoardColumnRepository boardColumnRepository,
+      BoardColumnViewPreferenceRepository boardColumnViewPreferenceRepository,
       BoardCardRepository boardCardRepository,
       BoardCardCommentRepository boardCardCommentRepository,
       BoardChecklistRepository boardChecklistRepository,
@@ -92,6 +94,7 @@ public class BoardService {
     this.planLabelRepository = planLabelRepository;
     this.planMemberRepository = planMemberRepository;
     this.boardColumnRepository = boardColumnRepository;
+    this.boardColumnViewPreferenceRepository = boardColumnViewPreferenceRepository;
     this.boardCardRepository = boardCardRepository;
     this.boardCardCommentRepository = boardCardCommentRepository;
     this.boardChecklistRepository = boardChecklistRepository;
@@ -116,6 +119,36 @@ public class BoardService {
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     ensureDefaultLabels(planId);
     return buildBoardView(plan, userId);
+  }
+
+  @Transactional
+  public CompactColumnsPreferenceView updateCompactColumns(UUID planId, List<UUID> columnIds) {
+    UUID userId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanMember(planId, userId);
+
+    Set<UUID> requestedColumnIds = new LinkedHashSet<>(columnIds == null ? List.of() : columnIds);
+    Set<UUID> planColumnIds = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).stream()
+        .map(BoardColumnEntity::getId)
+        .collect(Collectors.toSet());
+
+    if (!planColumnIds.containsAll(requestedColumnIds)) {
+      throw new BadRequestException("COLUNA_INVALIDA", "A preferencia contem uma coluna inexistente neste plano.");
+    }
+
+    boardColumnViewPreferenceRepository.deleteByUserIdAndPlanId(userId, planId);
+    if (!requestedColumnIds.isEmpty()) {
+      boardColumnViewPreferenceRepository.saveAll(requestedColumnIds.stream()
+          .map(columnId -> {
+            BoardColumnViewPreferenceEntity preference = new BoardColumnViewPreferenceEntity();
+            preference.setUserId(userId);
+            preference.setPlanId(planId);
+            preference.setColumnId(columnId);
+            return preference;
+          })
+          .toList());
+    }
+
+    return new CompactColumnsPreferenceView(List.copyOf(requestedColumnIds));
   }
 
   @Transactional
@@ -416,6 +449,10 @@ public class BoardService {
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     List<BoardCardEntity> cards = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     Map<UUID, List<BoardCardEntity>> cardsByColumn = cards.stream().collect(Collectors.groupingBy(BoardCardEntity::getColumnId));
+    List<UUID> compactColumnIds = boardColumnViewPreferenceRepository.findByUserIdAndPlanId(currentUserId, plan.getId())
+        .stream()
+        .map(BoardColumnViewPreferenceEntity::getColumnId)
+        .toList();
     PlanMemberRole currentRole = planAccessService.requireMemberRole(plan.getId(), currentUserId);
     List<LabelView> labels = planLabelRepository.findByPlanIdOrderByNameAsc(plan.getId()).stream()
         .map(label -> new LabelView(label.getId(), label.getName(), label.getColor()))
@@ -435,7 +472,8 @@ public class BoardService {
                 .toList()
         )).toList(),
         labels,
-        buildInboxItems(plan.getId())
+        buildInboxItems(plan.getId()),
+        compactColumnIds
     );
   }
 
@@ -898,7 +936,17 @@ public class BoardService {
     planLabelRepository.save(label);
   }
 
-  public record BoardView(UUID planId, String planName, List<ColumnView> columns, List<LabelView> labels, List<InboxItemView> inboxItems) {
+  public record BoardView(
+      UUID planId,
+      String planName,
+      List<ColumnView> columns,
+      List<LabelView> labels,
+      List<InboxItemView> inboxItems,
+      List<UUID> compactColumnIds
+  ) {
+  }
+
+  public record CompactColumnsPreferenceView(List<UUID> columnIds) {
   }
 
   public record ColumnView(UUID id, String title, String color, String status, int position, List<BoardCardView> cards) {

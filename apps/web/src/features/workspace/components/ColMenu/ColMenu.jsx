@@ -10,6 +10,8 @@ import {
   CircleOff,
   CircleX,
   Loader,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pencil,
   Trash2,
 } from 'lucide-react'
@@ -102,6 +104,8 @@ export default function ColMenu({
   onDelete,
   onChangeColor,
   onChangeStatus,
+  isCompact = false,
+  onToggleCompactView,
   onClose,
   colorOptions,
   statusOptions,
@@ -222,6 +226,23 @@ export default function ColMenu({
         >
           <Pencil size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
           Renomear
+        </button>
+
+        <button
+          type="button"
+          className={styles.colMenuItem}
+          onClick={() => {
+            onToggleCompactView()
+            onClose()
+          }}
+          role="menuitem"
+        >
+          {isCompact ? (
+            <PanelLeftOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          ) : (
+            <PanelLeftClose size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          )}
+          {isCompact ? 'Expandir lista' : 'Visualização compacta'}
         </button>
 
         <button

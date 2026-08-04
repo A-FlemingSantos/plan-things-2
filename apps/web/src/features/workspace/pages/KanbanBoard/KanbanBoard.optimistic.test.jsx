@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { apiRequest } from '../../../../shared/api/apiClient.js'
 import KanbanBoard from './KanbanBoard.jsx'
 
 const boardState = vi.hoisted(() => ({
@@ -27,6 +28,7 @@ const activePlan = vi.hoisted(() => ({
   boardLoaded: true,
   labelsMeta: [],
   membersMeta: [],
+  compactColumnIds: [],
 }))
 
 const plansMock = vi.hoisted(() => ({
@@ -132,8 +134,11 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 }))
 
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
-  default: ({ col, onToggleCardCompleted, onCardClick }) => (
-    <section aria-label={col.title}>
+  default: ({ col, isCompact, onToggleCompactView, onToggleCardCompleted, onCardClick }) => (
+    <section aria-label={col.title} data-compact={isCompact}>
+      <button type="button" onClick={() => onToggleCompactView(col.id)}>
+        Alternar compacta {col.title}
+      </button>
       {col.cards.map((card) => (
         <div key={card.id}>
           <button type="button" onClick={() => onToggleCardCompleted(card)}>
@@ -244,6 +249,7 @@ describe('KanbanBoard optimistic feedback', () => {
     boardActions.changeColColor.mockReset()
     boardActions.addCard.mockReset()
     boardActions.deleteCard.mockReset()
+    apiRequest.mockReset()
     plansMock.ensurePlanDetails.mockResolvedValue(activePlan)
     plansMock.refreshPlanDetails.mockResolvedValue(activePlan)
     plansMock.loadPlanBoard.mockImplementation(() => Promise.resolve(boardState.columns))
@@ -258,6 +264,86 @@ describe('KanbanBoard optimistic feedback', () => {
         cards: [buildCard()],
       },
     ]
+    activePlan.compactColumnIds = []
+  })
+
+  it('persists compact columns and restores the server preference after the board is mounted again', async () => {
+    apiRequest.mockResolvedValue({ columnIds: ['col-1'] })
+    const { unmount } = renderBoard()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Alternar compacta Backlog' }))
+
+    expect(screen.getByRole('region', { name: 'Backlog' })).toHaveAttribute('data-compact', 'true')
+    await waitFor(() => {
+      expect(apiRequest).toHaveBeenCalledWith('/api/plans/plan-1/board/preferences/compact-columns', {
+        method: 'PUT',
+        token: 'test-token',
+        body: { columnIds: ['col-1'] },
+      })
+    })
+
+    unmount()
+    activePlan.compactColumnIds = ['col-1']
+    renderBoard()
+
+    expect(await screen.findByRole('region', { name: 'Backlog' })).toHaveAttribute('data-compact', 'true')
+  })
+
+  it('restores the last confirmed compact state when saving fails', async () => {
+    const save = createDeferred()
+    apiRequest.mockReturnValue(save.promise)
+    renderBoard()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Alternar compacta Backlog' }))
+    expect(screen.getByRole('region', { name: 'Backlog' })).toHaveAttribute('data-compact', 'true')
+
+    save.reject(new Error('Falha ao salvar a preferência'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('region', { name: 'Backlog' })).toHaveAttribute('data-compact', 'false')
+    })
+  })
+
+  it('serializes compact-column saves so the latest toggle is persisted last', async () => {
+    const firstSave = createDeferred()
+    let compactSaveCount = 0
+    apiRequest.mockImplementation((url) => {
+      if (url !== '/api/plans/plan-1/board/preferences/compact-columns') {
+        return Promise.resolve({})
+      }
+
+      compactSaveCount += 1
+      return compactSaveCount === 1
+        ? firstSave.promise
+        : Promise.resolve({ columnIds: [] })
+    })
+    renderBoard()
+
+    const toggle = await screen.findByRole('button', { name: 'Alternar compacta Backlog' })
+    await userEvent.click(toggle)
+    await userEvent.click(toggle)
+
+    await waitFor(() => {
+      expect(apiRequest.mock.calls.filter(([url]) => (
+        url === '/api/plans/plan-1/board/preferences/compact-columns'
+      ))).toEqual([['/api/plans/plan-1/board/preferences/compact-columns', {
+        method: 'PUT',
+        token: 'test-token',
+        body: { columnIds: ['col-1'] },
+      }]])
+    })
+
+    firstSave.resolve({ columnIds: ['col-1'] })
+
+    await waitFor(() => {
+      expect(apiRequest.mock.calls.filter(([url]) => (
+        url === '/api/plans/plan-1/board/preferences/compact-columns'
+      )).at(-1)).toEqual(['/api/plans/plan-1/board/preferences/compact-columns', {
+        method: 'PUT',
+        token: 'test-token',
+        body: { columnIds: [] },
+      }])
+    })
   })
 
   it('marks cards as completed immediately and reverts on backend failure', async () => {

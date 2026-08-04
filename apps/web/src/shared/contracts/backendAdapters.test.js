@@ -6,6 +6,7 @@ import {
   mapCalendarEventsToSnapshot,
   mapBoardViewToColumns,
   mapPlanSummaryToRecord,
+  mergeBoardIntoPlan,
 } from './backendAdapters.js'
 
 describe('mapCalendarEventsToSnapshot', () => {
@@ -217,5 +218,22 @@ describe('board mapping with preferences', () => {
         canRemove: true,
       }),
     ])
+  })
+
+  it('keeps compact-column preferences from the board response', () => {
+    const plan = {
+      id: 'plan-1',
+      boardColumns: [],
+      labelsMeta: [],
+      inboxItems: [],
+      tasks: 0,
+      boardLoaded: false,
+    }
+    const boardView = {
+      ...sampleBoardView,
+      compactColumnIds: ['column-1'],
+    }
+
+    expect(mergeBoardIntoPlan(plan, boardView).compactColumnIds).toEqual(['column-1'])
   })
 })

@@ -536,6 +536,9 @@ export function mergeBoardIntoPlan(plan, boardView, options = {}) {
   return {
     ...plan,
     boardColumns: mapBoardViewToColumns(boardView, options),
+    compactColumnIds: Array.isArray(boardView.compactColumnIds)
+      ? boardView.compactColumnIds
+      : [],
     labelsMeta: boardView.labels.map((label) => ({
       id: label.id,
       text: label.name,

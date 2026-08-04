@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
@@ -28,6 +28,7 @@ import {
   KANBAN_DEFAULT_COLUMN_STATUS,
 } from '../../data/kanbanColumnStatusOptions.js'
 import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthenticatedImageUrl.js'
+import { apiRequest } from '../../../../shared/api/apiClient.js'
 import BoardLoadingState from './components/BoardLoadingState.jsx'
 import KanbanBoardInboxPanel from './components/KanbanBoardInboxPanel.jsx'
 import KanbanBoardPlannerPanel from './components/KanbanBoardPlannerPanel.jsx'
@@ -77,6 +78,11 @@ export default function KanbanBoard() {
   const [addColumnError, setAddColumnError] = useState(null)
   const [boardLoadError, setBoardLoadError] = useState(null)
   const [isGitHubIntegrationOpen, setIsGitHubIntegrationOpen] = useState(false)
+  const [compactColumnIds, setCompactColumnIds] = useState(() => new Set())
+  const compactColumnIdsRef = useRef(new Set())
+  const persistedCompactColumnIdsRef = useRef(new Set())
+  const compactColumnsSaveQueueRef = useRef(Promise.resolve())
+  const compactColumnsRevisionRef = useRef(0)
 
   const { notification, showNotification } = useKanbanBoardNotification()
   const {
@@ -365,6 +371,71 @@ export default function KanbanBoard() {
     })
   }
 
+  const queueCompactColumnsSave = useCallback((nextColumnIds, revision) => {
+    if (!isBackendDriven || !accessToken || !activePlan?.id) {
+      return
+    }
+
+    const columnIds = [...nextColumnIds]
+    const request = () => apiRequest(`/api/plans/${activePlan.id}/board/preferences/compact-columns`, {
+      method: 'PUT',
+      token: accessToken,
+      body: { columnIds },
+    })
+    const queuedRequest = compactColumnsSaveQueueRef.current
+      .catch(() => null)
+      .then(request)
+    compactColumnsSaveQueueRef.current = queuedRequest
+
+    queuedRequest
+      .then((response) => {
+        const persisted = new Set(Array.isArray(response?.columnIds) ? response.columnIds : columnIds)
+        persistedCompactColumnIdsRef.current = persisted
+
+        if (revision === compactColumnsRevisionRef.current) {
+          compactColumnIdsRef.current = persisted
+          setCompactColumnIds(persisted)
+        }
+      })
+      .catch((error) => {
+        if (revision !== compactColumnsRevisionRef.current) {
+          return
+        }
+
+        const restored = new Set(persistedCompactColumnIdsRef.current)
+        compactColumnIdsRef.current = restored
+        setCompactColumnIds(restored)
+        showNotification(error?.message ?? 'Não foi possível salvar a visualização compacta.')
+      })
+  }, [accessToken, activePlan?.id, isBackendDriven, showNotification])
+
+  const toggleColumnCompactView = useCallback((colId) => {
+    const next = new Set(compactColumnIdsRef.current)
+
+    if (next.has(colId)) {
+      next.delete(colId)
+    } else {
+      next.add(colId)
+    }
+
+    compactColumnIdsRef.current = next
+    setCompactColumnIds(next)
+
+    const revision = compactColumnsRevisionRef.current + 1
+    compactColumnsRevisionRef.current = revision
+    queueCompactColumnsSave(next, revision)
+  }, [queueCompactColumnsSave])
+
+  useEffect(() => {
+    compactColumnsRevisionRef.current += 1
+    const compactIds = isBackendDriven ? activePlan?.compactColumnIds : []
+    const next = new Set(Array.isArray(compactIds) ? compactIds : [])
+
+    compactColumnIdsRef.current = next
+    persistedCompactColumnIdsRef.current = next
+    setCompactColumnIds(next)
+  }, [activePlan?.compactColumnIds, activePlan?.id, isBackendDriven])
+
   useEffect(() => {
     if (!location.state?.openInbox) return
     openInboxPanel()
@@ -516,11 +587,13 @@ export default function KanbanBoard() {
                     key={col.uiKey ?? col.id}
                     col={col}
                     isDropTarget={dragOverColumnId === col.id}
+                    isCompact={compactColumnIds.has(col.id)}
                     onAddCard={addCard}
                     onDeleteCol={handleColumnDelete}
                     onRenameCol={renameColumn}
                     onChangeColColor={handleColumnColorChange}
                     onChangeColStatus={handleColumnStatusChange}
+                    onToggleCompactView={toggleColumnCompactView}
                     statusOptions={KANBAN_COLUMN_STATUS_OPTIONS}
                     onCardClick={handleBoardCardClick}
                     onToggleCardCompleted={togglePlannerCardCompleted}
@@ -619,6 +692,7 @@ export default function KanbanBoard() {
             <KanbanColumn
               col={activeDragColumn}
               isDragOverlay
+              isCompact={compactColumnIds.has(activeDragColumn.id)}
               onAddCard={() => {}}
               onDeleteCol={() => {}}
               onRenameCol={() => {}}

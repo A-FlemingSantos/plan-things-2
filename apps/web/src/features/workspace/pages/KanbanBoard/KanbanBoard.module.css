@@ -1309,9 +1309,10 @@
    COLUMN
 ════════════════════════════════════════ */
 .column {
+  --column-width: 300px;
   display: flex;
   flex-direction: column;
-  width: 300px;
+  width: var(--column-width);
   flex-shrink: 0;
   background: var(--board-column-bg);
   border: none;
@@ -1337,6 +1338,23 @@
 .columnDragging {
   opacity: 0;
   pointer-events: none;
+}
+
+.column.columnCompact {
+  --compact-header-length: min(200px, var(--column-width));
+  width: 48px;
+  height: var(--compact-header-length);
+  min-height: var(--compact-header-length);
+}
+
+.columnCompact .colHeader {
+  box-sizing: border-box;
+  width: var(--compact-header-length);
+  height: 48px;
+  min-height: 48px;
+  flex: none;
+  transform: rotate(90deg) translateY(-100%);
+  transform-origin: top left;
 }
 
 .columnDragOverlay {
@@ -6374,7 +6392,7 @@
     justify-content: space-between;
   }
   .board  { padding-bottom: 56px; gap: 8px; }
-  .column { width: min(264px, calc(100vw - 32px)); }
+  .column { --column-width: min(264px, calc(100vw - 32px)); }
   .modalOverlay { padding: 16px 10px 10px; }
   .cardModal { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--radius-md); }
   .cmHeader,
@@ -6480,9 +6498,7 @@
   .board {
     padding: var(--board-canvas-top-padding) 12px 52px;
   }
-  .column {
-    width: calc(100vw - 24px);
-  }
+  .column { --column-width: calc(100vw - 24px); }
   .modalOverlay {
     padding: 10px 0 0;
   }

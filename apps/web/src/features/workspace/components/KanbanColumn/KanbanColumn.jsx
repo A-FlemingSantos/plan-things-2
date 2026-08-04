@@ -54,11 +54,13 @@ export function KanbanColumnView({
   isDropTarget = false,
   isDragging = false,
   isDragOverlay = false,
+  isCompact = false,
   onAddCard,
   onDeleteCol,
   onRenameCol,
   onChangeColColor,
   onChangeColStatus,
+  onToggleCompactView,
   statusOptions,
   onCardClick,
   onToggleCardCompleted,
@@ -162,6 +164,7 @@ export function KanbanColumnView({
         ${hasColumnColor ? styles.columnColored : ''}
         ${isDragging ? styles.columnDragging : ''}
         ${isDragOverlay ? styles.columnDragOverlay : ''}
+        ${isCompact ? styles.columnCompact : ''}
       `}
       data-column-id={col.id}
       style={{
@@ -240,6 +243,12 @@ export function KanbanColumnView({
                   onDelete={() => onDeleteCol(col.id)}
                   onChangeColor={(color) => onChangeColColor(col.id, color)}
                   onChangeStatus={(status) => onChangeColStatus(col.id, status)}
+                  isCompact={isCompact}
+                  onToggleCompactView={() => {
+                    onToggleCompactView?.(col.id)
+                    setAddingCard(false)
+                    setCardError(null)
+                  }}
                   onClose={() => setShowMenu(false)}
                   colorOptions={colorOptions}
                   statusOptions={statusOptions}
@@ -251,7 +260,12 @@ export function KanbanColumnView({
             <button
               type="button"
               className={styles.colActionBtn}
-              onClick={startAddingCard}
+              onClick={() => {
+                if (isCompact) {
+                  onToggleCompactView?.(col.id)
+                }
+                startAddingCard()
+              }}
               disabled={isAddingCard}
               title="Adicionar cartão"
             >
@@ -260,9 +274,9 @@ export function KanbanColumnView({
           </div>
         ) : null}
       </div>
-      {renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
+      {!isCompact && renaming && renameError ? <p className={styles.inlineComposerError}>{renameError}</p> : null}
 
-      {isDragOverlay ? (
+      {!isCompact && isDragOverlay ? (
         <div
           className={`${styles.colCards} ${col.cards.length === 0 ? styles.colCardsEmpty : ''}`}
         >
@@ -278,7 +292,7 @@ export function KanbanColumnView({
             />
           ))}
         </div>
-      ) : (
+      ) : !isCompact ? (
         <>
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
             <div
@@ -314,7 +328,7 @@ export function KanbanColumnView({
             styles={styles}
           />
         </>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -365,6 +379,8 @@ function areKanbanColumnPropsEqual(prevProps, nextProps) {
   return prevProps.col === nextProps.col
     && prevProps.isDropTarget === nextProps.isDropTarget
     && prevProps.isDragOverlay === nextProps.isDragOverlay
+    && prevProps.isCompact === nextProps.isCompact
+    && prevProps.onToggleCompactView === nextProps.onToggleCompactView
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions

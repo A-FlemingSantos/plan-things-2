@@ -33,6 +33,14 @@ public class BoardController {
     return ApiEnvelope.ok(boardService.getBoard(planId));
   }
 
+  @PutMapping("/preferences/compact-columns")
+  public ApiEnvelope<BoardService.CompactColumnsPreferenceView> updateCompactColumns(
+      @PathVariable UUID planId,
+      @RequestBody CompactColumnsPreferenceRequest request
+  ) {
+    return ApiEnvelope.ok(boardService.updateCompactColumns(planId, request.columnIds()));
+  }
+
   @PostMapping("/columns")
   public ApiEnvelope<BoardService.BoardView> createColumn(@PathVariable UUID planId, @Valid @RequestBody ColumnRequest request) {
     return ApiEnvelope.ok(boardService.createColumn(planId, request.title(), request.color(), request.status()));
@@ -117,6 +125,9 @@ public class BoardController {
   }
 
   public record ReorderColumnsRequest(List<UUID> orderedColumnIds) {
+  }
+
+  public record CompactColumnsPreferenceRequest(List<UUID> columnIds) {
   }
 
   public record CardRequest(
