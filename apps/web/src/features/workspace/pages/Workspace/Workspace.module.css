@@ -3,50 +3,14 @@
    All CSS variables from globals.css are available.
    ============================================================ */
 
-.themeScope {
-  --workspace-shell-header-height: 0px;
-  display: flex;
-  flex-direction: column;
-  height: calc(100dvh - var(--workspace-shell-header-height));
-  max-height: calc(100dvh - var(--workspace-shell-header-height));
-  min-height: 0;
-  overflow: hidden;
-}
-
 .themeScope[data-theme='dark'] {
-  --app-bg: #0d0d0d;
-  --surface-1: #0d0d0d;
-  --surface-2: #161616;
-  --workspace-accent: #4290da;
-  --workspace-success: #0f703a;
-  --workspace-success-bg: rgba(15, 112, 58, 0.16);
+  --app-bg: #1a1a1a;
+  --surface-1: #1a1a1a;
 }
 
 .themeScope[data-theme='light'] {
-  --app-bg: #ffffff;
-  --surface-1: #ffffff;
-  --surface-2: #fafafa;
-  --workspace-accent: #4290da;
-  --workspace-success: #0f703a;
-  --workspace-success-bg: rgba(15, 112, 58, 0.1);
-}
-
-.themeScope :global([data-app-shell]) {
-  flex: 1 1 auto;
-  min-height: 0;
-  height: 100%;
-  max-height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.themeScope :global([data-app-shell-content]) {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  --app-bg: #f8f9fa;
+  --surface-1: #f8f9fa;
 }
 
 /* ── Shell ── */
@@ -66,14 +30,12 @@
    MAIN
 ════════════════════════════════════════ */
 .main {
+  --workspace-shell-header-height: 0px;
   --workspace-page-header-height: 57px;
   --workspace-content-top-padding: 28px;
-  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  height: 100%;
-  max-height: 100%;
+  min-height: 100vh;
   min-width: 0;
   background: var(--app-bg);
   position: relative;
@@ -81,13 +43,12 @@
 }
 
 .mainScrollArea {
-  flex: 1 1 auto;
-  min-height: 0;
+  height: calc(100dvh - var(--workspace-shell-header-height));
+  min-height: calc(100dvh - var(--workspace-shell-header-height));
 }
 
 .mainScrollViewport {
   min-height: 0;
-  height: 100%;
 }
 
 /* Topbar */
@@ -207,425 +168,28 @@
 /* Content */
 .content {
   flex: 1;
-  padding: 32px 40px 72px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Page header */
-.pageHeader {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.pageHeaderCopy {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.pageHeaderTitle {
-  margin: 0;
-  font-size: clamp(26px, 2.4vw, 32px);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -.03em;
-  color: var(--text-1);
-  line-height: 1.05;
-}
-
-.pageHeaderSubtitle {
-  margin: 0;
-  font-size: 14px;
-  font-weight: var(--font-weight-light);
-  color: var(--text-3);
-  line-height: 1.5;
-}
-
-.dashboardSections {
+  padding: 28px 48px 60px;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-/* Section cards */
-.sectionCard {
-  background: var(--app-bg);
-  border: 1px solid var(--border-1);
-  border-radius: 16px;
-  padding: clamp(20px, 2vw, 28px);
+.plansGalleryBody {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: clamp(16px, 1.8vw, 20px);
 }
 
-.sectionCardHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.sectionCardHeading {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.sectionCardTitle {
-  margin: 0;
-  font-size: 18px;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -.02em;
-  color: var(--text-1);
-  line-height: 1.2;
-}
-
-.sectionCardSubtitle {
-  margin: 0;
-  font-size: 13px;
-  font-weight: var(--font-weight-light);
-  color: var(--text-3);
-  line-height: 1.5;
-}
-
-.sectionCardActions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-.sectionCardBody {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-}
-
-.plansSectionBody,
-.chartsSectionBody,
-.membersSectionBody {
-  gap: clamp(18px, 2vw, 24px);
-}
-
-/* Overview metrics */
-.overviewMetrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.metricCard {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 18px 20px;
-  border: 1px solid var(--border-1);
-  border-radius: 12px;
-  background: var(--surface-2);
-}
-
-.metricLabel {
-  font-size: 12px;
-  font-weight: var(--font-weight-light);
-  color: var(--text-3);
-  letter-spacing: -.01em;
-}
-
-.metricValueRow {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.metricValue {
-  font-size: clamp(24px, 2.2vw, 30px);
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -.03em;
-  color: var(--text-1);
-  line-height: 1;
-}
-
-/* Charts */
-.chartsGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.chartCard {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-height: 280px;
-  padding: 20px;
-  border: 1px solid var(--border-1);
-  border-radius: 12px;
-  background: var(--surface-2);
-}
-
-.chartCardHeader {
+.sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.chartCardTitle {
-  margin: 0;
-  font-size: 14px;
-  font-weight: var(--font-weight-regular);
-  color: var(--text-1);
-  letter-spacing: -.01em;
-}
-
-.chartEmpty {
-  margin: auto 0;
-  font-size: 13px;
-  color: var(--text-3);
-  text-align: center;
-  line-height: 1.5;
-}
-
-.verticalChart {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-}
-
-.verticalChartPlot {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
-  align-items: end;
-  gap: 10px;
-  min-height: 180px;
-  padding: 0 4px;
-}
-
-.verticalChartColumn {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  height: 100%;
-}
-
-.verticalChartBar {
-  width: min(100%, 42px);
-  border-radius: 8px 8px 4px 4px;
-  background: var(--workspace-accent);
-  min-height: 8px;
-  transition: height var(--transition-normal);
-}
-
-.verticalChartLabels {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
-  gap: 10px;
-}
-
-.verticalChartLabel {
-  font-size: 11px;
-  color: var(--text-3);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.horizontalChart {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  flex: 1;
-}
-
-.horizontalChartRow {
-  display: grid;
-  grid-template-columns: minmax(72px, 28%) minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-}
-
-.horizontalChartLabel {
-  font-size: 12px;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.horizontalChartTrack {
-  min-width: 0;
-  height: 28px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
-  overflow: hidden;
-}
-
-.horizontalChartBar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  min-width: 28px;
-  padding-right: 10px;
-  border-radius: 8px;
-  background: var(--workspace-accent);
-}
-
-.horizontalChartValue {
-  font-size: 11px;
-  font-weight: var(--font-weight-regular);
-  color: var(--text-on-accent);
-}
-
-/* Members table */
-.membersTableWrap {
-  overflow-x: auto;
-  border: 1px solid var(--border-1);
-  border-radius: 12px;
-  background: var(--surface-2);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.membersTableWrap::-webkit-scrollbar {
-  display: none;
-}
-
-.membersTable {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 720px;
-}
-
-.membersTable th,
-.membersTable td {
-  padding: 14px 16px;
-  text-align: left;
-  border-bottom: 1px solid var(--border-1);
-  vertical-align: middle;
-}
-
-.membersTable th {
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  color: var(--text-3);
-  background: color-mix(in srgb, var(--surface-1) 72%, transparent);
-}
-
-.membersTable tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.membersTable tbody tr:hover {
-  background: color-mix(in srgb, var(--hover) 72%, transparent);
-}
-
-.membersTableIndex {
-  width: 44px;
-  color: var(--text-3);
-  font-size: 12px;
-}
-
-.membersTablePerson {
+.sectionLeft {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
-}
-
-.membersTableAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.membersTableAvatarImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.membersTableName {
-  font-size: 13px;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.membersTableEmail,
-.membersTablePlans,
-.membersTableRole {
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.membersTableActionsHead,
-.membersTableActionsCell {
-  width: 48px;
-  text-align: right;
-}
-
-.membersTableMenuBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.membersTableMenuBtn:hover {
-  background: var(--hover);
-  color: var(--text-1);
-}
-
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -.01em;
-}
-
-.statusBadgeActive {
-  color: var(--workspace-success);
-  background: var(--workspace-success-bg);
 }
 
 .sectionControls {
@@ -634,7 +198,6 @@
   justify-content: flex-end;
   gap: 10px;
   min-width: 0;
-  flex-wrap: wrap;
 }
 
 .sectionTitle {
@@ -2048,32 +1611,16 @@
     --workspace-content-top-padding: 24px;
   }
   .topbar  { padding: 24px 32px 22px; }
-  .content { padding: 24px 28px 56px; }
+  .content { padding: 24px 32px 48px; }
   .topbarRight {
     flex-wrap: wrap;
     justify-content: flex-end;
   }
-  .chartsGrid {
-    grid-template-columns: 1fr;
-  }
-  .overviewMetrics {
-    grid-template-columns: 1fr;
-  }
-  .sectionCardHeader {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .sectionCardActions {
-    justify-content: flex-start;
-  }
 }
 
 @media (max-width: 768px) {
-  .themeScope {
-    --workspace-shell-header-height: var(--mobile-app-header-offset);
-  }
-
   .main {
+    --workspace-shell-header-height: var(--mobile-app-header-offset);
     --workspace-page-header-height: 52px;
     --workspace-content-top-padding: 18px;
   }
@@ -2121,18 +1668,15 @@
     line-height: 1.1;
   }
   .content { padding: 18px 20px 40px; }
-  .pageHeader {
-    align-items: flex-start;
+  .sectionHeader {
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
-  .overviewMetrics {
-    grid-template-columns: 1fr;
-  }
-  .chartsGrid {
-    grid-template-columns: 1fr;
-  }
-  .horizontalChartRow {
-    grid-template-columns: 1fr;
-    gap: 6px;
+  .sectionLeft {
+    width: auto;
+    min-width: 0;
+    justify-content: flex-start;
   }
   .grid    { grid-template-columns: 1fr; }
   .viewToggle {
