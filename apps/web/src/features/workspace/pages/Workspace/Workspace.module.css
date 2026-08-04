@@ -9,8 +9,8 @@
 }
 
 .themeScope[data-theme='light'] {
-  --app-bg: #ffffff;
-  --surface-1: #ffffff;
+  --app-bg: #f8f9fb;
+  --surface-1: #f8f9fb;
 }
 
 /* ── Shell ── */
