@@ -1,10 +1,3 @@
-const DEMO_MEMBERS = [
-  { id: 'm1', initials: 'AS', color: '#4290da', name: 'Arthur Santos', email: 'arthur@example.com', role: 'OWNER' },
-  { id: 'm2', initials: 'MK', color: '#d4aef1', name: 'Maria Klein', email: 'maria@example.com', role: 'MEMBER' },
-  { id: 'm3', initials: 'TK', color: '#0f703a', name: 'Tiago Kuhn', email: 'tiago@example.com', role: 'MEMBER' },
-  { id: 'm4', initials: 'SR', color: '#ff6766', name: 'Sofia Ribeiro', email: 'sofia@example.com', role: 'ADMIN' },
-]
-
 function resolveMemberKey(member) {
   return member.id ?? member.email ?? member.name ?? member.initials ?? ''
 }
@@ -43,14 +36,6 @@ export function collectWorkspaceMembers(plans = []) {
       membersByKey.set(key, existing)
     })
   })
-
-  if (membersByKey.size === 0) {
-    return DEMO_MEMBERS.map((member, index) => ({
-      ...member,
-      planCount: Math.max(1, plans.length - index),
-      status: 'active',
-    }))
-  }
 
   return Array.from(membersByKey.values()).map((member) => ({
     id: member.id,
