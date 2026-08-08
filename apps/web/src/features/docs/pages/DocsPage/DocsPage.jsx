@@ -21,6 +21,7 @@ import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThem
 import { apiRequest } from '../../../../shared/api/apiClient.js'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import { useAppChrome } from '../../../../shared/context/AppChromeContext.jsx'
 import { getSectionOffsetTop } from '../../../../shared/hooks/useSectionScrollIndicator.js'
 import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
 import MarkdownWysiwygComposer from '../../components/MarkdownWysiwygComposer.jsx'
@@ -75,6 +76,7 @@ function DocsPageContent() {
   const { docId } = useParams()
   const navigate = useNavigate()
   const { accessToken, currentUser } = useAuth()
+  const { setPageBreadcrumbLabel } = useAppChrome()
   const {
     documents,
     loadDocument,
@@ -164,6 +166,16 @@ function DocsPageContent() {
       })
     return () => { active = false }
   }, [accessToken, details?.document?.id])
+
+  useEffect(() => {
+    if (isLoading || !details?.document?.id) {
+      setPageBreadcrumbLabel(null)
+      return undefined
+    }
+
+    setPageBreadcrumbLabel(draft.title.trim() || 'Documento')
+    return () => setPageBreadcrumbLabel(null)
+  }, [details?.document?.id, draft.title, isLoading, setPageBreadcrumbLabel])
 
   useEffect(() => {
     if (!canEdit || !details || draftSignature === savedDraftRef.current) return undefined

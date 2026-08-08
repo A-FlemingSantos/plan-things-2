@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { usePlans } from '../../../features/workspace/context/PlansContext.jsx'
+import { useAppChrome } from '../../context/AppChromeContext.jsx'
 import { resolveAuthenticatedPageBreadcrumb } from './resolveAuthenticatedPageBreadcrumb.js'
 import styles from './AuthenticatedAppHeader.module.css'
 
@@ -25,10 +26,12 @@ function BreadcrumbItem({ item }) {
 export default function AuthenticatedAppHeader({ pathname }) {
   const { workspace } = useAuth()
   const { plans } = usePlans()
+  const { pageBreadcrumbLabel } = useAppChrome()
   const { items } = resolveAuthenticatedPageBreadcrumb({
     pathname,
     workspaceName: workspace?.name,
     plans,
+    documentTitle: pageBreadcrumbLabel,
   })
 
   return (

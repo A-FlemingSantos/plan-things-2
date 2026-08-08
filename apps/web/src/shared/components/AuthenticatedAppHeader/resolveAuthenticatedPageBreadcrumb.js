@@ -12,6 +12,7 @@ export function resolveAuthenticatedPageBreadcrumb({
   pathname,
   workspaceName = 'Workspace',
   plans = [],
+  documentTitle = null,
 } = {}) {
   const normalized = normalizePathname(pathname)
   const resolvedWorkspaceName = String(workspaceName ?? '').trim() || 'Workspace'
@@ -37,9 +38,10 @@ export function resolveAuthenticatedPageBreadcrumb({
     items.push(createItem('Docs', { current: true }))
   } else if (normalized.startsWith(`${ROUTES.docs}/`)) {
     const docId = normalized.slice(`${ROUTES.docs}/`.length).split('/')[0]
+    const resolvedDocumentTitle = String(documentTitle ?? '').trim()
     items.push(createItem('Docs', { to: ROUTES.docs }))
     items.push(createItem(
-      docId === 'new' ? 'Nova doc' : 'Documento',
+      resolvedDocumentTitle || (docId === 'new' ? 'Nova doc' : 'Documento'),
       { current: true },
     ))
   } else if (normalized === ROUTES.calendar) {

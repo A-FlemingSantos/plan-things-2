@@ -15,6 +15,13 @@ vi.mock('../../../features/workspace/context/PlansContext.jsx', () => ({
   }),
 }))
 
+vi.mock('../../context/AppChromeContext.jsx', () => ({
+  useAppChrome: () => ({
+    pageBreadcrumbLabel: null,
+    setPageBreadcrumbLabel: () => {},
+  }),
+}))
+
 vi.mock('../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx', () => ({
   default: ({ children }) => <>{children}</>,
 }))

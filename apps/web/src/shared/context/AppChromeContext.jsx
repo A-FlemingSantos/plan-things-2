@@ -4,6 +4,7 @@ const AppChromeContext = createContext(null)
 
 export function AppChromeProvider({ children }) {
   const [loadingScreenCount, setLoadingScreenCount] = useState(0)
+  const [pageBreadcrumbLabel, setPageBreadcrumbLabelState] = useState(null)
 
   const registerLoadingScreen = useCallback(() => {
     setLoadingScreenCount((count) => count + 1)
@@ -13,10 +14,17 @@ export function AppChromeProvider({ children }) {
     }
   }, [])
 
+  const setPageBreadcrumbLabel = useCallback((label) => {
+    const nextLabel = String(label ?? '').trim()
+    setPageBreadcrumbLabelState(nextLabel || null)
+  }, [])
+
   const value = useMemo(() => ({
     isLoadingScreenActive: loadingScreenCount > 0,
     registerLoadingScreen,
-  }), [loadingScreenCount, registerLoadingScreen])
+    pageBreadcrumbLabel,
+    setPageBreadcrumbLabel,
+  }), [loadingScreenCount, pageBreadcrumbLabel, registerLoadingScreen, setPageBreadcrumbLabel])
 
   return (
     <AppChromeContext.Provider value={value}>
@@ -32,6 +40,8 @@ export function useAppChrome() {
     return {
       isLoadingScreenActive: false,
       registerLoadingScreen: () => () => {},
+      pageBreadcrumbLabel: null,
+      setPageBreadcrumbLabel: () => {},
     }
   }
 
