@@ -205,6 +205,14 @@
   gap: 16px;
 }
 
+.toolbarLeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .searchField {
   display: flex;
   align-items: center;
@@ -259,6 +267,7 @@
   border-radius: 4px;
   background: transparent;
   color: var(--text-3);
+  text-decoration: none;
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -575,6 +584,10 @@
   .toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .toolbarLeading {
+    width: 100%;
   }
 
   .searchField {

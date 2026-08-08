@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   MoreHorizontal,
+  MoveLeft,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
@@ -173,16 +174,25 @@ export default function DocsPage() {
             >
               <div className={styles.articleInner}>
                 <header className={styles.toolbar}>
-                  <label className={styles.searchField}>
-                    <Search size={15} strokeWidth={1.6} aria-hidden="true" />
-                    <input
-                      type="search"
-                      value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
-                      placeholder="Buscar nesta doc..."
-                      aria-label="Buscar seções nesta documentação"
-                    />
-                  </label>
+                  <div className={styles.toolbarLeading}>
+                    <Link
+                      to={ROUTES.docs}
+                      className={styles.iconButton}
+                      aria-label="Voltar para Docs"
+                    >
+                      <MoveLeft size={15} strokeWidth={1.6} aria-hidden="true" />
+                    </Link>
+                    <label className={styles.searchField}>
+                      <Search size={15} strokeWidth={1.6} aria-hidden="true" />
+                      <input
+                        type="search"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Buscar nesta doc..."
+                        aria-label="Buscar seções nesta documentação"
+                      />
+                    </label>
+                  </div>
                   <div className={styles.toolbarActions}>
                     <button type="button" className={styles.iconButton} aria-label="Compartilhar" disabled>
                       <Share size={15} strokeWidth={1.6} aria-hidden="true" />
