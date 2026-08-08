@@ -821,6 +821,27 @@
   box-shadow: var(--shadow-sm);
 }
 
+.compactNoteDelete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.compactNoteDelete:hover {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
 .compactNoteText {
   margin: 0;
   min-width: 0;

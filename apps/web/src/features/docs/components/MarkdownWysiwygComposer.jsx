@@ -15,8 +15,15 @@ import {
   Plus,
   Quote,
   Video,
+  X,
 } from 'lucide-react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import {
+  filterAnchoredComments,
+  findQuoteTopAtOccurrence,
+  getQuoteOccurrenceIndex,
+  resolveMarkdownSelection,
+} from '../utils/commentAnchors.js'
 
 const ICON_STROKE = 1.6
 
@@ -43,25 +50,6 @@ function getInitials(name = '') {
     .join('') || '?'
 }
 
-function findQuoteTop(editorRoot, composerMain, quote) {
-  if (!editorRoot || !composerMain || !quote?.trim()) return null
-
-  const walker = document.createTreeWalker(editorRoot, NodeFilter.SHOW_TEXT)
-  let node = walker.nextNode()
-  while (node) {
-    const index = node.textContent.indexOf(quote)
-    if (index >= 0) {
-      const range = document.createRange()
-      range.setStart(node, index)
-      range.setEnd(node, Math.min(index + quote.length, node.textContent.length))
-      const rect = range.getBoundingClientRect()
-      return rect.top - composerMain.getBoundingClientRect().top
-    }
-    node = walker.nextNode()
-  }
-  return null
-}
-
 function tagEditorHeadings(editorRoot, bodyHeadingClass) {
   if (!editorRoot) return
   editorRoot.querySelectorAll('h1, h2, h3').forEach((element, index) => {
@@ -74,6 +62,8 @@ export default function MarkdownWysiwygComposer({
   value,
   onChange,
   onAddComment,
+  onDeleteComment,
+  canDeleteComment,
   comments,
   placeholder,
   styles,
@@ -119,16 +109,23 @@ export default function MarkdownWysiwygComposer({
     setMenuOpen(false)
   }, [])
 
+  const anchoredComments = useMemo(
+    () => filterAnchoredComments(value, comments),
+    [comments, value],
+  )
+
   const refreshVisualState = useCallback((activeEditor) => {
     if (!activeEditor) return
     const editorRoot = activeEditor.view.dom
     const composerMain = composerMainRef.current
+    const markdown = activeEditor.getMarkdown()
     tagEditorHeadings(editorRoot, styles.bodyHeading)
 
     if (composerMain) {
       const nextOffsets = {}
-      comments.forEach((comment) => {
-        const top = findQuoteTop(editorRoot, composerMain, comment.quotedText)
+      filterAnchoredComments(markdown, comments).forEach((comment) => {
+        const occurrence = getQuoteOccurrenceIndex(markdown, comment.quotedText, comment.selectionStart)
+        const top = findQuoteTopAtOccurrence(editorRoot, composerMain, comment.quotedText, occurrence)
         if (top != null) nextOffsets[comment.id] = top
       })
       setNoteOffsets(nextOffsets)
@@ -155,6 +152,7 @@ export default function MarkdownWysiwygComposer({
     onUpdate: ({ editor: activeEditor }) => {
       onChange(activeEditor.getMarkdown())
       tagEditorHeadings(activeEditor.view.dom, styles.bodyHeading)
+      refreshVisualState(activeEditor)
     },
     onSelectionUpdate: ({ editor: activeEditor }) => syncSelection(activeEditor),
     onFocus: ({ editor: activeEditor }) => syncSelection(activeEditor),
@@ -252,7 +250,13 @@ export default function MarkdownWysiwygComposer({
     if (!editor || !selection) return
     if (action === 'comment') {
       const quote = editor.state.doc.textBetween(selection.from, selection.to, ' ')
-      if (quote) setPendingNote({ quote })
+      if (quote) {
+        setPendingNote({
+          quote,
+          from: selection.from,
+          to: selection.to,
+        })
+      }
       setSelection(null)
       return
     }
@@ -270,14 +274,14 @@ export default function MarkdownWysiwygComposer({
   }
 
   const sendNote = async () => {
-    if (!pendingNote || !noteDraft.trim()) return
-    const source = editor?.getMarkdown() ?? value
-    const selectionStart = source.indexOf(pendingNote.quote)
+    if (!pendingNote || !noteDraft.trim() || !editor) return
+    const range = resolveMarkdownSelection(editor, pendingNote.from, pendingNote.to)
+    if (!range) return
     await onAddComment({
       body: noteDraft.trim(),
       quotedText: pendingNote.quote,
-      selectionStart: Math.max(selectionStart, 0),
-      selectionEnd: Math.max(selectionStart, 0) + pendingNote.quote.length,
+      selectionStart: range.selectionStart,
+      selectionEnd: range.selectionEnd,
     })
     setPendingNote(null)
     setNoteDraft('')
@@ -285,11 +289,11 @@ export default function MarkdownWysiwygComposer({
 
   const authorName = currentUser?.fullName?.trim() || 'Você'
   const notes = useMemo(
-    () => comments.map((comment) => ({
+    () => anchoredComments.map((comment) => ({
       ...comment,
       authorInitials: getInitials(comment.author?.fullName),
     })),
-    [comments],
+    [anchoredComments],
   )
 
   if (!editor) return null
@@ -359,6 +363,17 @@ export default function MarkdownWysiwygComposer({
           >
             <span className={styles.compactNoteAvatar} aria-hidden="true">{note.authorInitials}</span>
             <p className={styles.compactNoteText}>{note.body}</p>
+            {canDeleteComment?.(note) ? (
+              <button
+                type="button"
+                className={styles.compactNoteDelete}
+                aria-label="Excluir comentário"
+                title="Excluir comentário"
+                onClick={() => onDeleteComment?.(note.id)}
+              >
+                <X size={12} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+            ) : null}
           </article>
         ))}
       </aside>

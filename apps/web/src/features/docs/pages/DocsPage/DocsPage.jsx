@@ -74,7 +74,7 @@ function scrollViewportToTarget(viewport, target) {
 function DocsPageContent() {
   const { docId } = useParams()
   const navigate = useNavigate()
-  const { accessToken } = useAuth()
+  const { accessToken, currentUser } = useAuth()
   const {
     documents,
     loadDocument,
@@ -261,6 +261,22 @@ function DocsPageContent() {
       return null
     }
   }
+
+  const removeComment = async (commentId) => {
+    try {
+      await apiRequest(`/api/documents/${details.document.id}/comments/${commentId}`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+      setComments((current) => current.filter((comment) => comment.id !== commentId))
+    } catch {
+      // keep UI unchanged on failure
+    }
+  }
+
+  const canDeleteComment = (comment) => (
+    comment.author?.id === currentUser?.id || details.document.role === 'OWNER'
+  )
 
   const duplicate = async () => {
     setMoreMenuOpen(false)
@@ -468,6 +484,8 @@ function DocsPageContent() {
                         value={draft.contentMarkdown}
                         onChange={(contentMarkdown) => setDraft((current) => ({ ...current, contentMarkdown }))}
                         onAddComment={addComment}
+                        onDeleteComment={removeComment}
+                        canDeleteComment={canDeleteComment}
                         comments={comments}
                         placeholder="Uma palavra leva à outra..."
                         styles={styles}
