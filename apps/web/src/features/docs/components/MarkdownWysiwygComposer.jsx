@@ -14,7 +14,6 @@ import {
   Minus,
   Plus,
   Quote,
-  Video,
   X,
 } from 'lucide-react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
@@ -26,6 +25,8 @@ import {
   getQuoteOccurrenceIndex,
   resolveMarkdownSelection,
 } from '../utils/commentAnchors.js'
+import { normalizeDocsEmbedMarkdown } from '../utils/docsEmbedMarkdown.js'
+import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
 
 const ICON_STROKE = 1.6
 
@@ -44,18 +45,10 @@ const AuthenticatedImage = ImageExtension.extend({
   },
 })
 
-function UnsplashLogo({ size = 15 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-      <path d="M10 9V0h12v9H10zm12 5h10v18H0V14h10v9h12v-9z" />
-    </svg>
-  )
-}
-
 const BLOCK_ACTIONS = [
   { id: 'image', label: 'Imagem', Icon: Image },
   { id: 'unsplash', label: 'Unsplash', Icon: UnsplashLogo },
-  { id: 'video', label: 'Vídeo', Icon: Video },
+  { id: 'video', label: 'Vídeo', Icon: YouTubeLogo },
   { id: 'quote', label: 'Adicionar citação', Icon: Quote },
   { id: 'code', label: 'Bloco de código', Icon: Code2 },
   { id: 'divider', label: 'Linha', Icon: Minus },
@@ -159,6 +152,7 @@ export default function MarkdownWysiwygComposer({
       StarterKit,
       Link.configure({ openOnClick: false, autolink: true, defaultProtocol: 'https' }),
       AuthenticatedImage,
+      createDocsEmbedExtension(styles),
       Placeholder.configure({ placeholder }),
       Markdown,
     ],
@@ -185,8 +179,10 @@ export default function MarkdownWysiwygComposer({
   })
 
   useEffect(() => {
-    if (!editor || editor.getMarkdown() === value) return
-    editor.commands.setContent(value, { emitUpdate: false, contentType: 'markdown' })
+    if (!editor) return
+    const normalized = normalizeDocsEmbedMarkdown(value)
+    if (editor.getMarkdown() === normalized) return
+    editor.commands.setContent(normalized, { emitUpdate: false, contentType: 'markdown' })
     refreshVisualState(editor)
   }, [editor, refreshVisualState, value])
 
@@ -306,29 +302,26 @@ export default function MarkdownWysiwygComposer({
       imageInputRef.current?.click()
       return
     }
+    if (blockId === 'unsplash' || blockId === 'video') {
+      editor.chain().focus().insertContent({
+        type: 'docsEmbed',
+        attrs: {
+          kind: blockId === 'video' ? 'video' : 'unsplash',
+          url: '',
+        },
+      }).run()
+      setMenuOpen(false)
+      return
+    }
 
     setMenuOpen(false)
-    setUrlPrompt({
-      anchor: 'rail',
-      blockId,
-    })
   }
 
   const submitUrlPrompt = () => {
     const url = urlDraft.trim()
     if (!url || !editor || !urlPrompt) return
 
-    if (urlPrompt.anchor === 'link') {
-      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
-    } else if (urlPrompt.blockId === 'video') {
-      editor.chain().focus().insertContent(url).run()
-    } else {
-      editor.chain().focus().setImage({
-        src: url,
-        alt: urlPrompt.blockId === 'unsplash' ? 'Imagem do Unsplash' : '',
-      }).run()
-    }
-
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
     setUrlPrompt(null)
     setUrlDraft('')
   }
@@ -405,8 +398,8 @@ export default function MarkdownWysiwygComposer({
   const urlMenu = urlPrompt ? (
     <div
       ref={urlPromptRef}
-      className={`${styles.coupledMenuPanel} ${urlPrompt.anchor === 'rail' ? styles.coupledMenuPanelRail : styles.coupledMenuPanelToolbar}`}
-      style={urlPrompt.anchor === 'link' && selection
+      className={`${styles.coupledMenuPanel} ${styles.coupledMenuPanelToolbar}`}
+      style={selection
         ? { top: selection.top + 44, left: selection.left }
         : undefined}
       role="group"
@@ -455,7 +448,7 @@ export default function MarkdownWysiwygComposer({
               <span className={styles.selectionToolDivider} aria-hidden="true" />
               <button type="button" className={styles.selectionToolButton} title="Adicionar comentário" aria-label="Adicionar comentário" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('comment')}><MessageSquareLock size={14} strokeWidth={1.8} aria-hidden="true" /></button>
             </div>
-            {urlPrompt?.anchor === 'link' ? urlMenu : null}
+            {urlPrompt ? urlMenu : null}
           </>
           ) : null}
           <div className={styles.composerRow}>
@@ -472,7 +465,6 @@ export default function MarkdownWysiwygComposer({
                   </div>
                 </div>
               ) : null}
-              {urlPrompt?.anchor === 'rail' ? urlMenu : null}
             </div>
             <EditorContent editor={editor} className={styles.bodyComposer} />
           </div>
