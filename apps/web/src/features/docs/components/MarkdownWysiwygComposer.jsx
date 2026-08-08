@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import ImageExtension from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
@@ -18,6 +18,8 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { apiRequest } from '../../../shared/api/apiClient.js'
+import { useAuthenticatedImageUrl } from '../../../shared/hooks/useAuthenticatedImageUrl.js'
 import {
   filterAnchoredComments,
   findQuoteTopAtOccurrence,
@@ -26,6 +28,21 @@ import {
 } from '../utils/commentAnchors.js'
 
 const ICON_STROKE = 1.6
+
+function AuthenticatedImageView({ node }) {
+  const source = useAuthenticatedImageUrl(node.attrs.src)
+  return (
+    <NodeViewWrapper>
+      {source ? <img src={source} alt={node.attrs.alt ?? ''} /> : null}
+    </NodeViewWrapper>
+  )
+}
+
+const AuthenticatedImage = ImageExtension.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(AuthenticatedImageView)
+  },
+})
 
 function UnsplashLogo({ size = 15 }) {
   return (
@@ -68,13 +85,14 @@ export default function MarkdownWysiwygComposer({
   placeholder,
   styles,
 }) {
-  const { currentUser } = useAuth()
+  const { currentUser, accessToken } = useAuth()
   const composerRef = useRef(null)
   const composerMainRef = useRef(null)
   const railRef = useRef(null)
   const selectionToolbarRef = useRef(null)
   const urlPromptRef = useRef(null)
   const urlInputRef = useRef(null)
+  const imageInputRef = useRef(null)
   const noteDraftRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [selection, setSelection] = useState(null)
@@ -140,7 +158,7 @@ export default function MarkdownWysiwygComposer({
     extensions: [
       StarterKit,
       Link.configure({ openOnClick: false, autolink: true, defaultProtocol: 'https' }),
-      ImageExtension,
+      AuthenticatedImage,
       Placeholder.configure({ placeholder }),
       Markdown,
     ],
@@ -283,6 +301,11 @@ export default function MarkdownWysiwygComposer({
       setMenuOpen(false)
       return
     }
+    if (blockId === 'image') {
+      setMenuOpen(false)
+      imageInputRef.current?.click()
+      return
+    }
 
     setMenuOpen(false)
     setUrlPrompt({
@@ -308,6 +331,24 @@ export default function MarkdownWysiwygComposer({
 
     setUrlPrompt(null)
     setUrlDraft('')
+  }
+
+  const uploadImage = async (event) => {
+    const [file] = event.target.files ?? []
+    event.target.value = ''
+    if (!file || !editor) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+    const uploaded = await apiRequest('/api/files/upload', {
+      method: 'POST',
+      token: accessToken,
+      body: formData,
+    })
+    editor.chain().focus().setImage({
+      src: `/api/files/${uploaded.id}/download`,
+      alt: uploaded.name,
+    }).run()
   }
 
   const applySelectionAction = (action) => {
@@ -398,6 +439,7 @@ export default function MarkdownWysiwygComposer({
 
   return (
     <div ref={composerRef} className={styles.composerShell}>
+      <input ref={imageInputRef} type="file" accept="image/*" hidden onChange={uploadImage} />
       <div ref={composerMainRef} className={styles.composerMain}>
         <div className={styles.composer} role="textbox" aria-label="Conteúdo do documento" aria-multiline="true">
           {selection ? (
