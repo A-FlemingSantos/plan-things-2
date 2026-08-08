@@ -813,8 +813,12 @@
   align-items: flex-start;
   gap: 8px;
   min-width: 0;
-  padding: 0;
+  padding: 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--surface-2);
   box-sizing: border-box;
+  box-shadow: var(--shadow-sm);
 }
 
 .compactNoteText {
@@ -822,10 +826,10 @@
   min-width: 0;
   flex: 1 1 0;
   font-family: var(--font-family);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--font-weight-light);
-  line-height: 1.45;
-  color: var(--text-3);
+  line-height: 1.4;
+  color: var(--text-2);
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
