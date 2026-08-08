@@ -1280,86 +1280,6 @@
   }
 }
 
-.documentSaveState {
-  font-family: var(--font-family);
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.editorToolbar {
-  position: sticky;
-  top: 8px;
-  z-index: 4;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  width: fit-content;
-  min-height: 36px;
-  margin: 0 0 16px;
-  padding: 4px 6px;
-  border: 1px solid var(--border-1);
-  border-radius: 6px;
-  background: var(--surface-2);
-  box-shadow: var(--shadow-sm);
-}
-
-.editorToolbar .selectionToolButton {
-  color: var(--text-2);
-}
-
-.editorToolbar .selectionToolButton:hover {
-  background: var(--hover);
-  color: var(--text-1);
-}
-
-.richTextEditor {
-  max-width: 62ch;
-  min-height: 40vh;
-  outline: none;
-  font-family: var(--font-family);
-  font-size: 15px;
-  font-weight: var(--font-weight-light);
-  line-height: 1.7;
-  color: var(--text-2);
-}
-
-.richTextEditor :global(.ProseMirror) {
-  min-height: 40vh;
-  outline: none;
-}
-
-.richTextEditor :global(.ProseMirror p.is-editor-empty:first-child::before) {
-  float: left;
-  height: 0;
-  color: var(--text-3);
-  content: attr(data-placeholder);
-  pointer-events: none;
-}
-
-.richTextEditor :global(.ProseMirror h1),
-.richTextEditor :global(.ProseMirror h2),
-.richTextEditor :global(.ProseMirror h3) {
-  margin: 24px 0 10px;
-  color: var(--text-1);
-  font-size: 18px;
-  font-weight: var(--font-weight-regular);
-  line-height: 1.3;
-}
-
-.richTextEditor :global(.ProseMirror p),
-.richTextEditor :global(.ProseMirror ul),
-.richTextEditor :global(.ProseMirror ol),
-.richTextEditor :global(.ProseMirror blockquote) {
-  margin: 0 0 14px;
-}
-
-.richTextEditor :global(.ProseMirror pre) {
-  overflow-x: auto;
-  padding: 12px;
-  border-radius: 6px;
-  background: var(--surface-3);
-}
-
 .richTextEditor :global(.ProseMirror img),
 .markdownImage {
   display: block;
@@ -1374,20 +1294,6 @@
 
 .markdownContent > * + * {
   margin-top: 14px;
-}
-
-.body > .commentsSection {
-  position: static;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: min(100%, 62ch);
-  min-height: 0;
-  pointer-events: auto;
-}
-
-.body > .commentsSection .compactNote {
-  position: static;
 }
 
 .documentSharePopover {

@@ -9,6 +9,8 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Plus,
+  Search,
   Share,
   Trash2,
 } from 'lucide-react'
@@ -19,8 +21,8 @@ import { apiRequest } from '../../../../shared/api/apiClient.js'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
+import InlineMarkdownComposer from '../../components/InlineMarkdownComposer.jsx'
 import MarkdownContent from '../../components/MarkdownContent.jsx'
-import MarkdownEditor from '../../components/MarkdownEditor.jsx'
 import DocumentSharePopover from '../../components/DocumentSharePopover.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
 import styles from './DocsPage.module.css'
@@ -64,11 +66,18 @@ function DocsPageContent() {
   const [docsOpen, setDocsOpen] = useState(true)
   const [shareOpen, setShareOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const articleViewportRef = useRef(null)
   const savedDraftRef = useRef('')
 
   const canEdit = details?.document?.role !== 'VIEWER'
   const headings = useMemo(() => markdownHeadings(draft.contentMarkdown), [draft.contentMarkdown])
+  const outline = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return headings
+      .map((heading, index) => ({ ...heading, index }))
+      .filter((heading) => !query || heading.label.toLowerCase().includes(query))
+  }, [headings, searchQuery])
   const draftSignature = JSON.stringify(draft)
 
   const applyDocument = (document) => {
@@ -153,9 +162,8 @@ function DocsPageContent() {
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const addComment = async ({ quotedText, selectionStart, selectionEnd }) => {
-    const body = window.prompt('Escreva seu comentário')
-    if (!body?.trim()) return
+  const addComment = async ({ body, quotedText, selectionStart, selectionEnd }) => {
+    if (!body?.trim()) return null
     try {
       const comment = await apiRequest(`/api/documents/${details.document.id}/comments`, {
         method: 'POST',
@@ -163,8 +171,10 @@ function DocsPageContent() {
         body: { body, quotedText, selectionStart, selectionEnd },
       })
       setComments((current) => [...current, comment])
+      return comment
     } catch (error) {
       setSaveStatus(error?.message ?? 'Não foi possível adicionar o comentário.')
+      return null
     }
   }
 
@@ -213,11 +223,12 @@ function DocsPageContent() {
             </div>
             <div className={styles.paneBody}>
               <nav className={styles.indexNav}>
-                {headings.map((heading, index) => (
-                  <button key={heading.id} type="button" className={styles.indexItem} onClick={() => goToHeading(index)}>
+                {outline.map((heading) => (
+                  <button key={heading.id} type="button" className={styles.indexItem} onClick={() => goToHeading(heading.index)}>
                     {heading.label}
                   </button>
                 ))}
+                {outline.length === 0 ? <p className={styles.indexEmpty}>Nenhuma seção encontrada.</p> : null}
               </nav>
             </div>
           </aside>
@@ -229,7 +240,10 @@ function DocsPageContent() {
                   <header className={styles.toolbar}>
                     <div className={styles.toolbarLeading}>
                       <Link to={ROUTES.docs} className={styles.iconButton} aria-label="Voltar para Docs"><MoveLeft size={15} /></Link>
-                      <span className={styles.documentSaveState}>{saveStatus}</span>
+                      <label className={styles.searchField}>
+                        <Search size={15} aria-hidden="true" />
+                        <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar nesta doc..." aria-label="Buscar seções nesta documentação" />
+                      </label>
                     </div>
                     <div className={styles.toolbarActions}>
                       <button type="button" className={styles.iconButton} aria-label="Compartilhar" onClick={() => setShareOpen((open) => !open)}><Share size={15} /></button>
@@ -272,20 +286,27 @@ function DocsPageContent() {
                         </div>
                       </li>
                     ))}
+                    {canEdit ? (
+                      <li className={styles.contributor}>
+                        <button type="button" className={styles.addMemberButton} onClick={() => setShareOpen(true)}>
+                          <span className={styles.addMemberAvatar} aria-hidden="true"><Plus size={14} /></span>
+                          <span className={styles.contributorCopy}><span className={styles.contributorName}>Adicionar membro</span></span>
+                        </button>
+                      </li>
+                    ) : null}
                   </ul>
 
                   <div className={styles.body}>
                     {canEdit ? (
-                      <MarkdownEditor value={draft.contentMarkdown} onChange={(contentMarkdown) => setDraft((current) => ({ ...current, contentMarkdown }))} onAddComment={addComment} editable placeholder="Uma palavra leva à outra..." styles={styles} />
+                      <InlineMarkdownComposer
+                        value={draft.contentMarkdown}
+                        onChange={(contentMarkdown) => setDraft((current) => ({ ...current, contentMarkdown }))}
+                        onAddComment={addComment}
+                        comments={comments}
+                        placeholder="Uma palavra leva à outra..."
+                        styles={styles}
+                      />
                     ) : <MarkdownContent value={draft.contentMarkdown} styles={styles} />}
-                    <aside className={styles.commentsSection} aria-label="Comentários do documento">
-                      {comments.map((comment) => (
-                        <article key={comment.id} className={styles.compactNote} title={comment.quotedText}>
-                          <span className={styles.compactNoteAvatar}>{getInitials(comment.author.fullName)}</span>
-                          <p className={styles.compactNoteText}>{comment.body}</p>
-                        </article>
-                      ))}
-                    </aside>
                   </div>
                 </div>
               </CustomScrollArea>
