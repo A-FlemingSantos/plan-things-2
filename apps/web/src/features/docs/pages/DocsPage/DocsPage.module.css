@@ -588,6 +588,90 @@
   pointer-events: auto;
 }
 
+.selectionToolbar {
+  position: fixed;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: #1a1a1a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  transform: translate(-50%, -100%);
+  animation: docsSelectionToolbarIn 140ms ease;
+}
+
+.selectionToolButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.selectionToolButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.selectionToolBold,
+.selectionToolItalic,
+.selectionToolTitle,
+.selectionToolSubtitle {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.selectionToolBold {
+  font-weight: 700;
+}
+
+.selectionToolItalic {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.selectionToolTitle {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.selectionToolSubtitle {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.selectionToolDivider {
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+
+@keyframes docsSelectionToolbarIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 4px));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+}
+
 .contributors {
   list-style: none;
   margin: 0;

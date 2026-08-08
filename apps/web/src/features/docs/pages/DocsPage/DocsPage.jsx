@@ -5,6 +5,7 @@ import {
   Download,
   Image,
   Link2,
+  MessageSquareLock,
   Minus,
   MoreHorizontal,
   MoveLeft,
@@ -89,6 +90,51 @@ function joinComposerLines(lines) {
   return lines.join('\n')
 }
 
+function measureInputSelectionAnchor(input) {
+  if (!input) return null
+  const start = input.selectionStart ?? 0
+  const end = input.selectionEnd ?? 0
+  if (start === end) return null
+
+  const style = window.getComputedStyle(input)
+  const inputRect = input.getBoundingClientRect()
+  const mirror = document.createElement('div')
+  const before = document.createElement('span')
+  const selected = document.createElement('span')
+
+  mirror.style.cssText = [
+    'position:fixed',
+    'visibility:hidden',
+    'white-space:pre',
+    'pointer-events:none',
+    `top:${inputRect.top}px`,
+    `left:${inputRect.left}px`,
+    `width:${inputRect.width}px`,
+    `height:${inputRect.height}px`,
+    `font:${style.font}`,
+    `letter-spacing:${style.letterSpacing}`,
+    `text-transform:${style.textTransform}`,
+    `padding:${style.padding}`,
+    `border:${style.border}`,
+    `box-sizing:${style.boxSizing}`,
+  ].join(';')
+
+  before.textContent = input.value.slice(0, start)
+  selected.textContent = input.value.slice(start, end) || '\u200b'
+  mirror.append(before, selected)
+  document.body.appendChild(mirror)
+
+  const selectedRect = selected.getBoundingClientRect()
+  const anchor = {
+    top: inputRect.top,
+    left: selectedRect.left + selectedRect.width / 2,
+    start,
+    end,
+  }
+  mirror.remove()
+  return anchor
+}
+
 function blockInsertion(blockId) {
   switch (blockId) {
     case 'image':
@@ -111,10 +157,36 @@ function blockInsertion(blockId) {
 function DocsBodyComposer({ value, onChange, placeholder }) {
   const lineRefs = useRef([])
   const railRef = useRef(null)
+  const selectionToolbarRef = useRef(null)
+  const composerRef = useRef(null)
   const [focusedLine, setFocusedLine] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [selection, setSelection] = useState(null)
   const lines = splitComposerLines(value)
   const activeLineEmpty = focusedLine != null && (lines[focusedLine] ?? '').length === 0
+
+  const clearSelectionToolbar = () => setSelection(null)
+
+  const syncSelectionToolbar = (lineIndex) => {
+    const node = lineRefs.current[lineIndex]
+    if (!node) {
+      clearSelectionToolbar()
+      return
+    }
+    const anchor = measureInputSelectionAnchor(node)
+    if (!anchor) {
+      clearSelectionToolbar()
+      return
+    }
+    setSelection({
+      lineIndex,
+      start: anchor.start,
+      end: anchor.end,
+      top: anchor.top - 10,
+      left: anchor.left,
+    })
+    setMenuOpen(false)
+  }
 
   useEffect(() => {
     if (!menuOpen) return undefined
@@ -140,6 +212,34 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     if (!activeLineEmpty && menuOpen) setMenuOpen(false)
   }, [activeLineEmpty, menuOpen])
 
+  useEffect(() => {
+    if (!selection) return undefined
+
+    const onPointerDown = (event) => {
+      if (selectionToolbarRef.current?.contains(event.target)) return
+      if (composerRef.current?.contains(event.target)) return
+      clearSelectionToolbar()
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') clearSelectionToolbar()
+    }
+
+    const onScroll = () => {
+      if (selection?.lineIndex == null) return
+      syncSelectionToolbar(selection.lineIndex)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('scroll', onScroll, true)
+    }
+  }, [selection])
+
   const focusLine = (index, caret = 'end') => {
     requestAnimationFrame(() => {
       const node = lineRefs.current[index]
@@ -148,6 +248,7 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
       const position = caret === 'start' ? 0 : node.value.length
       node.setSelectionRange(position, position)
       setFocusedLine(index)
+      clearSelectionToolbar()
     })
   }
 
@@ -156,6 +257,7 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     nextLines[index] = nextText
     onChange(joinComposerLines(nextLines))
     setMenuOpen(false)
+    clearSelectionToolbar()
   }
 
   const handleKeyDown = (event, index) => {
@@ -170,6 +272,7 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
       nextLines.splice(index + 1, 0, after)
       onChange(joinComposerLines(nextLines))
       setMenuOpen(false)
+      clearSelectionToolbar()
       focusLine(index + 1, 'start')
       return
     }
@@ -179,6 +282,7 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
       const nextLines = lines.filter((_, lineIndex) => lineIndex !== index)
       onChange(joinComposerLines(nextLines))
       setMenuOpen(false)
+      clearSelectionToolbar()
       focusLine(index - 1, 'end')
     }
   }
@@ -193,6 +297,7 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     }
     onChange(joinComposerLines(nextLines))
     setMenuOpen(false)
+    clearSelectionToolbar()
 
     if (blockId === 'code') {
       focusLine(focusedLine + 1, 'start')
@@ -205,8 +310,151 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     focusLine(focusedLine + insertion.length, 'start')
   }
 
+  const applySelectionAction = (actionId) => {
+    if (!selection) return
+    const { lineIndex, start, end } = selection
+    const line = lines[lineIndex] ?? ''
+    const selectedText = line.slice(start, end)
+    if (!selectedText) return
+
+    let nextLine = line
+    let nextStart = start
+    let nextEnd = end
+
+    if (actionId === 'bold') {
+      nextLine = `${line.slice(0, start)}**${selectedText}**${line.slice(end)}`
+      nextStart = start + 2
+      nextEnd = nextStart + selectedText.length
+    } else if (actionId === 'italic') {
+      nextLine = `${line.slice(0, start)}*${selectedText}*${line.slice(end)}`
+      nextStart = start + 1
+      nextEnd = nextStart + selectedText.length
+    } else if (actionId === 'link') {
+      nextLine = `${line.slice(0, start)}[${selectedText}](url)${line.slice(end)}`
+      nextStart = start + 1
+      nextEnd = nextStart + selectedText.length
+    } else if (actionId === 'title') {
+      nextLine = `# ${selectedText}`
+      nextStart = 2
+      nextEnd = nextStart + selectedText.length
+    } else if (actionId === 'subtitle') {
+      nextLine = `## ${selectedText}`
+      nextStart = 3
+      nextEnd = nextStart + selectedText.length
+    } else if (actionId === 'quote') {
+      nextLine = `> ${selectedText}`
+      nextStart = 2
+      nextEnd = nextStart + selectedText.length
+    } else if (actionId === 'comment') {
+      clearSelectionToolbar()
+      return
+    }
+
+    const nextLines = [...lines]
+    nextLines[lineIndex] = nextLine
+    onChange(joinComposerLines(nextLines))
+    clearSelectionToolbar()
+
+    requestAnimationFrame(() => {
+      const node = lineRefs.current[lineIndex]
+      if (!node) return
+      node.focus()
+      node.setSelectionRange(nextStart, nextEnd)
+      setFocusedLine(lineIndex)
+    })
+  }
+
   return (
-    <div className={styles.composer} role="textbox" aria-label="Conteúdo do documento" aria-multiline="true">
+    <div
+      ref={composerRef}
+      className={styles.composer}
+      role="textbox"
+      aria-label="Conteúdo do documento"
+      aria-multiline="true"
+    >
+      {selection ? (
+        <div
+          ref={selectionToolbarRef}
+          className={styles.selectionToolbar}
+          role="toolbar"
+          aria-label="Formatação do texto"
+          style={{ top: selection.top, left: selection.left }}
+        >
+          <button
+            type="button"
+            className={`${styles.selectionToolButton} ${styles.selectionToolBold}`}
+            title="Negrito"
+            aria-label="Negrito"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applySelectionAction('bold')}
+          >
+            B
+          </button>
+          <button
+            type="button"
+            className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`}
+            title="Itálico"
+            aria-label="Itálico"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applySelectionAction('italic')}
+          >
+            i
+          </button>
+          <button
+            type="button"
+            className={styles.selectionToolButton}
+            title="Inserir link"
+            aria-label="Inserir link"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applySelectionAction('link')}
+          >
+            <Link2 size={14} strokeWidth={1.8} aria-hidden="true" />
+          </button>
+          <span className={styles.selectionToolDivider} aria-hidden="true" />
+          <button
+            type="button"
+            className={`${styles.selectionToolButton} ${styles.selectionToolTitle}`}
+            title="Título"
+            aria-label="Título"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applySelectionAction('title')}
+          >
+            T
+          </button>
+          <button
+            type="button"
+            className={`${styles.selectionToolButton} ${styles.selectionToolSubtitle}`}
+            title="Subtítulo"
+            aria-label="Subtítulo"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applySelectionAction('subtitle')}
+          >
+            T
+          </button>
+          <button
+            type="button"
+            className={styles.selectionToolButton}
+            title="Citação"
+            aria-label="Citação"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applySelectionAction('quote')}
+          >
+            <Quote size={14} strokeWidth={1.8} aria-hidden="true" />
+          </button>
+          <span className={styles.selectionToolDivider} aria-hidden="true" />
+          <button
+            type="button"
+            className={styles.selectionToolButton}
+            title="Adicionar comentário"
+            aria-label="Adicionar comentário"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applySelectionAction('comment')}
+          >
+            <MessageSquareLock size={14} strokeWidth={1.8} aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
+
       {lines.map((line, index) => {
         const isActiveEmpty = focusedLine === index && line.length === 0
         const showPlaceholder = index === 0 && lines.length === 1 && line.length === 0
@@ -270,6 +518,9 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
                 setMenuOpen(false)
               }}
               onKeyDown={(event) => handleKeyDown(event, index)}
+              onKeyUp={() => syncSelectionToolbar(index)}
+              onMouseUp={() => syncSelectionToolbar(index)}
+              onSelect={() => syncSelectionToolbar(index)}
               placeholder={showPlaceholder ? placeholder : undefined}
               aria-label={index === 0 ? 'Conteúdo do documento' : `Linha ${index + 1}`}
             />
