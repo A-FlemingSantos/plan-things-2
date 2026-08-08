@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Search,
   Share,
   Trash2,
@@ -42,6 +46,8 @@ export default function DocsPage() {
   const [activeDocId, setActiveDocId] = useState(DOCS_LIBRARY[0].id)
   const [activeSectionId, setActiveSectionId] = useState(DOCS_LIBRARY[0].sections[0].id)
   const [searchQuery, setSearchQuery] = useState('')
+  const [indexOpen, setIndexOpen] = useState(true)
+  const [docsOpen, setDocsOpen] = useState(true)
   const articleViewportRef = useRef(null)
 
   const activeDoc = useMemo(() => getDocById(activeDocId), [activeDocId])
@@ -81,35 +87,66 @@ export default function DocsPage() {
       scrollViewportToSection(articleViewportRef.current, sectionId)
     }
 
-    // Wait a frame so layout/ref are settled before measuring.
     requestAnimationFrame(run)
   }
+
+  const layoutClassName = [
+    styles.layout,
+    indexOpen ? '' : styles.layoutIndexCollapsed,
+    docsOpen ? '' : styles.layoutDocsCollapsed,
+  ].filter(Boolean).join(' ')
 
   return (
     <AppThemeScope>
       <ProductAppShell contentClassName={styles.page} contentTag="main">
-        <div className={styles.layout}>
-          <aside className={styles.indexPane} aria-label="Índice do documento">
-            <p className={styles.indexLabel}>Índice</p>
-            <nav className={styles.indexNav}>
-              {outline.map((section) => {
-                const active = section.id === activeSectionId
-                return (
-                  <button
-                    key={section.id}
-                    type="button"
-                    className={`${styles.indexItem} ${active ? styles.indexItemActive : ''}`}
-                    aria-current={active ? 'location' : undefined}
-                    onClick={() => goToSection(section.id)}
-                  >
-                    {section.label}
-                  </button>
-                )
-              })}
-            </nav>
-            {outline.length === 0 ? (
-              <p className={styles.indexEmpty}>Nenhuma seção encontrada.</p>
-            ) : null}
+        <div className={layoutClassName}>
+          <aside
+            id="docs-index-pane"
+            className={`${styles.indexPane} ${indexOpen ? '' : styles.sidePaneCollapsed}`}
+            aria-label="Índice do documento"
+          >
+            <div className={styles.paneHeader}>
+              {indexOpen ? <p className={styles.indexLabel}>Índice</p> : null}
+              <button
+                type="button"
+                className={styles.paneToggle}
+                aria-label={indexOpen ? 'Ocultar índice' : 'Mostrar índice'}
+                aria-controls="docs-index-pane"
+                aria-expanded={indexOpen}
+                onClick={() => setIndexOpen((open) => !open)}
+              >
+                {indexOpen ? (
+                  <PanelLeftClose size={15} strokeWidth={1.6} aria-hidden="true" />
+                ) : (
+                  <PanelLeftOpen size={15} strokeWidth={1.6} aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            <div
+              className={styles.paneBody}
+              aria-hidden={!indexOpen}
+              {...(!indexOpen ? { inert: '' } : {})}
+            >
+              <nav className={styles.indexNav}>
+                {outline.map((section) => {
+                  const active = section.id === activeSectionId
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      className={`${styles.indexItem} ${active ? styles.indexItemActive : ''}`}
+                      aria-current={active ? 'location' : undefined}
+                      onClick={() => goToSection(section.id)}
+                    >
+                      {section.label}
+                    </button>
+                  )
+                })}
+              </nav>
+              {outline.length === 0 ? (
+                <p className={styles.indexEmpty}>Nenhuma seção encontrada.</p>
+              ) : null}
+            </div>
           </aside>
 
           <section className={styles.articlePane} aria-label="Documento">
@@ -117,7 +154,7 @@ export default function DocsPage() {
               className={styles.articleScroll}
               viewportClassName={styles.articleViewport}
               viewportRef={articleViewportRef}
-              refreshKey={`docs:${activeDocId}`}
+              refreshKey={`docs:${activeDocId}:${indexOpen}:${docsOpen}`}
             >
               <div className={styles.articleInner}>
                 <header className={styles.toolbar}>
@@ -193,30 +230,56 @@ export default function DocsPage() {
             </CustomScrollArea>
           </section>
 
-          <aside className={styles.relatedPane} aria-label="Documentos">
-            <p className={styles.relatedLabel}>Docs</p>
-            <div className={styles.relatedList}>
-              {DOCS_LIBRARY.map((doc) => {
-                const thumb = doc.sections.find((section) => section.image)?.image
-                const selected = doc.id === activeDocId
-                return (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    className={`${styles.relatedCard} ${selected ? styles.relatedCardSelected : ''}`}
-                    aria-current={selected ? 'page' : undefined}
-                    onClick={() => openDoc(doc.id)}
-                  >
-                    <span
-                      className={styles.relatedThumb}
-                      style={thumb ? { backgroundImage: thumb.gradient } : undefined}
-                      aria-hidden="true"
-                    />
-                    <span className={styles.relatedTitle}>{doc.title}</span>
-                    <span className={styles.relatedExcerpt}>{doc.description}</span>
-                  </button>
-                )
-              })}
+          <aside
+            id="docs-library-pane"
+            className={`${styles.relatedPane} ${docsOpen ? '' : styles.sidePaneCollapsed}`}
+            aria-label="Documentos"
+          >
+            <div className={styles.paneHeader}>
+              {docsOpen ? <p className={styles.relatedLabel}>Docs</p> : null}
+              <button
+                type="button"
+                className={styles.paneToggle}
+                aria-label={docsOpen ? 'Ocultar docs' : 'Mostrar docs'}
+                aria-controls="docs-library-pane"
+                aria-expanded={docsOpen}
+                onClick={() => setDocsOpen((open) => !open)}
+              >
+                {docsOpen ? (
+                  <PanelRightClose size={15} strokeWidth={1.6} aria-hidden="true" />
+                ) : (
+                  <PanelRightOpen size={15} strokeWidth={1.6} aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            <div
+              className={styles.paneBody}
+              aria-hidden={!docsOpen}
+              {...(!docsOpen ? { inert: '' } : {})}
+            >
+              <div className={styles.relatedList}>
+                {DOCS_LIBRARY.map((doc) => {
+                  const thumb = doc.sections.find((section) => section.image)?.image
+                  const selected = doc.id === activeDocId
+                  return (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      className={`${styles.relatedCard} ${selected ? styles.relatedCardSelected : ''}`}
+                      aria-current={selected ? 'page' : undefined}
+                      onClick={() => openDoc(doc.id)}
+                    >
+                      <span
+                        className={styles.relatedThumb}
+                        style={thumb ? { backgroundImage: thumb.gradient } : undefined}
+                        aria-hidden="true"
+                      />
+                      <span className={styles.relatedTitle}>{doc.title}</span>
+                      <span className={styles.relatedExcerpt}>{doc.description}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </aside>
         </div>
