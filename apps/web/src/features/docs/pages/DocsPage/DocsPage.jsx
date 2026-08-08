@@ -109,7 +109,6 @@ export default function DocsPage() {
   const layoutClassName = [
     styles.layout,
     indexOpen ? '' : styles.layoutIndexCollapsed,
-    docsOpen ? '' : styles.layoutDocsCollapsed,
   ].filter(Boolean).join(' ')
 
   return (
@@ -165,154 +164,165 @@ export default function DocsPage() {
             </div>
           </aside>
 
-          <section className={styles.articlePane} aria-label="Documento">
-            <CustomScrollArea
-              className={styles.articleScroll}
-              viewportClassName={styles.articleViewport}
-              viewportRef={articleViewportRef}
-              refreshKey={`docs:${activeDoc.id}:${indexOpen}:${docsOpen}`}
-            >
-              <div className={styles.articleInner}>
-                <header className={styles.toolbar}>
-                  <div className={styles.toolbarLeading}>
-                    <Link
-                      to={ROUTES.docs}
-                      className={styles.iconButton}
-                      aria-label="Voltar para Docs"
-                    >
-                      <MoveLeft size={15} strokeWidth={1.6} aria-hidden="true" />
-                    </Link>
-                    <label className={styles.searchField}>
-                      <Search size={15} strokeWidth={1.6} aria-hidden="true" />
-                      <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Buscar nesta doc..."
-                        aria-label="Buscar seções nesta documentação"
-                      />
-                    </label>
-                  </div>
-                  <div className={styles.toolbarActions}>
-                    <button type="button" className={styles.iconButton} aria-label="Compartilhar" disabled>
-                      <Share size={15} strokeWidth={1.6} aria-hidden="true" />
-                    </button>
-                    <button type="button" className={styles.iconButton} aria-label="Excluir" disabled>
-                      <Trash2 size={15} strokeWidth={1.6} aria-hidden="true" />
-                    </button>
-                    <button type="button" className={styles.iconButton} aria-label="Mais ações" disabled>
-                      <MoreHorizontal size={15} strokeWidth={1.6} aria-hidden="true" />
-                    </button>
-                  </div>
-                </header>
-
-                <div className={styles.docHeader}>
-                  <h1 className={styles.docTitle}>{activeDoc.title}</h1>
-                  <p className={styles.docDescription}>{activeDoc.description}</p>
-                  <p className={styles.docMeta}>{activeDoc.publishedLabel}</p>
-                </div>
-
-                <ul className={styles.contributors} aria-label="Contribuidores">
-                  {activeDoc.contributors.map((person) => (
-                    <li key={person.id} className={styles.contributor}>
-                      <ContributorAvatar name={person.name} initials={person.initials} />
-                      <div className={styles.contributorCopy}>
-                        <span className={styles.contributorName}>{person.name}</span>
-                        <span className={styles.contributorRole}>{person.role}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className={styles.body}>
-                  {activeDoc.sections.map((section) => (
-                    <section
-                      key={section.id}
-                      id={sectionDomId(section.id)}
-                      data-doc-section={section.id}
-                      className={styles.bodySection}
-                    >
-                      <h2 className={styles.bodyHeading}>{section.heading}</h2>
-                      {section.paragraphs.map((paragraph) => (
-                        <p key={paragraph} className={styles.bodyText}>
-                          {paragraph}
-                        </p>
-                      ))}
-                      {section.image ? (
-                        <figure className={styles.figure}>
-                          <div
-                            className={styles.figureMedia}
-                            style={{ backgroundImage: section.image.gradient }}
-                            role="img"
-                            aria-label={section.image.alt}
-                          />
-                        </figure>
-                      ) : null}
-                    </section>
-                  ))}
-                </div>
-              </div>
-            </CustomScrollArea>
-          </section>
-
-          <aside
-            id="docs-library-pane"
-            className={`${styles.relatedPane} ${docsOpen ? '' : styles.sidePaneCollapsed}`}
-            aria-label="Documentos"
+          <section
+            className={`${styles.articlePane} ${docsOpen ? '' : styles.articlePaneDocsCollapsed}`}
+            aria-label="Documento"
           >
-            <div className={styles.paneHeader}>
-              {docsOpen ? (
-                <p className={styles.relatedLabel}>
-                  <Link to={ROUTES.docs} className={styles.relatedHomeLink}>
-                    Docs
-                  </Link>
-                </p>
-              ) : null}
-              <button
-                type="button"
-                className={styles.paneToggle}
-                aria-label={docsOpen ? 'Ocultar docs' : 'Mostrar docs'}
-                aria-controls="docs-library-pane"
-                aria-expanded={docsOpen}
-                onClick={() => setDocsOpen((open) => !open)}
+            <div className={styles.articleStage}>
+              <CustomScrollArea
+                className={styles.articleScroll}
+                viewportClassName={styles.articleViewport}
+                viewportRef={articleViewportRef}
+                refreshKey={`docs:${activeDoc.id}:${indexOpen}:${docsOpen}`}
               >
-                {docsOpen ? (
-                  <PanelRightClose size={15} strokeWidth={1.6} aria-hidden="true" />
-                ) : (
-                  <PanelRightOpen size={15} strokeWidth={1.6} aria-hidden="true" />
-                )}
-              </button>
+                <div className={styles.articleInner}>
+                  <header className={styles.toolbar}>
+                    <div className={styles.toolbarLeading}>
+                      <Link
+                        to={ROUTES.docs}
+                        className={styles.iconButton}
+                        aria-label="Voltar para Docs"
+                      >
+                        <MoveLeft size={15} strokeWidth={1.6} aria-hidden="true" />
+                      </Link>
+                      <label className={styles.searchField}>
+                        <Search size={15} strokeWidth={1.6} aria-hidden="true" />
+                        <input
+                          type="search"
+                          value={searchQuery}
+                          onChange={(event) => setSearchQuery(event.target.value)}
+                          placeholder="Buscar nesta doc..."
+                          aria-label="Buscar seções nesta documentação"
+                        />
+                      </label>
+                    </div>
+                    <div className={styles.toolbarActions}>
+                      <button type="button" className={styles.iconButton} aria-label="Compartilhar" disabled>
+                        <Share size={15} strokeWidth={1.6} aria-hidden="true" />
+                      </button>
+                      <button type="button" className={styles.iconButton} aria-label="Excluir" disabled>
+                        <Trash2 size={15} strokeWidth={1.6} aria-hidden="true" />
+                      </button>
+                      <button type="button" className={styles.iconButton} aria-label="Mais ações" disabled>
+                        <MoreHorizontal size={15} strokeWidth={1.6} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </header>
+
+                  <div className={styles.docHeader}>
+                    <h1 className={styles.docTitle}>{activeDoc.title}</h1>
+                    <p className={styles.docDescription}>{activeDoc.description}</p>
+                    <p className={styles.docMeta}>{activeDoc.publishedLabel}</p>
+                  </div>
+
+                  <ul className={styles.contributors} aria-label="Contribuidores">
+                    {activeDoc.contributors.map((person) => (
+                      <li key={person.id} className={styles.contributor}>
+                        <ContributorAvatar name={person.name} initials={person.initials} />
+                        <div className={styles.contributorCopy}>
+                          <span className={styles.contributorName}>{person.name}</span>
+                          <span className={styles.contributorRole}>{person.role}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className={styles.body}>
+                    {activeDoc.sections.map((section) => (
+                      <section
+                        key={section.id}
+                        id={sectionDomId(section.id)}
+                        data-doc-section={section.id}
+                        className={styles.bodySection}
+                      >
+                        <h2 className={styles.bodyHeading}>{section.heading}</h2>
+                        {section.paragraphs.map((paragraph) => (
+                          <p key={paragraph} className={styles.bodyText}>
+                            {paragraph}
+                          </p>
+                        ))}
+                        {section.image ? (
+                          <figure className={styles.figure}>
+                            <div
+                              className={styles.figureMedia}
+                              style={{ backgroundImage: section.image.gradient }}
+                              role="img"
+                              aria-label={section.image.alt}
+                            />
+                          </figure>
+                        ) : null}
+                      </section>
+                    ))}
+                  </div>
+                </div>
+              </CustomScrollArea>
+
+              <aside
+                id="docs-library-pane"
+                className={`${styles.relatedPane} ${docsOpen ? '' : styles.relatedPaneCollapsed}`}
+                aria-label="Documentos"
+              >
+                <div className={styles.paneHeader}>
+                  {docsOpen ? (
+                    <p className={styles.relatedLabel}>
+                      <Link to={ROUTES.docs} className={styles.relatedHomeLink}>
+                        Docs
+                      </Link>
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={styles.paneToggle}
+                    aria-label={docsOpen ? 'Ocultar docs' : 'Mostrar docs'}
+                    aria-controls="docs-library-pane"
+                    aria-expanded={docsOpen}
+                    onClick={() => setDocsOpen((open) => !open)}
+                  >
+                    {docsOpen ? (
+                      <PanelRightClose size={15} strokeWidth={1.6} aria-hidden="true" />
+                    ) : (
+                      <PanelRightOpen size={15} strokeWidth={1.6} aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+                <div
+                  className={styles.relatedBody}
+                  aria-hidden={!docsOpen}
+                  {...(!docsOpen ? { inert: '' } : {})}
+                >
+                  <CustomScrollArea
+                    className={styles.relatedScroll}
+                    viewportClassName={styles.relatedViewport}
+                    refreshKey={`docs-library:${docsOpen}`}
+                  >
+                    <div className={styles.relatedList}>
+                      {DOCS_LIBRARY.map((doc) => {
+                        const thumb = getDocCover(doc)
+                        const selected = doc.id === activeDoc.id
+                        return (
+                          <button
+                            key={doc.id}
+                            type="button"
+                            className={`${styles.relatedCard} ${selected ? styles.relatedCardSelected : ''}`}
+                            aria-current={selected ? 'page' : undefined}
+                            onClick={() => openDoc(doc.id)}
+                          >
+                            <span
+                              className={styles.relatedThumb}
+                              style={thumb ? { backgroundImage: thumb.gradient } : undefined}
+                              aria-hidden="true"
+                            />
+                            <span className={styles.relatedTitle}>{doc.title}</span>
+                            <span className={styles.relatedExcerpt}>{doc.description}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </CustomScrollArea>
+                </div>
+              </aside>
             </div>
-            <div
-              className={styles.paneBody}
-              aria-hidden={!docsOpen}
-              {...(!docsOpen ? { inert: '' } : {})}
-            >
-              <div className={styles.relatedList}>
-                {DOCS_LIBRARY.map((doc) => {
-                  const thumb = getDocCover(doc)
-                  const selected = doc.id === activeDoc.id
-                  return (
-                    <button
-                      key={doc.id}
-                      type="button"
-                      className={`${styles.relatedCard} ${selected ? styles.relatedCardSelected : ''}`}
-                      aria-current={selected ? 'page' : undefined}
-                      onClick={() => openDoc(doc.id)}
-                    >
-                      <span
-                        className={styles.relatedThumb}
-                        style={thumb ? { backgroundImage: thumb.gradient } : undefined}
-                        aria-hidden="true"
-                      />
-                      <span className={styles.relatedTitle}>{doc.title}</span>
-                      <span className={styles.relatedExcerpt}>{doc.description}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </aside>
+          </section>
         </div>
       </ProductAppShell>
     </AppThemeScope>
