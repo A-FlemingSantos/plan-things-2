@@ -126,6 +126,7 @@ public class DocsEmbedSearchService {
           if (!StringUtils.hasText(videoId)) {
             continue;
           }
+          JsonNode snippet = item.path("snippet");
           JsonNode thumbnail = snippet.path("thumbnails").path("medium");
           String thumbnailUrl = thumbnail.path("url").asText("");
           if (!StringUtils.hasText(thumbnailUrl)) {

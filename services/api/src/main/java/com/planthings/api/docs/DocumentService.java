@@ -105,6 +105,7 @@ public class DocumentService {
       String title,
       String description,
       String contentMarkdown,
+      String coverImageId,
       long expectedVersion
   ) {
     UUID currentUserId = authenticatedUserService.requireUserId();
@@ -119,6 +120,7 @@ public class DocumentService {
     document.setTitle(normalizeTitle(title));
     document.setDescription(normalizeOptional(description));
     document.setContentMarkdown(normalizeMarkdown(contentMarkdown));
+    document.setCoverImageId(normalizeCoverImageId(coverImageId));
     document.setUpdatedByUserId(currentUserId);
     document.setVersionNumber(document.getVersionNumber() + 1);
     documentRepository.save(document);
@@ -135,6 +137,7 @@ public class DocumentService {
     copy.setTitle(source.getTitle() + " (cópia)");
     copy.setDescription(source.getDescription());
     copy.setContentMarkdown(source.getContentMarkdown());
+    copy.setCoverImageId(source.getCoverImageId());
     copy.setVersionNumber(1);
     documentRepository.save(copy);
 
@@ -381,6 +384,7 @@ public class DocumentService {
         document.getId(),
         document.getTitle(),
         document.getDescription(),
+        document.getCoverImageId(),
         requireRole(document.getId(), currentUserId),
         document.getVersionNumber(),
         brazilDateTimeMapper.toDateTime(document.getCreatedAt()),
@@ -489,6 +493,26 @@ public class DocumentService {
     return normalized;
   }
 
+  private String normalizeCoverImageId(String value) {
+    if (value == null) {
+      return null;
+    }
+    String normalized = value.trim().replace("\\", "/");
+    if (normalized.isBlank()) {
+      return null;
+    }
+    if (normalized.length() > 255) {
+      throw new BadRequestException("CAPA_INVALIDA", "A imagem de capa informada é inválida.");
+    }
+    if (normalized.startsWith("files/")) {
+      return normalized;
+    }
+    if (normalized.startsWith("https://") || normalized.startsWith("http://")) {
+      return normalized;
+    }
+    throw new BadRequestException("CAPA_INVALIDA", "A imagem de capa informada é inválida.");
+  }
+
   private String requireText(String value, String code, String message, int maximumLength) {
     String normalized = value == null ? "" : value.trim();
     if (normalized.isBlank()) {
@@ -524,6 +548,7 @@ public class DocumentService {
       UUID id,
       String title,
       String description,
+      String coverImageId,
       DocumentRole role,
       long versionNumber,
       ApiDateTimeDto createdAt,

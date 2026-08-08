@@ -55,6 +55,7 @@ public class DocumentController {
         request.title(),
         request.description(),
         request.contentMarkdown(),
+        request.coverImageId(),
         request.expectedVersion()
     ));
   }
@@ -148,6 +149,7 @@ public class DocumentController {
       String title,
       String description,
       String contentMarkdown,
+      String coverImageId,
       @NotNull(message = "A versão esperada é obrigatória.") Long expectedVersion
   ) {
   }

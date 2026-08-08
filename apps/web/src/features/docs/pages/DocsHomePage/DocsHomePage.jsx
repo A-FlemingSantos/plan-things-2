@@ -4,8 +4,8 @@ import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThem
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import { buildDocsPath } from '../../../../shared/config/routes.js'
+import DocumentCoverSurface from '../../components/DocumentCoverSurface.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
-import { getDocumentCoverGradient } from '../../utils/docVisuals.js'
 import styles from './DocsHomePage.module.css'
 
 function DocMeta({ role, updatedAt }) {
@@ -25,9 +25,10 @@ function RecentDocItem({ doc, index }) {
       className={styles.recentItem}
       style={{ '--reveal-delay': `${80 + index * 40}ms` }}
     >
-      <span
+      <DocumentCoverSurface
+        documentId={doc.id}
+        coverImageId={doc.coverImageId}
         className={styles.recentThumb}
-        style={{ backgroundImage: getDocumentCoverGradient(doc.id) }}
         aria-hidden="true"
       />
       <span className={styles.recentCopy}>
@@ -47,9 +48,10 @@ function LibraryDocCard({ doc, index }) {
       className={styles.libraryCard}
       style={{ '--reveal-delay': `${160 + index * 50}ms` }}
     >
-      <span
+      <DocumentCoverSurface
+        documentId={doc.id}
+        coverImageId={doc.coverImageId}
         className={styles.libraryMedia}
-        style={{ backgroundImage: getDocumentCoverGradient(doc.id) }}
         role="img"
         aria-label={doc.title}
       />

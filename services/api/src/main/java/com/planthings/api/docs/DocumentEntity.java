@@ -28,6 +28,9 @@ public class DocumentEntity extends BaseEntity {
   @Column(nullable = false)
   private long versionNumber;
 
+  @Column(length = 255)
+  private String coverImageId;
+
   public UUID getOwnerUserId() {
     return ownerUserId;
   }
@@ -74,5 +77,13 @@ public class DocumentEntity extends BaseEntity {
 
   public void setVersionNumber(long versionNumber) {
     this.versionNumber = versionNumber;
+  }
+
+  public String getCoverImageId() {
+    return coverImageId;
+  }
+
+  public void setCoverImageId(String coverImageId) {
+    this.coverImageId = coverImageId;
   }
 }

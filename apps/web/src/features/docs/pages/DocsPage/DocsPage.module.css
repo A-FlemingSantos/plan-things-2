@@ -379,6 +379,185 @@
   color: var(--danger-text);
 }
 
+.coverMenuWrap {
+  position: relative;
+}
+
+.coverMenuPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 12;
+  width: min(320px, calc(100vw - 40px));
+  padding: 8px;
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
+  animation: docsMoreReveal 160ms var(--ease-out, ease) both;
+}
+
+.coverMenuSection {
+  display: grid;
+  gap: 8px;
+}
+
+.coverMenuAction,
+.coverMenuClear {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.coverMenuAction:hover:not(:disabled),
+.coverMenuClear:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.coverMenuAction:disabled,
+.coverMenuClear:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.coverMenuSearchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-2) 72%, transparent);
+}
+
+.coverMenuSearchBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  color: var(--text-3);
+}
+
+.coverMenuSearchInput {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  color: var(--text-2);
+}
+
+.coverMenuSearchInput::placeholder {
+  color: var(--text-3);
+}
+
+.coverMenuSearchButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.coverMenuSearchButton:hover:not(:disabled) {
+  color: var(--text-2);
+}
+
+.coverMenuSearchButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.coverMenuResults {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.coverMenuResult {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  background: var(--surface-3);
+  cursor: pointer;
+}
+
+.coverMenuResult:hover:not(:disabled) {
+  opacity: 0.86;
+}
+
+.coverMenuResult:disabled {
+  cursor: not-allowed;
+}
+
+.coverMenuResultImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coverMenuResultFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--surface-3) 70%, var(--border-2));
+}
+
+.coverMenuFooter {
+  display: grid;
+  gap: 6px;
+}
+
+.coverMenuStatus {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+.docCover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 5;
+  margin: 0 0 18px;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-3);
+  background-size: cover;
+  background-position: center;
+}
+
 .iconButton {
   display: inline-flex;
   align-items: center;
@@ -594,6 +773,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .moreMenuPanel {
+    animation: none;
+  }
+
+  .coverMenuPanel {
     animation: none;
   }
 

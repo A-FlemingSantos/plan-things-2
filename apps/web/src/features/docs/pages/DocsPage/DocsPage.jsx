@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Copy,
   Download,
+  Image,
   Link2,
   MoreHorizontal,
   MoveLeft,
@@ -27,8 +28,10 @@ import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
 import MarkdownWysiwygComposer from '../../components/MarkdownWysiwygComposer.jsx'
 import MarkdownContent from '../../components/MarkdownContent.jsx'
 import AddDocumentMemberMenu from '../../components/AddDocumentMemberMenu.jsx'
+import DocumentCoverMenu from '../../components/DocumentCoverMenu.jsx'
+import DocumentCoverSurface from '../../components/DocumentCoverSurface.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
-import { formatDocumentMeta, getDocumentCoverGradient } from '../../utils/docVisuals.js'
+import { formatDocumentMeta } from '../../utils/docVisuals.js'
 import styles from './DocsPage.module.css'
 
 const ICON_STROKE = 1.6
@@ -86,7 +89,7 @@ function DocsPageContent() {
     duplicateDocument,
   } = useDocs()
   const [details, setDetails] = useState(null)
-  const [draft, setDraft] = useState({ title: '', description: '', contentMarkdown: '', version: 0 })
+  const [draft, setDraft] = useState({ title: '', description: '', contentMarkdown: '', coverImageId: null, version: 0 })
   const [comments, setComments] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [indexOpen, setIndexOpen] = useState(true)
@@ -94,10 +97,13 @@ function DocsPageContent() {
   const [memberMenuOpen, setMemberMenuOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [coverMenuOpen, setCoverMenuOpen] = useState(false)
+  const [coverSaving, setCoverSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeHeadingIndex, setActiveHeadingIndex] = useState(0)
   const articleViewportRef = useRef(null)
   const moreMenuRef = useRef(null)
+  const coverMenuRef = useRef(null)
   const deleteMenuRef = useRef(null)
   const memberMenuRef = useRef(null)
   const titleInputRef = useRef(null)
@@ -117,6 +123,7 @@ function DocsPageContent() {
       title: document.document.title ?? '',
       description: document.document.description ?? '',
       contentMarkdown: document.contentMarkdown ?? '',
+      coverImageId: document.document.coverImageId ?? null,
       version: document.document.versionNumber,
     }
     savedDraftRef.current = JSON.stringify(nextDraft)
@@ -187,6 +194,7 @@ function DocsPageContent() {
         title: draft.title,
         description: draft.description,
         contentMarkdown: draft.contentMarkdown,
+        coverImageId: draft.coverImageId,
         expectedVersion: draft.version,
       })
         .then((document) => {
@@ -248,6 +256,22 @@ function DocsPageContent() {
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [moreMenuOpen])
+
+  useEffect(() => {
+    if (!coverMenuOpen) return undefined
+    const onPointerDown = (event) => {
+      if (!coverMenuRef.current?.contains(event.target)) setCoverMenuOpen(false)
+    }
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setCoverMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [coverMenuOpen])
 
   useEffect(() => {
     if (outline.length === 0) return
@@ -369,6 +393,25 @@ function DocsPageContent() {
     }
   }
 
+  const selectCover = async (coverImageId) => {
+    if (!details?.document?.id || coverSaving) return
+    setCoverSaving(true)
+    try {
+      const document = await saveDocument(details.document.id, {
+        title: draft.title,
+        description: draft.description,
+        contentMarkdown: draft.contentMarkdown,
+        coverImageId: coverImageId || null,
+        expectedVersion: draft.version,
+      })
+      applyDocument(document)
+    } catch (error) {
+      if (error.currentDocument) applyDocument(error.currentDocument)
+    } finally {
+      setCoverSaving(false)
+    }
+  }
+
   if (isLoading || !details) {
     return (
       <AppThemeScope>
@@ -432,6 +475,31 @@ function DocsPageContent() {
                       </label>
                     </div>
                     <div className={styles.toolbarActions}>
+                      {canEdit ? (
+                        <div className={styles.coverMenuWrap} ref={coverMenuRef}>
+                          <button
+                            type="button"
+                            className={`${styles.iconButton} ${coverMenuOpen ? styles.iconButtonActive : ''}`}
+                            aria-label="Escolher capa"
+                            aria-haspopup="dialog"
+                            aria-expanded={coverMenuOpen}
+                            onClick={() => {
+                              setDeleteConfirmOpen(false)
+                              setMoreMenuOpen(false)
+                              setCoverMenuOpen((open) => !open)
+                            }}
+                          >
+                            <Image size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                          </button>
+                          <DocumentCoverMenu
+                            open={coverMenuOpen}
+                            onClose={() => setCoverMenuOpen(false)}
+                            onSelectCover={selectCover}
+                            busy={coverSaving}
+                            styles={styles}
+                          />
+                        </div>
+                      ) : null}
                       <button type="button" className={styles.iconButton} aria-label="Compartilhar link" onClick={copyLink}>
                         <Share size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
                       </button>
@@ -527,6 +595,14 @@ function DocsPageContent() {
                     </div>
                   </header>
 
+                  <DocumentCoverSurface
+                    documentId={details.document.id}
+                    coverImageId={draft.coverImageId}
+                    className={styles.docCover}
+                    role="img"
+                    aria-label={`Capa de ${draft.title || 'documento'}`}
+                  />
+
                   <div className={styles.docHeader}>
                     {canEdit ? (
                       <>
@@ -614,9 +690,10 @@ function DocsPageContent() {
                             aria-current={selected ? 'page' : undefined}
                             onClick={() => navigate(buildDocsPath(document.id))}
                           >
-                            <span
+                            <DocumentCoverSurface
+                              documentId={document.id}
+                              coverImageId={document.coverImageId}
                               className={styles.relatedThumb}
-                              style={{ backgroundImage: getDocumentCoverGradient(document.id) }}
                               aria-hidden="true"
                             />
                             <span className={styles.relatedTitle}>{document.title}</span>
