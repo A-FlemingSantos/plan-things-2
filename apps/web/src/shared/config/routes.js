@@ -6,6 +6,7 @@ export const ROUTES = {
   workspace: '/workspace',
   workspaceBoard: '/workspace/board',
   calendar: '/calendar',
+  docs: '/docs',
   files: '/files',
   settings: '/settings',
   forgot: '/forgot',
@@ -60,6 +61,7 @@ export function isInternalAppPath(pathname) {
     ROUTES.workspace,
     ROUTES.workspaceBoard,
     ROUTES.calendar,
+    ROUTES.docs,
     ROUTES.settings,
   ]
 

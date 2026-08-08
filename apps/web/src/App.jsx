@@ -12,6 +12,7 @@ import { INFO_PAGES } from './features/info/data/infoPages.js'
 import InfoPage from './features/info/pages/InfoPage.jsx'
 import LandingPage from './features/landing/pages/LandingPage.jsx'
 import AppThemeScope from './features/preferences/components/AppThemeScope/AppThemeScope.jsx'
+import DocsPage from './features/docs/pages/DocsPage/DocsPage.jsx'
 import SettingsPage from './features/settings/pages/SettingsPage/SettingsPage.jsx'
 import KanbanBoard from './features/workspace/pages/KanbanBoard/KanbanBoard.jsx'
 import InviteAccept from './features/workspace/pages/InviteAccept/InviteAccept.jsx'
@@ -262,6 +263,7 @@ function AppShell() {
                 )}
               />
               <Route path={`${ROUTES.files}/*`} element={<RequireSession><Navigate to={ROUTES.workspace} replace /></RequireSession>} />
+              <Route path={ROUTES.docs} element={<RequireSession><DocsPage /></RequireSession>} />
               {Object.entries(INFO_PAGES).map(([path, page]) => (
                 <Route
                   key={path}

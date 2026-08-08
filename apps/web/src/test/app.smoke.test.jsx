@@ -623,7 +623,7 @@ describe('App smoke flows', () => {
     const dock = document.querySelector('[data-app-navigation-dock]')
     expect(dock).toBeInTheDocument()
     expect(within(dock).getByRole('link', { name: 'Início' })).toBeInTheDocument()
-    expect(within(dock).getByRole('button', { name: 'Em breve' })).toBeDisabled()
+    expect(within(dock).getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs')
     expect(within(dock).getByRole('link', { name: 'Quadros' })).toBeInTheDocument()
     expect(within(dock).getByRole('button', { name: 'Abrir menu da conta' })).toBeInTheDocument()
 

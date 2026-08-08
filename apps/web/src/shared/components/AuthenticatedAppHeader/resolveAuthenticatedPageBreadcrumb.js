@@ -33,6 +33,8 @@ export function resolveAuthenticatedPageBreadcrumb({
     items.push(createItem(plan?.name?.trim() || 'Plano', { current: true }))
   } else if (normalized === ROUTES.settings) {
     items.push(createItem('Configurações', { current: true }))
+  } else if (normalized === ROUTES.docs) {
+    items.push(createItem('Docs', { current: true }))
   } else if (normalized === ROUTES.calendar) {
     items.push(createItem('Calendário', { current: true }))
   } else {

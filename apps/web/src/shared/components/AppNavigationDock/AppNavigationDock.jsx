@@ -10,14 +10,9 @@ import styles from './AppNavigationDock.module.css'
 
 const NAV_ITEMS = [
   { id: 'home', label: 'Início', to: ROUTES.workspace, Icon: House },
+  { id: 'docs', label: 'Docs', to: ROUTES.docs, Icon: BookOpen },
   { id: 'boards', label: 'Quadros', to: ROUTES.workspaceBoard, Icon: KanbanSquare },
 ]
-
-const PLACEHOLDER_ITEM = {
-  id: 'placeholder',
-  label: 'Em breve',
-  Icon: BookOpen,
-}
 
 const GITHUB_ITEM = {
   id: 'github',
@@ -74,8 +69,7 @@ export default function AppNavigationDock({ navigationPathname = null } = {}) {
   const contentPathname = navigationPathname ?? location.pathname
   const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
-  const PlaceholderIcon = PLACEHOLDER_ITEM.Icon
-  const [homeItem, boardsItem] = NAV_ITEMS
+  const [homeItem, docsItem, boardsItem] = NAV_ITEMS
 
   return (
     <AppThemeScope className={styles.themeScope}>
@@ -84,16 +78,7 @@ export default function AppNavigationDock({ navigationPathname = null } = {}) {
           <Dock className={styles.navigationDock} size={34}>
           <NavLinkItem {...homeItem} pathname={contentPathname} />
 
-          <DockItem>
-            <button
-              type="button"
-              className={styles.link}
-              aria-label={PLACEHOLDER_ITEM.label}
-              disabled
-            >
-              <PlaceholderIcon size={16} strokeWidth={1.75} aria-hidden="true" />
-            </button>
-          </DockItem>
+          <NavLinkItem {...docsItem} pathname={contentPathname} />
 
           <NavLinkItem {...boardsItem} pathname={contentPathname} />
 

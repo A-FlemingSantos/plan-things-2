@@ -40,4 +40,17 @@ describe('resolveAuthenticatedPageBreadcrumb', () => {
       ],
     })
   })
+
+  it('returns Docs label for the knowledge route', () => {
+    expect(resolveAuthenticatedPageBreadcrumb({
+      pathname: ROUTES.docs,
+      workspaceName: 'Workspace',
+      plans: [],
+    })).toEqual({
+      items: [
+        { label: 'Workspace', to: ROUTES.workspace, current: false },
+        { label: 'Docs', to: null, current: true },
+      ],
+    })
+  })
 })
