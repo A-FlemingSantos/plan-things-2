@@ -1334,6 +1334,16 @@
   color: var(--text-3);
 }
 
+.embedSlotValue {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.7;
+  color: var(--text-2);
+}
+
 .embedSlotUrl:focus,
 .embedSlotUrl:focus-visible {
   outline: none;
@@ -1342,6 +1352,115 @@
 
 .bodyComposer :global(.ProseMirror .embedSlot) {
   margin: 0;
+}
+
+.embedBlock {
+  width: 100%;
+  margin: 0 0 12px;
+}
+
+.bodyComposer :global(.ProseMirror .embedBlock .embedSlot) {
+  margin: 0 0 10px;
+}
+
+.embedSearchResults {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.embedSearchMeta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+.embedSearchCount {
+  justify-self: center;
+}
+
+.embedSearchNext {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.embedSearchNext:hover {
+  color: var(--text-2);
+}
+
+.embedSearchGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.embedSearchTile {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  border: none;
+  background: var(--surface-3);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.embedSearchTile:disabled {
+  cursor: default;
+}
+
+.embedSearchTileImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.embedSearchTileFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--surface-3) 70%, var(--border-2));
+}
+
+.embedSearchStatus,
+.embedSearchStatusError {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.embedSearchStatusError {
+  color: var(--danger, #c0392b);
+}
+
+.embedSelectedPreview {
+  width: 100%;
+}
+
+.embedSelectedImage {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.bodyComposer :global(.ProseMirror .embedBlock) {
+  margin: 0 0 12px;
 }
 
 /* ── Suspended docs library (inside center column) ── */

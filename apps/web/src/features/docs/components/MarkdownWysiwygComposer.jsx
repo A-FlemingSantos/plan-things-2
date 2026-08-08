@@ -308,6 +308,9 @@ export default function MarkdownWysiwygComposer({
         attrs: {
           kind: blockId === 'video' ? 'video' : 'unsplash',
           url: '',
+          query: '',
+          page: 1,
+          pageToken: '',
         },
       }).run()
       setMenuOpen(false)

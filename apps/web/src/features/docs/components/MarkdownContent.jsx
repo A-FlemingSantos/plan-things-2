@@ -1,6 +1,8 @@
 import ReactMarkdown from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
+import DocsEmbedResults from './DocsEmbedResults.jsx'
+import { DOCS_EMBED_META } from './docsEmbedExtension.jsx'
 import { useAuthenticatedImageUrl } from '../../../shared/hooks/useAuthenticatedImageUrl.js'
 import { splitDocsEmbedMarkdown, youtubeEmbedUrl } from '../utils/docsEmbedMarkdown.js'
 
@@ -13,7 +15,32 @@ function MarkdownImage({ src, alt, styles }) {
   )
 }
 
-function DocsEmbedReadView({ kind, url, styles }) {
+function DocsEmbedReadView({ kind, mode, url, query, page, pageToken, styles }) {
+  const embedKind = kind === 'video' ? 'video' : 'unsplash'
+  const meta = DOCS_EMBED_META[embedKind]
+  const Icon = meta.Icon
+
+  if (mode === 'search' && query?.trim()) {
+    return (
+      <div className={styles.embedBlock} data-docs-embed={kind} data-docs-embed-mode="search">
+        <div className={styles.embedSlot}>
+          <span className={styles.embedSlotBadge}>
+            <Icon size={14} aria-hidden="true" />
+            <span>{meta.label}</span>
+          </span>
+          <span className={styles.embedSlotValue}>{query.trim()}</span>
+        </div>
+        <DocsEmbedResults
+          kind={kind}
+          query={query}
+          page={page ?? 1}
+          pageToken={pageToken ?? ''}
+          styles={styles}
+        />
+      </div>
+    )
+  }
+
   if (!url?.trim()) return null
 
   if (kind === 'video') {
@@ -86,7 +113,11 @@ export default function MarkdownContent({ value, styles }) {
             <DocsEmbedReadView
               key={`embed-${index}`}
               kind={part.kind}
+              mode={part.mode}
               url={part.url}
+              query={part.query}
+              page={part.page}
+              pageToken={part.pageToken}
               styles={styles}
             />
           )

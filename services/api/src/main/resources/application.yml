@@ -95,6 +95,12 @@ app:
     use-openai-conversations: ${INTELLIGENCE_USE_OPENAI_CONVERSATIONS:false}
     store-openai-responses: ${INTELLIGENCE_STORE_OPENAI_RESPONSES:false}
     compact-threshold: ${INTELLIGENCE_COMPACT_THRESHOLD:120000}
+  docs:
+    embeds:
+      unsplash:
+        access-key: ${UNSPLASH_ACCESS_KEY:}
+      youtube:
+        api-key: ${YOUTUBE_API_KEY:}
   integrations:
     token-key-base64: ${APP_INTEGRATION_TOKEN_KEY_B64:}
     gmail:
