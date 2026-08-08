@@ -7,6 +7,8 @@
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
+  /* Columns should reach the viewport bottom; dock overlays them. */
+  padding-bottom: 0;
   background: var(--app-bg);
   color: var(--text-1);
 }
@@ -24,7 +26,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 40px 18px 28px 28px;
+  padding: 40px 18px calc(28px + var(--app-dock-clearance, 56px)) 28px;
   border-right: 1px solid var(--border-1);
   min-height: 0;
   overflow: auto;
@@ -113,7 +115,7 @@
 .articleInner {
   max-width: 720px;
   margin: 0 auto;
-  padding: 40px 40px 72px;
+  padding: 40px 40px calc(72px + var(--app-dock-clearance, 56px));
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -323,7 +325,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 40px 28px 28px 18px;
+  padding: 40px 28px calc(28px + var(--app-dock-clearance, 56px)) 18px;
   border-left: 1px solid var(--border-1);
   min-height: 0;
   overflow: auto;
