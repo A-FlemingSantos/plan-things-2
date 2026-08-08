@@ -7,6 +7,7 @@ export const ROUTES = {
   workspaceBoard: '/workspace/board',
   calendar: '/calendar',
   docs: '/docs',
+  docsNew: '/docs/new',
   docsDoc: '/docs/:docId',
   files: '/files',
   settings: '/settings',

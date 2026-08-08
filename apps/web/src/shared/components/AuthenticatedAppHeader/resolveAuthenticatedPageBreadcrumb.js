@@ -40,7 +40,10 @@ export function resolveAuthenticatedPageBreadcrumb({
     const docId = normalized.slice(`${ROUTES.docs}/`.length).split('/')[0]
     const doc = findDocById(docId)
     items.push(createItem('Docs', { to: ROUTES.docs }))
-    items.push(createItem(doc?.title?.trim() || 'Documento', { current: true }))
+    items.push(createItem(
+      docId === 'new' ? 'Nova doc' : (doc?.title?.trim() || 'Documento'),
+      { current: true },
+    ))
   } else if (normalized === ROUTES.calendar) {
     items.push(createItem('Calendário', { current: true }))
   } else {

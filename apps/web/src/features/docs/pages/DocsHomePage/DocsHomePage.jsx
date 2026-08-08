@@ -1,9 +1,9 @@
 import { SquarePen } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import { buildDocsPath } from '../../../../shared/config/routes.js'
+import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
 import {
   DOCS_LIBRARY,
   getDocCover,
@@ -93,6 +93,8 @@ function LibraryDocCard({ doc, index }) {
 }
 
 export default function DocsHomePage() {
+  const navigate = useNavigate()
+
   return (
     <AppThemeScope>
       <ProductAppShell contentClassName={styles.page} contentTag="main">
@@ -103,7 +105,11 @@ export default function DocsHomePage() {
         >
           <div className={styles.inner}>
             <div className={styles.pageToolbar}>
-              <button type="button" className={styles.writeButton}>
+              <button
+                type="button"
+                className={styles.writeButton}
+                onClick={() => navigate(ROUTES.docsNew)}
+              >
                 <SquarePen size={15} strokeWidth={1.6} aria-hidden="true" />
                 Escrever
               </button>

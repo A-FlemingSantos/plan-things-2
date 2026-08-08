@@ -22,7 +22,9 @@ export function resolveDocsDockPath() {
   if (!raw) return ROUTES.docs
 
   const normalized = normalizePathname(raw)
-  if (normalized === ROUTES.docs) return ROUTES.docs
+  if (normalized === ROUTES.docs) {
+    return normalized
+  }
 
   if (normalized.startsWith(`${ROUTES.docs}/`)) {
     const docId = normalized.slice(`${ROUTES.docs}/`.length).split('/')[0]

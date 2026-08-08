@@ -391,7 +391,19 @@ export const DOCS_LIBRARY = [
   },
 ]
 
+export const DOCS_BLANK = {
+  id: 'new',
+  title: '',
+  description: '',
+  category: 'Rascunho',
+  dateLabel: '',
+  publishedLabel: '',
+  contributors: [],
+  sections: [],
+}
+
 export function findDocById(id) {
+  if (id === DOCS_BLANK.id) return DOCS_BLANK
   return DOCS_LIBRARY.find((doc) => doc.id === id) ?? null
 }
 

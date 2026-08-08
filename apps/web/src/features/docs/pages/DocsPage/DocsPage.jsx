@@ -10,6 +10,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Pencil,
+  Plus,
   Search,
   Share,
   Trash2,
@@ -21,6 +22,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
 import { getSectionOffsetTop } from '../../../../shared/hooks/useSectionScrollIndicator.js'
 import {
+  DOCS_BLANK,
   DOCS_LIBRARY,
   findDocById,
   getDocCover,
@@ -62,14 +64,25 @@ export default function DocsPage() {
   const [indexOpen, setIndexOpen] = useState(true)
   const [docsOpen, setDocsOpen] = useState(true)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [draftTitle, setDraftTitle] = useState('')
+  const [draftDescription, setDraftDescription] = useState('')
+  const [draftBody, setDraftBody] = useState('')
   const articleViewportRef = useRef(null)
   const moreMenuRef = useRef(null)
+  const titleInputRef = useRef(null)
+  const isBlankDoc = activeDoc?.id === DOCS_BLANK.id
 
   useEffect(() => {
     if (!activeDoc) return
     setSearchQuery('')
     setActiveSectionId(activeDoc.sections[0]?.id ?? '')
     setMoreMenuOpen(false)
+    if (activeDoc.id === DOCS_BLANK.id) {
+      setDraftTitle('')
+      setDraftDescription('')
+      setDraftBody('')
+      requestAnimationFrame(() => titleInputRef.current?.focus())
+    }
     articleViewportRef.current?.scrollTo({ top: 0 })
   }, [activeDoc])
 
@@ -338,9 +351,31 @@ export default function DocsPage() {
                   </header>
 
                   <div className={styles.docHeader}>
-                    <h1 className={styles.docTitle}>{activeDoc.title}</h1>
-                    <p className={styles.docDescription}>{activeDoc.description}</p>
-                    <p className={styles.docMeta}>{activeDoc.publishedLabel}</p>
+                    {isBlankDoc ? (
+                      <>
+                        <input
+                          ref={titleInputRef}
+                          className={styles.docTitleInput}
+                          value={draftTitle}
+                          onChange={(event) => setDraftTitle(event.target.value)}
+                          placeholder="Title"
+                          aria-label="Título do documento"
+                        />
+                        <input
+                          className={styles.docDescriptionInput}
+                          value={draftDescription}
+                          onChange={(event) => setDraftDescription(event.target.value)}
+                          placeholder="Add a subtitle..."
+                          aria-label="Subtítulo do documento"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <h1 className={styles.docTitle}>{activeDoc.title}</h1>
+                        <p className={styles.docDescription}>{activeDoc.description}</p>
+                        <p className={styles.docMeta}>{activeDoc.publishedLabel}</p>
+                      </>
+                    )}
                   </div>
 
                   <ul className={styles.contributors} aria-label="Contribuidores">
@@ -353,34 +388,57 @@ export default function DocsPage() {
                         </div>
                       </li>
                     ))}
+                    {isBlankDoc ? (
+                      <li className={styles.contributor}>
+                        <button type="button" className={styles.addMemberButton}>
+                          <span className={styles.addMemberAvatar} aria-hidden="true">
+                            <Plus size={14} strokeWidth={1.6} />
+                          </span>
+                          <span className={styles.contributorCopy}>
+                            <span className={styles.contributorName}>Adicionar membro</span>
+                          </span>
+                        </button>
+                      </li>
+                    ) : null}
                   </ul>
 
                   <div className={styles.body}>
-                    {activeDoc.sections.map((section) => (
-                      <section
-                        key={section.id}
-                        id={sectionDomId(section.id)}
-                        data-doc-section={section.id}
-                        className={styles.bodySection}
-                      >
-                        <h2 className={styles.bodyHeading}>{section.heading}</h2>
-                        {section.paragraphs.map((paragraph) => (
-                          <p key={paragraph} className={styles.bodyText}>
-                            {paragraph}
-                          </p>
-                        ))}
-                        {section.image ? (
-                          <figure className={styles.figure}>
-                            <div
-                              className={styles.figureMedia}
-                              style={{ backgroundImage: section.image.gradient }}
-                              role="img"
-                              aria-label={section.image.alt}
-                            />
-                          </figure>
-                        ) : null}
-                      </section>
-                    ))}
+                    {isBlankDoc ? (
+                      <textarea
+                        className={styles.bodyComposer}
+                        value={draftBody}
+                        onChange={(event) => setDraftBody(event.target.value)}
+                        placeholder="Tell your story..."
+                        aria-label="Conteúdo do documento"
+                        rows={12}
+                      />
+                    ) : (
+                      activeDoc.sections.map((section) => (
+                        <section
+                          key={section.id}
+                          id={sectionDomId(section.id)}
+                          data-doc-section={section.id}
+                          className={styles.bodySection}
+                        >
+                          <h2 className={styles.bodyHeading}>{section.heading}</h2>
+                          {section.paragraphs.map((paragraph) => (
+                            <p key={paragraph} className={styles.bodyText}>
+                              {paragraph}
+                            </p>
+                          ))}
+                          {section.image ? (
+                            <figure className={styles.figure}>
+                              <div
+                                className={styles.figureMedia}
+                                style={{ backgroundImage: section.image.gradient }}
+                                role="img"
+                                aria-label={section.image.alt}
+                              />
+                            </figure>
+                          ) : null}
+                        </section>
+                      ))
+                    )}
                   </div>
                 </div>
               </CustomScrollArea>

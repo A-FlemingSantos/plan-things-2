@@ -67,4 +67,18 @@ describe('resolveAuthenticatedPageBreadcrumb', () => {
       ],
     })
   })
+
+  it('returns Nova doc label for the blank docs composer', () => {
+    expect(resolveAuthenticatedPageBreadcrumb({
+      pathname: ROUTES.docsNew,
+      workspaceName: 'Workspace',
+      plans: [],
+    })).toEqual({
+      items: [
+        { label: 'Workspace', to: ROUTES.workspace, current: false },
+        { label: 'Docs', to: ROUTES.docs, current: false },
+        { label: 'Nova doc', to: null, current: true },
+      ],
+    })
+  })
 })

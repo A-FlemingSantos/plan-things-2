@@ -413,16 +413,28 @@
   letter-spacing: -0.035em;
   line-height: 1.1;
   color: var(--text-1);
+  min-height: 1.1em;
+}
+
+.docTitle:empty::before {
+  content: 'Title';
+  color: var(--text-3);
 }
 
 .docDescription {
   margin: 0;
-  max-width: 52ch;
   font-family: var(--font-family);
   font-size: 14px;
   font-weight: var(--font-weight-light);
   line-height: 1.55;
   color: var(--text-2);
+  max-width: 52ch;
+  min-height: 1.55em;
+}
+
+.docDescription:empty::before {
+  content: 'Add a subtitle...';
+  color: var(--text-3);
 }
 
 .docMeta {
@@ -431,6 +443,61 @@
   font-size: 12px;
   font-weight: var(--font-weight-light);
   color: var(--text-3);
+}
+
+.docMeta:empty {
+  display: none;
+}
+
+.docTitleInput,
+.docDescriptionInput,
+.bodyComposer {
+  width: 100%;
+  margin: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+}
+
+.docTitleInput {
+  font-family: var(--font-family);
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--text-1);
+}
+
+.docTitleInput::placeholder,
+.docDescriptionInput::placeholder,
+.bodyComposer::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+.docDescriptionInput {
+  max-width: 52ch;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.bodyComposer {
+  min-height: 40vh;
+  resize: none;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.7;
+  color: var(--text-2);
+  max-width: 62ch;
 }
 
 .contributors {
@@ -485,6 +552,44 @@
   font-size: 12px;
   font-weight: var(--font-weight-light);
   color: var(--text-3);
+}
+
+.addMemberButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.addMemberAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-3);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.addMemberButton:hover .addMemberAvatar {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.addMemberButton:hover .contributorName {
+  color: var(--text-1);
 }
 
 .body {
