@@ -73,12 +73,16 @@ export default function MarkdownWysiwygComposer({
   const composerMainRef = useRef(null)
   const railRef = useRef(null)
   const selectionToolbarRef = useRef(null)
+  const urlPromptRef = useRef(null)
+  const urlInputRef = useRef(null)
   const noteDraftRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [selection, setSelection] = useState(null)
   const [insertTop, setInsertTop] = useState(null)
   const [pendingNote, setPendingNote] = useState(null)
   const [noteDraft, setNoteDraft] = useState('')
+  const [urlPrompt, setUrlPrompt] = useState(null)
+  const [urlDraft, setUrlDraft] = useState('')
   const [noteOffsets, setNoteOffsets] = useState({})
 
   const syncSelection = useCallback((activeEditor) => {
@@ -196,11 +200,16 @@ export default function MarkdownWysiwygComposer({
     if (!selection) return undefined
     const clearOutside = (event) => {
       if (selectionToolbarRef.current?.contains(event.target)) return
+      if (urlPromptRef.current?.contains(event.target)) return
       if (composerRef.current?.contains(event.target)) return
       setSelection(null)
+      setUrlPrompt(null)
     }
     const clearOnEscape = (event) => {
-      if (event.key === 'Escape') setSelection(null)
+      if (event.key === 'Escape') {
+        setSelection(null)
+        setUrlPrompt(null)
+      }
     }
     const onScroll = () => {
       if (!editor || selection?.from == null) return
@@ -218,6 +227,32 @@ export default function MarkdownWysiwygComposer({
   }, [editor, refreshVisualState, selection, syncSelection])
 
   useEffect(() => {
+    if (!urlPrompt) {
+      setUrlDraft('')
+      return undefined
+    }
+
+    requestAnimationFrame(() => urlInputRef.current?.focus())
+
+    const closeOutside = (event) => {
+      if (urlPromptRef.current?.contains(event.target)) return
+      if (selectionToolbarRef.current?.contains(event.target)) return
+      if (railRef.current?.contains(event.target)) return
+      setUrlPrompt(null)
+    }
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setUrlPrompt(null)
+    }
+
+    document.addEventListener('pointerdown', closeOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [urlPrompt])
+
+  useEffect(() => {
     if (!pendingNote) return undefined
     requestAnimationFrame(() => noteDraftRef.current?.focus())
     const cancelOnEscape = (event) => {
@@ -233,17 +268,46 @@ export default function MarkdownWysiwygComposer({
   const applyBlock = (blockId) => {
     if (!editor) return
     const chain = editor.chain().focus()
-    if (blockId === 'quote') chain.toggleBlockquote().run()
-    else if (blockId === 'code') chain.toggleCodeBlock().run()
-    else if (blockId === 'divider') chain.setHorizontalRule().run()
-    else {
-      const prompt = blockId === 'video' ? 'Cole a URL do vídeo' : 'Cole a URL da imagem'
-      const url = window.prompt(prompt)
-      if (!url?.trim()) return
-      if (blockId === 'video') chain.insertContent(url.trim()).run()
-      else chain.setImage({ src: url.trim(), alt: blockId === 'unsplash' ? 'Imagem do Unsplash' : '' }).run()
+    if (blockId === 'quote') {
+      chain.toggleBlockquote().run()
+      setMenuOpen(false)
+      return
     }
+    if (blockId === 'code') {
+      chain.toggleCodeBlock().run()
+      setMenuOpen(false)
+      return
+    }
+    if (blockId === 'divider') {
+      chain.setHorizontalRule().run()
+      setMenuOpen(false)
+      return
+    }
+
     setMenuOpen(false)
+    setUrlPrompt({
+      anchor: 'rail',
+      blockId,
+    })
+  }
+
+  const submitUrlPrompt = () => {
+    const url = urlDraft.trim()
+    if (!url || !editor || !urlPrompt) return
+
+    if (urlPrompt.anchor === 'link') {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+    } else if (urlPrompt.blockId === 'video') {
+      editor.chain().focus().insertContent(url).run()
+    } else {
+      editor.chain().focus().setImage({
+        src: url,
+        alt: urlPrompt.blockId === 'unsplash' ? 'Imagem do Unsplash' : '',
+      }).run()
+    }
+
+    setUrlPrompt(null)
+    setUrlDraft('')
   }
 
   const applySelectionAction = (action) => {
@@ -268,8 +332,7 @@ export default function MarkdownWysiwygComposer({
     else if (action === 'subtitle') chain.toggleHeading({ level: 2 }).run()
     else if (action === 'quote') chain.toggleBlockquote().run()
     else if (action === 'link') {
-      const url = window.prompt('Cole a URL do link')
-      if (url?.trim()) chain.extendMarkRange('link').setLink({ href: url.trim() }).run()
+      setUrlPrompt({ anchor: 'link' })
     }
   }
 
@@ -298,11 +361,47 @@ export default function MarkdownWysiwygComposer({
 
   if (!editor) return null
 
+  const urlMenu = urlPrompt ? (
+    <div
+      ref={urlPromptRef}
+      className={`${styles.coupledMenuPanel} ${urlPrompt.anchor === 'rail' ? styles.coupledMenuPanelRail : styles.coupledMenuPanelToolbar}`}
+      style={urlPrompt.anchor === 'link' && selection
+        ? { top: selection.top + 44, left: selection.left }
+        : undefined}
+      role="group"
+      aria-label="Inserir URL"
+    >
+      <input
+        ref={urlInputRef}
+        type="url"
+        className={styles.coupledMenuInput}
+        value={urlDraft}
+        placeholder="https://..."
+        onChange={(event) => setUrlDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            submitUrlPrompt()
+          }
+        }}
+      />
+      <div className={styles.coupledMenuActions}>
+        <button type="button" className={styles.coupledMenuCancel} onClick={() => setUrlPrompt(null)}>
+          Cancelar
+        </button>
+        <button type="button" className={styles.coupledMenuSubmit} onClick={submitUrlPrompt} disabled={!urlDraft.trim()}>
+          Inserir
+        </button>
+      </div>
+    </div>
+  ) : null
+
   return (
     <div ref={composerRef} className={styles.composerShell}>
       <div ref={composerMainRef} className={styles.composerMain}>
         <div className={styles.composer} role="textbox" aria-label="Conteúdo do documento" aria-multiline="true">
           {selection ? (
+            <>
             <div ref={selectionToolbarRef} className={styles.selectionToolbar} role="toolbar" aria-label="Formatação do texto" style={{ top: selection.top, left: selection.left }}>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolBold}`} title="Negrito" aria-label="Negrito" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('bold')}>B</button>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`} title="Itálico" aria-label="Itálico" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('italic')}>i</button>
@@ -314,6 +413,8 @@ export default function MarkdownWysiwygComposer({
               <span className={styles.selectionToolDivider} aria-hidden="true" />
               <button type="button" className={styles.selectionToolButton} title="Adicionar comentário" aria-label="Adicionar comentário" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('comment')}><MessageSquareLock size={14} strokeWidth={1.8} aria-hidden="true" /></button>
             </div>
+            {urlPrompt?.anchor === 'link' ? urlMenu : null}
+          </>
           ) : null}
           <div className={styles.composerRow}>
             <div className={styles.composerRail} ref={railRef} style={insertTop == null ? undefined : { top: insertTop }}>
@@ -329,6 +430,7 @@ export default function MarkdownWysiwygComposer({
                   </div>
                 </div>
               ) : null}
+              {urlPrompt?.anchor === 'rail' ? urlMenu : null}
             </div>
             <EditorContent editor={editor} className={styles.bodyComposer} />
           </div>

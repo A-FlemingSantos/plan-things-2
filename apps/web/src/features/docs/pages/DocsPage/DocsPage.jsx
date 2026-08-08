@@ -26,7 +26,7 @@ import { getSectionOffsetTop } from '../../../../shared/hooks/useSectionScrollIn
 import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
 import MarkdownWysiwygComposer from '../../components/MarkdownWysiwygComposer.jsx'
 import MarkdownContent from '../../components/MarkdownContent.jsx'
-import DocumentSharePopover from '../../components/DocumentSharePopover.jsx'
+import AddDocumentMemberMenu from '../../components/AddDocumentMemberMenu.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
 import { formatDocumentMeta, getDocumentCoverGradient } from '../../utils/docVisuals.js'
 import styles from './DocsPage.module.css'
@@ -91,12 +91,15 @@ function DocsPageContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [indexOpen, setIndexOpen] = useState(true)
   const [docsOpen, setDocsOpen] = useState(true)
-  const [shareOpen, setShareOpen] = useState(false)
+  const [memberMenuOpen, setMemberMenuOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeHeadingIndex, setActiveHeadingIndex] = useState(0)
   const articleViewportRef = useRef(null)
   const moreMenuRef = useRef(null)
+  const deleteMenuRef = useRef(null)
+  const memberMenuRef = useRef(null)
   const titleInputRef = useRef(null)
   const savedDraftRef = useRef('')
 
@@ -122,7 +125,7 @@ function DocsPageContent() {
     setActiveHeadingIndex(0)
     setSearchQuery('')
     setMoreMenuOpen(false)
-    setShareOpen(false)
+    setMemberMenuOpen(false)
     articleViewportRef.current?.scrollTo({ top: 0 })
   }
 
@@ -195,6 +198,40 @@ function DocsPageContent() {
     }, 650)
     return () => window.clearTimeout(timer)
   }, [canEdit, details, draft, draftSignature, saveDocument])
+
+  useEffect(() => {
+    if (!deleteConfirmOpen) return undefined
+    const onPointerDown = (event) => {
+      if (deleteMenuRef.current?.contains(event.target)) return
+      if (moreMenuRef.current?.contains(event.target)) return
+      setDeleteConfirmOpen(false)
+    }
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setDeleteConfirmOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [deleteConfirmOpen])
+
+  useEffect(() => {
+    if (!memberMenuOpen) return undefined
+    const onPointerDown = (event) => {
+      if (!memberMenuRef.current?.contains(event.target)) setMemberMenuOpen(false)
+    }
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMemberMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [memberMenuOpen])
 
   useEffect(() => {
     if (!moreMenuOpen) return undefined
@@ -312,9 +349,13 @@ function DocsPageContent() {
     requestAnimationFrame(() => titleInputRef.current?.focus())
   }
 
-  const remove = async () => {
+  const openDeleteConfirm = () => {
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmRemove = async () => {
+    setDeleteConfirmOpen(false)
     setMoreMenuOpen(false)
-    if (!window.confirm('Excluir este documento?')) return
     await deleteDocument(details.document.id)
     navigate(ROUTES.docs)
   }
@@ -373,15 +414,6 @@ function DocsPageContent() {
 
           <section className={`${styles.articlePane} ${docsOpen ? '' : styles.articlePaneDocsCollapsed}`} aria-label="Documento">
             <div className={styles.articleStage}>
-              {shareOpen ? (
-                <DocumentSharePopover
-                  document={details}
-                  onClose={() => setShareOpen(false)}
-                  onMembersChange={refreshDocument}
-                  styles={styles}
-                />
-              ) : null}
-
               <CustomScrollArea
                 className={styles.articleScroll}
                 viewportClassName={styles.articleViewport}
@@ -400,13 +432,35 @@ function DocsPageContent() {
                       </label>
                     </div>
                     <div className={styles.toolbarActions}>
-                      <button type="button" className={`${styles.iconButton} ${shareOpen ? styles.iconButtonActive : ''}`} aria-label="Compartilhar" aria-pressed={shareOpen} onClick={() => setShareOpen((open) => !open)}>
+                      <button type="button" className={styles.iconButton} aria-label="Compartilhar link" onClick={copyLink}>
                         <Share size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
                       </button>
                       {details.document.role === 'OWNER' ? (
-                        <button type="button" className={styles.iconButton} aria-label="Excluir" onClick={remove}>
-                          <Trash2 size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
-                        </button>
+                        <div className={styles.moreMenu} ref={deleteMenuRef}>
+                          <button
+                            type="button"
+                            className={`${styles.iconButton} ${deleteConfirmOpen && !moreMenuOpen ? styles.iconButtonActive : ''}`}
+                            aria-label="Excluir"
+                            aria-expanded={deleteConfirmOpen && !moreMenuOpen}
+                            onClick={() => {
+                              setMoreMenuOpen(false)
+                              setDeleteConfirmOpen((open) => !open)
+                            }}
+                          >
+                            <Trash2 size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                          </button>
+                          {deleteConfirmOpen && !moreMenuOpen ? (
+                            <div className={styles.moreMenuPanel} role="group" aria-label="Confirmar exclusão">
+                              <p className={styles.moreMenuConfirmText}>Excluir este documento?</p>
+                              <button type="button" className={`${styles.moreMenuItem} ${styles.moreMenuItemDanger}`} onClick={confirmRemove}>
+                                Excluir
+                              </button>
+                              <button type="button" className={styles.moreMenuItem} onClick={() => setDeleteConfirmOpen(false)}>
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                       ) : null}
                       <div className={styles.moreMenu} ref={moreMenuRef}>
                         <button
@@ -416,12 +470,28 @@ function DocsPageContent() {
                           aria-haspopup="menu"
                           aria-expanded={moreMenuOpen}
                           aria-controls="docs-more-menu"
-                          onClick={() => setMoreMenuOpen((open) => !open)}
+                          onClick={() => {
+                            setDeleteConfirmOpen(false)
+                            setMoreMenuOpen((open) => !open)
+                          }}
                         >
                           <MoreHorizontal size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
                         </button>
                         {moreMenuOpen ? (
                           <div id="docs-more-menu" className={styles.moreMenuPanel} role="menu" aria-label="Mais ações da documentação">
+                            {deleteConfirmOpen ? (
+                              <>
+                                <p className={styles.moreMenuConfirmText}>Excluir este documento?</p>
+                                <button type="button" className={`${styles.moreMenuItem} ${styles.moreMenuItemDanger}`} onClick={confirmRemove}>
+                                  <Trash2 size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                                  Excluir
+                                </button>
+                                <button type="button" className={styles.moreMenuItem} onClick={() => setDeleteConfirmOpen(false)}>
+                                  Cancelar
+                                </button>
+                              </>
+                            ) : (
+                              <>
                             <button type="button" className={styles.moreMenuItem} role="menuitem" onClick={duplicate}>
                               <Copy size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
                               Duplicar
@@ -443,12 +513,14 @@ function DocsPageContent() {
                             {details.document.role === 'OWNER' ? (
                               <>
                                 <div className={styles.moreMenuDivider} role="separator" />
-                                <button type="button" className={`${styles.moreMenuItem} ${styles.moreMenuItemDanger}`} role="menuitem" onClick={remove}>
+                                <button type="button" className={`${styles.moreMenuItem} ${styles.moreMenuItemDanger}`} role="menuitem" onClick={openDeleteConfirm}>
                                   <Trash2 size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
                                   Excluir
                                 </button>
                               </>
                             ) : null}
+                              </>
+                            )}
                           </div>
                         ) : null}
                       </div>
@@ -480,12 +552,25 @@ function DocsPageContent() {
                         </div>
                       </li>
                     ))}
-                    {canEdit ? (
-                      <li className={styles.contributor}>
-                        <button type="button" className={styles.addMemberButton} onClick={() => setShareOpen(true)}>
+                    {details.document.role === 'OWNER' ? (
+                      <li className={`${styles.contributor} ${styles.memberMenuWrap}`} ref={memberMenuRef}>
+                        <button
+                          type="button"
+                          className={styles.addMemberButton}
+                          aria-haspopup="dialog"
+                          aria-expanded={memberMenuOpen}
+                          onClick={() => setMemberMenuOpen((open) => !open)}
+                        >
                           <span className={styles.addMemberAvatar} aria-hidden="true"><Plus size={14} strokeWidth={ICON_STROKE} /></span>
                           <span className={styles.contributorCopy}><span className={styles.contributorName}>Adicionar membro</span></span>
                         </button>
+                        <AddDocumentMemberMenu
+                          open={memberMenuOpen}
+                          documentId={details.document.id}
+                          onClose={() => setMemberMenuOpen(false)}
+                          onInvited={refreshDocument}
+                          styles={styles}
+                        />
                       </li>
                     ) : null}
                   </ul>

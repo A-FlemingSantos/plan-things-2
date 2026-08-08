@@ -13,6 +13,12 @@
   color: var(--text-1);
 }
 
+.page :is(input, textarea, select):focus,
+.page :is(input, textarea, select):focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .layout {
   --docs-index-width: 240px;
   --docs-related-width: 300px;
@@ -239,9 +245,7 @@
 }
 
 .searchField:focus-within {
-  border-color: var(--focus-ring-border);
   color: var(--text-1);
-  box-shadow: 0 0 0 3px var(--focus-ring-glow);
 }
 
 .searchField input {
@@ -265,6 +269,114 @@
   align-items: center;
   gap: 4px;
   position: relative;
+}
+
+.memberMenuWrap {
+  position: relative;
+}
+
+.memberMenuPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 12;
+  width: min(260px, calc(100vw - 40px));
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
+  animation: docsMoreReveal 160ms var(--ease-out, ease) both;
+}
+
+.memberMenuInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+}
+
+.memberMenuInput::placeholder {
+  color: var(--text-3);
+}
+
+.memberMenuActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.memberMenuRoles {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+
+.memberMenuRole {
+  border: none;
+  border-radius: 3px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--text-3);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.memberMenuRole:hover {
+  color: var(--text-2);
+}
+
+.memberMenuRoleActive {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.memberMenuSubmit {
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.memberMenuSubmit:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.memberMenuSubmit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.memberMenuStatus {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+
+.memberMenuStatusError {
+  color: var(--danger-text);
 }
 
 .iconButton {
@@ -321,6 +433,92 @@
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   animation: docsMoreReveal 160ms var(--ease-out, ease) both;
+}
+
+.moreMenuConfirmText {
+  margin: 0;
+  padding: 6px 10px 4px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.coupledMenuPanel {
+  display: grid;
+  gap: 8px;
+  width: min(240px, calc(100vw - 40px));
+  padding: 8px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
+}
+
+.coupledMenuPanelToolbar {
+  position: fixed;
+  z-index: 41;
+  transform: translate(-50%, 8px);
+}
+
+.coupledMenuPanelRail {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 3;
+}
+
+.coupledMenuInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+}
+
+.coupledMenuInput::placeholder {
+  color: var(--text-3);
+}
+
+.coupledMenuActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.coupledMenuCancel,
+.coupledMenuSubmit {
+  border: none;
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  cursor: pointer;
+}
+
+.coupledMenuCancel {
+  color: var(--text-3);
+}
+
+.coupledMenuCancel:hover {
+  color: var(--text-1);
+}
+
+.coupledMenuSubmit {
+  color: var(--text-1);
+}
+
+.coupledMenuSubmit:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .moreMenuItem {
@@ -1298,6 +1496,12 @@
   }
 }
 
+.bodyComposer :global(.ProseMirror:focus),
+.bodyComposer :global(.ProseMirror:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
 .bodyComposer :global(.ProseMirror) {
   outline: none;
   min-height: 40vh;
@@ -1388,83 +1592,4 @@
   padding: 2px 0 2px 14px;
   border-left: 2px solid var(--border-2);
   color: var(--text-2);
-}
-
-.documentSharePopover {
-  position: absolute;
-  top: 54px;
-  right: 18px;
-  z-index: 8;
-  width: min(360px, calc(100% - 36px));
-  padding: 14px;
-  border: 1px solid var(--border-1);
-  border-radius: 6px;
-  background: var(--surface-1);
-  box-shadow: var(--shadow-lg);
-}
-
-.documentShareHeader,
-.documentShareInvite,
-.documentMemberRow,
-.documentShareCopy {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.documentShareHeader {
-  justify-content: space-between;
-  margin-bottom: 12px;
-  color: var(--text-1);
-}
-
-.documentShareInvite input,
-.documentShareInvite select,
-.documentMemberRow select {
-  min-width: 0;
-  border: 1px solid var(--border-1);
-  border-radius: 4px;
-  padding: 7px 8px;
-  background: var(--surface-2);
-  color: var(--text-1);
-  font: inherit;
-}
-
-.documentShareInvite input {
-  flex: 1;
-}
-
-.documentShareButton,
-.documentShareCopy {
-  border: none;
-  background: transparent;
-  color: var(--text-2);
-  font: inherit;
-  cursor: pointer;
-}
-
-.documentShareButton:hover,
-.documentShareCopy:hover {
-  color: var(--text-1);
-}
-
-.documentShareStatus {
-  margin: 10px 0 0;
-  color: var(--text-3);
-  font-size: 12px;
-}
-
-.documentMemberList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 14px 0;
-  padding: 0;
-  list-style: none;
-}
-
-.documentMemberRow {
-  justify-content: space-between;
-  color: var(--text-2);
-  font-size: 13px;
 }
