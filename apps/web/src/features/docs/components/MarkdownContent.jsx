@@ -94,6 +94,11 @@ function MarkdownChunk({ value, styles }) {
           return <h3 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h3>
         },
         p: ({ children }) => <p className={styles.bodyText}>{children}</p>,
+        a: ({ href, children }) => (
+          <a href={href} target="_blank" rel="noreferrer">
+            {children}
+          </a>
+        ),
         img: ({ src, alt }) => <MarkdownImage src={src} alt={alt} styles={styles} />,
       }}
     >

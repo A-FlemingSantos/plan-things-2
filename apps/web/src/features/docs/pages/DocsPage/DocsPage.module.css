@@ -905,7 +905,7 @@
   display: block;
   width: 100%;
   min-width: 0;
-  min-height: 25.5px;
+  min-height: 22.5px;
   height: auto;
   resize: none;
   overflow: hidden;
@@ -916,7 +916,7 @@
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  line-height: 1.7;
+  line-height: 1.5;
   color: var(--text-2);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -965,7 +965,7 @@
   position: relative;
   display: block;
   width: 100%;
-  min-height: 25.5px;
+  min-height: 22.5px;
   overflow: visible;
 }
 
@@ -978,7 +978,7 @@
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  line-height: 1.7;
+  line-height: 1.5;
   color: var(--text-2);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1470,10 +1470,10 @@
 .bodyHeading {
   margin: 0;
   font-family: var(--font-family);
-  font-size: 13px;
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.01em;
   color: var(--text-1);
+  scroll-margin-top: 24px;
 }
 
 .bodyText {
@@ -1481,7 +1481,7 @@
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  line-height: 1.7;
+  line-height: 1.5;
   color: var(--text-2);
 }
 
@@ -1517,7 +1517,7 @@
   border: none;
   border-bottom: 1px solid color-mix(in srgb, var(--border-2) 72%, transparent);
   box-sizing: border-box;
-  min-height: calc(15px * 1.7);
+  min-height: calc(15px * 1.5);
 }
 
 .embedSlotBadge {
@@ -1528,7 +1528,7 @@
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  line-height: 1.7;
+  line-height: 1.5;
   letter-spacing: -0.01em;
   color: var(--text-3);
 }
@@ -1545,7 +1545,7 @@
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  line-height: 1.7;
+  line-height: 1.5;
   letter-spacing: -0.01em;
   color: var(--text-2);
   appearance: none;
@@ -1561,7 +1561,7 @@
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  line-height: 1.7;
+  line-height: 1.5;
   letter-spacing: -0.01em;
   color: var(--text-2);
 }
@@ -1985,45 +1985,276 @@
   box-shadow: none;
 }
 
-.bodyComposer :global(.ProseMirror) {
-  outline: none;
-  min-height: 40vh;
+.bodyComposer :global(.ProseMirror),
+.markdownContent {
+  width: 100%;
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
-  line-height: 1.7;
+  line-height: 1.5;
   color: var(--text-2);
 }
 
-.bodyComposer :global(.ProseMirror p) {
-  margin: 0;
+.bodyComposer :global(.ProseMirror) {
+  outline: none;
+  min-height: 40vh;
 }
 
-.bodyComposer :global(.ProseMirror p + p),
-.bodyComposer :global(.ProseMirror p + h1),
-.bodyComposer :global(.ProseMirror p + h2),
-.bodyComposer :global(.ProseMirror p + h3),
-.bodyComposer :global(.ProseMirror h1 + p),
-.bodyComposer :global(.ProseMirror h2 + p),
-.bodyComposer :global(.ProseMirror h3 + p),
-.bodyComposer :global(.ProseMirror blockquote + p),
-.bodyComposer :global(.ProseMirror pre + p) {
-  margin-top: 14px;
+.bodyComposer :global(.ProseMirror) p,
+.markdownContent p {
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  line-height: 1.5;
 }
 
-.bodyComposer :global(.ProseMirror h1),
-.bodyComposer :global(.ProseMirror h2),
-.bodyComposer :global(.ProseMirror h3) {
-  margin: 0;
+.bodyComposer :global(.ProseMirror) h1,
+.bodyComposer :global(.ProseMirror) h2,
+.bodyComposer :global(.ProseMirror) h3,
+.markdownContent h1,
+.markdownContent h2,
+.markdownContent h3 {
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
   font-family: var(--font-family);
-  font-size: 13px;
   font-weight: var(--font-weight-regular);
   letter-spacing: -0.01em;
   color: var(--text-1);
   scroll-margin-top: 24px;
 }
 
-.bodyComposer :global(.ProseMirror mark) {
+.bodyComposer :global(.ProseMirror) h1,
+.markdownContent h1 {
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.bodyComposer :global(.ProseMirror) h2,
+.markdownContent h2 {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.bodyComposer :global(.ProseMirror) h3,
+.markdownContent h3 {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bodyComposer :global(.ProseMirror) a,
+.markdownContent a {
+  color: var(--text-1);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.bodyComposer :global(.ProseMirror) a:hover,
+.markdownContent a:hover {
+  color: var(--text-1);
+  text-decoration-thickness: 2px;
+}
+
+.bodyComposer :global(.ProseMirror) ul,
+.bodyComposer :global(.ProseMirror) ol,
+.markdownContent ul,
+.markdownContent ol {
+  list-style: none;
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  padding-left: 0;
+  line-height: 1.5;
+}
+
+.bodyComposer :global(.ProseMirror) ol,
+.markdownContent ol {
+  counter-reset: docs-ol;
+}
+
+.bodyComposer :global(.ProseMirror) ul > li,
+.bodyComposer :global(.ProseMirror) ol > li,
+.markdownContent ul > li,
+.markdownContent ol > li {
+  position: relative;
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  /* Marker column + gap so item text shares one left edge. */
+  padding: 0 0 0 2.25em;
+  list-style: none;
+  line-height: 1.5;
+}
+
+.bodyComposer :global(.ProseMirror) ol > li,
+.markdownContent ol > li {
+  counter-increment: docs-ol;
+}
+
+/* Equal-width digits so 1. and 2. share the same box — no thicker/wider glyph shift. */
+.bodyComposer :global(.ProseMirror) ol > li::before,
+.markdownContent ol > li::before {
+  content: counter(docs-ol) ".";
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  box-sizing: border-box;
+  width: 1.75em;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95em;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-weight: inherit;
+  letter-spacing: 0;
+  color: inherit;
+  line-height: inherit;
+}
+
+.bodyComposer :global(.ProseMirror) ul > li::before,
+.markdownContent ul > li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  box-sizing: border-box;
+  width: 1.75em;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95em;
+  color: inherit;
+  line-height: inherit;
+}
+
+.bodyComposer :global(.ProseMirror) ul ul,
+.bodyComposer :global(.ProseMirror) ol ol,
+.bodyComposer :global(.ProseMirror) ul ol,
+.bodyComposer :global(.ProseMirror) ol ul,
+.markdownContent ul ul,
+.markdownContent ol ol,
+.markdownContent ul ol,
+.markdownContent ol ul {
+  margin-top: 0.35em;
+}
+
+.bodyComposer :global(.ProseMirror) li > p,
+.markdownContent li > p {
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  line-height: 1.5;
+}
+
+/* GFM task lists in read mode: avoid a fake bullet beside the checkbox. */
+.markdownContent ul > li:has(> input[type='checkbox']) {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  padding-left: 0;
+}
+
+.markdownContent ul > li:has(> input[type='checkbox'])::before {
+  content: none;
+}
+
+.markdownContent ul > li > input[type='checkbox'] {
+  margin: 0.35em 0 0;
+  flex-shrink: 0;
+}
+
+.bodyComposer :global(.ProseMirror) strong,
+.markdownContent strong {
+  font-weight: var(--font-weight-regular);
+  color: var(--text-1);
+}
+
+.bodyComposer :global(.ProseMirror) em,
+.markdownContent em {
+  font-style: italic;
+}
+
+.bodyComposer :global(.ProseMirror) code,
+.markdownContent code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  font-weight: var(--font-weight-regular);
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface-3) 88%, var(--border-2));
+  color: var(--text-1);
+}
+
+.bodyComposer :global(.ProseMirror) pre,
+.markdownContent pre {
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-3) 92%, var(--border-2));
+  color: var(--text-1);
+  line-height: 1.5;
+}
+
+.bodyComposer :global(.ProseMirror) pre code,
+.markdownContent pre code {
+  display: block;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.bodyComposer :global(.ProseMirror) blockquote,
+.markdownContent blockquote {
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid var(--border-2);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.bodyComposer :global(.ProseMirror) hr,
+.markdownContent hr {
+  margin-right: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  border: none;
+  border-top: 1px solid var(--border-1);
+  height: 0;
+}
+
+/* Word-like 1.5: line-height above; 1.5em between top-level blocks. */
+.bodyComposer :global(.ProseMirror) > :first-child,
+.markdownContent > :first-child {
+  margin-top: 0;
+}
+
+.bodyComposer :global(.ProseMirror) > * + *,
+.markdownContent > * + * {
+  margin-top: 1.5em;
+}
+
+.bodyComposer :global(.ProseMirror) li + li,
+.markdownContent li + li {
+  margin-top: 0.35em;
+}
+
+.bodyComposer :global(.ProseMirror) li > p + p,
+.markdownContent li > p + p {
+  margin-top: 0.75em;
+}
+
+.bodyComposer :global(.ProseMirror) mark {
   margin: 0;
   padding: 0;
   border-radius: 2px;
@@ -2031,7 +2262,7 @@
   color: inherit;
 }
 
-.bodyComposer :global(.ProseMirror p.is-empty:first-child::before) {
+.bodyComposer :global(.ProseMirror) p.is-empty:first-child::before {
   color: var(--text-3);
   content: attr(data-placeholder);
   float: left;
@@ -2039,29 +2270,12 @@
   pointer-events: none;
 }
 
-.bodyComposer :global(.ProseMirror img),
+.bodyComposer :global(.ProseMirror) img,
 .markdownImage {
   display: block;
   width: 100%;
   max-width: 100%;
   border-radius: var(--radius-md);
-}
-
-.markdownContent {
-  width: 100%;
-}
-
-.markdownContent h3 {
-  margin: 0;
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -0.01em;
-  color: var(--text-1);
-}
-
-.markdownContent > * + * {
-  margin-top: 14px;
 }
 
 .markdownContent .embedBlock {
@@ -2079,12 +2293,4 @@
 .markdownContent .bodySection,
 .markdownContent [data-doc-heading] {
   scroll-margin-top: 24px;
-}
-
-.bodyComposer :global(.ProseMirror blockquote),
-.markdownContent blockquote {
-  margin: 14px 0;
-  padding: 2px 0 2px 14px;
-  border-left: 2px solid var(--border-2);
-  color: var(--text-2);
 }

@@ -26,6 +26,7 @@ import {
   resolveMarkdownSelection,
 } from '../utils/commentAnchors.js'
 import { normalizeDocsEmbedMarkdown } from '../utils/docsEmbedMarkdown.js'
+import { handleMarkdownPaste } from '../utils/markdownPaste.js'
 import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
 
 const ICON_STROKE = 1.6
@@ -79,6 +80,7 @@ export default function MarkdownWysiwygComposer({
   styles,
 }) {
   const { currentUser, accessToken } = useAuth()
+  const editorRef = useRef(null)
   const composerRef = useRef(null)
   const composerMainRef = useRef(null)
   const railRef = useRef(null)
@@ -161,9 +163,14 @@ export default function MarkdownWysiwygComposer({
     editorProps: {
       attributes: {
         'aria-label': 'Conteúdo do documento',
-        class: styles.richTextEditor,
         style: 'outline: none',
       },
+      handlePaste(_view, event) {
+        return handleMarkdownPaste(editorRef.current, event)
+      },
+    },
+    onCreate: ({ editor: activeEditor }) => {
+      editorRef.current = activeEditor
     },
     onUpdate: ({ editor: activeEditor }) => {
       onChange(activeEditor.getMarkdown())
@@ -177,6 +184,10 @@ export default function MarkdownWysiwygComposer({
       setMenuOpen(false)
     },
   })
+
+  useEffect(() => {
+    editorRef.current = editor
+  }, [editor])
 
   useEffect(() => {
     if (!editor) return
