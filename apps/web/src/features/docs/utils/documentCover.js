@@ -18,6 +18,10 @@ export function isAuthenticatedDocumentCoverUrl(url) {
   return typeof url === 'string' && url.startsWith('/api/files/')
 }
 
+export function hasDocumentCover(coverImageId) {
+  return Boolean(resolveDocumentCoverUrl(coverImageId))
+}
+
 export async function uploadDocumentCoverFile(file, accessToken) {
   const formData = new FormData()
   formData.append('file', file)
@@ -33,12 +37,13 @@ export async function uploadDocumentCoverFile(file, accessToken) {
   return `files/${fileId}`
 }
 
-export function buildDocumentCoverStyle({ coverImageId, documentId, gradient, resolvedUrl }) {
+export function buildDocumentCoverStyle({ coverImageId, resolvedUrl }) {
   if (resolvedUrl) {
     return { backgroundImage: `url(${resolvedUrl})` }
   }
-  if (coverImageId && resolveDocumentCoverUrl(coverImageId)?.startsWith('http')) {
-    return { backgroundImage: `url(${resolveDocumentCoverUrl(coverImageId)})` }
+  const externalUrl = resolveDocumentCoverUrl(coverImageId)
+  if (externalUrl?.startsWith('http')) {
+    return { backgroundImage: `url(${externalUrl})` }
   }
-  return { backgroundImage: gradient ?? undefined }
+  return undefined
 }

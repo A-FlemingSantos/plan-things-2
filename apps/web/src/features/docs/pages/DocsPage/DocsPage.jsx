@@ -31,6 +31,7 @@ import AddDocumentMemberMenu from '../../components/AddDocumentMemberMenu.jsx'
 import DocumentCoverMenu from '../../components/DocumentCoverMenu.jsx'
 import DocumentCoverSurface from '../../components/DocumentCoverSurface.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
+import { hasDocumentCover } from '../../utils/documentCover.js'
 import { formatDocumentMeta } from '../../utils/docVisuals.js'
 import styles from './DocsPage.module.css'
 
@@ -423,6 +424,19 @@ function DocsPageContent() {
   }
 
   const layoutClassName = [styles.layout, indexOpen ? '' : styles.layoutIndexCollapsed].filter(Boolean).join(' ')
+  const docHeaderFields = canEdit ? (
+    <>
+      <input ref={titleInputRef} className={styles.docTitleInput} value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Título" aria-label="Título do documento" />
+      <input className={styles.docDescriptionInput} value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Adicione um subtítulo..." aria-label="Subtítulo do documento" />
+    </>
+  ) : (
+    <>
+      <h1 className={styles.docTitle}>{draft.title}</h1>
+      {draft.description ? <p className={styles.docDescription}>{draft.description}</p> : null}
+      {docMeta ? <p className={styles.docMeta}>{docMeta}</p> : null}
+    </>
+  )
+
   return (
     <AppThemeScope>
       <ProductAppShell contentClassName={styles.page} contentTag="main">
@@ -595,28 +609,19 @@ function DocsPageContent() {
                     </div>
                   </header>
 
-                  <DocumentCoverSurface
-                    documentId={details.document.id}
-                    coverImageId={draft.coverImageId}
-                    className={styles.docCover}
-                    role="img"
-                    aria-label={`Capa de ${draft.title || 'documento'}`}
-                  />
-
-                  <div className={styles.docHeader}>
-                    {canEdit ? (
-                      <>
-                        <input ref={titleInputRef} className={styles.docTitleInput} value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Título" aria-label="Título do documento" />
-                        <input className={styles.docDescriptionInput} value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Adicione um subtítulo..." aria-label="Subtítulo do documento" />
-                      </>
-                    ) : (
-                      <>
-                        <h1 className={styles.docTitle}>{draft.title}</h1>
-                        {draft.description ? <p className={styles.docDescription}>{draft.description}</p> : null}
-                        {docMeta ? <p className={styles.docMeta}>{docMeta}</p> : null}
-                      </>
-                    )}
-                  </div>
+                  {hasDocumentCover(draft.coverImageId) ? (
+                    <div className={styles.docHero}>
+                      <DocumentCoverSurface
+                        coverImageId={draft.coverImageId}
+                        className={styles.docCover}
+                        role="img"
+                        aria-label={`Capa de ${draft.title || 'documento'}`}
+                      />
+                      <div className={styles.docHeader}>{docHeaderFields}</div>
+                    </div>
+                  ) : (
+                    <div className={styles.docHeader}>{docHeaderFields}</div>
+                  )}
 
                   <ul className={styles.contributors} aria-label="Contribuidores">
                     {details.members.map((member) => (
@@ -690,12 +695,13 @@ function DocsPageContent() {
                             aria-current={selected ? 'page' : undefined}
                             onClick={() => navigate(buildDocsPath(document.id))}
                           >
-                            <DocumentCoverSurface
-                              documentId={document.id}
-                              coverImageId={document.coverImageId}
-                              className={styles.relatedThumb}
-                              aria-hidden="true"
-                            />
+                            {hasDocumentCover(document.coverImageId) ? (
+                              <DocumentCoverSurface
+                                coverImageId={document.coverImageId}
+                                className={styles.relatedThumb}
+                                aria-hidden="true"
+                              />
+                            ) : null}
                             <span className={styles.relatedTitle}>{document.title}</span>
                             <span className={styles.relatedExcerpt}>{document.description}</span>
                           </button>

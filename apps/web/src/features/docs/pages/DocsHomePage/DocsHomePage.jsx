@@ -6,6 +6,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import { buildDocsPath } from '../../../../shared/config/routes.js'
 import DocumentCoverSurface from '../../components/DocumentCoverSurface.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
+import { hasDocumentCover } from '../../utils/documentCover.js'
 import styles from './DocsHomePage.module.css'
 
 function DocMeta({ role, updatedAt }) {
@@ -19,18 +20,21 @@ function DocMeta({ role, updatedAt }) {
 }
 
 function RecentDocItem({ doc, index }) {
+  const hasCover = hasDocumentCover(doc.coverImageId)
+
   return (
     <Link
       to={buildDocsPath(doc.id)}
-      className={styles.recentItem}
+      className={`${styles.recentItem} ${hasCover ? '' : styles.recentItemNoCover}`}
       style={{ '--reveal-delay': `${80 + index * 40}ms` }}
     >
-      <DocumentCoverSurface
-        documentId={doc.id}
-        coverImageId={doc.coverImageId}
-        className={styles.recentThumb}
-        aria-hidden="true"
-      />
+      {hasCover ? (
+        <DocumentCoverSurface
+          coverImageId={doc.coverImageId}
+          className={styles.recentThumb}
+          aria-hidden="true"
+        />
+      ) : null}
       <span className={styles.recentCopy}>
         <span className={styles.itemTitle}>{doc.title}</span>
         <span className={styles.itemFooter}>
@@ -42,19 +46,22 @@ function RecentDocItem({ doc, index }) {
 }
 
 function LibraryDocCard({ doc, index }) {
+  const hasCover = hasDocumentCover(doc.coverImageId)
+
   return (
     <Link
       to={buildDocsPath(doc.id)}
-      className={styles.libraryCard}
+      className={`${styles.libraryCard} ${hasCover ? '' : styles.libraryCardNoCover}`}
       style={{ '--reveal-delay': `${160 + index * 50}ms` }}
     >
-      <DocumentCoverSurface
-        documentId={doc.id}
-        coverImageId={doc.coverImageId}
-        className={styles.libraryMedia}
-        role="img"
-        aria-label={doc.title}
-      />
+      {hasCover ? (
+        <DocumentCoverSurface
+          coverImageId={doc.coverImageId}
+          className={styles.libraryMedia}
+          role="img"
+          aria-label={doc.title}
+        />
+      ) : null}
       <span className={styles.libraryCopy}>
         <span className={styles.itemTitle}>{doc.title}</span>
         <span className={styles.itemFooter}>

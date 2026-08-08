@@ -547,15 +547,50 @@
   color: var(--text-3);
 }
 
+.docHero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px 24px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.docHero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-1) 8%, transparent) 0%,
+    color-mix(in srgb, var(--surface-1) 28%, transparent) 100%
+  );
+  pointer-events: none;
+}
+
 .docCover {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 5;
-  margin: 0 0 18px;
-  border-radius: var(--radius-sm);
+  height: 100%;
+  margin: 0;
+  border-radius: inherit;
   background-color: var(--surface-3);
   background-size: cover;
   background-position: center;
+}
+
+.docHeader {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .iconButton {
@@ -783,12 +818,6 @@
   .embedSearchTile {
     animation: none;
   }
-}
-
-.docHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .docTitle {
@@ -1826,7 +1855,6 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   border-radius: var(--radius-sm);
-  background: var(--surface-3);
   background-size: cover;
   background-position: center;
   transition: opacity var(--transition-fast);

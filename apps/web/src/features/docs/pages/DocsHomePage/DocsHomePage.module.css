@@ -123,12 +123,15 @@
   animation-delay: var(--reveal-delay, 0ms);
 }
 
+.recentItemNoCover {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .recentThumb {
   display: block;
   width: 88px;
   height: 88px;
   border-radius: 4px;
-  background-color: var(--surface-3);
   background-size: cover;
   background-position: center;
   transition: transform 280ms var(--ease-out, ease);
@@ -245,12 +248,15 @@
   animation-delay: var(--reveal-delay, 0ms);
 }
 
+.libraryCardNoCover {
+  gap: 0;
+}
+
 .libraryMedia {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: 4px;
-  background-color: var(--surface-3);
   background-size: cover;
   background-position: center;
   transition: transform 320ms var(--ease-out, ease);
@@ -330,6 +336,10 @@
   .recentItem {
     grid-template-columns: 72px minmax(0, 1fr);
     gap: 14px;
+  }
+
+  .recentItemNoCover {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .recentThumb {
