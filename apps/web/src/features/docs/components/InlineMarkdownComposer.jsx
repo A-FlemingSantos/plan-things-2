@@ -137,6 +137,7 @@ export default function InlineMarkdownComposer({
   const rowRefs = useRef([])
   const railRef = useRef(null)
   const composerRef = useRef(null)
+  const composerMainRef = useRef(null)
   const selectionToolbarRef = useRef(null)
   const noteDraftRef = useRef(null)
   const [focusedLine, setFocusedLine] = useState(null)
@@ -151,10 +152,14 @@ export default function InlineMarkdownComposer({
 
   const clearSelection = () => setSelection(null)
   const refreshNoteOffsets = () => {
+    const main = composerMainRef.current
+    if (!main) return
+    const mainTop = main.getBoundingClientRect().top
     const nextOffsets = {}
     notes.forEach((note) => {
       const row = rowRefs.current[note.lineIndex]
-      if (row) nextOffsets[note.id] = row.offsetTop
+      if (!row) return
+      nextOffsets[note.id] = row.getBoundingClientRect().top - mainTop
     })
     setNoteOffsets(nextOffsets)
   }
@@ -194,13 +199,26 @@ export default function InlineMarkdownComposer({
     const clearOnEscape = (event) => {
       if (event.key === 'Escape') clearSelection()
     }
+    const onScroll = () => {
+      if (selection?.lineIndex == null) return
+      syncSelection(selection.lineIndex)
+      refreshNoteOffsets()
+    }
     document.addEventListener('pointerdown', clearOutside)
     document.addEventListener('keydown', clearOnEscape)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
       document.removeEventListener('pointerdown', clearOutside)
       document.removeEventListener('keydown', clearOnEscape)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [selection])
+
+  useEffect(() => {
+    const onResize = () => refreshNoteOffsets()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [notes])
 
   useEffect(() => {
     if (!pendingNote) return undefined
@@ -323,33 +341,46 @@ export default function InlineMarkdownComposer({
   const authorName = currentUser?.fullName?.trim() || 'Você'
   return (
     <div ref={composerRef} className={styles.composerShell}>
-      <div className={styles.composerMain}>
+      <div ref={composerMainRef} className={styles.composerMain}>
         <div className={styles.composer} role="textbox" aria-label="Conteúdo do documento" aria-multiline="true">
           {selection ? (
             <div ref={selectionToolbarRef} className={styles.selectionToolbar} role="toolbar" aria-label="Formatação do texto" style={{ top: selection.top, left: selection.left }}>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolBold}`} title="Negrito" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('bold')}>B</button>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`} title="Itálico" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('italic')}>i</button>
-              <button type="button" className={styles.selectionToolButton} title="Inserir link" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('link')}><Link2 size={14} /></button>
+              <button type="button" className={styles.selectionToolButton} title="Inserir link" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('link')}><Link2 size={14} strokeWidth={1.8} /></button>
               <span className={styles.selectionToolDivider} />
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolTitle}`} title="Título" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('title')}>T</button>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolSubtitle}`} title="Subtítulo" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('subtitle')}>T</button>
-              <button type="button" className={styles.selectionToolButton} title="Citação" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('quote')}><Quote size={14} /></button>
-              <span className={styles.selectionToolDivider} />
-              <button type="button" className={styles.selectionToolButton} title="Adicionar comentário" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('comment')}><MessageSquareLock size={14} /></button>
+              <button type="button" className={styles.selectionToolButton} title="Citação" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('quote')}><Quote size={14} strokeWidth={1.8} /></button>
+              <span className={styles.selectionToolDivider} aria-hidden="true" />
+              <button type="button" className={styles.selectionToolButton} title="Adicionar comentário" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('comment')}><MessageSquareLock size={14} strokeWidth={1.8} /></button>
             </div>
           ) : null}
           {lines.map((line, index) => {
-            const ranges = notes.filter((note) => note.lineIndex === index)
+            const ranges = notes
+              .filter((note) => note.lineIndex === index)
+              .map((note) => ({ start: note.start, end: note.end, id: note.id }))
+            if (
+              pendingNote?.lineIndex === index
+              && pendingNote.end > pendingNote.start
+            ) {
+              ranges.push({
+                start: pendingNote.start,
+                end: pendingNote.end,
+                id: 'pending',
+              })
+            }
+            ranges.sort((left, right) => left.start - right.start)
             const isActiveEmpty = focusedLine === index && line === ''
             return (
-              <div key={`composer-line-${index}`}>
+              <div key={`composer-line-${index}`} data-composer-line={index}>
                 <div ref={(node) => { rowRefs.current[index] = node }} className={styles.composerRow}>
                   <div className={styles.composerRail} ref={isActiveEmpty ? railRef : undefined}>
                     {isActiveEmpty ? (
                       <div className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}>
-                        <button type="button" className={styles.blockInsertButton} title={menuOpen ? 'Fechar' : 'Adicionar bloco'} aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'} aria-expanded={menuOpen} onMouseDown={(event) => event.preventDefault()} onClick={() => setMenuOpen((open) => !open)}><Plus size={14} /></button>
-                        <div className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen}>
-                          {BLOCK_ACTIONS.map(({ id, label, Icon }) => <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}><Icon size={15} /></button>)}
+                        <button type="button" className={styles.blockInsertButton} title={menuOpen ? 'Fechar' : 'Adicionar bloco'} aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'} aria-expanded={menuOpen} aria-controls={`docs-block-actions-${index}`} onMouseDown={(event) => event.preventDefault()} onClick={() => setMenuOpen((open) => !open)}><Plus size={14} strokeWidth={1.6} aria-hidden="true" /></button>
+                        <div id={`docs-block-actions-${index}`} className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen} {...(!menuOpen ? { inert: '' } : {})}>
+                          {BLOCK_ACTIONS.map(({ id, label, Icon }) => <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}><Icon size={15} strokeWidth={1.6} aria-hidden="true" /></button>)}
                         </div>
                       </div>
                     ) : null}
@@ -372,11 +403,14 @@ export default function InlineMarkdownComposer({
                   />
                 </div>
                 {pendingNote?.lineIndex === index ? (
-                  <div className={styles.noteComposer} role="dialog" aria-label="Comentários">
-                    <div className={styles.noteComposerHeader}><span className={styles.noteComposerHeaderLabel}><Lock size={12} />Comentário</span></div>
+                  <div className={styles.noteComposer} role="dialog" aria-label="Notas privadas">
+                    <div className={styles.noteComposerHeader}>
+                      <span className={styles.noteComposerHeaderLabel}><Lock size={12} strokeWidth={1.8} aria-hidden="true" />Notas privadas</span>
+                      <button type="button" className={styles.noteComposerHeaderAction} title="Quem pode ver isto?">Quem pode ver isto?</button>
+                    </div>
                     <div className={styles.noteComposerBody}>
-                      <div className={styles.noteComposerAuthor}><span className={styles.noteComposerAvatar}>{getInitials(authorName)}</span><span className={styles.noteComposerAuthorName}>{authorName}</span></div>
-                      <textarea ref={noteDraftRef} className={styles.noteComposerInput} value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Escreva um comentário..." aria-label="Escreva um comentário" rows={3} />
+                      <div className={styles.noteComposerAuthor}><span className={styles.noteComposerAvatar} aria-hidden="true">{getInitials(authorName)}</span><span className={styles.noteComposerAuthorName}>{authorName}</span></div>
+                      <textarea ref={noteDraftRef} className={styles.noteComposerInput} value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Escreva uma nota..." aria-label="Escreva uma nota" rows={3} />
                       <div className={styles.noteComposerActions}><button type="button" className={styles.noteComposerSend} onClick={sendNote} disabled={!noteDraft.trim()}>Enviar</button><button type="button" className={styles.noteComposerCancel} onClick={() => { setPendingNote(null); setNoteDraft('') }}>Cancelar</button></div>
                     </div>
                   </div>
@@ -387,7 +421,12 @@ export default function InlineMarkdownComposer({
         </div>
       </div>
       <aside className={styles.commentsSection} aria-label="Comentários do documento">
-        {notes.map((note) => <article key={note.id} className={styles.compactNote} style={{ top: noteOffsets[note.id] ?? 0 }} title={note.quote}><span className={styles.compactNoteAvatar}>{note.authorInitials}</span><p className={styles.compactNoteText}>{note.body}</p></article>)}
+        {notes.map((note) => (
+          <article key={note.id} className={styles.compactNote} style={{ top: noteOffsets[note.id] ?? 0 }} title={note.body}>
+            <span className={styles.compactNoteAvatar} aria-hidden="true">{note.authorInitials}</span>
+            <p className={styles.compactNoteText}>{note.body}</p>
+          </article>
+        ))}
       </aside>
     </div>
   )

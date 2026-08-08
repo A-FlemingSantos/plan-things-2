@@ -1280,6 +1280,60 @@
   }
 }
 
+.richTextEditor :global(.ProseMirror) {
+  outline: none;
+  min-height: 40vh;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.7;
+  color: var(--text-2);
+}
+
+.richTextEditor :global(.ProseMirror p) {
+  margin: 0;
+}
+
+.richTextEditor :global(.ProseMirror p + p),
+.richTextEditor :global(.ProseMirror p + h1),
+.richTextEditor :global(.ProseMirror p + h2),
+.richTextEditor :global(.ProseMirror p + h3),
+.richTextEditor :global(.ProseMirror h1 + p),
+.richTextEditor :global(.ProseMirror h2 + p),
+.richTextEditor :global(.ProseMirror h3 + p),
+.richTextEditor :global(.ProseMirror blockquote + p),
+.richTextEditor :global(.ProseMirror pre + p) {
+  margin-top: 14px;
+}
+
+.richTextEditor :global(.ProseMirror h1),
+.richTextEditor :global(.ProseMirror h2),
+.richTextEditor :global(.ProseMirror h3) {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  scroll-margin-top: 24px;
+}
+
+.richTextEditor :global(.ProseMirror mark) {
+  margin: 0;
+  padding: 0;
+  border-radius: 2px;
+  background: color-mix(in srgb, #d4a017 22%, transparent);
+  color: inherit;
+}
+
+.richTextEditor :global(.ProseMirror p.is-editor-empty:first-child::before) {
+  color: var(--text-3);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
 .richTextEditor :global(.ProseMirror img),
 .markdownImage {
   display: block;
@@ -1292,8 +1346,22 @@
   max-width: 62ch;
 }
 
+.markdownContent h3 {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+
 .markdownContent > * + * {
   margin-top: 14px;
+}
+
+.markdownContent .bodySection,
+.markdownContent [data-doc-heading] {
+  scroll-margin-top: 24px;
 }
 
 .bodyComposer :global(.ProseMirror blockquote),

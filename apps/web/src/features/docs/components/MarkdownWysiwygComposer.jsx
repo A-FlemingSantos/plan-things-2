@@ -18,10 +18,12 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 
+const ICON_STROKE = 1.6
+
 function UnsplashLogo({ size = 15 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-      <path d="M10 9V0h12v9H10zm12 5h10v-9h10v18H0V14h10v9h12v-9z" />
+      <path d="M10 9V0h12v9H10zm12 5h10v18H0V14h10v9h12v-9z" />
     </svg>
   )
 }
@@ -41,6 +43,33 @@ function getInitials(name = '') {
     .join('') || '?'
 }
 
+function findQuoteTop(editorRoot, composerMain, quote) {
+  if (!editorRoot || !composerMain || !quote?.trim()) return null
+
+  const walker = document.createTreeWalker(editorRoot, NodeFilter.SHOW_TEXT)
+  let node = walker.nextNode()
+  while (node) {
+    const index = node.textContent.indexOf(quote)
+    if (index >= 0) {
+      const range = document.createRange()
+      range.setStart(node, index)
+      range.setEnd(node, Math.min(index + quote.length, node.textContent.length))
+      const rect = range.getBoundingClientRect()
+      return rect.top - composerMain.getBoundingClientRect().top
+    }
+    node = walker.nextNode()
+  }
+  return null
+}
+
+function tagEditorHeadings(editorRoot, bodyHeadingClass) {
+  if (!editorRoot) return
+  editorRoot.querySelectorAll('h1, h2, h3').forEach((element, index) => {
+    element.setAttribute('data-doc-heading', String(index))
+    if (bodyHeadingClass) element.classList.add(bodyHeadingClass)
+  })
+}
+
 export default function MarkdownWysiwygComposer({
   value,
   onChange,
@@ -51,6 +80,8 @@ export default function MarkdownWysiwygComposer({
 }) {
   const { currentUser } = useAuth()
   const composerRef = useRef(null)
+  const composerMainRef = useRef(null)
+  const railRef = useRef(null)
   const selectionToolbarRef = useRef(null)
   const noteDraftRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -58,19 +89,26 @@ export default function MarkdownWysiwygComposer({
   const [insertTop, setInsertTop] = useState(null)
   const [pendingNote, setPendingNote] = useState(null)
   const [noteDraft, setNoteDraft] = useState('')
+  const [noteOffsets, setNoteOffsets] = useState({})
 
   const syncSelection = useCallback((activeEditor) => {
     const { from, to, $from } = activeEditor.state.selection
-    const cursor = activeEditor.view.coordsAtPos(from)
     const composerRect = composerRef.current?.getBoundingClientRect()
     const isEmptyParagraph = $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0
 
-    setInsertTop(isEmptyParagraph && composerRect ? cursor.top - composerRect.top + 12 : null)
+    if (composerRect) {
+      const cursor = activeEditor.view.coordsAtPos(from)
+      setInsertTop(isEmptyParagraph ? cursor.top - composerRect.top + 12 : null)
+    } else {
+      setInsertTop(null)
+    }
+
     if (from === to) {
       setSelection(null)
       return
     }
 
+    const cursor = activeEditor.view.coordsAtPos(from)
     const end = activeEditor.view.coordsAtPos(to)
     setSelection({
       from,
@@ -80,6 +118,22 @@ export default function MarkdownWysiwygComposer({
     })
     setMenuOpen(false)
   }, [])
+
+  const refreshVisualState = useCallback((activeEditor) => {
+    if (!activeEditor) return
+    const editorRoot = activeEditor.view.dom
+    const composerMain = composerMainRef.current
+    tagEditorHeadings(editorRoot, styles.bodyHeading)
+
+    if (composerMain) {
+      const nextOffsets = {}
+      comments.forEach((comment) => {
+        const top = findQuoteTop(editorRoot, composerMain, comment.quotedText)
+        if (top != null) nextOffsets[comment.id] = top
+      })
+      setNoteOffsets(nextOffsets)
+    }
+  }, [comments, styles.bodyHeading])
 
   const editor = useEditor({
     extensions: [
@@ -94,10 +148,14 @@ export default function MarkdownWysiwygComposer({
     editorProps: {
       attributes: {
         'aria-label': 'Conteúdo do documento',
+        class: styles.richTextEditor,
         style: 'outline: none',
       },
     },
-    onUpdate: ({ editor: activeEditor }) => onChange(activeEditor.getMarkdown()),
+    onUpdate: ({ editor: activeEditor }) => {
+      onChange(activeEditor.getMarkdown())
+      tagEditorHeadings(activeEditor.view.dom, styles.bodyHeading)
+    },
     onSelectionUpdate: ({ editor: activeEditor }) => syncSelection(activeEditor),
     onFocus: ({ editor: activeEditor }) => syncSelection(activeEditor),
     onBlur: () => {
@@ -109,7 +167,57 @@ export default function MarkdownWysiwygComposer({
   useEffect(() => {
     if (!editor || editor.getMarkdown() === value) return
     editor.commands.setContent(value, { emitUpdate: false, contentType: 'markdown' })
-  }, [editor, value])
+    refreshVisualState(editor)
+  }, [editor, refreshVisualState, value])
+
+  useEffect(() => {
+    if (!editor) return undefined
+    refreshVisualState(editor)
+    const onResize = () => refreshVisualState(editor)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [editor, refreshVisualState])
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    const closeMenu = (event) => {
+      if (!railRef.current?.contains(event.target)) setMenuOpen(false)
+    }
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', closeMenu)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeMenu)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [menuOpen])
+
+  useEffect(() => {
+    if (!selection) return undefined
+    const clearOutside = (event) => {
+      if (selectionToolbarRef.current?.contains(event.target)) return
+      if (composerRef.current?.contains(event.target)) return
+      setSelection(null)
+    }
+    const clearOnEscape = (event) => {
+      if (event.key === 'Escape') setSelection(null)
+    }
+    const onScroll = () => {
+      if (!editor || selection?.from == null) return
+      syncSelection(editor)
+      refreshVisualState(editor)
+    }
+    document.addEventListener('pointerdown', clearOutside)
+    document.addEventListener('keydown', clearOnEscape)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('pointerdown', clearOutside)
+      document.removeEventListener('keydown', clearOnEscape)
+      window.removeEventListener('scroll', onScroll, true)
+    }
+  }, [editor, refreshVisualState, selection, syncSelection])
 
   useEffect(() => {
     if (!pendingNote) return undefined
@@ -188,28 +296,32 @@ export default function MarkdownWysiwygComposer({
 
   return (
     <div ref={composerRef} className={styles.composerShell}>
-      <div className={styles.composerMain}>
+      <div ref={composerMainRef} className={styles.composerMain}>
         <div className={styles.composer} role="textbox" aria-label="Conteúdo do documento" aria-multiline="true">
           {selection ? (
             <div ref={selectionToolbarRef} className={styles.selectionToolbar} role="toolbar" aria-label="Formatação do texto" style={{ top: selection.top, left: selection.left }}>
-              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolBold}`} title="Negrito" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('bold')}>B</button>
-              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`} title="Itálico" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('italic')}>i</button>
-              <button type="button" className={styles.selectionToolButton} title="Inserir link" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('link')}><Link2 size={14} /></button>
-              <span className={styles.selectionToolDivider} />
-              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolTitle}`} title="Título" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('title')}>T</button>
-              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolSubtitle}`} title="Subtítulo" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('subtitle')}>T</button>
-              <button type="button" className={styles.selectionToolButton} title="Citação" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('quote')}><Quote size={14} /></button>
-              <span className={styles.selectionToolDivider} />
-              <button type="button" className={styles.selectionToolButton} title="Adicionar comentário" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('comment')}><MessageSquareLock size={14} /></button>
+              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolBold}`} title="Negrito" aria-label="Negrito" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('bold')}>B</button>
+              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`} title="Itálico" aria-label="Itálico" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('italic')}>i</button>
+              <button type="button" className={styles.selectionToolButton} title="Inserir link" aria-label="Inserir link" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('link')}><Link2 size={14} strokeWidth={1.8} aria-hidden="true" /></button>
+              <span className={styles.selectionToolDivider} aria-hidden="true" />
+              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolTitle}`} title="Título" aria-label="Título" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('title')}>T</button>
+              <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolSubtitle}`} title="Subtítulo" aria-label="Subtítulo" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('subtitle')}>T</button>
+              <button type="button" className={styles.selectionToolButton} title="Citação" aria-label="Citação" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('quote')}><Quote size={14} strokeWidth={1.8} aria-hidden="true" /></button>
+              <span className={styles.selectionToolDivider} aria-hidden="true" />
+              <button type="button" className={styles.selectionToolButton} title="Adicionar comentário" aria-label="Adicionar comentário" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('comment')}><MessageSquareLock size={14} strokeWidth={1.8} aria-hidden="true" /></button>
             </div>
           ) : null}
           <div className={styles.composerRow}>
-            <div className={styles.composerRail} style={insertTop == null ? undefined : { top: insertTop }}>
+            <div className={styles.composerRail} ref={railRef} style={insertTop == null ? undefined : { top: insertTop }}>
               {insertTop != null ? (
                 <div className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}>
-                  <button type="button" className={styles.blockInsertButton} title={menuOpen ? 'Fechar' : 'Adicionar bloco'} aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'} aria-expanded={menuOpen} onMouseDown={(event) => event.preventDefault()} onClick={() => setMenuOpen((open) => !open)}><Plus size={14} /></button>
-                  <div className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen}>
-                    {BLOCK_ACTIONS.map(({ id, label, Icon }) => <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}><Icon size={15} /></button>)}
+                  <button type="button" className={styles.blockInsertButton} title={menuOpen ? 'Fechar' : 'Adicionar bloco'} aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'} aria-expanded={menuOpen} onMouseDown={(event) => event.preventDefault()} onClick={() => setMenuOpen((open) => !open)}><Plus size={14} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
+                  <div className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen} {...(!menuOpen ? { inert: '' } : {})}>
+                    {BLOCK_ACTIONS.map(({ id, label, Icon }) => (
+                      <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}>
+                        <Icon size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                      </button>
+                    ))}
                   </div>
                 </div>
               ) : null}
@@ -217,19 +329,38 @@ export default function MarkdownWysiwygComposer({
             <EditorContent editor={editor} className={styles.bodyComposer} />
           </div>
           {pendingNote ? (
-            <div className={styles.noteComposer} role="dialog" aria-label="Comentários">
-              <div className={styles.noteComposerHeader}><span className={styles.noteComposerHeaderLabel}><Lock size={12} />Comentário</span></div>
+            <div className={styles.noteComposer} role="dialog" aria-label="Notas privadas">
+              <div className={styles.noteComposerHeader}>
+                <span className={styles.noteComposerHeaderLabel}><Lock size={12} strokeWidth={1.8} aria-hidden="true" />Notas privadas</span>
+                <button type="button" className={styles.noteComposerHeaderAction} title="Quem pode ver isto?">Quem pode ver isto?</button>
+              </div>
               <div className={styles.noteComposerBody}>
-                <div className={styles.noteComposerAuthor}><span className={styles.noteComposerAvatar}>{getInitials(authorName)}</span><span className={styles.noteComposerAuthorName}>{authorName}</span></div>
-                <textarea ref={noteDraftRef} className={styles.noteComposerInput} value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Escreva um comentário..." aria-label="Escreva um comentário" rows={3} />
-                <div className={styles.noteComposerActions}><button type="button" className={styles.noteComposerSend} onClick={sendNote} disabled={!noteDraft.trim()}>Enviar</button><button type="button" className={styles.noteComposerCancel} onClick={() => { setPendingNote(null); setNoteDraft('') }}>Cancelar</button></div>
+                <div className={styles.noteComposerAuthor}>
+                  <span className={styles.noteComposerAvatar} aria-hidden="true">{getInitials(authorName)}</span>
+                  <span className={styles.noteComposerAuthorName}>{authorName}</span>
+                </div>
+                <textarea ref={noteDraftRef} className={styles.noteComposerInput} value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Escreva uma nota..." aria-label="Escreva uma nota" rows={3} />
+                <div className={styles.noteComposerActions}>
+                  <button type="button" className={styles.noteComposerSend} onClick={sendNote} disabled={!noteDraft.trim()}>Enviar</button>
+                  <button type="button" className={styles.noteComposerCancel} onClick={() => { setPendingNote(null); setNoteDraft('') }}>Cancelar</button>
+                </div>
               </div>
             </div>
           ) : null}
         </div>
       </div>
       <aside className={styles.commentsSection} aria-label="Comentários do documento">
-        {notes.map((note, index) => <article key={note.id} className={styles.compactNote} style={{ top: index * 76 }} title={note.quotedText}><span className={styles.compactNoteAvatar}>{note.authorInitials}</span><p className={styles.compactNoteText}>{note.body}</p></article>)}
+        {notes.map((note, index) => (
+          <article
+            key={note.id}
+            className={styles.compactNote}
+            style={{ top: noteOffsets[note.id] ?? index * 76 }}
+            title={note.body}
+          >
+            <span className={styles.compactNoteAvatar} aria-hidden="true">{note.authorInitials}</span>
+            <p className={styles.compactNoteText}>{note.body}</p>
+          </article>
+        ))}
       </aside>
     </div>
   )

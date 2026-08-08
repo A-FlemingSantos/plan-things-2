@@ -5,6 +5,7 @@ import CustomScrollArea from '../../../../shared/components/CustomScrollArea/Cus
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import { buildDocsPath } from '../../../../shared/config/routes.js'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
+import { getDocumentCoverGradient } from '../../utils/docVisuals.js'
 import styles from './DocsHomePage.module.css'
 
 function DocMeta({ role, updatedAt }) {
@@ -26,7 +27,7 @@ function RecentDocItem({ doc, index }) {
     >
       <span
         className={styles.recentThumb}
-        style={{ backgroundImage: 'linear-gradient(135deg, #c9b8a8 0%, #8a9bb0 48%, #5f6f82 100%)' }}
+        style={{ backgroundImage: getDocumentCoverGradient(doc.id) }}
         aria-hidden="true"
       />
       <span className={styles.recentCopy}>
@@ -48,7 +49,7 @@ function LibraryDocCard({ doc, index }) {
     >
       <span
         className={styles.libraryMedia}
-        style={{ backgroundImage: 'linear-gradient(145deg, #d7d2c8 0%, #9aa7b5 55%, #6d7886 100%)' }}
+        style={{ backgroundImage: getDocumentCoverGradient(doc.id) }}
         role="img"
         aria-label={doc.title}
       />

@@ -13,14 +13,29 @@ function MarkdownImage({ src, alt, styles }) {
 }
 
 export default function MarkdownContent({ value, styles }) {
+  let headingIndex = 0
+
   return (
     <div className={styles.markdownContent}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}
         components={{
-          h1: ({ children }) => <h1 className={styles.bodyHeading}>{children}</h1>,
-          h2: ({ children }) => <h2 className={styles.bodyHeading}>{children}</h2>,
+          h1: ({ children }) => {
+            const index = headingIndex
+            headingIndex += 1
+            return <h1 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h1>
+          },
+          h2: ({ children }) => {
+            const index = headingIndex
+            headingIndex += 1
+            return <h2 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h2>
+          },
+          h3: ({ children }) => {
+            const index = headingIndex
+            headingIndex += 1
+            return <h3 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h3>
+          },
           p: ({ children }) => <p className={styles.bodyText}>{children}</p>,
           img: ({ src, alt }) => <MarkdownImage src={src} alt={alt} styles={styles} />,
         }}
