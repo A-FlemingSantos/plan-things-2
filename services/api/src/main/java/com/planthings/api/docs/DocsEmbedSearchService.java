@@ -69,7 +69,9 @@ public class DocsEmbedSearchService {
               item.path("id").asText(""),
               previewUrl,
               fullUrl,
-              item.path("alt_description").asText("")
+              item.path("alt_description").asText(""),
+              item.path("width").asInt(0),
+              item.path("height").asInt(0)
           ));
         }
       }
@@ -124,16 +126,19 @@ public class DocsEmbedSearchService {
           if (!StringUtils.hasText(videoId)) {
             continue;
           }
-          JsonNode snippet = item.path("snippet");
-          String thumbnailUrl = snippet.path("thumbnails").path("medium").path("url").asText("");
+          JsonNode thumbnail = snippet.path("thumbnails").path("medium");
+          String thumbnailUrl = thumbnail.path("url").asText("");
           if (!StringUtils.hasText(thumbnailUrl)) {
-            thumbnailUrl = snippet.path("thumbnails").path("default").path("url").asText("");
+            thumbnail = snippet.path("thumbnails").path("default");
+            thumbnailUrl = thumbnail.path("url").asText("");
           }
           results.add(new YouTubeVideo(
               videoId,
               snippet.path("title").asText(""),
               thumbnailUrl,
-              "https://www.youtube.com/watch?v=" + videoId
+              "https://www.youtube.com/watch?v=" + videoId,
+              thumbnail.path("width").asInt(0),
+              thumbnail.path("height").asInt(0)
           ));
         }
       }
@@ -151,13 +156,13 @@ public class DocsEmbedSearchService {
     }
   }
 
-  public record UnsplashPhoto(String id, String previewUrl, String fullUrl, String alt) {
+  public record UnsplashPhoto(String id, String previewUrl, String fullUrl, String alt, int width, int height) {
   }
 
   public record UnsplashSearchResponse(int total, int page, List<UnsplashPhoto> results) {
   }
 
-  public record YouTubeVideo(String id, String title, String thumbnailUrl, String watchUrl) {
+  public record YouTubeVideo(String id, String title, String thumbnailUrl, String watchUrl, int width, int height) {
   }
 
   public record YouTubeSearchResponse(long total, String nextPageToken, List<YouTubeVideo> results) {

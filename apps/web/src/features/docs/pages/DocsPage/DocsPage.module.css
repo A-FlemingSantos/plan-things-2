@@ -596,6 +596,10 @@
   .moreMenuPanel {
     animation: none;
   }
+
+  .embedSearchTile {
+    animation: none;
+  }
 }
 
 .docHeader {
@@ -1371,55 +1375,99 @@
 .embedSearchResults {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   width: 100%;
+  margin-top: 12px;
 }
 
-.embedSearchMeta {
-  display: grid;
-  grid-template-columns: 1fr auto;
+.embedSearchFooter {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border-2) 48%, transparent);
   font-family: var(--font-family);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--font-weight-light);
   line-height: 1.4;
+  letter-spacing: 0.01em;
   color: var(--text-3);
 }
 
 .embedSearchCount {
-  justify-self: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .embedSearchNext {
+  flex-shrink: 0;
   padding: 0;
   border: none;
   background: transparent;
   font: inherit;
   color: var(--text-3);
   cursor: pointer;
+  text-decoration: none;
+  transition: color var(--transition-fast, 0.12s ease);
 }
 
 .embedSearchNext:hover {
   color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .embedSearchGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
 }
 
-.embedSearchTile {
-  display: block;
+.embedSearchRow {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  height: 132px;
+}
+
+.embedSearchTile {
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 100%;
   padding: 0;
   border: none;
-  background: var(--surface-3);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface-3) 55%, transparent);
   overflow: hidden;
   cursor: pointer;
+  appearance: none;
+  box-sizing: border-box;
+  animation: embedSearchTileIn 240ms var(--ease-out, ease) both;
+  animation-delay: var(--embed-tile-delay, 0ms);
+  transition: opacity var(--transition-fast, 0.12s ease);
+}
+
+.bodyComposer :global(.ProseMirror) .embedSearchRow {
+  display: flex;
+  width: 100%;
+}
+
+.bodyComposer :global(.ProseMirror) .embedSearchTile {
+  min-width: 0;
+  max-width: none;
+}
+
+.embedSearchTile:hover:not(:disabled) {
+  opacity: 0.82;
+}
+
+.embedSearchTile:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--text-3) 40%, transparent);
+  outline-offset: 1px;
 }
 
 .embedSearchTile:disabled {
@@ -1430,7 +1478,16 @@
   display: block;
   width: 100%;
   height: 100%;
+  max-width: none;
   object-fit: cover;
+  border-radius: 0;
+}
+
+.bodyComposer :global(.ProseMirror) .embedSearchTile .embedSearchTileImage {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  border-radius: 0;
 }
 
 .embedSearchTileFallback {
@@ -1438,15 +1495,29 @@
   width: 100%;
   height: 100%;
   background: color-mix(in srgb, var(--surface-3) 70%, var(--border-2));
+  border-radius: 0;
+}
+
+@keyframes embedSearchTileIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .embedSearchStatus,
 .embedSearchStatusError {
-  margin: 0;
+  margin: 8px 0 0;
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--font-weight-light);
   line-height: 1.5;
+  letter-spacing: 0.01em;
   color: var(--text-3);
 }
 
@@ -1466,6 +1537,13 @@
 
 .bodyComposer :global(.ProseMirror .embedBlock) {
   margin: 0 0 12px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.bodyComposer :global(.ProseMirror .react-renderer.node-docsEmbed) {
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ── Suspended docs library (inside center column) ── */

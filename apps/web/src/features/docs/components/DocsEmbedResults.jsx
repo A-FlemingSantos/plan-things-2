@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
 import { formatEmbedResultCount } from '../utils/docsEmbedMarkdown.js'
 import { searchUnsplashPhotos, searchYouTubeVideos } from '../utils/docsEmbedSearch.js'
+import { chunkResults, layoutEmbedRow } from '../utils/embedSearchLayout.js'
 
 export default function DocsEmbedResults({
   kind,
@@ -15,6 +16,11 @@ export default function DocsEmbedResults({
 }) {
   const { accessToken } = useAuth()
   const [state, setState] = useState({ status: 'idle', data: null, error: '' })
+  const [dimensions, setDimensions] = useState({})
+
+  useEffect(() => {
+    setDimensions({})
+  }, [kind, page, pageToken, query])
 
   useEffect(() => {
     if (!query?.trim()) {
@@ -51,6 +57,21 @@ export default function DocsEmbedResults({
     }
   }, [accessToken, kind, page, pageToken, query])
 
+  const handleImageLoad = useCallback((itemId, event) => {
+    const image = event.currentTarget
+    const width = image.naturalWidth
+    const height = image.naturalHeight
+    if (!width || !height) return
+
+    setDimensions((current) => {
+      const existing = current[itemId]
+      if (existing?.width === width && existing?.height === height) {
+        return current
+      }
+      return { ...current, [itemId]: { width, height } }
+    })
+  }, [])
+
   if (!query?.trim()) return null
 
   if (state.status === 'loading' && !state.data) {
@@ -69,51 +90,70 @@ export default function DocsEmbedResults({
 
   return (
     <div className={styles.embedSearchResults}>
-      <div className={styles.embedSearchMeta}>
-        <span className={styles.embedSearchCount}>{formatEmbedResultCount(total)}</span>
-        {hasNext ? (
-          <button
-            type="button"
-            className={styles.embedSearchNext}
-            onClick={() => {
-              if (kind === 'video') {
-                onNextPage?.(state.data?.nextPageToken ?? '')
-                return
-              }
-              onNextPage?.()
-            }}
-          >
-            Next
-          </button>
-        ) : null}
-      </div>
       {results.length === 0 ? (
         <p className={styles.embedSearchStatus}>Nenhum resultado encontrado.</p>
       ) : (
-        <div className={styles.embedSearchGrid}>
-          {results.map((item) => {
-            const previewUrl = kind === 'video' ? item.thumbnailUrl : item.previewUrl
-            const label = kind === 'video' ? item.title : (item.alt || 'Imagem do Unsplash')
-            const selectedUrl = kind === 'video' ? item.watchUrl : item.fullUrl
+        <>
+          <div className={styles.embedSearchGrid}>
+            {chunkResults(results).map((row, rowIndex) => (
+              <div key={`row-${rowIndex}`} className={styles.embedSearchRow}>
+                {layoutEmbedRow(row, kind, dimensions).map(({ item, width }, columnIndex) => {
+                  const previewUrl = kind === 'video' ? item.thumbnailUrl : item.previewUrl
+                  const label = kind === 'video' ? item.title : (item.alt || 'Imagem do Unsplash')
+                  const selectedUrl = kind === 'video' ? item.watchUrl : item.fullUrl
+                  const tileIndex = rowIndex * 3 + columnIndex
 
-            return (
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={styles.embedSearchTile}
+                      style={{
+                        width,
+                        flex: `0 0 ${width}`,
+                        '--embed-tile-delay': `${tileIndex * 45}ms`,
+                      }}
+                      disabled={!interactive}
+                      aria-label={label}
+                      onClick={() => interactive && onSelect?.(selectedUrl)}
+                    >
+                      {previewUrl ? (
+                        <img
+                          className={styles.embedSearchTileImage}
+                          src={previewUrl}
+                          alt=""
+                          loading="lazy"
+                          draggable={false}
+                          onLoad={(event) => handleImageLoad(item.id, event)}
+                        />
+                      ) : (
+                        <span className={styles.embedSearchTileFallback} aria-hidden="true" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+          <div className={styles.embedSearchFooter}>
+            <span className={styles.embedSearchCount}>{formatEmbedResultCount(total)}</span>
+            {hasNext ? (
               <button
-                key={item.id}
                 type="button"
-                className={styles.embedSearchTile}
-                disabled={!interactive}
-                aria-label={label}
-                onClick={() => interactive && onSelect?.(selectedUrl)}
+                className={styles.embedSearchNext}
+                onClick={() => {
+                  if (kind === 'video') {
+                    onNextPage?.(state.data?.nextPageToken ?? '')
+                    return
+                  }
+                  onNextPage?.()
+                }}
               >
-                {previewUrl ? (
-                  <img className={styles.embedSearchTileImage} src={previewUrl} alt="" loading="lazy" />
-                ) : (
-                  <span className={styles.embedSearchTileFallback} aria-hidden="true" />
-                )}
+                Mais
               </button>
-            )
-          })}
-        </div>
+            ) : null}
+          </div>
+        </>
       )}
     </div>
   )
