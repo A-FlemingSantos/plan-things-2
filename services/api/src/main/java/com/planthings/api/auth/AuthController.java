@@ -117,6 +117,11 @@ public class AuthController {
     return ApiEnvelope.ok(authService.refreshSession());
   }
 
+  @PostMapping("/auth/logout")
+  public ApiEnvelope<AuthService.MessageResponse> logout() {
+    return ApiEnvelope.ok(authService.logout());
+  }
+
   public record RegisterRequest(
       @NotBlank(message = "O nome completo e obrigatorio.") String fullName,
       @NotBlank(message = "O e-mail e obrigatorio.")

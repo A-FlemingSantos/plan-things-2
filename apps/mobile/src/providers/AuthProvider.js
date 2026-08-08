@@ -132,6 +132,9 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async (options = {}) => {
     const redirectTo = normalizeLogoutRedirect(options.redirectTo)
+    const accessToken = sessionRef.current?.accessToken
+    const isDemoSession = Boolean(sessionRef.current?.demo)
+
     await clearSession()
     if (redirectTo) {
       setPendingLogoutRedirect({
@@ -140,6 +143,19 @@ export function AuthProvider({ children }) {
       })
     } else {
       clearPendingLogoutRedirect()
+    }
+
+    if (!accessToken || isDemoSession) {
+      return
+    }
+
+    try {
+      await mobileApiRequest('/api/auth/logout', {
+        method: 'POST',
+        token: accessToken,
+      })
+    } catch {
+      // Local session already cleared; ignore server revoke failures.
     }
   }, [clearPendingLogoutRedirect, clearSession])
 

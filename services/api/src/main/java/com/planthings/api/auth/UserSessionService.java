@@ -92,6 +92,11 @@ public class UserSessionService {
   }
 
   @Transactional
+  public void revokeCurrentSession(UUID userId, UUID sessionId) {
+    userSessionRepository.revokeOne(userId, sessionId, OffsetDateTime.now(clock));
+  }
+
+  @Transactional
   public void revokeOtherSessions(UUID userId, UUID currentSessionId) {
     userSessionRepository.revokeAllExcept(userId, currentSessionId, OffsetDateTime.now(clock));
   }

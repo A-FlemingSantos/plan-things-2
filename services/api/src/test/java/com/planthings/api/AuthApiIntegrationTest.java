@@ -127,4 +127,52 @@ class AuthApiIntegrationTest extends ApiIntegrationTestSupport {
     assertEquals("web", sessions.path("data").get(0).path("client").asText());
     assertEquals(true, sessions.path("data").get(0).path("current").asBoolean());
   }
+
+  @Test
+  void shouldLogoutAndRevokeCurrentSession() throws Exception {
+    JsonNode firstLogin = readJson(mockMvc.perform(post("/api/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "fullName": "Arthur Santos",
+                  "email": "arthur-logout@example.com",
+                  "password": "12345678",
+                  "client": "web"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn());
+
+    String firstToken = firstLogin.path("data").path("accessToken").asText();
+
+    mockMvc.perform(post("/api/auth/logout")
+            .header("Authorization", "Bearer " + firstToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.message").value("Sessao encerrada com sucesso."));
+
+    mockMvc.perform(get("/api/settings/security/sessions")
+            .header("Authorization", "Bearer " + firstToken))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.error.code").value("SESSAO_REVOGADA"));
+
+    JsonNode secondLogin = readJson(mockMvc.perform(post("/api/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "arthur-logout@example.com",
+                  "password": "12345678",
+                  "client": "web"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn());
+
+    String secondToken = secondLogin.path("data").path("accessToken").asText();
+
+    mockMvc.perform(get("/api/settings/security/sessions")
+            .header("Authorization", "Bearer " + secondToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.length()").value(1))
+        .andExpect(jsonPath("$.data[0].current").value(true));
+  }
 }

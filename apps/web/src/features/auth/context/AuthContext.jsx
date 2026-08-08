@@ -654,8 +654,12 @@ export function AuthProvider({ children }) {
     }, options)
   }, [saveAuthenticatedSession])
 
-  const logout = useCallback((options = {}) => {
+  const logout = useCallback(async (options = {}) => {
     const redirectTo = normalizeLogoutRedirect(options.redirectTo)
+    const accountsToRevoke = accountStoreRef.current.accounts.filter((account) => (
+      Boolean(account?.accessToken) && !account.demo
+    ))
+
     saveAccountStore(createEmptyAccountStore())
     if (redirectTo) {
       setPendingLogoutRedirect({
@@ -665,6 +669,17 @@ export function AuthProvider({ children }) {
     } else {
       clearPendingLogoutRedirect()
     }
+
+    if (accountsToRevoke.length === 0) {
+      return
+    }
+
+    await Promise.allSettled(accountsToRevoke.map((account) => (
+      apiRequest('/api/auth/logout', {
+        method: 'POST',
+        token: account.accessToken,
+      })
+    )))
   }, [clearPendingLogoutRedirect, saveAccountStore])
 
   const sessionMode = resolveSessionMode({

@@ -259,5 +259,9 @@ describe('mobile auth provider parity', () => {
       to: '/cadastro',
       replace: false,
     })
+    expect(mobileApiMock.mobileApiRequest).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST',
+      token: loginToken,
+    })
   })
 })

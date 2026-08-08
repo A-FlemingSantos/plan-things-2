@@ -153,6 +153,14 @@ public class AuthService {
   }
 
   @Transactional
+  public MessageResponse logout() {
+    UUID userId = authenticatedUserService.requireUserId();
+    UUID sessionId = authenticatedUserService.requireSessionId();
+    userSessionService.revokeCurrentSession(userId, sessionId);
+    return new MessageResponse("Sessao encerrada com sucesso.");
+  }
+
+  @Transactional
   public ForgotPasswordResponse forgotPassword(String email) {
     String normalizedEmail = normalizeEmail(email);
     UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)

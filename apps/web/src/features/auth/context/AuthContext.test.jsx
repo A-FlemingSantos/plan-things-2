@@ -514,8 +514,8 @@ describe('AuthProvider', () => {
       })
     })
 
-    act(() => {
-      result.current.logout({
+    await act(async () => {
+      await result.current.logout({
         redirectTo: '/login',
         replace: true,
       })
@@ -528,6 +528,60 @@ describe('AuthProvider', () => {
     expect(result.current.pendingLogoutRedirect).toEqual({
       to: '/login',
       replace: true,
+    })
+    expect(apiMock.apiRequest).not.toHaveBeenCalled()
+  })
+
+  it('revokes backend sessions for all saved accounts on logout', async () => {
+    const expiresLater = Date.now() + (60 * 60 * 1000)
+    const primaryToken = createAccessToken(expiresLater)
+    const secondaryToken = createAccessToken(expiresLater + 1000)
+    const primarySession = createSession({
+      token: primaryToken,
+      userId: 'user-1',
+      fullName: 'Arthur Santos',
+      email: 'arthur@example.com',
+    })
+    const secondarySession = createSession({
+      token: secondaryToken,
+      userId: 'user-2',
+      fullName: 'Bruna Santos',
+      email: 'bruna@example.com',
+    })
+
+    window.localStorage.setItem('plan-things.session', JSON.stringify(
+      createStoredAccountStore([primarySession, secondarySession], 'user-1'),
+    ))
+
+    apiMock.apiRequest
+      .mockResolvedValueOnce({
+        ...primarySession,
+        accessToken: primaryToken,
+      })
+      .mockResolvedValue({ message: 'Sessao encerrada com sucesso.' })
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true)
+    })
+
+    await act(async () => {
+      await result.current.logout({
+        redirectTo: '/login',
+        replace: true,
+      })
+    })
+
+    expect(result.current.accessToken).toBeNull()
+    expect(result.current.savedAccounts).toHaveLength(0)
+    expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST',
+      token: primaryToken,
+    })
+    expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST',
+      token: secondaryToken,
     })
   })
 })
