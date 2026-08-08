@@ -21,8 +21,8 @@ import { apiRequest } from '../../../../shared/api/apiClient.js'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
-import InlineMarkdownComposer from '../../components/InlineMarkdownComposer.jsx'
 import MarkdownContent from '../../components/MarkdownContent.jsx'
+import MarkdownWysiwygComposer from '../../components/MarkdownWysiwygComposer.jsx'
 import DocumentSharePopover from '../../components/DocumentSharePopover.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
 import styles from './DocsPage.module.css'
@@ -298,7 +298,7 @@ function DocsPageContent() {
 
                   <div className={styles.body}>
                     {canEdit ? (
-                      <InlineMarkdownComposer
+                      <MarkdownWysiwygComposer
                         value={draft.contentMarkdown}
                         onChange={(contentMarkdown) => setDraft((current) => ({ ...current, contentMarkdown }))}
                         onAddComment={addComment}
