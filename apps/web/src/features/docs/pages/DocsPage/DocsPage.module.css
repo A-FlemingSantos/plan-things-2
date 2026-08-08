@@ -1301,7 +1301,7 @@
   }
 }
 
-.richTextEditor :global(.ProseMirror) {
+.bodyComposer :global(.ProseMirror) {
   outline: none;
   min-height: 40vh;
   font-family: var(--font-family);
@@ -1311,25 +1311,25 @@
   color: var(--text-2);
 }
 
-.richTextEditor :global(.ProseMirror p) {
+.bodyComposer :global(.ProseMirror p) {
   margin: 0;
 }
 
-.richTextEditor :global(.ProseMirror p + p),
-.richTextEditor :global(.ProseMirror p + h1),
-.richTextEditor :global(.ProseMirror p + h2),
-.richTextEditor :global(.ProseMirror p + h3),
-.richTextEditor :global(.ProseMirror h1 + p),
-.richTextEditor :global(.ProseMirror h2 + p),
-.richTextEditor :global(.ProseMirror h3 + p),
-.richTextEditor :global(.ProseMirror blockquote + p),
-.richTextEditor :global(.ProseMirror pre + p) {
+.bodyComposer :global(.ProseMirror p + p),
+.bodyComposer :global(.ProseMirror p + h1),
+.bodyComposer :global(.ProseMirror p + h2),
+.bodyComposer :global(.ProseMirror p + h3),
+.bodyComposer :global(.ProseMirror h1 + p),
+.bodyComposer :global(.ProseMirror h2 + p),
+.bodyComposer :global(.ProseMirror h3 + p),
+.bodyComposer :global(.ProseMirror blockquote + p),
+.bodyComposer :global(.ProseMirror pre + p) {
   margin-top: 14px;
 }
 
-.richTextEditor :global(.ProseMirror h1),
-.richTextEditor :global(.ProseMirror h2),
-.richTextEditor :global(.ProseMirror h3) {
+.bodyComposer :global(.ProseMirror h1),
+.bodyComposer :global(.ProseMirror h2),
+.bodyComposer :global(.ProseMirror h3) {
   margin: 0;
   font-family: var(--font-family);
   font-size: 13px;
@@ -1339,7 +1339,7 @@
   scroll-margin-top: 24px;
 }
 
-.richTextEditor :global(.ProseMirror mark) {
+.bodyComposer :global(.ProseMirror mark) {
   margin: 0;
   padding: 0;
   border-radius: 2px;
@@ -1347,7 +1347,7 @@
   color: inherit;
 }
 
-.richTextEditor :global(.ProseMirror p.is-editor-empty:first-child::before) {
+.bodyComposer :global(.ProseMirror p.is-empty:first-child::before) {
   color: var(--text-3);
   content: attr(data-placeholder);
   float: left;
@@ -1355,7 +1355,7 @@
   pointer-events: none;
 }
 
-.richTextEditor :global(.ProseMirror img),
+.bodyComposer :global(.ProseMirror img),
 .markdownImage {
   display: block;
   width: 100%;
