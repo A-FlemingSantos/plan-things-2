@@ -358,14 +358,14 @@ export default function DocsPage() {
                           className={styles.docTitleInput}
                           value={draftTitle}
                           onChange={(event) => setDraftTitle(event.target.value)}
-                          placeholder="Title"
+                          placeholder="Título"
                           aria-label="Título do documento"
                         />
                         <input
                           className={styles.docDescriptionInput}
                           value={draftDescription}
                           onChange={(event) => setDraftDescription(event.target.value)}
-                          placeholder="Add a subtitle..."
+                          placeholder="Adicione um subtítulo..."
                           aria-label="Subtítulo do documento"
                         />
                       </>
@@ -408,7 +408,7 @@ export default function DocsPage() {
                         className={styles.bodyComposer}
                         value={draftBody}
                         onChange={(event) => setDraftBody(event.target.value)}
-                        placeholder="Tell your story..."
+                        placeholder="Conte sua história..."
                         aria-label="Conteúdo do documento"
                         rows={12}
                       />

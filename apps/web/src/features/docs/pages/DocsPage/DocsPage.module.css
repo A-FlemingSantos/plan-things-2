@@ -417,7 +417,7 @@
 }
 
 .docTitle:empty::before {
-  content: 'Title';
+  content: 'Título';
   color: var(--text-3);
 }
 
@@ -433,7 +433,7 @@
 }
 
 .docDescription:empty::before {
-  content: 'Add a subtitle...';
+  content: 'Adicione um subtítulo...';
   color: var(--text-3);
 }
 
