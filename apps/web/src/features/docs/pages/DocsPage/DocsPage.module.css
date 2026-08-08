@@ -263,6 +263,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
 }
 
 .iconButton {
@@ -289,9 +290,113 @@
   color: var(--text-1);
 }
 
+.iconButtonActive,
+.iconButtonActive:hover:not(:disabled) {
+  background: var(--active);
+  color: var(--text-1);
+}
+
 .iconButton:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.moreMenu {
+  position: relative;
+}
+
+.moreMenuPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
+  animation: docsMoreReveal 160ms var(--ease-out, ease) both;
+}
+
+.moreMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.01em;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.moreMenuItem svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: color var(--transition-fast);
+}
+
+.moreMenuItem:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.moreMenuItem:hover svg {
+  color: var(--text-1);
+}
+
+.moreMenuItemDanger {
+  color: var(--danger-text);
+}
+
+.moreMenuItemDanger svg {
+  color: var(--danger-text);
+}
+
+.moreMenuItemDanger:hover {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.moreMenuItemDanger:hover svg {
+  color: var(--danger-text);
+}
+
+.moreMenuDivider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-1);
+}
+
+@keyframes docsMoreReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moreMenuPanel {
+    animation: none;
+  }
 }
 
 .docHeader {

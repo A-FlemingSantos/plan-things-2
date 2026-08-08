@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Copy,
+  Download,
+  Link2,
   MoreHorizontal,
   MoveLeft,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Pencil,
   Search,
   Share,
   Trash2,
@@ -57,14 +61,38 @@ export default function DocsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [indexOpen, setIndexOpen] = useState(true)
   const [docsOpen, setDocsOpen] = useState(true)
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const articleViewportRef = useRef(null)
+  const moreMenuRef = useRef(null)
 
   useEffect(() => {
     if (!activeDoc) return
     setSearchQuery('')
     setActiveSectionId(activeDoc.sections[0]?.id ?? '')
+    setMoreMenuOpen(false)
     articleViewportRef.current?.scrollTo({ top: 0 })
   }, [activeDoc])
+
+  useEffect(() => {
+    if (!moreMenuOpen) return undefined
+
+    const onPointerDown = (event) => {
+      if (!moreMenuRef.current?.contains(event.target)) {
+        setMoreMenuOpen(false)
+      }
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMoreMenuOpen(false)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [moreMenuOpen])
 
   const outline = useMemo(() => {
     if (!activeDoc) return []
@@ -104,6 +132,31 @@ export default function DocsPage() {
   const openDoc = (nextDocId) => {
     if (nextDocId === activeDoc.id) return
     navigate(buildDocsPath(nextDocId))
+  }
+
+  const shareDoc = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : buildDocsPath(activeDoc.id)
+    try {
+      await navigator.clipboard?.writeText(url)
+    } catch {
+      // Mock surface — clipboard may be unavailable.
+    }
+  }
+
+  const deleteDoc = () => {
+    setMoreMenuOpen(false)
+    navigate(ROUTES.docs)
+  }
+
+  const runMoreAction = async (actionId) => {
+    setMoreMenuOpen(false)
+    if (actionId === 'copy-link') {
+      await shareDoc()
+      return
+    }
+    if (actionId === 'delete') {
+      deleteDoc()
+    }
   }
 
   const layoutClassName = [
@@ -197,15 +250,90 @@ export default function DocsPage() {
                       </label>
                     </div>
                     <div className={styles.toolbarActions}>
-                      <button type="button" className={styles.iconButton} aria-label="Compartilhar" disabled>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        aria-label="Compartilhar"
+                        onClick={shareDoc}
+                      >
                         <Share size={15} strokeWidth={1.6} aria-hidden="true" />
                       </button>
-                      <button type="button" className={styles.iconButton} aria-label="Excluir" disabled>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        aria-label="Excluir"
+                        onClick={deleteDoc}
+                      >
                         <Trash2 size={15} strokeWidth={1.6} aria-hidden="true" />
                       </button>
-                      <button type="button" className={styles.iconButton} aria-label="Mais ações" disabled>
-                        <MoreHorizontal size={15} strokeWidth={1.6} aria-hidden="true" />
-                      </button>
+                      <div className={styles.moreMenu} ref={moreMenuRef}>
+                        <button
+                          type="button"
+                          className={`${styles.iconButton} ${moreMenuOpen ? styles.iconButtonActive : ''}`}
+                          aria-label="Mais ações"
+                          aria-haspopup="menu"
+                          aria-expanded={moreMenuOpen}
+                          aria-controls="docs-more-menu"
+                          onClick={() => setMoreMenuOpen((open) => !open)}
+                        >
+                          <MoreHorizontal size={15} strokeWidth={1.6} aria-hidden="true" />
+                        </button>
+                        {moreMenuOpen ? (
+                          <div
+                            id="docs-more-menu"
+                            className={styles.moreMenuPanel}
+                            role="menu"
+                            aria-label="Mais ações da documentação"
+                          >
+                            <button
+                              type="button"
+                              className={styles.moreMenuItem}
+                              role="menuitem"
+                              onClick={() => runMoreAction('duplicate')}
+                            >
+                              <Copy size={14} strokeWidth={1.6} aria-hidden="true" />
+                              Duplicar
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.moreMenuItem}
+                              role="menuitem"
+                              onClick={() => runMoreAction('rename')}
+                            >
+                              <Pencil size={14} strokeWidth={1.6} aria-hidden="true" />
+                              Renomear
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.moreMenuItem}
+                              role="menuitem"
+                              onClick={() => runMoreAction('export')}
+                            >
+                              <Download size={14} strokeWidth={1.6} aria-hidden="true" />
+                              Exportar
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.moreMenuItem}
+                              role="menuitem"
+                              onClick={() => runMoreAction('copy-link')}
+                            >
+                              <Link2 size={14} strokeWidth={1.6} aria-hidden="true" />
+                              Copiar link
+                            </button>
+                            <div className={styles.moreMenuDivider} role="separator" />
+                            <button
+                              type="button"
+                              className={`${styles.moreMenuItem} ${styles.moreMenuItemDanger}`}
+                              role="menuitem"
+                              onClick={() => runMoreAction('delete')}
+                            >
+                              <Trash2 size={14} strokeWidth={1.6} aria-hidden="true" />
+                              Excluir
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </header>
 
