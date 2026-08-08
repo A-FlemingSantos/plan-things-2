@@ -94,7 +94,7 @@ function DocsPageContent() {
   const [comments, setComments] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [indexOpen, setIndexOpen] = useState(true)
-  const [docsOpen, setDocsOpen] = useState(true)
+  const [docsOpen, setDocsOpen] = useState(false)
   const [memberMenuOpen, setMemberMenuOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
