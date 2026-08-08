@@ -5,6 +5,7 @@ import {
   Download,
   Image,
   Link2,
+  Lock,
   MessageSquareLock,
   Minus,
   MoreHorizontal,
@@ -22,6 +23,7 @@ import {
   Video,
 } from 'lucide-react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
@@ -105,14 +107,16 @@ function measureInputSelectionAnchor(input) {
   mirror.style.cssText = [
     'position:fixed',
     'visibility:hidden',
-    'white-space:pre',
+    'white-space:pre-wrap',
+    'overflow-wrap:anywhere',
+    'word-break:break-word',
     'pointer-events:none',
     `top:${inputRect.top}px`,
     `left:${inputRect.left}px`,
     `width:${inputRect.width}px`,
-    `height:${inputRect.height}px`,
     `font:${style.font}`,
     `letter-spacing:${style.letterSpacing}`,
+    `line-height:${style.lineHeight}`,
     `text-transform:${style.textTransform}`,
     `padding:${style.padding}`,
     `border:${style.border}`,
@@ -126,13 +130,19 @@ function measureInputSelectionAnchor(input) {
 
   const selectedRect = selected.getBoundingClientRect()
   const anchor = {
-    top: inputRect.top,
+    top: selectedRect.top,
     left: selectedRect.left + selectedRect.width / 2,
     start,
     end,
   }
   mirror.remove()
   return anchor
+}
+
+function autosizeComposerField(node) {
+  if (!node) return
+  node.style.height = 'auto'
+  node.style.height = `${Math.max(node.scrollHeight, 26)}px`
 }
 
 function blockInsertion(blockId) {
@@ -154,20 +164,95 @@ function blockInsertion(blockId) {
   }
 }
 
+function getInitials(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+function collectLineRanges(lineIndex, notes, pendingNote) {
+  const ranges = notes
+    .filter((note) => note.lineIndex === lineIndex)
+    .map((note) => ({ start: note.start, end: note.end, id: note.id }))
+
+  if (
+    pendingNote
+    && pendingNote.lineIndex === lineIndex
+    && pendingNote.end > pendingNote.start
+  ) {
+    ranges.push({
+      start: pendingNote.start,
+      end: pendingNote.end,
+      id: 'pending',
+    })
+  }
+
+  return ranges.sort((left, right) => left.start - right.start)
+}
+
+function AnnotatedLineMirror({ text, ranges }) {
+  if (!text || ranges.length === 0) {
+    return <span>{text || '\u00a0'}</span>
+  }
+
+  const parts = []
+  let cursor = 0
+
+  ranges.forEach((range, index) => {
+    const start = Math.max(0, Math.min(range.start, text.length))
+    const end = Math.max(start, Math.min(range.end, text.length))
+    if (start > cursor) {
+      parts.push(
+        <span key={`text-${cursor}`}>{text.slice(cursor, start)}</span>,
+      )
+    }
+    parts.push(
+      <mark key={`mark-${range.id}-${index}`} className={styles.annotatedMark}>
+        {text.slice(start, end) || '\u00a0'}
+      </mark>,
+    )
+    cursor = end
+  })
+
+  if (cursor < text.length) {
+    parts.push(<span key={`text-${cursor}`}>{text.slice(cursor)}</span>)
+  }
+
+  return parts
+}
+
 function DocsBodyComposer({ value, onChange, placeholder }) {
+  const { currentUser } = useAuth()
+  const authorName = currentUser?.fullName?.trim() || 'Você'
+  const authorInitials = getInitials(authorName)
+
   const lineRefs = useRef([])
+  const rowRefs = useRef([])
   const railRef = useRef(null)
   const selectionToolbarRef = useRef(null)
+  const noteComposerRef = useRef(null)
   const composerRef = useRef(null)
+  const composerMainRef = useRef(null)
+  const noteDraftRef = useRef(null)
+
   const [focusedLine, setFocusedLine] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [selection, setSelection] = useState(null)
-  const lines = splitComposerLines(value)
+  const [pendingNote, setPendingNote] = useState(null)
+  const [noteDraft, setNoteDraft] = useState('')
+  const [notes, setNotes] = useState([])
+  const [noteOffsets, setNoteOffsets] = useState({})
+
+  const lines = useMemo(() => splitComposerLines(value), [value])
   const activeLineEmpty = focusedLine != null && (lines[focusedLine] ?? '').length === 0
 
   const clearSelectionToolbar = () => setSelection(null)
 
   const syncSelectionToolbar = (lineIndex) => {
+    if (pendingNote) return
     const node = lineRefs.current[lineIndex]
     if (!node) {
       clearSelectionToolbar()
@@ -187,6 +272,47 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     })
     setMenuOpen(false)
   }
+
+  const refreshNoteOffsets = () => {
+    const main = composerMainRef.current
+    if (!main) return
+    const mainTop = main.getBoundingClientRect().top
+    const nextOffsets = {}
+    notes.forEach((note) => {
+      const row = rowRefs.current[note.lineIndex]
+      if (!row) return
+      nextOffsets[note.id] = row.getBoundingClientRect().top - mainTop
+    })
+    setNoteOffsets(nextOffsets)
+  }
+
+  useEffect(() => {
+    lines.forEach((_, index) => {
+      autosizeComposerField(lineRefs.current[index])
+    })
+    requestAnimationFrame(refreshNoteOffsets)
+  }, [lines, value, notes])
+
+  useEffect(() => {
+    const annotationStillExists = (annotation) => {
+      const line = lines[annotation.lineIndex]
+      return typeof line === 'string'
+        && line.slice(annotation.start, annotation.end) === annotation.quote
+    }
+
+    setNotes((current) => current.filter(annotationStillExists))
+
+    if (pendingNote && !annotationStillExists(pendingNote)) {
+      setPendingNote(null)
+      setNoteDraft('')
+    }
+  }, [value])
+
+  useEffect(() => {
+    const onResize = () => refreshNoteOffsets()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [notes])
 
   useEffect(() => {
     if (!menuOpen) return undefined
@@ -228,6 +354,7 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     const onScroll = () => {
       if (selection?.lineIndex == null) return
       syncSelectionToolbar(selection.lineIndex)
+      refreshNoteOffsets()
     }
 
     document.addEventListener('pointerdown', onPointerDown)
@@ -240,15 +367,32 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     }
   }, [selection])
 
+  useEffect(() => {
+    if (!pendingNote) return undefined
+    requestAnimationFrame(() => noteDraftRef.current?.focus())
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setPendingNote(null)
+        setNoteDraft('')
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [pendingNote])
+
   const focusLine = (index, caret = 'end') => {
     requestAnimationFrame(() => {
       const node = lineRefs.current[index]
       if (!node) return
+      autosizeComposerField(node)
       node.focus()
       const position = caret === 'start' ? 0 : node.value.length
       node.setSelectionRange(position, position)
       setFocusedLine(index)
       clearSelectionToolbar()
+      refreshNoteOffsets()
     })
   }
 
@@ -258,6 +402,23 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
     onChange(joinComposerLines(nextLines))
     setMenuOpen(false)
     clearSelectionToolbar()
+    requestAnimationFrame(() => {
+      autosizeComposerField(lineRefs.current[index])
+      refreshNoteOffsets()
+    })
+
+    setNotes((current) => current.filter((note) => {
+      if (note.lineIndex !== index) return true
+      return nextText.slice(note.start, note.end) === note.quote
+    }))
+
+    if (
+      pendingNote?.lineIndex === index
+      && nextText.slice(pendingNote.start, pendingNote.end) !== pendingNote.quote
+    ) {
+      setPendingNote(null)
+      setNoteDraft('')
+    }
   }
 
   const handleKeyDown = (event, index) => {
@@ -273,6 +434,45 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
       onChange(joinComposerLines(nextLines))
       setMenuOpen(false)
       clearSelectionToolbar()
+
+      setNotes((current) => current.flatMap((note) => {
+        if (note.lineIndex < index) return [note]
+        if (note.lineIndex > index) {
+          return [{ ...note, lineIndex: note.lineIndex + 1 }]
+        }
+        if (note.end <= caret) return [note]
+        if (note.start >= caret) {
+          return [{
+            ...note,
+            lineIndex: index + 1,
+            start: note.start - caret,
+            end: note.end - caret,
+          }]
+        }
+        return []
+      }))
+
+      if (pendingNote?.lineIndex === index) {
+        if (pendingNote.end <= caret) {
+          // keep
+        } else if (pendingNote.start >= caret) {
+          setPendingNote({
+            ...pendingNote,
+            lineIndex: index + 1,
+            start: pendingNote.start - caret,
+            end: pendingNote.end - caret,
+          })
+        } else {
+          setPendingNote(null)
+          setNoteDraft('')
+        }
+      } else if (pendingNote && pendingNote.lineIndex > index) {
+        setPendingNote({
+          ...pendingNote,
+          lineIndex: pendingNote.lineIndex + 1,
+        })
+      }
+
       focusLine(index + 1, 'start')
       return
     }
@@ -283,6 +483,22 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
       onChange(joinComposerLines(nextLines))
       setMenuOpen(false)
       clearSelectionToolbar()
+      setNotes((current) => current
+        .filter((note) => note.lineIndex !== index)
+        .map((note) => (
+          note.lineIndex > index
+            ? { ...note, lineIndex: note.lineIndex - 1 }
+            : note
+        )))
+      if (pendingNote?.lineIndex === index) {
+        setPendingNote(null)
+        setNoteDraft('')
+      } else if (pendingNote && pendingNote.lineIndex > index) {
+        setPendingNote({
+          ...pendingNote,
+          lineIndex: pendingNote.lineIndex - 1,
+        })
+      }
       focusLine(index - 1, 'end')
     }
   }
@@ -308,6 +524,41 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
       return
     }
     focusLine(focusedLine + insertion.length, 'start')
+  }
+
+  const openNoteComposer = (lineIndex, start, end, quote) => {
+    setPendingNote({ lineIndex, start, end, quote })
+    setNoteDraft('')
+    clearSelectionToolbar()
+    setMenuOpen(false)
+  }
+
+  const cancelNoteComposer = () => {
+    setPendingNote(null)
+    setNoteDraft('')
+  }
+
+  const sendNote = () => {
+    if (!pendingNote) return
+    const body = noteDraft.trim()
+    if (!body) return
+
+    setNotes((current) => [
+      ...current,
+      {
+        id: `note-${Date.now()}`,
+        lineIndex: pendingNote.lineIndex,
+        start: pendingNote.start,
+        end: pendingNote.end,
+        quote: pendingNote.quote,
+        body,
+        authorName,
+        authorInitials,
+      },
+    ])
+    setPendingNote(null)
+    setNoteDraft('')
+    requestAnimationFrame(refreshNoteOffsets)
   }
 
   const applySelectionAction = (actionId) => {
@@ -346,7 +597,7 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
       nextStart = 2
       nextEnd = nextStart + selectedText.length
     } else if (actionId === 'comment') {
-      clearSelectionToolbar()
+      openNoteComposer(lineIndex, start, end, selectedText)
       return
     }
 
@@ -365,168 +616,261 @@ function DocsBodyComposer({ value, onChange, placeholder }) {
   }
 
   return (
-    <div
-      ref={composerRef}
-      className={styles.composer}
-      role="textbox"
-      aria-label="Conteúdo do documento"
-      aria-multiline="true"
-    >
-      {selection ? (
+    <div ref={composerRef} className={styles.composerShell}>
+      <div ref={composerMainRef} className={styles.composerMain}>
         <div
-          ref={selectionToolbarRef}
-          className={styles.selectionToolbar}
-          role="toolbar"
-          aria-label="Formatação do texto"
-          style={{ top: selection.top, left: selection.left }}
+          className={styles.composer}
+          role="textbox"
+          aria-label="Conteúdo do documento"
+          aria-multiline="true"
         >
-          <button
-            type="button"
-            className={`${styles.selectionToolButton} ${styles.selectionToolBold}`}
-            title="Negrito"
-            aria-label="Negrito"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => applySelectionAction('bold')}
-          >
-            B
-          </button>
-          <button
-            type="button"
-            className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`}
-            title="Itálico"
-            aria-label="Itálico"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => applySelectionAction('italic')}
-          >
-            i
-          </button>
-          <button
-            type="button"
-            className={styles.selectionToolButton}
-            title="Inserir link"
-            aria-label="Inserir link"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => applySelectionAction('link')}
-          >
-            <Link2 size={14} strokeWidth={1.8} aria-hidden="true" />
-          </button>
-          <span className={styles.selectionToolDivider} aria-hidden="true" />
-          <button
-            type="button"
-            className={`${styles.selectionToolButton} ${styles.selectionToolTitle}`}
-            title="Título"
-            aria-label="Título"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => applySelectionAction('title')}
-          >
-            T
-          </button>
-          <button
-            type="button"
-            className={`${styles.selectionToolButton} ${styles.selectionToolSubtitle}`}
-            title="Subtítulo"
-            aria-label="Subtítulo"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => applySelectionAction('subtitle')}
-          >
-            T
-          </button>
-          <button
-            type="button"
-            className={styles.selectionToolButton}
-            title="Citação"
-            aria-label="Citação"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => applySelectionAction('quote')}
-          >
-            <Quote size={14} strokeWidth={1.8} aria-hidden="true" />
-          </button>
-          <span className={styles.selectionToolDivider} aria-hidden="true" />
-          <button
-            type="button"
-            className={styles.selectionToolButton}
-            title="Adicionar comentário"
-            aria-label="Adicionar comentário"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => applySelectionAction('comment')}
-          >
-            <MessageSquareLock size={14} strokeWidth={1.8} aria-hidden="true" />
-          </button>
-        </div>
-      ) : null}
-
-      {lines.map((line, index) => {
-        const isActiveEmpty = focusedLine === index && line.length === 0
-        const showPlaceholder = index === 0 && lines.length === 1 && line.length === 0
-
-        return (
-          <div key={`composer-line-${index}`} className={styles.composerRow}>
-            <div className={styles.composerRail} ref={isActiveEmpty ? railRef : undefined}>
-              {isActiveEmpty ? (
-                <div
-                  className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}
-                >
-                  <button
-                    type="button"
-                    className={styles.blockInsertButton}
-                    title={menuOpen ? 'Fechar' : 'Adicionar bloco'}
-                    aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'}
-                    aria-expanded={menuOpen}
-                    aria-controls={`docs-block-actions-${index}`}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => setMenuOpen((open) => !open)}
-                  >
-                    <Plus size={14} strokeWidth={1.6} aria-hidden="true" />
-                  </button>
-                  <div
-                    id={`docs-block-actions-${index}`}
-                    className={styles.blockActions}
-                    role="toolbar"
-                    aria-label="Inserir bloco"
-                    aria-hidden={!menuOpen}
-                    {...(!menuOpen ? { inert: '' } : {})}
-                  >
-                    {BLOCK_ACTIONS.map(({ id, label, Icon }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        className={styles.blockActionButton}
-                        title={label}
-                        aria-label={label}
-                        tabIndex={menuOpen ? 0 : -1}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => applyBlock(id)}
-                      >
-                        <Icon size={15} strokeWidth={1.6} aria-hidden="true" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+          {selection ? (
+            <div
+              ref={selectionToolbarRef}
+              className={styles.selectionToolbar}
+              role="toolbar"
+              aria-label="Formatação do texto"
+              style={{ top: selection.top, left: selection.left }}
+            >
+              <button
+                type="button"
+                className={`${styles.selectionToolButton} ${styles.selectionToolBold}`}
+                title="Negrito"
+                aria-label="Negrito"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySelectionAction('bold')}
+              >
+                B
+              </button>
+              <button
+                type="button"
+                className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`}
+                title="Itálico"
+                aria-label="Itálico"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySelectionAction('italic')}
+              >
+                i
+              </button>
+              <button
+                type="button"
+                className={styles.selectionToolButton}
+                title="Inserir link"
+                aria-label="Inserir link"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySelectionAction('link')}
+              >
+                <Link2 size={14} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+              <span className={styles.selectionToolDivider} aria-hidden="true" />
+              <button
+                type="button"
+                className={`${styles.selectionToolButton} ${styles.selectionToolTitle}`}
+                title="Título"
+                aria-label="Título"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySelectionAction('title')}
+              >
+                T
+              </button>
+              <button
+                type="button"
+                className={`${styles.selectionToolButton} ${styles.selectionToolSubtitle}`}
+                title="Subtítulo"
+                aria-label="Subtítulo"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySelectionAction('subtitle')}
+              >
+                T
+              </button>
+              <button
+                type="button"
+                className={styles.selectionToolButton}
+                title="Citação"
+                aria-label="Citação"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySelectionAction('quote')}
+              >
+                <Quote size={14} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+              <span className={styles.selectionToolDivider} aria-hidden="true" />
+              <button
+                type="button"
+                className={styles.selectionToolButton}
+                title="Adicionar comentário"
+                aria-label="Adicionar comentário"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySelectionAction('comment')}
+              >
+                <MessageSquareLock size={14} strokeWidth={1.8} aria-hidden="true" />
+              </button>
             </div>
+          ) : null}
 
-            <input
-              ref={(node) => {
-                lineRefs.current[index] = node
-              }}
-              className={styles.bodyComposer}
-              value={line}
-              onChange={(event) => updateLine(index, event.target.value)}
-              onFocus={() => setFocusedLine(index)}
-              onBlur={() => {
-                setFocusedLine((current) => (current === index ? null : current))
-                setMenuOpen(false)
-              }}
-              onKeyDown={(event) => handleKeyDown(event, index)}
-              onKeyUp={() => syncSelectionToolbar(index)}
-              onMouseUp={() => syncSelectionToolbar(index)}
-              onSelect={() => syncSelectionToolbar(index)}
-              placeholder={showPlaceholder ? placeholder : undefined}
-              aria-label={index === 0 ? 'Conteúdo do documento' : `Linha ${index + 1}`}
-            />
-          </div>
-        )
-      })}
+          {lines.map((line, index) => {
+            const isActiveEmpty = focusedLine === index && line.length === 0
+            const showPlaceholder = index === 0 && lines.length === 1 && line.length === 0
+            const ranges = collectLineRanges(index, notes, pendingNote)
+            const hasAnnotations = ranges.length > 0
+
+            return (
+              <div key={`composer-line-${index}`}>
+                <div
+                  ref={(node) => {
+                    rowRefs.current[index] = node
+                  }}
+                  className={styles.composerRow}
+                >
+                  <div className={styles.composerRail} ref={isActiveEmpty ? railRef : undefined}>
+                    {isActiveEmpty ? (
+                      <div
+                        className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className={styles.blockInsertButton}
+                          title={menuOpen ? 'Fechar' : 'Adicionar bloco'}
+                          aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'}
+                          aria-expanded={menuOpen}
+                          aria-controls={`docs-block-actions-${index}`}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => setMenuOpen((open) => !open)}
+                        >
+                          <Plus size={14} strokeWidth={1.6} aria-hidden="true" />
+                        </button>
+                        <div
+                          id={`docs-block-actions-${index}`}
+                          className={styles.blockActions}
+                          role="toolbar"
+                          aria-label="Inserir bloco"
+                          aria-hidden={!menuOpen}
+                          {...(!menuOpen ? { inert: '' } : {})}
+                        >
+                          {BLOCK_ACTIONS.map(({ id, label, Icon }) => (
+                            <button
+                              key={id}
+                              type="button"
+                              className={styles.blockActionButton}
+                              title={label}
+                              aria-label={label}
+                              tabIndex={menuOpen ? 0 : -1}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => applyBlock(id)}
+                            >
+                              <Icon size={15} strokeWidth={1.6} aria-hidden="true" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {hasAnnotations ? (
+                    <div className={styles.lineMirror} aria-hidden="true">
+                      <AnnotatedLineMirror text={line} ranges={ranges} />
+                    </div>
+                  ) : null}
+
+                  <textarea
+                    ref={(node) => {
+                      lineRefs.current[index] = node
+                      autosizeComposerField(node)
+                    }}
+                    className={`${styles.bodyComposer} ${hasAnnotations ? styles.bodyComposerAnnotated : ''}`}
+                    value={line}
+                    rows={1}
+                    onChange={(event) => updateLine(index, event.target.value)}
+                    onFocus={() => setFocusedLine(index)}
+                    onBlur={() => {
+                      setFocusedLine((current) => (current === index ? null : current))
+                      setMenuOpen(false)
+                    }}
+                    onKeyDown={(event) => handleKeyDown(event, index)}
+                    onKeyUp={() => syncSelectionToolbar(index)}
+                    onMouseUp={() => syncSelectionToolbar(index)}
+                    onSelect={() => syncSelectionToolbar(index)}
+                    placeholder={showPlaceholder ? placeholder : undefined}
+                    aria-label={index === 0 ? 'Conteúdo do documento' : `Linha ${index + 1}`}
+                  />
+                </div>
+
+                {pendingNote?.lineIndex === index ? (
+                  <div
+                    ref={noteComposerRef}
+                    className={styles.noteComposer}
+                    role="dialog"
+                    aria-label="Notas privadas"
+                  >
+                    <div className={styles.noteComposerHeader}>
+                      <span className={styles.noteComposerHeaderLabel}>
+                        <Lock size={12} strokeWidth={1.8} aria-hidden="true" />
+                        Notas privadas
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.noteComposerHeaderAction}
+                        title="Quem pode ver isto?"
+                      >
+                        Quem pode ver isto?
+                      </button>
+                    </div>
+                    <div className={styles.noteComposerBody}>
+                      <div className={styles.noteComposerAuthor}>
+                        <span className={styles.noteComposerAvatar} aria-hidden="true">
+                          {authorInitials}
+                        </span>
+                        <span className={styles.noteComposerAuthorName}>{authorName}</span>
+                      </div>
+                      <textarea
+                        ref={noteDraftRef}
+                        className={styles.noteComposerInput}
+                        value={noteDraft}
+                        onChange={(event) => setNoteDraft(event.target.value)}
+                        placeholder="Escreva uma nota..."
+                        aria-label="Escreva uma nota"
+                        rows={3}
+                      />
+                      <div className={styles.noteComposerActions}>
+                        <button
+                          type="button"
+                          className={styles.noteComposerSend}
+                          onClick={sendNote}
+                          disabled={!noteDraft.trim()}
+                        >
+                          Enviar
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.noteComposerCancel}
+                          onClick={cancelNoteComposer}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <aside className={styles.commentsSection} aria-label="Comentários do documento">
+        {notes.map((note) => (
+          <article
+            key={note.id}
+            className={styles.compactNote}
+            style={{ top: noteOffsets[note.id] ?? 0 }}
+            title={note.body}
+          >
+            <span className={styles.compactNoteAvatar} aria-hidden="true">
+              {note.authorInitials}
+            </span>
+            <p className={styles.compactNoteText}>{note.body}</p>
+          </article>
+        ))}
+      </aside>
     </div>
   )
 }

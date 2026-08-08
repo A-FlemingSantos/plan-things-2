@@ -204,6 +204,7 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
+  overflow: visible;
   transition: padding var(--transition-normal), max-width var(--transition-normal);
 }
 
@@ -489,16 +490,39 @@
 }
 
 .bodyComposer {
+  display: block;
   width: 100%;
   min-width: 0;
-  height: 25.5px;
+  min-height: 25.5px;
+  height: auto;
   resize: none;
+  overflow: hidden;
   padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
   font-family: var(--font-family);
   font-size: 15px;
   font-weight: var(--font-weight-light);
   line-height: 1.7;
   color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.composerShell {
+  position: relative;
+  width: 100%;
+  min-height: 40vh;
+  overflow: visible;
+}
+
+.composerMain {
+  position: relative;
+  min-width: 0;
+  max-width: 62ch;
+  overflow: visible;
 }
 
 .composer {
@@ -506,14 +530,67 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-width: 62ch;
+  width: 100%;
   min-height: 40vh;
+  overflow: visible;
+}
+
+.commentsSection {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 16px);
+  min-width: 0;
+  width: 200px;
+  min-height: 100%;
+  pointer-events: none;
+}
+
+.commentsSection > * {
+  pointer-events: auto;
 }
 
 .composerRow {
   position: relative;
   display: block;
+  width: 100%;
   min-height: 25.5px;
+  overflow: visible;
+}
+
+.lineMirror {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  overflow: hidden;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.7;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  pointer-events: none;
+}
+
+.annotatedMark {
+  margin: 0;
+  padding: 0;
+  border-radius: 2px;
+  background: color-mix(in srgb, #d4a017 22%, transparent);
+  color: inherit;
+}
+
+.bodyComposerAnnotated {
+  position: relative;
+  z-index: 1;
+  color: transparent;
+  caret-color: var(--text-1);
+}
+
+.bodyComposerAnnotated::placeholder {
+  color: transparent;
 }
 
 .composerRail {
@@ -586,6 +663,178 @@
 .blockInsertOpen .blockActions {
   opacity: 1;
   pointer-events: auto;
+}
+
+.noteComposer {
+  margin: 12px 0 18px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-1, var(--app-bg));
+  overflow: hidden;
+}
+
+.noteComposerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 0 12px;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.noteComposerHeaderLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.noteComposerHeaderAction {
+  border: none;
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.noteComposerHeaderAction:hover {
+  color: var(--text-1);
+}
+
+.noteComposerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px 12px;
+  background: var(--surface-1, var(--app-bg));
+}
+
+.noteComposerAuthor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.noteComposerAvatar,
+.compactNoteAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 9px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.02em;
+}
+
+.noteComposerAuthorName {
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-1);
+}
+
+.noteComposerInput {
+  width: 100%;
+  min-height: 64px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  resize: vertical;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.5;
+  color: var(--text-1);
+}
+
+.noteComposerInput::placeholder {
+  color: var(--text-3);
+}
+
+.noteComposerActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.noteComposerSend,
+.noteComposerCancel {
+  border: none;
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  cursor: pointer;
+}
+
+.noteComposerSend {
+  color: var(--color-green);
+}
+
+.noteComposerSend:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.noteComposerCancel {
+  color: var(--text-3);
+}
+
+.noteComposerCancel:hover {
+  color: var(--text-1);
+}
+
+.compactNote {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.compactNoteText {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 0;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.45;
+  color: var(--text-3);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .commentsSection {
+    display: none;
+  }
 }
 
 .selectionToolbar {
@@ -770,6 +1019,7 @@
   gap: 32px;
   padding-top: 28px;
   border-top: 1px solid var(--border-1);
+  overflow: visible;
 }
 
 .bodySection {
