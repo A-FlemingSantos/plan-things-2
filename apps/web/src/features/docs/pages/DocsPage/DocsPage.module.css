@@ -489,7 +489,9 @@
 }
 
 .bodyComposer {
-  min-height: 40vh;
+  width: 100%;
+  min-width: 0;
+  height: 25.5px;
   resize: none;
   padding: 0;
   font-family: var(--font-family);
@@ -497,7 +499,93 @@
   font-weight: var(--font-weight-light);
   line-height: 1.7;
   color: var(--text-2);
+}
+
+.composer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   max-width: 62ch;
+  min-height: 40vh;
+}
+
+.composerRow {
+  position: relative;
+  display: block;
+  min-height: 25.5px;
+}
+
+.composerRail {
+  position: absolute;
+  top: 50%;
+  left: -34px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  transform: translateY(-50%);
+  overflow: visible;
+}
+
+.blockInsert {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  max-width: 26px;
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--surface-2);
+  transition: max-width 160ms ease;
+}
+
+.blockInsertOpen {
+  max-width: 220px;
+}
+
+.blockInsertButton,
+.blockActionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.blockInsertOpen .blockInsertButton {
+  color: var(--text-1);
+  transform: rotate(45deg);
+}
+
+.blockInsertButton:hover,
+.blockActionButton:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.blockActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.blockInsertOpen .blockActions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .contributors {

@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Code2,
   Copy,
   Download,
+  Image,
+  Images,
   Link2,
+  Minus,
   MoreHorizontal,
   MoveLeft,
   PanelLeftClose,
@@ -11,9 +15,11 @@ import {
   PanelRightOpen,
   Pencil,
   Plus,
+  Quote,
   Search,
   Share,
   Trash2,
+  Video,
 } from 'lucide-react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -50,6 +56,214 @@ function scrollViewportToSection(viewport, sectionId) {
     behavior: 'smooth',
   })
   return true
+}
+
+const BLOCK_ACTIONS = [
+  { id: 'image', label: 'Imagem', Icon: Image },
+  { id: 'unsplash', label: 'Unsplash', Icon: Images },
+  { id: 'video', label: 'Vídeo', Icon: Video },
+  { id: 'quote', label: 'Adicionar citação', Icon: Quote },
+  { id: 'code', label: 'Bloco de código', Icon: Code2 },
+  { id: 'divider', label: 'Linha', Icon: Minus },
+]
+
+function splitComposerLines(value) {
+  return value.length === 0 ? [''] : value.split('\n')
+}
+
+function joinComposerLines(lines) {
+  return lines.join('\n')
+}
+
+function blockInsertion(blockId) {
+  switch (blockId) {
+    case 'image':
+      return ['[Imagem]']
+    case 'unsplash':
+      return ['[Unsplash]']
+    case 'video':
+      return ['[Vídeo]']
+    case 'quote':
+      return ['> ']
+    case 'code':
+      return ['```', '', '```']
+    case 'divider':
+      return ['---']
+    default:
+      return ['']
+  }
+}
+
+function DocsBodyComposer({ value, onChange, placeholder }) {
+  const lineRefs = useRef([])
+  const railRef = useRef(null)
+  const [focusedLine, setFocusedLine] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const lines = splitComposerLines(value)
+  const activeLineEmpty = focusedLine != null && (lines[focusedLine] ?? '').length === 0
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+
+    const onPointerDown = (event) => {
+      if (railRef.current?.contains(event.target)) return
+      setMenuOpen(false)
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [menuOpen])
+
+  useEffect(() => {
+    if (!activeLineEmpty && menuOpen) setMenuOpen(false)
+  }, [activeLineEmpty, menuOpen])
+
+  const focusLine = (index, caret = 'end') => {
+    requestAnimationFrame(() => {
+      const node = lineRefs.current[index]
+      if (!node) return
+      node.focus()
+      const position = caret === 'start' ? 0 : node.value.length
+      node.setSelectionRange(position, position)
+      setFocusedLine(index)
+    })
+  }
+
+  const updateLine = (index, nextText) => {
+    const nextLines = [...lines]
+    nextLines[index] = nextText
+    onChange(joinComposerLines(nextLines))
+    setMenuOpen(false)
+  }
+
+  const handleKeyDown = (event, index) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      const node = event.currentTarget
+      const caret = node.selectionStart ?? node.value.length
+      const before = node.value.slice(0, caret)
+      const after = node.value.slice(caret)
+      const nextLines = [...lines]
+      nextLines[index] = before
+      nextLines.splice(index + 1, 0, after)
+      onChange(joinComposerLines(nextLines))
+      setMenuOpen(false)
+      focusLine(index + 1, 'start')
+      return
+    }
+
+    if (event.key === 'Backspace' && lines[index] === '' && lines.length > 1 && index > 0) {
+      event.preventDefault()
+      const nextLines = lines.filter((_, lineIndex) => lineIndex !== index)
+      onChange(joinComposerLines(nextLines))
+      setMenuOpen(false)
+      focusLine(index - 1, 'end')
+    }
+  }
+
+  const applyBlock = (blockId) => {
+    if (focusedLine == null) return
+    const insertion = blockInsertion(blockId)
+    const nextLines = [...lines]
+    nextLines.splice(focusedLine, 1, ...insertion)
+    if (blockId !== 'quote' && nextLines[focusedLine + insertion.length] == null) {
+      nextLines.push('')
+    }
+    onChange(joinComposerLines(nextLines))
+    setMenuOpen(false)
+
+    if (blockId === 'code') {
+      focusLine(focusedLine + 1, 'start')
+      return
+    }
+    if (blockId === 'quote') {
+      focusLine(focusedLine, 'end')
+      return
+    }
+    focusLine(focusedLine + insertion.length, 'start')
+  }
+
+  return (
+    <div className={styles.composer} role="textbox" aria-label="Conteúdo do documento" aria-multiline="true">
+      {lines.map((line, index) => {
+        const isActiveEmpty = focusedLine === index && line.length === 0
+        const showPlaceholder = index === 0 && lines.length === 1 && line.length === 0
+
+        return (
+          <div key={`composer-line-${index}`} className={styles.composerRow}>
+            <div className={styles.composerRail} ref={isActiveEmpty ? railRef : undefined}>
+              {isActiveEmpty ? (
+                <div
+                  className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}
+                >
+                  <button
+                    type="button"
+                    className={styles.blockInsertButton}
+                    title={menuOpen ? 'Fechar' : 'Adicionar bloco'}
+                    aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'}
+                    aria-expanded={menuOpen}
+                    aria-controls={`docs-block-actions-${index}`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setMenuOpen((open) => !open)}
+                  >
+                    <Plus size={14} strokeWidth={1.6} aria-hidden="true" />
+                  </button>
+                  <div
+                    id={`docs-block-actions-${index}`}
+                    className={styles.blockActions}
+                    role="toolbar"
+                    aria-label="Inserir bloco"
+                    aria-hidden={!menuOpen}
+                    {...(!menuOpen ? { inert: '' } : {})}
+                  >
+                    {BLOCK_ACTIONS.map(({ id, label, Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={styles.blockActionButton}
+                        title={label}
+                        aria-label={label}
+                        tabIndex={menuOpen ? 0 : -1}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => applyBlock(id)}
+                      >
+                        <Icon size={15} strokeWidth={1.6} aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <input
+              ref={(node) => {
+                lineRefs.current[index] = node
+              }}
+              className={styles.bodyComposer}
+              value={line}
+              onChange={(event) => updateLine(index, event.target.value)}
+              onFocus={() => setFocusedLine(index)}
+              onBlur={() => {
+                setFocusedLine((current) => (current === index ? null : current))
+                setMenuOpen(false)
+              }}
+              onKeyDown={(event) => handleKeyDown(event, index)}
+              placeholder={showPlaceholder ? placeholder : undefined}
+              aria-label={index === 0 ? 'Conteúdo do documento' : `Linha ${index + 1}`}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function DocsPage() {
@@ -404,13 +618,10 @@ export default function DocsPage() {
 
                   <div className={styles.body}>
                     {isBlankDoc ? (
-                      <textarea
-                        className={styles.bodyComposer}
+                      <DocsBodyComposer
                         value={draftBody}
-                        onChange={(event) => setDraftBody(event.target.value)}
+                        onChange={setDraftBody}
                         placeholder="Conte sua história..."
-                        aria-label="Conteúdo do documento"
-                        rows={12}
                       />
                     ) : (
                       activeDoc.sections.map((section) => (
