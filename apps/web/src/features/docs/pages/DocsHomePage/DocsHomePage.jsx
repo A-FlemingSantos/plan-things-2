@@ -1,3 +1,4 @@
+import { SquarePen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
@@ -101,6 +102,13 @@ export default function DocsHomePage() {
           refreshKey="docs-home"
         >
           <div className={styles.inner}>
+            <div className={styles.pageToolbar}>
+              <button type="button" className={styles.writeButton}>
+                <SquarePen size={15} strokeWidth={1.6} aria-hidden="true" />
+                Escrever
+              </button>
+            </div>
+
             <section className={styles.section} aria-labelledby="docs-recent-heading">
               <header className={styles.sectionHeader}>
                 <h2 id="docs-recent-heading" className={styles.sectionTitle}>

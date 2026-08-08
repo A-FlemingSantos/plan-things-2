@@ -25,6 +25,39 @@
   padding: 48px 32px calc(48px + var(--app-dock-clearance, 56px));
 }
 
+.pageToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 28px;
+}
+
+.writeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.writeButton:hover {
+  background: var(--hover);
+  border-color: var(--border-2, var(--border-1));
+  color: var(--text-1);
+}
+
 .section {
   display: flex;
   flex-direction: column;
