@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BookOpen, House, KanbanSquare, Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { SiGithub } from 'react-icons/si'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
+import {
+  rememberDocsRoute,
+  resolveDocsDockPath,
+} from '../../../features/docs/utils/lastDocsRoute.js'
 import { normalizePathname, ROUTES } from '../../config/routes.js'
 import { Dock, DockItem, DockSeparator } from '../Dock/Dock.jsx'
 import SidebarAccountMenu from '../SidebarAccountMenu/SidebarAccountMenu.jsx'
@@ -46,8 +50,8 @@ function isRouteActive(pathname, route) {
   )
 }
 
-function NavLinkItem({ label, to, Icon, pathname }) {
-  const active = isRouteActive(pathname, to)
+function NavLinkItem({ label, to, Icon, pathname, activeTo = to }) {
+  const active = isRouteActive(pathname, activeTo)
 
   return (
     <DockItem active={active}>
@@ -66,10 +70,16 @@ function NavLinkItem({ label, to, Icon, pathname }) {
 export default function AppNavigationDock({ navigationPathname = null } = {}) {
   const location = useLocation()
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [docsPath, setDocsPath] = useState(() => resolveDocsDockPath())
   const contentPathname = navigationPathname ?? location.pathname
   const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
   const [homeItem, docsItem, boardsItem] = NAV_ITEMS
+
+  useEffect(() => {
+    rememberDocsRoute(location.pathname)
+    setDocsPath(resolveDocsDockPath())
+  }, [location.pathname])
 
   return (
     <AppThemeScope className={styles.themeScope}>
@@ -78,7 +88,12 @@ export default function AppNavigationDock({ navigationPathname = null } = {}) {
           <Dock className={styles.navigationDock} size={34}>
           <NavLinkItem {...homeItem} pathname={contentPathname} />
 
-          <NavLinkItem {...docsItem} pathname={contentPathname} />
+          <NavLinkItem
+            {...docsItem}
+            to={docsPath}
+            activeTo={ROUTES.docs}
+            pathname={contentPathname}
+          />
 
           <NavLinkItem {...boardsItem} pathname={contentPathname} />
 
