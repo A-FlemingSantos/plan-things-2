@@ -7,6 +7,7 @@ export const ROUTES = {
   workspaceBoard: '/workspace/board',
   calendar: '/calendar',
   docs: '/docs',
+  docsDoc: '/docs/:docId',
   files: '/files',
   settings: '/settings',
   forgot: '/forgot',
@@ -135,4 +136,8 @@ export function toRouteString(location) {
 
 export function buildWorkspaceBoardPath(planId) {
   return planId ? `${ROUTES.workspaceBoard}/${planId}` : ROUTES.workspaceBoard
+}
+
+export function buildDocsPath(docId) {
+  return docId ? `${ROUTES.docs}/${docId}` : ROUTES.docs
 }

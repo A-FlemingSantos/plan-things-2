@@ -3,6 +3,8 @@ export const DOCS_LIBRARY = [
     id: 'spark',
     title: 'Spark Creativity',
     description: 'Um espaço para explorar ideias iniciais, referências e caminhos criativos antes de formalizar o plano.',
+    category: 'Produto',
+    dateLabel: '8 ago 2026',
     publishedLabel: 'Publicado há 2 horas',
     contributors: [
       { id: 'c1', name: 'Ana Ribeiro', role: 'Lead Author', initials: 'AR' },
@@ -92,6 +94,8 @@ export const DOCS_LIBRARY = [
     id: 'strategy',
     title: 'Strategic Planning',
     description: 'Defina prioridades, restrições e critérios de sucesso antes de distribuir o trabalho no quadro.',
+    category: 'Estratégia',
+    dateLabel: '7 ago 2026',
     publishedLabel: 'Publicado há 1 dia',
     contributors: [
       { id: 'c4', name: 'Bruno Alves', role: 'Lead Author', initials: 'BA' },
@@ -140,6 +144,8 @@ export const DOCS_LIBRARY = [
     id: 'refine',
     title: 'Content Refinement',
     description: 'Ajuste narrativa, tom e estrutura para que a mensagem chegue limpa a quem precisa agir.',
+    category: 'Conteúdo',
+    dateLabel: '5 ago 2026',
     publishedLabel: 'Publicado há 3 dias',
     contributors: [
       { id: 'c6', name: 'Clara Nunes', role: 'Editor', initials: 'CN' },
@@ -180,6 +186,8 @@ export const DOCS_LIBRARY = [
     id: 'insights',
     title: 'Market Insights',
     description: 'Síntese de sinais externos para orientar decisões de produto e posicionamento.',
+    category: 'Pesquisa',
+    dateLabel: '3 ago 2026',
     publishedLabel: 'Publicado há 5 dias',
     contributors: [
       { id: 'c3', name: 'Maya Costa', role: 'Researcher', initials: 'MC' },
@@ -219,6 +227,8 @@ export const DOCS_LIBRARY = [
     id: 'story',
     title: 'Visual Storytelling',
     description: 'Como imagens, hierarquia e ritmo visual reforçam o entendimento sem sobrecarregar a tela.',
+    category: 'Design',
+    dateLabel: '1 ago 2026',
     publishedLabel: 'Publicado há 1 semana',
     contributors: [
       { id: 'c2', name: 'Leo Martins', role: 'UX Designer', initials: 'LM' },
@@ -259,6 +269,8 @@ export const DOCS_LIBRARY = [
     id: 'innovation',
     title: 'Innovation Hub',
     description: 'Um repositório curto de experimentos, aprendizados e próximas apostas do time.',
+    category: 'Inovação',
+    dateLabel: '25 jul 2026',
     publishedLabel: 'Publicado há 2 semanas',
     contributors: [
       { id: 'c4', name: 'Bruno Alves', role: 'Lead Author', initials: 'BA' },
@@ -298,6 +310,8 @@ export const DOCS_LIBRARY = [
     id: 'discover',
     title: 'Discover Opportunities',
     description: 'Mapeie espaços em aberto e oportunidades adjacentes sem perder o fio do plano atual.',
+    category: 'Estratégia',
+    dateLabel: '18 jul 2026',
     publishedLabel: 'Publicado há 3 semanas',
     contributors: [
       { id: 'c5', name: 'Helena Dias', role: 'Strategist', initials: 'HD' },
@@ -338,6 +352,8 @@ export const DOCS_LIBRARY = [
     id: 'templates',
     title: 'Fresh Templates',
     description: 'Modelos leves para kickoffs, briefs e retrospectivas — prontos para adaptar.',
+    category: 'Conteúdo',
+    dateLabel: '8 jul 2026',
     publishedLabel: 'Publicado há 1 mês',
     contributors: [
       { id: 'c6', name: 'Clara Nunes', role: 'Editor', initials: 'CN' },
@@ -375,8 +391,20 @@ export const DOCS_LIBRARY = [
   },
 ]
 
+export function findDocById(id) {
+  return DOCS_LIBRARY.find((doc) => doc.id === id) ?? null
+}
+
 export function getDocById(id) {
-  return DOCS_LIBRARY.find((doc) => doc.id === id) ?? DOCS_LIBRARY[0]
+  return findDocById(id) ?? DOCS_LIBRARY[0]
+}
+
+export function getDocCover(doc) {
+  return doc?.sections?.find((section) => section.image)?.image ?? null
+}
+
+export function getRecentDocs(limit = 4) {
+  return DOCS_LIBRARY.slice(0, limit)
 }
 
 export function sectionDomId(sectionId) {

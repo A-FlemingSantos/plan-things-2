@@ -9,13 +9,16 @@ import {
   Share,
   Trash2,
 } from 'lucide-react'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
+import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
 import { getSectionOffsetTop } from '../../../../shared/hooks/useSectionScrollIndicator.js'
 import {
   DOCS_LIBRARY,
-  getDocById,
+  findDocById,
+  getDocCover,
   sectionDomId,
 } from '../../data/docsContent.js'
 import styles from './DocsPage.module.css'
@@ -43,16 +46,27 @@ function scrollViewportToSection(viewport, sectionId) {
 }
 
 export default function DocsPage() {
-  const [activeDocId, setActiveDocId] = useState(DOCS_LIBRARY[0].id)
-  const [activeSectionId, setActiveSectionId] = useState(DOCS_LIBRARY[0].sections[0].id)
+  const { docId } = useParams()
+  const navigate = useNavigate()
+  const activeDoc = findDocById(docId)
+
+  const [activeSectionId, setActiveSectionId] = useState(
+    () => activeDoc?.sections[0]?.id ?? '',
+  )
   const [searchQuery, setSearchQuery] = useState('')
   const [indexOpen, setIndexOpen] = useState(true)
   const [docsOpen, setDocsOpen] = useState(true)
   const articleViewportRef = useRef(null)
 
-  const activeDoc = useMemo(() => getDocById(activeDocId), [activeDocId])
+  useEffect(() => {
+    if (!activeDoc) return
+    setSearchQuery('')
+    setActiveSectionId(activeDoc.sections[0]?.id ?? '')
+    articleViewportRef.current?.scrollTo({ top: 0 })
+  }, [activeDoc])
 
   const outline = useMemo(() => {
+    if (!activeDoc) return []
     const query = searchQuery.trim().toLowerCase()
     if (!query) return activeDoc.sections
 
@@ -72,12 +86,8 @@ export default function DocsPage() {
     setActiveSectionId(outline[0].id)
   }, [activeSectionId, outline])
 
-  const openDoc = (docId) => {
-    const nextDoc = getDocById(docId)
-    setSearchQuery('')
-    setActiveDocId(nextDoc.id)
-    setActiveSectionId(nextDoc.sections[0]?.id ?? '')
-    articleViewportRef.current?.scrollTo({ top: 0 })
+  if (!activeDoc) {
+    return <Navigate to={ROUTES.docs} replace />
   }
 
   const goToSection = (sectionId) => {
@@ -88,6 +98,11 @@ export default function DocsPage() {
     }
 
     requestAnimationFrame(run)
+  }
+
+  const openDoc = (nextDocId) => {
+    if (nextDocId === activeDoc.id) return
+    navigate(buildDocsPath(nextDocId))
   }
 
   const layoutClassName = [
@@ -154,7 +169,7 @@ export default function DocsPage() {
               className={styles.articleScroll}
               viewportClassName={styles.articleViewport}
               viewportRef={articleViewportRef}
-              refreshKey={`docs:${activeDocId}:${indexOpen}:${docsOpen}`}
+              refreshKey={`docs:${activeDoc.id}:${indexOpen}:${docsOpen}`}
             >
               <div className={styles.articleInner}>
                 <header className={styles.toolbar}>
@@ -236,7 +251,13 @@ export default function DocsPage() {
             aria-label="Documentos"
           >
             <div className={styles.paneHeader}>
-              {docsOpen ? <p className={styles.relatedLabel}>Docs</p> : null}
+              {docsOpen ? (
+                <p className={styles.relatedLabel}>
+                  <Link to={ROUTES.docs} className={styles.relatedHomeLink}>
+                    Docs
+                  </Link>
+                </p>
+              ) : null}
               <button
                 type="button"
                 className={styles.paneToggle}
@@ -259,8 +280,8 @@ export default function DocsPage() {
             >
               <div className={styles.relatedList}>
                 {DOCS_LIBRARY.map((doc) => {
-                  const thumb = doc.sections.find((section) => section.image)?.image
-                  const selected = doc.id === activeDocId
+                  const thumb = getDocCover(doc)
+                  const selected = doc.id === activeDoc.id
                   return (
                     <button
                       key={doc.id}

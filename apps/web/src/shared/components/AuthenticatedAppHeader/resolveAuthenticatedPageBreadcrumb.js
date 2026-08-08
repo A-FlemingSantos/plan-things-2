@@ -1,3 +1,4 @@
+import { findDocById } from '../../../features/docs/data/docsContent.js'
 import { normalizePathname, ROUTES } from '../../config/routes.js'
 
 function createItem(label, { to = null, current = false } = {}) {
@@ -35,6 +36,11 @@ export function resolveAuthenticatedPageBreadcrumb({
     items.push(createItem('Configurações', { current: true }))
   } else if (normalized === ROUTES.docs) {
     items.push(createItem('Docs', { current: true }))
+  } else if (normalized.startsWith(`${ROUTES.docs}/`)) {
+    const docId = normalized.slice(`${ROUTES.docs}/`.length).split('/')[0]
+    const doc = findDocById(docId)
+    items.push(createItem('Docs', { to: ROUTES.docs }))
+    items.push(createItem(doc?.title?.trim() || 'Documento', { current: true }))
   } else if (normalized === ROUTES.calendar) {
     items.push(createItem('Calendário', { current: true }))
   } else {

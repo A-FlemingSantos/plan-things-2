@@ -53,4 +53,18 @@ describe('resolveAuthenticatedPageBreadcrumb', () => {
       ],
     })
   })
+
+  it('returns navigable Docs segments for a document route', () => {
+    expect(resolveAuthenticatedPageBreadcrumb({
+      pathname: `${ROUTES.docs}/spark`,
+      workspaceName: 'Workspace',
+      plans: [],
+    })).toEqual({
+      items: [
+        { label: 'Workspace', to: ROUTES.workspace, current: false },
+        { label: 'Docs', to: ROUTES.docs, current: false },
+        { label: 'Spark Creativity', to: null, current: true },
+      ],
+    })
+  })
 })
