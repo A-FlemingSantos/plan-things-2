@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-auth
-description: "Skill for the Auth area of plan-things-2. 163 symbols across 30 files."
+description: "Skill for the Auth area of plan-things-2. 167 symbols across 31 files."
 ---
 
 # Auth
 
-163 symbols | 30 files | Cohesion: 75%
+167 symbols | 31 files | Cohesion: 74%
 
 ## When to Use
 
@@ -17,16 +17,16 @@ description: "Skill for the Auth area of plan-things-2. 163 symbols across 30 fi
 
 | File | Symbols |
 |------|---------|
-| `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | createExternalUser, normalizeName, register, loginAndLinkExternalIdentity, requireTrustedAutoLink (+11) |
+| `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | createExternalUser, normalizeName, register, loginAndLinkExternalIdentity, requireTrustedAutoLink (+12) |
 | `services/api/src/main/java/com/planthings/api/auth/DefaultOidcProviderClient.java` | exchangeAuthorizationCode, exchangeCode, normalizeProvider, verifyIdToken, decodeIdToken (+9) |
 | `services/api/src/test/java/com/planthings/api/auth/DefaultOidcProviderClientTest.java` | baseUrl, providerConfig, shouldParseMicrosoftTenantObjectAndVerifiedPrimaryEmail, shouldRejectExpiredToken, shouldRejectInvalidAudience (+8) |
 | `services/api/src/main/java/com/planthings/api/auth/OAuthLoginCodeEntity.java` | OAuthLoginCodeEntity, getCompletionCode, getRedirectPath, setClient, setCompletionCode (+8) |
 | `services/api/src/main/java/com/planthings/api/auth/OAuthLoginStateEntity.java` | getRedirectPath, OAuthLoginStateEntity, setClient, setNonce, setProvider (+8) |
-| `services/api/src/main/java/com/planthings/api/auth/OAuthLoginService.java` | createCompletionCode, randomToken, sanitizeRedirectPath, start, exchangeCompletionCode (+7) |
+| `services/api/src/main/java/com/planthings/api/auth/OAuthLoginService.java` | createCompletionCode, randomToken, start, exchangeCompletionCode, consumeState (+7) |
 | `services/api/src/main/java/com/planthings/api/auth/UserExternalIdentityEntity.java` | UserExternalIdentityEntity, setProvider, setProviderSubject, setUserId, setAvatarUrl (+4) |
 | `services/api/src/main/java/com/planthings/api/auth/PasswordResetTokenEntity.java` | PasswordResetTokenEntity, getExpiresAt, getToken, setExpiresAt, setToken (+4) |
-| `services/api/src/main/java/com/planthings/api/auth/UserSessionEntity.java` | UserSessionEntity, getClient, getUserAgent, setClient, setDeviceLabel (+2) |
-| `services/api/src/main/java/com/planthings/api/auth/UserSessionService.java` | createSession, describeBrowser, describePlatform, normalizeClient, normalizeUserAgent (+2) |
+| `services/api/src/main/java/com/planthings/api/auth/UserSessionService.java` | createSession, describeBrowser, describePlatform, normalizeClient, normalizeUserAgent (+3) |
+| `services/api/src/main/java/com/planthings/api/auth/AuthController.java` | startOAuth, register, forgotPassword, exchangeOAuthCode, logout (+3) |
 
 ## Entry Points
 
@@ -69,27 +69,27 @@ Start here when exploring this area:
 |------|------|-------|
 | `NativeOAuth → ApiException` | cross_community | 8 |
 | `HandleOAuth → NormalizePathname` | cross_community | 7 |
+| `Logout → ApiException` | cross_community | 6 |
 | `CreateCompletionCode → ApiException` | cross_community | 5 |
 | `ListActiveSessions → GetClient` | cross_community | 5 |
 | `NativeOAuth → NormalizeProvider` | cross_community | 4 |
 | `NativeOAuth → FindByProviderAndProviderSubject` | cross_community | 4 |
-| `CreateCompletionCode → FindByProviderAndProviderSubject` | cross_community | 3 |
-| `StartOAuth → SetProvider` | intra_community | 3 |
-| `StartOAuth → SetStateToken` | intra_community | 3 |
-| `StartOAuth → SetNonce` | intra_community | 3 |
+| `Logout → GetUserId` | cross_community | 4 |
+| `Logout → GetSessionId` | cross_community | 4 |
+| `Logout → RevokeOne` | intra_community | 4 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
-| Files | 12 calls |
-| Board | 8 calls |
-| Settings | 6 calls |
-| AppThemeScope | 3 calls |
+| Settings | 27 calls |
+| Hooks | 3 calls |
 | Context | 3 calls |
+| Board | 2 calls |
 | Api | 1 calls |
 | Url | 1 calls |
 | Security | 1 calls |
+| SidebarAccountMenu | 1 calls |
 
 ## How to Explore
 

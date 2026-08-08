@@ -1,32 +1,32 @@
 ---
 name: gitnexus-area-plans
-description: "Skill for the Plans area of plan-things-2. 73 symbols across 16 files."
+description: "Skill for the Plans area of plan-things-2. 70 symbols across 17 files."
 ---
 
 # Plans
 
-73 symbols | 16 files | Cohesion: 60%
+70 symbols | 17 files | Cohesion: 58%
 
 ## When to Use
 
 - Working with code in `services/`
-- Understanding how PlanInviteEntity, PlanLabelEntity, requirePlanManager work
+- Understanding how PlanInviteEntity, PlanLabelEntity, acceptInvite work
 - Modifying plans-related functionality
 
 ## Key Files
 
 | File | Symbols |
 |------|---------|
-| `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | acceptInvite, declineInvite, getInvitePreview, listInvites, listPendingInvitesForCurrentUser (+14) |
+| `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | acceptInvite, declineInvite, getInvitePreview, toInvitePreviewResponse, toInviteResponse (+12) |
 | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | getExpiresAt, getInvitedEmail, getPlanId, getStatus, getToken (+8) |
 | `services/api/src/main/java/com/planthings/api/plans/PlanEntity.java` | getCoverColor, getCoverImageId, getCoverThemeId, getDescription, getName (+6) |
-| `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | acceptInvite, declineInvite, getInvite, listInvites, listPendingInvites (+5) |
+| `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | acceptInvite, declineInvite, getInvite, inviteMember, removeMember (+3) |
 | `services/api/src/main/java/com/planthings/api/plans/PlanLabelEntity.java` | PlanLabelEntity, setColor, setName, setPlanId |
-| `services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java` | findByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc, findByToken, findByPlanIdAndInvitedEmailIgnoreCaseAndStatus |
 | `services/api/src/main/java/com/planthings/api/plans/PlanMemberRepository.java` | existsByPlanIdAndUserId, findByPlanIdAndUserId, findByPlanId |
-| `services/api/src/main/java/com/planthings/api/plans/PlanAccessService.java` | requirePlanManager, requireMember |
+| `services/api/src/main/java/com/planthings/api/plans/PlanAccessService.java` | requireMember, requireMemberRole, requirePlanManager |
+| `services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java` | findByToken, findByPlanIdAndInvitedEmailIgnoreCaseAndStatus |
 | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEmailSender.java` | sendInvite |
-| `services/api/src/main/java/com/planthings/api/board/BoardCardRepository.java` | countByPlanId |
+| `services/api/src/main/java/com/planthings/api/board/BoardCardAssigneeRepository.java` | deleteByUserIdAndCardIdIn |
 
 ## Entry Points
 
@@ -34,9 +34,9 @@ Start here when exploring this area:
 
 - **`PlanInviteEntity`** (Class) — `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java:11`
 - **`PlanLabelEntity`** (Class) — `services/api/src/main/java/com/planthings/api/plans/PlanLabelEntity.java:8`
-- **`requirePlanManager`** (Method) — `services/api/src/main/java/com/planthings/api/plans/PlanAccessService.java:29`
-- **`acceptInvite`** (Method) — `services/api/src/main/java/com/planthings/api/plans/PlanController.java:97`
-- **`declineInvite`** (Method) — `services/api/src/main/java/com/planthings/api/plans/PlanController.java:102`
+- **`acceptInvite`** (Method) — `services/api/src/main/java/com/planthings/api/plans/PlanController.java:82`
+- **`declineInvite`** (Method) — `services/api/src/main/java/com/planthings/api/plans/PlanController.java:87`
+- **`getInvite`** (Method) — `services/api/src/main/java/com/planthings/api/plans/PlanController.java:77`
 
 ## Key Symbols
 
@@ -44,13 +44,9 @@ Start here when exploring this area:
 |--------|------|------|------|
 | `PlanInviteEntity` | Class | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | 11 |
 | `PlanLabelEntity` | Class | `services/api/src/main/java/com/planthings/api/plans/PlanLabelEntity.java` | 8 |
-| `requirePlanManager` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanAccessService.java` | 29 |
-| `acceptInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 97 |
-| `declineInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 102 |
-| `getInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 87 |
-| `listInvites` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 77 |
-| `listPendingInvites` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 82 |
-| `revokeInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 92 |
+| `acceptInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 82 |
+| `declineInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 87 |
+| `getInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 77 |
 | `getExpiresAt` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | 77 |
 | `getInvitedEmail` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | 53 |
 | `getPlanId` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | 37 |
@@ -58,37 +54,42 @@ Start here when exploring this area:
 | `getToken` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | 61 |
 | `setRespondedAt` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | 89 |
 | `setStatus` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEntity.java` | 73 |
-| `findByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java` | 11 |
 | `findByToken` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteRepository.java` | 13 |
 | `acceptInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | 242 |
-| `declineInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | 359 |
+| `declineInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | 294 |
+| `getInvitePreview` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | 276 |
+| `toInvitePreviewResponse` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | 442 |
+| `toInviteResponse` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanService.java` | 431 |
+| `inviteMember` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanController.java` | 72 |
+| `sendInvite` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanInviteEmailSender.java` | 7 |
 
 ## Execution Flows
 
 | Flow | Type | Steps |
 |------|------|-------|
-| `ListPendingInvites → ApiException` | cross_community | 7 |
-| `InviteMember → ApiException` | cross_community | 7 |
-| `RevokeInvite → ApiException` | cross_community | 7 |
-| `AcceptInvite → ApiException` | cross_community | 7 |
-| `DeclineInvite → ApiException` | cross_community | 7 |
+| `InviteMember → ApiException` | cross_community | 6 |
 | `CreateLabel → ApiException` | cross_community | 6 |
-| `InviteMember → FindByPlanIdAndUserId` | cross_community | 6 |
-| `ListInvites → ApiException` | cross_community | 6 |
-| `RevokeInvite → FindByPlanIdAndUserId` | cross_community | 6 |
-| `ListPendingInvites → GetUserId` | cross_community | 5 |
+| `AcceptInvite → ApiException` | cross_community | 6 |
+| `ConnectRepository → FindByPlanIdAndUserId` | cross_community | 6 |
+| `InviteMember → FindByPlanIdAndUserId` | cross_community | 5 |
+| `ListConnectedRepositories → FindByPlanIdAndUserId` | cross_community | 5 |
+| `ListPlanFiles → FindByPlanIdAndUserId` | cross_community | 5 |
+| `UploadAndAttachToCard → FindByPlanIdAndUserId` | cross_community | 5 |
+| `AttachToCard → FindByPlanIdAndUserId` | cross_community | 5 |
+| `ConnectRepository → ExistsByPlanIdAndUserId` | cross_community | 5 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
-| Files | 30 calls |
-| Board | 23 calls |
+| Settings | 36 calls |
+| Board | 10 calls |
 | Api | 5 calls |
-| Tools | 2 calls |
 | Auth | 1 calls |
 | Persistence | 1 calls |
+| Calendar | 1 calls |
 | Blocks | 1 calls |
+| Tools | 1 calls |
 
 ## How to Explore
 

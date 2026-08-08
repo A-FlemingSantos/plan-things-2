@@ -3,47 +3,21 @@ import { Link, useNavigate } from 'react-router-dom'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
-import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
-import {
-  DOCS_LIBRARY,
-  getDocCover,
-  getRecentDocs,
-} from '../../data/docsContent.js'
+import { buildDocsPath } from '../../../../shared/config/routes.js'
+import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
 import styles from './DocsHomePage.module.css'
 
-const RECENT_DOCS = getRecentDocs(4)
-
-function DocMeta({ category, dateLabel }) {
+function DocMeta({ role, updatedAt }) {
   return (
     <p className={styles.meta}>
-      <span>{category}</span>
+      <span>{role === 'OWNER' ? 'Seu documento' : 'Compartilhado'}</span>
       <span className={styles.metaSep} aria-hidden="true">·</span>
-      <span>{dateLabel}</span>
+      <span>{updatedAt?.text ?? 'Agora'}</span>
     </p>
   )
 }
 
-function EditorAvatars({ contributors = [] }) {
-  if (contributors.length === 0) return null
-
-  const names = contributors.map((person) => person.name).join(', ')
-
-  return (
-    <ul className={styles.avatarStack} aria-label={`Editado por ${names}`}>
-      {contributors.map((person) => (
-        <li key={person.id} className={styles.avatarItem}>
-          <span className={styles.avatar} title={person.name} aria-hidden="true">
-            {person.initials}
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 function RecentDocItem({ doc, index }) {
-  const cover = getDocCover(doc)
-
   return (
     <Link
       to={buildDocsPath(doc.id)}
@@ -52,14 +26,13 @@ function RecentDocItem({ doc, index }) {
     >
       <span
         className={styles.recentThumb}
-        style={cover ? { backgroundImage: cover.gradient } : undefined}
+        style={{ backgroundImage: 'linear-gradient(135deg, #c9b8a8 0%, #8a9bb0 48%, #5f6f82 100%)' }}
         aria-hidden="true"
       />
       <span className={styles.recentCopy}>
         <span className={styles.itemTitle}>{doc.title}</span>
         <span className={styles.itemFooter}>
-          <DocMeta category={doc.category} dateLabel={doc.dateLabel} />
-          <EditorAvatars contributors={doc.contributors} />
+          <DocMeta role={doc.role} updatedAt={doc.updatedAt} />
         </span>
       </span>
     </Link>
@@ -67,8 +40,6 @@ function RecentDocItem({ doc, index }) {
 }
 
 function LibraryDocCard({ doc, index }) {
-  const cover = getDocCover(doc)
-
   return (
     <Link
       to={buildDocsPath(doc.id)}
@@ -77,23 +48,30 @@ function LibraryDocCard({ doc, index }) {
     >
       <span
         className={styles.libraryMedia}
-        style={cover ? { backgroundImage: cover.gradient } : undefined}
+        style={{ backgroundImage: 'linear-gradient(145deg, #d7d2c8 0%, #9aa7b5 55%, #6d7886 100%)' }}
         role="img"
-        aria-label={cover?.alt ?? doc.title}
+        aria-label={doc.title}
       />
       <span className={styles.libraryCopy}>
         <span className={styles.itemTitle}>{doc.title}</span>
         <span className={styles.itemFooter}>
-          <DocMeta category={doc.category} dateLabel={doc.dateLabel} />
-          <EditorAvatars contributors={doc.contributors} />
+          <DocMeta role={doc.role} updatedAt={doc.updatedAt} />
         </span>
       </span>
     </Link>
   )
 }
 
-export default function DocsHomePage() {
+function DocsHomeContent() {
   const navigate = useNavigate()
+  const { createDocument, documents, error, isLoading } = useDocs()
+  const recentDocs = documents.slice(0, 4)
+  const libraryDocs = documents
+
+  const createAndOpenDocument = async () => {
+    const document = await createDocument()
+    navigate(buildDocsPath(document.document.id))
+  }
 
   return (
     <AppThemeScope>
@@ -108,7 +86,7 @@ export default function DocsHomePage() {
               <button
                 type="button"
                 className={styles.writeButton}
-                onClick={() => navigate(ROUTES.docsNew)}
+                onClick={createAndOpenDocument}
               >
                 <SquarePen size={15} strokeWidth={1.6} aria-hidden="true" />
                 Escrever
@@ -125,7 +103,7 @@ export default function DocsHomePage() {
                 </a>
               </header>
               <div className={styles.recentGrid}>
-                {RECENT_DOCS.map((doc, index) => (
+                {recentDocs.map((doc, index) => (
                   <RecentDocItem key={doc.id} doc={doc} index={index} />
                 ))}
               </div>
@@ -141,18 +119,30 @@ export default function DocsHomePage() {
                   Biblioteca
                 </h2>
                 <span className={styles.sectionLinkMuted}>
-                  {DOCS_LIBRARY.length} docs
+                  {documents.length} docs
                 </span>
               </header>
-              <div className={styles.libraryGrid}>
-                {DOCS_LIBRARY.map((doc, index) => (
-                  <LibraryDocCard key={doc.id} doc={doc} index={index} />
-                ))}
-              </div>
+              {isLoading ? <p className={styles.sectionLinkMuted}>Carregando docs…</p> : null}
+              {error ? <p className={styles.sectionLinkMuted}>Não foi possível carregar os documentos.</p> : null}
+              {!isLoading && !error ? (
+                <div className={styles.libraryGrid}>
+                  {libraryDocs.map((doc, index) => (
+                    <LibraryDocCard key={doc.id} doc={doc} index={index} />
+                  ))}
+                </div>
+              ) : null}
             </section>
           </div>
         </CustomScrollArea>
       </ProductAppShell>
     </AppThemeScope>
+  )
+}
+
+export default function DocsHomePage() {
+  return (
+    <DocsProvider>
+      <DocsHomeContent />
+    </DocsProvider>
   )
 }

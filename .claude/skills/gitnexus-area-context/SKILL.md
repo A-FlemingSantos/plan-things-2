@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-context
-description: "Skill for the Context area of plan-things-2. 129 symbols across 27 files."
+description: "Skill for the Context area of plan-things-2. 132 symbols across 26 files."
 ---
 
 # Context
 
-129 symbols | 27 files | Cohesion: 67%
+132 symbols | 26 files | Cohesion: 68%
 
 ## When to Use
 
@@ -17,51 +17,51 @@ description: "Skill for the Context area of plan-things-2. 129 symbols across 27
 
 | File | Symbols |
 |------|---------|
-| `apps/web/src/features/preferences/context/PreferencesContext.jsx` | capitalizeFirst, formatClockTime, formatClockTimeWithPreferences, formatCompactDayMonth, formatCompactDayMonthWithPreferences (+38) |
-| `apps/web/src/features/auth/context/AuthContext.jsx` | activateStoredAccount, clearPendingAccountRedirect, createEmptyAccountStore, getAccountId, normalizeAccountStore (+33) |
+| `apps/web/src/features/preferences/context/PreferencesContext.jsx` | capitalizeFirst, formatClockTime, formatClockTimeWithPreferences, formatCompactDayMonth, formatCompactDayMonthWithPreferences (+39) |
+| `apps/web/src/features/auth/context/AuthContext.jsx` | activateStoredAccount, clearPendingAccountRedirect, createEmptyAccountStore, getAccountId, normalizeAccountStore (+36) |
 | `apps/web/src/features/workspace/context/PlansContext.jsx` | createPlan, ensureInteractiveSession, renamePlan, setPlanById, updatePlan (+6) |
 | `apps/web/src/features/settings/pages/SettingsPage/SettingsPage.jsx` | handleNotificationToggle, persistNotifications, handleGeneralFieldChange, persistGeneralPreferences |
 | `apps/web/src/features/auth/context/AuthContext.test.jsx` | createAccessToken, toBase64Url, readActiveStoredSession, readStoredValue |
-| `apps/web/src/shared/context/AppChromeContext.jsx` | registerLoadingScreen, useAppChrome |
 | `apps/web/src/features/auth/utils/authRedirect.js` | resolveAccountHomeRoute, resolvePostAuthRoute |
-| `apps/web/src/shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx` | handleSwitchAccount, renderAccountsSubmenu |
+| `apps/web/src/shared/context/AppChromeContext.jsx` | registerLoadingScreen, useAppChrome |
 | `apps/web/src/features/auth/pages/OAuthCallback/OAuthCallback.jsx` | completeLogin, finishPopupOAuth |
 | `apps/web/src/features/auth/utils/oauthPopup.js` | isOAuthPopupContext, postOAuthPopupResult |
+| `apps/web/src/features/auth/pages/PasswordRecovery/PasswordRecovery.jsx` | submitForgot, submitReset |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`formatClockTime`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:651`
-- **`formatClockTimeWithPreferences`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:301`
-- **`formatCompactDayMonth`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:663`
-- **`formatCompactDayMonthWithPreferences`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:342`
-- **`formatDate`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:643`
+- **`formatClockTime`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:659`
+- **`formatClockTimeWithPreferences`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:309`
+- **`formatCompactDayMonth`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:671`
+- **`formatCompactDayMonthWithPreferences`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:350`
+- **`formatDate`** (Function) — `apps/web/src/features/preferences/context/PreferencesContext.jsx:651`
 
 ## Key Symbols
 
 | Symbol | Type | File | Line |
 |--------|------|------|------|
-| `formatClockTime` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 651 |
-| `formatClockTimeWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 301 |
-| `formatCompactDayMonth` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 663 |
-| `formatCompactDayMonthWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 342 |
-| `formatDate` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 643 |
-| `formatDateTime` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 655 |
-| `formatDateTimeWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 321 |
-| `formatDateWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 260 |
-| `formatIntl` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 634 |
-| `formatMonthLabel` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 659 |
-| `formatMonthLabelWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 329 |
-| `formatTime` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 647 |
-| `formatTimeWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 288 |
+| `formatClockTime` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 659 |
+| `formatClockTimeWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 309 |
+| `formatCompactDayMonth` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 671 |
+| `formatCompactDayMonthWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 350 |
+| `formatDate` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 651 |
+| `formatDateTime` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 663 |
+| `formatDateTimeWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 329 |
+| `formatDateWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 268 |
+| `formatIntl` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 642 |
+| `formatMonthLabel` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 667 |
+| `formatMonthLabelWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 337 |
+| `formatTime` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 655 |
+| `formatTimeWithPreferences` | Function | `apps/web/src/features/preferences/context/PreferencesContext.jsx` | 296 |
 | `clearPendingAccountRedirect` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 305 |
 | `patchSession` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 485 |
 | `saveAuthenticatedSession` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 335 |
-| `savedAccounts` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 674 |
+| `savedAccounts` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 689 |
 | `switchAccount` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 504 |
 | `bootstrap` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 368 |
-| `refreshSession` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 441 |
+| `clearPendingLogoutRedirect` | Function | `apps/web/src/features/auth/context/AuthContext.jsx` | 301 |
 
 ## Execution Flows
 
@@ -77,13 +77,13 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| SettingsPage | 19 calls |
+| SettingsPage | 20 calls |
 | Contracts | 7 calls |
 | Config | 5 calls |
-| Data | 3 calls |
-| AppThemeScope | 2 calls |
-| KanbanBoard | 1 calls |
-| KanbanColumnStatusPicker | 1 calls |
+| Hooks | 3 calls |
+| SidebarAccountMenu | 1 calls |
+| PlanGitHubIntegrationModal | 1 calls |
+| Data | 1 calls |
 
 ## How to Explore
 

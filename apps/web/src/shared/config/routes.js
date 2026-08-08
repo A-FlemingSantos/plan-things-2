@@ -9,6 +9,7 @@ export const ROUTES = {
   docs: '/docs',
   docsNew: '/docs/new',
   docsDoc: '/docs/:docId',
+  docsInvite: '/docs/invites/:token',
   files: '/files',
   settings: '/settings',
   forgot: '/forgot',

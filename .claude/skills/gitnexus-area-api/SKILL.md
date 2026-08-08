@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-api
-description: "Skill for the Api area of plan-things-2. 162 symbols across 28 files."
+description: "Skill for the Api area of plan-things-2. 179 symbols across 30 files."
 ---
 
 # Api
 
-162 symbols | 28 files | Cohesion: 76%
+179 symbols | 30 files | Cohesion: 76%
 
 ## When to Use
 
@@ -19,14 +19,14 @@ description: "Skill for the Api area of plan-things-2. 162 symbols across 28 fil
 |------|---------|
 | `services/api/src/test/java/com/planthings/api/OAuthApiIntegrationTest.java` | shouldCreateSessionFromNativeGoogleIdToken, OAuthApiIntegrationTest, completeProviderCallbackLocation, queryParam, shouldPreserveMobileCallbackWhenFailureHappensAfterStateConsumption (+15) |
 | `services/api/src/test/java/com/planthings/api/BoardInboxGmailIntegrationTest.java` | BoardInboxGmailIntegrationTest, addMember, createCard, decodeBase64Part, register (+12) |
-| `services/api/src/test/java/com/planthings/api/IntelligenceApiIntegrationTest.java` | createCard, shouldValidateCardScopeWhenCreatingConversation, functionCallNode, postMessage, reasoningItemNode (+10) |
+| `services/api/src/test/java/com/planthings/api/IntelligenceApiIntegrationTest.java` | createCard, shouldValidateCardScopeWhenCreatingConversation, IntelligenceApiIntegrationTest, functionCallNode, postMessage (+10) |
+| `services/api/src/test/java/com/planthings/api/GitHubIntegrationApiIntegrationTest.java` | reset, addMember, connectGitHub, shouldLinkOnlyObjectsFromConnectedPlanRepository, shouldPromoteOldestEligibleAnchorOnRemoval (+8) |
 | `services/api/src/test/java/com/planthings/api/PlanInviteGmailIntegrationTest.java` | decodeBase64Part, register, shouldKeepDuplicatePendingInviteConflict, shouldRejectInviteWhenGmailSendFailsAndNotCreatePendingInvite, shouldRejectInviteWhenRefreshTokenFailsAndRememberLastError (+8) |
 | `services/api/src/test/java/com/planthings/api/SettingsApiIntegrationTest.java` | shouldCanonicalizeLocaleAndTimeZoneOnPreferencesUpdate, shouldDeleteAccountAfterStrongConfirmation, shouldExportSettingsDataAsZip, shouldListAndRevokeSpecificSession, shouldLoadAndUpdateSettingsSnapshot (+8) |
 | `services/api/src/test/java/com/planthings/api/GmailIntegrationApiIntegrationTest.java` | GmailIntegrationApiIntegrationTest, queryParam, shouldPreserveMobileReturnUrlWhenGmailAddressDiffers, shouldPreserveMobileReturnUrlWhenRefreshTokenIsMissing, shouldPreserveWebBackgroundRouteAcrossGmailCallback (+8) |
 | `services/api/src/test/java/com/planthings/api/ApiIntegrationTestSupport.java` | createBoardColumn, createPlan, readJson, registerAndGetToken, ApiIntegrationTestSupport (+7) |
 | `services/api/src/test/java/com/planthings/api/FileApiIntegrationTest.java` | addMember, assertAttachmentMissing, findAttachmentByFileId, shouldApplyPlanFileAttachmentPermissions, shouldRollbackAtomicUploadWhenCardIsInvalidOrInaccessible (+7) |
 | `services/api/src/test/java/com/planthings/api/BoardAssigneeIntegrationTest.java` | shouldAllowAssigningMembersAndUpdatingDueDates, shouldPersistAssigneeActivityInCardComments, shouldPersistCompletedStateWithoutMovingCardToDoneColumn, shouldPersistStarredStateAcrossBoardReads, shouldRemoveLegacyCardAssignmentsWhenAMemberLeavesThePlan (+1) |
-| `services/api/src/test/java/com/planthings/api/DatasourceSafetyGuardTest.java` | shouldAllowAnyDatabaseDuringTestProfile, shouldAllowOfficialApplicationDatabaseFromContainerHostOutsideTestProfile, shouldAllowOfficialApplicationDatabaseOutsideTestProfile, shouldBlockInvalidDatabaseOutsideTestProfile, shouldBlockWhenDatabaseNameIsMissingOutsideTestProfile (+1) |
 
 ## Entry Points
 
@@ -80,12 +80,12 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Settings | 10 calls |
-| Files | 7 calls |
+| Settings | 16 calls |
 | Plans | 5 calls |
 | Auth | 3 calls |
 | Openai | 2 calls |
 | Board | 2 calls |
+| Files | 1 calls |
 
 ## How to Explore
 

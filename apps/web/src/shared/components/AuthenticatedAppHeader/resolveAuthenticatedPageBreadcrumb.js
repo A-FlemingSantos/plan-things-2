@@ -1,4 +1,3 @@
-import { findDocById } from '../../../features/docs/data/docsContent.js'
 import { normalizePathname, ROUTES } from '../../config/routes.js'
 
 function createItem(label, { to = null, current = false } = {}) {
@@ -38,10 +37,9 @@ export function resolveAuthenticatedPageBreadcrumb({
     items.push(createItem('Docs', { current: true }))
   } else if (normalized.startsWith(`${ROUTES.docs}/`)) {
     const docId = normalized.slice(`${ROUTES.docs}/`.length).split('/')[0]
-    const doc = findDocById(docId)
     items.push(createItem('Docs', { to: ROUTES.docs }))
     items.push(createItem(
-      docId === 'new' ? 'Nova doc' : (doc?.title?.trim() || 'Documento'),
+      docId === 'new' ? 'Nova doc' : 'Documento',
       { current: true },
     ))
   } else if (normalized === ROUTES.calendar) {

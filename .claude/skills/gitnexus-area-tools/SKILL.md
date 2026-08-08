@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-tools
-description: "Skill for the Tools area of plan-things-2. 40 symbols across 8 files."
+description: "Skill for the Tools area of plan-things-2. 45 symbols across 9 files."
 ---
 
 # Tools
 
-40 symbols | 8 files | Cohesion: 58%
+45 symbols | 9 files | Cohesion: 55%
 
 ## When to Use
 
@@ -18,12 +18,13 @@ description: "Skill for the Tools area of plan-things-2. 40 symbols across 8 fil
 | File | Symbols |
 |------|---------|
 | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | errorNode, executeCapability, failedAudit, failedAudit, failedOutcome (+16) |
-| `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | getBoard, getPlan, normalizedEntity, requirePlanInScope, resolvePlanId (+1) |
+| `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | buildCardSummary, normalizeQuery, searchCards, getBoard, getPlan (+4) |
 | `services/api/src/test/java/com/planthings/api/intelligence/tools/AiModelToolRouterTest.java` | shouldAcceptOpenAiWireToolNames, shouldAggregateContextSearchResults, shouldCaptureCapabilityExceptionAsStructuredFailure, shouldReturnRecoverableErrorWhenEntityIdIsInvalid |
 | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiCapabilityRegistry.java` | toOpenAiToolName, normalizeToolName, toCanonicalToolName |
 | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRegistry.java` | buildContextSearchSchema, buildEntityGetSchema, buildTools |
-| `services/api/src/main/java/com/planthings/api/intelligence/blocks/AiEntityHrefBuilder.java` | planBoardHref |
-| `services/api/src/main/java/com/planthings/api/plans/PlanEntity.java` | getWorkspaceId |
+| `services/api/src/main/java/com/planthings/api/intelligence/blocks/AiEntityHrefBuilder.java` | cardBoardHref, planBoardHref |
+| `services/api/src/main/java/com/planthings/api/board/BoardCardRepository.java` | searchByPlanId |
+| `services/api/src/main/java/com/planthings/api/board/BoardColumnEntity.java` | getTitle |
 | `services/api/src/test/java/com/planthings/api/intelligence/tools/AiModelToolRegistryTest.java` | shouldExposeOnlyReadOnlyModelFacingTools |
 
 ## Entry Points
@@ -48,18 +49,18 @@ Start here when exploring this area:
 | `serialize` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 343 |
 | `toDurationMillis` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 330 |
 | `get` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 388 |
+| `searchByPlanId` | Method | `services/api/src/main/java/com/planthings/api/board/BoardCardRepository.java` | 20 |
+| `getTitle` | Method | `services/api/src/main/java/com/planthings/api/board/BoardColumnEntity.java` | 35 |
+| `cardBoardHref` | Method | `services/api/src/main/java/com/planthings/api/intelligence/blocks/AiEntityHrefBuilder.java` | 16 |
+| `buildCardSummary` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 357 |
+| `normalizeQuery` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 353 |
+| `searchCards` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 192 |
 | `planBoardHref` | Method | `services/api/src/main/java/com/planthings/api/intelligence/blocks/AiEntityHrefBuilder.java` | 12 |
 | `getBoard` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 135 |
 | `getPlan` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 104 |
 | `normalizedEntity` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 380 |
 | `requirePlanInScope` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 323 |
 | `resolvePlanId` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiReadOnlyCapabilityService.java` | 313 |
-| `getWorkspaceId` | Method | `services/api/src/main/java/com/planthings/api/plans/PlanEntity.java` | 33 |
-| `appendArrayResults` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 239 |
-| `appendIfNew` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 256 |
-| `appendSingleEntityResult` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 226 |
-| `executeContextSearch` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 61 |
-| `requireLimit` | Method | `services/api/src/main/java/com/planthings/api/intelligence/tools/AiModelToolRouter.java` | 300 |
 
 ## Execution Flows
 
@@ -78,10 +79,11 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Files | 3 calls |
-| Board | 3 calls |
+| Settings | 7 calls |
+| Board | 6 calls |
 | Intelligence | 2 calls |
-| Blocks | 2 calls |
+| Github | 2 calls |
+| Calendar | 1 calls |
 
 ## How to Explore
 

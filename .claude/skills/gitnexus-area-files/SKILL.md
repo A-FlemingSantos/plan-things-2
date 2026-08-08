@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-files
-description: "Skill for the Files area of plan-things-2. 250 symbols across 62 files."
+description: "Skill for the Files area of plan-things-2. 50 symbols across 12 files."
 ---
 
 # Files
 
-250 symbols | 62 files | Cohesion: 77%
+50 symbols | 12 files | Cohesion: 64%
 
 ## When to Use
 
@@ -17,16 +17,16 @@ description: "Skill for the Files area of plan-things-2. 250 symbols across 62 f
 
 | File | Symbols |
 |------|---------|
-| `services/api/src/main/java/com/planthings/api/files/FileService.java` | applyRestoreRecursively, applySoftDeleteRecursively, canAccessFile, collectSubtree, delete (+27) |
-| `services/api/src/main/java/com/planthings/api/settings/SettingsExportService.java` | attachmentMap, boardAssigneeMap, boardCardMap, boardChecklistMap, boardColumnMap (+18) |
-| `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | getDeletedAt, getMimeType, getName, getOwnerUserId, getParentId (+14) |
-| `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | buildSessionResponse, buildSessionResponse, login, me, refreshSession (+3) |
-| `services/api/src/main/java/com/planthings/api/board/BoardCardEntity.java` | getAuthorUserId, getDescription, getDueAt, getLabelId, getPositionIndex (+3) |
-| `services/api/src/main/java/com/planthings/api/board/BoardService.java` | deriveCardKind, resolveInboxRecipients, sendCardToInbox, toAttachmentView, toCardView (+3) |
-| `services/api/src/main/java/com/planthings/api/files/FilePlanShareEntity.java` | getFileEntryId, getPlanId, FilePlanShareEntity, setFileEntryId, setPlanId (+2) |
-| `services/api/src/main/java/com/planthings/api/settings/SettingsService.java` | accountSettingsFor, changePassword, getAccountAvatar, removeAccountAvatar, setupOAuthPassword (+2) |
-| `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | getEmail, getFullName, getLocaleTag, getPasswordHash, getTimeZone (+1) |
-| `services/api/src/main/java/com/planthings/api/board/BoardCardInboxDeliveryEntity.java` | getCardId, getMessageId, getPlanId, getSentByUserId, getSentFrom (+1) |
+| `services/api/src/main/java/com/planthings/api/files/FileService.java` | createFolder, persistUploadedFile, requireName, attachToCard, ensureFileSharedWithPlan (+10) |
+| `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | FileEntryEntity, setMimeType, setName, setOwnerUserId, setParentId (+3) |
+| `services/api/src/main/java/com/planthings/api/files/FileController.java` | createFolder, attachToCard, shareToPlan, uploadAndAttachToCard, removeAttachment (+2) |
+| `services/api/src/main/java/com/planthings/api/files/FilePlanShareEntity.java` | FilePlanShareEntity, setFileEntryId, setPlanId, setSharedByUserId, getSharedByUserId |
+| `services/api/src/main/java/com/planthings/api/files/CardAttachmentEntity.java` | CardAttachmentEntity, setAttachedByUserId, setCardId, setFileEntryId, getCardId |
+| `services/api/src/main/java/com/planthings/api/files/FileBlobEntity.java` | setContent, setFileEntryId |
+| `services/api/src/main/java/com/planthings/api/files/CardAttachmentRepository.java` | findByCardId, findByFileEntryId |
+| `services/api/src/main/java/com/planthings/api/files/FileEntryRepository.java` | findByWorkspaceIdAndDeletedAtIsNotNullOrderByUpdatedAtDesc, findByWorkspaceIdAndOwnerUserIdAndDeletedAtIsNullOrderByTypeAscNameAsc |
+| `services/api/src/test/java/com/planthings/api/IntelligenceApiIntegrationTest.java` | saveFileEntry |
+| `services/api/src/test/java/com/planthings/api/intelligence/blocks/AiEntityReferenceResolverTest.java` | shouldResolveFileAttachmentReference |
 
 ## Entry Points
 
@@ -35,8 +35,8 @@ Start here when exploring this area:
 - **`FileEntryEntity`** (Class) — `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java:11`
 - **`FilePlanShareEntity`** (Class) — `services/api/src/main/java/com/planthings/api/files/FilePlanShareEntity.java:8`
 - **`CardAttachmentEntity`** (Class) — `services/api/src/main/java/com/planthings/api/files/CardAttachmentEntity.java:8`
-- **`buildSessionResponse`** (Method) — `services/api/src/main/java/com/planthings/api/auth/AuthService.java:215`
-- **`buildSessionResponse`** (Method) — `services/api/src/main/java/com/planthings/api/auth/AuthService.java:210`
+- **`setContent`** (Method) — `services/api/src/main/java/com/planthings/api/files/FileBlobEntity.java:32`
+- **`setFileEntryId`** (Method) — `services/api/src/main/java/com/planthings/api/files/FileBlobEntity.java:24`
 
 ## Key Symbols
 
@@ -45,51 +45,47 @@ Start here when exploring this area:
 | `FileEntryEntity` | Class | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 11 |
 | `FilePlanShareEntity` | Class | `services/api/src/main/java/com/planthings/api/files/FilePlanShareEntity.java` | 8 |
 | `CardAttachmentEntity` | Class | `services/api/src/main/java/com/planthings/api/files/CardAttachmentEntity.java` | 8 |
-| `buildSessionResponse` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 215 |
-| `buildSessionResponse` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 210 |
-| `login` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 99 |
-| `me` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 203 |
-| `refreshSession` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 145 |
-| `sessionForUserId` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 136 |
-| `toUserSummary` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 220 |
-| `toWorkspaceSummary` | Method | `services/api/src/main/java/com/planthings/api/auth/AuthService.java` | 234 |
-| `getEmail` | Method | `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | 37 |
-| `getFullName` | Method | `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | 29 |
-| `getLocaleTag` | Method | `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | 61 |
-| `getPasswordHash` | Method | `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | 45 |
-| `getTimeZone` | Method | `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | 69 |
-| `isLocalPasswordEnabled` | Method | `services/api/src/main/java/com/planthings/api/auth/UserEntity.java` | 53 |
-| `existsByUserId` | Method | `services/api/src/main/java/com/planthings/api/auth/UserExternalIdentityRepository.java` | 12 |
-| `getDeviceLabel` | Method | `services/api/src/main/java/com/planthings/api/auth/UserSessionEntity.java` | 47 |
-| `findByUserIdAndRevokedAtIsNullOrderByLastSeenAtDescCreatedAtDesc` | Method | `services/api/src/main/java/com/planthings/api/auth/UserSessionRepository.java` | 15 |
+| `setContent` | Method | `services/api/src/main/java/com/planthings/api/files/FileBlobEntity.java` | 32 |
+| `setFileEntryId` | Method | `services/api/src/main/java/com/planthings/api/files/FileBlobEntity.java` | 24 |
+| `createFolder` | Method | `services/api/src/main/java/com/planthings/api/files/FileController.java` | 42 |
+| `setMimeType` | Method | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 87 |
+| `setName` | Method | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 79 |
+| `setOwnerUserId` | Method | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 55 |
+| `setParentId` | Method | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 63 |
+| `setSizeBytes` | Method | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 95 |
+| `setType` | Method | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 71 |
+| `setWorkspaceId` | Method | `services/api/src/main/java/com/planthings/api/files/FileEntryEntity.java` | 47 |
+| `createFolder` | Method | `services/api/src/main/java/com/planthings/api/files/FileService.java` | 96 |
+| `persistUploadedFile` | Method | `services/api/src/main/java/com/planthings/api/files/FileService.java` | 350 |
+| `requireName` | Method | `services/api/src/main/java/com/planthings/api/files/FileService.java` | 497 |
+| `attachToCard` | Method | `services/api/src/main/java/com/planthings/api/files/FileController.java` | 101 |
+| `shareToPlan` | Method | `services/api/src/main/java/com/planthings/api/files/FileController.java` | 91 |
+| `uploadAndAttachToCard` | Method | `services/api/src/main/java/com/planthings/api/files/FileController.java` | 52 |
+| `setFileEntryId` | Method | `services/api/src/main/java/com/planthings/api/files/FilePlanShareEntity.java` | 25 |
 
 ## Execution Flows
 
 | Flow | Type | Steps |
 |------|------|-------|
-| `CreateEvent → ApiException` | cross_community | 7 |
 | `CreateFolder → ApiException` | cross_community | 7 |
-| `CreateConversation → ApiException` | cross_community | 7 |
-| `CreatePlan → ApiException` | cross_community | 7 |
 | `ListFiles → ApiException` | cross_community | 7 |
-| `ListPendingInvites → ApiException` | cross_community | 7 |
-| `DeleteAccount → ApiException` | cross_community | 7 |
-| `StartGmailIntegration → ApiException` | cross_community | 7 |
-| `UpdateEvent → ApiException` | cross_community | 7 |
-| `DeleteEvent → ApiException` | cross_community | 7 |
+| `UploadAndAttachToCard → ApiException` | cross_community | 7 |
+| `ShareToPlan → ApiException` | cross_community | 7 |
+| `AttachToCard → ApiException` | cross_community | 7 |
+| `CreateFolder → GetUserId` | cross_community | 5 |
+| `ListFiles → GetUserId` | cross_community | 5 |
+| `UploadAndAttachToCard → GetUserId` | cross_community | 5 |
+| `UploadAndAttachToCard → FindByPlanIdAndUserId` | cross_community | 5 |
+| `ShareToPlan → GetUserId` | cross_community | 5 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
-| Board | 39 calls |
-| Plans | 13 calls |
-| Settings | 12 calls |
-| Blocks | 10 calls |
-| Auth | 7 calls |
-| Avatar | 5 calls |
-| Calendar | 3 calls |
-| Security | 2 calls |
+| Settings | 34 calls |
+| Board | 10 calls |
+| Plans | 4 calls |
+| Blocks | 1 calls |
 
 ## How to Explore
 

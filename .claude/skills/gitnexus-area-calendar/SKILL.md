@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-calendar
-description: "Skill for the Calendar area of plan-things-2. 54 symbols across 10 files."
+description: "Skill for the Calendar area of plan-things-2. 55 symbols across 11 files."
 ---
 
 # Calendar
 
-54 symbols | 10 files | Cohesion: 72%
+55 symbols | 11 files | Cohesion: 59%
 
 ## When to Use
 
@@ -17,11 +17,11 @@ description: "Skill for the Calendar area of plan-things-2. 54 symbols across 10
 
 | File | Symbols |
 |------|---------|
-| `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | CalendarEventEntity, setCreatorUserId, setDescription, setEndsAt, setGeneratedFromCard (+16) |
-| `services/api/src/main/java/com/planthings/api/calendar/CalendarService.java` | createStandaloneEvent, normalizeOptional, removeCardEvent, requireTitle, syncCardEvent (+6) |
+| `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | getCreatorUserId, getDescription, getEndsAt, getGeneratedFromCard, getLinkedCardId (+16) |
+| `services/api/src/main/java/com/planthings/api/calendar/CalendarService.java` | deleteStandaloneEvent, deriveLinkedCardKind, getEventForPlan, toEventSummary, createStandaloneEvent (+6) |
 | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventRepository.java` | findByLinkedCardId, findByPlanIdInAndStartsAtBetweenOrderByStartsAtAsc, findByPlanIdInOrderByStartsAtAsc, findByWorkspaceIdAndStartsAtBetweenOrderByStartsAtAsc, findByWorkspaceIdOrderByStartsAtAsc |
 | `apps/web/src/shared/components/Calendar/Calendar.jsx` | Calendar, CalendarGridComponent, CalendarHeader, RangeCalendar, cn |
-| `services/api/src/main/java/com/planthings/api/calendar/CalendarController.java` | createEvent, updateEvent, deleteEvent, listEvents |
+| `services/api/src/main/java/com/planthings/api/calendar/CalendarController.java` | deleteEvent, createEvent, updateEvent, listEvents |
 | `apps/web/src/shared/components/Calendar/calendarDateUtils.js` | formatCalendarDateToBrazil, isSameCalendarDate, resolveCardScheduleFromRange |
 | `apps/web/src/features/workspace/components/CardModal/CardModal.jsx` | handleConfirmSchedule, saveDateRange |
 | `services/api/src/main/java/com/planthings/api/settings/SettingsExportService.java` | calendarEventMap |
@@ -32,8 +32,8 @@ description: "Skill for the Calendar area of plan-things-2. 54 symbols across 10
 
 Start here when exploring this area:
 
-- **`handleConfirmSchedule`** (Function) — `apps/web/src/features/workspace/components/CardModal/CardModal.jsx:567`
-- **`saveDateRange`** (Function) — `apps/web/src/features/workspace/components/CardModal/CardModal.jsx:495`
+- **`handleConfirmSchedule`** (Function) — `apps/web/src/features/workspace/components/CardModal/CardModal.jsx:576`
+- **`saveDateRange`** (Function) — `apps/web/src/features/workspace/components/CardModal/CardModal.jsx:504`
 - **`resolvedSchedule`** (Function) — `apps/web/src/features/workspace/components/CardModal/components/CardModalDateSchedulePicker.jsx:24`
 - **`formatDueDateLabelFromValue`** (Function) — `apps/web/src/features/workspace/components/CardModal/utils/cardModalDateUtils.js:79`
 - **`formatCalendarDateToBrazil`** (Function) — `apps/web/src/shared/components/Calendar/calendarDateUtils.js:15`
@@ -43,8 +43,8 @@ Start here when exploring this area:
 | Symbol | Type | File | Line |
 |--------|------|------|------|
 | `CalendarEventEntity` | Class | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 9 |
-| `handleConfirmSchedule` | Function | `apps/web/src/features/workspace/components/CardModal/CardModal.jsx` | 567 |
-| `saveDateRange` | Function | `apps/web/src/features/workspace/components/CardModal/CardModal.jsx` | 495 |
+| `handleConfirmSchedule` | Function | `apps/web/src/features/workspace/components/CardModal/CardModal.jsx` | 576 |
+| `saveDateRange` | Function | `apps/web/src/features/workspace/components/CardModal/CardModal.jsx` | 504 |
 | `resolvedSchedule` | Function | `apps/web/src/features/workspace/components/CardModal/components/CardModalDateSchedulePicker.jsx` | 24 |
 | `formatDueDateLabelFromValue` | Function | `apps/web/src/features/workspace/components/CardModal/utils/cardModalDateUtils.js` | 79 |
 | `formatCalendarDateToBrazil` | Function | `apps/web/src/shared/components/Calendar/calendarDateUtils.js` | 15 |
@@ -52,16 +52,16 @@ Start here when exploring this area:
 | `resolveCardScheduleFromRange` | Function | `apps/web/src/shared/components/Calendar/calendarDateUtils.js` | 48 |
 | `Calendar` | Function | `apps/web/src/shared/components/Calendar/Calendar.jsx` | 66 |
 | `RangeCalendar` | Function | `apps/web/src/shared/components/Calendar/Calendar.jsx` | 78 |
-| `createEvent` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarController.java` | 39 |
-| `updateEvent` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarController.java` | 50 |
-| `setCreatorUserId` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 55 |
-| `setDescription` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 87 |
-| `setEndsAt` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 111 |
-| `setGeneratedFromCard` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 119 |
-| `setLinkedCardId` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 71 |
-| `setLocation` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 95 |
-| `setPlanId` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 63 |
-| `setStartsAt` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 103 |
+| `deleteEvent` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarController.java` | 62 |
+| `getCreatorUserId` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 51 |
+| `getDescription` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 83 |
+| `getEndsAt` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 107 |
+| `getGeneratedFromCard` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 115 |
+| `getLinkedCardId` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 67 |
+| `getLocation` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 91 |
+| `getPlanId` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 59 |
+| `getStartsAt` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 99 |
+| `getTitle` | Method | `services/api/src/main/java/com/planthings/api/calendar/CalendarEventEntity.java` | 75 |
 
 ## Execution Flows
 
@@ -75,16 +75,15 @@ Start here when exploring this area:
 | `UpdateEvent → GetUserId` | cross_community | 5 |
 | `DeleteEvent → GetUserId` | cross_community | 5 |
 | `ListEvents → GetUserId` | cross_community | 5 |
+| `ExecuteContextSearch → GetWorkspaceId` | cross_community | 4 |
 | `CreateEvent → FindByOwnerUserId` | cross_community | 3 |
-| `CreateEvent → GetId` | cross_community | 3 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
-| Files | 27 calls |
-| Board | 6 calls |
-| Tools | 1 calls |
+| Settings | 31 calls |
+| Board | 2 calls |
 | Components | 1 calls |
 | CardModal | 1 calls |
 

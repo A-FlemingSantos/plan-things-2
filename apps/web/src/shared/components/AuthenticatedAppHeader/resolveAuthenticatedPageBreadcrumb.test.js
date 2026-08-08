@@ -63,7 +63,7 @@ describe('resolveAuthenticatedPageBreadcrumb', () => {
       items: [
         { label: 'Workspace', to: ROUTES.workspace, current: false },
         { label: 'Docs', to: ROUTES.docs, current: false },
-        { label: 'Spark Creativity', to: null, current: true },
+        { label: 'Documento', to: null, current: true },
       ],
     })
   })

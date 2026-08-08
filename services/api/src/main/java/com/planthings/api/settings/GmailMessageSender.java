@@ -35,7 +35,7 @@ public class GmailMessageSender {
     this.connectionStatusService = connectionStatusService;
   }
 
-  @Transactional
+  @Transactional(noRollbackFor = BadRequestException.class)
   public Delivery send(UserEntity sender, Function<String, String> rawMessageFactory) {
     GmailConnectionEntity connection = connectionRepository.findByUserId(sender.getId())
         .filter(item -> item.getRevokedAt() == null)

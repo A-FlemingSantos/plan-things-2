@@ -82,11 +82,11 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Files | 17 calls |
+| Settings | 19 calls |
 | Intelligence | 15 calls |
-| Board | 5 calls |
-| Blocks | 2 calls |
-| Tools | 1 calls |
+| Board | 4 calls |
+| Calendar | 1 calls |
+| Blocks | 1 calls |
 | Plans | 1 calls |
 
 ## How to Explore

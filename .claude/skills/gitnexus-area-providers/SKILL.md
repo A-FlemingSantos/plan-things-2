@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-providers
-description: "Skill for the Providers area of plan-things-2. 92 symbols across 15 files."
+description: "Skill for the Providers area of plan-things-2. 88 symbols across 14 files."
 ---
 
 # Providers
 
-92 symbols | 15 files | Cohesion: 76%
+88 symbols | 14 files | Cohesion: 76%
 
 ## When to Use
 
@@ -17,8 +17,8 @@ description: "Skill for the Providers area of plan-things-2. 92 symbols across 1
 
 | File | Symbols |
 |------|---------|
-| `apps/mobile/src/providers/AuthProvider.js` | bootstrap, completeOAuthLogin, getSessionAccountId, login, normalizeSession (+18) |
 | `apps/mobile/src/providers/PlansProvider.js` | addComment, attachFileToCard, createChecklist, createChecklistItem, deleteCard (+15) |
+| `apps/mobile/src/providers/AuthProvider.js` | bootstrap, completeOAuthLogin, getSessionAccountId, login, normalizeSession (+15) |
 | `apps/mobile/src/providers/FilesProvider.js` | createFolder, loadFiles, request, restoreFile, shareToPlan (+8) |
 | `apps/mobile/src/screens/FilesScreen.js` | FilesScreen, closeFileSheet, deleteSelectedFile, downloadSelectedFile, openCreateFlow (+3) |
 | `apps/mobile/src/providers/authSessionPolicy.js` | isAuthFailure, shouldClearSessionAfterRefreshFailure, decodeBase64, decodeBase64Url, readAccessTokenExpiresAt (+3) |
@@ -76,11 +76,11 @@ Start here when exploring this area:
 | Area | Connections |
 |------|-------------|
 | Screens | 5 calls |
-| Cluster_331 | 3 calls |
+| Cluster_313 | 3 calls |
 | Components | 2 calls |
-| Contracts | 1 calls |
 | Services | 1 calls |
-| Cluster_329 | 1 calls |
+| Contracts | 1 calls |
+| Cluster_311 | 1 calls |
 
 ## How to Explore
 

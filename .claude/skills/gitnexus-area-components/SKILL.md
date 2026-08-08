@@ -1,11 +1,11 @@
 ---
 name: gitnexus-area-components
-description: "Skill for the Components area of plan-things-2. 77 symbols across 30 files."
+description: "Skill for the Components area of plan-things-2. 103 symbols across 38 files."
 ---
 
 # Components
 
-77 symbols | 30 files | Cohesion: 72%
+103 symbols | 38 files | Cohesion: 75%
 
 ## When to Use
 
@@ -19,14 +19,14 @@ description: "Skill for the Components area of plan-things-2. 77 symbols across 
 |------|---------|
 | `apps/mobile/src/utils/calendarDateUtils.js` | buildMonthGrid, calendarDateFromDate, compareCalendarDates, isSameCalendarDate, isTodayCalendarDate (+4) |
 | `apps/mobile/src/components/NewPlanSheet.js` | NewPlanSheet, collapse, isImageSelected, measureCollapsed, animateTo (+3) |
+| `apps/web/src/features/workspace/components/CardModal/components/github/components/CardModalGitHubItemBody.jsx` | CardModalGitHubItemBody, CommitBody, DiffStatRow, IssueBody, ItemDescription (+2) |
 | `apps/mobile/src/components/CardModalRangeCalendar.js` | CalendarDayCell, getRangePosition, handleDayPress, monthDays, resolveNextRange (+2) |
-| `apps/web/src/features/workspace/components/CardModal/components/CardModalActivitySidebar.jsx` | CardModalActivitySidebar, CardModalSidebarActivityPanel, CardModalSidebarChecklistPanel, CardModalSidebarGitHubPanel, CardModalSidebarPanelHeader (+1) |
 | `apps/mobile/src/components/AuthenticatedAvatar.js` | imageSource, resolveImageSource, AuthenticatedAvatar, useNativeCachedUri, useWebObjectUrl |
 | `apps/mobile/src/components/authenticatedAvatarSource.js` | resolveAuthenticatedAvatarUri, shouldFetchAuthenticatedAvatar, hashString, inferAvatarExtension, resolveAvatarCachePath |
+| `apps/web/src/features/workspace/components/CardModal/components/CardModalActivitySidebar.jsx` | CardModalSidebarChecklistPanel, CardModalSidebarActivityPanel, CardModalSidebarFilesPanel, CardModalActivitySidebar, CardModalSidebarPanelHeader |
 | `apps/web/src/features/workspace/components/CardModal/utils/cardModalScheduleUtils.js` | formatCardScheduleSummary, formatScheduleDatePart, formatScheduleShortDate, normalizeCardScheduleTimeValue, snapCardScheduleTimeToSlot |
 | `apps/mobile/src/components/BottomTabs.js` | BottomTabs, handleChange, createStyles, mutedLabelColor |
 | `apps/mobile/src/components/AuthenticatedImage.js` | AuthenticatedImage, imageSource, useNativeCachedUri, useWebObjectUrl |
-| `apps/mobile/src/theme/ThemeProvider.js` | useAppTheme, useThemedStyles |
 
 ## Entry Points
 
@@ -49,19 +49,19 @@ Start here when exploring this area:
 | `ScreenHeader` | Function | `apps/mobile/src/components/ScreenHeader.js` | 5 |
 | `TaskRow` | Function | `apps/mobile/src/components/TaskRow.js` | 5 |
 | `AppShell` | Function | `apps/mobile/src/screens/AppShell.js` | 38 |
+| `AuthScreen` | Function | `apps/mobile/src/screens/AuthScreen.js` | 164 |
 | `DocsScreen` | Function | `apps/mobile/src/screens/DocsScreen.js` | 5 |
+| `InboxScreen` | Function | `apps/mobile/src/screens/InboxScreen.js` | 9 |
 | `ProfileFilesTab` | Function | `apps/mobile/src/screens/profile/ProfileFilesTab.js` | 5 |
 | `useAppTheme` | Function | `apps/mobile/src/theme/ThemeProvider.js` | 99 |
+| `useMobileTheme` | Function | `apps/mobile/src/theme/ThemeProvider.js` | 91 |
 | `useThemedStyles` | Function | `apps/mobile/src/theme/ThemeProvider.js` | 103 |
-| `handleDayPress` | Function | `apps/mobile/src/components/CardModalRangeCalendar.js` | 122 |
-| `monthDays` | Function | `apps/mobile/src/components/CardModalRangeCalendar.js` | 114 |
-| `buildMonthGrid` | Function | `apps/mobile/src/utils/calendarDateUtils.js` | 105 |
-| `calendarDateFromDate` | Function | `apps/mobile/src/utils/calendarDateUtils.js` | 84 |
-| `compareCalendarDates` | Function | `apps/mobile/src/utils/calendarDateUtils.js` | 26 |
-| `isSameCalendarDate` | Function | `apps/mobile/src/utils/calendarDateUtils.js` | 52 |
-| `isTodayCalendarDate` | Function | `apps/mobile/src/utils/calendarDateUtils.js` | 96 |
-| `CardModalActivitySidebar` | Function | `apps/web/src/features/workspace/components/CardModal/components/CardModalActivitySidebar.jsx` | 433 |
-| `CardModalChecklist` | Function | `apps/web/src/features/workspace/components/CardModal/components/CardModalChecklist.jsx` | 3 |
+| `CardModalActivityGitHubLink` | Function | `apps/web/src/features/workspace/components/CardModal/components/CardModalActivityGitHubLink.jsx` | 17 |
+| `CardModalActivityPreview` | Function | `apps/web/src/features/workspace/components/CardModal/components/CardModalActivityPreview.jsx` | 53 |
+| `CardModalGitHubItemBody` | Function | `apps/web/src/features/workspace/components/CardModal/components/github/components/CardModalGitHubItemBody.jsx` | 158 |
+| `CardModalGitHubLinkItem` | Function | `apps/web/src/features/workspace/components/CardModal/components/github/components/CardModalGitHubLinkItem.jsx` | 48 |
+| `GitHubExternalLinkGlyph` | Function | `apps/web/src/features/workspace/components/CardModal/components/github/githubIcons.jsx` | 87 |
+| `GitHubObjectIcon` | Function | `apps/web/src/features/workspace/components/CardModal/components/github/githubIcons.jsx` | 78 |
 
 ## Execution Flows
 
@@ -73,14 +73,14 @@ Start here when exploring this area:
 
 | Area | Connections |
 |------|-------------|
-| Providers | 7 calls |
-| Hooks | 4 calls |
-| Screens | 2 calls |
+| Hooks | 10 calls |
+| Providers | 9 calls |
+| CardModal | 4 calls |
 | DateTime | 2 calls |
 | NewPlanPopover | 1 calls |
-| KanbanColumnStatusPicker | 1 calls |
+| Services | 1 calls |
+| Github | 1 calls |
 | Calendar | 1 calls |
-| CardModal | 1 calls |
 
 ## How to Explore
 

@@ -74,20 +74,20 @@ Start here when exploring this area:
 | `CreateMessage → SetConversationId` | cross_community | 5 |
 | `CreateMessage → SetMessageId` | cross_community | 5 |
 | `CancelMessage → ApiException` | cross_community | 5 |
-| `ListMessages → ApiException` | intra_community | 5 |
-| `ListMessages → GetId` | cross_community | 5 |
-| `ListMessages → GetBlockType` | cross_community | 5 |
+| `CreateMessage → IsEnabled` | cross_community | 4 |
+| `CreateMessage → SendEvent` | cross_community | 4 |
+| `CancelMessage → IsEnabled` | cross_community | 4 |
 
 ## Connected Areas
 
 | Area | Connections |
 |------|-------------|
 | Persistence | 17 calls |
-| Board | 7 calls |
-| Files | 4 calls |
+| Settings | 10 calls |
 | Tools | 4 calls |
 | Openai | 2 calls |
 | Api | 2 calls |
+| Board | 1 calls |
 
 ## How to Explore
 
