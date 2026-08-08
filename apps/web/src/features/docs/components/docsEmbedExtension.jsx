@@ -39,7 +39,7 @@ const EMBED_META = {
 
 export { EMBED_META as DOCS_EMBED_META }
 
-function DocsEmbedView({ node, updateAttributes, extension }) {
+function DocsEmbedView({ node, updateAttributes, extension, deleteNode, editor }) {
   const inputRef = useRef(null)
   const kind = node.attrs.kind === 'video' ? 'video' : 'unsplash'
   const meta = EMBED_META[kind]
@@ -60,6 +60,11 @@ function DocsEmbedView({ node, updateAttributes, extension }) {
     }
   }, [hasSelection, hasSearch])
 
+  const cancelEmbed = () => {
+    deleteNode()
+    editor?.commands.focus()
+  }
+
   const submitSearch = (value = draft) => {
     const query = value.trim()
     if (!query) return
@@ -73,9 +78,23 @@ function DocsEmbedView({ node, updateAttributes, extension }) {
 
   const handleQueryKeyDown = (event) => {
     event.stopPropagation()
+    const value = event.currentTarget.value
+
     if (event.key === 'Enter') {
       event.preventDefault()
-      submitSearch(event.currentTarget.value)
+      submitSearch(value)
+      return
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      cancelEmbed()
+      return
+    }
+
+    if (event.key === 'Backspace' && !value) {
+      event.preventDefault()
+      cancelEmbed()
     }
   }
 
