@@ -40,7 +40,6 @@
   gap: 18px;
   min-width: 0;
   padding: 40px 18px calc(28px + var(--app-dock-clearance, 56px)) 28px;
-  border-right: 1px solid var(--border-1);
   min-height: 0;
   overflow: auto;
   transition: padding var(--transition-normal);
@@ -409,7 +408,6 @@
   gap: 16px;
   min-width: 0;
   padding: 40px 28px calc(28px + var(--app-dock-clearance, 56px)) 18px;
-  border-left: 1px solid var(--border-1);
   min-height: 0;
   overflow: auto;
   transition: padding var(--transition-normal);
@@ -532,8 +530,6 @@
   }
 
   .indexPane {
-    border-right: none;
-    border-bottom: 1px solid var(--border-1);
     padding: 20px 20px 12px;
     overflow-x: auto;
     overflow-y: hidden;
