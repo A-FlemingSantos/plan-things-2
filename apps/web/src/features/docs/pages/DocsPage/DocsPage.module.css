@@ -1485,7 +1485,7 @@
 }
 
 .figure {
-  margin: 8px 0 0;
+  margin: 20px 0;
 }
 
 .figureMedia {
@@ -1577,7 +1577,7 @@
 
 .embedBlock {
   width: 100%;
-  margin: 0 0 12px;
+  margin: 0;
 }
 
 .bodyComposer :global(.ProseMirror .embedBlock .embedSlot) {
@@ -1748,9 +1748,15 @@
 }
 
 .bodyComposer :global(.ProseMirror .embedBlock) {
-  margin: 0 0 12px;
+  margin: 0;
   width: 100%;
   max-width: 100%;
+}
+
+.bodyComposer :global(.ProseMirror .react-renderer.node-image),
+.bodyComposer :global(.ProseMirror .react-renderer.node-docsEmbed) {
+  display: block;
+  margin-block: 20px;
 }
 
 .bodyComposer :global(.ProseMirror .react-renderer.node-docsEmbed) {
@@ -2055,6 +2061,18 @@
 
 .markdownContent > * + * {
   margin-top: 14px;
+}
+
+.markdownContent .embedBlock {
+  margin-block: 20px;
+}
+
+.markdownContent .embedBlock:first-child {
+  margin-top: 0;
+}
+
+.markdownContent .embedBlock:last-child {
+  margin-bottom: 0;
 }
 
 .markdownContent .bodySection,
