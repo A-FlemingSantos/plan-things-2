@@ -4,7 +4,6 @@ import {
   Copy,
   Download,
   Image,
-  Images,
   Link2,
   Minus,
   MoreHorizontal,
@@ -58,9 +57,24 @@ function scrollViewportToSection(viewport, sectionId) {
   return true
 }
 
+function UnsplashLogo({ size = 15 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M10 9V0h12v9H10zm12 5h10v18H0V14h10v9h12v-9z" />
+    </svg>
+  )
+}
+
 const BLOCK_ACTIONS = [
   { id: 'image', label: 'Imagem', Icon: Image },
-  { id: 'unsplash', label: 'Unsplash', Icon: Images },
+  { id: 'unsplash', label: 'Unsplash', Icon: UnsplashLogo },
   { id: 'video', label: 'Vídeo', Icon: Video },
   { id: 'quote', label: 'Adicionar citação', Icon: Quote },
   { id: 'code', label: 'Bloco de código', Icon: Code2 },
@@ -621,7 +635,7 @@ export default function DocsPage() {
                       <DocsBodyComposer
                         value={draftBody}
                         onChange={setDraftBody}
-                        placeholder="Conte sua história..."
+                        placeholder="Uma palavra leva à outra..."
                       />
                     ) : (
                       activeDoc.sections.map((section) => (
