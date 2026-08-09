@@ -141,6 +141,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   comments,
   linkableDocuments = [],
   scrollTopRef = null,
+  editable = true,
   placeholder,
   styles,
 }, ref) {
@@ -224,6 +225,14 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   }, [clearSelectionToolbarTimer])
 
   const syncSelection = useCallback((activeEditor, { immediate = false } = {}) => {
+    if (!activeEditor.isEditable) {
+      clearSelectionToolbarTimer()
+      setSelection(null)
+      setInsertTop(null)
+      setMenuOpen(false)
+      return
+    }
+
     const { from, to, $from } = activeEditor.state.selection
     const composerRect = composerRef.current?.getBoundingClientRect()
     // Only top-level empty paragraphs — list items get a + that looks misaligned
@@ -334,6 +343,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
     extensions,
     content: value,
     contentType: 'markdown',
+    editable,
     editorProps: {
       attributes: {
         'aria-label': 'Conteúdo do documento',
@@ -402,7 +412,22 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   }, [editor])
 
   useEffect(() => {
-    if (!editor || editor.isDestroyed) return undefined
+    if (!editor || editor.isDestroyed) return
+    editor.setEditable(editable)
+    if (!editable) {
+      clearSelectionToolbarTimer()
+      setSelection(null)
+      setInsertTop(null)
+      setMenuOpen(false)
+      setUrlPrompt(null)
+      setPendingNote(null)
+      setNoteDraft('')
+      hideLinkHover()
+    }
+  }, [clearSelectionToolbarTimer, editable, editor, hideLinkHover])
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed || !editable) return undefined
     const dom = editor.view.dom
 
     const onPointerDown = (event) => {
@@ -430,7 +455,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
       window.removeEventListener('pointercancel', finishPointerSelect)
       clearSelectionToolbarTimer()
     }
-  }, [clearSelectionToolbarTimer, editor, hideLinkHover, scheduleSelectionToolbar])
+  }, [clearSelectionToolbarTimer, editable, editor, hideLinkHover, scheduleSelectionToolbar])
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return undefined
@@ -656,7 +681,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   }, [pendingNote])
 
   const openLinkPrompt = useCallback((anchorEl = null) => {
-    if (!editor) return
+    if (!editor || !editor.isEditable) return
     setDocsMenuOpen(false)
     setDocSearchQuery('')
     const { from, to } = editor.state.selection
@@ -680,7 +705,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   }, [editor])
 
   const applyFormat = useCallback((action, options = {}) => {
-    if (!editor) return
+    if (!editor || !editor.isEditable) return
     if (action === 'link') {
       openLinkPrompt(options.anchorEl ?? null)
       return
@@ -761,7 +786,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   }
 
   const removeHoveredLink = () => {
-    if (!editor || !linkHover?.anchor) return
+    if (!editor || !editor.isEditable || !linkHover?.anchor) return
     try {
       const pos = editor.view.posAtDOM(linkHover.anchor, 0)
       editor.chain().focus().setTextSelection(pos).extendMarkRange('link').unsetLink().run()
@@ -782,7 +807,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   const uploadImage = async (event) => {
     const [file] = event.target.files ?? []
     event.target.value = ''
-    if (!file || !editor) return
+    if (!file || !editor || !editor.isEditable) return
 
     const formData = new FormData()
     formData.append('file', file)
@@ -798,7 +823,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   }
 
   const applySelectionAction = (action) => {
-    if (!editor || !selection) return
+    if (!editor || !editor.isEditable || !selection) return
     if (action === 'comment') {
       const quote = editor.state.doc.textBetween(selection.from, selection.to, ' ')
       if (quote) {
@@ -931,8 +956,14 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
     <div ref={composerRef} className={styles.composerShell}>
       <input ref={imageInputRef} type="file" accept="image/*" hidden onChange={uploadImage} />
       <div ref={composerMainRef} className={styles.composerMain}>
-        <div className={styles.composer} role="textbox" aria-label="Conteúdo do documento" aria-multiline="true">
-          {selection ? (
+        <div
+          className={styles.composer}
+          role={editable ? 'textbox' : 'article'}
+          aria-label="Conteúdo do documento"
+          aria-multiline={editable ? 'true' : undefined}
+          aria-readonly={editable ? undefined : 'true'}
+        >
+          {editable && selection ? (
             <div ref={selectionToolbarRef} className={styles.selectionToolbar} role="toolbar" aria-label="Formatação do texto" style={{ top: selection.top, left: selection.left }}>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolBold}`} title="Negrito" aria-label="Negrito" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('bold')}>B</button>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`} title="Itálico" aria-label="Itálico" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('italic')}>i</button>
@@ -945,7 +976,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
               <button type="button" className={styles.selectionToolButton} title="Adicionar comentário" aria-label="Adicionar comentário" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('comment')}><MessageSquareLock size={14} strokeWidth={1.8} aria-hidden="true" /></button>
             </div>
           ) : null}
-          {urlPrompt ? urlMenu : null}
+          {editable && urlPrompt ? urlMenu : null}
           {linkHover && !urlPrompt ? (
             <div
               ref={linkHoverTooltipRef}
@@ -958,36 +989,40 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
               <span className={styles.linkHoverTooltipLabel} title={linkHover.href}>
                 {linkHoverLabel || linkHover.href}
               </span>
-              <button
-                type="button"
-                className={styles.linkHoverTooltipRemove}
-                aria-label="Remover link"
-                title="Remover link"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={removeHoveredLink}
-              >
-                <X size={12} strokeWidth={1.8} aria-hidden="true" />
-              </button>
+              {editable ? (
+                <button
+                  type="button"
+                  className={styles.linkHoverTooltipRemove}
+                  aria-label="Remover link"
+                  title="Remover link"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={removeHoveredLink}
+                >
+                  <X size={12} strokeWidth={1.8} aria-hidden="true" />
+                </button>
+              ) : null}
             </div>
           ) : null}
           <div className={styles.composerRow}>
-            <div className={styles.composerRail} ref={railRef} style={insertTop == null ? undefined : { top: insertTop }}>
-              {insertTop != null ? (
-                <div className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}>
-                  <button type="button" className={styles.blockInsertButton} title={menuOpen ? 'Fechar' : 'Adicionar bloco'} aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'} aria-expanded={menuOpen} onMouseDown={(event) => event.preventDefault()} onClick={() => setMenuOpen((open) => !open)}><Plus size={14} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
-                  <div className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen} {...(!menuOpen ? { inert: '' } : {})}>
-                    {BLOCK_ACTIONS.map(({ id, label, Icon }) => (
-                      <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}>
-                        <Icon size={17} strokeWidth={ICON_STROKE} aria-hidden="true" />
-                      </button>
-                    ))}
+            {editable ? (
+              <div className={styles.composerRail} ref={railRef} style={insertTop == null ? undefined : { top: insertTop }}>
+                {insertTop != null ? (
+                  <div className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}>
+                    <button type="button" className={styles.blockInsertButton} title={menuOpen ? 'Fechar' : 'Adicionar bloco'} aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'} aria-expanded={menuOpen} onMouseDown={(event) => event.preventDefault()} onClick={() => setMenuOpen((open) => !open)}><Plus size={14} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
+                    <div className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen} {...(!menuOpen ? { inert: '' } : {})}>
+                      {BLOCK_ACTIONS.map(({ id, label, Icon }) => (
+                        <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}>
+                          <Icon size={17} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : null}
-            </div>
+                ) : null}
+              </div>
+            ) : null}
             <EditorContent editor={editor} className={styles.bodyComposer} />
           </div>
-          {pendingNote ? (
+          {editable && pendingNote ? (
             <div className={styles.noteComposer} role="dialog" aria-label="Notas privadas">
               <div className={styles.noteComposerHeader}>
                 <span className={styles.noteComposerHeaderLabel}><Lock size={12} strokeWidth={1.8} aria-hidden="true" />Notas privadas</span>

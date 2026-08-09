@@ -4,6 +4,23 @@ import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import DocsEmbedResults from './DocsEmbedResults.jsx'
 import { serializeEmbedPayload, youtubeEmbedUrl } from '../utils/docsEmbedMarkdown.js'
 
+function useEditorIsEditable(editor) {
+  const [isEditable, setIsEditable] = useState(() => editor?.isEditable ?? true)
+
+  useEffect(() => {
+    if (!editor) return undefined
+    const sync = () => setIsEditable(editor.isEditable)
+    sync()
+    // setEditable(emitUpdate) fires "update" even without a document transaction.
+    editor.on('update', sync)
+    return () => {
+      editor.off('update', sync)
+    }
+  }, [editor])
+
+  return isEditable
+}
+
 export function UnsplashLogo({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
@@ -41,6 +58,7 @@ export { EMBED_META as DOCS_EMBED_META }
 
 function DocsEmbedView({ node, updateAttributes, extension, deleteNode, editor }) {
   const inputRef = useRef(null)
+  const isEditable = useEditorIsEditable(editor)
   const kind = node.attrs.kind === 'video' ? 'video' : 'unsplash'
   const meta = EMBED_META[kind]
   const Icon = meta.Icon
@@ -49,16 +67,17 @@ function DocsEmbedView({ node, updateAttributes, extension, deleteNode, editor }
 
   const hasSelection = Boolean(node.attrs.url?.trim())
   const hasSearch = Boolean(node.attrs.query?.trim()) && !hasSelection
+  const displayQuery = (node.attrs.query ?? draft).trim()
 
   useEffect(() => {
     setDraft(node.attrs.query ?? '')
   }, [node.attrs.query])
 
   useEffect(() => {
-    if (!hasSelection) {
-      requestAnimationFrame(() => inputRef.current?.focus())
-    }
-  }, [hasSelection, hasSearch])
+    if (!isEditable || hasSelection) return undefined
+    requestAnimationFrame(() => inputRef.current?.focus())
+    return undefined
+  }, [hasSelection, hasSearch, isEditable])
 
   const cancelEmbed = () => {
     deleteNode()
@@ -139,6 +158,33 @@ function DocsEmbedView({ node, updateAttributes, extension, deleteNode, editor }
   }
 
   if (hasSearch || !hasSelection) {
+    if (!isEditable) {
+      return (
+        <NodeViewWrapper
+          className={styles.embedBlock}
+          data-docs-embed={kind}
+          data-docs-embed-mode={hasSearch ? 'search' : 'input'}
+        >
+          <div className={styles.embedSlot} contentEditable={false}>
+            <span className={styles.embedSlotBadge}>
+              <Icon size={14} aria-hidden="true" />
+              <span>{meta.label}</span>
+            </span>
+            <span className={styles.embedSlotValue}>{displayQuery || meta.placeholder}</span>
+          </div>
+          {hasSearch ? (
+            <DocsEmbedResults
+              kind={kind}
+              query={node.attrs.query}
+              page={node.attrs.page ?? 1}
+              pageToken={node.attrs.pageToken ?? ''}
+              styles={styles}
+            />
+          ) : null}
+        </NodeViewWrapper>
+      )
+    }
+
     return (
       <NodeViewWrapper
         className={styles.embedBlock}

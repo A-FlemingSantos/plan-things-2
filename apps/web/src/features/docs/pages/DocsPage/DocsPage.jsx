@@ -150,10 +150,6 @@ function DocsPageContent() {
   const [toolbarAnimating, setToolbarAnimating] = useState(false)
   const articleViewportRef = useRef(null)
   const articleScrollTopRef = useRef(0)
-  // While set, ignore scroll events that would poison the saved top (content
-  // height collapses to ~0 on mode swap / TipTap mount, and the browser clamps
-  // scrollTop to 0, which used to overwrite the restore target).
-  const articleScrollLockRef = useRef(null)
   const activeHeadingIndexRef = useRef(0)
   const headingNavLockRef = useRef(null)
   const moreMenuRef = useRef(null)
@@ -172,18 +168,15 @@ function DocsPageContent() {
   const captureArticleScroll = useCallback(() => {
     const viewport = articleViewportRef.current
     if (!viewport) return
-    const top = viewport.scrollTop
-    articleScrollTopRef.current = top
-    articleScrollLockRef.current = top
+    articleScrollTopRef.current = viewport.scrollTop
   }, [])
 
   const restoreArticleScroll = useCallback(() => {
     const viewport = articleViewportRef.current
-    if (!viewport) return false
-    const top = articleScrollLockRef.current ?? articleScrollTopRef.current
+    if (!viewport) return
+    const top = articleScrollTopRef.current
     const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
     viewport.scrollTop = Math.min(Math.max(0, top), maxScrollTop)
-    return maxScrollTop >= Math.max(0, top) - 1
   }, [])
 
   const changeContentMode = useCallback((mode) => {
@@ -256,7 +249,6 @@ function DocsPageContent() {
     setMoreMenuOpen(false)
     setMemberMenuOpen(false)
     articleScrollTopRef.current = 0
-    articleScrollLockRef.current = null
     articleViewportRef.current?.scrollTo({ top: 0 })
   }
 
@@ -484,79 +476,11 @@ function DocsPageContent() {
     setActiveHeadingIndex(outline[0].headingIndex)
   }, [activeHeadingIndex, outline])
 
-  // Mode swap changes body height (composer parked / preview mounted). Keep
-  // re-applying the locked scrollTop until the viewport can actually hold it.
+  // Same TipTap tree in edit and view — only chrome/editable flag changes.
+  // Re-apply scroll once in case focus or toolbar animation nudges the viewport.
   useLayoutEffect(() => {
-    if (articleScrollLockRef.current == null) return undefined
-
-    const viewport = articleViewportRef.current
-    if (!viewport) return undefined
-
-    let frameId = null
-    let settledFrames = 0
-    let lastScrollHeight = -1
-    let released = false
-
-    const releaseLock = () => {
-      if (released) return
-      released = true
-      articleScrollLockRef.current = null
-      articleScrollTopRef.current = viewport.scrollTop
-    }
-
-    const apply = () => {
-      const lockedTop = articleScrollLockRef.current
-      if (lockedTop == null) return true
-      const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
-      viewport.scrollTop = Math.min(Math.max(0, lockedTop), maxScrollTop)
-      const height = viewport.scrollHeight
-      const canHold = maxScrollTop >= Math.max(0, lockedTop) - 1
-      const heightStable = height === lastScrollHeight && height > 0
-      lastScrollHeight = height
-      if (canHold && heightStable) {
-        settledFrames += 1
-      } else {
-        settledFrames = 0
-      }
-      return settledFrames >= 2
-    }
-
-    if (apply()) {
-      releaseLock()
-      return undefined
-    }
-
-    const onFrame = () => {
-      frameId = null
-      if (released) return
-      if (apply()) {
-        releaseLock()
-        return
-      }
-      frameId = window.requestAnimationFrame(onFrame)
-    }
-    frameId = window.requestAnimationFrame(onFrame)
-
-    const resizeObserver = typeof ResizeObserver === 'function'
-      ? new ResizeObserver(() => {
-        if (released) return
-        if (apply()) releaseLock()
-      })
-      : null
-    resizeObserver?.observe(viewport)
-    if (viewport.firstElementChild) resizeObserver?.observe(viewport.firstElementChild)
-
-    const timer = window.setTimeout(() => {
-      restoreArticleScroll()
-      releaseLock()
-    }, 480)
-
-    return () => {
-      if (frameId != null) window.cancelAnimationFrame(frameId)
-      resizeObserver?.disconnect()
-      window.clearTimeout(timer)
-    }
-  }, [contentMode, isEditingContent, restoreArticleScroll])
+    restoreArticleScroll()
+  }, [contentMode, restoreArticleScroll])
 
   useLayoutEffect(() => {
     const viewport = articleViewportRef.current
@@ -592,11 +516,7 @@ function DocsPageContent() {
     }
 
     const onScroll = () => {
-      // While a mode-switch lock is active, the viewport may report scrollTop 0
-      // because content height collapsed — do not overwrite the restore target.
-      if (articleScrollLockRef.current == null) {
-        articleScrollTopRef.current = viewport.scrollTop
-      }
+      articleScrollTopRef.current = viewport.scrollTop
       if (frameId != null) return
       frameId = window.requestAnimationFrame(syncActiveHeading)
     }
@@ -1160,34 +1080,20 @@ function DocsPageContent() {
 
                   <div className={styles.body} data-docs-body="">
                     {canEdit ? (
-                      <>
-                        {/*
-                          Keep the WYSIWYG editor mounted across view mode so TipTap
-                          does not remount (and jump scroll) on every edit/view toggle.
-                        */}
-                        <div
-                          className={isEditingContent ? undefined : styles.contentModeParked}
-                          aria-hidden={!isEditingContent}
-                          {...(!isEditingContent ? { inert: '' } : {})}
-                        >
-                          <MarkdownWysiwygComposer
-                            ref={composerRef}
-                            value={draft.contentMarkdown}
-                            onChange={handleContentChange}
-                            onAddComment={addComment}
-                            onDeleteComment={removeComment}
-                            canDeleteComment={canDeleteComment}
-                            comments={comments}
-                            linkableDocuments={linkableDocuments}
-                            scrollTopRef={articleScrollTopRef}
-                            placeholder="Uma palavra leva à outra..."
-                            styles={styles}
-                          />
-                        </div>
-                        {!isEditingContent ? (
-                          <MarkdownContent value={draft.contentMarkdown} styles={styles} />
-                        ) : null}
-                      </>
+                      <MarkdownWysiwygComposer
+                        ref={composerRef}
+                        editable={isEditingContent}
+                        value={draft.contentMarkdown}
+                        onChange={handleContentChange}
+                        onAddComment={addComment}
+                        onDeleteComment={removeComment}
+                        canDeleteComment={canDeleteComment}
+                        comments={comments}
+                        linkableDocuments={linkableDocuments}
+                        scrollTopRef={articleScrollTopRef}
+                        placeholder="Uma palavra leva à outra..."
+                        styles={styles}
+                      />
                     ) : (
                       <MarkdownContent value={draft.contentMarkdown} styles={styles} />
                     )}
