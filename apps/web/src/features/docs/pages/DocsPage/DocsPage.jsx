@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronRight,
   Copy,
@@ -34,11 +34,12 @@ import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
 import { hasDocumentCover } from '../../utils/documentCover.js'
 import { formatDocumentMeta } from '../../utils/docVisuals.js'
 import {
-  DOC_HEADING_ATTR,
   buildHeadingTree,
   extractMarkdownHeadings,
   findDocHeadingElement,
   listDocHeadingElements,
+  resolveActiveDocHeadingIndex,
+  resolveVisibleOutlineHeadingIndex,
   scrollViewportToHeading,
   tagDocHeadingElements,
 } from '../../utils/docsHeadings.js'
@@ -95,6 +96,8 @@ function DocsPageContent() {
   const [activeHeadingIndex, setActiveHeadingIndex] = useState(0)
   const [expandedHeadingIds, setExpandedHeadingIds] = useState(() => new Set())
   const articleViewportRef = useRef(null)
+  const activeHeadingIndexRef = useRef(0)
+  const headingNavLockRef = useRef(null)
   const moreMenuRef = useRef(null)
   const coverMenuRef = useRef(null)
   const deleteMenuRef = useRef(null)
@@ -121,6 +124,11 @@ function DocsPageContent() {
     return flat
   }, [outlineTree])
   const searchExpandsAll = outlineQuery.length > 0
+  const highlightedHeadingIndex = useMemo(() => (
+    resolveVisibleOutlineHeadingIndex(outlineTree, activeHeadingIndex, {
+      isExpanded: (headingId) => searchExpandsAll || expandedHeadingIds.has(headingId),
+    })
+  ), [activeHeadingIndex, expandedHeadingIds, outlineTree, searchExpandsAll])
   const draftSignature = JSON.stringify(draft)
   const docMeta = formatDocumentMeta(details?.document?.updatedAt)
 
@@ -139,6 +147,7 @@ function DocsPageContent() {
     setActiveHeadingIndex(0)
     setSearchQuery('')
     setExpandedHeadingIds(new Set())
+    headingNavLockRef.current = null
     setMoreMenuOpen(false)
     setMemberMenuOpen(false)
     articleViewportRef.current?.scrollTo({ top: 0 })
@@ -316,36 +325,50 @@ function DocsPageContent() {
   }, [coverMenuOpen])
 
   useEffect(() => {
+    activeHeadingIndexRef.current = activeHeadingIndex
+  }, [activeHeadingIndex])
+
+  useEffect(() => {
     if (outline.length === 0) return
     if (outline.some((heading) => heading.headingIndex === activeHeadingIndex)) return
     setActiveHeadingIndex(outline[0].headingIndex)
   }, [activeHeadingIndex, outline])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const viewport = articleViewportRef.current
-    if (!viewport || outline.length === 0) return undefined
+    if (!viewport || headings.length === 0) return undefined
+
+    const headingIndexes = new Set(headings.map((heading) => heading.headingIndex))
+    let frameId = null
+
+    const syncActiveHeading = () => {
+      frameId = null
+      if (headingNavLockRef.current != null) return
+
+      tagDocHeadingElements(viewport)
+      const targets = listDocHeadingElements(viewport)
+      if (targets.length === 0) return
+
+      const nextIndex = resolveActiveDocHeadingIndex(viewport, targets)
+      if (nextIndex == null || !headingIndexes.has(nextIndex)) return
+      if (activeHeadingIndexRef.current === nextIndex) return
+      setActiveHeadingIndex(nextIndex)
+    }
+
+    const onScroll = () => {
+      if (frameId != null) return
+      frameId = window.requestAnimationFrame(syncActiveHeading)
+    }
 
     tagDocHeadingElements(viewport)
-    const targets = listDocHeadingElements(viewport)
-    if (targets.length === 0) return undefined
+    viewport.addEventListener('scroll', onScroll, { passive: true })
+    syncActiveHeading()
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)
-        if (visible.length === 0) return
-        const index = Number(visible[0].target.getAttribute(DOC_HEADING_ATTR))
-        if (Number.isNaN(index)) return
-        const match = outline.find((heading) => heading.headingIndex === index)
-        if (match) setActiveHeadingIndex(match.headingIndex)
-      },
-      { root: viewport, rootMargin: '-20% 0px -65% 0px', threshold: [0, 0.25, 0.5, 1] },
-    )
-
-    targets.forEach((target) => observer.observe(target))
-    return () => observer.disconnect()
-  }, [canEdit, draft.contentMarkdown, outline])
+    return () => {
+      viewport.removeEventListener('scroll', onScroll)
+      if (frameId != null) window.cancelAnimationFrame(frameId)
+    }
+  }, [canEdit, details?.document?.id, draft.contentMarkdown, headings])
 
   useEffect(() => {
     if (!canEdit || draft.title) return undefined
@@ -357,17 +380,26 @@ function DocsPageContent() {
     const headingIndex = heading.headingIndex
     const viewport = articleViewportRef.current
     if (!viewport) {
+      headingNavLockRef.current = headingIndex
       setActiveHeadingIndex(headingIndex)
+      headingNavLockRef.current = null
       return false
     }
 
-    // Tag + scroll synchronously before any React state update. Updating
-    // activeHeadingIndex first re-renders TipTap and replaces heading nodes;
-    // scrolling a detached node yields offset 0 (jump to top).
+    // Lock + scroll against live nodes before React re-renders TipTap.
+    // Updating active state first replaces heading DOM and yields offset 0.
+    headingNavLockRef.current = headingIndex
     tagDocHeadingElements(viewport)
     const target = findDocHeadingElement(viewport, headingIndex)
     const didScroll = scrollViewportToHeading(viewport, target, { behavior: 'smooth' })
     setActiveHeadingIndex(headingIndex)
+
+    window.setTimeout(() => {
+      if (headingNavLockRef.current === headingIndex) {
+        headingNavLockRef.current = null
+      }
+    }, 450)
+
     return didScroll
   }
 
@@ -381,7 +413,7 @@ function DocsPageContent() {
   }
 
   const renderOutlineNodes = (nodes) => nodes.map((heading) => {
-    const active = heading.headingIndex === activeHeadingIndex
+    const active = heading.headingIndex === highlightedHeadingIndex
     const hasChildren = heading.children.length > 0
     const expanded = searchExpandsAll || expandedHeadingIds.has(heading.id)
     const levelClass = heading.level === 1

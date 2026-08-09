@@ -4,6 +4,8 @@ import {
   extractMarkdownHeadings,
   findDocHeadingElement,
   findHeadingAncestorIds,
+  resolveActiveDocHeadingIndex,
+  resolveVisibleOutlineHeadingIndex,
   tagDocHeadingElements,
 } from './docsHeadings.js'
 
@@ -74,6 +76,52 @@ describe('findHeadingAncestorIds', () => {
     const tree = buildHeadingTree(headings)
     expect(findHeadingAncestorIds(tree, 2)).toEqual(['doc-heading-0', 'doc-heading-1'])
     expect(findHeadingAncestorIds(tree, 0)).toEqual([])
+  })
+})
+
+describe('resolveActiveDocHeadingIndex', () => {
+  it('picks the last heading at or above the marker', () => {
+    const viewport = document.createElement('div')
+    Object.defineProperty(viewport, 'clientHeight', { value: 400 })
+    viewport.getBoundingClientRect = () => ({ top: 100, bottom: 500, left: 0, right: 0, width: 0, height: 400 })
+
+    const makeHeading = (index, top) => {
+      const el = document.createElement('h2')
+      el.setAttribute('data-doc-heading', String(index))
+      el.getBoundingClientRect = () => ({ top, bottom: top + 24, left: 0, right: 0, width: 0, height: 24 })
+      return el
+    }
+
+    // markerY = 100 + max(48, 72) = 172
+    const targets = [
+      makeHeading(0, 120),
+      makeHeading(1, 170),
+      makeHeading(2, 260),
+    ]
+
+    expect(resolveActiveDocHeadingIndex(viewport, targets)).toBe(1)
+  })
+})
+
+describe('resolveVisibleOutlineHeadingIndex', () => {
+  it('falls back to the nearest expanded ancestor when children are collapsed', () => {
+    const tree = buildHeadingTree(extractMarkdownHeadings([
+      '# One',
+      '## Two',
+      '### Three',
+    ].join('\n')))
+
+    expect(resolveVisibleOutlineHeadingIndex(tree, 2, {
+      isExpanded: () => false,
+    })).toBe(0)
+
+    expect(resolveVisibleOutlineHeadingIndex(tree, 2, {
+      isExpanded: (id) => id === 'doc-heading-0',
+    })).toBe(1)
+
+    expect(resolveVisibleOutlineHeadingIndex(tree, 2, {
+      isExpanded: () => true,
+    })).toBe(2)
   })
 })
 

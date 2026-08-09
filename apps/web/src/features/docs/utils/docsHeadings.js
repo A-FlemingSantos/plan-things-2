@@ -132,3 +132,70 @@ export function scrollViewportToHeading(viewport, target, { offsetPx = 24, behav
   viewport.scrollTo({ top, behavior })
   return true
 }
+
+/**
+ * Pick the active outline heading from scroll position: the last heading whose
+ * top edge is at or above a marker near the top of the viewport.
+ */
+export function resolveActiveDocHeadingIndex(
+  viewport,
+  targets,
+  { markerRatio = 0.18, markerMinPx = 48 } = {},
+) {
+  if (!viewport || !targets?.length) return null
+
+  const markerY = viewport.getBoundingClientRect().top
+    + Math.max(markerMinPx, viewport.clientHeight * markerRatio)
+
+  let activeIndex = null
+  for (const target of targets) {
+    const index = Number(target.getAttribute(DOC_HEADING_ATTR))
+    if (Number.isNaN(index)) continue
+    if (target.getBoundingClientRect().top <= markerY + 1) {
+      activeIndex = index
+      continue
+    }
+    break
+  }
+
+  if (activeIndex != null) return activeIndex
+
+  const first = Number(targets[0].getAttribute(DOC_HEADING_ATTR))
+  return Number.isNaN(first) ? null : first
+}
+
+/**
+ * When nested outline rows are collapsed, highlight the deepest still-visible
+ * ancestor of the scroll-active heading instead of a hidden child.
+ */
+export function resolveVisibleOutlineHeadingIndex(
+  tree,
+  activeHeadingIndex,
+  { isExpanded = () => false } = {},
+) {
+  if (activeHeadingIndex == null || !tree?.length) return activeHeadingIndex
+
+  const path = []
+  const findPath = (nodes, trail) => {
+    for (const node of nodes) {
+      const nextTrail = [...trail, node]
+      if (node.headingIndex === activeHeadingIndex) {
+        path.push(...nextTrail)
+        return true
+      }
+      if (node.children.length > 0 && findPath(node.children, nextTrail)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  if (!findPath(tree, [])) return activeHeadingIndex
+
+  let visible = path[0]
+  for (let index = 1; index < path.length; index += 1) {
+    if (!isExpanded(path[index - 1].id)) break
+    visible = path[index]
+  }
+  return visible.headingIndex
+}
