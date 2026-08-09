@@ -852,7 +852,7 @@ export default memo(function MarkdownWysiwygComposer({
           }}
         >
           <BookOpen size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          <span className={styles.linkPickerItemLabel}>Documentos</span>
+          <span className={styles.linkPickerItemLabel}>Outras docs</span>
           <ChevronRight size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
         </button>
       </div>
@@ -860,7 +860,7 @@ export default memo(function MarkdownWysiwygComposer({
         <div
           className={`${styles.linkPickerFlyout} ${docsMenuSide === 'left' ? styles.linkPickerFlyoutLeft : ''}`}
           role="menu"
-          aria-label="Documentos"
+          aria-label="Outras docs"
         >
           <input
             ref={docSearchInputRef}
@@ -871,7 +871,7 @@ export default memo(function MarkdownWysiwygComposer({
             aria-label="Buscar documento"
             onChange={(event) => setDocSearchQuery(event.target.value)}
           />
-          <div className={styles.linkDocList} role="listbox" aria-label="Documentos disponíveis">
+          <div className={styles.linkDocList} role="listbox" aria-label="Outras docs disponíveis">
             {filteredLinkableDocuments.length === 0 ? (
               <p className={styles.linkDocEmpty}>Nenhum documento encontrado</p>
             ) : filteredLinkableDocuments.map((document) => (
