@@ -28,6 +28,7 @@ import {
 } from '../utils/commentAnchors.js'
 import { normalizeDocsEmbedMarkdown } from '../utils/docsEmbedMarkdown.js'
 import { listDocHeadingElements, tagDocHeadingElements } from '../utils/docsHeadings.js'
+import { DocsListKeymap, isTopLevelEmptyParagraph } from '../utils/listEditing.js'
 import { handleMarkdownPaste } from '../utils/markdownPaste.js'
 import { DocsCodeBlock } from './DocsCodeBlockExtension.jsx'
 import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
@@ -106,11 +107,13 @@ export default memo(function MarkdownWysiwygComposer({
   const syncSelection = useCallback((activeEditor) => {
     const { from, to, $from } = activeEditor.state.selection
     const composerRect = composerRef.current?.getBoundingClientRect()
-    const isEmptyParagraph = $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0
+    // Only top-level empty paragraphs — list items get a + that looks misaligned
+    // next to markers, and Backspace-lift used to leave a gap paragraph mid-list.
+    const showInsert = isTopLevelEmptyParagraph($from)
 
-    if (composerRect) {
+    if (composerRect && showInsert) {
       const cursor = activeEditor.view.coordsAtPos(from)
-      setInsertTop(isEmptyParagraph ? cursor.top - composerRect.top + 12 : null)
+      setInsertTop(cursor.top - composerRect.top + 12)
     } else {
       setInsertTop(null)
     }
@@ -168,6 +171,8 @@ export default memo(function MarkdownWysiwygComposer({
           defaultProtocol: 'https',
         },
       }),
+      // Prefer deleting empty mid-list items over TipTap's liftListItem (which splits lists).
+      DocsListKeymap,
       DocsCodeBlock,
       AuthenticatedImage,
       createDocsEmbedExtension(styles),
