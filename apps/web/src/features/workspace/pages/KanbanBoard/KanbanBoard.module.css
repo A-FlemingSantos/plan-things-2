@@ -1760,7 +1760,7 @@
   color: var(--text-1);
   letter-spacing: -.01em;
   line-height: 1.35;
-  background: var(--app-bg);
+  background: transparent;
   border: 1px solid var(--border-1);
   border-radius: 4px;
   outline: none;
