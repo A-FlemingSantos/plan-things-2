@@ -10,53 +10,70 @@ export default function DocInviteAccept() {
   const { token } = useParams()
   const navigate = useNavigate()
   const { accessToken } = useAuth()
-  const [invite, setInvite] = useState(null)
   const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [statusMessage, setStatusMessage] = useState('Carregando convite…')
 
   useEffect(() => {
-    let active = true
-    apiRequest(`/api/documents/invites/${token}`, { token: accessToken })
-      .then((nextInvite) => {
-        if (active) setInvite(nextInvite)
-      })
-      .catch((nextError) => {
-        if (active) setError(nextError?.message ?? 'Não foi possível carregar o convite.')
-      })
-    return () => { active = false }
-  }, [accessToken, token])
+    if (!token || !accessToken) return undefined
 
-  const respond = async (action) => {
-    setIsSubmitting(true)
-    try {
-      const result = await apiRequest(`/api/documents/invites/${token}/${action}`, {
-        method: 'POST',
-        token: accessToken,
-      })
-      if (action === 'accept') navigate(buildDocsPath(result.documentId), { replace: true })
-      else navigate(ROUTES.docs, { replace: true })
-    } catch (nextError) {
-      setError(nextError?.message ?? 'Não foi possível responder ao convite.')
-    } finally {
-      setIsSubmitting(false)
+    let active = true
+
+    async function openInvite() {
+      setError('')
+      setStatusMessage('Carregando convite…')
+
+      try {
+        const invite = await apiRequest(`/api/documents/invites/${token}`, { token: accessToken })
+        if (!active) return
+
+        if (invite?.status === 'ACCEPTED' && invite.documentId) {
+          navigate(buildDocsPath(invite.documentId), { replace: true })
+          return
+        }
+
+        if (invite?.status !== 'PENDING') {
+          setError('Este convite não está mais disponível.')
+          setStatusMessage('')
+          return
+        }
+
+        setStatusMessage('Abrindo documento…')
+        const result = await apiRequest(`/api/documents/invites/${token}/accept`, {
+          method: 'POST',
+          token: accessToken,
+        })
+        if (!active) return
+
+        const documentId = result?.documentId ?? invite.documentId
+        if (!documentId) {
+          setError('Não foi possível identificar o documento do convite.')
+          setStatusMessage('')
+          return
+        }
+
+        navigate(buildDocsPath(documentId), { replace: true })
+      } catch (nextError) {
+        if (!active) return
+        setError(nextError?.message ?? 'Não foi possível aceitar o convite.')
+        setStatusMessage('')
+      }
     }
-  }
+
+    openInvite()
+
+    return () => {
+      active = false
+    }
+  }, [accessToken, navigate, token])
 
   return (
     <AppThemeScope preference="system">
       <ProductAppShell contentTag="main">
         <section style={{ maxWidth: 520, margin: '10vh auto', padding: 24 }}>
           <Link to={ROUTES.docs}>Voltar para Docs</Link>
-          <h1>{invite ? `Convite para “${invite.documentTitle}”` : 'Convite para documento'}</h1>
+          <h1>Convite para documento</h1>
           {error ? <p>{error}</p> : null}
-          {!invite && !error ? <p>Carregando convite…</p> : null}
-          {invite ? (
-            <>
-              <p>Você receberá acesso como {invite.role === 'EDITOR' ? 'editor' : 'leitor'}.</p>
-              <button type="button" disabled={isSubmitting} onClick={() => respond('accept')}>Aceitar</button>
-              <button type="button" disabled={isSubmitting} onClick={() => respond('decline')}>Recusar</button>
-            </>
-          ) : null}
+          {!error && statusMessage ? <p>{statusMessage}</p> : null}
         </section>
       </ProductAppShell>
     </AppThemeScope>

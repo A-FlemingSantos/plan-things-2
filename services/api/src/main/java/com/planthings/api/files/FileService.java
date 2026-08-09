@@ -7,6 +7,7 @@ import com.planthings.api.common.error.ForbiddenException;
 import com.planthings.api.common.error.NotFoundException;
 import com.planthings.api.common.security.AuthenticatedUserService;
 import com.planthings.api.common.time.BrazilDateTimeMapper;
+import com.planthings.api.docs.DocumentRepository;
 import com.planthings.api.plans.PlanAccessService;
 import com.planthings.api.plans.PlanEntity;
 import com.planthings.api.plans.PlanMemberRole;
@@ -38,6 +39,7 @@ public class FileService {
   private final FilePlanShareRepository filePlanShareRepository;
   private final CardAttachmentRepository cardAttachmentRepository;
   private final WorkspaceRepository workspaceRepository;
+  private final DocumentRepository documentRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
   private final BoardCardRepository boardCardRepository;
@@ -50,6 +52,7 @@ public class FileService {
       FilePlanShareRepository filePlanShareRepository,
       CardAttachmentRepository cardAttachmentRepository,
       WorkspaceRepository workspaceRepository,
+      DocumentRepository documentRepository,
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
       BoardCardRepository boardCardRepository,
@@ -61,6 +64,7 @@ public class FileService {
     this.filePlanShareRepository = filePlanShareRepository;
     this.cardAttachmentRepository = cardAttachmentRepository;
     this.workspaceRepository = workspaceRepository;
+    this.documentRepository = documentRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
     this.boardCardRepository = boardCardRepository;
@@ -483,7 +487,7 @@ public class FileService {
     if (Objects.equals(file.getOwnerUserId(), userId)) {
       return true;
     }
-    return filePlanShareRepository.findByFileEntryId(file.getId()).stream()
+    boolean sharedWithPlan = filePlanShareRepository.findByFileEntryId(file.getId()).stream()
         .filter(share -> share.getFileEntryId().equals(file.getId()))
         .anyMatch(share -> {
           try {
@@ -493,6 +497,10 @@ public class FileService {
             return false;
           }
         });
+    if (sharedWithPlan) {
+      return true;
+    }
+    return documentRepository.existsCoverAccessibleToUser("files/" + file.getId(), userId);
   }
 
   private String requireName(String name) {

@@ -58,6 +58,7 @@ app:
       - /app
       - /workspace
       - /calendar
+      - /docs
       - /files
       - /settings
       - /plans/invites

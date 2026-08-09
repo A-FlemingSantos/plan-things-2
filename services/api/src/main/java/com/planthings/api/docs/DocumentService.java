@@ -195,6 +195,8 @@ public class DocumentService {
     invite.setToken(UUID.randomUUID().toString());
     invite.setStatus(DocumentInviteStatus.PENDING);
     invite.setExpiresAt(OffsetDateTime.now(clock).plusDays(7));
+    // Doc invites always persist so the owner can share a copyable link even when
+    // Gmail is missing, expired, missing scopes, or fails to send.
     DocumentInviteEmailSender.Delivery delivery;
     try {
       delivery = documentInviteEmailSender.sendInvite(
@@ -205,10 +207,7 @@ public class DocumentService {
               .orElseThrow(() -> new NotFoundException("DOCUMENTO_NAO_ENCONTRADO", "Documento não encontrado.")),
           buildInviteUrl(invite.getToken())
       );
-    } catch (BadRequestException exception) {
-      if (!"GMAIL_NAO_CONECTADO".equals(exception.getCode())) {
-        throw exception;
-      }
+    } catch (BadRequestException ignored) {
       delivery = new DocumentInviteEmailSender.Delivery(false, normalizedEmail, null);
     }
     documentInviteRepository.save(invite);

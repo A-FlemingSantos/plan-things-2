@@ -333,6 +333,13 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
     String allowedLocation = completeProviderCallbackLocation("google", "google-new", "/settings?tab=account");
     assertEquals("/settings?tab=account", queryParam(allowedLocation, "redirectTo"));
 
+    String docsInviteLocation = completeProviderCallbackLocation(
+        "google",
+        "google-docs-invite",
+        "/docs/invites/invite-token-123"
+    );
+    assertEquals("/docs/invites/invite-token-123", queryParam(docsInviteLocation, "redirectTo"));
+
     String blockedLocation = completeProviderCallbackLocation("google", "google-again", "https://evil.example/settings");
     assertEquals("", queryParam(blockedLocation, "redirectTo"));
   }
