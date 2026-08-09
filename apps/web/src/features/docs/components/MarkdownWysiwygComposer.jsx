@@ -211,8 +211,19 @@ export default function MarkdownWysiwygComposer({
     if (!editor) return
     const normalized = normalizeDocsEmbedMarkdown(value)
     if (editor.getMarkdown() === normalized) return
+
+    const scrollRoot = editor.view.dom.closest('[data-custom-scroll-viewport]')
+    const previousScrollTop = scrollRoot?.scrollTop ?? null
+
     editor.commands.setContent(normalized, { emitUpdate: false, contentType: 'markdown' })
     refreshVisualState(editor)
+
+    if (scrollRoot != null && previousScrollTop != null) {
+      scrollRoot.scrollTop = previousScrollTop
+      requestAnimationFrame(() => {
+        scrollRoot.scrollTop = previousScrollTop
+      })
+    }
   }, [editor, refreshVisualState, value])
 
   useEffect(() => {

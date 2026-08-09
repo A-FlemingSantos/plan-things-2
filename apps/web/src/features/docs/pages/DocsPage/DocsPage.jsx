@@ -119,7 +119,7 @@ function DocsPageContent() {
   const draftSignature = JSON.stringify(draft)
   const docMeta = formatDocumentMeta(details?.document?.updatedAt)
 
-  const applyDocument = (document) => {
+  const applyDocument = (document, { resetView = false } = {}) => {
     const nextDraft = {
       title: document.document.title ?? '',
       description: document.document.description ?? '',
@@ -130,11 +130,43 @@ function DocsPageContent() {
     savedDraftRef.current = JSON.stringify(nextDraft)
     setDetails(document)
     setDraft(nextDraft)
+    if (!resetView) return
     setActiveHeadingIndex(0)
     setSearchQuery('')
     setMoreMenuOpen(false)
     setMemberMenuOpen(false)
     articleViewportRef.current?.scrollTo({ top: 0 })
+  }
+
+  // Autosave success: keep the live draft (and scroll position). Only bump
+  // version/details so a mid-flight edit is not overwritten and the viewport
+  // does not jump to the top on every keystroke debounce.
+  const acknowledgeSavedDocument = (document, submitted) => {
+    const nextVersion = document.document.versionNumber
+    setDetails(document)
+    setDraft((current) => {
+      const stillSameAsSubmitted = (
+        current.title === submitted.title
+        && current.description === submitted.description
+        && current.contentMarkdown === submitted.contentMarkdown
+        && current.coverImageId === submitted.coverImageId
+      )
+
+      if (stillSameAsSubmitted) {
+        const clean = { ...submitted, version: nextVersion }
+        savedDraftRef.current = JSON.stringify(clean)
+        return clean
+      }
+
+      savedDraftRef.current = JSON.stringify({
+        title: document.document.title ?? '',
+        description: document.document.description ?? '',
+        contentMarkdown: document.contentMarkdown ?? '',
+        coverImageId: document.document.coverImageId ?? null,
+        version: nextVersion,
+      })
+      return { ...current, version: nextVersion }
+    })
   }
 
   const refreshDocument = async () => {
@@ -154,7 +186,7 @@ function DocsPageContent() {
     setIsLoading(true)
     loadDocument(docId)
       .then((document) => {
-        if (active) applyDocument(document)
+        if (active) applyDocument(document, { resetView: true })
       })
       .catch(() => {
         if (active) navigate(ROUTES.docs, { replace: true })
@@ -191,18 +223,21 @@ function DocsPageContent() {
   useEffect(() => {
     if (!canEdit || !details || draftSignature === savedDraftRef.current) return undefined
     const timer = window.setTimeout(() => {
-      saveDocument(details.document.id, {
+      const submitted = {
         title: draft.title,
         description: draft.description,
         contentMarkdown: draft.contentMarkdown,
         coverImageId: draft.coverImageId,
+      }
+      saveDocument(details.document.id, {
+        ...submitted,
         expectedVersion: draft.version,
       })
         .then((document) => {
-          applyDocument(document)
+          acknowledgeSavedDocument(document, submitted)
         })
         .catch((error) => {
-          if (error.currentDocument) applyDocument(error.currentDocument)
+          if (error.currentDocument) applyDocument(error.currentDocument, { resetView: true })
         })
     }, 650)
     return () => window.clearTimeout(timer)

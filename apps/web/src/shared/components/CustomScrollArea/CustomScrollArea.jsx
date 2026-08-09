@@ -55,6 +55,7 @@ function CustomScrollArea({
         {...viewportRest}
         ref={setViewportRef}
         className={viewportCombinedClassName}
+        data-custom-scroll-viewport=""
       >
         {children}
       </ViewportTag>
