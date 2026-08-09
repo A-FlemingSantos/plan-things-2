@@ -305,6 +305,11 @@
   padding-top: 64px;
 }
 
+/* Park the WYSIWYG editor while previewing so TipTap stays warm across toggles. */
+.contentModeParked {
+  display: none;
+}
+
 .docChromeFloat {
   position: absolute;
   top: 12px;

@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   computeViewportScrollDelta,
+  isScrollIntoViewSuppressed,
+  pinCustomViewportScrollTop,
   restoreCaretScrollLock,
+  suppressScrollIntoView,
 } from './editorScroll.js'
 
 describe('computeViewportScrollDelta', () => {
@@ -63,5 +66,29 @@ describe('restoreCaretScrollLock', () => {
 
     // caret is at 120, want offset 40 → scroll by +80
     expect(scrollRoot.scrollTop).toBe(280)
+  })
+})
+
+describe('pinCustomViewportScrollTop', () => {
+  it('clamps the requested top to the current max scroll', () => {
+    const scrollRoot = {
+      scrollTop: 0,
+      scrollHeight: 500,
+      clientHeight: 200,
+    }
+
+    pinCustomViewportScrollTop(scrollRoot, 400, { frames: 0 })
+    expect(scrollRoot.scrollTop).toBe(300)
+  })
+})
+
+describe('suppressScrollIntoView', () => {
+  it('marks scroll-into-view as suppressed for the duration window', () => {
+    vi.spyOn(performance, 'now').mockReturnValue(1000)
+    suppressScrollIntoView(120)
+    expect(isScrollIntoViewSuppressed()).toBe(true)
+    performance.now.mockReturnValue(1130)
+    expect(isScrollIntoViewSuppressed()).toBe(false)
+    vi.restoreAllMocks()
   })
 })

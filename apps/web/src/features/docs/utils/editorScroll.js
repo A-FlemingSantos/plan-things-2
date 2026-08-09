@@ -3,6 +3,50 @@ import { Plugin } from '@tiptap/pm/state'
 
 const DEFAULT_MARGIN_PX = 16
 
+/** Wall-clock gate so toolbar/link transactions do not scroll-into-view mid-reconcile. */
+let scrollIntoViewSuppressedUntil = 0
+
+/**
+ * Suppress ProseMirror/TipTap scroll-into-view for a short window.
+ * Used around format/link commands that otherwise jump the article to the top
+ * when caret coords briefly report the start of the document.
+ */
+export function suppressScrollIntoView(durationMs = 120) {
+  const until = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + durationMs
+  if (until > scrollIntoViewSuppressedUntil) {
+    scrollIntoViewSuppressedUntil = until
+  }
+}
+
+export function isScrollIntoViewSuppressed() {
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+  return now < scrollIntoViewSuppressedUntil
+}
+
+/**
+ * Re-apply a scrollTop across layout frames. Content height often collapses
+ * briefly during TipTap/React NodeView updates; a single write gets clamped to 0.
+ */
+export function pinCustomViewportScrollTop(scrollRoot, top, { frames = 3 } = {}) {
+  if (!scrollRoot || top == null || !Number.isFinite(top)) return
+
+  const apply = () => {
+    const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
+    scrollRoot.scrollTop = Math.min(Math.max(0, top), maxScrollTop)
+  }
+
+  apply()
+  let remaining = Math.max(0, frames)
+  if (remaining === 0) return
+
+  const tick = () => {
+    apply()
+    remaining -= 1
+    if (remaining > 0) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
 /**
  * Keep the caret visible inside Plan Things' CustomScrollArea viewport only.
  * ProseMirror's default scrollRectIntoView also walks window/body ancestors and
@@ -13,6 +57,7 @@ const DEFAULT_MARGIN_PX = 16
  */
 export function scrollSelectionIntoCustomViewport(view, { marginPx = DEFAULT_MARGIN_PX } = {}) {
   if (!view?.dom) return false
+  if (isScrollIntoViewSuppressed()) return true
 
   const scrollRoot = view.dom.closest('[data-custom-scroll-viewport]')
   if (!scrollRoot) return false
@@ -154,19 +199,15 @@ export const DocsCaretScrollLock = Extension.create({
                 return
               }
               // Fallback when the change did not come from a keyed input
-              // (paste, toolbar). Prefer pinning scrollTop over scroll-into-view
-              // so the article does not jump to the top when the caret briefly
-              // reports start-of-doc coordinates mid-reconciliation.
+              // (paste, toolbar, link). Pin scrollTop only — do not scroll the
+              // caret into view here. Mid-reconcile coords often report the
+              // start of the doc and would yank the article to the top.
               const scrollRoot = view.dom.closest('[data-custom-scroll-viewport]')
               const previousScrollTop = scrollRoot?.scrollTop ?? null
-              requestAnimationFrame(() => {
-                if (!view || view.isDestroyed) return
-                if (scrollRoot && previousScrollTop != null) {
-                  const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
-                  scrollRoot.scrollTop = Math.min(previousScrollTop, maxScrollTop)
-                }
-                scrollSelectionIntoCustomViewport(view)
-              })
+              if (scrollRoot && previousScrollTop != null) {
+                suppressScrollIntoView(120)
+                pinCustomViewportScrollTop(scrollRoot, previousScrollTop, { frames: 3 })
+              }
             },
             destroy() {
               dom.removeEventListener('keydown', onKeyDown, true)

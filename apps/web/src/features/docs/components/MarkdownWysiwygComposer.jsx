@@ -34,7 +34,10 @@ import { listDocHeadingElements, tagDocHeadingElements } from '../utils/docsHead
 import { DocsListKeymap, isTopLevelEmptyParagraph } from '../utils/listEditing.js'
 import {
   DocsCaretScrollLock,
+  isScrollIntoViewSuppressed,
+  pinCustomViewportScrollTop,
   scrollSelectionIntoCustomViewport,
+  suppressScrollIntoView,
 } from '../utils/editorScroll.js'
 import { handleMarkdownPaste } from '../utils/markdownPaste.js'
 import { summarizeLinkHref } from '../utils/summarizeLinkHref.js'
@@ -119,20 +122,14 @@ function tagEditorHeadings(editorRoot, bodyHeadingClass) {
   })
 }
 
-function restoreScrollTop(scrollRoot, top) {
-  if (!scrollRoot || top == null || !Number.isFinite(top)) return
-  const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
-  scrollRoot.scrollTop = Math.min(Math.max(0, top), maxScrollTop)
-}
-
 function withPreservedScroll(editor, run) {
   if (!editor) return
   const scrollRoot = editor.view.dom.closest('[data-custom-scroll-viewport]')
   const previousScrollTop = scrollRoot?.scrollTop ?? null
+  suppressScrollIntoView(160)
   run()
   if (!scrollRoot || previousScrollTop == null) return
-  restoreScrollTop(scrollRoot, previousScrollTop)
-  requestAnimationFrame(() => restoreScrollTop(scrollRoot, previousScrollTop))
+  pinCustomViewportScrollTop(scrollRoot, previousScrollTop, { frames: 4 })
 }
 
 const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer({
@@ -354,6 +351,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
         return handleMarkdownPaste(editorRef.current, event)
       },
       handleScrollToSelection(view) {
+        if (isScrollIntoViewSuppressed()) return true
         return scrollSelectionIntoCustomViewport(view)
       },
     },
@@ -364,8 +362,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
       const scrollRoot = activeEditor.view.dom.closest('[data-custom-scroll-viewport]')
       const lockedTop = scrollTopRef?.current
       if (scrollRoot != null && lockedTop != null) {
-        restoreScrollTop(scrollRoot, lockedTop)
-        requestAnimationFrame(() => restoreScrollTop(scrollRoot, lockedTop))
+        pinCustomViewportScrollTop(scrollRoot, lockedTop, { frames: 4 })
       }
     },
     onUpdate: ({ editor: activeEditor }) => {
@@ -373,11 +370,8 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
       lastEmittedMarkdownRef.current = markdown
       onChange(markdown)
       refreshVisualState(activeEditor)
-      const scrollRoot = activeEditor.view.dom.closest('[data-custom-scroll-viewport]')
-      if (scrollRoot) {
-        // Keep parent mode-switch lock in sync while editing.
-        if (scrollTopRef) scrollTopRef.current = scrollRoot.scrollTop
-      }
+      // Do not mirror scrollTop into the parent here: when the viewport briefly
+      // collapses mid-update, scrollTop is 0 and would poison mode-switch restore.
     },
     onSelectionUpdate: ({ editor: activeEditor }) => syncSelection(activeEditor),
     onFocus: ({ editor: activeEditor }) => syncSelection(activeEditor),
@@ -526,12 +520,8 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
       refreshVisualState(editor)
 
       if (scrollRoot != null && previousScrollTop != null) {
-        const applyScroll = () => {
-          const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
-          scrollRoot.scrollTop = Math.min(previousScrollTop, maxScrollTop)
-        }
-        applyScroll()
-        requestAnimationFrame(applyScroll)
+        suppressScrollIntoView(160)
+        pinCustomViewportScrollTop(scrollRoot, previousScrollTop, { frames: 4 })
       }
     })
 
