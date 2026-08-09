@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import ImageExtension from '@tiptap/extension-image'
@@ -119,7 +119,7 @@ function tagEditorHeadings(editorRoot, bodyHeadingClass) {
   })
 }
 
-export default memo(function MarkdownWysiwygComposer({
+const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer({
   value,
   onChange,
   onAddComment,
@@ -129,7 +129,7 @@ export default memo(function MarkdownWysiwygComposer({
   linkableDocuments = [],
   placeholder,
   styles,
-}) {
+}, ref) {
   const { currentUser, accessToken } = useAuth()
   const { generalPreferences } = usePreferences()
   const spellcheckLang = resolveDocumentLang(generalPreferences?.language)
@@ -139,6 +139,7 @@ export default memo(function MarkdownWysiwygComposer({
   const railRef = useRef(null)
   const selectionToolbarRef = useRef(null)
   const linkToolButtonRef = useRef(null)
+  const linkPanelAnchorRef = useRef(null)
   const urlPromptRef = useRef(null)
   const urlInputRef = useRef(null)
   const docSearchInputRef = useRef(null)
@@ -556,7 +557,7 @@ export default memo(function MarkdownWysiwygComposer({
       // headings / note offsets during scroll forces TipTap DOM work and jank.
       syncSelection(editor, { immediate: true })
       if (!urlPromptOpenRef.current) return
-      const anchor = measureLinkPanelAnchor(linkToolButtonRef.current)
+      const anchor = measureLinkPanelAnchor(linkPanelAnchorRef.current)
       if (!anchor) return
       setUrlPrompt((current) => (
         current && (current.top !== anchor.top || current.left !== anchor.left)
@@ -576,6 +577,7 @@ export default memo(function MarkdownWysiwygComposer({
 
   useEffect(() => {
     if (!urlPrompt) {
+      linkPanelAnchorRef.current = null
       setUrlDraft('')
       setDocSearchQuery('')
       setDocsMenuOpen(false)
@@ -635,44 +637,67 @@ export default memo(function MarkdownWysiwygComposer({
     return () => document.removeEventListener('keydown', cancelOnEscape)
   }, [pendingNote])
 
-  const applyBlock = (blockId) => {
+  const openLinkPrompt = useCallback((anchorEl = null) => {
     if (!editor) return
+    setDocsMenuOpen(false)
+    setDocSearchQuery('')
+    const { from, to } = editor.state.selection
+    let fallback = { top: window.innerHeight / 2, left: window.innerWidth / 2 }
+    try {
+      const coords = editor.view.coordsAtPos(from)
+      fallback = { top: coords.bottom, left: coords.left }
+    } catch {
+      // Selection may be temporarily invalid while the view remounts.
+    }
+    const button = anchorEl ?? linkToolButtonRef.current
+    linkPanelAnchorRef.current = button
+    const anchor = measureLinkPanelAnchor(button, fallback)
+    setUrlPrompt({
+      anchor: 'link',
+      top: anchor.top,
+      left: anchor.left,
+      from,
+      to,
+    })
+  }, [editor])
+
+  const applyFormat = useCallback((action, options = {}) => {
+    if (!editor) return
+    if (action === 'link') {
+      openLinkPrompt(options.anchorEl ?? null)
+      return
+    }
+
     const chain = editor.chain().focus()
-    if (blockId === 'quote') {
-      chain.toggleBlockquote().run()
-      setMenuOpen(false)
-      return
-    }
-    if (blockId === 'code') {
-      chain.toggleCodeBlock().run()
-      setMenuOpen(false)
-      return
-    }
-    if (blockId === 'divider') {
-      chain.setHorizontalRule().run()
-      setMenuOpen(false)
-      return
-    }
-    if (blockId === 'image') {
-      setMenuOpen(false)
-      imageInputRef.current?.click()
-      return
-    }
-    if (blockId === 'unsplash' || blockId === 'video') {
+    if (action === 'bold') chain.toggleBold().run()
+    else if (action === 'italic') chain.toggleItalic().run()
+    else if (action === 'h1' || action === 'title') chain.toggleHeading({ level: 1 }).run()
+    else if (action === 'h2' || action === 'subtitle') chain.toggleHeading({ level: 2 }).run()
+    else if (action === 'h3') chain.toggleHeading({ level: 3 }).run()
+    else if (action === 'quote') chain.toggleBlockquote().run()
+    else if (action === 'bulletList') chain.toggleBulletList().run()
+    else if (action === 'orderedList') chain.toggleOrderedList().run()
+    else if (action === 'code') chain.toggleCodeBlock().run()
+    else if (action === 'divider') chain.setHorizontalRule().run()
+    else if (action === 'image') imageInputRef.current?.click()
+    else if (action === 'unsplash' || action === 'video') {
       editor.chain().focus().insertContent({
         type: 'docsEmbed',
         attrs: {
-          kind: blockId === 'video' ? 'video' : 'unsplash',
+          kind: action === 'video' ? 'video' : 'unsplash',
           url: '',
           query: '',
           page: 1,
           pageToken: '',
         },
       }).run()
-      setMenuOpen(false)
-      return
     }
+  }, [editor, openLinkPrompt])
 
+  useImperativeHandle(ref, () => ({ applyFormat }), [applyFormat])
+
+  const applyBlock = (blockId) => {
+    applyFormat(blockId)
     setMenuOpen(false)
   }
 
@@ -765,27 +790,12 @@ export default memo(function MarkdownWysiwygComposer({
       return
     }
 
-    const chain = editor.chain().focus()
-    if (action === 'bold') chain.toggleBold().run()
-    else if (action === 'italic') chain.toggleItalic().run()
-    else if (action === 'title') chain.toggleHeading({ level: 1 }).run()
-    else if (action === 'subtitle') chain.toggleHeading({ level: 2 }).run()
-    else if (action === 'quote') chain.toggleBlockquote().run()
-    else if (action === 'link') {
-      setDocsMenuOpen(false)
-      setDocSearchQuery('')
-      const anchor = measureLinkPanelAnchor(linkToolButtonRef.current, {
-        top: selection.top,
-        left: selection.left,
-      })
-      setUrlPrompt({
-        anchor: 'link',
-        top: anchor.top,
-        left: anchor.left,
-        from: selection.from,
-        to: selection.to,
-      })
+    if (action === 'link') {
+      openLinkPrompt(linkToolButtonRef.current)
+      return
     }
+
+    applyFormat(action === 'title' ? 'h1' : action === 'subtitle' ? 'h2' : action)
   }
 
   const sendNote = async () => {
@@ -1002,4 +1012,6 @@ export default memo(function MarkdownWysiwygComposer({
       </aside>
     </div>
   )
-})
+}))
+
+export default MarkdownWysiwygComposer

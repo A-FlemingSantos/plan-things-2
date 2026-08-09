@@ -1,10 +1,17 @@
 import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
+  ChevronDown,
   ChevronRight,
+  Code2,
   Copy,
   Download,
+  Eye,
   Image,
   Link2,
+  List,
+  ListOrdered,
+  Minus,
   MoreHorizontal,
   MoveLeft,
   PanelLeftClose,
@@ -13,6 +20,7 @@ import {
   PanelRightOpen,
   Pencil,
   Plus,
+  Quote,
   Search,
   Share,
   Trash2,
@@ -30,6 +38,7 @@ import MarkdownContent from '../../components/MarkdownContent.jsx'
 import AddDocumentMemberMenu from '../../components/AddDocumentMemberMenu.jsx'
 import DocumentCoverMenu from '../../components/DocumentCoverMenu.jsx'
 import DocumentCoverSurface from '../../components/DocumentCoverSurface.jsx'
+import { UnsplashLogo, YouTubeLogo } from '../../components/docsEmbedExtension.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
 import { hasDocumentCover } from '../../utils/documentCover.js'
 import { formatDocumentMeta } from '../../utils/docVisuals.js'
@@ -46,6 +55,30 @@ import { extractLinkedDocIds } from '../../utils/extractLinkedDocIds.js'
 import styles from './DocsPage.module.css'
 
 const ICON_STROKE = 1.6
+
+const FORMAT_TOOLBAR_ACTIONS = [
+  { id: 'bold', label: 'Negrito', kind: 'text', text: 'B', textClass: 'formatToolBold' },
+  { id: 'italic', label: 'Itálico', kind: 'text', text: 'i', textClass: 'formatToolItalic' },
+  { id: 'link', label: 'Inserir link', kind: 'icon', Icon: Link2 },
+  { id: 'heading', label: 'Título', kind: 'headingMenu' },
+  { id: 'quote', label: 'Citação', kind: 'icon', Icon: Quote },
+  { id: 'bulletList', label: 'Lista', kind: 'icon', Icon: List },
+  { id: 'orderedList', label: 'Lista numerada', kind: 'icon', Icon: ListOrdered },
+  { id: 'code', label: 'Bloco de código', kind: 'icon', Icon: Code2 },
+  { id: 'divider', label: 'Linha', kind: 'icon', Icon: Minus },
+  { id: 'image', label: 'Imagem', kind: 'icon', Icon: Image },
+  { id: 'unsplash', label: 'Unsplash', kind: 'custom', Icon: UnsplashLogo },
+  { id: 'video', label: 'YouTube', kind: 'custom', Icon: YouTubeLogo },
+]
+
+const HEADING_FORMAT_OPTIONS = [
+  { id: 'h1', label: 'Título', textClass: 'formatHeadingOptionH1' },
+  { id: 'h2', label: 'Subtítulo', textClass: 'formatHeadingOptionH2' },
+  { id: 'h3', label: 'Título 3', textClass: 'formatHeadingOptionH3' },
+]
+
+const FORMAT_TOOLBAR_EASE = [0.22, 1, 0.36, 1]
+const MODE_PILL_LAYOUT_ID = 'docs-content-mode-pill'
 
 function getInitials(name = '') {
   return name.trim().split(/\s+/).filter(Boolean).slice(0, 2)
@@ -73,6 +106,7 @@ function DocsPageContent() {
   const navigate = useNavigate()
   const { accessToken, currentUser } = useAuth()
   const { setPageBreadcrumbLabel } = useAppChrome()
+  const reduceMotion = useReducedMotion()
   const {
     documents,
     loadDocument,
@@ -95,6 +129,9 @@ function DocsPageContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeHeadingIndex, setActiveHeadingIndex] = useState(0)
   const [expandedHeadingIds, setExpandedHeadingIds] = useState(() => new Set())
+  const [contentMode, setContentMode] = useState('edit')
+  const [headingMenuOpen, setHeadingMenuOpen] = useState(false)
+  const [toolbarAnimating, setToolbarAnimating] = useState(false)
   const articleViewportRef = useRef(null)
   const activeHeadingIndexRef = useRef(0)
   const headingNavLockRef = useRef(null)
@@ -104,8 +141,12 @@ function DocsPageContent() {
   const memberMenuRef = useRef(null)
   const titleInputRef = useRef(null)
   const savedDraftRef = useRef('')
+  const composerRef = useRef(null)
+  const formatLinkButtonRef = useRef(null)
+  const headingMenuRef = useRef(null)
 
   const canEdit = details?.document?.role !== 'VIEWER'
+  const isEditingContent = canEdit && contentMode === 'edit'
   const headings = useMemo(() => extractMarkdownHeadings(draft.contentMarkdown), [draft.contentMarkdown])
   const mentionedDocuments = useMemo(() => {
     const currentId = details?.document?.id ?? null
@@ -159,10 +200,22 @@ function DocsPageContent() {
     setActiveHeadingIndex(0)
     setSearchQuery('')
     setExpandedHeadingIds(new Set())
+    setContentMode('edit')
+    setHeadingMenuOpen(false)
     headingNavLockRef.current = null
     setMoreMenuOpen(false)
     setMemberMenuOpen(false)
     articleViewportRef.current?.scrollTo({ top: 0 })
+  }
+
+  const runFormatAction = (action) => {
+    if (!isEditingContent) return
+    setHeadingMenuOpen(false)
+    if (action === 'link') {
+      composerRef.current?.applyFormat('link', { anchorEl: formatLinkButtonRef.current })
+      return
+    }
+    composerRef.current?.applyFormat(action)
   }
 
   // Autosave success: keep the live draft (and scroll position). Only bump
@@ -335,6 +388,26 @@ function DocsPageContent() {
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [coverMenuOpen])
+
+  useEffect(() => {
+    if (!headingMenuOpen) return undefined
+    const onPointerDown = (event) => {
+      if (!headingMenuRef.current?.contains(event.target)) setHeadingMenuOpen(false)
+    }
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setHeadingMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [headingMenuOpen])
+
+  useEffect(() => {
+    if (!isEditingContent) setHeadingMenuOpen(false)
+  }, [isEditingContent])
 
   useEffect(() => {
     activeHeadingIndexRef.current = activeHeadingIndex
@@ -624,12 +697,149 @@ function DocsPageContent() {
           </aside>
 
           <section className={`${styles.articlePane} ${docsOpen ? '' : styles.articlePaneDocsCollapsed}`} aria-label="Documento">
-            <div className={styles.articleStage}>
+            <div className={`${styles.articleStage} ${canEdit ? styles.articleStageWithFormatToolbar : ''}`}>
+              {canEdit ? (
+                <div className={styles.docChromeFloat}>
+                  <AnimatePresence initial={false}>
+                    {isEditingContent ? (
+                      <motion.div
+                        key="docs-format-toolbar"
+                        className={`${styles.formatToolbarMotion} ${toolbarAnimating ? styles.formatToolbarMotionClipping : ''}`}
+                        initial={reduceMotion ? false : { width: 0, opacity: 0 }}
+                        animate={{ width: 'auto', opacity: 1 }}
+                        exit={reduceMotion ? { opacity: 0 } : { width: 0, opacity: 0 }}
+                        transition={reduceMotion
+                          ? { duration: 0 }
+                          : { duration: 0.32, ease: FORMAT_TOOLBAR_EASE }}
+                        onAnimationStart={() => setToolbarAnimating(true)}
+                        onAnimationComplete={() => setToolbarAnimating(false)}
+                      >
+                        <div className={styles.formatToolbarFloat} role="toolbar" aria-label="Formatação do documento">
+                          <div className={styles.formatToolbarGroup}>
+                            {FORMAT_TOOLBAR_ACTIONS.map((action) => {
+                              if (action.kind === 'headingMenu') {
+                                return (
+                                  <div key={action.id} className={styles.formatHeadingMenu} ref={headingMenuRef}>
+                                    <button
+                                      type="button"
+                                      className={[
+                                        styles.formatToolButton,
+                                        styles.formatHeadingTrigger,
+                                        headingMenuOpen ? styles.formatToolButtonActive : '',
+                                      ].filter(Boolean).join(' ')}
+                                      title={action.label}
+                                      aria-label={action.label}
+                                      aria-haspopup="menu"
+                                      aria-expanded={headingMenuOpen}
+                                      onMouseDown={(event) => event.preventDefault()}
+                                      onClick={() => setHeadingMenuOpen((open) => !open)}
+                                    >
+                                      <span className={styles.formatToolHeadingLabel} aria-hidden="true">T</span>
+                                      <ChevronDown size={12} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                                    </button>
+                                    {headingMenuOpen ? (
+                                      <div className={styles.formatHeadingPanel} role="menu" aria-label="Estilos de título">
+                                        {HEADING_FORMAT_OPTIONS.map((option) => (
+                                          <button
+                                            key={option.id}
+                                            type="button"
+                                            role="menuitem"
+                                            className={`${styles.formatHeadingOption} ${styles[option.textClass]}`}
+                                            onMouseDown={(event) => event.preventDefault()}
+                                            onClick={() => runFormatAction(option.id)}
+                                          >
+                                            {option.label}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )
+                              }
+
+                              const buttonClass = [
+                                styles.formatToolButton,
+                                action.textClass ? styles[action.textClass] : '',
+                              ].filter(Boolean).join(' ')
+                              return (
+                                <button
+                                  key={action.id}
+                                  ref={action.id === 'link' ? formatLinkButtonRef : undefined}
+                                  type="button"
+                                  className={buttonClass}
+                                  title={action.label}
+                                  aria-label={action.label}
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => runFormatAction(action.id)}
+                                >
+                                  {action.kind === 'text' ? (
+                                    action.text
+                                  ) : (
+                                    <action.Icon size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                  <div className={styles.modePillGroup} role="group" aria-label="Modo do documento">
+                    <button
+                      type="button"
+                      className={`${styles.modePill} ${contentMode === 'edit' ? styles.modePillActive : ''}`}
+                      title="Editar"
+                      aria-label="Editar"
+                      aria-pressed={contentMode === 'edit'}
+                      onClick={() => {
+                        setHeadingMenuOpen(false)
+                        setContentMode('edit')
+                      }}
+                    >
+                      {contentMode === 'edit' ? (
+                        <motion.span
+                          layoutId={MODE_PILL_LAYOUT_ID}
+                          className={styles.modePillActiveFill}
+                          transition={reduceMotion
+                            ? { duration: 0 }
+                            : { type: 'spring', stiffness: 420, damping: 34 }}
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      <Pencil size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.modePill} ${contentMode === 'view' ? styles.modePillActive : ''}`}
+                      title="Visualizar"
+                      aria-label="Visualizar"
+                      aria-pressed={contentMode === 'view'}
+                      onClick={() => {
+                        setHeadingMenuOpen(false)
+                        setContentMode('view')
+                      }}
+                    >
+                      {contentMode === 'view' ? (
+                        <motion.span
+                          layoutId={MODE_PILL_LAYOUT_ID}
+                          className={styles.modePillActiveFill}
+                          transition={reduceMotion
+                            ? { duration: 0 }
+                            : { type: 'spring', stiffness: 420, damping: 34 }}
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      <Eye size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <CustomScrollArea
                 className={styles.articleScroll}
                 viewportClassName={styles.articleViewport}
                 viewportRef={articleViewportRef}
-                refreshKey={`docs:${details.document.id}:${indexOpen}:${docsOpen}`}
+                refreshKey={`docs:${details.document.id}:${indexOpen}:${docsOpen}:${contentMode}`}
               >
                 <div className={styles.articleInner}>
                   <header className={styles.toolbar}>
@@ -811,8 +1021,9 @@ function DocsPageContent() {
                   </ul>
 
                   <div className={styles.body} data-docs-body="">
-                    {canEdit ? (
+                    {isEditingContent ? (
                       <MarkdownWysiwygComposer
+                        ref={composerRef}
                         value={draft.contentMarkdown}
                         onChange={handleContentChange}
                         onAddComment={addComment}
