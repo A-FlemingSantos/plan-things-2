@@ -79,6 +79,11 @@ const HEADING_FORMAT_OPTIONS = [
 
 const FORMAT_TOOLBAR_EASE = [0.22, 1, 0.36, 1]
 const MODE_PILL_LAYOUT_ID = 'docs-content-mode-pill'
+const MODE_TOGGLE_SHORTCUT_LABEL = (
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.platform)
+    ? '⌘⇧E'
+    : 'Ctrl+Shift+E'
+)
 
 function getInitials(name = '') {
   return name.trim().split(/\s+/).filter(Boolean).slice(0, 2)
@@ -169,6 +174,11 @@ function DocsPageContent() {
     setHeadingMenuOpen(false)
     setContentMode(mode)
   }, [captureArticleScroll, contentMode])
+
+  const toggleContentMode = useCallback(() => {
+    changeContentMode(contentMode === 'edit' ? 'view' : 'edit')
+  }, [changeContentMode, contentMode])
+
   const headings = useMemo(() => extractMarkdownHeadings(draft.contentMarkdown), [draft.contentMarkdown])
   const mentionedDocuments = useMemo(() => {
     const currentId = details?.document?.id ?? null
@@ -431,6 +441,19 @@ function DocsPageContent() {
   useEffect(() => {
     if (!isEditingContent) setHeadingMenuOpen(false)
   }, [isEditingContent])
+
+  useEffect(() => {
+    if (!canEdit) return undefined
+    const onKeyDown = (event) => {
+      if (event.isComposing) return
+      if (!(event.metaKey || event.ctrlKey) || !event.shiftKey || event.altKey) return
+      if (event.key.toLowerCase() !== 'e') return
+      event.preventDefault()
+      toggleContentMode()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [canEdit, toggleContentMode])
 
   useEffect(() => {
     activeHeadingIndexRef.current = activeHeadingIndex
@@ -826,12 +849,12 @@ function DocsPageContent() {
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
-                  <div className={styles.modePillGroup} role="group" aria-label="Modo do documento">
+                  <div className={styles.modePillGroup} role="group" aria-label={`Modo do documento (${MODE_TOGGLE_SHORTCUT_LABEL})`}>
                     <button
                       type="button"
                       className={`${styles.modePill} ${contentMode === 'edit' ? styles.modePillActive : ''}`}
-                      title="Editar"
-                      aria-label="Editar"
+                      title={`Editar (${MODE_TOGGLE_SHORTCUT_LABEL})`}
+                      aria-label={`Editar (${MODE_TOGGLE_SHORTCUT_LABEL})`}
                       aria-pressed={contentMode === 'edit'}
                       onClick={() => changeContentMode('edit')}
                     >
@@ -850,8 +873,8 @@ function DocsPageContent() {
                     <button
                       type="button"
                       className={`${styles.modePill} ${contentMode === 'view' ? styles.modePillActive : ''}`}
-                      title="Visualizar"
-                      aria-label="Visualizar"
+                      title={`Visualizar (${MODE_TOGGLE_SHORTCUT_LABEL})`}
+                      aria-label={`Visualizar (${MODE_TOGGLE_SHORTCUT_LABEL})`}
                       aria-pressed={contentMode === 'view'}
                       onClick={() => changeContentMode('view')}
                     >
