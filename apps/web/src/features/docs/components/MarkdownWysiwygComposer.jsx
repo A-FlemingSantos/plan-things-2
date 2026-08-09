@@ -491,7 +491,7 @@ export default function MarkdownWysiwygComposer({
                   <div className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen} {...(!menuOpen ? { inert: '' } : {})}>
                     {BLOCK_ACTIONS.map(({ id, label, Icon }) => (
                       <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}>
-                        <Icon size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                        <Icon size={17} strokeWidth={ICON_STROKE} aria-hidden="true" />
                       </button>
                     ))}
                   </div>

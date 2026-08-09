@@ -1019,7 +1019,7 @@
 .blockInsert {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   overflow: visible;
   border: none;
   border-radius: 0;
@@ -1034,7 +1034,7 @@
   width: auto;
   height: auto;
   flex: 0 0 auto;
-  padding: 0;
+  padding: 2px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -1047,6 +1047,10 @@
     opacity var(--transition-fast),
     color var(--transition-fast),
     transform var(--transition-fast);
+}
+
+.blockActionButton {
+  background: var(--app-bg);
 }
 
 .blockInsertButton:focus,
@@ -1068,10 +1072,16 @@
   opacity: 0.72;
 }
 
+.blockActionButton:hover {
+  background: var(--app-bg);
+}
+
 .blockActions {
   display: none;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  padding: 2px 4px;
+  background: var(--app-bg);
 }
 
 .blockInsertOpen .blockActions {

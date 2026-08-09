@@ -380,7 +380,7 @@ export default function InlineMarkdownComposer({
                       <div className={`${styles.blockInsert} ${menuOpen ? styles.blockInsertOpen : ''}`}>
                         <button type="button" className={styles.blockInsertButton} title={menuOpen ? 'Fechar' : 'Adicionar bloco'} aria-label={menuOpen ? 'Fechar opções de bloco' : 'Adicionar bloco'} aria-expanded={menuOpen} aria-controls={`docs-block-actions-${index}`} onMouseDown={(event) => event.preventDefault()} onClick={() => setMenuOpen((open) => !open)}><Plus size={14} strokeWidth={1.6} aria-hidden="true" /></button>
                         <div id={`docs-block-actions-${index}`} className={styles.blockActions} role="toolbar" aria-label="Inserir bloco" aria-hidden={!menuOpen} {...(!menuOpen ? { inert: '' } : {})}>
-                          {BLOCK_ACTIONS.map(({ id, label, Icon }) => <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}><Icon size={15} strokeWidth={1.6} aria-hidden="true" /></button>)}
+                          {BLOCK_ACTIONS.map(({ id, label, Icon }) => <button key={id} type="button" className={styles.blockActionButton} title={label} aria-label={label} tabIndex={menuOpen ? 0 : -1} onMouseDown={(event) => event.preventDefault()} onClick={() => applyBlock(id)}><Icon size={17} strokeWidth={1.6} aria-hidden="true" /></button>)}
                         </div>
                       </div>
                     ) : null}
