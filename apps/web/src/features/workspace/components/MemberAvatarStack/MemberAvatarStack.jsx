@@ -6,24 +6,12 @@ import styles from './MemberAvatarStack.module.css'
 
 const HOVER_LIFT = 4
 const TOOLTIP_GAP = 8
-const VIEWPORT_PADDING = 8
-const ESTIMATED_TOOLTIP_HEIGHT = 28
 
-function resolveTooltipPlacement(rect, tooltipHeight = ESTIMATED_TOOLTIP_HEIGHT) {
-  const spaceAbove = rect.top - VIEWPORT_PADDING
-  const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_PADDING
-  const needed = tooltipHeight + TOOLTIP_GAP
-
-  if (spaceAbove >= needed) return 'top'
-  if (spaceBelow >= needed) return 'bottom'
-  return spaceBelow >= spaceAbove ? 'bottom' : 'top'
-}
-
-function resolveTooltipPosition(rect, placement) {
+function resolveTooltipPosition(rect) {
   return {
-    top: placement === 'top' ? rect.top - TOOLTIP_GAP : rect.bottom + TOOLTIP_GAP,
+    top: rect.bottom + TOOLTIP_GAP,
     left: rect.left + rect.width / 2,
-    placement,
+    placement: 'bottom',
   }
 }
 
@@ -58,8 +46,8 @@ function resolveTheme(rootEl) {
   return scope?.dataset?.theme ?? document.documentElement.dataset.appColorScheme ?? 'light'
 }
 
-function useTooltipPosition(anchorEl, active, tooltipEl) {
-  const [position, setPosition] = useState({ top: 0, left: 0, placement: 'top' })
+function useTooltipPosition(anchorEl, active) {
+  const [position, setPosition] = useState({ top: 0, left: 0, placement: 'bottom' })
 
   useLayoutEffect(() => {
     if (!active || !anchorEl) return undefined
@@ -68,9 +56,7 @@ function useTooltipPosition(anchorEl, active, tooltipEl) {
 
     const updatePosition = () => {
       const rect = anchorEl.getBoundingClientRect()
-      const tooltipHeight = tooltipEl?.offsetHeight ?? ESTIMATED_TOOLTIP_HEIGHT
-      const placement = resolveTooltipPlacement(rect, tooltipHeight)
-      setPosition(resolveTooltipPosition(rect, placement))
+      setPosition(resolveTooltipPosition(rect))
     }
 
     updatePosition()
@@ -88,17 +74,15 @@ function useTooltipPosition(anchorEl, active, tooltipEl) {
       window.removeEventListener('scroll', updatePosition, true)
       window.removeEventListener('resize', updatePosition)
     }
-  }, [active, anchorEl, tooltipEl])
+  }, [active, anchorEl])
 
   return position
 }
 
 function AvatarTooltipPortal({ rootRef, anchorEl, label, visible }) {
-  const [tooltipEl, setTooltipEl] = useState(null)
   const active = Boolean(visible && label && anchorEl)
-  const position = useTooltipPosition(anchorEl, active, tooltipEl)
+  const position = useTooltipPosition(anchorEl, active)
   const theme = resolveTheme(rootRef.current)
-  const placement = position.placement ?? 'top'
 
   if (typeof document === 'undefined') return null
 
@@ -111,19 +95,19 @@ function AvatarTooltipPortal({ rootRef, anchorEl, label, visible }) {
             className={styles.tooltipHost}
             initial={{
               x: '-50%',
-              y: placement === 'top' ? '-90%' : 8,
+              y: 8,
               opacity: 0,
               scale: 0.7,
             }}
             animate={{
               x: '-50%',
-              y: placement === 'top' ? '-100%' : 0,
+              y: 0,
               opacity: 1,
               scale: 1,
             }}
             exit={{
               x: '-50%',
-              y: placement === 'top' ? '-90%' : 8,
+              y: 8,
               opacity: 0,
               scale: 0.7,
             }}
@@ -137,7 +121,7 @@ function AvatarTooltipPortal({ rootRef, anchorEl, label, visible }) {
               left: position.left,
             }}
           >
-            <span ref={setTooltipEl} className={styles.tooltip}>
+            <span className={styles.tooltip}>
               {label}
             </span>
           </motion.div>
