@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BookOpen, House, KanbanSquare, Settings } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { SiGithub } from 'react-icons/si'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import {
@@ -8,6 +8,7 @@ import {
   resolveDocsDockPath,
 } from '../../../features/docs/utils/lastDocsRoute.js'
 import { normalizePathname, ROUTES } from '../../config/routes.js'
+import { navigateToSettingsSection } from '../../utils/settingsNavigation.js'
 import { Dock, DockItem, DockSeparator } from '../Dock/Dock.jsx'
 import SidebarAccountMenu from '../SidebarAccountMenu/SidebarAccountMenu.jsx'
 import styles from './AppNavigationDock.module.css'
@@ -21,13 +22,12 @@ const NAV_ITEMS = [
 const GITHUB_ITEM = {
   id: 'github',
   label: 'GitHub',
-  to: `${ROUTES.settings}?section=integrations`,
+  section: 'integrations',
 }
 
 const SETTINGS_ITEM = {
   id: 'settings',
   label: 'Configurações',
-  to: ROUTES.settings,
 }
 
 function isSettingsSectionActive(pathname, search, section) {
@@ -67,14 +67,38 @@ function NavLinkItem({ label, to, Icon, pathname, activeTo = to }) {
   )
 }
 
+function SettingsPanelItem({ label, section = null, active, onOpen }) {
+  return (
+    <DockItem active={active}>
+      <button
+        type="button"
+        className={styles.link}
+        aria-label={label}
+        aria-current={active ? 'page' : undefined}
+        onClick={() => onOpen(section)}
+      >
+        {section === 'integrations' ? (
+          <SiGithub size={16} aria-hidden="true" />
+        ) : (
+          <Settings size={16} strokeWidth={1.75} aria-hidden="true" />
+        )}
+      </button>
+    </DockItem>
+  )
+}
+
 export default function AppNavigationDock({ navigationPathname = null } = {}) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [docsPath, setDocsPath] = useState(() => resolveDocsDockPath())
   const contentPathname = navigationPathname ?? location.pathname
   const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
   const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
   const [homeItem, docsItem, boardsItem] = NAV_ITEMS
+  const openSettingsPanel = (section) => {
+    navigateToSettingsSection(navigate, location, section)
+  }
 
   useEffect(() => {
     rememberDocsRoute(location.pathname)
@@ -99,27 +123,17 @@ export default function AppNavigationDock({ navigationPathname = null } = {}) {
 
           <DockSeparator />
 
-          <DockItem active={githubActive}>
-            <Link
-              to={GITHUB_ITEM.to}
-              className={styles.link}
-              aria-label={GITHUB_ITEM.label}
-              aria-current={githubActive ? 'page' : undefined}
-            >
-              <SiGithub size={16} aria-hidden="true" />
-            </Link>
-          </DockItem>
+          <SettingsPanelItem
+            {...GITHUB_ITEM}
+            active={githubActive}
+            onOpen={openSettingsPanel}
+          />
 
-          <DockItem active={settingsActive}>
-            <Link
-              to={SETTINGS_ITEM.to}
-              className={styles.link}
-              aria-label={SETTINGS_ITEM.label}
-              aria-current={settingsActive ? 'page' : undefined}
-            >
-              <Settings size={16} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-          </DockItem>
+          <SettingsPanelItem
+            {...SETTINGS_ITEM}
+            active={settingsActive}
+            onOpen={openSettingsPanel}
+          />
 
           <DockItem expanded={accountMenuOpen}>
             <SidebarAccountMenu

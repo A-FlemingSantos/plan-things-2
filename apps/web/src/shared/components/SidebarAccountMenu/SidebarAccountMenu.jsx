@@ -13,6 +13,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import { buildAuthRedirectState, resolveAccountHomeRoute } from '../../../features/auth/utils/authRedirect.js'
 import { ROUTES } from '../../config/routes.js'
+import { navigateToSettingsSection } from '../../utils/settingsNavigation.js'
 import { getWorkspacePlanLabel } from '../../utils/workspaceSubscriptionPlans.js'
 import AuthenticatedAvatar from '../AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import SidebarUserCard from '../SidebarUserCard/SidebarUserCard.jsx'
@@ -303,26 +304,7 @@ export default function SidebarAccountMenu({
     : undefined
 
   const openSettingsSection = (section) => {
-    const params = new URLSearchParams()
-    if (section) {
-      params.set('section', section)
-    }
-
-    const target = `${ROUTES.settings}${params.toString() ? `?${params.toString()}` : ''}`
-
-    if (location.pathname === ROUTES.settings) {
-      navigate(target, {
-        replace: true,
-        state: location.state,
-      })
-      return
-    }
-
-    navigate(target, {
-      state: {
-        backgroundLocation: location,
-      },
-    })
+    navigateToSettingsSection(navigate, location, section)
   }
 
   const handleItemClick = (id) => {

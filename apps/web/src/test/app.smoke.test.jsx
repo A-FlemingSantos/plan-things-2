@@ -430,12 +430,12 @@ describe('App smoke flows', () => {
 
     renderApp('/workspace', { session: createDemoSession() })
 
-    await user.click(await screen.findByRole('link', { name: 'Configurações' }))
+    await user.click(await screen.findByRole('button', { name: 'Configurações' }))
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -453,7 +453,7 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/settings')
     expect(window.location.search).toBe('?section=workspace')
     expect(await screen.findByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('returns to the login route after logging out from the dock account menu', async () => {
@@ -486,12 +486,12 @@ describe('App smoke flows', () => {
 
     expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
-    await user.click(await screen.findByRole('link', { name: 'Configurações' }))
+    await user.click(await screen.findByRole('button', { name: 'Configurações' }))
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/settings')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
