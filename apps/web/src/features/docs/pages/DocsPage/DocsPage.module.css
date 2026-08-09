@@ -1601,7 +1601,7 @@
   font-size: 15px;
   font-weight: var(--font-weight-light);
   line-height: 1.5;
-  color: var(--text-2);
+  color: var(--text-1);
 }
 
 .figure {
@@ -2111,7 +2111,8 @@
   font-size: 15px;
   font-weight: var(--font-weight-light);
   line-height: 1.5;
-  color: var(--text-2);
+  /* Primary body ink — --text-2 washes out on light surfaces with weight 300. */
+  color: var(--text-1);
 }
 
 .bodyComposer :global(.ProseMirror) {
