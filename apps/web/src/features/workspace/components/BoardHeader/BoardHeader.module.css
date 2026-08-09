@@ -148,60 +148,52 @@
 
 .viewMenu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   left: 0;
-  width: min(240px, calc(100vw - 32px));
-  padding: 6px;
-  border: 1px solid color-mix(in srgb, var(--border-1) 92%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-1) 96%, var(--surface-2));
-  box-shadow: var(--shadow-lg);
   z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(240px, calc(100vw - 32px));
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
+  animation: viewMenuReveal 160ms var(--ease-out, ease) both;
 }
 
-@keyframes viewMenuItemEnter {
+@keyframes viewMenuReveal {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateY(-4px);
   }
 
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
 .viewMenuItem {
   all: unset;
   box-sizing: border-box;
-  position: relative;
   width: 100%;
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  min-height: 36px;
-  padding: 8px 10px 8px 14px;
-  border-radius: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: transparent;
   color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.01em;
   cursor: pointer;
-  opacity: 0;
-  animation: viewMenuItemEnter 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.viewMenuItem::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 50%;
-  width: 3px;
-  height: 16px;
-  transform: translateY(-50%);
-  border-radius: 999px;
-  background: var(--kanban-accent-color, var(--focus-ring));
-  opacity: 0;
-  transition: opacity var(--transition-fast);
 }
 
 .viewMenuItem:hover {
@@ -210,23 +202,27 @@
 }
 
 .viewMenuItemActive {
-  background: color-mix(in srgb, var(--surface-2) 94%, var(--surface-1));
+  background: var(--active);
   color: var(--text-1);
-}
-
-.viewMenuItemActive::before {
-  opacity: 1;
 }
 
 .viewMenuItemIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: currentColor;
+  color: var(--text-3);
+  transition: color var(--transition-fast);
+}
+
+.viewMenuItem:hover .viewMenuItemIcon,
+.viewMenuItemActive .viewMenuItemIcon {
+  color: var(--text-1);
 }
 
 .viewMenuItemLabel {
+  min-width: 0;
   font-size: 13px;
+  font-weight: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -363,8 +359,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .viewMenuItem {
-    opacity: 1;
+  .viewMenu {
     animation: none;
   }
 }

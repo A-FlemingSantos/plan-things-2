@@ -145,7 +145,7 @@ export default function BoardHeader({
               role="menu"
               aria-label="Modos de visualização do board"
             >
-              {BOARD_VIEW_MODES.map(({ id, label, Icon }, index) => {
+              {BOARD_VIEW_MODES.map(({ id, label, Icon }) => {
                 const isActive = viewMode === id
 
                 return (
@@ -155,7 +155,6 @@ export default function BoardHeader({
                     role="menuitemradio"
                     aria-checked={isActive}
                     className={`${styles.viewMenuItem} ${isActive ? styles.viewMenuItemActive : ''}`}
-                    style={{ animationDelay: `${index * 45}ms` }}
                     onClick={() => handleSelectViewMode(id)}
                   >
                     <span className={styles.viewMenuItemIcon} aria-hidden="true">
