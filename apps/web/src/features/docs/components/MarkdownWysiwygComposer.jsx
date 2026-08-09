@@ -70,6 +70,15 @@ function measureSelectionToolbar(activeEditor) {
   }
 }
 
+function measureLinkPanelAnchor(button, fallback = null) {
+  if (!button) return fallback
+  const rect = button.getBoundingClientRect()
+  return {
+    top: rect.bottom,
+    left: rect.left + (rect.width / 2),
+  }
+}
+
 function AuthenticatedImageView({ node }) {
   const source = useAuthenticatedImageUrl(node.attrs.src)
   return (
@@ -127,6 +136,7 @@ export default memo(function MarkdownWysiwygComposer({
   const composerMainRef = useRef(null)
   const railRef = useRef(null)
   const selectionToolbarRef = useRef(null)
+  const linkToolButtonRef = useRef(null)
   const urlPromptRef = useRef(null)
   const urlInputRef = useRef(null)
   const docSearchInputRef = useRef(null)
@@ -542,6 +552,14 @@ export default memo(function MarkdownWysiwygComposer({
       // Selection toolbar is viewport-fixed; only remeasure coords. Retagging
       // headings / note offsets during scroll forces TipTap DOM work and jank.
       syncSelection(editor, { immediate: true })
+      if (!urlPromptOpenRef.current) return
+      const anchor = measureLinkPanelAnchor(linkToolButtonRef.current)
+      if (!anchor) return
+      setUrlPrompt((current) => (
+        current && (current.top !== anchor.top || current.left !== anchor.left)
+          ? { ...current, ...anchor }
+          : current
+      ))
     }
     document.addEventListener('pointerdown', clearOutside)
     document.addEventListener('keydown', clearOnEscape)
@@ -731,10 +749,14 @@ export default memo(function MarkdownWysiwygComposer({
     else if (action === 'link') {
       setLinkMode('web')
       setDocSearchQuery('')
-      setUrlPrompt({
-        anchor: 'link',
+      const anchor = measureLinkPanelAnchor(linkToolButtonRef.current, {
         top: selection.top,
         left: selection.left,
+      })
+      setUrlPrompt({
+        anchor: 'link',
+        top: anchor.top,
+        left: anchor.left,
         from: selection.from,
         to: selection.to,
       })
@@ -766,14 +788,11 @@ export default memo(function MarkdownWysiwygComposer({
 
   if (!editor) return null
 
-  const linkPanelTop = (selection?.top ?? urlPrompt?.top ?? 0) + 44
-  const linkPanelLeft = selection?.left ?? urlPrompt?.left ?? 0
-
   const urlMenu = urlPrompt ? (
     <div
       ref={urlPromptRef}
       className={`${styles.coupledMenuPanel} ${styles.coupledMenuPanelToolbar} ${styles.coupledMenuPanelLink}`}
-      style={{ top: linkPanelTop, left: linkPanelLeft }}
+      style={{ top: urlPrompt.top, left: urlPrompt.left }}
       role="group"
       aria-label="Inserir link"
     >
@@ -872,7 +891,7 @@ export default memo(function MarkdownWysiwygComposer({
             <div ref={selectionToolbarRef} className={styles.selectionToolbar} role="toolbar" aria-label="Formatação do texto" style={{ top: selection.top, left: selection.left }}>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolBold}`} title="Negrito" aria-label="Negrito" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('bold')}>B</button>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolItalic}`} title="Itálico" aria-label="Itálico" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('italic')}>i</button>
-              <button type="button" className={styles.selectionToolButton} title="Inserir link" aria-label="Inserir link" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('link')}><Link2 size={14} strokeWidth={1.8} aria-hidden="true" /></button>
+              <button ref={linkToolButtonRef} type="button" className={styles.selectionToolButton} title="Inserir link" aria-label="Inserir link" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('link')}><Link2 size={14} strokeWidth={1.8} aria-hidden="true" /></button>
               <span className={styles.selectionToolDivider} aria-hidden="true" />
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolTitle}`} title="Título" aria-label="Título" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('title')}>T</button>
               <button type="button" className={`${styles.selectionToolButton} ${styles.selectionToolSubtitle}`} title="Subtítulo" aria-label="Subtítulo" onMouseDown={(event) => event.preventDefault()} onClick={() => applySelectionAction('subtitle')}>T</button>
