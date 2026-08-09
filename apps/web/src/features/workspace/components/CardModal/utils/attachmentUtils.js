@@ -1,7 +1,14 @@
-export const FILE_PICKER_DESKTOP_WIDTH = 680
-export const FILE_PICKER_MOBILE_WIDTH = 360
-export const FILE_PICKER_FALLBACK_HEIGHT = 360
+/** Must stay in sync with `.cmFilePicker` frame in KanbanBoard.module.css */
+export const FILE_PICKER_DESKTOP_WIDTH = 468
+export const FILE_PICKER_MOBILE_WIDTH = 312
+export const FILE_PICKER_DESKTOP_HEIGHT = 520
+export const FILE_PICKER_MOBILE_HEIGHT = 460
+export const FILE_PICKER_DESKTOP_HEIGHT_VIEWPORT_OFFSET = 140
+export const FILE_PICKER_MOBILE_HEIGHT_VIEWPORT_OFFSET = 96
 export const FILE_PICKER_VIEWPORT_MARGIN = 16
+
+/** @deprecated Use getFilePickerFrameSize().height — kept for callers expecting a constant. */
+export const FILE_PICKER_FALLBACK_HEIGHT = FILE_PICKER_DESKTOP_HEIGHT
 
 export const FILE_TYPE_OPTIONS = [
   { id: 'all', label: 'Todos' },
@@ -43,29 +50,59 @@ export function getFileCategory(file) {
   return { id: 'all', label: 'Arquivo' }
 }
 
+export function resolveFilePickerAnchorElement(anchor) {
+  if (!anchor) return null
+  if (typeof Element !== 'undefined' && anchor instanceof Element) return anchor
+  if (typeof Element !== 'undefined' && anchor.current instanceof Element) return anchor.current
+  return null
+}
+
+export function getFilePickerFrameSize({
+  viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0,
+  viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0,
+} = {}) {
+  const isMobile = viewportWidth <= 768
+
+  if (isMobile) {
+    return {
+      width: Math.min(FILE_PICKER_MOBILE_WIDTH, Math.max(0, viewportWidth - 20)),
+      height: Math.min(FILE_PICKER_MOBILE_HEIGHT, Math.max(0, viewportHeight - FILE_PICKER_MOBILE_HEIGHT_VIEWPORT_OFFSET)),
+    }
+  }
+
+  return {
+    width: Math.min(FILE_PICKER_DESKTOP_WIDTH, Math.max(0, viewportWidth - 56)),
+    height: Math.min(FILE_PICKER_DESKTOP_HEIGHT, Math.max(0, viewportHeight - FILE_PICKER_DESKTOP_HEIGHT_VIEWPORT_OFFSET)),
+  }
+}
+
 export function computeFilePickerPosition({
   anchorRect,
   pickerHeight,
+  pickerWidth: pickerWidthOverride,
   viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0,
   viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0,
 }) {
   if (!anchorRect) return null
 
-  const pickerWidth = viewportWidth <= 768
-    ? Math.min(FILE_PICKER_MOBILE_WIDTH, viewportWidth - 40)
-    : Math.min(FILE_PICKER_DESKTOP_WIDTH, viewportWidth - 64)
+  const frame = getFilePickerFrameSize({ viewportWidth, viewportHeight })
+  const pickerWidth = pickerWidthOverride ?? frame.width
+  const resolvedPickerHeight = pickerHeight ?? frame.height
   const minLeft = FILE_PICKER_VIEWPORT_MARGIN
   const maxLeft = Math.max(minLeft, viewportWidth - pickerWidth - FILE_PICKER_VIEWPORT_MARGIN)
-  const idealLeft = anchorRect.left
+  const leftAligned = anchorRect.left
+  const rightAligned = anchorRect.right - pickerWidth
+  // Prefer left-align to the trigger; if that overflows the viewport, right-align instead.
+  const idealLeft = leftAligned <= maxLeft ? leftAligned : rightAligned
   const left = Math.min(Math.max(minLeft, idealLeft), maxLeft)
   const preferredTopBelow = anchorRect.bottom + 4
-  const preferredTopAbove = anchorRect.top - pickerHeight - 4
+  const preferredTopAbove = anchorRect.top - resolvedPickerHeight - 4
   const minTop = FILE_PICKER_VIEWPORT_MARGIN
-  const maxTop = Math.max(minTop, viewportHeight - pickerHeight - FILE_PICKER_VIEWPORT_MARGIN)
+  const maxTop = Math.max(minTop, viewportHeight - resolvedPickerHeight - FILE_PICKER_VIEWPORT_MARGIN)
 
   let top = preferredTopBelow
 
-  if (preferredTopBelow + pickerHeight > viewportHeight - FILE_PICKER_VIEWPORT_MARGIN) {
+  if (preferredTopBelow + resolvedPickerHeight > viewportHeight - FILE_PICKER_VIEWPORT_MARGIN) {
     top = preferredTopAbove >= minTop ? preferredTopAbove : maxTop
   }
 

@@ -5952,7 +5952,8 @@
   position: fixed;
   width: min(468px, calc(100vw - 56px));
   max-width: min(468px, calc(100vw - 56px));
-  min-height: 300px;
+  /* Fixed frame so Plano ↔ Biblioteca (or any list length change) never resizes the panel. */
+  height: min(520px, calc(100vh - 140px));
   max-height: min(520px, calc(100vh - 140px));
   display: flex;
   flex-direction: column;
@@ -6349,6 +6350,7 @@
   .cmFilePicker {
     width: min(312px, calc(100vw - 20px));
     max-width: min(312px, calc(100vw - 20px));
+    height: min(460px, calc(100vh - 96px));
     max-height: min(460px, calc(100vh - 96px));
   }
   .cmFilePickerTabs {

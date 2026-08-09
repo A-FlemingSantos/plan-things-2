@@ -52,7 +52,9 @@ export function CardModalAttachmentAction({
             type="button"
             className={styles.cmAttachmentAddMenuItem}
             onClick={() => {
-              void openFilePicker()
+              void openFilePicker({
+                anchor: attachmentAddButtonRef?.current ?? attachmentAddSplitRef?.current,
+              })
             }}
             role="menuitem"
           >

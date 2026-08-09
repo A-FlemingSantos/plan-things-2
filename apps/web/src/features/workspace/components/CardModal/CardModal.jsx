@@ -1563,7 +1563,9 @@ export default function CardModal({
               label: 'Arquivo',
               description: 'Anexe um arquivo',
               icon: <FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />,
-              action: openFilePicker,
+              action: () => openFilePicker({
+                anchor: insertMenuButtonRef.current,
+              }),
             },
             {
               label: 'Imagem',

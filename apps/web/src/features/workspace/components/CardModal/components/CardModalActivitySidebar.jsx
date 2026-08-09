@@ -67,6 +67,22 @@ function CardModalSidebarFilesPanel({
   attachmentUi,
   onDownloadFile,
 }) {
+  const {
+    attachmentAddButtonRef,
+    showFilePicker,
+    closeFilePicker,
+    ...inlineAttachmentUi
+  } = attachmentUi
+
+  const handleAttachTriggerClick = (event) => {
+    if (showFilePicker) {
+      closeFilePicker?.()
+      return
+    }
+
+    void openFilePicker({ anchor: event.currentTarget })
+  }
+
   if (attachments.length === 0) {
     return (
       <div className={styles.cmSidebarPanelFill}>
@@ -79,9 +95,13 @@ function CardModalSidebarFilesPanel({
           message="Anexe documentos, imagens e outros arquivos a este cartão."
           action={(
             <button
+              ref={attachmentAddButtonRef}
               type="button"
               className={styles.cmSidebarPanelActionBtn}
-              onClick={() => { void openFilePicker() }}
+              aria-label="Anexar arquivo"
+              aria-haspopup="dialog"
+              aria-expanded={showFilePicker}
+              onClick={handleAttachTriggerClick}
               disabled={isMutating}
             >
               <Paperclip size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
@@ -101,9 +121,13 @@ function CardModalSidebarFilesPanel({
       refreshKey={`sidebar-files:${attachments.length}`}
     >
       <button
+        ref={attachmentAddButtonRef}
         type="button"
         className={styles.cmSidebarPanelActionBtn}
-        onClick={() => { void openFilePicker() }}
+        aria-label="Anexar arquivo"
+        aria-haspopup="dialog"
+        aria-expanded={showFilePicker}
+        onClick={handleAttachTriggerClick}
         disabled={isMutating}
       >
         <Paperclip size={iconSize} strokeWidth={iconStroke} aria-hidden="true" />
@@ -116,7 +140,7 @@ function CardModalSidebarFilesPanel({
         iconStroke={iconStroke}
         attachments={attachments}
         onDownloadFile={onDownloadFile}
-        {...attachmentUi}
+        {...inlineAttachmentUi}
       />
     </CustomScrollArea>
   )

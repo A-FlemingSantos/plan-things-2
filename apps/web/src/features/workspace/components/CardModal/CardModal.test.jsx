@@ -80,7 +80,7 @@ describe('CardModal file picker positioning', () => {
         }
       }
 
-      if (this.getAttribute?.('aria-label') === 'Anexar arquivo') {
+      if (this.getAttribute?.('aria-label') === 'Anexar arquivo' && this.getAttribute?.('role') === 'dialog') {
         return {
           x: 120,
           y: 236,
@@ -94,15 +94,19 @@ describe('CardModal file picker positioning', () => {
         }
       }
 
-      if (this.getAttribute?.('aria-label') === 'Adicionar anexo' || this.textContent?.includes('Anexar arquivo')) {
+      if (
+        this.getAttribute?.('aria-label') === 'Anexar arquivo'
+        || this.getAttribute?.('aria-label') === 'Adicionar anexo'
+        || this.textContent?.includes('Anexar arquivo')
+      ) {
         return {
-          x: 120,
+          x: 420,
           y: 500,
           top: 500,
-          left: 120,
-          right: 240,
+          left: 420,
+          right: 580,
           bottom: 540,
-          width: 120,
+          width: 160,
           height: 40,
           toJSON() {},
         }
@@ -128,7 +132,7 @@ describe('CardModal file picker positioning', () => {
     window.innerHeight = originalInnerHeight
   })
 
-  it('opens the attachment picker above the trigger and keeps it inside the viewport', async () => {
+  it('opens the attachment picker above the insert-menu trigger and keeps it inside the viewport', async () => {
     const user = userEvent.setup()
 
     render(
@@ -155,8 +159,84 @@ describe('CardModal file picker positioning', () => {
     const picker = await screen.findByRole('dialog', { name: 'Anexar arquivo' })
 
     await waitFor(() => {
-      expect(picker).toHaveStyle({ top: '236px', left: '104px' })
+      expect(picker).toHaveStyle({ top: '36px', left: '120px' })
     })
+  })
+
+  it('couples the attachment picker to the files sidebar Anexar trigger', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        styles={styles}
+        isBackendDriven
+        planFiles={[]}
+        libraryFiles={[{ id: 'file-1', name: 'briefing.pdf', size: 1200, modified: 'Agora' }]}
+      />
+    )
+
+    await openSidebarPanel(user, 'Arquivos')
+    await user.click(screen.getByRole('button', { name: 'Anexar arquivo' }))
+
+    const picker = await screen.findByRole('dialog', { name: 'Anexar arquivo' })
+
+    await waitFor(() => {
+      // Trigger at left:420 / right:580; picker right-aligns when left-align would overflow.
+      expect(picker).toHaveStyle({ top: '36px', left: '112px' })
+    })
+  })
+
+  it('keeps the picker position locked when switching Plano and Biblioteca', async () => {
+    const user = userEvent.setup()
+    const manyLibraryFiles = Array.from({ length: 40 }, (_, index) => ({
+      id: `file-${index + 1}`,
+      name: `arquivo-${index + 1}.pdf`,
+      size: 1200,
+      modified: 'Agora',
+    }))
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onDelete={async () => {}}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        styles={styles}
+        isBackendDriven
+        planFiles={[{ id: 'plan-file-1', name: 'plano.pdf', size: 800, modified: 'Agora' }]}
+        libraryFiles={manyLibraryFiles}
+      />
+    )
+
+    await openSidebarPanel(user, 'Arquivos')
+    await user.click(screen.getByRole('button', { name: 'Anexar arquivo' }))
+
+    const picker = await screen.findByRole('dialog', { name: 'Anexar arquivo' })
+
+    await waitFor(() => {
+      expect(picker).toHaveStyle({ top: '36px', left: '112px' })
+    })
+
+    const lockedTop = picker.style.top
+    const lockedLeft = picker.style.left
+
+    await user.click(screen.getByRole('tab', { name: /Plano/i }))
+    expect(picker).toHaveStyle({ top: lockedTop, left: lockedLeft })
+
+    await user.click(screen.getByRole('tab', { name: /Biblioteca/i }))
+    expect(picker).toHaveStyle({ top: lockedTop, left: lockedLeft })
   })
 
   it('shows recent activity messages in the compact preview', () => {

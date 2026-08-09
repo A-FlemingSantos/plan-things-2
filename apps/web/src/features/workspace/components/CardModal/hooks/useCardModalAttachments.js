@@ -2,9 +2,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   buildAttachedFileIds,
   computeFilePickerPosition,
-  FILE_PICKER_FALLBACK_HEIGHT,
   filterPickerFiles,
   getActiveFileTypeLabel,
+  getFilePickerFrameSize,
+  resolveFilePickerAnchorElement,
 } from '../utils/attachmentUtils.js'
 
 export default function useCardModalAttachments({
@@ -38,6 +39,8 @@ export default function useCardModalAttachments({
   const attachmentAddMenuRef = useRef(null)
   const attachmentAddButtonRef = useRef(null)
   const attachmentAddSplitRef = useRef(null)
+  const activeFilePickerAnchorRef = useRef(null)
+  const filePickerPositionLockedRef = useRef(false)
   const filePickerRef = useRef(null)
   const filePickerTypeButtonRef = useRef(null)
   const filePickerTypeMenuRef = useRef(null)
@@ -52,14 +55,32 @@ export default function useCardModalAttachments({
   const attachedFileIds = useMemo(() => buildAttachedFileIds(attachments), [attachments])
   const activeFileTypeLabel = getActiveFileTypeLabel(filePickerTypeFilter)
 
-  const updateFilePickerPosition = () => {
-    const rect = attachmentAddButtonRef.current?.getBoundingClientRect()
-      ?? filePickerAnchorRef?.current?.getBoundingClientRect()
-    const pickerHeight = filePickerRef.current?.getBoundingClientRect?.().height ?? FILE_PICKER_FALLBACK_HEIGHT
-    const nextPosition = computeFilePickerPosition({ anchorRect: rect, pickerHeight })
+  const resolveActiveAnchorElement = (explicitAnchor) => (
+    resolveFilePickerAnchorElement(explicitAnchor)
+      ?? attachmentAddButtonRef.current
+      ?? resolveFilePickerAnchorElement(filePickerAnchorRef)
+      ?? null
+  )
+
+  const lockFilePickerPosition = () => {
+    if (filePickerPositionLockedRef.current) return
+
+    const anchorEl = activeFilePickerAnchorRef.current ?? resolveActiveAnchorElement()
+    const rect = anchorEl?.getBoundingClientRect?.()
+    if (!rect) return
+
+    // Always use the fixed CSS frame size — never the live content height — so tab
+    // switches (Plano ↔ Biblioteca) cannot move the picker.
+    const frame = getFilePickerFrameSize()
+    const nextPosition = computeFilePickerPosition({
+      anchorRect: rect,
+      pickerHeight: frame.height,
+      pickerWidth: frame.width,
+    })
 
     if (nextPosition) {
       setFilePickerPosition(nextPosition)
+      filePickerPositionLockedRef.current = true
     }
   }
 
@@ -67,16 +88,26 @@ export default function useCardModalAttachments({
     setShowFilePickerTypeMenu(false)
     setFilePickerOpening(false)
     setShowFilePicker(false)
+    activeFilePickerAnchorRef.current = null
+    filePickerPositionLockedRef.current = false
   }
 
-  const openFilePicker = async (nextFilter = 'library') => {
+  const openFilePicker = async (filterOrOptions = 'library', maybeAnchor = null) => {
+    const options = typeof filterOrOptions === 'string'
+      ? { filter: filterOrOptions, anchor: maybeAnchor }
+      : (filterOrOptions ?? {})
+    const nextFilter = options.filter ?? 'library'
+    const explicitAnchor = options.anchor ?? null
+    const anchorEl = resolveActiveAnchorElement(explicitAnchor)
+
     onCloseInsertMenu?.()
     setShowAttachmentAddMenu(false)
     setFilePickerFilter(nextFilter)
     setFilePickerTypeFilter('all')
     setShowFilePickerTypeMenu(false)
     setFileSearch('')
-    updateFilePickerPosition()
+    activeFilePickerAnchorRef.current = anchorEl
+    filePickerPositionLockedRef.current = false
     setFilePickerOpening(true)
     setShowFilePicker(true)
     setFileActionError('')
@@ -99,9 +130,7 @@ export default function useCardModalAttachments({
       if (nextCard?.attachments) {
         setAttachments(nextCard.attachments)
       }
-      setShowFilePickerTypeMenu(false)
-      setFilePickerOpening(false)
-      setShowFilePicker(false)
+      closeFilePicker()
       setFileSearch('')
     } catch (error) {
       setFileActionError(error?.message ?? 'Não foi possível anexar este arquivo.')
@@ -147,9 +176,7 @@ export default function useCardModalAttachments({
       if (nextCard?.attachments) {
         setAttachments(nextCard.attachments)
       }
-      setShowFilePickerTypeMenu(false)
-      setFilePickerOpening(false)
-      setShowFilePicker(false)
+      closeFilePicker()
       setFileSearch('')
     } catch (error) {
       const message = error?.message ?? 'Não foi possível enviar e anexar este arquivo.'
@@ -176,10 +203,13 @@ export default function useCardModalAttachments({
     if (!showAttachmentAddMenu && !showFilePicker) return
 
     const handlePointerDown = (event) => {
-      const clickedAttachmentControls = attachmentAddSplitRef.current?.contains(event.target)
-      const clickedFilePicker = filePickerRef.current?.contains(event.target)
+      const target = event.target
+      const clickedAttachmentControls = attachmentAddSplitRef.current?.contains(target)
+      const clickedFilePicker = filePickerRef.current?.contains(target)
+      const clickedActiveAnchor = activeFilePickerAnchorRef.current?.contains?.(target)
+        ?? attachmentAddButtonRef.current?.contains?.(target)
 
-      if (!clickedAttachmentControls && !clickedFilePicker) {
+      if (!clickedAttachmentControls && !clickedFilePicker && !clickedActiveAnchor) {
         setShowAttachmentAddMenu(false)
         closeFilePicker()
       }
@@ -201,28 +231,15 @@ export default function useCardModalAttachments({
     }
   }, [showAttachmentAddMenu, showFilePicker])
 
-  useEffect(() => {
-    if (!showFilePicker) return
-
-    updateFilePickerPosition()
-
-    const handleViewportChange = () => {
-      updateFilePickerPosition()
-    }
-
-    window.addEventListener('resize', handleViewportChange)
-    window.addEventListener('scroll', handleViewportChange, true)
-
-    return () => {
-      window.removeEventListener('resize', handleViewportChange)
-      window.removeEventListener('scroll', handleViewportChange, true)
-    }
-  }, [showFilePicker])
-
+  // Lock top/left once when the picker opens. Do not re-run on content/filter/size changes.
   useLayoutEffect(() => {
-    if (!showFilePicker) return
-    updateFilePickerPosition()
-  }, [showFilePicker, isFilePickerLoading, fileActionError, filesError, pickerFiles.length, filePickerFilter, filePickerTypeFilter])
+    if (!showFilePicker) {
+      filePickerPositionLockedRef.current = false
+      return
+    }
+
+    lockFilePickerPosition()
+  }, [showFilePicker])
 
   useEffect(() => {
     if (!showFilePickerTypeMenu) return
@@ -255,6 +272,7 @@ export default function useCardModalAttachments({
     attachments,
     setAttachments,
     openFilePicker,
+    closeFilePicker,
     attachmentAddMenuRef,
     attachmentAddButtonRef,
     attachmentAddSplitRef,
