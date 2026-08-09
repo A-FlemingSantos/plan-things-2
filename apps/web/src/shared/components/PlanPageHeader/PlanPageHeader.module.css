@@ -139,6 +139,26 @@
   gap: 10px;
 }
 
+.densityCompact {
+  padding: 10px 16px;
+  min-height: 48px;
+  background: var(--app-bg);
+}
+
+.densityCompact.toneSolid {
+  background: var(--app-bg);
+}
+
+.densityCompact .titleMedium {
+  font-size: 15px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.015em;
+}
+
+.densityCompact .actions {
+  gap: 4px;
+}
+
 @media (max-width: 1024px) {
   .header {
     padding: 13px 20px;

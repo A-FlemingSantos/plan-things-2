@@ -11,6 +11,7 @@ export default function PlanPageHeader({
   sticky = false,
   tone = 'solid',
   titleSize = 'medium',
+  density = 'default',
   hideOnMobile = false,
   className = '',
 }) {
@@ -19,6 +20,7 @@ export default function PlanPageHeader({
     centerContent ? styles.headerWithCenter : '',
     sticky ? styles.sticky : '',
     tone === 'frosted' ? styles.toneFrosted : styles.toneSolid,
+    density === 'compact' ? styles.densityCompact : '',
     hideOnMobile ? styles.hideOnMobile : '',
     className,
   ].filter(Boolean).join(' ')

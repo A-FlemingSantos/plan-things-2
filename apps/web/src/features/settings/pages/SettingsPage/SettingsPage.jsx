@@ -57,8 +57,8 @@ import {
 } from '../../../../shared/components/icons/index.js'
 import styles from './SettingsPage.module.css'
 
-const SECTION_NAV_ICON_SIZE = 16
-const SECTION_NAV_ICON_STROKE = 1.75
+const SECTION_NAV_ICON_SIZE = 15
+const SECTION_NAV_ICON_STROKE = 1.6
 
 const SECTIONS = [
   { id: 'account',       label: 'Conta',                   Icon: User         },
@@ -246,6 +246,13 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
   const deadlineAlerts = notificationPreferences.deadlineAlerts
   const settingsThemeStyle = {
     '--settings-toggle-accent': settingsToggleAccentColor,
+    '--toggle-width': '34px',
+    '--toggle-height': '20px',
+    '--toggle-radius': '4px',
+    '--toggle-thumb-size': '14px',
+    '--toggle-thumb-inset': '3px',
+    '--toggle-thumb-radius': '3px',
+    '--toggle-travel': '14px',
   }
 
   const replaceAccountAvatarPreview = (nextUrl) => {
@@ -1396,7 +1403,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
         </SettingsField>
         <SettingsField label="Cor padrão" hint="Define o acento visual usado nos checks, checklist e atalhos do Kanban.">
           <div ref={kanbanAccentPickerRef} className={styles.colorPreferenceControl}>
-            <div className={styles.colorSwatchList}>
+            <div className={styles.colorSwatchList} role="group" aria-label="Cores padrão">
               {KANBAN_ACCENT_BASE_COLOR_OPTIONS.map((option) => {
                 const isSelected = kanbanAccentColor === option.value
                 const isDefaultOption = option.value === ''
@@ -1405,42 +1412,45 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
                   <button
                     key={option.id}
                     type="button"
-                    className={`${styles.colorSwatchButton} ${isSelected ? styles.colorSwatchButtonActive : ''}`}
+                    className={[
+                      styles.colorSwatchButton,
+                      isDefaultOption ? styles.colorSwatchButtonDefault : '',
+                      isSelected ? styles.colorSwatchButtonActive : '',
+                    ].filter(Boolean).join(' ')}
+                    style={isDefaultOption ? undefined : { background: option.value }}
                     onClick={() => handleKanbanAccentColorSelect(option.value)}
                     aria-pressed={isSelected}
                     aria-label={`Usar cor ${option.label}`}
                     title={option.label}
                   >
-                    <span className={`${styles.colorSwatchDot} ${isDefaultOption ? styles.colorSwatchDotDefault : ''}`}>
-                      {isDefaultOption ? (
-                        <span className={styles.colorSwatchDotDefaultIcon}>
-                          <UndefinedIcon />
-                        </span>
-                      ) : (
-                        <span className={styles.colorSwatchDotFill} style={{ background: option.value }} />
-                      )}
-                    </span>
+                    {isDefaultOption ? (
+                      <span className={styles.colorSwatchDotDefaultIcon}>
+                        <UndefinedIcon />
+                      </span>
+                    ) : null}
                   </button>
                 )
               })}
-
-              <button
-                type="button"
-                className={`${styles.colorPaletteTrigger} ${isKanbanAccentPaletteOpen || hasCustomKanbanAccentColor ? styles.colorPaletteTriggerActive : ''}`}
-                onClick={() => setIsKanbanAccentPaletteOpen((open) => !open)}
-                aria-expanded={isKanbanAccentPaletteOpen}
-                aria-haspopup="dialog"
-              >
-                <span className={styles.colorPaletteTriggerDot}>
-                  {hasCustomKanbanAccentColor ? (
-                    <span className={styles.colorSwatchDotFill} style={{ background: kanbanAccentColor }} />
-                  ) : (
-                    <span className={styles.colorPaletteTriggerPlus}>+</span>
-                  )}
-                </span>
-                <span>Mais cores</span>
-              </button>
             </div>
+
+            <button
+              type="button"
+              className={`${styles.colorPaletteTrigger} ${isKanbanAccentPaletteOpen || hasCustomKanbanAccentColor ? styles.colorPaletteTriggerActive : ''}`}
+              onClick={() => setIsKanbanAccentPaletteOpen((open) => !open)}
+              aria-expanded={isKanbanAccentPaletteOpen}
+              aria-haspopup="dialog"
+            >
+              {hasCustomKanbanAccentColor ? (
+                <span
+                  className={styles.colorPaletteTriggerSwatch}
+                  style={{ background: kanbanAccentColor }}
+                  aria-hidden="true"
+                />
+              ) : (
+                <span className={styles.colorPaletteTriggerPlus}>+</span>
+              )}
+              <span>Mais cores</span>
+            </button>
 
             {isKanbanAccentPaletteOpen ? (
               <div className={styles.colorPalettePopover} role="dialog" aria-label="Paleta de cores do Kanban">
@@ -1454,15 +1464,12 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
                         key={option.id}
                         type="button"
                         className={`${styles.colorSwatchButton} ${styles.colorPaletteSwatch} ${isSelected ? styles.colorSwatchButtonActive : ''}`}
+                        style={{ background: option.value }}
                         onClick={() => handleKanbanAccentColorSelect(option.value)}
                         aria-pressed={isSelected}
                         aria-label={`Usar cor ${option.label}`}
                         title={option.label}
-                      >
-                        <span className={styles.colorSwatchDot}>
-                          <span className={styles.colorSwatchDotFill} style={{ background: option.value }} />
-                        </span>
-                      </button>
+                      />
                     )
                   })}
                 </div>
@@ -2060,6 +2067,8 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
       title="Configurações"
       tone="solid"
       titleSize="medium"
+      density="compact"
+      className={styles.settingsPageHeader}
       actions={(
         <button
           type="button"
@@ -2095,6 +2104,13 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
     </button>
   ))
 
+  const settingsNavContent = (
+    <>
+      <p className={styles.settingsNavLabelHeader}>Seções</p>
+      {settingsNavButtons}
+    </>
+  )
+
   const settingsContent = (
     <>
       <div className={styles.settingsContentHeader}>
@@ -2118,11 +2134,11 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
             enabled
             refreshKey={`nav:${activeSection}:${isMobile ? 'mobile' : 'desktop'}`}
           >
-            {settingsNavButtons}
+            {settingsNavContent}
           </CustomScrollArea>
         ) : (
           <nav className={styles.settingsNav} aria-label="Seções de configurações">
-            {settingsNavButtons}
+            {settingsNavContent}
           </nav>
         )}
       </div>
