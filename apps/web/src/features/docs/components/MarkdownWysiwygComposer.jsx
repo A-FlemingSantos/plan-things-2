@@ -28,6 +28,7 @@ import {
   resolveMarkdownSelection,
 } from '../utils/commentAnchors.js'
 import { normalizeDocsEmbedMarkdown } from '../utils/docsEmbedMarkdown.js'
+import { listDocHeadingElements, tagDocHeadingElements } from '../utils/docsHeadings.js'
 import { handleMarkdownPaste } from '../utils/markdownPaste.js'
 import { DocsCodeBlock } from './DocsCodeBlockExtension.jsx'
 import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
@@ -65,10 +66,10 @@ function getInitials(name = '') {
 }
 
 function tagEditorHeadings(editorRoot, bodyHeadingClass) {
-  if (!editorRoot) return
-  editorRoot.querySelectorAll('h1, h2, h3').forEach((element, index) => {
-    element.setAttribute('data-doc-heading', String(index))
-    if (bodyHeadingClass) element.classList.add(bodyHeadingClass)
+  tagDocHeadingElements(editorRoot)
+  if (!bodyHeadingClass || !editorRoot) return
+  listDocHeadingElements(editorRoot).forEach((element) => {
+    element.classList.add(bodyHeadingClass)
   })
 }
 
@@ -182,6 +183,7 @@ export default function MarkdownWysiwygComposer({
     },
     onCreate: ({ editor: activeEditor }) => {
       editorRef.current = activeEditor
+      tagEditorHeadings(activeEditor.view.dom, styles.bodyHeading)
     },
     onUpdate: ({ editor: activeEditor }) => {
       onChange(activeEditor.getMarkdown())
@@ -219,10 +221,12 @@ export default function MarkdownWysiwygComposer({
     refreshVisualState(editor)
 
     if (scrollRoot != null && previousScrollTop != null) {
-      scrollRoot.scrollTop = previousScrollTop
-      requestAnimationFrame(() => {
-        scrollRoot.scrollTop = previousScrollTop
-      })
+      const applyScroll = () => {
+        const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
+        scrollRoot.scrollTop = Math.min(previousScrollTop, maxScrollTop)
+      }
+      applyScroll()
+      requestAnimationFrame(applyScroll)
     }
   }, [editor, refreshVisualState, value])
 

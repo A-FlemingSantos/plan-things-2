@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ChevronRight,
   Copy,
   Download,
   Image,
@@ -23,7 +24,6 @@ import { apiRequest } from '../../../../shared/api/apiClient.js'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import { useAppChrome } from '../../../../shared/context/AppChromeContext.jsx'
-import { getSectionOffsetTop } from '../../../../shared/hooks/useSectionScrollIndicator.js'
 import { buildDocsPath, ROUTES } from '../../../../shared/config/routes.js'
 import MarkdownWysiwygComposer from '../../components/MarkdownWysiwygComposer.jsx'
 import MarkdownContent from '../../components/MarkdownContent.jsx'
@@ -33,6 +33,15 @@ import DocumentCoverSurface from '../../components/DocumentCoverSurface.jsx'
 import { DocsProvider, useDocs } from '../../context/DocsContext.jsx'
 import { hasDocumentCover } from '../../utils/documentCover.js'
 import { formatDocumentMeta } from '../../utils/docVisuals.js'
+import {
+  DOC_HEADING_ATTR,
+  buildHeadingTree,
+  extractMarkdownHeadings,
+  findDocHeadingElement,
+  listDocHeadingElements,
+  scrollViewportToHeading,
+  tagDocHeadingElements,
+} from '../../utils/docsHeadings.js'
 import styles from './DocsPage.module.css'
 
 const ICON_STROKE = 1.6
@@ -47,33 +56,15 @@ function ContributorAvatar({ name }) {
   return <span className={styles.avatar} aria-hidden="true" title={name}>{getInitials(name)}</span>
 }
 
-function markdownHeadings(value = '') {
-  let headingIndex = 0
-  return value
-    .split('\n')
-    .map((line, lineIndex) => {
-      const match = line.match(/^(#{1,3})\s+(.+)$/)
-      if (!match) return null
-      const entry = {
-        id: `heading-${lineIndex}`,
-        label: match[2],
-        lineIndex,
-        headingIndex,
-      }
-      headingIndex += 1
-      return entry
-    })
-    .filter(Boolean)
-}
-
-function scrollViewportToTarget(viewport, target) {
-  if (!viewport || !target) return false
-  const offsetTop = getSectionOffsetTop(viewport, target)
-  viewport.scrollTo({
-    top: Math.max(0, offsetTop - 20),
-    behavior: 'smooth',
+function filterHeadingTree(nodes, query) {
+  if (!query) return nodes
+  return nodes.flatMap((node) => {
+    const children = filterHeadingTree(node.children, query)
+    if (node.label.toLowerCase().includes(query) || children.length > 0) {
+      return [{ ...node, children }]
+    }
+    return []
   })
-  return true
 }
 
 function DocsPageContent() {
@@ -102,6 +93,7 @@ function DocsPageContent() {
   const [coverSaving, setCoverSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeHeadingIndex, setActiveHeadingIndex] = useState(0)
+  const [expandedHeadingIds, setExpandedHeadingIds] = useState(() => new Set())
   const articleViewportRef = useRef(null)
   const moreMenuRef = useRef(null)
   const coverMenuRef = useRef(null)
@@ -111,11 +103,24 @@ function DocsPageContent() {
   const savedDraftRef = useRef('')
 
   const canEdit = details?.document?.role !== 'VIEWER'
-  const headings = useMemo(() => markdownHeadings(draft.contentMarkdown), [draft.contentMarkdown])
+  const headings = useMemo(() => extractMarkdownHeadings(draft.contentMarkdown), [draft.contentMarkdown])
+  const outlineQuery = searchQuery.trim().toLowerCase()
+  const outlineTree = useMemo(() => {
+    const tree = buildHeadingTree(headings)
+    return filterHeadingTree(tree, outlineQuery)
+  }, [headings, outlineQuery])
   const outline = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    return headings.filter((heading) => !query || heading.label.toLowerCase().includes(query))
-  }, [headings, searchQuery])
+    const flat = []
+    const walk = (nodes) => {
+      nodes.forEach((node) => {
+        flat.push(node)
+        if (node.children.length > 0) walk(node.children)
+      })
+    }
+    walk(outlineTree)
+    return flat
+  }, [outlineTree])
+  const searchExpandsAll = outlineQuery.length > 0
   const draftSignature = JSON.stringify(draft)
   const docMeta = formatDocumentMeta(details?.document?.updatedAt)
 
@@ -133,6 +138,7 @@ function DocsPageContent() {
     if (!resetView) return
     setActiveHeadingIndex(0)
     setSearchQuery('')
+    setExpandedHeadingIds(new Set())
     setMoreMenuOpen(false)
     setMemberMenuOpen(false)
     articleViewportRef.current?.scrollTo({ top: 0 })
@@ -319,10 +325,8 @@ function DocsPageContent() {
     const viewport = articleViewportRef.current
     if (!viewport || outline.length === 0) return undefined
 
-    const targets = outline.map((heading) => (
-      viewport.querySelector(`[data-doc-heading="${heading.headingIndex}"]`)
-    )).filter(Boolean)
-
+    tagDocHeadingElements(viewport)
+    const targets = listDocHeadingElements(viewport)
     if (targets.length === 0) return undefined
 
     const observer = new IntersectionObserver(
@@ -331,7 +335,7 @@ function DocsPageContent() {
           .filter((entry) => entry.isIntersecting)
           .sort((left, right) => right.intersectionRatio - left.intersectionRatio)
         if (visible.length === 0) return
-        const index = Number(visible[0].target.getAttribute('data-doc-heading'))
+        const index = Number(visible[0].target.getAttribute(DOC_HEADING_ATTR))
         if (Number.isNaN(index)) return
         const match = outline.find((heading) => heading.headingIndex === index)
         if (match) setActiveHeadingIndex(match.headingIndex)
@@ -350,11 +354,81 @@ function DocsPageContent() {
   }, [canEdit, details?.document?.id, draft.title])
 
   const goToHeading = (heading) => {
-    setActiveHeadingIndex(heading.headingIndex)
+    const headingIndex = heading.headingIndex
     const viewport = articleViewportRef.current
-    const target = viewport?.querySelector(`[data-doc-heading="${heading.headingIndex}"]`)
-    scrollViewportToTarget(viewport, target)
+    if (!viewport) {
+      setActiveHeadingIndex(headingIndex)
+      return false
+    }
+
+    // Tag + scroll synchronously before any React state update. Updating
+    // activeHeadingIndex first re-renders TipTap and replaces heading nodes;
+    // scrolling a detached node yields offset 0 (jump to top).
+    tagDocHeadingElements(viewport)
+    const target = findDocHeadingElement(viewport, headingIndex)
+    const didScroll = scrollViewportToHeading(viewport, target, { behavior: 'smooth' })
+    setActiveHeadingIndex(headingIndex)
+    return didScroll
   }
+
+  const toggleHeadingExpanded = (headingId) => {
+    setExpandedHeadingIds((current) => {
+      const next = new Set(current)
+      if (next.has(headingId)) next.delete(headingId)
+      else next.add(headingId)
+      return next
+    })
+  }
+
+  const renderOutlineNodes = (nodes) => nodes.map((heading) => {
+    const active = heading.headingIndex === activeHeadingIndex
+    const hasChildren = heading.children.length > 0
+    const expanded = searchExpandsAll || expandedHeadingIds.has(heading.id)
+    const levelClass = heading.level === 1
+      ? styles.indexItemLevel1
+      : heading.level === 2
+        ? styles.indexItemLevel2
+        : styles.indexItemLevel3
+
+    return (
+      <div key={heading.id} className={styles.indexBranch}>
+        <div className={`${styles.indexRow} ${active ? styles.indexRowActive : ''}`}>
+          {hasChildren ? (
+            <button
+              type="button"
+              className={`${styles.indexExpandButton} ${expanded ? styles.indexExpandButtonOpen : ''}`}
+              aria-label={expanded ? `Recolher ${heading.label}` : `Expandir ${heading.label}`}
+              aria-expanded={expanded}
+              onClick={() => toggleHeadingExpanded(heading.id)}
+            >
+              <ChevronRight size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            </button>
+          ) : (
+            <span className={styles.indexExpandSpacer} aria-hidden="true" />
+          )}
+          <button
+            type="button"
+            className={`${styles.indexItem} ${levelClass} ${active ? styles.indexItemActive : ''}`}
+            aria-current={active ? 'location' : undefined}
+            onClick={() => goToHeading(heading)}
+          >
+            {heading.label}
+          </button>
+        </div>
+        {hasChildren ? (
+          <div
+            className={`${styles.indexChildren} ${expanded ? styles.indexChildrenOpen : ''}`}
+            aria-hidden={!expanded}
+            {...(!expanded ? { inert: '' } : {})}
+          >
+            <div className={styles.indexChildrenInner}>
+              {renderOutlineNodes(heading.children)}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    )
+  })
 
   const addComment = async ({ body, quotedText, selectionStart, selectionEnd }) => {
     if (!body?.trim()) return null
@@ -484,22 +558,9 @@ function DocsPageContent() {
               </button>
             </div>
             <div className={styles.paneBody} aria-hidden={!indexOpen} {...(!indexOpen ? { inert: '' } : {})}>
-              <nav className={styles.indexNav}>
-                {outline.map((heading) => {
-                  const active = heading.headingIndex === activeHeadingIndex
-                  return (
-                    <button
-                      key={heading.id}
-                      type="button"
-                      className={`${styles.indexItem} ${active ? styles.indexItemActive : ''}`}
-                      aria-current={active ? 'location' : undefined}
-                      onClick={() => goToHeading(heading)}
-                    >
-                      {heading.label}
-                    </button>
-                  )
-                })}
-                {outline.length === 0 ? <p className={styles.indexEmpty}>Nenhuma seção encontrada.</p> : null}
+              <nav className={styles.indexNav} aria-label="Seções do documento">
+                {renderOutlineNodes(outlineTree)}
+                {outlineTree.length === 0 ? <p className={styles.indexEmpty}>Nenhuma seção encontrada.</p> : null}
               </nav>
             </div>
           </aside>
@@ -691,7 +752,7 @@ function DocsPageContent() {
                     ) : null}
                   </ul>
 
-                  <div className={styles.body}>
+                  <div className={styles.body} data-docs-body="">
                     {canEdit ? (
                       <MarkdownWysiwygComposer
                         value={draft.contentMarkdown}

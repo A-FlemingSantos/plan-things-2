@@ -131,6 +131,10 @@ export default function useCustomScrollbar({
     }
 
     function updateThumbLayout() {
+      const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
+      if (viewport.scrollTop > maxScrollTop) {
+        viewport.scrollTop = maxScrollTop
+      }
       commitMetrics(computeThumbMetrics(viewport, { insetPx, minThumbPx }))
     }
 

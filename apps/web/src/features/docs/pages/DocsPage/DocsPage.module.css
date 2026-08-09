@@ -128,23 +128,117 @@
   gap: 2px;
 }
 
+.indexBranch {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.indexChildren {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--transition-normal),
+    opacity var(--transition-fast);
+}
+
+.indexChildrenOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.indexChildrenInner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.indexRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  border-radius: 4px;
+}
+
+.indexRowActive {
+  background: var(--active);
+}
+
+.indexExpandButton,
+.indexExpandSpacer {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+}
+
+.indexExpandButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.indexExpandButton svg {
+  transition: transform var(--transition-normal);
+}
+
+.indexExpandButtonOpen svg {
+  transform: rotate(90deg);
+}
+
+.indexExpandButton:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
 .indexItem {
   display: block;
-  width: 100%;
-  padding: 9px 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  padding: 8px 10px 8px 4px;
   border: none;
   border-radius: 4px;
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: var(--font-weight-light);
   letter-spacing: -0.01em;
+  line-height: 1.35;
   text-align: left;
   cursor: pointer;
   transition:
     background var(--transition-fast),
     color var(--transition-fast);
+}
+
+.indexItemLevel1 {
+  font-size: 14.5px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-1);
+}
+
+.indexItemLevel2 {
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+.indexItemLevel3 {
+  font-size: 13px;
+  color: var(--text-2);
 }
 
 .indexItem:hover {
@@ -153,13 +247,28 @@
 }
 
 .indexItemActive {
-  background: var(--active);
+  background: transparent;
   color: var(--text-1);
 }
 
 .indexItemActive:hover {
-  background: var(--active);
+  background: transparent;
   color: var(--text-1);
+}
+
+.indexChildren .indexRow {
+  padding-left: 12px;
+}
+
+.indexChildren .indexChildren .indexRow {
+  padding-left: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indexChildren,
+  .indexExpandButton svg {
+    transition: none;
+  }
 }
 
 .indexEmpty {

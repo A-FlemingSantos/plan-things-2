@@ -71,27 +71,22 @@ function DocsEmbedReadView({ kind, mode, url, query, page, pageToken, styles }) 
   return <MarkdownImage src={url.trim()} alt="Imagem do Unsplash" styles={styles} />
 }
 
-function MarkdownChunk({ value, styles }) {
-  let headingIndex = 0
-
+function MarkdownChunk({ value, styles, allocateHeadingIndex }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeSanitize]}
       components={{
         h1: ({ children }) => {
-          const index = headingIndex
-          headingIndex += 1
+          const index = allocateHeadingIndex()
           return <h1 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h1>
         },
         h2: ({ children }) => {
-          const index = headingIndex
-          headingIndex += 1
+          const index = allocateHeadingIndex()
           return <h2 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h2>
         },
         h3: ({ children }) => {
-          const index = headingIndex
-          headingIndex += 1
+          const index = allocateHeadingIndex()
           return <h3 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h3>
         },
         p: ({ children }) => <p className={styles.bodyText}>{children}</p>,
@@ -111,6 +106,12 @@ function MarkdownChunk({ value, styles }) {
 
 export default function MarkdownContent({ value, styles }) {
   const parts = splitDocsEmbedMarkdown(value)
+  let nextHeadingIndex = 0
+  const allocateHeadingIndex = () => {
+    const index = nextHeadingIndex
+    nextHeadingIndex += 1
+    return index
+  }
 
   return (
     <div className={styles.markdownContent}>
@@ -130,7 +131,14 @@ export default function MarkdownContent({ value, styles }) {
           )
         }
         if (!part.content?.trim()) return null
-        return <MarkdownChunk key={`markdown-${index}`} value={part.content} styles={styles} />
+        return (
+          <MarkdownChunk
+            key={`markdown-${index}`}
+            value={part.content}
+            styles={styles}
+            allocateHeadingIndex={allocateHeadingIndex}
+          />
+        )
       })}
     </div>
   )
