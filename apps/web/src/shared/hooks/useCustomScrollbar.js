@@ -18,7 +18,11 @@ function computeThumbMetrics(viewport, { insetPx, minThumbPx }) {
   )
   const maxTop = Math.max(0, trackHeight - height)
   const scrollRange = scrollHeight - clientHeight
-  const top = insetPx + (scrollRange > 0 ? (scrollTop / scrollRange) * maxTop : 0)
+  // Clamp for display only — never write scrollTop during layout passes.
+  // TipTap/React can report a transiently-small scrollHeight mid-mutation;
+  // assigning scrollTop = maxScrollTop then sticks the viewport far above the caret.
+  const ratio = scrollRange > 0 ? Math.min(1, Math.max(0, scrollTop / scrollRange)) : 0
+  const top = insetPx + ratio * maxTop
 
   return { visible: true, height, top }
 }
@@ -131,10 +135,10 @@ export default function useCustomScrollbar({
     }
 
     function updateThumbLayout() {
-      const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
-      if (viewport.scrollTop > maxScrollTop) {
-        viewport.scrollTop = maxScrollTop
-      }
+      // Update thumb chrome only. Do not assign viewport.scrollTop here:
+      // MutationObserver/ResizeObserver fire while TipTap is mid-DOM-update and
+      // scrollHeight can briefly collapse. Clamping scrollTop against that
+      // transient max jumps Docs (and other long editors) far above the caret.
       commitMetrics(computeThumbMetrics(viewport, { insetPx, minThumbPx }))
     }
 

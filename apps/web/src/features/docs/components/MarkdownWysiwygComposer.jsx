@@ -29,11 +29,19 @@ import {
 import { normalizeDocsEmbedMarkdown } from '../utils/docsEmbedMarkdown.js'
 import { listDocHeadingElements, tagDocHeadingElements } from '../utils/docsHeadings.js'
 import { DocsListKeymap, isTopLevelEmptyParagraph } from '../utils/listEditing.js'
+import {
+  DocsCaretScrollLock,
+  scrollSelectionIntoCustomViewport,
+} from '../utils/editorScroll.js'
 import { handleMarkdownPaste } from '../utils/markdownPaste.js'
 import { DocsCodeBlock } from './DocsCodeBlockExtension.jsx'
 import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
 
 const ICON_STROKE = 1.6
+// Non-empty deps so TipTap does NOT call setOptions on every React render.
+// With deps=[], compareOptions sees a new `content`/`extensions` each keystroke
+// and updateState/setProps fights the caret scroll at the bottom of long docs.
+const DOC_WYSIWYG_EDITOR_DEPS = ['docs-wysiwyg-composer']
 
 function AuthenticatedImageView({ node }) {
   const source = useAuthenticatedImageUrl(node.attrs.src)
@@ -95,6 +103,7 @@ export default memo(function MarkdownWysiwygComposer({
   const urlInputRef = useRef(null)
   const imageInputRef = useRef(null)
   const noteDraftRef = useRef(null)
+  const lastEmittedMarkdownRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [selection, setSelection] = useState(null)
   const [insertTop, setInsertTop] = useState(null)
@@ -146,39 +155,52 @@ export default memo(function MarkdownWysiwygComposer({
     const markdown = activeEditor.getMarkdown()
     tagEditorHeadings(editorRoot, styles.bodyHeading)
 
-    if (composerMain) {
-      const nextOffsets = {}
-      filterAnchoredComments(markdown, comments).forEach((comment) => {
-        const occurrence = getQuoteOccurrenceIndex(markdown, comment.quotedText, comment.selectionStart)
-        const top = findQuoteTopAtOccurrence(editorRoot, composerMain, comment.quotedText, occurrence)
-        if (top != null) nextOffsets[comment.id] = top
-      })
-      setNoteOffsets(nextOffsets)
-    }
+    if (!composerMain) return
+
+    const nextOffsets = {}
+    filterAnchoredComments(markdown, comments).forEach((comment) => {
+      const occurrence = getQuoteOccurrenceIndex(markdown, comment.quotedText, comment.selectionStart)
+      const top = findQuoteTopAtOccurrence(editorRoot, composerMain, comment.quotedText, occurrence)
+      if (top != null) nextOffsets[comment.id] = top
+    })
+    setNoteOffsets((current) => {
+      const currentKeys = Object.keys(current)
+      const nextKeys = Object.keys(nextOffsets)
+      if (
+        currentKeys.length === nextKeys.length
+        && nextKeys.every((key) => current[key] === nextOffsets[key])
+      ) {
+        return current
+      }
+      return nextOffsets
+    })
   }, [comments, styles.bodyHeading])
+
+  const extensions = useMemo(() => [
+    StarterKit.configure({
+      codeBlock: false,
+      // TipTap 3 ships Link inside StarterKit — do not also register @tiptap/extension-link.
+      link: {
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: 'https',
+      },
+    }),
+    // Prefer deleting empty mid-list items over TipTap's liftListItem (which splits lists).
+    DocsListKeymap,
+    DocsCaretScrollLock,
+    DocsCodeBlock,
+    AuthenticatedImage,
+    createDocsEmbedExtension(styles),
+    Placeholder.configure({ placeholder }),
+    Markdown,
+  ], [placeholder, styles])
 
   const editor = useEditor({
     // Defer creation past the first render so React NodeViews (images/embeds/code)
     // do not call flushSync while React is still committing.
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-        // TipTap 3 ships Link inside StarterKit — do not also register @tiptap/extension-link.
-        link: {
-          openOnClick: false,
-          autolink: true,
-          defaultProtocol: 'https',
-        },
-      }),
-      // Prefer deleting empty mid-list items over TipTap's liftListItem (which splits lists).
-      DocsListKeymap,
-      DocsCodeBlock,
-      AuthenticatedImage,
-      createDocsEmbedExtension(styles),
-      Placeholder.configure({ placeholder }),
-      Markdown,
-    ],
+    extensions,
     content: value,
     contentType: 'markdown',
     editorProps: {
@@ -189,19 +211,27 @@ export default memo(function MarkdownWysiwygComposer({
         // docs produce constant false positives and block editing.
         lang: spellcheckLang,
         spellcheck: 'false',
-        style: 'outline: none',
+        // overflow-anchor: none disables ProseMirror's storeScrollPos/resetScrollPos
+        // (it only skips when the inline style is set). That JS path overshoots when
+        // deleting near the bottom of a long doc inside CustomScrollArea.
+        style: 'outline: none; overflow-anchor: none',
       },
       handlePaste(_view, event) {
         return handleMarkdownPaste(editorRef.current, event)
       },
+      handleScrollToSelection(view) {
+        return scrollSelectionIntoCustomViewport(view)
+      },
     },
     onCreate: ({ editor: activeEditor }) => {
       editorRef.current = activeEditor
+      lastEmittedMarkdownRef.current = activeEditor.getMarkdown()
       tagEditorHeadings(activeEditor.view.dom, styles.bodyHeading)
     },
     onUpdate: ({ editor: activeEditor }) => {
-      onChange(activeEditor.getMarkdown())
-      tagEditorHeadings(activeEditor.view.dom, styles.bodyHeading)
+      const markdown = activeEditor.getMarkdown()
+      lastEmittedMarkdownRef.current = markdown
+      onChange(markdown)
       refreshVisualState(activeEditor)
     },
     onSelectionUpdate: ({ editor: activeEditor }) => syncSelection(activeEditor),
@@ -210,7 +240,7 @@ export default memo(function MarkdownWysiwygComposer({
       setSelection(null)
       setMenuOpen(false)
     },
-  })
+  }, DOC_WYSIWYG_EDITOR_DEPS)
 
   useEffect(() => {
     editorRef.current = editor
@@ -226,7 +256,14 @@ export default memo(function MarkdownWysiwygComposer({
   useEffect(() => {
     if (!editor) return undefined
     const normalized = normalizeDocsEmbedMarkdown(value)
-    if (editor.getMarkdown() === normalized) return undefined
+    // Skip echo from our own onChange — remounting via setContent jumps scroll
+    // and drops the caret, especially when deleting at the bottom of the page.
+    if (
+      normalized === lastEmittedMarkdownRef.current
+      || editor.getMarkdown() === normalized
+    ) {
+      return undefined
+    }
 
     const scrollRoot = editor.view.dom.closest('[data-custom-scroll-viewport]')
     const previousScrollTop = scrollRoot?.scrollTop ?? null
@@ -236,9 +273,15 @@ export default memo(function MarkdownWysiwygComposer({
     // React's commit/effect phase (TipTap guidance for NodeView + useEffect).
     queueMicrotask(() => {
       if (cancelled || editor.isDestroyed) return
-      if (editor.getMarkdown() === normalized) return
+      if (
+        normalized === lastEmittedMarkdownRef.current
+        || editor.getMarkdown() === normalized
+      ) {
+        return
+      }
 
       editor.commands.setContent(normalized, { emitUpdate: false, contentType: 'markdown' })
+      lastEmittedMarkdownRef.current = editor.getMarkdown()
       refreshVisualState(editor)
 
       if (scrollRoot != null && previousScrollTop != null) {

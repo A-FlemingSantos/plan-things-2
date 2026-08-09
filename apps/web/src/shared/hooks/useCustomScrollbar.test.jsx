@@ -84,4 +84,29 @@ describe('useCustomScrollbar', () => {
       expect(thumb.style.transform).toBe('translate3d(0, 37.5px, 0)')
     })
   })
+
+  it('does not clamp scrollTop when content height shrinks during a layout pass', async () => {
+    const metrics = {
+      clientHeight: 100,
+      scrollHeight: 500,
+      scrollTop: 400,
+    }
+
+    render(<TestScrollbar />)
+
+    const viewport = screen.getByTestId('viewport')
+    installScrollMetrics(viewport, metrics)
+
+    viewport.scrollTop = 400
+    fireEvent.scroll(viewport)
+
+    // Simulate TipTap mid-mutation: scrollHeight collapses while scrollTop is still high.
+    metrics.scrollHeight = 120
+    fireEvent.scroll(viewport)
+
+    await waitFor(() => {
+      // Browser may clamp later; our hook must not write a stuck low scrollTop.
+      expect(viewport.scrollTop).toBe(400)
+    })
+  })
 })

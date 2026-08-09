@@ -113,8 +113,16 @@ export function findDocHeadingElement(root, headingIndex) {
 export function tagDocHeadingElements(root) {
   const headings = listDocHeadingElements(root)
   headings.forEach((element, index) => {
-    element.setAttribute(DOC_HEADING_ATTR, String(index))
-    element.id = `doc-heading-${index}`
+    const nextId = `doc-heading-${index}`
+    const nextAttr = String(index)
+    if (element.getAttribute(DOC_HEADING_ATTR) !== nextAttr) {
+      element.setAttribute(DOC_HEADING_ATTR, nextAttr)
+    }
+    // Only write id when it changes — reassigning matching ids can make some
+    // browsers scroll the element into view during live edits.
+    if (element.id !== nextId) {
+      element.id = nextId
+    }
   })
   return headings
 }
