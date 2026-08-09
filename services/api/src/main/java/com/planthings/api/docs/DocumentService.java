@@ -2,6 +2,8 @@ package com.planthings.api.docs;
 
 import com.planthings.api.auth.UserEntity;
 import com.planthings.api.auth.UserRepository;
+import com.planthings.api.avatar.AvatarImageService;
+import com.planthings.api.avatar.AvatarOwnerType;
 import com.planthings.api.common.api.ApiDateTimeDto;
 import com.planthings.api.common.error.BadRequestException;
 import com.planthings.api.common.error.ConflictException;
@@ -30,6 +32,7 @@ public class DocumentService {
   private final DocumentInviteRepository documentInviteRepository;
   private final DocumentCommentRepository documentCommentRepository;
   private final UserRepository userRepository;
+  private final AvatarImageService avatarImageService;
   private final AuthenticatedUserService authenticatedUserService;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final DocumentInviteEmailSender documentInviteEmailSender;
@@ -42,6 +45,7 @@ public class DocumentService {
       DocumentInviteRepository documentInviteRepository,
       DocumentCommentRepository documentCommentRepository,
       UserRepository userRepository,
+      AvatarImageService avatarImageService,
       AuthenticatedUserService authenticatedUserService,
       BrazilDateTimeMapper brazilDateTimeMapper,
       DocumentInviteEmailSender documentInviteEmailSender,
@@ -53,6 +57,7 @@ public class DocumentService {
     this.documentInviteRepository = documentInviteRepository;
     this.documentCommentRepository = documentCommentRepository;
     this.userRepository = userRepository;
+    this.avatarImageService = avatarImageService;
     this.authenticatedUserService = authenticatedUserService;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.documentInviteEmailSender = documentInviteEmailSender;
@@ -413,6 +418,7 @@ public class DocumentService {
         user.getId(),
         user.getFullName(),
         user.getEmail(),
+        avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
         member.getRole(),
         brazilDateTimeMapper.toDateTime(member.getCreatedAt())
     );
@@ -571,6 +577,7 @@ public class DocumentService {
       UUID userId,
       String fullName,
       String email,
+      String avatarUrl,
       DocumentRole role,
       ApiDateTimeDto joinedAt
   ) {

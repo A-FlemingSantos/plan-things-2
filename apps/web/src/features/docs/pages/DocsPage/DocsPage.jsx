@@ -29,6 +29,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
 import AppThemeScope from '../../../preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
+import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import ProductAppShell from '../../../../shared/components/ProductAppShell/ProductAppShell.jsx'
 import { useAppChrome } from '../../../../shared/context/AppChromeContext.jsx'
@@ -91,8 +92,18 @@ function getInitials(name = '') {
     .join('') || '?'
 }
 
-function ContributorAvatar({ name }) {
-  return <span className={styles.avatar} aria-hidden="true" title={name}>{getInitials(name)}</span>
+function ContributorAvatar({ name, avatarUrl }) {
+  return (
+    <AuthenticatedAvatar
+      avatarUrl={avatarUrl}
+      fallback={getInitials(name)}
+      className={styles.avatar}
+      imageClassName={styles.avatarImage}
+      title={name}
+      alt=""
+      aria-hidden="true"
+    />
+  )
 }
 
 function filterHeadingTree(nodes, query) {
@@ -1117,7 +1128,7 @@ function DocsPageContent() {
                   <ul className={styles.contributors} aria-label="Contribuidores">
                     {details.members.map((member) => (
                       <li key={member.userId} className={styles.contributor}>
-                        <ContributorAvatar name={member.fullName} />
+                        <ContributorAvatar name={member.fullName} avatarUrl={member.avatarUrl} />
                         <div className={styles.contributorCopy}>
                           <span className={styles.contributorName}>{member.fullName}</span>
                           <span className={styles.contributorRole}>{member.role === 'OWNER' ? 'Proprietário' : member.role === 'EDITOR' ? 'Editor' : 'Leitor'}</span>

@@ -173,4 +173,76 @@ class DocumentsApiIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error.code").value("ACESSO_AO_ARQUIVO_NEGADO"));
   }
+
+  @Test
+  void shouldIncludeMemberAvatarUrlsOnDocumentDetails() throws Exception {
+    String ownerToken = registerAndGetToken("Avatar Owner", "avatar-doc-owner@example.com", "password123");
+    String memberToken = registerAndGetToken("Avatar Member", "avatar-doc-member@example.com", "password123");
+    MockMultipartFile avatarFile = new MockMultipartFile(
+        "file",
+        "avatar.png",
+        "image/png",
+        new byte[] {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}
+    );
+
+    mockMvc.perform(multipart("/api/settings/account/avatar")
+            .file(avatarFile)
+            .header("Authorization", "Bearer " + ownerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.avatarUrl").value(org.hamcrest.Matchers.matchesPattern("/api/avatars/users/.+\\?v=.+")));
+
+    String documentId = readJson(mockMvc.perform(post("/api/documents")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "title": "Documento com avatares",
+                  "description": "",
+                  "contentMarkdown": "# Avatares"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("document").path("id").asText();
+
+    JsonNode invite = readJson(mockMvc.perform(post("/api/documents/" + documentId + "/invites")
+            .header("Authorization", "Bearer " + ownerToken)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "email": "avatar-doc-member@example.com",
+                  "role": "VIEWER"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    mockMvc.perform(post("/api/documents/invites/" + invite.path("token").asText() + "/accept")
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk());
+
+    JsonNode members = readJson(mockMvc.perform(get("/api/documents/" + documentId)
+            .header("Authorization", "Bearer " + memberToken))
+        .andExpect(status().isOk())
+        .andReturn()).path("data").path("members");
+
+    JsonNode ownerMember = null;
+    JsonNode viewerMember = null;
+    for (JsonNode member : members) {
+      if ("avatar-doc-owner@example.com".equalsIgnoreCase(member.path("email").asText())) {
+        ownerMember = member;
+      }
+      if ("avatar-doc-member@example.com".equalsIgnoreCase(member.path("email").asText())) {
+        viewerMember = member;
+      }
+    }
+
+    org.junit.jupiter.api.Assertions.assertNotNull(ownerMember);
+    org.junit.jupiter.api.Assertions.assertNotNull(viewerMember);
+    org.junit.jupiter.api.Assertions.assertTrue(
+        ownerMember.path("avatarUrl").asText("").matches("/api/avatars/users/.+\\?v=.+")
+    );
+    org.junit.jupiter.api.Assertions.assertTrue(
+        viewerMember.path("avatarUrl").isMissingNode() || viewerMember.path("avatarUrl").isNull()
+    );
+  }
 }
