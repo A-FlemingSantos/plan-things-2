@@ -5,6 +5,8 @@ import ImageExtension from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from '@tiptap/markdown'
 import {
+  BookOpen,
+  ChevronRight,
   Code2,
   Image,
   Link2,
@@ -155,7 +157,8 @@ export default memo(function MarkdownWysiwygComposer({
   const [noteDraft, setNoteDraft] = useState('')
   const [urlPrompt, setUrlPrompt] = useState(null)
   const [urlDraft, setUrlDraft] = useState('')
-  const [linkMode, setLinkMode] = useState('web')
+  const [docsMenuOpen, setDocsMenuOpen] = useState(false)
+  const [docsMenuSide, setDocsMenuSide] = useState('right')
   const [docSearchQuery, setDocSearchQuery] = useState('')
   const [linkHover, setLinkHover] = useState(null)
   const [noteOffsets, setNoteOffsets] = useState({})
@@ -575,12 +578,13 @@ export default memo(function MarkdownWysiwygComposer({
     if (!urlPrompt) {
       setUrlDraft('')
       setDocSearchQuery('')
-      setLinkMode('web')
+      setDocsMenuOpen(false)
+      setDocsMenuSide('right')
       return undefined
     }
 
     requestAnimationFrame(() => {
-      if (linkMode === 'doc') docSearchInputRef.current?.focus()
+      if (docsMenuOpen) docSearchInputRef.current?.focus()
       else urlInputRef.current?.focus()
     })
 
@@ -591,7 +595,13 @@ export default memo(function MarkdownWysiwygComposer({
       setUrlPrompt(null)
     }
     const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setUrlPrompt(null)
+      if (event.key !== 'Escape') return
+      if (docsMenuOpen) {
+        setDocsMenuOpen(false)
+        requestAnimationFrame(() => urlInputRef.current?.focus())
+        return
+      }
+      setUrlPrompt(null)
     }
 
     document.addEventListener('pointerdown', closeOutside)
@@ -600,7 +610,7 @@ export default memo(function MarkdownWysiwygComposer({
       document.removeEventListener('pointerdown', closeOutside)
       document.removeEventListener('keydown', closeOnEscape)
     }
-  }, [linkMode, urlPrompt])
+  }, [docsMenuOpen, urlPrompt])
 
   const filteredLinkableDocuments = useMemo(() => {
     const query = docSearchQuery.trim().toLowerCase()
@@ -677,7 +687,7 @@ export default memo(function MarkdownWysiwygComposer({
     setUrlPrompt(null)
     setUrlDraft('')
     setDocSearchQuery('')
-    setLinkMode('web')
+    setDocsMenuOpen(false)
   }
 
   const submitUrlPrompt = () => {
@@ -686,6 +696,21 @@ export default memo(function MarkdownWysiwygComposer({
 
   const submitDocLink = (documentId) => {
     applyLinkHref(buildDocsPath(documentId))
+  }
+
+  const openDocsMenu = () => {
+    const panel = urlPromptRef.current
+    if (!panel) {
+      setDocsMenuSide('right')
+      setDocsMenuOpen(true)
+      return
+    }
+    const rect = panel.getBoundingClientRect()
+    const flyoutWidth = 260
+    const gap = 6
+    const fitsRight = rect.right + gap + flyoutWidth <= window.innerWidth - 8
+    setDocsMenuSide(fitsRight ? 'right' : 'left')
+    setDocsMenuOpen(true)
   }
 
   const removeHoveredLink = () => {
@@ -747,7 +772,7 @@ export default memo(function MarkdownWysiwygComposer({
     else if (action === 'subtitle') chain.toggleHeading({ level: 2 }).run()
     else if (action === 'quote') chain.toggleBlockquote().run()
     else if (action === 'link') {
-      setLinkMode('web')
+      setDocsMenuOpen(false)
       setDocSearchQuery('')
       const anchor = measureLinkPanelAnchor(linkToolButtonRef.current, {
         top: selection.top,
@@ -791,69 +816,62 @@ export default memo(function MarkdownWysiwygComposer({
   const urlMenu = urlPrompt ? (
     <div
       ref={urlPromptRef}
-      className={`${styles.coupledMenuPanel} ${styles.coupledMenuPanelToolbar} ${styles.coupledMenuPanelLink}`}
+      className={`${styles.linkPickerRoot} ${styles.coupledMenuPanelToolbar}`}
       style={{ top: urlPrompt.top, left: urlPrompt.left }}
       role="group"
       aria-label="Inserir link"
     >
-      <div className={styles.linkModeTabs} role="tablist" aria-label="Tipo de link">
+      <div className={styles.linkPickerPanel}>
+        <input
+          ref={urlInputRef}
+          type="url"
+          className={styles.linkPickerInput}
+          value={urlDraft}
+          placeholder="https://..."
+          aria-label="URL do link"
+          onChange={(event) => {
+            setUrlDraft(event.target.value)
+            if (docsMenuOpen) setDocsMenuOpen(false)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              submitUrlPrompt()
+            }
+          }}
+        />
         <button
           type="button"
-          role="tab"
-          aria-selected={linkMode === 'web'}
-          className={`${styles.linkModeTab} ${linkMode === 'web' ? styles.linkModeTabActive : ''}`}
+          className={`${styles.linkPickerItem} ${docsMenuOpen ? styles.linkPickerItemActive : ''}`}
+          aria-haspopup="menu"
+          aria-expanded={docsMenuOpen}
           onMouseDown={(event) => event.preventDefault()}
-          onClick={() => setLinkMode('web')}
+          onClick={() => {
+            if (docsMenuOpen) setDocsMenuOpen(false)
+            else openDocsMenu()
+          }}
         >
-          Web
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={linkMode === 'doc'}
-          className={`${styles.linkModeTab} ${linkMode === 'doc' ? styles.linkModeTabActive : ''}`}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => setLinkMode('doc')}
-        >
-          Documento
+          <BookOpen size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          <span className={styles.linkPickerItemLabel}>Documentos</span>
+          <ChevronRight size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
         </button>
       </div>
-      {linkMode === 'web' ? (
-        <>
-          <input
-            ref={urlInputRef}
-            type="url"
-            className={styles.coupledMenuInput}
-            value={urlDraft}
-            placeholder="https://..."
-            onChange={(event) => setUrlDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                submitUrlPrompt()
-              }
-            }}
-          />
-          <div className={styles.coupledMenuActions}>
-            <button type="button" className={styles.coupledMenuCancel} onClick={() => setUrlPrompt(null)}>
-              Cancelar
-            </button>
-            <button type="button" className={styles.coupledMenuSubmit} onClick={submitUrlPrompt} disabled={!urlDraft.trim()}>
-              Inserir
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
+      {docsMenuOpen ? (
+        <div
+          className={`${styles.linkPickerFlyout} ${docsMenuSide === 'left' ? styles.linkPickerFlyoutLeft : ''}`}
+          role="menu"
+          aria-label="Documentos"
+        >
           <input
             ref={docSearchInputRef}
             type="search"
-            className={styles.coupledMenuInput}
+            className={styles.linkPickerInput}
             value={docSearchQuery}
             placeholder="Buscar documento..."
+            aria-label="Buscar documento"
             onChange={(event) => setDocSearchQuery(event.target.value)}
           />
-          <div className={styles.linkDocList} role="listbox" aria-label="Documentos">
+          <div className={styles.linkDocList} role="listbox" aria-label="Documentos disponíveis">
             {filteredLinkableDocuments.length === 0 ? (
               <p className={styles.linkDocEmpty}>Nenhum documento encontrado</p>
             ) : filteredLinkableDocuments.map((document) => (
@@ -872,13 +890,8 @@ export default memo(function MarkdownWysiwygComposer({
               </button>
             ))}
           </div>
-          <div className={styles.coupledMenuActions}>
-            <button type="button" className={styles.coupledMenuCancel} onClick={() => setUrlPrompt(null)}>
-              Cancelar
-            </button>
-          </div>
-        </>
-      )}
+        </div>
+      ) : null}
     </div>
   ) : null
 
