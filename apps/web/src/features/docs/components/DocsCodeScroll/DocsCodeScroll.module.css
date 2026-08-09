@@ -1,0 +1,72 @@
+.root {
+  --docs-code-scroll-thumb-size: 2px;
+  --docs-code-scroll-thumb-color: #000000;
+  position: relative;
+  display: block;
+  max-width: 100%;
+}
+
+[data-theme='dark'] .root,
+[data-app-color-scheme='dark'] .root {
+  --docs-code-scroll-thumb-color: #ffffff;
+}
+
+.viewport {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overflow-anchor: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.viewport,
+.viewport :global(code) {
+  /* TipTap sets inline white-space: pre-wrap on code — keep real newlines only. */
+  white-space: pre !important;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.trackHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.thumb {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: var(--docs-code-scroll-thumb-size);
+  min-width: 24px;
+  background: var(--docs-code-scroll-thumb-color);
+  border-radius: 0;
+  opacity: 1;
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transition: height 140ms ease;
+  will-change: transform;
+}
+
+.track:hover .thumb,
+.thumb:hover,
+.thumbDragging {
+  height: 6px;
+}

@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 import DocsEmbedResults from './DocsEmbedResults.jsx'
+import DocsCodeScroll from './DocsCodeScroll/DocsCodeScroll.jsx'
 import { DOCS_EMBED_META } from './docsEmbedExtension.jsx'
 import { useAuthenticatedImageUrl } from '../../../shared/hooks/useAuthenticatedImageUrl.js'
 import { splitDocsEmbedMarkdown, youtubeEmbedUrl } from '../utils/docsEmbedMarkdown.js'
@@ -99,6 +100,7 @@ function MarkdownChunk({ value, styles }) {
             {children}
           </a>
         ),
+        pre: ({ children }) => <DocsCodeScroll>{children}</DocsCodeScroll>,
         img: ({ src, alt }) => <MarkdownImage src={src} alt={alt} styles={styles} />,
       }}
     >

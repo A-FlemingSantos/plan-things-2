@@ -2194,11 +2194,12 @@
   margin-bottom: 0;
   margin-left: 0;
   padding: 12px 14px;
-  overflow-x: hidden;
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface-3) 92%, var(--border-2));
   color: var(--text-1);
   line-height: 1.5;
+  /* Beat TipTap's .ProseMirror pre { white-space: pre-wrap }. */
+  white-space: pre;
 }
 
 .bodyComposer :global(.ProseMirror) pre code,
@@ -2209,11 +2210,7 @@
   background: transparent;
   font-size: 13px;
   line-height: 1.5;
-  /* Wrap long lines — Chromium overlay scrollbars ignore custom sizing and
-     leave an unusable hairline bar on code fences. */
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  white-space: pre;
 }
 
 .bodyComposer :global(.ProseMirror) blockquote,

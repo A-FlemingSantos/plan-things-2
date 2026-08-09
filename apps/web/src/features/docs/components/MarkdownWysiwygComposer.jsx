@@ -29,6 +29,7 @@ import {
 } from '../utils/commentAnchors.js'
 import { normalizeDocsEmbedMarkdown } from '../utils/docsEmbedMarkdown.js'
 import { handleMarkdownPaste } from '../utils/markdownPaste.js'
+import { DocsCodeBlock } from './DocsCodeBlockExtension.jsx'
 import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
 
 const ICON_STROKE = 1.6
@@ -155,7 +156,8 @@ export default function MarkdownWysiwygComposer({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }),
+      DocsCodeBlock,
       Link.configure({ openOnClick: false, autolink: true, defaultProtocol: 'https' }),
       AuthenticatedImage,
       createDocsEmbedExtension(styles),
