@@ -17,6 +17,8 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
+import { resolveDocumentLang } from '../../preferences/utils/documentLang.js'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import { useAuthenticatedImageUrl } from '../../../shared/hooks/useAuthenticatedImageUrl.js'
 import {
@@ -80,6 +82,8 @@ export default function MarkdownWysiwygComposer({
   styles,
 }) {
   const { currentUser, accessToken } = useAuth()
+  const { generalPreferences } = usePreferences()
+  const spellcheckLang = resolveDocumentLang(generalPreferences?.language)
   const editorRef = useRef(null)
   const composerRef = useRef(null)
   const composerMainRef = useRef(null)
@@ -163,6 +167,11 @@ export default function MarkdownWysiwygComposer({
     editorProps: {
       attributes: {
         'aria-label': 'Conteúdo do documento',
+        // Keep lang in sync with Settings (pt-BR / en-US) for a11y and any
+        // browser/OS tools. Native spellcheck stays off: mixed PT/EN technical
+        // docs produce constant false positives and block editing.
+        lang: spellcheckLang,
+        spellcheck: 'false',
         style: 'outline: none',
       },
       handlePaste(_view, event) {
@@ -188,6 +197,13 @@ export default function MarkdownWysiwygComposer({
   useEffect(() => {
     editorRef.current = editor
   }, [editor])
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+    const dom = editor.view.dom
+    dom.setAttribute('lang', spellcheckLang)
+    dom.setAttribute('spellcheck', 'false')
+  }, [editor, spellcheckLang])
 
   useEffect(() => {
     if (!editor) return

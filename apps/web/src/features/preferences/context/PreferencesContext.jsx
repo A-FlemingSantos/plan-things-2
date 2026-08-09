@@ -5,6 +5,7 @@ import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import { isLegacyFilesPath, ROUTES, normalizePathname } from '../../../shared/config/routes.js'
 import { normalizeAccentColor } from '../../../shared/config/accentColors.js'
+import { applyDocumentLang } from '../utils/documentLang.js'
 
 export const LOCAL_SETTINGS_STORAGE_PREFIX = 'plan-things:settings:v1:'
 export const THEME_STORAGE_PREFIX = 'plan-things:theme:v1:'
@@ -394,6 +395,10 @@ export function PreferencesProvider({ children }) {
   useEffect(() => {
     generalStateRef.current = generalPreferences
   }, [generalPreferences])
+
+  useEffect(() => {
+    applyDocumentLang(generalPreferences.language)
+  }, [generalPreferences.language])
 
   useEffect(() => {
     localStateRef.current = localPreferences
