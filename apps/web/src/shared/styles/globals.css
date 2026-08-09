@@ -330,7 +330,7 @@ ul, ol { list-style: none; }
    SCROLLBAR
    ────────────────────────────────────────── */
 
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--app-bg); }
 ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
 
