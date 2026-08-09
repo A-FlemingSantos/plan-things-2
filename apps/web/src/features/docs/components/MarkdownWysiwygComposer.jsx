@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import ImageExtension from '@tiptap/extension-image'
@@ -73,7 +73,7 @@ function tagEditorHeadings(editorRoot, bodyHeadingClass) {
   })
 }
 
-export default function MarkdownWysiwygComposer({
+export default memo(function MarkdownWysiwygComposer({
   value,
   onChange,
   onAddComment,
@@ -271,8 +271,9 @@ export default function MarkdownWysiwygComposer({
     }
     const onScroll = () => {
       if (!editor || selection?.from == null) return
+      // Selection toolbar is viewport-fixed; only remeasure coords. Retagging
+      // headings / note offsets during scroll forces TipTap DOM work and jank.
       syncSelection(editor)
-      refreshVisualState(editor)
     }
     document.addEventListener('pointerdown', clearOutside)
     document.addEventListener('keydown', clearOnEscape)
@@ -282,7 +283,7 @@ export default function MarkdownWysiwygComposer({
       document.removeEventListener('keydown', clearOnEscape)
       window.removeEventListener('scroll', onScroll, true)
     }
-  }, [editor, refreshVisualState, selection, syncSelection])
+  }, [editor, selection, syncSelection])
 
   useEffect(() => {
     if (!urlPrompt) {
@@ -562,4 +563,4 @@ export default function MarkdownWysiwygComposer({
       </aside>
     </div>
   )
-}
+})

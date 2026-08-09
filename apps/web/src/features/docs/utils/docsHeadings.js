@@ -137,6 +137,13 @@ export function scrollViewportToHeading(viewport, target, { offsetPx = 24, behav
  * Pick the active outline heading from scroll position: the last heading whose
  * top edge is at or above a marker near the top of the viewport.
  */
+function resolveDocHeadingIndex(target, fallbackIndex) {
+  const raw = target.getAttribute(DOC_HEADING_ATTR)
+  if (raw == null || raw === '') return fallbackIndex
+  const indexed = Number(raw)
+  return Number.isNaN(indexed) ? fallbackIndex : indexed
+}
+
 export function resolveActiveDocHeadingIndex(
   viewport,
   targets,
@@ -148,20 +155,17 @@ export function resolveActiveDocHeadingIndex(
     + Math.max(markerMinPx, viewport.clientHeight * markerRatio)
 
   let activeIndex = null
-  for (const target of targets) {
-    const index = Number(target.getAttribute(DOC_HEADING_ATTR))
-    if (Number.isNaN(index)) continue
+  for (let index = 0; index < targets.length; index += 1) {
+    const target = targets[index]
     if (target.getBoundingClientRect().top <= markerY + 1) {
-      activeIndex = index
+      activeIndex = resolveDocHeadingIndex(target, index)
       continue
     }
     break
   }
 
   if (activeIndex != null) return activeIndex
-
-  const first = Number(targets[0].getAttribute(DOC_HEADING_ATTR))
-  return Number.isNaN(first) ? null : first
+  return resolveDocHeadingIndex(targets[0], 0)
 }
 
 /**

@@ -101,6 +101,26 @@ describe('resolveActiveDocHeadingIndex', () => {
 
     expect(resolveActiveDocHeadingIndex(viewport, targets)).toBe(1)
   })
+
+  it('falls back to array order when headings are untagged', () => {
+    const viewport = document.createElement('div')
+    Object.defineProperty(viewport, 'clientHeight', { value: 400 })
+    viewport.getBoundingClientRect = () => ({ top: 100, bottom: 500, left: 0, right: 0, width: 0, height: 400 })
+
+    const makeHeading = (top) => {
+      const el = document.createElement('h2')
+      el.getBoundingClientRect = () => ({ top, bottom: top + 24, left: 0, right: 0, width: 0, height: 24 })
+      return el
+    }
+
+    const targets = [
+      makeHeading(120),
+      makeHeading(170),
+      makeHeading(260),
+    ]
+
+    expect(resolveActiveDocHeadingIndex(viewport, targets)).toBe(1)
+  })
 })
 
 describe('resolveVisibleOutlineHeadingIndex', () => {

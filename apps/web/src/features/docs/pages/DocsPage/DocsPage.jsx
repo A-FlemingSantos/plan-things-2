@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronRight,
   Copy,
@@ -41,7 +41,6 @@ import {
   resolveActiveDocHeadingIndex,
   resolveVisibleOutlineHeadingIndex,
   scrollViewportToHeading,
-  tagDocHeadingElements,
 } from '../../utils/docsHeadings.js'
 import styles from './DocsPage.module.css'
 
@@ -340,19 +339,31 @@ function DocsPageContent() {
 
     const headingIndexes = new Set(headings.map((heading) => heading.headingIndex))
     let frameId = null
+    // Read-only during scroll: mutating TipTap's DOM (retagging ids/attrs) every
+    // frame forces editor reconciliation and makes the viewport feel stuck.
+    let targets = listDocHeadingElements(viewport)
+
+    const refreshTargetsIfStale = () => {
+      if (targets.length === 0 || targets.some((element) => !element.isConnected)) {
+        targets = listDocHeadingElements(viewport)
+      }
+      return targets
+    }
 
     const syncActiveHeading = () => {
       frameId = null
       if (headingNavLockRef.current != null) return
 
-      tagDocHeadingElements(viewport)
-      const targets = listDocHeadingElements(viewport)
-      if (targets.length === 0) return
+      const nextTargets = refreshTargetsIfStale()
+      if (nextTargets.length === 0) return
 
-      const nextIndex = resolveActiveDocHeadingIndex(viewport, targets)
+      const nextIndex = resolveActiveDocHeadingIndex(viewport, nextTargets)
       if (nextIndex == null || !headingIndexes.has(nextIndex)) return
       if (activeHeadingIndexRef.current === nextIndex) return
-      setActiveHeadingIndex(nextIndex)
+      // Keep scroll on the main thread; outline highlight can wait a frame.
+      startTransition(() => {
+        setActiveHeadingIndex(nextIndex)
+      })
     }
 
     const onScroll = () => {
@@ -360,7 +371,6 @@ function DocsPageContent() {
       frameId = window.requestAnimationFrame(syncActiveHeading)
     }
 
-    tagDocHeadingElements(viewport)
     viewport.addEventListener('scroll', onScroll, { passive: true })
     syncActiveHeading()
 
@@ -389,7 +399,6 @@ function DocsPageContent() {
     // Lock + scroll against live nodes before React re-renders TipTap.
     // Updating active state first replaces heading DOM and yields offset 0.
     headingNavLockRef.current = headingIndex
-    tagDocHeadingElements(viewport)
     const target = findDocHeadingElement(viewport, headingIndex)
     const didScroll = scrollViewportToHeading(viewport, target, { behavior: 'smooth' })
     setActiveHeadingIndex(headingIndex)
@@ -462,7 +471,11 @@ function DocsPageContent() {
     )
   })
 
-  const addComment = async ({ body, quotedText, selectionStart, selectionEnd }) => {
+  const handleContentChange = useCallback((contentMarkdown) => {
+    setDraft((current) => ({ ...current, contentMarkdown }))
+  }, [])
+
+  const addComment = useCallback(async ({ body, quotedText, selectionStart, selectionEnd }) => {
     if (!body?.trim()) return null
     try {
       const comment = await apiRequest(`/api/documents/${details.document.id}/comments`, {
@@ -475,9 +488,9 @@ function DocsPageContent() {
     } catch {
       return null
     }
-  }
+  }, [accessToken, details?.document?.id])
 
-  const removeComment = async (commentId) => {
+  const removeComment = useCallback(async (commentId) => {
     try {
       await apiRequest(`/api/documents/${details.document.id}/comments/${commentId}`, {
         method: 'DELETE',
@@ -487,11 +500,11 @@ function DocsPageContent() {
     } catch {
       // keep UI unchanged on failure
     }
-  }
+  }, [accessToken, details?.document?.id])
 
-  const canDeleteComment = (comment) => (
+  const canDeleteComment = useCallback((comment) => (
     comment.author?.id === currentUser?.id || details.document.role === 'OWNER'
-  )
+  ), [currentUser?.id, details?.document?.role])
 
   const duplicate = async () => {
     setMoreMenuOpen(false)
@@ -788,7 +801,7 @@ function DocsPageContent() {
                     {canEdit ? (
                       <MarkdownWysiwygComposer
                         value={draft.contentMarkdown}
-                        onChange={(contentMarkdown) => setDraft((current) => ({ ...current, contentMarkdown }))}
+                        onChange={handleContentChange}
                         onAddComment={addComment}
                         onDeleteComment={removeComment}
                         canDeleteComment={canDeleteComment}
