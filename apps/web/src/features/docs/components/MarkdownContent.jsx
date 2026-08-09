@@ -1,11 +1,28 @@
 import ReactMarkdown from 'react-markdown'
+import { Link } from 'react-router-dom'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 import DocsEmbedResults from './DocsEmbedResults.jsx'
 import DocsCodeScroll from './DocsCodeScroll/DocsCodeScroll.jsx'
 import { DOCS_EMBED_META } from './docsEmbedExtension.jsx'
+import { sanitizeInternalAppRedirect } from '../../../shared/config/routes.js'
 import { useAuthenticatedImageUrl } from '../../../shared/hooks/useAuthenticatedImageUrl.js'
+import { documentIdFromHref } from '../utils/extractLinkedDocIds.js'
 import { splitDocsEmbedMarkdown, youtubeEmbedUrl } from '../utils/docsEmbedMarkdown.js'
+
+function resolveInternalDocsHref(href) {
+  if (!href || !documentIdFromHref(href)) return null
+  const candidate = href.trim()
+  if (candidate.startsWith('/')) {
+    return sanitizeInternalAppRedirect(candidate)
+  }
+  try {
+    const url = new URL(candidate)
+    return sanitizeInternalAppRedirect(`${url.pathname}${url.search}${url.hash}`)
+  } catch {
+    return null
+  }
+}
 
 function MarkdownImage({ src, alt, styles }) {
   const resolvedSource = useAuthenticatedImageUrl(src)
@@ -90,11 +107,17 @@ function MarkdownChunk({ value, styles, allocateHeadingIndex }) {
           return <h3 id={`doc-heading-${index}`} data-doc-heading={index} className={styles.bodyHeading}>{children}</h3>
         },
         p: ({ children }) => <p className={styles.bodyText}>{children}</p>,
-        a: ({ href, children }) => (
-          <a href={href} target="_blank" rel="noreferrer">
-            {children}
-          </a>
-        ),
+        a: ({ href, children }) => {
+          const internalHref = resolveInternalDocsHref(href)
+          if (internalHref) {
+            return <Link to={internalHref}>{children}</Link>
+          }
+          return (
+            <a href={href} target="_blank" rel="noreferrer">
+              {children}
+            </a>
+          )
+        },
         pre: ({ children }) => <DocsCodeScroll>{children}</DocsCodeScroll>,
         img: ({ src, alt }) => <MarkdownImage src={src} alt={alt} styles={styles} />,
       }}

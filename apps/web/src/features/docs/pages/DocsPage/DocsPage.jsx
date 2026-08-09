@@ -42,6 +42,7 @@ import {
   resolveVisibleOutlineHeadingIndex,
   scrollViewportToHeading,
 } from '../../utils/docsHeadings.js'
+import { extractLinkedDocIds } from '../../utils/extractLinkedDocIds.js'
 import styles from './DocsPage.module.css'
 
 const ICON_STROKE = 1.6
@@ -106,6 +107,18 @@ function DocsPageContent() {
 
   const canEdit = details?.document?.role !== 'VIEWER'
   const headings = useMemo(() => extractMarkdownHeadings(draft.contentMarkdown), [draft.contentMarkdown])
+  const mentionedDocuments = useMemo(() => {
+    const currentId = details?.document?.id ?? null
+    const linkedIds = extractLinkedDocIds(draft.contentMarkdown, { excludeDocumentId: currentId })
+    if (linkedIds.length === 0) return []
+    const byId = new Map(documents.map((document) => [document.id, document]))
+    return linkedIds.map((id) => byId.get(id)).filter(Boolean)
+  }, [details?.document?.id, documents, draft.contentMarkdown])
+  const linkableDocuments = useMemo(() => {
+    const currentId = details?.document?.id
+    if (!currentId) return documents
+    return documents.filter((document) => document.id !== currentId)
+  }, [details?.document?.id, documents])
   const outlineQuery = searchQuery.trim().toLowerCase()
   const outlineTree = useMemo(() => {
     const tree = buildHeadingTree(headings)
@@ -806,6 +819,7 @@ function DocsPageContent() {
                         onDeleteComment={removeComment}
                         canDeleteComment={canDeleteComment}
                         comments={comments}
+                        linkableDocuments={linkableDocuments}
                         placeholder="Uma palavra leva à outra..."
                         styles={styles}
                       />
@@ -824,30 +838,28 @@ function DocsPageContent() {
                   </button>
                 </div>
                 <div className={styles.relatedBody} aria-hidden={!docsOpen} {...(!docsOpen ? { inert: '' } : {})}>
-                  <CustomScrollArea className={styles.relatedScroll} viewportClassName={styles.relatedViewport} refreshKey={`docs-library:${docsOpen}:${documents.length}`}>
+                  <CustomScrollArea className={styles.relatedScroll} viewportClassName={styles.relatedViewport} refreshKey={`docs-library:${docsOpen}:${mentionedDocuments.length}`}>
                     <div className={styles.relatedList}>
-                      {documents.map((document) => {
-                        const selected = document.id === details.document.id
-                        return (
-                          <button
-                            key={document.id}
-                            type="button"
-                            className={`${styles.relatedCard} ${selected ? styles.relatedCardSelected : ''}`}
-                            aria-current={selected ? 'page' : undefined}
-                            onClick={() => navigate(buildDocsPath(document.id))}
-                          >
-                            {hasDocumentCover(document.coverImageId) ? (
-                              <DocumentCoverSurface
-                                coverImageId={document.coverImageId}
-                                className={styles.relatedThumb}
-                                aria-hidden="true"
-                              />
-                            ) : null}
-                            <span className={styles.relatedTitle}>{document.title}</span>
-                            <span className={styles.relatedExcerpt}>{document.description}</span>
-                          </button>
-                        )
-                      })}
+                      {mentionedDocuments.length === 0 ? (
+                        <p className={styles.relatedEmpty}>Nenhuma documentação mencionada</p>
+                      ) : mentionedDocuments.map((document) => (
+                        <button
+                          key={document.id}
+                          type="button"
+                          className={styles.relatedCard}
+                          onClick={() => navigate(buildDocsPath(document.id))}
+                        >
+                          {hasDocumentCover(document.coverImageId) ? (
+                            <DocumentCoverSurface
+                              coverImageId={document.coverImageId}
+                              className={styles.relatedThumb}
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          <span className={styles.relatedTitle}>{document.title}</span>
+                          <span className={styles.relatedExcerpt}>{document.description}</span>
+                        </button>
+                      ))}
                     </div>
                   </CustomScrollArea>
                 </div>
