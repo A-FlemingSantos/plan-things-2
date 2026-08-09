@@ -133,6 +133,7 @@ function DocsPageContent() {
   const [headingMenuOpen, setHeadingMenuOpen] = useState(false)
   const [toolbarAnimating, setToolbarAnimating] = useState(false)
   const articleViewportRef = useRef(null)
+  const articleScrollTopRef = useRef(0)
   const activeHeadingIndexRef = useRef(0)
   const headingNavLockRef = useRef(null)
   const moreMenuRef = useRef(null)
@@ -147,6 +148,27 @@ function DocsPageContent() {
 
   const canEdit = details?.document?.role !== 'VIEWER'
   const isEditingContent = canEdit && contentMode === 'edit'
+
+  const captureArticleScroll = useCallback(() => {
+    const viewport = articleViewportRef.current
+    if (!viewport) return
+    articleScrollTopRef.current = viewport.scrollTop
+  }, [])
+
+  const restoreArticleScroll = useCallback(() => {
+    const viewport = articleViewportRef.current
+    if (!viewport) return
+    const top = articleScrollTopRef.current
+    const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
+    viewport.scrollTop = Math.min(Math.max(0, top), maxScrollTop)
+  }, [])
+
+  const changeContentMode = useCallback((mode) => {
+    if (mode === contentMode) return
+    captureArticleScroll()
+    setHeadingMenuOpen(false)
+    setContentMode(mode)
+  }, [captureArticleScroll, contentMode])
   const headings = useMemo(() => extractMarkdownHeadings(draft.contentMarkdown), [draft.contentMarkdown])
   const mentionedDocuments = useMemo(() => {
     const currentId = details?.document?.id ?? null
@@ -205,6 +227,7 @@ function DocsPageContent() {
     headingNavLockRef.current = null
     setMoreMenuOpen(false)
     setMemberMenuOpen(false)
+    articleScrollTopRef.current = 0
     articleViewportRef.current?.scrollTo({ top: 0 })
   }
 
@@ -419,6 +442,23 @@ function DocsPageContent() {
     setActiveHeadingIndex(outline[0].headingIndex)
   }, [activeHeadingIndex, outline])
 
+  // Swap composer ↔ preview remounts heavy DOM; TipTap can also scroll the
+  // caret to the start on mount. Keep the article scroll pinned through that.
+  useLayoutEffect(() => {
+    restoreArticleScroll()
+    let frameTwo = null
+    const frameOne = window.requestAnimationFrame(() => {
+      restoreArticleScroll()
+      frameTwo = window.requestAnimationFrame(restoreArticleScroll)
+    })
+    const timer = window.setTimeout(restoreArticleScroll, 48)
+    return () => {
+      window.cancelAnimationFrame(frameOne)
+      if (frameTwo != null) window.cancelAnimationFrame(frameTwo)
+      window.clearTimeout(timer)
+    }
+  }, [contentMode, isEditingContent, restoreArticleScroll])
+
   useLayoutEffect(() => {
     const viewport = articleViewportRef.current
     if (!viewport || headings.length === 0) return undefined
@@ -453,6 +493,7 @@ function DocsPageContent() {
     }
 
     const onScroll = () => {
+      articleScrollTopRef.current = viewport.scrollTop
       if (frameId != null) return
       frameId = window.requestAnimationFrame(syncActiveHeading)
     }
@@ -792,10 +833,7 @@ function DocsPageContent() {
                       title="Editar"
                       aria-label="Editar"
                       aria-pressed={contentMode === 'edit'}
-                      onClick={() => {
-                        setHeadingMenuOpen(false)
-                        setContentMode('edit')
-                      }}
+                      onClick={() => changeContentMode('edit')}
                     >
                       {contentMode === 'edit' ? (
                         <motion.span
@@ -815,10 +853,7 @@ function DocsPageContent() {
                       title="Visualizar"
                       aria-label="Visualizar"
                       aria-pressed={contentMode === 'view'}
-                      onClick={() => {
-                        setHeadingMenuOpen(false)
-                        setContentMode('view')
-                      }}
+                      onClick={() => changeContentMode('view')}
                     >
                       {contentMode === 'view' ? (
                         <motion.span
@@ -839,7 +874,7 @@ function DocsPageContent() {
                 className={styles.articleScroll}
                 viewportClassName={styles.articleViewport}
                 viewportRef={articleViewportRef}
-                refreshKey={`docs:${details.document.id}:${indexOpen}:${docsOpen}:${contentMode}`}
+                refreshKey={`docs:${details.document.id}:${indexOpen}:${docsOpen}`}
               >
                 <div className={styles.articleInner}>
                   <header className={styles.toolbar}>
@@ -1031,6 +1066,7 @@ function DocsPageContent() {
                         canDeleteComment={canDeleteComment}
                         comments={comments}
                         linkableDocuments={linkableDocuments}
+                        scrollTopRef={articleScrollTopRef}
                         placeholder="Uma palavra leva à outra..."
                         styles={styles}
                       />

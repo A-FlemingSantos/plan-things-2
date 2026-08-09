@@ -149,12 +149,24 @@ export const DocsCaretScrollLock = Extension.create({
           return {
             update(view, prevState) {
               if (view.state.doc.eq(prevState.doc)) return
-              if (lock) release()
-              else {
-                // Fallback when the change did not come from a keyed input
-                // (paste, toolbar). Still keep the caret on-screen.
-                requestAnimationFrame(() => scrollSelectionIntoCustomViewport(view))
+              if (lock) {
+                release()
+                return
               }
+              // Fallback when the change did not come from a keyed input
+              // (paste, toolbar). Prefer pinning scrollTop over scroll-into-view
+              // so the article does not jump to the top when the caret briefly
+              // reports start-of-doc coordinates mid-reconciliation.
+              const scrollRoot = view.dom.closest('[data-custom-scroll-viewport]')
+              const previousScrollTop = scrollRoot?.scrollTop ?? null
+              requestAnimationFrame(() => {
+                if (!view || view.isDestroyed) return
+                if (scrollRoot && previousScrollTop != null) {
+                  const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
+                  scrollRoot.scrollTop = Math.min(previousScrollTop, maxScrollTop)
+                }
+                scrollSelectionIntoCustomViewport(view)
+              })
             },
             destroy() {
               dom.removeEventListener('keydown', onKeyDown, true)

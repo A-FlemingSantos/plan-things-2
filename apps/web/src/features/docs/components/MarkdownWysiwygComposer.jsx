@@ -119,6 +119,22 @@ function tagEditorHeadings(editorRoot, bodyHeadingClass) {
   })
 }
 
+function restoreScrollTop(scrollRoot, top) {
+  if (!scrollRoot || top == null || !Number.isFinite(top)) return
+  const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
+  scrollRoot.scrollTop = Math.min(Math.max(0, top), maxScrollTop)
+}
+
+function withPreservedScroll(editor, run) {
+  if (!editor) return
+  const scrollRoot = editor.view.dom.closest('[data-custom-scroll-viewport]')
+  const previousScrollTop = scrollRoot?.scrollTop ?? null
+  run()
+  if (!scrollRoot || previousScrollTop == null) return
+  restoreScrollTop(scrollRoot, previousScrollTop)
+  requestAnimationFrame(() => restoreScrollTop(scrollRoot, previousScrollTop))
+}
+
 const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer({
   value,
   onChange,
@@ -127,6 +143,7 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   canDeleteComment,
   comments,
   linkableDocuments = [],
+  scrollTopRef = null,
   placeholder,
   styles,
 }, ref) {
@@ -344,12 +361,23 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
       editorRef.current = activeEditor
       lastEmittedMarkdownRef.current = activeEditor.getMarkdown()
       tagEditorHeadings(activeEditor.view.dom, styles.bodyHeading)
+      const scrollRoot = activeEditor.view.dom.closest('[data-custom-scroll-viewport]')
+      const lockedTop = scrollTopRef?.current
+      if (scrollRoot != null && lockedTop != null) {
+        restoreScrollTop(scrollRoot, lockedTop)
+        requestAnimationFrame(() => restoreScrollTop(scrollRoot, lockedTop))
+      }
     },
     onUpdate: ({ editor: activeEditor }) => {
       const markdown = activeEditor.getMarkdown()
       lastEmittedMarkdownRef.current = markdown
       onChange(markdown)
       refreshVisualState(activeEditor)
+      const scrollRoot = activeEditor.view.dom.closest('[data-custom-scroll-viewport]')
+      if (scrollRoot) {
+        // Keep parent mode-switch lock in sync while editing.
+        if (scrollTopRef) scrollTopRef.current = scrollRoot.scrollTop
+      }
     },
     onSelectionUpdate: ({ editor: activeEditor }) => syncSelection(activeEditor),
     onFocus: ({ editor: activeEditor }) => syncSelection(activeEditor),
@@ -668,30 +696,32 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
       return
     }
 
-    const chain = editor.chain().focus()
-    if (action === 'bold') chain.toggleBold().run()
-    else if (action === 'italic') chain.toggleItalic().run()
-    else if (action === 'h1' || action === 'title') chain.toggleHeading({ level: 1 }).run()
-    else if (action === 'h2' || action === 'subtitle') chain.toggleHeading({ level: 2 }).run()
-    else if (action === 'h3') chain.toggleHeading({ level: 3 }).run()
-    else if (action === 'quote') chain.toggleBlockquote().run()
-    else if (action === 'bulletList') chain.toggleBulletList().run()
-    else if (action === 'orderedList') chain.toggleOrderedList().run()
-    else if (action === 'code') chain.toggleCodeBlock().run()
-    else if (action === 'divider') chain.setHorizontalRule().run()
-    else if (action === 'image') imageInputRef.current?.click()
-    else if (action === 'unsplash' || action === 'video') {
-      editor.chain().focus().insertContent({
-        type: 'docsEmbed',
-        attrs: {
-          kind: action === 'video' ? 'video' : 'unsplash',
-          url: '',
-          query: '',
-          page: 1,
-          pageToken: '',
-        },
-      }).run()
-    }
+    withPreservedScroll(editor, () => {
+      const chain = editor.chain().focus(null, { scrollIntoView: false })
+      if (action === 'bold') chain.toggleBold().run()
+      else if (action === 'italic') chain.toggleItalic().run()
+      else if (action === 'h1' || action === 'title') chain.toggleHeading({ level: 1 }).run()
+      else if (action === 'h2' || action === 'subtitle') chain.toggleHeading({ level: 2 }).run()
+      else if (action === 'h3') chain.toggleHeading({ level: 3 }).run()
+      else if (action === 'quote') chain.toggleBlockquote().run()
+      else if (action === 'bulletList') chain.toggleBulletList().run()
+      else if (action === 'orderedList') chain.toggleOrderedList().run()
+      else if (action === 'code') chain.toggleCodeBlock().run()
+      else if (action === 'divider') chain.setHorizontalRule().run()
+      else if (action === 'image') imageInputRef.current?.click()
+      else if (action === 'unsplash' || action === 'video') {
+        editor.chain().focus(null, { scrollIntoView: false }).insertContent({
+          type: 'docsEmbed',
+          attrs: {
+            kind: action === 'video' ? 'video' : 'unsplash',
+            url: '',
+            query: '',
+            page: 1,
+            pageToken: '',
+          },
+        }).run()
+      }
+    })
   }, [editor, openLinkPrompt])
 
   useImperativeHandle(ref, () => ({ applyFormat }), [applyFormat])
@@ -704,11 +734,13 @@ const MarkdownWysiwygComposer = memo(forwardRef(function MarkdownWysiwygComposer
   const applyLinkHref = (href) => {
     if (!href || !editor || !urlPrompt) return
     const { from, to } = urlPrompt
-    const chain = editor.chain().focus()
-    if (typeof from === 'number' && typeof to === 'number' && from !== to) {
-      chain.setTextSelection({ from, to })
-    }
-    chain.extendMarkRange('link').setLink({ href }).run()
+    withPreservedScroll(editor, () => {
+      const chain = editor.chain().focus(null, { scrollIntoView: false })
+      if (typeof from === 'number' && typeof to === 'number' && from !== to) {
+        chain.setTextSelection({ from, to })
+      }
+      chain.extendMarkRange('link').setLink({ href }).run()
+    })
     setUrlPrompt(null)
     setUrlDraft('')
     setDocSearchQuery('')
