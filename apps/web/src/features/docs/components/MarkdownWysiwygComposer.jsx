@@ -35,6 +35,7 @@ import {
   scrollSelectionIntoCustomViewport,
 } from '../utils/editorScroll.js'
 import { handleMarkdownPaste } from '../utils/markdownPaste.js'
+import { summarizeLinkHref } from '../utils/summarizeLinkHref.js'
 import { DocsCodeBlock } from './DocsCodeBlockExtension.jsx'
 import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
 
@@ -42,10 +43,19 @@ const ICON_STROKE = 1.6
 // Wait until the user finishes selecting (mouseup / selection idle) before showing
 // the floating format toolbar — popping it up mid-drag is distracting.
 const SELECTION_TOOLBAR_DELAY_MS = 500
+// Keep the link chip visible briefly so the pointer can reach the remove control.
+const LINK_HOVER_HIDE_DELAY_MS = 160
 // Non-empty deps so TipTap does NOT call setOptions on every React render.
 // With deps=[], compareOptions sees a new `content`/`extensions` each keystroke
 // and updateState/setProps fights the caret scroll at the bottom of long docs.
 const DOC_WYSIWYG_EDITOR_DEPS = ['docs-wysiwyg-composer']
+
+function findEditorLinkElement(target, editorRoot) {
+  if (!(target instanceof Element) || !editorRoot) return null
+  const anchor = target.closest('a[href]')
+  if (!anchor || !editorRoot.contains(anchor)) return null
+  return anchor
+}
 
 function measureSelectionToolbar(activeEditor) {
   const { from, to } = activeEditor.state.selection
@@ -120,10 +130,12 @@ export default memo(function MarkdownWysiwygComposer({
   const urlPromptRef = useRef(null)
   const urlInputRef = useRef(null)
   const docSearchInputRef = useRef(null)
+  const linkHoverTooltipRef = useRef(null)
   const imageInputRef = useRef(null)
   const noteDraftRef = useRef(null)
   const lastEmittedMarkdownRef = useRef(null)
   const selectionToolbarTimerRef = useRef(null)
+  const linkHoverHideTimerRef = useRef(null)
   const pointerSelectingRef = useRef(false)
   const selectionVisibleRef = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -135,11 +147,31 @@ export default memo(function MarkdownWysiwygComposer({
   const [urlDraft, setUrlDraft] = useState('')
   const [linkMode, setLinkMode] = useState('web')
   const [docSearchQuery, setDocSearchQuery] = useState('')
+  const [linkHover, setLinkHover] = useState(null)
   const [noteOffsets, setNoteOffsets] = useState({})
   const urlPromptOpenRef = useRef(false)
 
   selectionVisibleRef.current = selection != null
   urlPromptOpenRef.current = urlPrompt != null
+
+  const clearLinkHoverHideTimer = useCallback(() => {
+    if (linkHoverHideTimerRef.current == null) return
+    clearTimeout(linkHoverHideTimerRef.current)
+    linkHoverHideTimerRef.current = null
+  }, [])
+
+  const hideLinkHover = useCallback(() => {
+    clearLinkHoverHideTimer()
+    setLinkHover(null)
+  }, [clearLinkHoverHideTimer])
+
+  const scheduleHideLinkHover = useCallback(() => {
+    clearLinkHoverHideTimer()
+    linkHoverHideTimerRef.current = setTimeout(() => {
+      linkHoverHideTimerRef.current = null
+      setLinkHover(null)
+    }, LINK_HOVER_HIDE_DELAY_MS)
+  }, [clearLinkHoverHideTimer])
 
   const clearSelectionToolbarTimer = useCallback(() => {
     if (selectionToolbarTimerRef.current == null) return
@@ -342,6 +374,7 @@ export default memo(function MarkdownWysiwygComposer({
       pointerSelectingRef.current = true
       clearSelectionToolbarTimer()
       setSelection(null)
+      hideLinkHover()
     }
 
     const finishPointerSelect = () => {
@@ -361,7 +394,56 @@ export default memo(function MarkdownWysiwygComposer({
       window.removeEventListener('pointercancel', finishPointerSelect)
       clearSelectionToolbarTimer()
     }
-  }, [clearSelectionToolbarTimer, editor, scheduleSelectionToolbar])
+  }, [clearSelectionToolbarTimer, editor, hideLinkHover, scheduleSelectionToolbar])
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return undefined
+    const dom = editor.view.dom
+
+    const showForAnchor = (anchor) => {
+      if (!anchor || urlPromptOpenRef.current || pointerSelectingRef.current) return
+      const href = anchor.getAttribute('href')?.trim()
+      if (!href) return
+      const rect = anchor.getBoundingClientRect()
+      clearLinkHoverHideTimer()
+      setLinkHover({
+        href,
+        top: rect.top,
+        left: rect.left + (rect.width / 2),
+        anchor,
+      })
+    }
+
+    const onPointerOver = (event) => {
+      const anchor = findEditorLinkElement(event.target, dom)
+      if (!anchor) return
+      showForAnchor(anchor)
+    }
+
+    const onPointerOut = (event) => {
+      const fromAnchor = findEditorLinkElement(event.target, dom)
+      if (!fromAnchor) return
+      const next = event.relatedTarget
+      if (next instanceof Node) {
+        if (fromAnchor.contains(next)) return
+        if (linkHoverTooltipRef.current?.contains(next)) return
+      }
+      scheduleHideLinkHover()
+    }
+
+    const onScroll = () => hideLinkHover()
+
+    dom.addEventListener('pointerover', onPointerOver)
+    dom.addEventListener('pointerout', onPointerOut)
+    window.addEventListener('scroll', onScroll, true)
+
+    return () => {
+      dom.removeEventListener('pointerover', onPointerOver)
+      dom.removeEventListener('pointerout', onPointerOut)
+      window.removeEventListener('scroll', onScroll, true)
+      clearLinkHoverHideTimer()
+    }
+  }, [clearLinkHoverHideTimer, editor, hideLinkHover, scheduleHideLinkHover])
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return
@@ -588,6 +670,25 @@ export default memo(function MarkdownWysiwygComposer({
     applyLinkHref(buildDocsPath(documentId))
   }
 
+  const removeHoveredLink = () => {
+    if (!editor || !linkHover?.anchor) return
+    try {
+      const pos = editor.view.posAtDOM(linkHover.anchor, 0)
+      editor.chain().focus().setTextSelection(pos).extendMarkRange('link').unsetLink().run()
+    } catch {
+      // Anchor may have been remounted; fall back to the mark under the caret.
+      editor.chain().focus().extendMarkRange('link').unsetLink().run()
+    }
+    hideLinkHover()
+  }
+
+  const linkHoverLabel = useMemo(
+    () => (linkHover?.href
+      ? summarizeLinkHref(linkHover.href, { documents: linkableDocuments })
+      : ''),
+    [linkHover?.href, linkableDocuments],
+  )
+
   const uploadImage = async (event) => {
     const [file] = event.target.files ?? []
     event.target.value = ''
@@ -781,6 +882,30 @@ export default memo(function MarkdownWysiwygComposer({
             </div>
           ) : null}
           {urlPrompt ? urlMenu : null}
+          {linkHover && !urlPrompt ? (
+            <div
+              ref={linkHoverTooltipRef}
+              className={styles.linkHoverTooltip}
+              style={{ top: linkHover.top, left: linkHover.left }}
+              role="tooltip"
+              onPointerEnter={clearLinkHoverHideTimer}
+              onPointerLeave={scheduleHideLinkHover}
+            >
+              <span className={styles.linkHoverTooltipLabel} title={linkHover.href}>
+                {linkHoverLabel || linkHover.href}
+              </span>
+              <button
+                type="button"
+                className={styles.linkHoverTooltipRemove}
+                aria-label="Remover link"
+                title="Remover link"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={removeHoveredLink}
+              >
+                <X size={12} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
           <div className={styles.composerRow}>
             <div className={styles.composerRail} ref={railRef} style={insertTop == null ? undefined : { top: insertTop }}>
               {insertTop != null ? (
