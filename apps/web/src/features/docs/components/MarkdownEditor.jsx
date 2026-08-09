@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from '@tiptap/markdown'
@@ -36,9 +35,15 @@ export default function MarkdownEditor({
   const { accessToken } = useAuth()
   const imageInputRef = useRef(null)
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
-      StarterKit,
-      Link.configure({ openOnClick: false, autolink: true, defaultProtocol: 'https' }),
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+          autolink: true,
+          defaultProtocol: 'https',
+        },
+      }),
       AuthenticatedImage,
       Placeholder.configure({ placeholder }),
       Markdown,
@@ -50,10 +55,19 @@ export default function MarkdownEditor({
   })
 
   useEffect(() => {
-    if (!editor) return
+    if (!editor) return undefined
     editor.setEditable(editable)
-    if (editor.getMarkdown() !== value) {
+    if (editor.getMarkdown() === value) return undefined
+
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled || editor.isDestroyed) return
+      if (editor.getMarkdown() === value) return
       editor.commands.setContent(value, { emitUpdate: false, contentType: 'markdown' })
+    })
+
+    return () => {
+      cancelled = true
     }
   }, [editable, editor, value])
 

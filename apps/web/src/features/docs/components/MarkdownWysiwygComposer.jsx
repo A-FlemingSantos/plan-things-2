@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import ImageExtension from '@tiptap/extension-image'
-import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from '@tiptap/markdown'
 import {
@@ -156,10 +155,20 @@ export default memo(function MarkdownWysiwygComposer({
   }, [comments, styles.bodyHeading])
 
   const editor = useEditor({
+    // Defer creation past the first render so React NodeViews (images/embeds/code)
+    // do not call flushSync while React is still committing.
+    immediatelyRender: false,
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit.configure({
+        codeBlock: false,
+        // TipTap 3 ships Link inside StarterKit — do not also register @tiptap/extension-link.
+        link: {
+          openOnClick: false,
+          autolink: true,
+          defaultProtocol: 'https',
+        },
+      }),
       DocsCodeBlock,
-      Link.configure({ openOnClick: false, autolink: true, defaultProtocol: 'https' }),
       AuthenticatedImage,
       createDocsEmbedExtension(styles),
       Placeholder.configure({ placeholder }),
@@ -210,23 +219,35 @@ export default memo(function MarkdownWysiwygComposer({
   }, [editor, spellcheckLang])
 
   useEffect(() => {
-    if (!editor) return
+    if (!editor) return undefined
     const normalized = normalizeDocsEmbedMarkdown(value)
-    if (editor.getMarkdown() === normalized) return
+    if (editor.getMarkdown() === normalized) return undefined
 
     const scrollRoot = editor.view.dom.closest('[data-custom-scroll-viewport]')
     const previousScrollTop = scrollRoot?.scrollTop ?? null
+    let cancelled = false
 
-    editor.commands.setContent(normalized, { emitUpdate: false, contentType: 'markdown' })
-    refreshVisualState(editor)
+    // setContent recreates React NodeViews, which call flushSync. Defer past
+    // React's commit/effect phase (TipTap guidance for NodeView + useEffect).
+    queueMicrotask(() => {
+      if (cancelled || editor.isDestroyed) return
+      if (editor.getMarkdown() === normalized) return
 
-    if (scrollRoot != null && previousScrollTop != null) {
-      const applyScroll = () => {
-        const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
-        scrollRoot.scrollTop = Math.min(previousScrollTop, maxScrollTop)
+      editor.commands.setContent(normalized, { emitUpdate: false, contentType: 'markdown' })
+      refreshVisualState(editor)
+
+      if (scrollRoot != null && previousScrollTop != null) {
+        const applyScroll = () => {
+          const maxScrollTop = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
+          scrollRoot.scrollTop = Math.min(previousScrollTop, maxScrollTop)
+        }
+        applyScroll()
+        requestAnimationFrame(applyScroll)
       }
-      applyScroll()
-      requestAnimationFrame(applyScroll)
+    })
+
+    return () => {
+      cancelled = true
     }
   }, [editor, refreshVisualState, value])
 
