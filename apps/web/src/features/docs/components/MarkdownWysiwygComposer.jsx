@@ -38,10 +38,26 @@ import { DocsCodeBlock } from './DocsCodeBlockExtension.jsx'
 import { createDocsEmbedExtension, UnsplashLogo, YouTubeLogo } from './docsEmbedExtension.jsx'
 
 const ICON_STROKE = 1.6
+// Wait until the user finishes selecting (mouseup / selection idle) before showing
+// the floating format toolbar — popping it up mid-drag is distracting.
+const SELECTION_TOOLBAR_DELAY_MS = 500
 // Non-empty deps so TipTap does NOT call setOptions on every React render.
 // With deps=[], compareOptions sees a new `content`/`extensions` each keystroke
 // and updateState/setProps fights the caret scroll at the bottom of long docs.
 const DOC_WYSIWYG_EDITOR_DEPS = ['docs-wysiwyg-composer']
+
+function measureSelectionToolbar(activeEditor) {
+  const { from, to } = activeEditor.state.selection
+  if (from === to) return null
+  const cursor = activeEditor.view.coordsAtPos(from)
+  const end = activeEditor.view.coordsAtPos(to)
+  return {
+    from,
+    to,
+    top: Math.min(cursor.top, end.top) - 10,
+    left: (cursor.left + end.right) / 2,
+  }
+}
 
 function AuthenticatedImageView({ node }) {
   const source = useAuthenticatedImageUrl(node.attrs.src)
@@ -104,6 +120,9 @@ export default memo(function MarkdownWysiwygComposer({
   const imageInputRef = useRef(null)
   const noteDraftRef = useRef(null)
   const lastEmittedMarkdownRef = useRef(null)
+  const selectionToolbarTimerRef = useRef(null)
+  const pointerSelectingRef = useRef(false)
+  const selectionVisibleRef = useRef(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [selection, setSelection] = useState(null)
   const [insertTop, setInsertTop] = useState(null)
@@ -113,7 +132,31 @@ export default memo(function MarkdownWysiwygComposer({
   const [urlDraft, setUrlDraft] = useState('')
   const [noteOffsets, setNoteOffsets] = useState({})
 
-  const syncSelection = useCallback((activeEditor) => {
+  selectionVisibleRef.current = selection != null
+
+  const clearSelectionToolbarTimer = useCallback(() => {
+    if (selectionToolbarTimerRef.current == null) return
+    clearTimeout(selectionToolbarTimerRef.current)
+    selectionToolbarTimerRef.current = null
+  }, [])
+
+  const scheduleSelectionToolbar = useCallback((activeEditor) => {
+    clearSelectionToolbarTimer()
+    selectionToolbarTimerRef.current = setTimeout(() => {
+      selectionToolbarTimerRef.current = null
+      if (!activeEditor || activeEditor.isDestroyed) return
+      if (pointerSelectingRef.current) return
+      const next = measureSelectionToolbar(activeEditor)
+      if (!next) {
+        setSelection(null)
+        return
+      }
+      setSelection(next)
+      setMenuOpen(false)
+    }, SELECTION_TOOLBAR_DELAY_MS)
+  }, [clearSelectionToolbarTimer])
+
+  const syncSelection = useCallback((activeEditor, { immediate = false } = {}) => {
     const { from, to, $from } = activeEditor.state.selection
     const composerRect = composerRef.current?.getBoundingClientRect()
     // Only top-level empty paragraphs — list items get a + that looks misaligned
@@ -128,20 +171,39 @@ export default memo(function MarkdownWysiwygComposer({
     }
 
     if (from === to) {
+      clearSelectionToolbarTimer()
       setSelection(null)
       return
     }
 
-    const cursor = activeEditor.view.coordsAtPos(from)
-    const end = activeEditor.view.coordsAtPos(to)
-    setSelection({
-      from,
-      to,
-      top: Math.min(cursor.top, end.top) - 10,
-      left: (cursor.left + end.right) / 2,
-    })
-    setMenuOpen(false)
-  }, [])
+    // Scroll remasure: keep an already-visible toolbar pinned to the range.
+    if (immediate) {
+      if (!selectionVisibleRef.current) return
+      const next = measureSelectionToolbar(activeEditor)
+      if (next) setSelection(next)
+      return
+    }
+
+    // Hide while the mouse button is still held during a drag-select.
+    if (pointerSelectingRef.current) {
+      clearSelectionToolbarTimer()
+      setSelection(null)
+      return
+    }
+
+    // Already showing (format clicks, keyboard adjust): remasure in place.
+    if (selectionVisibleRef.current) {
+      const next = measureSelectionToolbar(activeEditor)
+      if (next) {
+        setSelection(next)
+        setMenuOpen(false)
+      }
+      return
+    }
+
+    // Fresh selection: wait until the gesture settles before opening the toolbar.
+    scheduleSelectionToolbar(activeEditor)
+  }, [clearSelectionToolbarTimer, scheduleSelectionToolbar])
 
   const anchoredComments = useMemo(
     () => filterAnchoredComments(value, comments),
@@ -237,6 +299,10 @@ export default memo(function MarkdownWysiwygComposer({
     onSelectionUpdate: ({ editor: activeEditor }) => syncSelection(activeEditor),
     onFocus: ({ editor: activeEditor }) => syncSelection(activeEditor),
     onBlur: () => {
+      if (selectionToolbarTimerRef.current != null) {
+        clearTimeout(selectionToolbarTimerRef.current)
+        selectionToolbarTimerRef.current = null
+      }
       setSelection(null)
       setMenuOpen(false)
     },
@@ -245,6 +311,36 @@ export default memo(function MarkdownWysiwygComposer({
   useEffect(() => {
     editorRef.current = editor
   }, [editor])
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return undefined
+    const dom = editor.view.dom
+
+    const onPointerDown = (event) => {
+      if (event.button !== 0) return
+      pointerSelectingRef.current = true
+      clearSelectionToolbarTimer()
+      setSelection(null)
+    }
+
+    const finishPointerSelect = () => {
+      if (!pointerSelectingRef.current) return
+      pointerSelectingRef.current = false
+      scheduleSelectionToolbar(editor)
+    }
+
+    dom.addEventListener('pointerdown', onPointerDown)
+    // Release often happens outside the editor after a drag-select.
+    window.addEventListener('pointerup', finishPointerSelect)
+    window.addEventListener('pointercancel', finishPointerSelect)
+
+    return () => {
+      dom.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointerup', finishPointerSelect)
+      window.removeEventListener('pointercancel', finishPointerSelect)
+      clearSelectionToolbarTimer()
+    }
+  }, [clearSelectionToolbarTimer, editor, scheduleSelectionToolbar])
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return
@@ -342,7 +438,7 @@ export default memo(function MarkdownWysiwygComposer({
       if (!editor || selection?.from == null) return
       // Selection toolbar is viewport-fixed; only remeasure coords. Retagging
       // headings / note offsets during scroll forces TipTap DOM work and jank.
-      syncSelection(editor)
+      syncSelection(editor, { immediate: true })
     }
     document.addEventListener('pointerdown', clearOutside)
     document.addEventListener('keydown', clearOnEscape)
