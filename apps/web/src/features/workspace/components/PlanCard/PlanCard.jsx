@@ -70,7 +70,7 @@ export default function PlanCard({
           onMore?.(event.currentTarget.getBoundingClientRect())
         }}
       >
-        <Ellipsis size={14} strokeWidth={1.75} />
+        <Ellipsis size={16} strokeWidth={1.6} />
       </button>
       {menuOpen && (
         <PlanOptionsMenu

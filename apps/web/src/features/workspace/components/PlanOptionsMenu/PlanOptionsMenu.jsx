@@ -3,11 +3,11 @@ import { AlignStartHorizontal, Image, PencilLine, Trash2 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import styles from '../../pages/Workspace/Workspace.module.css'
 
-export const PLAN_OPTIONS_MENU_WIDTH = 176
+export const PLAN_OPTIONS_MENU_WIDTH = 180
 export const PLAN_OPTIONS_MENU_HEIGHT = 190
 export const PLAN_OPTIONS_MENU_GAP = 8
 export const PLAN_OPTIONS_MENU_ICON_SIZE = 14
-export const PLAN_OPTIONS_MENU_ICON_STROKE = 1.75
+export const PLAN_OPTIONS_MENU_ICON_STROKE = 1.6
 
 export function resolvePlanOptionsMenuPosition(anchorRect) {
   if (!anchorRect) return { left: 0, top: 0 }

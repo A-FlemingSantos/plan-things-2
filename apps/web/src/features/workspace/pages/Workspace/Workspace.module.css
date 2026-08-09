@@ -30,8 +30,16 @@
   height: 100%;
   min-width: 0;
   background: var(--app-bg);
+  color: var(--text-1);
   position: relative;
   overflow: hidden;
+  padding-bottom: 0;
+}
+
+.main :is(input, textarea, select):focus,
+.main :is(input, textarea, select):focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .mainScrollArea {
@@ -97,16 +105,15 @@
   align-items: center;
   gap: 8px;
   height: 36px;
-  padding: 0 12px;
+  padding: 0 14px;
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  background: var(--surface-1);
+  border-radius: 4px;
+  background: var(--surface-2);
   color: var(--text-3);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .searchWrap:focus-within {
-  border-color: var(--focus-ring);
   color: var(--text-1);
 }
 
@@ -141,70 +148,86 @@
 .newPlanBtn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   height: 36px;
-  padding: 0 16px;
+  padding: 0 14px;
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: var(--radius-md);
+  letter-spacing: -0.01em;
+  background: var(--surface-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
   cursor: pointer;
-  letter-spacing: -.005em;
-  transition: opacity var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
-.newPlanBtn:hover { opacity: .8; }
+.newPlanBtn:hover {
+  background: var(--hover);
+  border-color: var(--border-2, var(--border-1));
+  color: var(--text-1);
+}
 
 /* Content */
 .content {
   flex: 1;
-  padding: 28px 48px 60px;
+  padding: 40px 48px calc(48px + var(--app-dock-clearance, 56px));
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
+  color: var(--text-1);
 }
 
 .plansGalleryBody {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 1.8vw, 20px);
+  gap: 28px;
 }
 
 .sectionHeader {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .sectionLeft {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
+  min-width: 0;
 }
 
 .sectionControls {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 4px;
   min-width: 0;
 }
 
 .sectionTitle {
-  font-size: 14px;
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 11px;
   font-weight: var(--font-weight-regular);
-  color: var(--text-1);
-  letter-spacing: -.01em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
 }
 
 .planCount {
+  font-family: var(--font-family);
   font-size: 12px;
-  color: var(--text-2);
-  background: var(--surface-3);
-  padding: 2px 8px;
-  border-radius: 99px;
+  font-weight: var(--font-weight-light);
+  color: var(--text-3);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
 .sectionHeaderRight {
@@ -226,26 +249,26 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 30px;
+  height: 32px;
   padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  color: var(--text-2);
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
   font-family: var(--font-family);
   font-size: 12px;
+  font-weight: var(--font-weight-light);
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   transition:
     background var(--transition-fast),
-    border-color var(--transition-fast),
     color var(--transition-fast);
 }
 
 .workspaceSectionAction:hover {
   color: var(--text-1);
-  background: var(--surface-3);
-  border-color: var(--border-1);
+  background: var(--hover);
 }
 
 .workspaceSectionActionIcon {
@@ -288,12 +311,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  background: var(--surface-3);
-  color: var(--text-2);
-  border: 1px solid var(--border-1);
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  border: none;
   flex-shrink: 0;
 }
 
@@ -302,20 +325,21 @@
 }
 
 .workspaceGroupTitle {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  letter-spacing: -.02em;
+  letter-spacing: -0.015em;
 }
 
 .workspaceGroupEmpty {
   margin: 0;
   padding: 18px 20px;
   border: 1px dashed var(--border-1);
-  border-radius: 16px;
-  background: var(--surface-2);
-  color: var(--text-2);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
   font-size: 13px;
+  font-weight: var(--font-weight-light);
   line-height: 1.5;
 }
 
@@ -334,32 +358,42 @@
   scroll-snap-align: start;
 }
 
-/* View toggle */
+/* View toggle — Docs iconButton language */
 .viewToggle {
   display: flex;
   gap: 2px;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-sm);
-  padding: 2px;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  background: transparent;
 }
 
 .viewBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
   border-radius: 4px;
+  background: transparent;
   color: var(--text-3);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
-.viewBtn:hover { color: var(--text-1); }
+.viewBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
 
-.viewBtnActive {
-  background: var(--text-1);
-  color: var(--text-inverse) !important;
+.viewBtnActive,
+.viewBtnActive:hover {
+  background: var(--active);
+  color: var(--text-1) !important;
 }
 
 /* ════════════════════════════════════════
@@ -367,10 +401,10 @@
 ════════════════════════════════════════ */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
-  gap: clamp(14px, 1.5vw, 18px);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
   align-items: start;
-  animation: fadeUp 0.28s ease both;
+  animation: workspaceReveal 420ms var(--ease-out, ease) both;
 }
 
 .emptyState {
@@ -379,11 +413,11 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  min-height: 300px;
-  padding: 28px;
-  border: 1px dashed var(--border-1);
-  border-radius: 20px;
-  background: var(--surface-2);
+  min-height: 280px;
+  padding: 32px 28px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  background: transparent;
   text-align: center;
 }
 
@@ -391,26 +425,31 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: var(--surface-1);
-  color: var(--text-2);
-  border: 1px solid var(--border-1);
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  border: none;
 }
 
 .emptyStateTitle {
-  font-size: 17px;
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
   font-weight: var(--font-weight-regular);
-  letter-spacing: -.02em;
+  letter-spacing: -0.015em;
   color: var(--text-1);
 }
 
 .emptyStateHint {
   max-width: 420px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--text-2);
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.5;
+  color: var(--text-3);
 }
 
 .emptyStateActions {
@@ -419,6 +458,7 @@
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 4px;
 }
 
 .emptyStateBtn,
@@ -426,50 +466,61 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   height: 36px;
-  padding: 0 16px;
-  border-radius: 999px;
+  padding: 0 14px;
+  border-radius: 4px;
   font-family: var(--font-family);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--font-weight-regular);
-  transition: border-color var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .emptyStateBtn {
-  background: var(--surface-1);
-  color: var(--text-2);
+  background: var(--surface-2);
+  color: var(--text-1);
   border: 1px solid var(--border-1);
 }
 
 .emptyStateBtn:hover {
-  border-color: var(--border-2);
+  background: var(--hover);
+  border-color: var(--border-2, var(--border-1));
   color: var(--text-1);
 }
 
 .emptyStateBtnPrimary {
-  background: var(--text-1);
-  color: var(--text-inverse);
+  background: var(--surface-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-1);
 }
 
 .emptyStateBtnPrimary:hover {
-  opacity: .82;
+  background: var(--hover);
+  border-color: var(--border-2, var(--border-1));
 }
 
 .notification {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(16px + var(--app-dock-clearance, 56px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 700;
-  padding: 10px 18px;
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  box-shadow: var(--shadow-lg);
-  animation: fadeUp 0.2s ease both;
+  padding: 10px 14px;
+  background: var(--app-bg);
+  color: var(--text-1);
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.01em;
+  box-shadow: var(--shadow-md);
+  animation: workspaceReveal 160ms var(--ease-out, ease) both;
 }
 
 @keyframes skeletonPulse {
@@ -486,10 +537,11 @@
 }
 
 .loadingPlanCard {
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-xl);
-  background: var(--surface-1);
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   overflow: hidden;
+  padding: 10px;
 }
 
 .loadingPlanCardBody {
@@ -606,26 +658,37 @@
   flex-shrink: 0;
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes workspaceReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .planCard {
   display: flex;
   flex-direction: column;
+  gap: 10px;
   position: relative;
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 10px;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
   overflow: visible;
   cursor: pointer;
-  transition:
-    box-shadow var(--transition-normal),
-    border-color var(--transition-normal);
-  width: 100%;
   text-align: left;
+  color: inherit;
+  font: inherit;
   font-family: var(--font-family);
+  transition: background var(--transition-fast);
 }
 
 .planCover {
@@ -644,32 +707,42 @@
 }
 
 .planCardCover {
-  height: clamp(56px, 9vw, 74px);
-  border-bottom: 1px solid var(--border-1);
-  border-radius: 9px 9px 0 0;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: none;
+  border-radius: var(--radius-sm);
+  transition: opacity var(--transition-fast);
 }
 
 .planCard:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-2);
+  background: var(--hover);
   z-index: 3;
 }
 
+.planCard:hover .planCardCover {
+  opacity: 0.92;
+}
+
 .planCardActive {
-  border-color: var(--focus-ring-border);
-  box-shadow: 0 0 0 1px var(--focus-ring-shadow);
+  background: var(--active);
+}
+
+.planCardActive:hover {
+  background: var(--active);
 }
 
 .planCardActions {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 14px;
+  right: 14px;
   display: flex;
-  gap: 6px;
+  gap: 2px;
   opacity: 0;
   transform: translateY(-2px);
   pointer-events: none;
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition: opacity 160ms var(--ease-out, ease), transform 160ms var(--ease-out, ease);
   z-index: 2;
 }
 
@@ -685,29 +758,33 @@
 }
 
 .planCardActionBtn {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  border: 1px solid var(--border-1);
-  background: var(--surface-1);
-  color: var(--text-2);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-sm);
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
+  color: var(--text-3);
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
 .planCardActionBtn:hover {
   background: var(--hover);
-  border-color: var(--border-2);
   color: var(--text-1);
 }
 
-.planCardActionBtnActive {
-  background: var(--text-1);
-  border-color: var(--text-1);
-  color: var(--text-inverse);
+.planCardActionBtnActive,
+.planCardActionBtnActive:hover {
+  background: var(--active);
+  color: var(--text-1);
 }
 
 .planCardActionDanger {
@@ -716,39 +793,60 @@
 
 .planOptionsMenu {
   position: fixed;
-  width: 176px;
-  padding: 5px;
+  min-width: 180px;
+  width: max-content;
+  padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-lg);
-  background: var(--menu-bg);
-  box-shadow: var(--shadow-lg);
+  border-radius: 4px;
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 2px;
   pointer-events: auto;
   z-index: 1000;
-  animation: planOptionsMenuIn 0.14s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: workspaceMenuReveal 160ms var(--ease-out, ease) both;
 }
 
-@keyframes planOptionsMenuIn {
-  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+@keyframes workspaceMenuReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .planOptionsMenuItem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  height: 34px;
-  padding: 0 10px;
-  border-radius: var(--radius-sm);
+  min-height: 0;
+  height: auto;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
   font-size: 13px;
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.01em;
   text-align: left;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.planOptionsMenuItem svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: color var(--transition-fast);
 }
 
 .planOptionsMenuItem:hover {
@@ -756,7 +854,24 @@
   color: var(--text-1);
 }
 
+.planOptionsMenuItem:hover svg {
+  color: var(--text-1);
+}
+
 .planOptionsMenuItemDanger {
+  color: var(--danger-text);
+}
+
+.planOptionsMenuItemDanger svg {
+  color: var(--danger-text);
+}
+
+.planOptionsMenuItemDanger:hover {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.planOptionsMenuItemDanger:hover svg {
   color: var(--danger-text);
 }
 
@@ -764,7 +879,8 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 10px 12px 12px;
+  padding: 0;
+  min-width: 0;
 }
 
 .cardNameRow {
@@ -791,21 +907,22 @@
   display: inline-block;
   font-size: 11px;
   font-weight: var(--font-weight-regular);
-  padding: 3px 9px;
-  border-radius: 99px;
+  padding: 3px 8px;
+  border-radius: 4px;
 }
 
 .cardDate {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-3);
   font-weight: var(--font-weight-light);
 }
 
 .cardName {
   margin: 0;
-  font-size: 14px;
+  font-family: var(--font-family);
+  font-size: 13px;
   font-weight: var(--font-weight-regular);
-  letter-spacing: -.02em;
+  letter-spacing: -0.015em;
   color: var(--text-1);
   line-height: 1.3;
   white-space: nowrap;
@@ -818,7 +935,7 @@
 .planRenameGroup {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   width: min(100%, 220px);
   min-width: 0;
   flex: 0 1 220px;
@@ -828,52 +945,63 @@
   width: 0;
   min-width: 96px;
   flex: 1 1 auto;
-  height: 28px;
-  border: 1px solid var(--focus-ring);
-  border-radius: var(--radius-sm);
+  height: 32px;
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
   background: var(--surface-2);
   color: var(--text-1);
   font-family: var(--font-family);
-  font-size: 14px;
-  font-weight: var(--font-weight-regular);
+  font-size: 13px;
+  font-weight: var(--font-weight-light);
   line-height: 1.3;
-  padding: 0 8px;
+  padding: 0 10px;
   outline: none;
-  box-shadow: 0 0 0 3px var(--focus-ring-bg);
+  box-shadow: none;
+}
+
+.planRenameInput:focus,
+.planRenameInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--border-2, var(--border-1));
 }
 
 .planRenameInput:disabled {
-  opacity: .64;
+  opacity: 0.55;
   cursor: progress;
 }
 
 .planRenameButton {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 0;
+  border: none;
+  border-radius: 4px;
   background: transparent;
-  color: var(--text-2);
+  color: var(--text-3);
   cursor: pointer;
   padding: 0;
-  transition: color .15s ease, opacity .15s ease;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
 .planRenameButton:hover:not(:disabled) {
+  background: var(--hover);
   color: var(--text-1);
 }
 
 .planRenameButton:disabled {
-  opacity: .55;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
 .planRenameConfirm {
-  color: var(--text-2);
+  color: var(--text-3);
 }
 
 .planRenameConfirm:hover:not(:disabled) {
@@ -881,12 +1009,13 @@
 }
 
 .planRenameCancel:hover:not(:disabled) {
-  color: var(--color-red);
+  color: var(--danger-text);
 }
 
 .cardTaskCount {
+  font-family: var(--font-family);
   font-size: 12px;
-  color: var(--text-2);
+  color: var(--text-3);
   font-weight: var(--font-weight-light);
   flex-shrink: 0;
   line-height: 1;
@@ -948,9 +1077,11 @@
   justify-content: center;
   gap: 10px;
   background: transparent;
-  border: 1.5px dashed var(--border-2);
-  border-radius: 10px;
-  min-height: clamp(92px, 9vw, 108px);
+  border: 1px dashed var(--border-1);
+  border-radius: 4px;
+  min-height: 160px;
+  padding: 10px;
+  box-sizing: border-box;
   cursor: pointer;
   color: var(--text-3);
   transition:
@@ -961,24 +1092,26 @@
 }
 
 .newPlanCard:hover {
-  border-color: var(--text-1);
+  border-color: var(--border-2, var(--border-1));
   color: var(--text-1);
-  background: var(--surface-2);
+  background: var(--hover);
 }
 
 .newPlanIcon {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .newPlanLabel {
+  font-family: var(--font-family);
   font-size: 13px;
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.01em;
 }
 
 /* ════════════════════════════════════════
@@ -987,10 +1120,11 @@
 .listView {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-xl);
+  gap: 2px;
+  border: none;
+  border-radius: 0;
   overflow: visible;
-  animation: fadeUp 0.28s ease both;
+  animation: workspaceReveal 420ms var(--ease-out, ease) both;
 }
 
 .listCard {
@@ -998,33 +1132,55 @@
   align-items: center;
   justify-content: flex-start;
   position: relative;
-  padding: 14px 18px;
-  gap: 20px;
+  padding: 10px;
+  gap: 16px;
   cursor: pointer;
   transition: background var(--transition-fast);
-  border-bottom: 1px solid var(--border-1);
+  border: none;
+  border-radius: 4px;
+  border-bottom: none;
   width: 100%;
   text-align: left;
   font-family: var(--font-family);
+  background: transparent;
+  color: inherit;
 }
 
-.listCard:last-child { border-bottom: none; }
-.listCard:hover { background: var(--hover); }
+.listCard .planCardActions {
+  top: 50%;
+  right: 10px;
+  transform: translateY(calc(-50% - 2px));
+}
 
-.listCardActive { background: var(--focus-ring-bg); }
+.listCard:hover .planCardActions,
+.listCard:focus-within .planCardActions,
+.listCard .planCardActionsOpen {
+  transform: translateY(-50%);
+}
+
+.listCardActive,
+.listCardActive:hover {
+  background: var(--active);
+}
 
 .listCardLeft {
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex: 1;
 }
 
 .listCover {
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.listCard:hover .listCover {
+  opacity: 0.92;
 }
 
 .listInfo { min-width: 0; flex: 1; }
@@ -1038,10 +1194,12 @@
 }
 
 .listName {
+  font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  letter-spacing: -.01em;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1051,8 +1209,9 @@
 }
 
 .listTaskCount {
+  font-family: var(--font-family);
   font-size: 12px;
-  color: var(--text-2);
+  color: var(--text-3);
   font-weight: var(--font-weight-light);
   flex-shrink: 0;
   line-height: 1;
@@ -1082,11 +1241,11 @@
   position: fixed;
   z-index: 1000;
   width: min(296px, calc(100vw - 24px));
-  background: var(--popover-bg);
+  background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 10px;
+  border-radius: 4px;
   box-shadow: var(--shadow-md);
-  animation: popoverIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: workspaceMenuReveal 160ms var(--ease-out, ease) both;
 }
 
 .planPopover::before {
@@ -1096,7 +1255,7 @@
   left: -8px;
   width: 16px;
   height: 16px;
-  background: var(--popover-bg);
+  background: var(--app-bg);
   border-top: 1px solid var(--border-1);
   border-left: 1px solid var(--border-1);
   transform: rotate(-45deg);
@@ -1123,13 +1282,20 @@
 }
 
 @keyframes popoverIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Form */
 .planPopoverForm {
-  padding: 14px 12px 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1143,16 +1309,17 @@
 }
 
 .modalTitle {
-  font-size: 15px;
+  font-family: var(--font-family);
+  font-size: 13px;
   font-weight: var(--font-weight-regular);
-  letter-spacing: -.02em;
+  letter-spacing: -0.015em;
   color: var(--text-1);
 }
 
 .planPreview {
   position: relative;
   height: 116px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background:
     linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,0)),
     radial-gradient(circle at 20% 25%, rgba(255,255,255,.22), transparent 30%),
@@ -1174,9 +1341,9 @@
 }
 
 .planPreviewCol {
-  border-radius: 6px;
+  border-radius: 4px;
   background: color-mix(in srgb, var(--surface-1) 92%, transparent);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   position: relative;
 }
 
@@ -1187,7 +1354,7 @@
   left: 7px;
   right: 7px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: 4px;
   background: var(--skeleton-1);
 }
 
@@ -1260,23 +1427,25 @@
   position: relative;
   aspect-ratio: 1 / 1;
   width: 38px;
-  border-radius: 7px;
+  border-radius: 4px;
   overflow: hidden;
   border: 1px solid transparent;
   background:
     linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,0)),
     radial-gradient(circle at 20% 25%, rgba(255,255,255,.16), transparent 28%),
     var(--cover-bg);
-  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
 .coverOption:hover {
-  transform: translateY(-1px);
+  border-color: var(--border-2, var(--border-1));
 }
 
 .coverOptionActive {
-  border-color: var(--text-1);
-  box-shadow: 0 0 0 1px var(--text-1);
+  border-color: var(--border-2, var(--border-1));
+  box-shadow: none;
+  outline: 1px solid var(--text-1);
+  outline-offset: 1px;
 }
 
 .coverOptionShade {
@@ -1324,12 +1493,12 @@
   z-index: 1001;
   width: min(420px, calc(100vw - 24px));
   max-height: min(520px, calc(100vh - 32px));
-  background: var(--menu-bg);
+  background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 10px;
+  border-radius: 4px;
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  animation: popoverIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: workspaceMenuReveal 160ms var(--ease-out, ease) both;
 }
 
 .planBackgroundPicker {
@@ -1340,21 +1509,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-1);
 }
 
 .collectionsTitle {
+  font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  letter-spacing: -.01em;
+  letter-spacing: -0.015em;
   color: var(--text-1);
 }
 
 .collectionsClose {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1369,7 +1541,7 @@
 }
 
 .collectionsBody {
-  padding: 12px 14px 14px;
+  padding: 12px;
   overflow: auto;
   max-height: calc(min(520px, calc(100vh - 32px)) - 54px);
 }
@@ -1381,9 +1553,11 @@
 }
 
 .collectionTitle {
-  font-size: 10px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   color: var(--text-3);
   margin-bottom: 10px;
 }
@@ -1396,28 +1570,29 @@
 
 .collectionItem {
   aspect-ratio: 1 / 1;
-  border-radius: 10px;
+  border-radius: 4px;
   border: 1px solid var(--border-1);
   overflow: hidden;
   cursor: pointer;
-  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
   background: var(--surface-2);
 }
 
 .collectionItem:hover {
-  transform: translateY(-1px);
-  border-color: var(--border-2);
+  border-color: var(--border-2, var(--border-1));
 }
 
 .collectionItem:disabled,
 .coverOption:disabled {
-  opacity: .64;
+  opacity: 0.55;
   cursor: progress;
 }
 
 .collectionItemActive {
   border-color: var(--text-1);
-  box-shadow: 0 0 0 1px var(--text-1);
+  box-shadow: none;
+  outline: 1px solid var(--text-1);
+  outline-offset: 1px;
 }
 
 .collectionThumb {
@@ -1461,7 +1636,9 @@
 .modalCloseBtn {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1486,10 +1663,11 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  font-family: var(--font-family);
   font-size: 12px;
   font-weight: var(--font-weight-regular);
   color: var(--text-1);
-  letter-spacing: -.005em;
+  letter-spacing: -0.005em;
 }
 
 .mLabelOptional {
@@ -1503,27 +1681,30 @@
 }
 
 .mInput {
-  height: 38px;
+  height: 36px;
   padding: 0 10px;
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-light);
   color: var(--text-1);
-  background: var(--surface-1);
+  background: var(--surface-2);
   border: 1px solid var(--border-1);
-  border-radius: 8px;
+  border-radius: 4px;
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), color var(--transition-fast);
   -webkit-appearance: none;
 }
 
 .mInput::placeholder { color: var(--text-3); }
 
-.mInput:hover { border-color: var(--border-2); }
+.mInput:hover { border-color: var(--border-2, var(--border-1)); }
 
-.mInput:focus {
-  border-color: var(--focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 25%, transparent);
+.mInput:focus,
+.mInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--border-2, var(--border-1));
+  color: var(--text-1);
 }
 
 /* Tag grid */
@@ -1537,14 +1718,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 9px;
+  padding: 6px 10px;
   font-family: var(--font-family);
-  font-size: 11px;
-  font-weight: var(--font-weight-regular);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
   color: var(--text-2);
-  background: var(--surface-1);
+  background: transparent;
   border: 1px solid var(--border-1);
-  border-radius: 99px;
+  border-radius: 4px;
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -1553,7 +1734,13 @@
 }
 
 .tagChip:hover {
-  border-color: var(--border-2);
+  background: var(--hover);
+  border-color: var(--border-2, var(--border-1));
+  color: var(--text-1);
+}
+
+.tagChipActive {
+  background: var(--active);
   color: var(--text-1);
 }
 
@@ -1565,8 +1752,10 @@
 }
 
 .formHint {
+  font-family: var(--font-family);
   font-size: 12px;
-  color: var(--text-2);
+  font-weight: var(--font-weight-light);
+  color: var(--text-3);
   line-height: 1.4;
 }
 
@@ -1579,20 +1768,32 @@
 .mSubmitBtn {
   width: 100%;
   height: 36px;
-  padding: 0 16px;
+  padding: 0 14px;
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
-  background: var(--text-1);
-  color: var(--text-inverse);
-  border-radius: 8px;
+  letter-spacing: -0.01em;
+  background: var(--surface-2);
+  color: var(--text-1);
+  border: 1px solid var(--border-1);
+  border-radius: 4px;
   cursor: pointer;
-  transition: opacity var(--transition-fast);
-  letter-spacing: -.005em;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
-.mSubmitBtn:hover:not(:disabled) { opacity: .8; }
-.mSubmitBtn:disabled { opacity: .35; cursor: not-allowed; }
+.mSubmitBtn:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--border-2, var(--border-1));
+}
+
+.mSubmitBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 /* ════════════════════════════════════════
    RESPONSIVE
@@ -1603,7 +1804,7 @@
     --workspace-content-top-padding: 24px;
   }
   .topbar  { padding: 24px 32px 22px; }
-  .content { padding: 24px 32px 48px; }
+  .content { padding: 32px 32px calc(40px + var(--app-dock-clearance, 56px)); }
   .topbarRight {
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -1659,7 +1860,7 @@
     font-size: 20px;
     line-height: 1.1;
   }
-  .content { padding: 18px 20px 40px; }
+  .content { padding: 28px 20px calc(36px + var(--app-dock-clearance, 56px)); }
   .sectionHeader {
     align-items: center;
     justify-content: space-between;
@@ -1682,10 +1883,10 @@
   .notification {
     left: 12px;
     right: 12px;
-    bottom: 12px;
+    bottom: calc(12px + var(--app-dock-clearance, 56px));
     transform: none;
     text-align: center;
-    border-radius: 16px;
+    border-radius: 4px;
     white-space: normal;
   }
   .planPopover {
@@ -1711,11 +1912,11 @@
     padding: 18px 16px 16px;
   }
   .content {
-    padding: 14px 16px 32px;
+    padding: 24px 16px calc(32px + var(--app-dock-clearance, 56px));
     gap: 20px;
   }
   .plansGalleryBody {
-    gap: 14px;
+    gap: 20px;
   }
   .topbarUtility {
     gap: 8px;
@@ -1731,7 +1932,27 @@
     justify-content: flex-start;
   }
   .emptyState {
-    min-height: 260px;
-    padding: 22px 18px;
+    min-height: 240px;
+    padding: 24px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid,
+  .listView,
+  .notification,
+  .planOptionsMenu,
+  .planPopover,
+  .collectionsPopover {
+    animation: none;
+  }
+
+  .planCardActions {
+    transition: none;
+  }
+
+  .planCardCover,
+  .listCover {
+    transition: none;
   }
 }
