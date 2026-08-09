@@ -3,7 +3,6 @@ import {
   Calendar,
   Check,
   MoveRight,
-  ChevronRight,
   Code,
   FileText,
   Flag,
@@ -12,7 +11,6 @@ import {
   Hourglass,
   Image,
   Link,
-  List,
   Maximize2,
   PencilLine,
   Plus,
@@ -987,14 +985,6 @@ export default function CardModal({
             indicatorAnchorRef={titleRowRef}
           >
             <SectionScrollArea.Section id="overview" label="Visão geral">
-            <div className={styles.cmTaskTypeRow}>
-              <button type="button" className={styles.cmTaskTypePill} aria-label="Tipo de tarefa">
-                <span className={styles.cmTaskTypeIcon}><List size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
-                <span>Tarefa</span>
-                <span className={styles.cmStatusBtnIcon}><ChevronRight size={11} strokeWidth={ICON_STROKE} aria-hidden="true" /></span>
-              </button>
-            </div>
-
             <div ref={titleRowRef} className={styles.cmTitleRow}>
               <div className={styles.cmTitleEditor}>
                 <textarea
