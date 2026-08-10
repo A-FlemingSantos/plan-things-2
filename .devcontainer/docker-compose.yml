@@ -31,9 +31,9 @@ services:
           "SQLCMD=/opt/mssql-tools18/bin/sqlcmd; if [ ! -x \"$$SQLCMD\" ]; then SQLCMD=/opt/mssql-tools/bin/sqlcmd; fi; \"$$SQLCMD\" -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1",
         ]
       interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
+      timeout: 15s
+      retries: 30
+      start_period: 120s
 
   sqlserver-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -46,6 +46,14 @@ services:
       - /bin/bash
       - -lc
       - |
+        for i in $(seq 1 60); do
+          SQLCMD=/opt/mssql-tools18/bin/sqlcmd
+          if [ ! -x "$$SQLCMD" ]; then SQLCMD=/opt/mssql-tools/bin/sqlcmd; fi
+          if "$$SQLCMD" -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" >/dev/null 2>&1; then
+            break
+          fi
+          sleep 5
+        done
         SQLCMD=/opt/mssql-tools18/bin/sqlcmd
         if [ ! -x "$$SQLCMD" ]; then SQLCMD=/opt/mssql-tools/bin/sqlcmd; fi
         "$$SQLCMD" -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "IF DB_ID(N'plan_things_db') IS NULL CREATE DATABASE [plan_things_db];"
