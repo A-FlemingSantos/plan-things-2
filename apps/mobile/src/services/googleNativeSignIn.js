@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || ''
@@ -8,8 +9,13 @@ function isNativePlatform() {
   return Platform.OS === 'ios' || Platform.OS === 'android'
 }
 
+function isExpoGoRuntime() {
+  return Constants.appOwnership === 'expo'
+    || Constants.executionEnvironment === 'storeClient'
+}
+
 export function isGoogleNativeSignInConfigured() {
-  return isNativePlatform() && Boolean(WEB_CLIENT_ID)
+  return isNativePlatform() && Boolean(WEB_CLIENT_ID) && !isExpoGoRuntime()
 }
 
 export async function isGoogleNativeSignInAvailable() {
@@ -26,8 +32,8 @@ export async function isGoogleNativeSignInAvailable() {
 }
 
 async function ensureConfigured(accountName) {
-  if (!WEB_CLIENT_ID) {
-    throw new Error('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID nao configurado.')
+  if (!isGoogleNativeSignInConfigured()) {
+    throw new Error('Google Sign-In nativo indisponivel neste runtime.')
   }
 
   const { GoogleSignin } = await import('@react-native-google-signin/google-signin')

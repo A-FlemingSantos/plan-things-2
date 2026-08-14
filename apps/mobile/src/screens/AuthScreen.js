@@ -189,9 +189,13 @@ export default function AuthScreen() {
   useEffect(() => {
     let active = true
 
-    getLastGoogleAccount().then((account) => {
-      if (active) setLastGoogleAccount(account)
-    })
+    getLastGoogleAccount()
+      .then((account) => {
+        if (active) setLastGoogleAccount(account)
+      })
+      .catch(() => {
+        if (active) setLastGoogleAccount(null)
+      })
 
     return () => {
       active = false
