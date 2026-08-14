@@ -14,8 +14,8 @@ Scripts prontos para os cenarios locais mais comuns:
 
 Todos pedem apenas o que faltar no ambiente atual.
 
-Use `$env:PLAN_THINGS_ANDROID_CLIENT="expo-go"` para Expo Go (padrao) ou
-`$env:PLAN_THINGS_ANDROID_CLIENT="dev-build"` para development build.
+Use `$env:PLAN_THINGS_ANDROID_CLIENT="dev-build"` para development build (padrao) ou
+`$env:PLAN_THINGS_ANDROID_CLIENT="expo-go"` para Expo Go.
 
 Para EAS, use `$env:PLAN_THINGS_EAS_PROFILE="development"` (padrao do script de build)
 ou `preview` / `production`. O script sincroniza `EXPO_PUBLIC_API_BASE_URL` e
@@ -27,8 +27,10 @@ No modo Expo Go, informe `PLAN_THINGS_EXPO_GO_BASE_URL` como a URL base exata
 backend deriva `/--/oauth/callback` e `/--/settings` sem quebrar query string
 do tunnel.
 
-No modo development build, os scripts usam `planthings://oauth/callback` e
+No modo development build (padrao), os scripts usam `planthings://oauth/callback` e
 `planthings://settings`, e o Metro sobe com `--dev-client`.
+
+No modo Expo Go, o Metro sobe com `--go`.
 
 Segredos locais ficam em `local.secrets.ps1`. Variaveis ja definidas no
 processo atual tem prioridade sobre esse arquivo local.

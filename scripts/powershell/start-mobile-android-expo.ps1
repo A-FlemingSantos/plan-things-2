@@ -24,8 +24,9 @@ if ([string]::IsNullOrWhiteSpace($apiBaseUrl)) {
 $apiBaseUrl = Get-PlanThingsTrimmedUrl $apiBaseUrl
 Set-PlanThingsProcessEnvVar -Name 'EXPO_PUBLIC_API_BASE_URL' -Value $apiBaseUrl
 $expoArguments = @('expo', 'start', '--port', $expoGoPort)
-if ($androidClient -eq 'dev-build') {
-  $expoArguments += '--dev-client'
+switch ($androidClient) {
+  'dev-build' { $expoArguments += '--dev-client' }
+  'expo-go' { $expoArguments += '--go' }
 }
 
 Write-PlanThingsConfig -Rows @(

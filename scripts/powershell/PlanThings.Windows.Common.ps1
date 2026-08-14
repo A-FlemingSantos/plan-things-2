@@ -92,7 +92,7 @@ function Get-PlanThingsAndroidClient {
 }
 
 function Set-PlanThingsAndroidClientEnvVar {
-  $androidClient = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_ANDROID_CLIENT' -Prompt 'android_client' -Default 'expo-go' -UseDefaultIfMissing
+  $androidClient = Set-PlanThingsEnvVar -Name 'PLAN_THINGS_ANDROID_CLIENT' -Prompt 'android_client' -Default 'dev-build' -UseDefaultIfMissing
   $androidClient = Get-PlanThingsAndroidClient -Value $androidClient
   Set-PlanThingsProcessEnvVar -Name 'PLAN_THINGS_ANDROID_CLIENT' -Value $androidClient
   return $androidClient
