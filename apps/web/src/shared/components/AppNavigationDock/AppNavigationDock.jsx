@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, House, KanbanSquare, Settings } from 'lucide-react'
+import { AlignStartHorizontal, BookOpen, House, Settings } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { SiGithub } from 'react-icons/si'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -16,7 +16,7 @@ import styles from './AppNavigationDock.module.css'
 const NAV_ITEMS = [
   { id: 'home', label: 'Início', to: ROUTES.workspace, Icon: House },
   { id: 'docs', label: 'Docs', to: ROUTES.docs, Icon: BookOpen },
-  { id: 'boards', label: 'Quadros', to: ROUTES.workspaceBoard, Icon: KanbanSquare },
+  { id: 'boards', label: 'Quadros', to: ROUTES.workspaceBoard, Icon: AlignStartHorizontal },
 ]
 
 const GITHUB_ITEM = {
