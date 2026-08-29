@@ -3,6 +3,11 @@ import { Link } from 'react-router-dom'
 import { ROUTES } from '../../../../shared/config/routes.js'
 import { LANDING_NAV_LINKS } from '../../config/landingNav.js'
 import { useLandingActiveSection } from '../../hooks/useLandingActiveSection.js'
+import {
+  getLandingScrollTop,
+  getLandingScrollViewport,
+  handleLandingHashClick,
+} from '../../utils/landingScroll.js'
 import styles from './Navbar.module.css'
 
 export default function Navbar() {
@@ -11,16 +16,19 @@ export default function Navbar() {
   const activeSection = useLandingActiveSection()
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const viewport = getLandingScrollViewport()
+    const onScroll = () => setScrolled(getLandingScrollTop() > 12)
+    onScroll()
+    viewport?.addEventListener('scroll', onScroll, { passive: true })
+    return () => viewport?.removeEventListener('scroll', onScroll)
   }, [])
 
   useEffect(() => {
     if (!menuOpen) return undefined
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const viewport = getLandingScrollViewport()
+    const previousOverflow = viewport?.style.overflowY ?? ''
+    if (viewport) viewport.style.overflowY = 'hidden'
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
@@ -31,7 +39,7 @@ export default function Navbar() {
     window.addEventListener('keydown', onKeyDown)
 
     return () => {
-      document.body.style.overflow = previousOverflow
+      if (viewport) viewport.style.overflowY = previousOverflow
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [menuOpen])
@@ -113,7 +121,10 @@ export default function Navbar() {
                       href={link.href}
                       className={`${styles.mobileMenuLink} ${isActive ? styles.mobileMenuLinkActive : ''}`}
                       aria-current={isActive ? 'true' : undefined}
-                      onClick={() => setMenuOpen(false)}
+                      onClick={(event) => {
+                        handleLandingHashClick(event)
+                        setMenuOpen(false)
+                      }}
                     >
                       {link.label}
                     </a>

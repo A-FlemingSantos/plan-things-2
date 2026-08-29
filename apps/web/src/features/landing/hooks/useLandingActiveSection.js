@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react'
 import { LANDING_NAV_LINKS } from '../config/landingNav.js'
-
-const HEADER_OFFSET_FALLBACK = 52
-
-function getHeaderOffset() {
-  const value = getComputedStyle(document.documentElement).getPropertyValue('--landing-header-height').trim()
-  const parsed = Number.parseInt(value, 10)
-  return Number.isFinite(parsed) ? parsed : HEADER_OFFSET_FALLBACK
-}
+import { getLandingHeaderOffset, getLandingScrollViewport } from '../utils/landingScroll.js'
 
 export function useLandingActiveSection() {
   const [active, setActive] = useState('')
@@ -18,7 +11,7 @@ export function useLandingActiveSection() {
       .filter(Boolean)
 
     const updateActive = () => {
-      const offset = getHeaderOffset() + 12
+      const offset = getLandingHeaderOffset() + 12
       let current = ''
 
       for (const section of sections) {
@@ -30,12 +23,13 @@ export function useLandingActiveSection() {
       setActive(current)
     }
 
+    const viewport = getLandingScrollViewport()
     updateActive()
-    window.addEventListener('scroll', updateActive, { passive: true })
+    viewport?.addEventListener('scroll', updateActive, { passive: true })
     window.addEventListener('resize', updateActive)
 
     return () => {
-      window.removeEventListener('scroll', updateActive)
+      viewport?.removeEventListener('scroll', updateActive)
       window.removeEventListener('resize', updateActive)
     }
   }, [])
