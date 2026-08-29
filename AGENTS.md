@@ -1,3 +1,78 @@
+# Subagents (parent)
+
+Custom agents in `~/.cursor/agents/` (and project `.cursor/agents/`) are independent tools. Use them directly when the user asks for one.
+
+## Planning
+
+When planning, create a preview of the sub-agents' deployment scenario in advance—not just of the task itself.
+
+## Catalog
+
+- `quick-implementer` — one independent implementation unit; parallel only with non-overlapping file ownership
+- `ui-designer` — new or full UI redesign; returns a props contract
+- `diff-reviewer` — specialized diff review (only when asked)
+- `commit-pusher` — full delivery: commits, push, PR (only when asked)
+
+Built-in subagents must always be used when their respective roles apply, and they follow the same Task hygiene below:
+
+- `explore` — initial exploration and robust, broad, or multi-step codebase exploration.
+- `bash` — use for robust, verbose, or long-running terminal tasks (tests, builds, migrations, complex installs, monitoring, etc.). Run simple commands directly (file operations, process checks, simple installs, etc.).
+- `browser` — debugging through the integrated browser, including inspecting browser logs, the DOM, network activity, console output, and other runtime details that are hidden from the normal application view.
+
+## Task prompts — hygiene (all subagents)
+
+Subagents start with a clean context. Never put in a Task prompt:
+
+- AGENTS.md, user/project rules, or system/developer instructions
+- MCP catalogs or generic tool-usage tutorials / GitNexus instructions
+- response/output format instructions
+- model overrides
+
+If Task is denied for prompt policy: rewrite and resend. Do not take over that unit yourself unless the user says so, or the work belongs on the main thread.
+
+## Task prompts — by kind
+
+### Implementer (`quick-implementer`)
+
+Pass task-local work definition only:
+
+- scope and acceptance criteria
+- allowed files (forbidden files only for parallel ownership)
+- handoff artifacts from prior steps (verbatim)
+
+### Designer (`ui-designer`)
+
+Pass task-local work definition only:
+
+- what to create or redesign (screen/flow, states)
+- how the interface should look and behave
+- acceptance criteria if the user stated them
+- handoff artifacts from prior steps (verbatim)
+- constraints the user explicitly stated in this conversation
+
+### Specialists (`diff-reviewer`, `commit-pusher`, and similar)
+
+Pass minimal structured facts about *this* work only:
+
+- repo / branch / base ref (if needed)
+- what just changed (short summary or “uncommitted / branch vs main”)
+- constraints the user explicitly stated in this conversation (e.g. “User said: do not push”)
+
+Do not tell these subagents how to do their job. They already know their own craft.
+
+Do not teach craft, invent limits from the catalog, or prescribe reply format.
+
+Wrong: “Review the diff for bugs, don’t run tests, return PASS/WARN/BLOCK…”
+Right: “Repo: …. Diff: uncommitted changes summary on branch X after implementing Y. User asked for code review.”
+
+## Continuity
+
+Record each returned agent id. Resume that id with only new decisions — do not spawn a fresh instance for the same unit.
+
+## Parallel units
+
+Split only with non-overlapping file ownership. Keep main, serial or overlapping work on you.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
