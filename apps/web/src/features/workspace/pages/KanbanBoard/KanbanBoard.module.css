@@ -1362,6 +1362,7 @@
 }
 
 .columnDragOverlay {
+  --kanban-column-drag-max-height: min(320px, 42dvh);
   cursor: grabbing;
   box-shadow: var(--shadow-md);
   width: 300px;
@@ -1370,7 +1371,25 @@
 }
 
 .columnDragOverlay:not(.columnCompact) {
-  max-height: calc(100dvh - 32px);
+  height: auto;
+  max-height: none;
+  overflow: hidden;
+}
+
+.columnDragOverlayCollapsed:not(.columnCompact) {
+  transition: max-height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.columnDragOverlayCollapsed:not(.columnCompact) .colCards {
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .columnDragOverlayCollapsed:not(.columnCompact) {
+    transition: none;
+  }
 }
 
 .columnDragOverlay .colHeader {

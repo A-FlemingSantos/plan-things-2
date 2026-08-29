@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, defaultAnimateLayoutChanges, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -23,6 +23,16 @@ const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
 const ICON_STROKE = 1.75
 const COMPOSER_COLLAPSE_MS = 320
+const COLUMN_DRAG_OVERLAY_MAX_HEIGHT_FALLBACK_PX = 320
+
+function readColumnDragOverlayMaxHeightPx(columnNode) {
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;height:var(--kanban-column-drag-max-height)'
+  columnNode.appendChild(probe)
+  const height = probe.getBoundingClientRect().height
+  probe.remove()
+  return height > 0 ? height : COLUMN_DRAG_OVERLAY_MAX_HEIGHT_FALLBACK_PX
+}
 
 function columnAnimateLayoutChanges(args) {
   if (args.isSorting || args.wasDragging) {
@@ -93,11 +103,17 @@ export function KanbanColumnView({
   const [isAddingCard, setIsAddingCard] = useState(false)
   const renameRef = useRef(null)
   const menuAnchorRef = useRef(null)
+  const columnNodeRef = useRef(null)
   const cardsScrollRef = useRef(null)
   const lockedCardsHeightRef = useRef(null)
   const composerClosingRef = useRef(false)
   const composerCloseTimeoutRef = useRef(null)
   const [lockedCardsHeight, setLockedCardsHeight] = useState(null)
+
+  const setColumnNodeRef = (node) => {
+    columnNodeRef.current = node
+    setNodeRef?.(node)
+  }
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
   const isComposerOpen = addingCard || isAddingCard || lockedCardsHeight != null
   const hasColumnColor = Boolean(col.color?.trim())
@@ -196,6 +212,37 @@ export function KanbanColumnView({
     window.clearTimeout(composerCloseTimeoutRef.current)
   }, [])
 
+  useLayoutEffect(() => {
+    if (!isDragOverlay || isCompact) return undefined
+
+    const node = columnNodeRef.current
+    if (!node) return undefined
+
+    const fullHeight = node.getBoundingClientRect().height
+    const maxHeight = readColumnDragOverlayMaxHeightPx(node)
+    if (fullHeight <= maxHeight + 1) return undefined
+
+    node.classList.add(styles.columnDragOverlayCollapsed)
+    node.style.maxHeight = `${fullHeight}px`
+
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+      node.style.maxHeight = `${maxHeight}px`
+      return undefined
+    }
+
+    let innerFrame = 0
+    const outerFrame = window.requestAnimationFrame(() => {
+      innerFrame = window.requestAnimationFrame(() => {
+        node.style.maxHeight = `${maxHeight}px`
+      })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(outerFrame)
+      window.cancelAnimationFrame(innerFrame)
+    }
+  }, [col.cards.length, col.id, isCompact, isDragOverlay, styles.columnDragOverlayCollapsed])
+
   const submitRename = async () => {
     const nextTitle = renameVal.trim()
 
@@ -221,7 +268,7 @@ export function KanbanColumnView({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setColumnNodeRef}
       className={`
         ${styles.column}
         ${isDropTarget ? styles.columnDropTarget : ''}
