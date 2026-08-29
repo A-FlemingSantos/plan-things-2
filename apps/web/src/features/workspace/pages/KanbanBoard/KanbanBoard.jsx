@@ -83,6 +83,18 @@ export default function KanbanBoard() {
   const persistedCompactColumnIdsRef = useRef(new Set())
   const compactColumnsSaveQueueRef = useRef(Promise.resolve())
   const compactColumnsRevisionRef = useRef(0)
+  const boardRef = useRef(null)
+
+  const scrollBoardToTrailingEdge = useCallback(() => {
+    const board = boardRef.current
+    if (!board) return
+
+    const targetLeft = Math.max(0, board.scrollWidth - board.clientWidth)
+    board.scrollTo({
+      left: targetLeft,
+      behavior: 'smooth',
+    })
+  }, [])
 
   const { notification, showNotification } = useKanbanBoardNotification()
   const {
@@ -303,6 +315,9 @@ export default function KanbanBoard() {
 
     try {
       await createColumn(nextTitle, { color: nextColor, status: nextStatus })
+      requestAnimationFrame(() => {
+        requestAnimationFrame(scrollBoardToTrailingEdge)
+      })
     } catch (error) {
       const message = error?.message ?? 'Não foi possível criar a lista.'
       setNewColTitle(nextTitle)
@@ -580,7 +595,7 @@ export default function KanbanBoard() {
                 items={columns.map((column) => column.id)}
                 strategy={horizontalListSortingStrategy}
               >
-              <div className={styles.board}>
+              <div ref={boardRef} className={styles.board}>
                 {columns.map(col => (
                   <KanbanColumn
                     key={col.uiKey ?? col.id}

@@ -397,6 +397,31 @@ describe('KanbanBoard optimistic feedback', () => {
     expect(screen.getAllByText('Falha ao criar lista')).toHaveLength(2)
   })
 
+  it('scrolls the board to the trailing edge after a column is created', async () => {
+    if (!HTMLElement.prototype.scrollTo) {
+      HTMLElement.prototype.scrollTo = vi.fn()
+    }
+    const scrollTo = vi.spyOn(HTMLElement.prototype, 'scrollTo').mockImplementation(() => {})
+    boardActions.createColumn.mockImplementation(async (title) => {
+      boardState.updateColumns((prev) => [
+        ...prev,
+        { id: 'col-2', title, color: '', cards: [] },
+      ])
+      return true
+    })
+
+    renderBoard()
+    await userEvent.click(await screen.findByRole('button', { name: 'Adicionar lista' }))
+    await userEvent.type(screen.getByLabelText('Nome da lista'), 'Doing')
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar lista' }))
+
+    await waitFor(() => {
+      expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }))
+    })
+
+    scrollTo.mockRestore()
+  })
+
   it('closes the card modal immediately while the backend deletion is pending and restores it on failure', async () => {
     const deferred = createDeferred()
     boardActions.deleteCard.mockReturnValue(deferred.promise)
