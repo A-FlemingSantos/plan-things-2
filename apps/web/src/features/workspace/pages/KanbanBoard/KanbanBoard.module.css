@@ -229,7 +229,7 @@
 
 .board::-webkit-scrollbar { height: 6px; }
 .board::-webkit-scrollbar-track { background: transparent; }
-.board::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+.board::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: var(--radius-sm); }
 
 .boardLoadingScreen {
   flex: 1 1 0;
@@ -239,7 +239,7 @@
 
 .boardLoadingBlock {
   display: block;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(90deg, var(--skeleton-1) 0%, var(--skeleton-2) 50%, var(--skeleton-1) 100%);
   background-size: 200% 100%;
   animation: boardLoadingPulse 1.2s ease-in-out infinite;
@@ -252,7 +252,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 14px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--board-column-bg);
 }
@@ -285,7 +285,7 @@
   flex-direction: column;
   gap: 9px;
   padding: 14px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--board-base-bg);
 }
@@ -308,7 +308,7 @@
 .boardStatusPanel {
   margin: var(--board-section-padding) var(--board-inline-padding) 72px;
   padding: 18px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--surface-1);
   box-shadow: var(--shadow-sm);
@@ -364,7 +364,7 @@
   padding: 10px 18px;
   background: var(--text-1);
   color: var(--text-inverse);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: var(--font-weight-regular);
   box-shadow: var(--shadow-md);
@@ -391,7 +391,7 @@
   gap: 8px;
   min-height: 40px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-2);
   background: var(--surface-1);
 }
@@ -420,7 +420,7 @@
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-1);
   color: var(--text-2);
   white-space: nowrap;
@@ -434,7 +434,7 @@
 .mobileBoardTabDot {
   width: 8px;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
@@ -515,7 +515,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-1);
   box-shadow: var(--shadow-md);
   animation: plannerPanelIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -587,7 +587,7 @@
   font-weight: var(--font-weight-regular);
   letter-spacing: -.02em;
   line-height: 1.2;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 1px transparent;
   transition: box-shadow var(--transition-fast), background var(--transition-fast);
 }
@@ -600,14 +600,14 @@
 .plannerTitleButton:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .plannerTitleCount {
   min-width: 20px;
   height: 20px;
   padding: 0 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -638,7 +638,7 @@
   width: 260px;
   padding: 10px 8px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   z-index: 40;
@@ -652,7 +652,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 10px 10px 18px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-1);
   text-align: left;
   transition: background var(--transition-fast), color var(--transition-fast);
@@ -680,7 +680,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -693,7 +693,7 @@
 .plannerCloseButton {
   width: 30px;
   height: 30px;
-  border-radius: 6px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -727,7 +727,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-2);
@@ -771,7 +771,7 @@
   min-width: 20px;
   height: 20px;
   padding: 0 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -795,7 +795,7 @@
   min-height: 56px;
   padding: 10px 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
@@ -853,7 +853,7 @@
 .plannerCheckbox {
   width: 22px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-2);
   background: transparent;
   color: var(--kanban-accent-foreground, var(--text-on-accent));
@@ -878,7 +878,7 @@
 .plannerEventDot {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -894,7 +894,7 @@
 .plannerStarBtn {
   width: 28px;
   height: 28px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -980,7 +980,7 @@
   gap: 10px;
   padding: 28px 24px;
   border: 1px dashed color-mix(in srgb, var(--focus-ring) 55%, var(--border-1));
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--surface-1) 82%, transparent);
   color: var(--text-2);
   text-align: center;
@@ -1018,7 +1018,7 @@
   margin: 16px 14px 0;
   padding: 14px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
 }
@@ -1058,7 +1058,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-2);
   cursor: pointer;
 }
@@ -1114,7 +1114,7 @@
 .inboxSecondaryButton {
   height: 32px;
   padding: 0 12px;
-  border-radius: 7px;
+  border-radius: 10px;
   font-size: 13px;
 }
 
@@ -1153,7 +1153,7 @@
   margin: 16px 14px 0;
   padding: 14px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-1);
 }
 
@@ -1182,7 +1182,7 @@
   height: 24px;
   display: inline-grid;
   place-items: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--hover);
   color: var(--text-2);
   font-size: 12px;
@@ -1195,7 +1195,7 @@
   display: inline-grid;
   place-items: center;
   border: 1px solid var(--border-1);
-  border-radius: 7px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-3);
 }
@@ -1223,7 +1223,7 @@
   gap: 5px;
   padding: 11px;
   border: 1px solid var(--border-1);
-  border-radius: 7px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--surface-2) 82%, transparent);
 }
 
@@ -1307,7 +1307,7 @@
   flex-shrink: 0;
   background: var(--board-column-bg);
   border: 1px solid color-mix(in srgb, var(--border-1) 72%, transparent);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: visible;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -1409,7 +1409,7 @@
   padding: 10px 14px 8px;
   gap: 6px;
   flex-shrink: 0;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   min-height: 0;
   background: transparent;
 }
@@ -1459,7 +1459,7 @@
   outline: none;
   background: var(--app-bg);
   width: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 4px 8px;
 }
 
@@ -1485,7 +1485,7 @@
 .colActionBtn {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1514,7 +1514,7 @@
   padding: 6px;
   background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   animation: menuIn 0.15s ease both;
 }
@@ -1531,7 +1531,7 @@
   color: var(--text-2);
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition-fast);
   text-align: left;
@@ -1618,7 +1618,7 @@
   padding: 6px;
   background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   animation: menuIn 0.15s ease both;
 }
@@ -1686,7 +1686,7 @@
   gap: 10px;
   padding: 0 12px 8px;
   min-height: 0;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   overflow-x: hidden;
   overflow-y: auto;
   transform-style: flat;
@@ -1706,7 +1706,7 @@
 
 .addCardShell {
   width: 100%;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   overflow: hidden;
   background: transparent;
   transition: background 0.26s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1827,7 +1827,7 @@
   line-height: 1.35;
   background: transparent;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   outline: none;
   box-shadow: none;
 }
@@ -1890,7 +1890,7 @@
   color: var(--text-3);
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
 }
@@ -1909,7 +1909,7 @@
 .card {
   background: var(--board-column-bg);
   border: 1px solid color-mix(in srgb, var(--border-1) 72%, transparent);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px 8px;
   cursor: grab;
   position: relative;
@@ -2121,7 +2121,7 @@
   align-items: center;
   gap: 3px;
   padding: 2px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--text-1) 5%, transparent);
   font-size: 11px;
   font-weight: var(--font-weight-light);
@@ -2147,7 +2147,7 @@
   align-items: center;
   gap: 3px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--text-1) 5%, transparent);
   font-size: 11px;
   color: var(--text-2);
@@ -2174,7 +2174,7 @@
 
 .addColShell {
   width: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface-2);
   border: 1px solid var(--border-1);
@@ -2308,7 +2308,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition-fast);
 }
@@ -2342,7 +2342,7 @@
   padding: 5px;
   background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   animation: menuIn 0.15s ease both;
 }
@@ -2369,7 +2369,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition-fast);
 }
@@ -2436,7 +2436,7 @@
   margin: -2px -4px;
   border: none;
   background: transparent;
-  border-radius: 6px;
+  border-radius: 9px;
   cursor: pointer;
   transition: background var(--transition-fast);
 }
@@ -2467,7 +2467,7 @@
   padding: 4px;
   background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   animation: menuIn 0.15s ease both;
 }
@@ -2481,7 +2481,7 @@
   padding: 6px 8px;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   text-align: left;
   transition: background var(--transition-fast);
@@ -2598,7 +2598,7 @@
   color: var(--text-3);
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
 }
@@ -2667,7 +2667,7 @@
   margin: auto 0;
   background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   overflow: hidden;
   display: flex;
@@ -2744,7 +2744,7 @@
 .cmTopBarLink {
   height: 28px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
@@ -2788,7 +2788,7 @@
 .cmStatusBtn {
   height: 32px;
   padding: 0 10px 0 12px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--surface-2);
   color: var(--text-1);
@@ -2884,7 +2884,7 @@
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3008,7 +3008,7 @@
 
 .cmPropertyRow:hover .cmAssigneeChip:not(.cmPropertyBtnActive) {
   background: var(--hover);
-  border-radius: 6px;
+  border-radius: 9px;
 }
 
 .cmPropertyBtn {
@@ -3016,7 +3016,7 @@
   max-width: 100%;
   min-height: 30px;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 0;
   background: transparent;
   color: var(--text-2);
@@ -3069,7 +3069,7 @@
   font-size: 13px;
   color: var(--text-3);
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 9px;
   transition: background var(--transition-fast), color var(--transition-fast), width var(--transition-fast);
 }
 
@@ -3086,7 +3086,7 @@
   display: inline-flex;
   align-items: stretch;
   min-height: 28px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   overflow: hidden;
 }
@@ -3099,7 +3099,7 @@
   padding: 0 4px 0 10px;
   border: 0;
   background: transparent;
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
   transition: background var(--transition-fast);
 }
 
@@ -3146,7 +3146,7 @@
   min-height: 28px;
   flex-shrink: 0;
   color: var(--text-2);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .cmStatusSplitToggle svg {
@@ -3199,7 +3199,7 @@
   gap: 8px;
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   color: var(--text-1);
   font-size: 12px;
@@ -3219,7 +3219,7 @@
 .cmStatusPillAction {
   width: 22px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3241,7 +3241,7 @@
   min-width: 0;
   min-height: 30px;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: transparent;
   border: 0;
   color: var(--text-1);
@@ -3514,7 +3514,7 @@
   width: 100%;
   min-height: 34px;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: 9px;
   border: 0;
   background: transparent;
   color: var(--text-2);
@@ -3564,7 +3564,7 @@
   gap: 10px;
   min-height: 34px;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: background var(--transition-fast);
 }
 
@@ -3611,7 +3611,7 @@
 .cmInlineAttachmentBtn {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3649,7 +3649,7 @@
   gap: 1px;
   padding: 2px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-1);
   opacity: 0;
   pointer-events: none;
@@ -3667,7 +3667,7 @@
   height: 22px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-2);
   display: inline-flex;
@@ -3855,7 +3855,7 @@
 .cmActiveLabel {
   font-size: 12px;
   padding: 5px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-weight: var(--font-weight-regular);
 }
 
@@ -3871,7 +3871,7 @@
 .cmToolbarBtn {
   min-height: 30px;
   padding: 5px 11px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--surface-2);
   color: var(--text-2);
@@ -3915,7 +3915,7 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
   line-height: 1.1;
   overflow: hidden;
@@ -4026,7 +4026,7 @@
 .cmChecklistDeleteBtn {
   height: 34px;
   padding: 0 14px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--surface-3);
   color: var(--text-2);
   font-family: var(--font-family);
@@ -4052,7 +4052,7 @@
 .cmChecklistProgressBar {
   flex: 1;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   overflow: hidden;
 }
@@ -4069,7 +4069,7 @@
   min-height: 40px;
   padding: 10px 12px;
   border: 1px solid var(--kanban-accent-color, var(--focus-ring));
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-1);
   color: var(--text-1);
   font-family: var(--font-family);
@@ -4100,7 +4100,7 @@
 .cmChecklistItemCheckbox {
   width: 20px;
   height: 20px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-2);
   background: var(--surface-1);
   color: var(--kanban-accent-foreground, var(--text-on-accent));
@@ -4152,7 +4152,7 @@
 .cmChecklistAddItemBtn {
   height: 36px;
   padding: 0 14px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   color: var(--text-2);
   font-family: var(--font-family);
@@ -4164,7 +4164,7 @@
 .cmChecklistPrimaryBtn {
   height: 32px;
   padding: 0 14px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--kanban-accent-color, var(--focus-ring));
   color: var(--kanban-accent-foreground, var(--text-on-accent));
   font-family: var(--font-family);
@@ -4270,7 +4270,7 @@
   aspect-ratio: 1;
   min-height: 108px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   display: flex;
   flex-direction: column;
@@ -4344,7 +4344,7 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-3);
 }
@@ -4380,7 +4380,7 @@
   min-height: 36px;
   padding: 0 12px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-2);
   display: inline-flex;
@@ -4413,7 +4413,7 @@
 .cmSidebarHeaderBtn {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4495,7 +4495,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   overflow: hidden;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -4539,7 +4539,7 @@
 .cmCommentAddBtn {
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text-2);
   display: inline-flex;
@@ -4573,7 +4573,7 @@
 .cmCommentTypeBtn {
   height: 26px;
   padding: 0 7px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
@@ -4678,7 +4678,7 @@
   width: 26px;
   height: 26px;
   padding: 0;
-  border-radius: 5px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
@@ -4732,7 +4732,7 @@
   width: 212px;
   padding: 8px 0;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -4762,7 +4762,7 @@
 .cmTextMenuShortcut {
   flex-shrink: 0;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--surface-3);
   color: var(--text-2);
   font-size: 12px;
@@ -4774,7 +4774,7 @@
   width: 280px;
   padding: 10px 0;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -4799,7 +4799,7 @@
 .cmInsertMenuIcon {
   width: 40px;
   height: 40px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   color: var(--text-2);
   display: inline-flex;
@@ -4834,7 +4834,7 @@
   width: 256px;
   padding: 8px 0;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -4864,7 +4864,7 @@
 .cmListMenuShortcut {
   flex-shrink: 0;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--surface-3);
   color: var(--text-2);
   font-size: 12px;
@@ -4930,7 +4930,7 @@
 .cmCommentSaveBtn {
   min-height: 32px;
   padding: 0 14px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--cm-accent);
   color: var(--cm-accent-foreground);
   font-family: var(--font-family);
@@ -4964,7 +4964,7 @@
   flex-direction: column;
   background: var(--cm-comment-card-bg);
   border: 1px solid var(--cm-comment-card-border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
 }
 
@@ -5048,7 +5048,7 @@
 .cmCommentCardActionBtn {
   width: 24px;
   height: 24px;
-  border-radius: 5px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5116,7 +5116,7 @@
   align-items: center;
   gap: 7px;
   padding: 6px 9px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 12px;
   color: var(--text-2);
@@ -5143,7 +5143,7 @@
   z-index: 1200;
   padding: 0;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -5199,7 +5199,7 @@
   min-height: 34px;
   padding: 0 12px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-1);
   font-family: var(--font-family);
@@ -5245,7 +5245,7 @@
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid var(--kanban-accent-color, var(--focus-ring));
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--kanban-accent-color, var(--focus-ring));
   color: var(--kanban-accent-foreground, var(--text-on-accent));
   font-family: var(--font-family);
@@ -5275,7 +5275,7 @@
   width: 220px;
   padding: 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
 }
@@ -5290,7 +5290,7 @@
   margin-top: 4px;
   width: 100%;
   padding: 9px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px dashed var(--border-2);
   background: var(--surface-2);
   color: var(--text-2);
@@ -5322,7 +5322,7 @@
   width: 240px;
   padding: 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
 }
@@ -5331,7 +5331,7 @@
   margin-top: 6px;
   width: 100%;
   padding: 9px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px dashed var(--border-1);
   background: var(--surface-2);
   color: var(--text-2);
@@ -5362,7 +5362,7 @@
   z-index: 1200;
   width: 296px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -5388,7 +5388,7 @@
   top: 8px;
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-3);
   display: flex;
   align-items: center;
@@ -5414,7 +5414,7 @@
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-1);
   color: var(--text-1);
   font-family: var(--font-family);
@@ -5424,7 +5424,7 @@
 .cmChecklistMenuAdd {
   width: 100%;
   height: 30px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--kanban-accent-color, var(--focus-ring));
   color: var(--kanban-accent-foreground, var(--text-on-accent));
   font-family: var(--font-family);
@@ -5439,7 +5439,7 @@
   min-width: 220px;
   padding: 8px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
 }
@@ -5451,7 +5451,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-1);
   font-family: var(--font-family);
@@ -5475,7 +5475,7 @@
   z-index: 1200;
   width: 272px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
@@ -5501,7 +5501,7 @@
   top: 8px;
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-3);
   display: flex;
   align-items: center;
@@ -5524,7 +5524,7 @@
 .cmChecklistDateMenuNavBtn {
   width: 22px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-2);
   display: flex;
   align-items: center;
@@ -5559,7 +5559,7 @@
 
 .cmChecklistDateMenuDay {
   height: 30px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--text-2);
   font-size: 12px;
   display: flex;
@@ -5615,7 +5615,7 @@
   height: 34px;
   padding: 0 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-1);
   color: var(--text-1);
   font-family: var(--font-family);
@@ -5630,7 +5630,7 @@
 .cmDateCheckbox {
   width: 20px;
   height: 20px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--surface-1);
   color: var(--kanban-accent-foreground, var(--text-on-accent));
@@ -5662,7 +5662,7 @@
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 12px;
   color: var(--text-2);
@@ -5756,7 +5756,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px 6px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-2);
   font-size: 12px;
@@ -5766,7 +5766,7 @@
 .cmFilePickerIcon {
   width: 32px;
   height: 32px;
-  border-radius: 7px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5807,7 +5807,7 @@
 .cmAttachmentIconBtn {
   width: 30px;
   height: 30px;
-  border-radius: 6px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5823,7 +5823,7 @@
 .cmAttachmentRemoveBtn {
   min-height: 30px;
   padding: 0 9px;
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--surface-3);
   color: var(--text-2);
   font-size: 12px;
@@ -5862,7 +5862,7 @@
 
 .cmFilePickerSkeleton {
   height: 58px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
   background-size: 200% 100%;
   animation: shimmer 1.2s linear infinite;
@@ -5885,7 +5885,7 @@
 .cmAttachmentAddBtn {
   height: 30px;
   padding: 0 10px;
-  border-radius: 6px 0 0 6px;
+  border-radius: 9px 0 0 9px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -5898,7 +5898,7 @@
   width: 28px;
   height: 30px;
   border-left: 1px solid var(--border-1);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 9px 9px 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5943,7 +5943,7 @@
   min-width: 180px;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   z-index: 30;
@@ -5953,7 +5953,7 @@
   width: 100%;
   min-height: 36px;
   padding: 0 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -6003,7 +6003,7 @@
   gap: 10px;
   padding: 9px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
 
@@ -6024,7 +6024,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   color: var(--text-1);
   box-shadow: var(--shadow-md);
@@ -6055,7 +6055,7 @@
   min-height: 36px;
   padding: 0 11px;
   border: 1px solid var(--border-1);
-  border-radius: 9px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
@@ -6090,7 +6090,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 6px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6111,7 +6111,7 @@
   min-height: 36px;
   padding: 0 10px;
   border: 1px solid var(--border-1);
-  border-radius: 9px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -6147,7 +6147,7 @@
   min-width: 160px;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   z-index: 3;
@@ -6157,7 +6157,7 @@
   width: 100%;
   min-height: 32px;
   padding: 0 9px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   background: transparent;
@@ -6181,7 +6181,7 @@
   min-width: 0;
   height: 38px;
   border: 1px solid var(--border-1);
-  border-radius: 9px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -6218,7 +6218,7 @@
   width: 36px;
   height: 38px;
   border: 1px solid var(--border-1);
-  border-radius: 9px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6254,7 +6254,7 @@
   min-height: 68px;
   padding: 10px 12px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   text-align: left;
 }
@@ -6262,7 +6262,7 @@
 .cmFilePickerIcon {
   width: 40px;
   height: 40px;
-  border-radius: 9px;
+  border-radius: 12px;
   background: var(--surface-3);
   color: var(--text-2);
 }
@@ -6289,7 +6289,7 @@
   width: fit-content;
   min-height: 18px;
   padding: 0 7px;
-  border-radius: 6px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6338,7 +6338,7 @@
   min-height: 32px;
   padding: 0 11px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6358,7 +6358,7 @@
 .cmFilePickerMoreBtn {
   width: 28px;
   height: 28px;
-  border-radius: 7px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

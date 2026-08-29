@@ -87,7 +87,7 @@
   height: 28px;
   flex-shrink: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
@@ -161,7 +161,7 @@
   align-items: center;
   gap: 2px;
   min-width: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .indexRowActive {
@@ -181,7 +181,7 @@
   justify-content: center;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
@@ -210,7 +210,7 @@
   width: auto;
   padding: 8px 10px 8px 4px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
@@ -335,7 +335,7 @@
   height: 40px;
   padding: 4px;
   border: 1px solid var(--border-1);
-  border-radius: 10px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--app-bg) 88%, transparent);
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(10px);
@@ -358,7 +358,7 @@
   height: 30px;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text-1);
   cursor: pointer;
@@ -419,7 +419,7 @@
   min-width: 148px;
   padding: 4px;
   border: 1px solid var(--border-1);
-  border-radius: 8px;
+  border-radius: 11px;
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   transform: translateX(-50%);
@@ -432,7 +432,7 @@
   min-height: 32px;
   padding: 6px 10px;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-1);
   font-family: Georgia, 'Times New Roman', serif;
@@ -556,7 +556,7 @@
   height: 36px;
   padding: 0 14px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-3);
   transition: border-color var(--transition-fast), color var(--transition-fast);
@@ -603,7 +603,7 @@
   display: grid;
   gap: 8px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   animation: docsMoreReveal 160ms var(--ease-out, ease) both;
@@ -614,7 +614,7 @@
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-1);
   font-family: var(--font-family);
@@ -638,13 +638,13 @@
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
 
 .memberMenuRole {
   border: none;
-  border-radius: 3px;
+  border-radius: 6px;
   padding: 4px 8px;
   background: transparent;
   color: var(--text-3);
@@ -666,7 +666,7 @@
 
 .memberMenuSubmit {
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   background: var(--surface-3);
   color: var(--text-1);
@@ -711,7 +711,7 @@
   display: grid;
   gap: 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   animation: docsMoreReveal 160ms var(--ease-out, ease) both;
@@ -730,7 +730,7 @@
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-2);
   font-family: var(--font-family);
@@ -919,7 +919,7 @@
   height: 32px;
   flex-shrink: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   text-decoration: none;
@@ -961,7 +961,7 @@
   min-width: 180px;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   animation: docsMoreReveal 160ms var(--ease-out, ease) both;
@@ -983,7 +983,7 @@
   width: min(240px, calc(100vw - 40px));
   padding: 8px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
 }
@@ -999,7 +999,7 @@
   gap: 4px;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 6px;
+  border-radius: 9px;
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
 }
@@ -1022,7 +1022,7 @@
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--border-1);
-  border-radius: 5px;
+  border-radius: 8px;
   background: var(--surface-2);
   color: var(--text-1);
   font-family: var(--font-family);
@@ -1042,7 +1042,7 @@
   min-height: 32px;
   padding: 6px 8px;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-1);
   font-family: var(--font-family);
@@ -1097,7 +1097,7 @@
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -1145,7 +1145,7 @@
   max-width: min(280px, calc(100vw - 24px));
   padding: 6px 8px 6px 10px;
   border: 1px solid color-mix(in srgb, var(--border-1) 70%, transparent);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--app-bg) 82%, transparent);
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(8px);
@@ -1176,7 +1176,7 @@
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 3px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
@@ -1199,7 +1199,7 @@
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-1);
   font-family: var(--font-family);
@@ -1253,7 +1253,7 @@
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
@@ -1500,7 +1500,7 @@
 .annotatedMark {
   margin: 0;
   padding: 0;
-  border-radius: 2px;
+  border-radius: 5px;
   background: color-mix(in srgb, #d4a017 22%, transparent);
   color: inherit;
 }
@@ -1749,7 +1749,7 @@
   min-width: 0;
   padding: 8px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   box-sizing: border-box;
   box-shadow: var(--shadow-sm);
@@ -1765,7 +1765,7 @@
   margin-left: auto;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
@@ -1805,7 +1805,7 @@
   height: 36px;
   padding: 0 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  border-radius: 9px;
   background: #1a1a1a;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   color: #fff;
@@ -1821,7 +1821,7 @@
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: #fff;
   cursor: pointer;
@@ -2371,7 +2371,7 @@
   padding: 10px;
   margin: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -2724,7 +2724,7 @@
   font-size: 0.9em;
   font-weight: var(--font-weight-regular);
   padding: 0.12em 0.35em;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--surface-3) 88%, var(--border-2));
   color: var(--text-1);
 }
@@ -2799,7 +2799,7 @@
 .bodyComposer :global(.ProseMirror) mark {
   margin: 0;
   padding: 0;
-  border-radius: 2px;
+  border-radius: 5px;
   background: color-mix(in srgb, #d4a017 22%, transparent);
   color: inherit;
 }

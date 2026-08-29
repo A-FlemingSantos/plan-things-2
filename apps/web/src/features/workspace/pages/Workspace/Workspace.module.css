@@ -107,7 +107,7 @@
   height: 36px;
   padding: 0 14px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-3);
   transition: border-color var(--transition-fast), color var(--transition-fast);
@@ -158,7 +158,7 @@
   background: var(--surface-2);
   color: var(--text-1);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -251,7 +251,7 @@
   gap: 6px;
   height: 32px;
   padding: 0 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: var(--text-3);
@@ -313,7 +313,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   border: none;
@@ -335,7 +335,7 @@
   margin: 0;
   padding: 18px 20px;
   border: 1px dashed var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   font-size: 13px;
@@ -363,7 +363,7 @@
   display: flex;
   gap: 2px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 0;
   background: transparent;
 }
@@ -376,7 +376,7 @@
   height: 32px;
   flex-shrink: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
@@ -416,7 +416,7 @@
   min-height: 280px;
   padding: 32px 28px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   text-align: center;
 }
@@ -427,7 +427,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   border: none;
@@ -469,7 +469,7 @@
   gap: 8px;
   height: 36px;
   padding: 0 14px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-regular);
@@ -514,7 +514,7 @@
   background: var(--app-bg);
   color: var(--text-1);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-light);
@@ -538,7 +538,7 @@
 
 .loadingPlanCard {
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   overflow: hidden;
   padding: 10px;
@@ -681,7 +681,7 @@
   box-sizing: border-box;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: visible;
   cursor: pointer;
   text-align: left;
@@ -765,7 +765,7 @@
   height: 32px;
   flex-shrink: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--app-bg) 88%, transparent);
   color: var(--text-3);
   box-shadow: none;
@@ -797,7 +797,7 @@
   width: max-content;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   display: flex;
@@ -829,7 +829,7 @@
   height: auto;
   padding: 8px 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-2);
   font-family: var(--font-family);
@@ -908,7 +908,7 @@
   font-size: 11px;
   font-weight: var(--font-weight-regular);
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .cardDate {
@@ -947,7 +947,7 @@
   flex: 1 1 auto;
   height: 32px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-1);
   font-family: var(--font-family);
@@ -979,7 +979,7 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-3);
   cursor: pointer;
@@ -1078,7 +1078,7 @@
   gap: 10px;
   background: transparent;
   border: 1px dashed var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   min-height: 160px;
   padding: 10px;
   box-sizing: border-box;
@@ -1100,7 +1100,7 @@
 .newPlanIcon {
   width: 32px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid currentColor;
   display: flex;
   align-items: center;
@@ -1137,7 +1137,7 @@
   cursor: pointer;
   transition: background var(--transition-fast);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border-bottom: none;
   width: 100%;
   text-align: left;
@@ -1243,7 +1243,7 @@
   width: min(296px, calc(100vw - 24px));
   background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   animation: workspaceMenuReveal 160ms var(--ease-out, ease) both;
 }
@@ -1341,7 +1341,7 @@
 }
 
 .planPreviewCol {
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--surface-1) 92%, transparent);
   box-shadow: none;
   position: relative;
@@ -1354,7 +1354,7 @@
   left: 7px;
   right: 7px;
   height: 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--skeleton-1);
 }
 
@@ -1427,7 +1427,7 @@
   position: relative;
   aspect-ratio: 1 / 1;
   width: 38px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid transparent;
   background:
@@ -1495,7 +1495,7 @@
   max-height: min(520px, calc(100vh - 32px));
   background: var(--app-bg);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   overflow: hidden;
   animation: workspaceMenuReveal 160ms var(--ease-out, ease) both;
@@ -1525,7 +1525,7 @@
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   display: flex;
   align-items: center;
@@ -1570,7 +1570,7 @@
 
 .collectionItem {
   aspect-ratio: 1 / 1;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   overflow: hidden;
   cursor: pointer;
@@ -1637,7 +1637,7 @@
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   display: flex;
   align-items: center;
@@ -1689,7 +1689,7 @@
   color: var(--text-1);
   background: var(--surface-2);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   outline: none;
   transition: border-color var(--transition-fast), color var(--transition-fast);
   -webkit-appearance: none;
@@ -1725,7 +1725,7 @@
   color: var(--text-2);
   background: transparent;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -1776,7 +1776,7 @@
   background: var(--surface-2);
   color: var(--text-1);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -1886,7 +1886,7 @@
     bottom: calc(12px + var(--app-dock-clearance, 56px));
     transform: none;
     text-align: center;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     white-space: normal;
   }
   .planPopover {

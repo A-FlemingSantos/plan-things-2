@@ -58,7 +58,7 @@
   --settings-neutral-accent: var(--color-black);
   width: min(1120px, calc(100vw - 56px));
   height: min(780px, calc(100vh - 56px));
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
@@ -129,7 +129,7 @@
 .settingsModalCloseButton {
   width: 32px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: var(--text-3);
@@ -224,7 +224,7 @@
   align-items: center;
   gap: 9px;
   padding: 8px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: var(--font-weight-light);
@@ -473,7 +473,7 @@
   min-height: 28px;
   padding: 0 10px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-3);
   font-size: 12px;
@@ -493,7 +493,7 @@
   color: var(--text-1);
   background: var(--surface-2);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   outline: none;
   width: 100%;
   transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
@@ -522,7 +522,7 @@
   color: var(--text-1);
   background: var(--surface-2);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   outline: none;
   width: 100%;
   cursor: pointer;
@@ -549,7 +549,7 @@
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -575,7 +575,7 @@
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -595,7 +595,7 @@
   font-size: 13px;
   font-weight: var(--font-weight-light);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
   white-space: nowrap;
@@ -611,7 +611,7 @@
   font-size: 13px;
   font-weight: var(--font-weight-regular);
   border: 1px solid var(--danger-text);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition-fast);
   white-space: nowrap;
@@ -732,7 +732,7 @@
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
 }
@@ -783,14 +783,14 @@
   flex-wrap: wrap;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
 
 .colorSwatchButton {
   width: 22px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid color-mix(in srgb, var(--border-1) 70%, transparent);
   background: transparent;
   display: inline-flex;
@@ -843,7 +843,7 @@
   color: var(--text-2);
   background: var(--surface-2);
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
   display: inline-flex;
@@ -866,7 +866,7 @@
 .colorPaletteTriggerSwatch {
   width: 14px;
   height: 14px;
-  border-radius: 3px;
+  border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--border-1) 70%, transparent);
   display: inline-block;
   flex-shrink: 0;
@@ -891,7 +891,7 @@
   min-width: 240px;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   animation: settingsMoreReveal 160ms ease both;
@@ -933,7 +933,7 @@
   gap: 8px;
   padding: 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
   transition: background var(--transition-fast);
@@ -977,7 +977,7 @@
   right: 6px;
   font-size: 9px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   color: var(--text-3);
   border: 1px solid var(--border-1);
@@ -1005,7 +1005,7 @@
 .wsAvatarBox {
   width: 48px;
   height: 48px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   color: var(--text-1);
   font-size: 14px;
@@ -1060,7 +1060,7 @@
 .workspaceIconTrigger {
   height: 36px;
   padding: 0 10px 0 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--surface-2);
   color: var(--text-2);
@@ -1137,7 +1137,7 @@
   min-width: 236px;
   padding: 6px;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
   animation: settingsMoreReveal 160ms ease both;
@@ -1152,7 +1152,7 @@
 .workspaceIconOption {
   width: 44px;
   height: 44px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: var(--text-2);
@@ -1192,7 +1192,7 @@
 .storageBlock {
   padding: 14px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
 }
 
@@ -1217,7 +1217,7 @@
 .storageTrack {
   height: 5px;
   background: var(--surface-3);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   margin-bottom: 8px;
 }
@@ -1225,7 +1225,7 @@
 .storageFill {
   height: 100%;
   background: var(--text-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   transition: width .4s ease;
 }
 
@@ -1241,7 +1241,7 @@
 .planBlock {
   padding: 14px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   display: flex;
   flex-direction: column;
@@ -1272,7 +1272,7 @@
 .planActiveBadge {
   font-size: 11px;
   padding: 3px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--color-green) 18%, var(--surface-2));
   color: var(--color-green);
   border: 1px solid color-mix(in srgb, var(--color-green) 35%, var(--border-1));
@@ -1299,7 +1299,7 @@
   gap: 10px;
   text-align: left;
   border: 1px solid var(--border-1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--text-1);
   cursor: pointer;
@@ -1359,7 +1359,7 @@
   gap: 14px;
   padding: 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   transition: background var(--transition-fast);
 }
@@ -1368,7 +1368,7 @@
 .integrationIconBox {
   width: 36px;
   height: 36px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   border: 1px solid var(--border-1);
   display: flex;
@@ -1409,7 +1409,7 @@
   gap: 16px;
   padding: 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
 }
 
@@ -1440,7 +1440,7 @@
 .muteChip {
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   color: var(--text-2);
   background: var(--surface-2);
@@ -1463,7 +1463,7 @@
 .futureBadge {
   font-size: 10px;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--surface-3);
   color: var(--text-3);
   border: 1px solid var(--border-1);
@@ -1510,7 +1510,7 @@
   gap: 16px;
   padding: 10px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   transition: background var(--transition-fast);
 }
@@ -1540,7 +1540,7 @@
 .sessionCurrentLabel {
   font-size: 10px;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   white-space: nowrap;
 }
@@ -1567,7 +1567,7 @@
 ════════════════════════════════════════ */
 .dangerZone {
   border: 1px solid var(--danger-border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--danger-bg);
   padding: 14px;
 }
@@ -1610,7 +1610,7 @@
 
 .dialogCard {
   width: min(100%, 560px);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: var(--app-bg);
   box-shadow: var(--shadow-md);
@@ -1778,7 +1778,7 @@
     min-height: 32px;
     padding: 0 10px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     background: transparent;
     scroll-snap-align: center;
     font-size: 12px;
@@ -1801,7 +1801,7 @@
   }
 
   .settingsModalCard {
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     height: min(720px, calc(100vh - 40px));
   }
 
@@ -1836,7 +1836,7 @@
     width: 100%;
     min-height: calc(100vh - 28px);
     height: calc(100vh - 28px);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
 
   .settingsModalHeader {
@@ -1893,13 +1893,13 @@
     grid-template-columns: 36px minmax(0, 1fr) auto;
     gap: 12px;
     padding: 10px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
 
   .integrationIconBox {
     width: 36px;
     height: 36px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
 
   .integrationName {
@@ -1921,7 +1921,7 @@
     min-width: 88px;
     height: 32px;
     padding: 0 12px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
 }
 
@@ -1955,7 +1955,7 @@
   .settingsModalCard {
     min-height: calc(100vh - 20px);
     height: calc(100vh - 20px);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
 
   .field {
