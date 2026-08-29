@@ -14,6 +14,7 @@ import {
   applyDragOverToColumns,
   findCardIndex,
   findColumnIdForItem,
+  isColumnId,
   KANBAN_INBOX_DROP_ID,
   reorderColumnsByDrag,
 } from './boardDnDUtils.js'
@@ -23,14 +24,6 @@ const DRAG_TYPE_COLUMN = 'column'
 
 function getDragType(active) {
   return active?.data?.current?.type ?? DRAG_TYPE_CARD
-}
-
-function haveSameColumnOrder(leftColumns = [], rightColumns = []) {
-  if (leftColumns.length !== rightColumns.length) {
-    return false
-  }
-
-  return leftColumns.every((column, index) => column.id === rightColumns[index]?.id)
 }
 
 export function useKanbanBoardDnd({
@@ -63,10 +56,15 @@ export function useKanbanBoardDnd({
   }, [activeCardId, activeColumnId, columns])
 
   const columnIds = useMemo(() => columns.map((column) => column.id), [columns])
+  const columnIdsRef = useRef(columnIds)
+  columnIdsRef.current = columnIds
 
   const collisionDetection = useMemo(
-    () => createBoardCollisionDetection(columnIds, dragCollisionStateRef.current),
-    [columnIds],
+    () => createBoardCollisionDetection(
+      () => columnIdsRef.current,
+      dragCollisionStateRef.current,
+    ),
+    [],
   )
 
   const sensors = useSensors(
@@ -142,28 +140,6 @@ export function useKanbanBoardDnd({
     setDragOverColumnId(sourceColumnId)
   }, [])
 
-  const handleColumnDragOver = useCallback(({ active, over }) => {
-    if (!over) {
-      return
-    }
-
-    const activeId = String(active.id)
-    const overId = String(over.id)
-    const { columns: nextColumns, changed } = reorderColumnsByDrag(
-      dragColumnsRef.current,
-      activeId,
-      overId,
-    )
-
-    if (!changed) {
-      return
-    }
-
-    dragColumnsRef.current = nextColumns
-    columnsRef.current = nextColumns
-    updateColumns(() => nextColumns)
-  }, [updateColumns])
-
   const handleCardDragOver = useCallback(({ active, over }) => {
     const pointerColumnId = dragCollisionStateRef.current.getPointerColumnId()
 
@@ -202,12 +178,11 @@ export function useKanbanBoardDnd({
 
   const handleDragOver = useCallback((event) => {
     if (getDragType(event.active) === DRAG_TYPE_COLUMN) {
-      handleColumnDragOver(event)
       return
     }
 
     handleCardDragOver(event)
-  }, [handleCardDragOver, handleColumnDragOver])
+  }, [handleCardDragOver])
 
   const resetDragState = useCallback(() => {
     dragStartSnapshotRef.current = null
@@ -223,26 +198,38 @@ export function useKanbanBoardDnd({
     resetDragState()
   }, [resetDragState, restoreDragSnapshot])
 
-  const handleColumnDragEnd = useCallback(async (snapshot) => {
-    const finalColumns = columnsRef.current
-    const orderedColumnIds = finalColumns.map((column) => column.id)
-
-    if (!activePlanId || haveSameColumnOrder(snapshot, finalColumns)) {
+  const handleColumnDragEnd = useCallback(async ({ active, over }, snapshot) => {
+    if (!snapshot) {
       return
     }
 
-    if (!isBackendDriven) {
+    const overId = over && isColumnId(snapshot, String(over.id))
+      ? String(over.id)
+      : null
+    const { columns: nextColumns, changed } = reorderColumnsByDrag(
+      snapshot,
+      String(active.id),
+      overId,
+    )
+
+    if (!changed) {
+      return
+    }
+
+    dragColumnsRef.current = nextColumns
+    columnsRef.current = nextColumns
+    updateColumns(() => nextColumns)
+
+    if (!activePlanId || !isBackendDriven) {
       return
     }
 
     try {
-      await reorderColumns(orderedColumnIds)
+      await reorderColumns(nextColumns.map((column) => column.id))
     } catch (error) {
-      if (snapshot) {
-        dragColumnsRef.current = snapshot
-        columnsRef.current = snapshot
-        updateColumns(() => snapshot)
-      }
+      dragColumnsRef.current = snapshot
+      columnsRef.current = snapshot
+      updateColumns(() => snapshot)
       onReorderError?.(error)
     }
   }, [activePlanId, isBackendDriven, onReorderError, reorderColumns, updateColumns])
@@ -337,7 +324,7 @@ export function useKanbanBoardDnd({
     setDragOverColumnId(null)
 
     if (dragType === DRAG_TYPE_COLUMN) {
-      await handleColumnDragEnd(snapshot)
+      await handleColumnDragEnd(event, snapshot)
       return
     }
 

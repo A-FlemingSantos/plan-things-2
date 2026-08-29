@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, defaultAnimateLayoutChanges, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
   CircleAlert,
@@ -23,6 +23,14 @@ const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
 const ICON_STROKE = 1.75
 const COMPOSER_COLLAPSE_MS = 320
+
+function columnAnimateLayoutChanges(args) {
+  if (args.isSorting || args.wasDragging) {
+    return false
+  }
+
+  return defaultAnimateLayoutChanges(args)
+}
 
 const STATUS_ICONS = {
   CircleDashed,
@@ -417,6 +425,7 @@ function SortableKanbanColumn(props) {
       type: 'column',
       columnId: props.col.id,
     },
+    animateLayoutChanges: columnAnimateLayoutChanges,
   })
 
   return (

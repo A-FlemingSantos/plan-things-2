@@ -94,23 +94,83 @@ function pickClosestCardCollisionInColumn(
   return bestCollision ? [bestCollision] : []
 }
 
-function getColumnCollisions(args) {
-  const columnContainers = args.droppableContainers.filter((container) => (
-    getContainerType(args.droppableContainers, container.id) === COLUMN_TYPE
-  ))
+function getPointerX(args) {
+  if (Number.isFinite(args.pointerCoordinates?.x)) {
+    return args.pointerCoordinates.x
+  }
 
-  if (columnContainers.length === 0) {
+  const rect = args.collisionRect
+  if (rect && Number.isFinite(rect.left) && Number.isFinite(rect.width)) {
+    return rect.left + rect.width / 2
+  }
+
+  return null
+}
+
+export function pickHorizontalColumnOverId(pointerX, columnRects, activeId) {
+  if (pointerX == null || columnRects.length === 0) {
+    return null
+  }
+
+  const sorted = [...columnRects].sort((left, right) => left.left - right.left)
+  const activeKey = activeId == null ? null : String(activeId)
+  const others = sorted.filter((column) => String(column.id) !== activeKey)
+
+  let insertIndex = 0
+  for (const column of others) {
+    const centerX = column.left + column.width / 2
+    if (pointerX > centerX) {
+      insertIndex += 1
+    }
+  }
+
+  return String((sorted[insertIndex] ?? sorted[sorted.length - 1]).id)
+}
+
+function getColumnCollisions(args) {
+  const columnRects = []
+
+  for (const container of args.droppableContainers) {
+    if (getContainerType(args.droppableContainers, container.id) !== COLUMN_TYPE) {
+      continue
+    }
+
+    const rect = args.droppableRects.get(container.id)
+    if (!rect) {
+      continue
+    }
+
+    columnRects.push({
+      id: container.id,
+      left: rect.left,
+      width: rect.width,
+    })
+  }
+
+  if (columnRects.length === 0) {
     return []
   }
 
-  return closestCenter({
-    ...args,
-    droppableContainers: columnContainers,
-  })
+  const pointerX = getPointerX(args)
+  if (pointerX == null) {
+    const columnContainers = args.droppableContainers.filter((container) => (
+      getContainerType(args.droppableContainers, container.id) === COLUMN_TYPE
+    ))
+
+    return closestCenter({
+      ...args,
+      droppableContainers: columnContainers,
+    })
+  }
+
+  const overId = pickHorizontalColumnOverId(pointerX, columnRects, args.active?.id)
+  return overId ? [{ id: overId }] : []
 }
 
 export function createBoardCollisionDetection(columnIds, dragState) {
-  const columnIdSet = new Set(columnIds.map(String))
+  const resolveColumnIds = () => (
+    typeof columnIds === 'function' ? columnIds() : columnIds
+  )
 
   return function boardCollisionDetection(args) {
     const activeType = args.active?.data?.current?.type
@@ -118,6 +178,9 @@ export function createBoardCollisionDetection(columnIds, dragState) {
     if (activeType === COLUMN_TYPE) {
       return getColumnCollisions(args)
     }
+
+    const resolvedColumnIds = resolveColumnIds()
+    const columnIdSet = new Set(resolvedColumnIds.map(String))
 
     const { droppableContainers, droppableRects, pointerCoordinates } = args
     const stickyColumnId = dragState.getStickyColumnId()
@@ -141,7 +204,7 @@ export function createBoardCollisionDetection(columnIds, dragState) {
     }
 
     const columnsUnderPointerX = getColumnsByPointerX(
-      columnIds,
+      resolvedColumnIds,
       pointerCoordinates.x,
       droppableRects,
     )

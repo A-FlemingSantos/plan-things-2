@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DndContext, DragOverlay } from '@dnd-kit/core'
+import { DndContext, DragOverlay, MeasuringStrategy } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/context/AuthContext.jsx'
@@ -281,6 +281,7 @@ export default function KanbanBoard() {
   const {
     sensors,
     collisionDetection,
+    activeColumnId,
     activeDragCard,
     activeDragColumn,
     dragOverColumnId,
@@ -507,6 +508,9 @@ export default function KanbanBoard() {
         <DndContext
           sensors={sensors}
           collisionDetection={collisionDetection}
+          measuring={activeColumnId ? {
+            droppable: { strategy: MeasuringStrategy.Always },
+          } : undefined}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}

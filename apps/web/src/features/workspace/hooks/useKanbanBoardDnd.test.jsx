@@ -31,6 +31,21 @@ function buildColumns() {
   ]
 }
 
+function buildThreeColumns() {
+  return [
+    ...buildColumns(),
+    {
+      id: 'col-3',
+      title: 'To Do',
+      cards: [],
+    },
+  ]
+}
+
+function columnDrag(id) {
+  return { id, data: { current: { type: 'column' } } }
+}
+
 describe('useKanbanBoardDnd', () => {
   it('persists the final card index after cross-column drag end', async () => {
     let columns = buildColumns()
@@ -293,5 +308,90 @@ describe('useKanbanBoardDnd', () => {
 
     expect(columns.map((column) => column.id)).toEqual(['col-1', 'col-2'])
     expect(onReorderError).toHaveBeenCalledWith(error)
+  })
+
+  it('does not mutate list order during drag-over so the sortable strategy can animate the gap', () => {
+    let columns = buildThreeColumns()
+    const updateColumns = vi.fn((updater) => {
+      columns = typeof updater === 'function' ? updater(columns) : updater
+    })
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns,
+      moveCard: vi.fn(),
+      reorderColumns: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: columnDrag('col-1') })
+      result.current.handleDragOver({
+        active: columnDrag('col-1'),
+        over: { id: 'col-2' },
+      })
+    })
+
+    expect(updateColumns).not.toHaveBeenCalled()
+    expect(columns.map((column) => column.id)).toEqual(['col-1', 'col-2', 'col-3'])
+  })
+
+  it('ignores card droppables while dragging a list', () => {
+    let columns = buildThreeColumns()
+    const updateColumns = vi.fn((updater) => {
+      columns = typeof updater === 'function' ? updater(columns) : updater
+    })
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns,
+      moveCard: vi.fn(),
+      reorderColumns: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: columnDrag('col-1') })
+      result.current.handleDragOver({
+        active: columnDrag('col-1'),
+        over: { id: 'card-2' },
+      })
+    })
+
+    expect(updateColumns).not.toHaveBeenCalled()
+    expect(columns.map((column) => column.id)).toEqual(['col-1', 'col-2', 'col-3'])
+  })
+
+  it('moves a list into the first position when dropped on the first list', async () => {
+    let columns = buildThreeColumns()
+    const updateColumns = vi.fn((updater) => {
+      columns = typeof updater === 'function' ? updater(columns) : updater
+    })
+    const reorderColumns = vi.fn(() => Promise.resolve(true))
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns,
+      moveCard: vi.fn(),
+      reorderColumns,
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: columnDrag('col-3') })
+    })
+
+    await act(async () => {
+      await result.current.handleDragEnd({
+        active: columnDrag('col-3'),
+        over: { id: 'col-1' },
+      })
+    })
+
+    expect(columns.map((column) => column.id)).toEqual(['col-3', 'col-1', 'col-2'])
+    expect(reorderColumns).toHaveBeenCalledWith(['col-3', 'col-1', 'col-2'])
   })
 })

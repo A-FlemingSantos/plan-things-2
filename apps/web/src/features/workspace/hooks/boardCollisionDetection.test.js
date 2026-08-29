@@ -14,11 +14,17 @@ import { columnCardStackDropId, KANBAN_INBOX_DROP_ID } from './boardDnDUtils.js'
 import {
   createBoardCollisionDetection,
   createBoardDragCollisionState,
+  pickHorizontalColumnOverId,
 } from './boardCollisionDetection.js'
 
-function buildCollisionArgs({ pointer, droppableContainers, droppableRects }) {
+function buildCollisionArgs({
+  pointer,
+  droppableContainers,
+  droppableRects,
+  active = { id: 'card-1', rect: { current: { translated: null } } },
+}) {
   return {
-    active: { id: 'card-1', rect: { current: { translated: null } } },
+    active,
     collisionRect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 },
     droppableRects,
     droppableContainers,
@@ -58,6 +64,22 @@ function buildBoardRects() {
     ['card-2', buildCardStackRect(12, 120, 200)],
     ['card-4', buildCardStackRect(326, 120, 200)],
   ])
+}
+
+function buildThreeColumnRects() {
+  return new Map([
+    ['col-1', buildColumnRect(20)],
+    ['col-2', buildColumnRect(334)],
+    ['col-3', buildColumnRect(648)],
+  ])
+}
+
+function buildThreeColumnContainers() {
+  return [
+    { id: 'col-1', data: { current: { type: 'column' } }, rect: { current: null } },
+    { id: 'col-2', data: { current: { type: 'column' } }, rect: { current: null } },
+    { id: 'col-3', data: { current: { type: 'column' } }, rect: { current: null } },
+  ]
 }
 
 function buildBoardContainers() {
@@ -175,5 +197,57 @@ describe('boardCollisionDetection', () => {
 
     expect(collisions).toEqual([{ id: 'card-4' }])
     expect(closestCorners).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens a slot between two columns from the pointer in the gap, not the dragged list rect', () => {
+    const dragState = createBoardDragCollisionState()
+    const detect = createBoardCollisionDetection(['col-1', 'col-2', 'col-3'], dragState)
+
+    const collisions = detect(buildCollisionArgs({
+      active: { id: 'col-1', data: { current: { type: 'column' } } },
+      pointer: { x: 641, y: 120 },
+      droppableContainers: buildThreeColumnContainers(),
+      droppableRects: buildThreeColumnRects(),
+    }))
+
+    expect(collisions).toEqual([{ id: 'col-2' }])
+  })
+
+  it('targets the first column when the pointer is left of the first list center', () => {
+    const dragState = createBoardDragCollisionState()
+    const detect = createBoardCollisionDetection(['col-1', 'col-2', 'col-3'], dragState)
+
+    const collisions = detect(buildCollisionArgs({
+      active: { id: 'col-3', data: { current: { type: 'column' } } },
+      pointer: { x: 24, y: 80 },
+      droppableContainers: buildThreeColumnContainers(),
+      droppableRects: buildThreeColumnRects(),
+    }))
+
+    expect(collisions).toEqual([{ id: 'col-1' }])
+  })
+})
+
+describe('pickHorizontalColumnOverId', () => {
+  const columns = [
+    { id: 'col-1', left: 20, width: 300 },
+    { id: 'col-2', left: 334, width: 300 },
+    { id: 'col-3', left: 648, width: 300 },
+  ]
+
+  it('keeps the dragged first column in place while the pointer stays left of the next center', () => {
+    expect(pickHorizontalColumnOverId(100, columns, 'col-1')).toBe('col-1')
+  })
+
+  it('inserts at the start when dragging a later column onto the first half of the first list', () => {
+    expect(pickHorizontalColumnOverId(100, columns, 'col-3')).toBe('col-1')
+  })
+
+  it('uses the left list of a gap so space opens between In Progress and To Do', () => {
+    expect(pickHorizontalColumnOverId(641, columns, 'col-1')).toBe('col-2')
+  })
+
+  it('places a right-side list between the first two lists when the pointer is in that gap', () => {
+    expect(pickHorizontalColumnOverId(327, columns, 'col-3')).toBe('col-2')
   })
 })

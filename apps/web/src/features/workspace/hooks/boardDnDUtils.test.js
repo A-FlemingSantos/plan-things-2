@@ -131,4 +131,15 @@ describe('boardDnDUtils', () => {
     expect(result.changed).toBe(true)
     expect(result.columns.map((column) => column.id)).toEqual(['col-2', 'col-1'])
   })
+
+  it('moves a column to the first position', () => {
+    const columns = [
+      ...buildColumns(),
+      { id: 'col-3', title: 'To Do', cards: [] },
+    ]
+    const result = reorderColumnsByDrag(columns, 'col-3', 'col-1')
+
+    expect(result.changed).toBe(true)
+    expect(result.columns.map((column) => column.id)).toEqual(['col-3', 'col-1', 'col-2'])
+  })
 })
