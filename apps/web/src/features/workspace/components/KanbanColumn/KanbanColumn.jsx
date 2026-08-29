@@ -1,5 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useDroppable } from '@dnd-kit/core'
+import { defaultDropAnimationSideEffects, useDroppable } from '@dnd-kit/core'
 import { SortableContext, defaultAnimateLayoutChanges, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -24,6 +24,9 @@ const ICON_SIZE_MD = 14
 const ICON_STROKE = 1.75
 const COMPOSER_COLLAPSE_MS = 320
 const COLUMN_DRAG_OVERLAY_MAX_HEIGHT_FALLBACK_PX = 320
+export const COLUMN_DRAG_OVERLAY_HEIGHT_MS = 300
+const CARD_DRAG_OVERLAY_DROP_MS = 180
+const columnDragOverlayHeightById = new Map()
 
 function readColumnDragOverlayMaxHeightPx(columnNode) {
   const probe = document.createElement('div')
@@ -32,6 +35,116 @@ function readColumnDragOverlayMaxHeightPx(columnNode) {
   const height = probe.getBoundingClientRect().height
   probe.remove()
   return height > 0 ? height : COLUMN_DRAG_OVERLAY_MAX_HEIGHT_FALLBACK_PX
+}
+
+function findColumnDragOverlayNode(overlayRoot) {
+  if (!overlayRoot) return null
+  if (typeof overlayRoot.getAttribute === 'function' && overlayRoot.getAttribute('data-column-id')) {
+    return overlayRoot
+  }
+  return overlayRoot.querySelector?.('[data-column-id]') ?? null
+}
+
+function readColumnRestingHeightPx(columnId, overlayNode) {
+  const nodes = document.querySelectorAll(`[data-column-id="${columnId}"]`)
+  for (const node of nodes) {
+    if (node === overlayNode) continue
+    const height = node.getBoundingClientRect().height
+    if (height > 0) return height
+  }
+  return overlayNode.getBoundingClientRect().height
+}
+
+export function expandColumnDragOverlay(overlayRoot, restingHeightOverride) {
+  const column = findColumnDragOverlayNode(overlayRoot)
+  if (!column) return false
+
+  const columnId = column.getAttribute('data-column-id')
+  const remembered = columnId ? columnDragOverlayHeightById.get(columnId) : null
+  const restingHeight = (
+    (Number(restingHeightOverride) > 0 ? Number(restingHeightOverride) : 0)
+    || remembered?.restingHeight
+    || Number(column.dataset.kanbanDragRestingHeight)
+  )
+  if (!(restingHeight > 0)) return false
+
+  const currentHeight = column.getBoundingClientRect().height
+  column.dataset.kanbanDragRestingHeight = String(restingHeight)
+  column.dataset.kanbanDragExpanding = 'true'
+  column.style.maxHeight = `${restingHeight}px`
+
+  return currentHeight < restingHeight - 1
+}
+
+export function forgetColumnDragOverlayHeight(columnId) {
+  if (!columnId) return
+  columnDragOverlayHeightById.delete(columnId)
+}
+
+export function kanbanDropAnimation(args) {
+  const dragType = args.active?.data?.current?.type ?? args.active?.data?.type
+  const isColumn = dragType === 'column'
+  const boardColumnHeight = Number(args.active?.rect?.height)
+  const didExpand = isColumn
+    ? expandColumnDragOverlay(
+      args.dragOverlay.node,
+      boardColumnHeight > 0 ? boardColumnHeight : undefined,
+    )
+    : false
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+  const duration = prefersReducedMotion
+    ? 0
+    : (didExpand ? COLUMN_DRAG_OVERLAY_HEIGHT_MS : CARD_DRAG_OVERLAY_DROP_MS)
+
+  const { transform, active, dragOverlay } = args
+  const delta = {
+    x: dragOverlay.rect.left - active.rect.left,
+    y: dragOverlay.rect.top - active.rect.top,
+  }
+  const finalTransform = {
+    x: transform.x - delta.x,
+    y: transform.y - delta.y,
+    scaleX: 1,
+    scaleY: 1,
+  }
+  const cleanup = defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: '0',
+      },
+    },
+  })(args)
+
+  const finish = () => {
+    cleanup?.()
+    if (isColumn) {
+      forgetColumnDragOverlayHeight(String(active.id))
+    }
+  }
+
+  if (!duration) {
+    finish()
+    return undefined
+  }
+
+  const animation = dragOverlay.node.animate(
+    [
+      { transform: CSS.Transform.toString(transform) },
+      { transform: CSS.Transform.toString(finalTransform) },
+    ],
+    {
+      duration,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: 'forwards',
+    },
+  )
+
+  return new Promise((resolve) => {
+    animation.onfinish = () => {
+      finish()
+      resolve()
+    }
+  })
 }
 
 function columnAnimateLayoutChanges(args) {
@@ -218,12 +331,26 @@ export function KanbanColumnView({
     const node = columnNodeRef.current
     if (!node) return undefined
 
-    const fullHeight = node.getBoundingClientRect().height
     const maxHeight = readColumnDragOverlayMaxHeightPx(node)
-    if (fullHeight <= maxHeight + 1) return undefined
+    const remembered = columnDragOverlayHeightById.get(col.id)
 
+    if (remembered) {
+      node.dataset.kanbanDragRestingHeight = String(remembered.restingHeight)
+      node.classList.add(styles.columnDragOverlayCollapsed)
+      node.style.maxHeight = `${remembered.collapsedHeight}px`
+      return undefined
+    }
+
+    const restingHeight = readColumnRestingHeightPx(col.id, node)
+    if (!(restingHeight > 0) || restingHeight <= maxHeight + 1) return undefined
+
+    node.dataset.kanbanDragRestingHeight = String(restingHeight)
     node.classList.add(styles.columnDragOverlayCollapsed)
-    node.style.maxHeight = `${fullHeight}px`
+    columnDragOverlayHeightById.set(col.id, {
+      restingHeight,
+      collapsedHeight: maxHeight,
+    })
+    node.style.maxHeight = `${restingHeight}px`
 
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
       node.style.maxHeight = `${maxHeight}px`

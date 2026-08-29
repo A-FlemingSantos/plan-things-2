@@ -8,7 +8,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
-import KanbanColumn from '../../components/KanbanColumn/KanbanColumn.jsx'
+import KanbanColumn, { kanbanDropAnimation } from '../../components/KanbanColumn/KanbanColumn.jsx'
 import KanbanCard from '../../components/KanbanCard/KanbanCard.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
 import { useBoardColumns } from '../../hooks/useBoardColumns.js'
@@ -694,7 +694,7 @@ export default function KanbanBoard() {
         ) : null}
         </div>
         </div>
-        <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
+        <DragOverlay dropAnimation={kanbanDropAnimation}>
           {activeDragCard ? (
             <KanbanCard
               card={activeDragCard.card}

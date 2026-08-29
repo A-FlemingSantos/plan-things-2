@@ -1,7 +1,10 @@
 import { DndContext } from '@dnd-kit/core'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import KanbanColumn from './KanbanColumn.jsx'
+import KanbanColumn, {
+  expandColumnDragOverlay,
+  forgetColumnDragOverlayHeight,
+} from './KanbanColumn.jsx'
 
 const styles = new Proxy({}, { get: (_, key) => String(key) })
 
@@ -226,6 +229,7 @@ describe('KanbanColumn card composer', () => {
 describe('KanbanColumn drag overlay', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    forgetColumnDragOverlayHeight('col-1')
   })
   function emptyRect() {
     return {
@@ -331,5 +335,119 @@ describe('KanbanColumn drag overlay', () => {
     const column = document.querySelector('[data-column-id="col-1"]')
     expect(column.style.maxHeight).toBe('')
     expect(column.className).not.toContain('columnDragOverlayCollapsed')
+  })
+
+  it('expands a collapsed overlay back to its resting height', async () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function mockRect() {
+      if (this.getAttribute?.('data-column-id') === 'col-1') {
+        return {
+          ...emptyRect(),
+          width: 300,
+          height: 800,
+          right: 300,
+          bottom: 800,
+        }
+      }
+
+      return emptyRect()
+    })
+
+    render(
+      <KanbanColumn
+        {...buildColumnProps({
+          isDragOverlay: true,
+          col: {
+            id: 'col-1',
+            title: 'A fazer',
+            color: '#4290da',
+            cards: Array.from({ length: 12 }, (_, index) => ({
+              id: `card-${index}`,
+              title: `Card ${index + 1}`,
+              labelId: '',
+              memberIds: [],
+              comments: [],
+              attachments: [],
+              checklists: [],
+              dueDate: '',
+            })),
+          },
+        })}
+      />,
+    )
+
+    const column = document.querySelector('[data-column-id="col-1"]')
+    await waitFor(() => {
+      expect(column.style.maxHeight).toBe('320px')
+    })
+
+    expandColumnDragOverlay(column)
+    expect(column.style.maxHeight).toBe('800px')
+    expect(column.dataset.kanbanDragExpanding).toBe('true')
+  })
+
+  it('expands back to the on-board height instead of the full card stack', async () => {
+    const source = document.createElement('div')
+    source.setAttribute('data-column-id', 'col-1')
+    document.body.appendChild(source)
+
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function mockRect() {
+      if (this === source) {
+        return {
+          ...emptyRect(),
+          width: 300,
+          height: 520,
+          right: 300,
+          bottom: 520,
+        }
+      }
+
+      if (this.getAttribute?.('data-column-id') === 'col-1') {
+        return {
+          ...emptyRect(),
+          width: 300,
+          height: 1200,
+          right: 300,
+          bottom: 1200,
+        }
+      }
+
+      return emptyRect()
+    })
+
+    try {
+      render(
+        <KanbanColumn
+          {...buildColumnProps({
+            isDragOverlay: true,
+            col: {
+              id: 'col-1',
+              title: 'A fazer',
+              color: '#4290da',
+              cards: Array.from({ length: 12 }, (_, index) => ({
+                id: `card-${index}`,
+                title: `Card ${index + 1}`,
+                labelId: '',
+                memberIds: [],
+                comments: [],
+                attachments: [],
+                checklists: [],
+                dueDate: '',
+              })),
+            },
+          })}
+        />,
+      )
+
+      const column = document.querySelector('[class*="columnDragOverlay"]')
+
+      await waitFor(() => {
+        expect(column.style.maxHeight).toBe('320px')
+      })
+
+      expandColumnDragOverlay(column)
+      expect(column.style.maxHeight).toBe('520px')
+    } finally {
+      source.remove()
+    }
   })
 })

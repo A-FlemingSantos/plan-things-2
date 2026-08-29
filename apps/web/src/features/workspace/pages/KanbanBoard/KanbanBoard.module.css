@@ -1386,6 +1386,11 @@
   -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
 }
 
+.columnDragOverlayCollapsed:not(.columnCompact)[data-kanban-drag-expanding='true'] .colCards {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .columnDragOverlayCollapsed:not(.columnCompact) {
     transition: none;
