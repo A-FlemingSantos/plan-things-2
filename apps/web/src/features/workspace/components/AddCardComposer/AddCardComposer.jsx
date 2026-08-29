@@ -11,6 +11,7 @@ export default function AddCardComposer({
   setNewCardText,
   onSubmit,
   onDismiss,
+  onCollapseEnd,
   errorMessage,
   isSubmitting,
   styles,
@@ -51,6 +52,13 @@ export default function AddCardComposer({
     }
   }
 
+  const handleExpandTransitionEnd = (event) => {
+    if (event.target !== event.currentTarget) return
+    if (event.propertyName !== 'grid-template-rows') return
+    if (addingCard || isSubmitting) return
+    onCollapseEnd?.()
+  }
+
   return (
     <div className={styles.addCardWrap}>
       <div
@@ -69,7 +77,7 @@ export default function AddCardComposer({
           Adicionar cartão
         </button>
 
-        <div className={styles.addCardExpand} aria-hidden={!addingCard}>
+        <div className={styles.addCardExpand} aria-hidden={!addingCard} onTransitionEnd={handleExpandTransitionEnd}>
           <div className={styles.addCardExpandInner}>
             <div className={styles.addCardForm}>
               <div className={styles.addCardFormBody}>

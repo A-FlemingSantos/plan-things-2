@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -22,6 +22,7 @@ import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
 const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
 const ICON_STROKE = 1.75
+const COMPOSER_COLLAPSE_MS = 320
 
 const STATUS_ICONS = {
   CircleDashed,
@@ -86,9 +87,11 @@ export function KanbanColumnView({
   const menuAnchorRef = useRef(null)
   const cardsScrollRef = useRef(null)
   const lockedCardsHeightRef = useRef(null)
+  const composerClosingRef = useRef(false)
+  const composerCloseTimeoutRef = useRef(null)
   const [lockedCardsHeight, setLockedCardsHeight] = useState(null)
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
-  const isComposerOpen = addingCard || isAddingCard
+  const isComposerOpen = addingCard || isAddingCard || lockedCardsHeight != null
   const hasColumnColor = Boolean(col.color?.trim())
   const cardIds = col.cards.map((card) => card.id)
 
@@ -124,6 +127,12 @@ export function KanbanColumnView({
     }
   }
 
+  const clearComposerCloseTimeout = () => {
+    if (composerCloseTimeoutRef.current == null) return
+    window.clearTimeout(composerCloseTimeoutRef.current)
+    composerCloseTimeoutRef.current = null
+  }
+
   const lockCardsScrollHeight = () => {
     if (lockedCardsHeightRef.current != null) return
     const node = cardsScrollRef.current
@@ -134,12 +143,22 @@ export function KanbanColumnView({
   }
 
   const unlockCardsScrollHeight = () => {
+    clearComposerCloseTimeout()
+    composerClosingRef.current = false
+    if (lockedCardsHeightRef.current == null) return
     lockedCardsHeightRef.current = null
     setLockedCardsHeight(null)
   }
 
+  const finishComposerClose = () => {
+    if (!composerClosingRef.current) return
+    unlockCardsScrollHeight()
+  }
+
   const startAddingCard = () => {
     if (isAddingCard || isDragOverlay) return
+    composerClosingRef.current = false
+    clearComposerCloseTimeout()
     lockCardsScrollHeight()
     setAddingCard(true)
     setCardError(null)
@@ -150,8 +169,24 @@ export function KanbanColumnView({
     setAddingCard(false)
     setNewCardText('')
     setCardError(null)
-    unlockCardsScrollHeight()
+
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+      unlockCardsScrollHeight()
+      return
+    }
+
+    composerClosingRef.current = true
+    clearComposerCloseTimeout()
+    composerCloseTimeoutRef.current = window.setTimeout(() => {
+      composerCloseTimeoutRef.current = null
+      finishComposerClose()
+    }, COMPOSER_COLLAPSE_MS)
   }
+
+  useEffect(() => () => {
+    if (composerCloseTimeoutRef.current == null) return
+    window.clearTimeout(composerCloseTimeoutRef.current)
+  }, [])
 
   const submitRename = async () => {
     const nextTitle = renameVal.trim()
@@ -270,6 +305,7 @@ export function KanbanColumnView({
                     onToggleCompactView?.(col.id)
                     setAddingCard(false)
                     setCardError(null)
+                    unlockCardsScrollHeight()
                   }}
                   onClose={() => setShowMenu(false)}
                   colorOptions={colorOptions}
@@ -356,6 +392,7 @@ export function KanbanColumnView({
             setNewCardText={setNewCardText}
             onSubmit={submitCard}
             onDismiss={cancelAddingCard}
+            onCollapseEnd={finishComposerClose}
             errorMessage={cardError}
             isSubmitting={isAddingCard}
             styles={styles}
