@@ -15,8 +15,9 @@ async function expectWorkspaceHomeShell() {
   }, { timeout: 4000 })
 
   expect(
-    await screen.findByPlaceholderText('Buscar planos...', {}, { timeout: 4000 }),
-  ).toBeInTheDocument()
+    await screen.findByRole('link', { name: 'Workspace' }, { timeout: 4000 }),
+  ).toHaveAttribute('aria-current', 'page')
+  expect(await screen.findByRole('heading', { name: 'Planos' })).toBeInTheDocument()
 }
 
 function formatTodayAsScheduleDateValue() {
@@ -200,7 +201,7 @@ describe('App smoke flows', () => {
       expect(window.location.pathname).toBe('/settings')
     }, { timeout: 4000 })
     expect(await screen.findByRole('dialog', { name: 'Configurações' }, { timeout: 4000 })).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Buscar planos...')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('keeps legacy seeded due dates in pt-BR after opening and saving the date modal', async () => {
@@ -250,7 +251,7 @@ describe('App smoke flows', () => {
   it('redirects the authenticated legacy files library route to workspace', async () => {
     renderApp('/files', { session: createDemoSession() })
 
-    expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
     expect(window.location.pathname).toBe('/workspace')
     expect(screen.queryByPlaceholderText('Buscar arquivos...')).not.toBeInTheDocument()
   })
@@ -337,10 +338,10 @@ describe('App smoke flows', () => {
 
     expect(await screen.findByRole('menu')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /contas salvas de arthur santos/i })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Meu perfil' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Upgrade' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Configurações' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Sair' })).toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Meu perfil' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Configurações' })).not.toBeInTheDocument()
   })
 
   it('opens the saved accounts submenu from the dock account menu', async () => {
@@ -436,7 +437,7 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/settings')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('opens the workspace section from Upgrade in the dock account menu', async () => {
@@ -484,7 +485,7 @@ describe('App smoke flows', () => {
 
     renderApp('/workspace', { session: createDemoSession() })
 
-    expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(await screen.findByRole('button', { name: 'Configurações' }))
 
@@ -492,7 +493,7 @@ describe('App smoke flows', () => {
     expect(window.location.pathname).toBe('/settings')
     expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Configurações' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(screen.getByRole('button', { name: 'Workspace' }))
 
@@ -505,7 +506,7 @@ describe('App smoke flows', () => {
       expect(screen.queryByRole('dialog', { name: 'Configurações' })).not.toBeInTheDocument()
     })
 
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('reopens settings over the original page after a Gmail callback redirect', async () => {
@@ -516,7 +517,7 @@ describe('App smoke flows', () => {
     })
 
     expect(await screen.findByRole('dialog', { name: 'Configurações' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
     expect(await screen.findByText('Gmail conectado com sucesso.')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Fechar configurações' }))
@@ -533,7 +534,7 @@ describe('App smoke flows', () => {
     renderApp('/settings', { session: createDemoSession() })
 
     const settingsDialog = await screen.findByRole('dialog', { name: 'Configurações' })
-    expect(screen.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getAllByRole('button', { name: 'Salvar alterações' })).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /salvar preferências/i })).not.toBeInTheDocument()
 
@@ -614,23 +615,26 @@ describe('App smoke flows', () => {
     expect(await screen.findAllByText('Plano Renomeado QA')).not.toHaveLength(0)
   })
 
-  it('renders the shared bottom dock across product screens', async () => {
+  it('renders the shared authenticated header across product screens', async () => {
     const user = userEvent.setup()
 
     renderApp('/workspace', { session: createDemoSession() })
 
-    expect(await screen.findByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
-    const dock = document.querySelector('[data-app-navigation-dock]')
-    expect(dock).toBeInTheDocument()
-    expect(within(dock).getByRole('link', { name: 'Início' })).toBeInTheDocument()
-    expect(within(dock).getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs')
-    expect(within(dock).getByRole('link', { name: 'Quadros' })).toBeInTheDocument()
-    expect(within(dock).getByRole('button', { name: 'Abrir menu da conta' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Workspace' })).toHaveAttribute('aria-current', 'page')
+    const header = document.querySelector('[data-authenticated-app-header]')
+    expect(header).toBeInTheDocument()
+    expect(within(header).getByRole('link', { name: 'Workspace' })).toBeInTheDocument()
+    expect(within(header).getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs')
+    expect(within(header).getByRole('link', { name: 'Plano' })).toBeInTheDocument()
+    expect(within(header).getByRole('button', { name: 'GitHub' })).toBeInTheDocument()
+    expect(within(header).getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
+    expect(within(header).getByRole('button', { name: 'Abrir menu da conta' })).toBeInTheDocument()
 
     await user.click(await screen.findByRole('button', { name: /lançamento do produto/i }))
 
     expect(await screen.findAllByText('Adicionar lista')).not.toHaveLength(0)
-    expect(document.querySelector('[data-app-navigation-dock]')).toBeInTheDocument()
+    expect(document.querySelector('[data-authenticated-app-header]')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Plano' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('shows the liquid-glass preference in general settings', async () => {

@@ -13,10 +13,17 @@ vi.mock('./features/auth/context/AuthContext.jsx', () => ({
     isReady: true,
     isAuthenticated: true,
     sessionMode: 'authenticated',
+    workspace: { name: 'Workspace' },
     pendingLogoutRedirect: null,
     clearPendingLogoutRedirect: vi.fn(),
     pendingAccountRedirect: null,
     clearPendingAccountRedirect: vi.fn(),
+  }),
+}))
+
+vi.mock('./features/workspace/context/PlansContext.jsx', () => ({
+  usePlans: () => ({
+    plans: [],
   }),
 }))
 
@@ -62,8 +69,12 @@ vi.mock('./features/workspace/pages/KanbanBoard/KanbanBoard.jsx', () => ({
   default: () => <main>Board</main>,
 }))
 
-vi.mock('./shared/components/AuthenticatedAppHeader/AuthenticatedAppHeader.jsx', () => ({
-  default: () => null,
+vi.mock('./shared/components/SidebarAccountMenu/SidebarAccountMenu.jsx', () => ({
+  default: () => (
+    <button type="button" aria-label="Abrir menu da conta">
+      Conta
+    </button>
+  ),
 }))
 
 vi.mock('./features/workspace/pages/Workspace/Workspace.jsx', async () => {
@@ -85,13 +96,13 @@ vi.mock('./features/workspace/pages/Workspace/Workspace.jsx', async () => {
   }
 })
 
-describe('App navigation dock visibility', () => {
+describe('App authenticated header visibility', () => {
   beforeEach(() => {
     workspaceState.showLoading = true
     workspaceState.useFullscreenLoading = false
   })
 
-  it('keeps the authenticated navigation dock visible during embedded loading', () => {
+  it('keeps the authenticated header visible during embedded loading', () => {
     render(
       <MemoryRouter initialEntries={['/workspace']}>
         <App />
@@ -102,7 +113,7 @@ describe('App navigation dock visibility', () => {
     expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeInTheDocument()
   })
 
-  it('hides the authenticated navigation dock during fullscreen loading', () => {
+  it('hides the authenticated header during fullscreen loading', () => {
     workspaceState.showLoading = true
     workspaceState.useFullscreenLoading = true
 
@@ -116,7 +127,7 @@ describe('App navigation dock visibility', () => {
     expect(screen.queryByRole('navigation', { name: 'Navegação principal' })).not.toBeInTheDocument()
   })
 
-  it('shows the authenticated navigation dock when route content is ready', () => {
+  it('shows the authenticated header when route content is ready', () => {
     workspaceState.showLoading = false
 
     render(

@@ -45,7 +45,6 @@
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  /* Board is full-bleed under the fixed dock; clearance lives in .board padding. */
   padding-bottom: 0;
 }
 
@@ -184,7 +183,7 @@
    BOARD CANVAS
 ════════════════════════════════════════ */
 .board {
-  --board-bottom-padding: 72px;
+  --board-bottom-padding: 24px;
   display: flex;
   gap: 14px;
   padding: var(--board-canvas-top-padding) var(--board-inline-padding) var(--board-bottom-padding);
@@ -6378,7 +6377,7 @@
     --board-inline-padding: 14px;
     --board-section-padding: 10px;
   }
-  .board       { padding-bottom: 68px; }
+  .board       { padding-bottom: 24px; }
   .cardModal {
     width: 100%;
     max-width: 100%;
@@ -6445,7 +6444,7 @@
     width: 100%;
     justify-content: space-between;
   }
-  .board  { padding-bottom: 56px; gap: 8px; }
+  .board  { padding-bottom: 20px; gap: 8px; }
   .column { --column-width: min(264px, calc(100vw - 32px)); }
   .modalOverlay { padding: 16px 10px 10px; }
   .cardModal { max-width: 100%; max-height: calc(100dvh - 16px); border-radius: var(--radius-md); }

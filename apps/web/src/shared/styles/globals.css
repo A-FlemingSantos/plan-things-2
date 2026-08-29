@@ -69,7 +69,7 @@
   --mobile-app-header-height: 60px;
   --mobile-app-header-safe-top: env(safe-area-inset-top, 0px);
   --mobile-app-header-offset: calc(var(--mobile-app-header-height) + var(--mobile-app-header-safe-top));
-  --authenticated-app-header-height: 40px;
+  --authenticated-app-header-height: 44px;
   --authenticated-app-header-offset: calc(var(--authenticated-app-header-height) + env(safe-area-inset-top, 0px));
   --z-app-page-base: 1;
   --z-app-page-sticky: 8;

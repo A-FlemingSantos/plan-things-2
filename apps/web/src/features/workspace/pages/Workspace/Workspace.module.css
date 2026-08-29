@@ -175,7 +175,7 @@
 /* Content */
 .content {
   flex: 1;
-  padding: 40px 48px calc(48px + var(--app-dock-clearance, 56px));
+  padding: 40px 48px 48px;
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -506,7 +506,7 @@
 
 .notification {
   position: fixed;
-  bottom: calc(16px + var(--app-dock-clearance, 56px));
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 700;
@@ -1804,7 +1804,7 @@
     --workspace-content-top-padding: 24px;
   }
   .topbar  { padding: 24px 32px 22px; }
-  .content { padding: 32px 32px calc(40px + var(--app-dock-clearance, 56px)); }
+  .content { padding: 32px 32px 40px; }
   .topbarRight {
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -1860,7 +1860,7 @@
     font-size: 20px;
     line-height: 1.1;
   }
-  .content { padding: 28px 20px calc(36px + var(--app-dock-clearance, 56px)); }
+  .content { padding: 28px 20px 36px; }
   .sectionHeader {
     align-items: center;
     justify-content: space-between;
@@ -1883,7 +1883,7 @@
   .notification {
     left: 12px;
     right: 12px;
-    bottom: calc(12px + var(--app-dock-clearance, 56px));
+    bottom: 12px;
     transform: none;
     text-align: center;
     border-radius: var(--radius-sm);
@@ -1912,7 +1912,7 @@
     padding: 18px 16px 16px;
   }
   .content {
-    padding: 24px 16px calc(32px + var(--app-dock-clearance, 56px));
+    padding: 24px 16px 32px;
     gap: 20px;
   }
   .plansGalleryBody {
