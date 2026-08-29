@@ -299,7 +299,6 @@ export default function KanbanBoard() {
     setNewColTitle('')
     setNewColColor('')
     setNewColStatus(KANBAN_DEFAULT_COLUMN_STATUS)
-    setAddingCol(false)
     setAddColumnError(null)
 
     try {

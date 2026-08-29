@@ -109,7 +109,7 @@ export function KanbanColumnView({
       setNewCardText('')
       setCardError(null)
       await onAddCard(col.id, nextCardTitle)
-      setAddingCard(false)
+      setAddingCard(true)
     } catch (error) {
       setAddingCard(true)
       setNewCardText(nextCardTitle)

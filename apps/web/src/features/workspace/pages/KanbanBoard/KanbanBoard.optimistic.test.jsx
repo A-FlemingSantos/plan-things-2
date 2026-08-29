@@ -378,7 +378,7 @@ describe('KanbanBoard optimistic feedback', () => {
     })
   })
 
-  it('closes the add-column composer immediately while the backend request is pending and reopens it on failure', async () => {
+  it('keeps the add-column composer open while the backend request is pending and restores it on failure', async () => {
     const deferred = createDeferred()
     boardActions.createColumn.mockReturnValue(deferred.promise)
 
@@ -388,7 +388,7 @@ describe('KanbanBoard optimistic feedback', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Adicionar lista' }))
 
     await waitFor(() => {
-      expect(screen.queryByLabelText('Nome da lista')).toBeNull()
+      expect(screen.getByLabelText('Nome da lista')).toHaveValue('')
     })
 
     deferred.reject(new Error('Falha ao criar lista'))

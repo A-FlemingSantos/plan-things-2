@@ -70,6 +70,13 @@ describe('KanbanColumn card composer', () => {
     })
 
     resolveCreation(true)
+
+    await waitFor(() => {
+      const input = screen.getByLabelText('Título do cartão')
+      expect(input).toHaveAttribute('tabindex', '0')
+      expect(input).toHaveValue('')
+      expect(input.closest('[aria-hidden="true"]')).toBeNull()
+    })
   })
 
   it('opens cards with the latest column title after the column is renamed', () => {
