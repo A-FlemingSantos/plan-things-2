@@ -12,6 +12,7 @@ import {
   Loader,
   Plus,
 } from 'lucide-react'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import AddCardComposer from '../AddCardComposer/AddCardComposer.jsx'
 import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard, { KanbanCardView } from '../KanbanCard/KanbanCard.jsx'
@@ -83,7 +84,11 @@ export function KanbanColumnView({
   const [isAddingCard, setIsAddingCard] = useState(false)
   const renameRef = useRef(null)
   const menuAnchorRef = useRef(null)
+  const cardsScrollRef = useRef(null)
+  const lockedCardsHeightRef = useRef(null)
+  const [lockedCardsHeight, setLockedCardsHeight] = useState(null)
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
+  const isComposerOpen = addingCard || isAddingCard
   const hasColumnColor = Boolean(col.color?.trim())
   const cardIds = col.cards.map((card) => card.id)
 
@@ -119,8 +124,23 @@ export function KanbanColumnView({
     }
   }
 
+  const lockCardsScrollHeight = () => {
+    if (lockedCardsHeightRef.current != null) return
+    const node = cardsScrollRef.current
+    if (!node) return
+    const nextHeight = node.getBoundingClientRect().height
+    lockedCardsHeightRef.current = nextHeight
+    setLockedCardsHeight(nextHeight)
+  }
+
+  const unlockCardsScrollHeight = () => {
+    lockedCardsHeightRef.current = null
+    setLockedCardsHeight(null)
+  }
+
   const startAddingCard = () => {
     if (isAddingCard || isDragOverlay) return
+    lockCardsScrollHeight()
     setAddingCard(true)
     setCardError(null)
   }
@@ -130,6 +150,7 @@ export function KanbanColumnView({
     setAddingCard(false)
     setNewCardText('')
     setCardError(null)
+    unlockCardsScrollHeight()
   }
 
   const submitRename = async () => {
@@ -165,6 +186,7 @@ export function KanbanColumnView({
         ${isDragging ? styles.columnDragging : ''}
         ${isDragOverlay ? styles.columnDragOverlay : ''}
         ${isCompact ? styles.columnCompact : ''}
+        ${isComposerOpen ? styles.columnComposerOpen : ''}
       `}
       data-column-id={col.id}
       style={{
@@ -296,29 +318,40 @@ export function KanbanColumnView({
         <>
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
             <div
-              ref={setCardStackDropRef}
-              className={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
+              ref={cardsScrollRef}
+              className={`${styles.colCardsScroll} ${isEmptyColumn ? styles.colCardsScrollEmpty : ''} ${lockedCardsHeight != null ? styles.colCardsScrollLocked : ''}`}
+              style={lockedCardsHeight != null ? { height: lockedCardsHeight } : undefined}
             >
-              {col.cards.map((card) => (
-                <KanbanCard
-                  key={card.uiKey ?? card.id}
-                  card={card}
-                  colId={col.id}
-                  colTitle={col.title}
-                  onClick={onCardClick}
-                  isConfirmed={Boolean(card.isCompleted)}
-                  onToggleConfirmed={onToggleCardCompleted}
-                  labels={labels}
-                  members={members}
-                  styles={styles}
-                />
-              ))}
+              <CustomScrollArea
+                className={styles.colCardsScrollArea}
+                viewportClassName={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
+                viewportRef={setCardStackDropRef}
+                enabled={col.cards.length > 0}
+                refreshKey={`${col.id}:${col.cards.length}:${lockedCardsHeight ?? 'auto'}`}
+              >
+                {col.cards.map((card) => (
+                  <KanbanCard
+                    key={card.uiKey ?? card.id}
+                    card={card}
+                    colId={col.id}
+                    colTitle={col.title}
+                    onClick={onCardClick}
+                    isConfirmed={Boolean(card.isCompleted)}
+                    onToggleConfirmed={onToggleCardCompleted}
+                    labels={labels}
+                    members={members}
+                    styles={styles}
+                  />
+                ))}
+              </CustomScrollArea>
             </div>
           </SortableContext>
 
           <AddCardComposer
             addingCard={addingCard}
-            setAddingCard={setAddingCard}
+            setAddingCard={(nextOpen) => {
+              if (nextOpen) startAddingCard()
+            }}
             newCardText={newCardText}
             setNewCardText={setNewCardText}
             onSubmit={submitCard}
