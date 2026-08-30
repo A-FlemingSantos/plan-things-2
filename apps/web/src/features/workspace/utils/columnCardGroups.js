@@ -116,6 +116,33 @@ export function replaceColumnGroupId(columns, columnId, previousGroupId, nextGro
   })
 }
 
+export function removeColumnGroup(columns, columnId, groupId) {
+  if (!Array.isArray(columns) || !columnId || !groupId) {
+    return columns
+  }
+
+  let hasChanges = false
+  const nextColumns = columns.map((column) => {
+    if (column.id !== columnId) {
+      return column
+    }
+
+    const groups = normalizeColumnGroups(column.groups)
+    const nextGroups = groups.filter((group) => group.id !== groupId)
+    if (nextGroups.length === groups.length) {
+      return column
+    }
+
+    hasChanges = true
+    return {
+      ...column,
+      groups: nextGroups,
+    }
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
 export function buildColumnListSegments(cards, groups) {
   const cardList = Array.isArray(cards) ? cards : []
   const indexById = new Map(cardList.map((card, index) => [card.id, index]))

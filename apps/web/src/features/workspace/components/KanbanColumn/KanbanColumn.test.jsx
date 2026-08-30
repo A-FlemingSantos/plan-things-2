@@ -536,5 +536,26 @@ describe('KanbanColumn card groups', () => {
     fireEvent.click(screen.getByRole('button', { name: /recolher sprint/i }))
     expect(onUpdateColumnGroup).toHaveBeenCalledWith('col-1', 'group-1', { collapsed: true })
   })
+
+  it('removes a group from the header without deleting cards', () => {
+    const onDeleteColumnGroup = vi.fn()
+
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [
+          { id: 'group-1', title: 'Sprint', startCardId: 'card-2', collapsed: false },
+        ],
+      },
+      onDeleteColumnGroup,
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /remover sprint/i }))
+    expect(onDeleteColumnGroup).toHaveBeenCalledWith('col-1', 'group-1')
+    expect(screen.getByRole('button', { name: /abrir cartão segundo/i })).toBeTruthy()
+  })
 })
 

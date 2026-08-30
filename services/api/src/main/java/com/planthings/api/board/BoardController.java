@@ -91,6 +91,14 @@ public class BoardController {
     ));
   }
 
+  @DeleteMapping("/groups/{groupId}")
+  public ApiEnvelope<BoardService.BoardView> deleteColumnGroup(
+      @PathVariable UUID planId,
+      @PathVariable UUID groupId
+  ) {
+    return ApiEnvelope.ok(boardService.deleteColumnGroup(planId, groupId));
+  }
+
   @PostMapping("/cards")
   public ApiEnvelope<BoardService.BoardCardView> createCard(@PathVariable UUID planId, @Valid @RequestBody CardRequest request) {
     return ApiEnvelope.ok(boardService.createCard(planId, request.columnId(), request.title(), request.description(), request.labelId(), request.assigneeIds(), request.completed(), request.starred(), request.startAt(), request.dueAt()));
