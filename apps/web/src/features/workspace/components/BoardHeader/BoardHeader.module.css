@@ -270,6 +270,43 @@
   outline-offset: 2px;
 }
 
+.githubIntegrationButton {
+  all: unset;
+  box-sizing: border-box;
+  height: 28px;
+  max-width: min(220px, 34vw);
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--border-1);
+  color: var(--text-1);
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.githubIntegrationButton:hover,
+.githubIntegrationButtonOpen {
+  background: var(--border-2);
+}
+
+.githubIntegrationButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.githubIntegrationRepoName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .shareMenuWrap {
   position: relative;
   display: inline-flex;
@@ -352,6 +389,14 @@
     padding: 0 9px;
     font-size: 11px;
     gap: 4px;
+  }
+
+  .githubIntegrationButton {
+    height: 26px;
+    max-width: min(180px, 42vw);
+    padding: 0 9px;
+    font-size: 11px;
+    gap: 5px;
   }
 
   .planName {

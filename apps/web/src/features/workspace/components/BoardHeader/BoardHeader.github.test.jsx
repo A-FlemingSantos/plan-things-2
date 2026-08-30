@@ -25,4 +25,42 @@ describe('BoardHeader GitHub integration', () => {
     expect(screen.getByRole('dialog', { name: 'Integrações do GitHub do plano' })).toBeInTheDocument()
     expect(screen.getAllByText('MVP GitHub')).toHaveLength(2)
   })
+
+  it('renders a GitHub pill with the connected repo name', () => {
+    render(
+      <BoardHeader
+        planName="MVP GitHub"
+        githubIntegration={{
+          status: 'ready',
+          isManager: true,
+          connectedRepos: [{
+            id: '1',
+            fullName: 'plan-things/core',
+          }],
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Integrações do GitHub (plan-things/core)' })).toBeInTheDocument()
+    expect(screen.getByText('plan-things/core')).toBeInTheDocument()
+  })
+
+  it('shows a count suffix when multiple repos are connected', () => {
+    render(
+      <BoardHeader
+        planName="MVP GitHub"
+        githubIntegration={{
+          status: 'ready',
+          isManager: true,
+          connectedRepos: [
+            { id: '1', fullName: 'plan-things/core' },
+            { id: '2', fullName: 'plan-things/docs' },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Integrações do GitHub (plan-things/core +1)' })).toBeInTheDocument()
+    expect(screen.getByText('plan-things/core +1')).toBeInTheDocument()
+  })
 })

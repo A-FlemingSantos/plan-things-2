@@ -11,6 +11,7 @@ import {
   Route,
   Share,
 } from 'lucide-react'
+import { SiGithub } from 'react-icons/si'
 import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import PlanSharePopover from '../PlanSharePopover/PlanSharePopover.jsx'
 import PlanGitHubIntegrationModal from '../PlanGitHubIntegrationModal/PlanGitHubIntegrationModal.jsx'
@@ -110,6 +111,14 @@ export default function BoardHeader({
   }
 
   const sharePlan = plan ?? { name: planName }
+  const connectedRepos = githubIntegration?.connectedRepos ?? []
+  const primaryConnectedRepo = connectedRepos[0] ?? null
+  const hasConnectedRepo = Boolean(primaryConnectedRepo?.fullName)
+  const connectedRepoLabel = hasConnectedRepo
+    ? (connectedRepos.length > 1
+      ? `${primaryConnectedRepo.fullName} +${connectedRepos.length - 1}`
+      : primaryConnectedRepo.fullName)
+    : null
 
   return (
     <header className={styles.header}>
@@ -179,24 +188,55 @@ export default function BoardHeader({
             <span className={styles.actionsDivider} aria-hidden="true" />
           </>
         ) : null}
-        {LEADING_ACTION_ITEMS.map(({ id, Icon, label }) => (
-          <button
-            key={id}
-            ref={id === 'blocks' ? githubButtonRef : undefined}
-            type="button"
-            className={styles.iconButton}
-            aria-label={id === 'blocks' ? 'Integrações do GitHub' : label}
-            aria-haspopup={id === 'blocks' ? 'dialog' : undefined}
-            aria-expanded={id === 'blocks' ? githubOpen : undefined}
-            onClick={id === 'blocks' ? () => {
-              setGitHubOpen((open) => !open)
-              setIsViewMenuOpen(false)
-              setIsShareOpen(false)
-            } : undefined}
-          >
-            <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-          </button>
-        ))}
+        {LEADING_ACTION_ITEMS.map(({ id, Icon, label }) => {
+          if (id === 'blocks') {
+            const githubButtonClassName = hasConnectedRepo
+              ? `${styles.githubIntegrationButton} ${githubOpen ? styles.githubIntegrationButtonOpen : ''}`
+              : styles.iconButton
+            const githubAriaLabel = hasConnectedRepo
+              ? `Integrações do GitHub (${connectedRepoLabel})`
+              : 'Integrações do GitHub'
+
+            return (
+              <button
+                key={id}
+                ref={githubButtonRef}
+                type="button"
+                className={githubButtonClassName}
+                aria-label={githubAriaLabel}
+                aria-haspopup="dialog"
+                aria-expanded={githubOpen}
+                onClick={() => {
+                  setGitHubOpen((open) => !open)
+                  setIsViewMenuOpen(false)
+                  setIsShareOpen(false)
+                }}
+              >
+                {hasConnectedRepo ? (
+                  <>
+                    <SiGithub size={ICON_SIZE} aria-hidden="true" />
+                    <span className={styles.githubIntegrationRepoName} title={connectedRepoLabel}>
+                      {connectedRepoLabel}
+                    </span>
+                  </>
+                ) : (
+                  <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+                )}
+              </button>
+            )
+          }
+
+          return (
+            <button
+              key={id}
+              type="button"
+              className={styles.iconButton}
+              aria-label={label}
+            >
+              <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+            </button>
+          )
+        })}
         <PlanGitHubIntegrationModal
           open={githubOpen}
           onClose={() => setGitHubOpen(false)}
