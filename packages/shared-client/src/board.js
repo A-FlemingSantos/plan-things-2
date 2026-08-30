@@ -119,6 +119,7 @@ function mapBoardColumnGroups(groups) {
       id: group.id,
       title: typeof group.title === 'string' ? group.title : '',
       startCardId: group.startCardId,
+      endCardId: group.endCardId || group.startCardId,
       collapsed: Boolean(group.collapsed),
     }]
   })

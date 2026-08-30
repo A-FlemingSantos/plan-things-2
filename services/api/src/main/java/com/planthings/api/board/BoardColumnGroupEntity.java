@@ -22,6 +22,9 @@ public class BoardColumnGroupEntity extends BaseEntity {
   @Column(name = "start_card_id")
   private UUID startCardId;
 
+  @Column(name = "end_card_id")
+  private UUID endCardId;
+
   @Column(nullable = false)
   private Boolean collapsed = false;
 
@@ -55,6 +58,14 @@ public class BoardColumnGroupEntity extends BaseEntity {
 
   public void setStartCardId(UUID startCardId) {
     this.startCardId = startCardId;
+  }
+
+  public UUID getEndCardId() {
+    return endCardId;
+  }
+
+  public void setEndCardId(UUID endCardId) {
+    this.endCardId = endCardId;
   }
 
   public Boolean getCollapsed() {

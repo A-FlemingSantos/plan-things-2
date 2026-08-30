@@ -29,12 +29,13 @@ export function normalizeColumnGroups(groups) {
       id,
       title: typeof group.title === 'string' ? group.title : '',
       startCardId: String(group.startCardId),
+      endCardId: String(group.endCardId || group.startCardId),
       collapsed: Boolean(group.collapsed),
     }]
   })
 }
 
-export function createColumnGroup({ startCardId, title = '', collapsed = false, id } = {}) {
+export function createColumnGroup({ startCardId, endCardId, title = '', collapsed = false, id } = {}) {
   if (!startCardId) {
     return null
   }
@@ -43,8 +44,28 @@ export function createColumnGroup({ startCardId, title = '', collapsed = false, 
     id: id ?? createColumnGroupId(),
     title: typeof title === 'string' ? title : '',
     startCardId: String(startCardId),
+    endCardId: String(endCardId || startCardId),
     collapsed: Boolean(collapsed),
   }
+}
+
+export function resolveGroupEndCardId(cards, groups, startCardId) {
+  if (!Array.isArray(cards) || !startCardId) {
+    return startCardId ?? null
+  }
+
+  const start = cards.findIndex((card) => card.id === startCardId)
+  if (start < 0) {
+    return startCardId
+  }
+
+  const nextOccupied = normalizeColumnGroups(groups)
+    .map((group) => cards.findIndex((card) => card.id === group.startCardId))
+    .filter((index) => index > start)
+    .sort((left, right) => left - right)[0]
+
+  const end = nextOccupied == null ? cards.length - 1 : nextOccupied - 1
+  return cards[Math.max(start, end)]?.id ?? startCardId
 }
 
 export function nextCardIdAfter(cards, afterCardId) {
@@ -60,9 +81,23 @@ export function nextCardIdAfter(cards, afterCardId) {
   return cards[index + 1]?.id ?? null
 }
 
+export function isCardInColumnGroup(cards, groups, cardId) {
+  if (!cardId) {
+    return false
+  }
+
+  return buildColumnListSegments(cards, groups).some((segment) => (
+    segment.type === 'group' && segment.cards.some((card) => card.id === cardId)
+  ))
+}
+
 export function canInsertColumnGroupAfter(cards, groups, afterCardId) {
   const startCardId = nextCardIdAfter(cards, afterCardId)
   if (!startCardId) {
+    return false
+  }
+
+  if (isCardInColumnGroup(cards, groups, afterCardId) || isCardInColumnGroup(cards, groups, startCardId)) {
     return false
   }
 
@@ -146,25 +181,35 @@ export function removeColumnGroup(columns, columnId, groupId) {
 export function buildColumnListSegments(cards, groups) {
   const cardList = Array.isArray(cards) ? cards : []
   const indexById = new Map(cardList.map((card, index) => [card.id, index]))
-  const orderedGroups = []
-  const usedStarts = new Set()
+  const ranges = []
 
   for (const group of normalizeColumnGroups(groups)) {
-    if (!indexById.has(group.startCardId) || usedStarts.has(group.startCardId)) {
+    const start = indexById.get(group.startCardId)
+    if (start == null) {
       continue
     }
 
-    usedStarts.add(group.startCardId)
-    orderedGroups.push(group)
+    const endInclusive = indexById.has(group.endCardId)
+      ? indexById.get(group.endCardId)
+      : start
+    ranges.push({
+      group,
+      start,
+      end: Math.max(start, endInclusive) + 1,
+    })
   }
 
-  orderedGroups.sort((left, right) => indexById.get(left.startCardId) - indexById.get(right.startCardId))
+  ranges.sort((left, right) => left.start - right.start || left.end - right.end)
 
   const segments = []
   let cursor = 0
 
-  for (const group of orderedGroups) {
-    const start = indexById.get(group.startCardId)
+  for (const range of ranges) {
+    if (range.end <= cursor) {
+      continue
+    }
+
+    const start = Math.max(range.start, cursor)
     if (start > cursor) {
       segments.push({
         type: 'loose',
@@ -172,17 +217,12 @@ export function buildColumnListSegments(cards, groups) {
       })
     }
 
-    const nextStart = orderedGroups
-      .map((item) => indexById.get(item.startCardId))
-      .find((index) => index > start)
-    const end = nextStart ?? cardList.length
-
     segments.push({
       type: 'group',
-      group,
-      cards: cardList.slice(start, end),
+      group: range.group,
+      cards: cardList.slice(start, range.end),
     })
-    cursor = end
+    cursor = range.end
   }
 
   if (cursor < cardList.length) {
