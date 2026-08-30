@@ -28,6 +28,7 @@ import com.planthings.api.plans.PlanMemberRole;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,7 @@ public class BoardService {
   private final PlanLabelRepository planLabelRepository;
   private final PlanMemberRepository planMemberRepository;
   private final BoardColumnRepository boardColumnRepository;
+  private final BoardColumnGroupRepository boardColumnGroupRepository;
   private final BoardColumnViewPreferenceRepository boardColumnViewPreferenceRepository;
   private final BoardCardRepository boardCardRepository;
   private final BoardCardCommentRepository boardCardCommentRepository;
@@ -71,6 +73,7 @@ public class BoardService {
       PlanLabelRepository planLabelRepository,
       PlanMemberRepository planMemberRepository,
       BoardColumnRepository boardColumnRepository,
+      BoardColumnGroupRepository boardColumnGroupRepository,
       BoardColumnViewPreferenceRepository boardColumnViewPreferenceRepository,
       BoardCardRepository boardCardRepository,
       BoardCardCommentRepository boardCardCommentRepository,
@@ -94,6 +97,7 @@ public class BoardService {
     this.planLabelRepository = planLabelRepository;
     this.planMemberRepository = planMemberRepository;
     this.boardColumnRepository = boardColumnRepository;
+    this.boardColumnGroupRepository = boardColumnGroupRepository;
     this.boardColumnViewPreferenceRepository = boardColumnViewPreferenceRepository;
     this.boardCardRepository = boardCardRepository;
     this.boardCardCommentRepository = boardCardCommentRepository;
@@ -218,6 +222,47 @@ public class BoardService {
   }
 
   @Transactional
+  public BoardView createColumnGroup(UUID planId, UUID columnId, UUID startCardId, String title, Boolean collapsed) {
+    UUID userId = authenticatedUserService.requireUserId();
+    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    BoardColumnEntity column = requireColumn(planId, columnId);
+    BoardCardEntity startCard = requireCard(planId, startCardId);
+    if (!startCard.getColumnId().equals(column.getId())) {
+      throw new BadRequestException("AGRUPAMENTO_INVALIDO", "O cartao inicial precisa pertencer a esta coluna.");
+    }
+
+    boolean startTaken = boardColumnGroupRepository.findByColumnId(columnId).stream()
+        .anyMatch(group -> startCardId.equals(group.getStartCardId()));
+    if (startTaken) {
+      throw new ConflictException("AGRUPAMENTO_EXISTENTE", "Ja existe um agrupamento neste ponto da lista.");
+    }
+
+    BoardColumnGroupEntity group = new BoardColumnGroupEntity();
+    group.setPlanId(planId);
+    group.setColumnId(columnId);
+    group.setTitle(normalizeGroupTitle(title));
+    group.setStartCardId(startCardId);
+    group.setCollapsed(Boolean.TRUE.equals(collapsed));
+    boardColumnGroupRepository.save(group);
+    return buildBoardView(plan, userId);
+  }
+
+  @Transactional
+  public BoardView updateColumnGroup(UUID planId, UUID groupId, String title, Boolean collapsed) {
+    UUID userId = authenticatedUserService.requireUserId();
+    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    BoardColumnGroupEntity group = requireColumnGroup(planId, groupId);
+    if (title != null) {
+      group.setTitle(normalizeGroupTitle(title));
+    }
+    if (collapsed != null) {
+      group.setCollapsed(collapsed);
+    }
+    boardColumnGroupRepository.save(group);
+    return buildBoardView(plan, userId);
+  }
+
+  @Transactional
   public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, Boolean starred, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
@@ -295,8 +340,12 @@ public class BoardService {
     requireColumn(planId, targetColumnId);
 
     UUID sourceColumnId = card.getColumnId();
-    List<BoardCardEntity> sourceCards = new ArrayList<>(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(sourceColumnId));
+    List<BoardCardEntity> originalSourceCards = new ArrayList<>(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(sourceColumnId));
+    List<BoardCardEntity> sourceCards = new ArrayList<>(originalSourceCards);
     sourceCards.removeIf(item -> item.getId().equals(cardId));
+    if (!sourceColumnId.equals(targetColumnId)) {
+      reassignGroupsAfterRemovingCard(sourceColumnId, cardId, originalSourceCards, sourceCards);
+    }
     reorder(sourceCards, BoardCardEntity::setPositionIndex);
 
     List<BoardCardEntity> targetCards = sourceColumnId.equals(targetColumnId)
@@ -321,6 +370,11 @@ public class BoardService {
     planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
     UUID columnId = card.getColumnId();
+    List<BoardCardEntity> originalCards = new ArrayList<>(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId));
+    List<BoardCardEntity> remainingCards = originalCards.stream()
+        .filter(item -> !item.getId().equals(cardId))
+        .toList();
+    reassignGroupsAfterRemovingCard(columnId, cardId, originalCards, remainingCards);
     calendarService.removeCardEvent(cardId);
     boardCardRepository.delete(card);
     reorder(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId), BoardCardEntity::setPositionIndex);
@@ -449,6 +503,8 @@ public class BoardService {
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     List<BoardCardEntity> cards = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     Map<UUID, List<BoardCardEntity>> cardsByColumn = cards.stream().collect(Collectors.groupingBy(BoardCardEntity::getColumnId));
+    Map<UUID, List<BoardColumnGroupEntity>> groupsByColumn = boardColumnGroupRepository.findByPlanId(plan.getId()).stream()
+        .collect(Collectors.groupingBy(BoardColumnGroupEntity::getColumnId));
     List<UUID> compactColumnIds = boardColumnViewPreferenceRepository.findByUserIdAndPlanId(currentUserId, plan.getId())
         .stream()
         .map(BoardColumnViewPreferenceEntity::getColumnId)
@@ -461,16 +517,20 @@ public class BoardService {
     return new BoardView(
         plan.getId(),
         plan.getName(),
-        columns.stream().map(column -> new ColumnView(
-            column.getId(),
-            column.getTitle(),
-            column.getColor(),
-            column.getStatus(),
-            column.getPositionIndex(),
-            cardsByColumn.getOrDefault(column.getId(), List.of()).stream()
-                .map(card -> toCardView(card, currentUserId, currentRole))
-                .toList()
-        )).toList(),
+        columns.stream().map(column -> {
+          List<BoardCardEntity> columnCards = cardsByColumn.getOrDefault(column.getId(), List.of());
+          return new ColumnView(
+              column.getId(),
+              column.getTitle(),
+              column.getColor(),
+              column.getStatus(),
+              column.getPositionIndex(),
+              columnCards.stream()
+                  .map(card -> toCardView(card, currentUserId, currentRole))
+                  .toList(),
+              toGroupViews(groupsByColumn.getOrDefault(column.getId(), List.of()), columnCards)
+          );
+        }).toList(),
         labels,
         buildInboxItems(plan.getId()),
         compactColumnIds
@@ -748,6 +808,99 @@ public class BoardService {
         .orElseThrow(() -> new NotFoundException("COLUNA_NAO_ENCONTRADA", "Nao encontramos a coluna informada."));
   }
 
+  private BoardColumnGroupEntity requireColumnGroup(UUID planId, UUID groupId) {
+    return boardColumnGroupRepository.findById(groupId)
+        .filter(group -> group.getPlanId().equals(planId))
+        .orElseThrow(() -> new NotFoundException("AGRUPAMENTO_NAO_ENCONTRADO", "Nao encontramos o agrupamento informado."));
+  }
+
+  private List<ColumnGroupView> toGroupViews(List<BoardColumnGroupEntity> groups, List<BoardCardEntity> cards) {
+    Map<UUID, Integer> indexById = new HashMap<>();
+    for (int i = 0; i < cards.size(); i++) {
+      indexById.put(cards.get(i).getId(), i);
+    }
+
+    return groups.stream()
+        .filter(group -> group.getStartCardId() != null && indexById.containsKey(group.getStartCardId()))
+        .sorted(Comparator.comparingInt(group -> indexById.get(group.getStartCardId())))
+        .map(group -> new ColumnGroupView(
+            group.getId(),
+            group.getTitle(),
+            group.getStartCardId(),
+            Boolean.TRUE.equals(group.getCollapsed())
+        ))
+        .toList();
+  }
+
+  private String normalizeGroupTitle(String title) {
+    if (title == null) {
+      return "";
+    }
+    String trimmed = title.trim();
+    return trimmed.length() > 120 ? trimmed.substring(0, 120) : trimmed;
+  }
+
+  private void reassignGroupsAfterRemovingCard(
+      UUID columnId,
+      UUID removedCardId,
+      List<BoardCardEntity> originalOrderedCards,
+      List<BoardCardEntity> remainingCards
+  ) {
+    List<BoardColumnGroupEntity> groups = boardColumnGroupRepository.findByColumnId(columnId);
+    List<BoardColumnGroupEntity> anchored = groups.stream()
+        .filter(group -> removedCardId.equals(group.getStartCardId()))
+        .toList();
+    if (anchored.isEmpty()) {
+      return;
+    }
+
+    Set<UUID> occupiedStarts = groups.stream()
+        .map(BoardColumnGroupEntity::getStartCardId)
+        .filter(id -> id != null && !removedCardId.equals(id))
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+    int removedIndex = -1;
+    for (int i = 0; i < originalOrderedCards.size(); i++) {
+      if (originalOrderedCards.get(i).getId().equals(removedCardId)) {
+        removedIndex = i;
+        break;
+      }
+    }
+
+    List<UUID> candidateIds = new ArrayList<>();
+    if (removedIndex >= 0) {
+      for (int i = removedIndex + 1; i < originalOrderedCards.size(); i++) {
+        candidateIds.add(originalOrderedCards.get(i).getId());
+      }
+    } else {
+      candidateIds.addAll(remainingCards.stream().map(BoardCardEntity::getId).toList());
+    }
+
+    List<BoardColumnGroupEntity> toDelete = new ArrayList<>();
+    for (BoardColumnGroupEntity group : anchored) {
+      UUID nextStart = candidateIds.stream()
+          .filter(id -> !occupiedStarts.contains(id))
+          .findFirst()
+          .orElse(null);
+      if (nextStart == null) {
+        toDelete.add(group);
+        continue;
+      }
+      group.setStartCardId(nextStart);
+      occupiedStarts.add(nextStart);
+    }
+
+    if (!toDelete.isEmpty()) {
+      boardColumnGroupRepository.deleteAll(toDelete);
+    }
+    List<BoardColumnGroupEntity> toSave = anchored.stream()
+        .filter(group -> !toDelete.contains(group))
+        .toList();
+    if (!toSave.isEmpty()) {
+      boardColumnGroupRepository.saveAll(toSave);
+    }
+  }
+
   private BoardCardEntity requireCard(UUID planId, UUID cardId) {
     return boardCardRepository.findByIdAndPlanId(cardId, planId)
         .orElseThrow(() -> new NotFoundException("CARTAO_NAO_ENCONTRADO", "Nao encontramos o cartao informado."));
@@ -949,7 +1102,18 @@ public class BoardService {
   public record CompactColumnsPreferenceView(List<UUID> columnIds) {
   }
 
-  public record ColumnView(UUID id, String title, String color, String status, int position, List<BoardCardView> cards) {
+  public record ColumnView(
+      UUID id,
+      String title,
+      String color,
+      String status,
+      int position,
+      List<BoardCardView> cards,
+      List<ColumnGroupView> groups
+  ) {
+  }
+
+  public record ColumnGroupView(UUID id, String title, UUID startCardId, boolean collapsed) {
   }
 
   public record BoardCardView(

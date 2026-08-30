@@ -1,6 +1,11 @@
 import { useCallback, useMemo } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 import { buildBoardCardPayload, mapBoardCard, mapBoardViewToColumns } from '../../../shared/contracts/backendAdapters.js'
+import {
+  createColumnGroup,
+  replaceColumnGroupId,
+  upsertColumnGroup,
+} from '../utils/columnCardGroups.js'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
@@ -139,6 +144,7 @@ function mergePersistedColumnForMove(currentColumn, persistedColumn) {
     && nextColor === currentColumn.color
     && nextStatus === (currentColumn.status ?? '')
     && nextCards === currentColumn.cards
+    && (Array.isArray(persistedColumn.groups) ? persistedColumn.groups : currentColumn.groups) === currentColumn.groups
   ) {
     return currentColumn
   }
@@ -149,6 +155,7 @@ function mergePersistedColumnForMove(currentColumn, persistedColumn) {
     color: nextColor,
     status: nextStatus,
     cards: nextCards,
+    groups: Array.isArray(persistedColumn.groups) ? persistedColumn.groups : (currentColumn.groups ?? []),
   }
 }
 
@@ -405,6 +412,7 @@ function replaceColumnById(columns, columnId, nextColumn) {
         || normalizedColumn.color !== column.color
         || (normalizedColumn.status ?? '') !== (column.status ?? '')
         || normalizedColumn.cards !== column.cards
+        || normalizedColumn.groups !== column.groups
       )
 
     if (!columnChanged) {
@@ -697,6 +705,26 @@ function replaceChecklistItemByIdInColumns(columns, itemId, nextItem) {
   return hasChanges ? nextColumns : columns
 }
 
+function applyColumnGroupsFromBoardView(columns, boardView, options) {
+  if (!Array.isArray(columns) || !Array.isArray(boardView?.columns)) {
+    return columns
+  }
+
+  const persistedColumns = mapBoardViewToColumns(boardView, options)
+  const groupsById = new Map(persistedColumns.map((column) => [column.id, column.groups ?? []]))
+
+  return columns.map((column) => {
+    if (!groupsById.has(column.id)) {
+      return column
+    }
+
+    return {
+      ...column,
+      groups: groupsById.get(column.id),
+    }
+  })
+}
+
 export function useBoardColumns({
   activePlanId,
   boardColumns,
@@ -727,7 +755,7 @@ export function useBoardColumns({
     if (!isBackendDriven) {
       updateColumns((prev) => [
         ...prev,
-        { id: uid(), title: nextTitle, color: nextColor, status: nextStatus, cards: [] },
+        { id: uid(), title: nextTitle, color: nextColor, status: nextStatus, cards: [], groups: [] },
       ])
       return true
     }
@@ -742,6 +770,7 @@ export function useBoardColumns({
       color: nextColor,
       status: nextStatus,
       cards: [],
+      groups: [],
     }
 
     updateColumns((prev) => [...prev, optimisticColumn])
@@ -775,6 +804,7 @@ export function useBoardColumns({
           color: persistedColumnView.color ?? optimisticColumn.color,
           status: persistedColumnView.status ?? optimisticColumn.status,
           cards: [],
+          groups: [],
         }))
       } else {
         applyBoardView(activePlanId, boardView)
@@ -1392,6 +1422,117 @@ export function useBoardColumns({
     }
   }, [accessToken, activePlanId, columns, isBackendDriven, updateColumns])
 
+  const createColumnGroupAtCard = useCallback(async (columnId, startCardId) => {
+    if (!activePlanId || !columnId || !startCardId) {
+      return null
+    }
+
+    const optimisticGroup = createColumnGroup({ startCardId })
+    if (!optimisticGroup) {
+      return null
+    }
+
+    if (!isBackendDriven) {
+      updateColumns((prev) => upsertColumnGroup(prev, columnId, optimisticGroup))
+      return optimisticGroup
+    }
+
+    const previousColumns = columns
+    updateColumns((prev) => upsertColumnGroup(prev, columnId, optimisticGroup))
+
+    try {
+      const boardView = await apiRequest(`/api/plans/${activePlanId}/board/columns/${columnId}/groups`, {
+        method: 'POST',
+        token: accessToken,
+        body: {
+          title: optimisticGroup.title,
+          startCardId,
+          collapsed: false,
+        },
+      })
+
+      if (Array.isArray(boardView?.columns)) {
+        const persistedGroups = mapBoardViewToColumns(boardView, { timeZone, dateFormat })
+          .find((column) => column.id === columnId)
+          ?.groups ?? []
+        const persistedGroup = persistedGroups.find((group) => group.startCardId === startCardId)
+          ?? persistedGroups.find((group) => !previousColumns
+            .find((column) => column.id === columnId)
+            ?.groups
+            ?.some((current) => current.id === group.id))
+
+        if (persistedGroup?.id) {
+          updateColumns((prev) => replaceColumnGroupId(prev, columnId, optimisticGroup.id, persistedGroup))
+          return persistedGroup
+        }
+
+        updateColumns((prev) => applyColumnGroupsFromBoardView(prev, boardView, { timeZone, dateFormat }))
+        return persistedGroups.find((group) => group.startCardId === startCardId) ?? optimisticGroup
+      }
+
+      applyBoardView(activePlanId, boardView)
+      return optimisticGroup
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, applyBoardView, columns, dateFormat, isBackendDriven, timeZone, updateColumns])
+
+  const updateColumnGroup = useCallback(async (columnId, groupId, patch) => {
+    if (!activePlanId || !columnId || !groupId) {
+      return
+    }
+
+    const nextPatch = patch && typeof patch === 'object' ? patch : {}
+
+    if (!isBackendDriven) {
+      updateColumns((prev) => prev.map((column) => {
+        if (column.id !== columnId) {
+          return column
+        }
+
+        return {
+          ...column,
+          groups: (column.groups ?? []).map((group) => (
+            group.id === groupId ? { ...group, ...nextPatch } : group
+          )),
+        }
+      }))
+      return
+    }
+
+    const previousColumns = columns
+    updateColumns((prev) => prev.map((column) => {
+      if (column.id !== columnId) {
+        return column
+      }
+
+      return {
+        ...column,
+        groups: (column.groups ?? []).map((group) => (
+          group.id === groupId ? { ...group, ...nextPatch } : group
+        )),
+      }
+    }))
+
+    try {
+      const boardView = await apiRequest(`/api/plans/${activePlanId}/board/groups/${groupId}`, {
+        method: 'PATCH',
+        token: accessToken,
+        body: nextPatch,
+      })
+
+      if (Array.isArray(boardView?.columns)) {
+        updateColumns((prev) => applyColumnGroupsFromBoardView(prev, boardView, { timeZone, dateFormat }))
+      } else {
+        applyBoardView(activePlanId, boardView)
+      }
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, applyBoardView, columns, dateFormat, isBackendDriven, timeZone, updateColumns])
+
   const totalCards = useMemo(
     () => columns.reduce((sum, column) => sum + column.cards.length, 0),
     [columns],
@@ -1416,5 +1557,7 @@ export function useBoardColumns({
     deleteChecklist,
     createChecklistItem,
     updateChecklistItem,
+    createColumnGroup: createColumnGroupAtCard,
+    updateColumnGroup,
   }
 }

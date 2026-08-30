@@ -1,8 +1,9 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { defaultDropAnimationSideEffects, useDroppable } from '@dnd-kit/core'
 import { SortableContext, defaultAnimateLayoutChanges, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
+  ChevronRight,
   CircleAlert,
   CircleCheckBig,
   CircleDashed,
@@ -18,6 +19,12 @@ import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard, { KanbanCardView } from '../KanbanCard/KanbanCard.jsx'
 import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
 import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
+import {
+  buildColumnListSegments,
+  canInsertColumnGroupAfter,
+  collapsedCardIdsFromGroups,
+  nextCardIdAfter,
+} from '../../utils/columnCardGroups.js'
 
 const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
@@ -164,6 +171,26 @@ const STATUS_ICONS = {
   CircleX,
 }
 
+function ColumnGroupInsertButton({ styles, onClick }) {
+  return (
+    <button
+      type="button"
+      className={styles.cardInsertBtn}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onClick?.()
+      }}
+      aria-label="Criar agrupamento com os cartões abaixo"
+    >
+      <span className={styles.cardInsertRule} aria-hidden="true" />
+      <span className={styles.cardInsertGlyph} aria-hidden="true">+</span>
+      <span className={styles.cardInsertRule} aria-hidden="true" />
+    </button>
+  )
+}
+
 function ColumnStatusIcon({ option, className }) {
   const Icon = STATUS_ICONS[option.icon]
 
@@ -197,6 +224,8 @@ export function KanbanColumnView({
   statusOptions,
   onCardClick,
   onToggleCardCompleted,
+  onCreateColumnGroup,
+  onUpdateColumnGroup,
   labels,
   members,
   colorOptions,
@@ -214,6 +243,8 @@ export function KanbanColumnView({
   const [renameError, setRenameError] = useState(null)
   const [cardError, setCardError] = useState(null)
   const [isAddingCard, setIsAddingCard] = useState(false)
+  const [editingGroupId, setEditingGroupId] = useState(null)
+  const [groupTitleDraft, setGroupTitleDraft] = useState('')
   const renameRef = useRef(null)
   const menuAnchorRef = useRef(null)
   const columnNodeRef = useRef(null)
@@ -230,7 +261,12 @@ export function KanbanColumnView({
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
   const isComposerOpen = addingCard || isAddingCard || lockedCardsHeight != null
   const hasColumnColor = Boolean(col.color?.trim())
-  const cardIds = col.cards.map((card) => card.id)
+  const columnGroups = col.groups ?? []
+  const hiddenCardIds = collapsedCardIdsFromGroups(col.cards, columnGroups)
+  const cardIds = col.cards
+    .filter((card) => !hiddenCardIds.has(card.id))
+    .map((card) => card.id)
+  const listSegments = buildColumnListSegments(col.cards, columnGroups)
 
   const { setNodeRef: setCardStackDropRef } = useDroppable({
     id: columnCardStackDropId(col.id),
@@ -393,6 +429,170 @@ export function KanbanColumnView({
     setRenaming(false)
   }
 
+  const beginEditingGroup = (group) => {
+    setEditingGroupId(group.id)
+    setGroupTitleDraft(group.title ?? '')
+  }
+
+  const submitGroupTitle = async (group) => {
+    const nextTitle = groupTitleDraft.trim()
+    setEditingGroupId(null)
+    if (nextTitle === (group.title ?? '')) {
+      return
+    }
+
+    try {
+      await onUpdateColumnGroup?.(col.id, group.id, { title: nextTitle })
+    } catch {
+      setEditingGroupId(group.id)
+      setGroupTitleDraft(nextTitle)
+    }
+  }
+
+  const handleCreateGroupAfter = async (afterCardId) => {
+    if (isDragOverlay || !canInsertColumnGroupAfter(col.cards, columnGroups, afterCardId)) {
+      return
+    }
+
+    const startCardId = nextCardIdAfter(col.cards, afterCardId)
+    try {
+      const created = await onCreateColumnGroup?.(col.id, startCardId)
+      if (created?.id) {
+        beginEditingGroup(created)
+      }
+    } catch {
+      // O rollback fica a cargo do hook; o controle some se o agrupamento nao persistir.
+    }
+  }
+
+  const renderCardNode = (card) => {
+    if (isDragOverlay) {
+      return (
+        <KanbanCardView
+          key={card.uiKey ?? card.id}
+          card={card}
+          colTitle={col.title}
+          isConfirmed={Boolean(card.isCompleted)}
+          labels={labels}
+          members={members}
+          styles={styles}
+        />
+      )
+    }
+
+    return (
+      <KanbanCard
+        key={card.uiKey ?? card.id}
+        card={card}
+        colId={col.id}
+        colTitle={col.title}
+        onClick={onCardClick}
+        isConfirmed={Boolean(card.isCompleted)}
+        onToggleConfirmed={onToggleCardCompleted}
+        labels={labels}
+        members={members}
+        styles={styles}
+      />
+    )
+  }
+
+  const renderCardSlot = (card, cardList, showInserts) => {
+    const showInsert = Boolean(
+      showInserts
+      && !isDragOverlay
+      && canInsertColumnGroupAfter(cardList, columnGroups, card.id),
+    )
+
+    return (
+      <Fragment key={card.uiKey ?? card.id}>
+        <div className={styles.cardSlot}>
+          {renderCardNode(card)}
+        </div>
+        {showInsert ? (
+          <ColumnGroupInsertButton
+            styles={styles}
+            onClick={() => handleCreateGroupAfter(card.id)}
+          />
+        ) : null}
+      </Fragment>
+    )
+  }
+
+  const renderListSegments = (showInserts) => listSegments.map((segment) => {
+    if (segment.type === 'loose') {
+      return segment.cards.map((card) => renderCardSlot(card, segment.cards, showInserts))
+    }
+
+    const group = segment.group
+    const expanded = !group.collapsed
+    const isEditingTitle = editingGroupId === group.id
+    const groupLabel = group.title.trim() || 'Agrupamento'
+
+    return (
+      <section
+        key={group.id}
+        className={styles.columnGroup}
+        aria-label={groupLabel}
+      >
+        <div
+          className={styles.columnGroupHeader}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            className={styles.columnGroupChevronBtn}
+            aria-expanded={expanded}
+            aria-label={expanded ? `Recolher ${groupLabel}` : `Expandir ${groupLabel}`}
+            onClick={() => onUpdateColumnGroup?.(col.id, group.id, { collapsed: expanded })}
+          >
+            <ChevronRight
+              size={ICON_SIZE}
+              strokeWidth={ICON_STROKE}
+              className={styles.columnGroupChevron}
+              aria-hidden="true"
+            />
+          </button>
+          {isEditingTitle && !isDragOverlay ? (
+            <input
+              className={styles.columnGroupTitleInput}
+              value={groupTitleDraft}
+              aria-label="Nome do agrupamento"
+              onChange={(event) => setGroupTitleDraft(event.target.value)}
+              onBlur={() => submitGroupTitle(group)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur()
+                }
+                if (event.key === 'Escape') {
+                  setEditingGroupId(null)
+                  setGroupTitleDraft(group.title ?? '')
+                }
+              }}
+              autoFocus
+            />
+          ) : (
+            <button
+              type="button"
+              className={styles.columnGroupTitle}
+              onClick={() => {
+                if (!isDragOverlay) {
+                  beginEditingGroup(group)
+                }
+              }}
+            >
+              {groupLabel}
+            </button>
+          )}
+        </div>
+        {expanded ? (
+          <div className={styles.columnGroupBody}>
+            {segment.cards.map((card) => renderCardSlot(card, segment.cards, showInserts))}
+          </div>
+        ) : null}
+      </section>
+    )
+  })
+
   return (
     <div
       ref={setColumnNodeRef}
@@ -520,17 +720,7 @@ export function KanbanColumnView({
         <div
           className={`${styles.colCards} ${col.cards.length === 0 ? styles.colCardsEmpty : ''}`}
         >
-          {col.cards.map((card) => (
-            <KanbanCardView
-              key={card.uiKey ?? card.id}
-              card={card}
-              colTitle={col.title}
-              isConfirmed={Boolean(card.isCompleted)}
-              labels={labels}
-              members={members}
-              styles={styles}
-            />
-          ))}
+          {renderListSegments(false)}
         </div>
       ) : !isCompact ? (
         <>
@@ -547,20 +737,7 @@ export function KanbanColumnView({
                 enabled={col.cards.length > 0}
                 refreshKey={`${col.id}:${col.cards.length}:${lockedCardsHeight ?? 'auto'}`}
               >
-                {col.cards.map((card) => (
-                  <KanbanCard
-                    key={card.uiKey ?? card.id}
-                    card={card}
-                    colId={col.id}
-                    colTitle={col.title}
-                    onClick={onCardClick}
-                    isConfirmed={Boolean(card.isCompleted)}
-                    onToggleConfirmed={onToggleCardCompleted}
-                    labels={labels}
-                    members={members}
-                    styles={styles}
-                  />
-                ))}
+                {renderListSegments(true)}
               </CustomScrollArea>
             </div>
           </SortableContext>
@@ -634,6 +811,8 @@ function areKanbanColumnPropsEqual(prevProps, nextProps) {
     && prevProps.isDragOverlay === nextProps.isDragOverlay
     && prevProps.isCompact === nextProps.isCompact
     && prevProps.onToggleCompactView === nextProps.onToggleCompactView
+    && prevProps.onCreateColumnGroup === nextProps.onCreateColumnGroup
+    && prevProps.onUpdateColumnGroup === nextProps.onUpdateColumnGroup
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions

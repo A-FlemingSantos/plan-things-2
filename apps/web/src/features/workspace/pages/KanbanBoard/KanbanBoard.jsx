@@ -162,6 +162,8 @@ export default function KanbanBoard() {
     deleteChecklist,
     createChecklistItem,
     updateChecklistItem,
+    createColumnGroup,
+    updateColumnGroup,
   } = useBoardColumns({
     activePlanId: activePlan?.id,
     boardColumns: activePlan?.boardColumns,
@@ -619,6 +621,8 @@ export default function KanbanBoard() {
                     statusOptions={KANBAN_COLUMN_STATUS_OPTIONS}
                     onCardClick={handleBoardCardClick}
                     onToggleCardCompleted={togglePlannerCardCompleted}
+                    onCreateColumnGroup={createColumnGroup}
+                    onUpdateColumnGroup={updateColumnGroup}
                     labels={planLabels}
                     members={planMembers}
                     colorOptions={KANBAN_ADD_LIST_COLOR_OPTIONS}
