@@ -650,7 +650,7 @@ describe('App smoke flows', () => {
     const liquidGlassField = liquidGlassLabel.closest('div')?.parentElement
     const liquidGlassSwitch = within(liquidGlassField).getByRole('switch')
 
-    expect(screen.getByText(/futuro efeito de vidro líquido/i)).toBeInTheDocument()
+    expect(screen.getByText(/efeito acrílico.*KanbanBoard/i)).toBeInTheDocument()
     expect(liquidGlassSwitch).toBeEnabled()
   })
 })

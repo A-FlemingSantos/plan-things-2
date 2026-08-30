@@ -1396,7 +1396,7 @@ export default function SettingsPage({ modal = false, backgroundLocation = null 
         </SettingsField>
         <SettingsField
           label="Liquid-glass"
-          hint="Preferência salva para o futuro efeito de vidro líquido no KanbanBoard."
+          hint="Aplica efeito acrílico nas listas do KanbanBoard. Os cartões ficam sem contorno, com relevo sutil para contraste."
           inlineControl
         >
           <Toggle checked={liquidGlass} onChange={(value) => handleLocalGeneralFieldChange('liquidGlass', value)} />

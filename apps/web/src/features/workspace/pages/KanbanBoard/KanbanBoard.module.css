@@ -55,6 +55,85 @@
   /* column/card keep --surface-2 (same as add-list shell) */
 }
 
+/* Liquid-glass — acrylic lists; cards use shadow relief instead of borders */
+.boardAccentScope[data-liquid-glass='true'] {
+  --board-liquid-glass-fill: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  --board-liquid-glass-border: color-mix(in srgb, var(--border-1) 52%, transparent);
+  --board-liquid-glass-card-shadow:
+    0 1px 2px color-mix(in srgb, var(--text-1) 4%, transparent),
+    0 2px 6px color-mix(in srgb, var(--text-1) 3%, transparent);
+  --board-liquid-glass-card-shadow-hover:
+    0 2px 4px color-mix(in srgb, var(--text-1) 6%, transparent),
+    0 4px 12px color-mix(in srgb, var(--text-1) 5%, transparent);
+}
+
+[data-theme='dark'] .boardAccentScope[data-liquid-glass='true'] {
+  --board-liquid-glass-fill: color-mix(in srgb, var(--surface-2) 54%, transparent);
+  --board-liquid-glass-border: color-mix(in srgb, var(--border-1) 46%, transparent);
+  --board-liquid-glass-card-shadow:
+    0 1px 3px color-mix(in srgb, var(--color-black) 22%, transparent),
+    0 2px 8px color-mix(in srgb, var(--color-black) 16%, transparent);
+  --board-liquid-glass-card-shadow-hover:
+    0 2px 5px color-mix(in srgb, var(--color-black) 30%, transparent),
+    0 5px 14px color-mix(in srgb, var(--color-black) 22%, transparent);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .column,
+.boardAccentScope[data-liquid-glass='true'] .columnDragOverlay,
+.boardAccentScope[data-liquid-glass='true'] .addColShell {
+  background: var(--board-liquid-glass-fill);
+  backdrop-filter: blur(15px) saturate(1.12);
+  -webkit-backdrop-filter: blur(15px) saturate(1.12);
+  border-color: var(--board-liquid-glass-border);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .columnColored,
+.boardAccentScope[data-liquid-glass='true'] .columnColored.columnDragOverlay {
+  background: color-mix(in srgb, var(--column-color) 11%, var(--board-liquid-glass-fill));
+}
+
+.boardAccentScope[data-liquid-glass='true'] .addColShell:not(.addColShellOpen):hover {
+  background: color-mix(in srgb, var(--board-liquid-glass-fill) 80%, var(--hover));
+}
+
+.boardAccentScope[data-liquid-glass='true'] .addColShellOpen {
+  background: var(--board-liquid-glass-fill);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .card,
+.boardAccentScope[data-liquid-glass='true'] .cardDragOverlay {
+  background: transparent;
+  border-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: var(--board-liquid-glass-card-shadow);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .card:hover {
+  border-color: transparent;
+  box-shadow: var(--board-liquid-glass-card-shadow-hover);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .cardFooter {
+  border-top-color: color-mix(in srgb, var(--border-1) 30%, transparent);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .cardAvatar {
+  border-color: color-mix(in srgb, var(--border-1) 50%, transparent);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .boardLoadingColumn {
+  background: var(--board-liquid-glass-fill);
+  backdrop-filter: blur(15px) saturate(1.12);
+  -webkit-backdrop-filter: blur(15px) saturate(1.12);
+}
+
+.boardAccentScope[data-liquid-glass='true'] .boardLoadingCard {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: var(--board-liquid-glass-card-shadow);
+}
+
 /* ════════════════════════════════════════
    BOARD PAGE SHELL
 ════════════════════════════════════════ */

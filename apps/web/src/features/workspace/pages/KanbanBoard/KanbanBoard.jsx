@@ -113,6 +113,7 @@ export default function KanbanBoard() {
   const dateFormat = generalPreferences.dateFormat
   const boardAccentColor = resolveKanbanAccentColor(localPreferences?.kanbanAccentColor)
   const boardAccentForeground = resolveKanbanAccentForeground(localPreferences?.kanbanAccentColor)
+  const liquidGlass = Boolean(localPreferences?.liquidGlass)
   const boardAccentStyle = useMemo(() => ({
     '--kanban-accent-color': boardAccentColor,
     '--kanban-accent-foreground': boardAccentForeground,
@@ -501,7 +502,11 @@ export default function KanbanBoard() {
 
   return (
     <AppThemeScope>
-      <div className={styles.boardAccentScope} style={boardAccentStyle}>
+      <div
+        className={styles.boardAccentScope}
+        style={boardAccentStyle}
+        data-liquid-glass={liquidGlass ? 'true' : undefined}
+      >
       <ProductAppShell
         contentClassName={styles.boardPageShell}
       >
