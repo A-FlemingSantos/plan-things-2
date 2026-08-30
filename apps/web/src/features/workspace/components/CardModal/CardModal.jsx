@@ -29,6 +29,7 @@ import {
 } from '../../../../shared/components/Calendar/calendarDateUtils.js'
 import { buildInlineAssignmentText } from './utils/activityUtils.js'
 import { createCardModalUid } from './utils/cardModalCommon.js'
+import { CARD_MODAL_SIDEBAR_RENDERED } from './utils/cardModalFeatureFlags.js'
 import { buildInitialCardSchedule, formatDueDateLabelFromValue } from './utils/cardModalDateUtils.js'
 import { snapCardScheduleTimeToSlot } from './utils/cardModalScheduleUtils.js'
 import CardModalActivityPreview from './components/CardModalActivityPreview.jsx'
@@ -243,10 +244,11 @@ export default function CardModal({
   } = activity
 
   const isMutating = isInteractionBlocked || isSendingComment
-  const showGitHubMainPreview = !isActivitySidebarOpen
+  const isSidebarVisible = CARD_MODAL_SIDEBAR_RENDERED && isActivitySidebarOpen
+  const showGitHubMainPreview = !isSidebarVisible
     && githubIntegration?.status === 'ready'
     && (githubIntegration.linkedItems?.length ?? 0) > 0
-  const showRecentesPreview = !isActivitySidebarOpen
+  const showRecentesPreview = !isSidebarVisible
 
   const label = labels.find(l => l.id === labelId)
   const currentUserName = currentUser?.fullName ?? currentUser?.email ?? 'Você'
@@ -976,7 +978,7 @@ export default function CardModal({
           </div>
         </div>
 
-        <div className={`${styles.cmBody} ${!isActivitySidebarOpen ? styles.cmBodyActivityCollapsed : ''}`}>
+        <div className={`${styles.cmBody} ${!isSidebarVisible ? styles.cmBodyActivityCollapsed : ''}`}>
           <SectionScrollArea
             className={styles.cmMainScrollArea}
             viewportClassName={styles.cmMain}
@@ -1281,7 +1283,7 @@ export default function CardModal({
             <CardModalGitHubMainPreview
               styles={styles}
               cardId={card.id}
-              isActivitySidebarOpen={isActivitySidebarOpen}
+              isActivitySidebarOpen={isSidebarVisible}
               githubIntegration={githubIntegration}
             />
             </SectionScrollArea.Section>
@@ -1294,7 +1296,7 @@ export default function CardModal({
               iconSize={ICON_SIZE}
               iconStroke={ICON_STROKE}
               cardId={card.id}
-              isActivitySidebarOpen={isActivitySidebarOpen}
+              isActivitySidebarOpen={isSidebarVisible}
               isMutating={isMutating}
               activityFeedItems={activitySidebarUi.activityFeedItems}
               getCommentPresenter={activitySidebarUi.getCommentPresenter}
@@ -1314,33 +1316,35 @@ export default function CardModal({
               ) : null}
           </SectionScrollArea>
 
-          <CardModalActivitySidebar
-            styles={styles}
-            iconSize={ICON_SIZE}
-            iconSizeSm={ICON_SIZE_SM}
-            iconStroke={ICON_STROKE}
-            isMutating={isMutating}
-            isActivitySidebarOpen={isActivitySidebarOpen}
-            sidebarPanel={sidebarPanel}
-            selectSidebarPanel={selectSidebarPanel}
-            openSidebarPanel={openSidebarPanel}
-            clearSidebarPanel={clearSidebarPanel}
-            isBackendDriven={isBackendDriven}
-            activeChecklist={activeChecklist}
-            checklistReadOnly={checklistReadOnly}
-            checklistBlockUi={checklistBlockUi}
-            isChecklistMutating={isChecklistMutating}
-            handleChecklistCreate={handleChecklistCreate}
-            attachments={attachments}
-            openFilePicker={openFilePicker}
-            attachmentUi={attachmentUi}
-            onDownloadFile={onDownloadFile}
-            insertMenuButtonRef={insertMenuButtonRef}
-            showInsertMenu={showInsertMenu}
-            setShowInsertMenu={setShowInsertMenu}
-            githubIntegration={githubIntegration}
-            {...activitySidebarUi}
-          />
+          {CARD_MODAL_SIDEBAR_RENDERED ? (
+            <CardModalActivitySidebar
+              styles={styles}
+              iconSize={ICON_SIZE}
+              iconSizeSm={ICON_SIZE_SM}
+              iconStroke={ICON_STROKE}
+              isMutating={isMutating}
+              isActivitySidebarOpen={isActivitySidebarOpen}
+              sidebarPanel={sidebarPanel}
+              selectSidebarPanel={selectSidebarPanel}
+              openSidebarPanel={openSidebarPanel}
+              clearSidebarPanel={clearSidebarPanel}
+              isBackendDriven={isBackendDriven}
+              activeChecklist={activeChecklist}
+              checklistReadOnly={checklistReadOnly}
+              checklistBlockUi={checklistBlockUi}
+              isChecklistMutating={isChecklistMutating}
+              handleChecklistCreate={handleChecklistCreate}
+              attachments={attachments}
+              openFilePicker={openFilePicker}
+              attachmentUi={attachmentUi}
+              onDownloadFile={onDownloadFile}
+              insertMenuButtonRef={insertMenuButtonRef}
+              showInsertMenu={showInsertMenu}
+              setShowInsertMenu={setShowInsertMenu}
+              githubIntegration={githubIntegration}
+              {...activitySidebarUi}
+            />
+          ) : null}
         </div>
 
       </div>

@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CardModal from './CardModal.jsx'
+import { CARD_MODAL_SIDEBAR_RENDERED } from './utils/cardModalFeatureFlags.js'
 
 vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx', () => ({
   default: ({ fallback = 'PT', title = '' }) => (
@@ -12,6 +13,7 @@ vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.j
 }))
 
 const styles = new Proxy({}, { get: (_, key) => String(key) })
+const itWithSidebar = CARD_MODAL_SIDEBAR_RENDERED ? it : it.skip
 
 async function openSidebarPanel(user, panelLabel = 'Activity') {
   await user.click(screen.getByRole('button', { name: `Painel ${panelLabel}` }))
@@ -132,7 +134,7 @@ describe('CardModal file picker positioning', () => {
     window.innerHeight = originalInnerHeight
   })
 
-  it('opens the attachment picker above the insert-menu trigger and keeps it inside the viewport', async () => {
+  itWithSidebar('opens the attachment picker above the insert-menu trigger and keeps it inside the viewport', async () => {
     const user = userEvent.setup()
 
     render(
@@ -163,7 +165,7 @@ describe('CardModal file picker positioning', () => {
     })
   })
 
-  it('couples the attachment picker to the files sidebar Anexar trigger', async () => {
+  itWithSidebar('couples the attachment picker to the files sidebar Anexar trigger', async () => {
     const user = userEvent.setup()
 
     render(
@@ -194,7 +196,7 @@ describe('CardModal file picker positioning', () => {
     })
   })
 
-  it('keeps the picker position locked when switching Plano and Biblioteca', async () => {
+  itWithSidebar('keeps the picker position locked when switching Plano and Biblioteca', async () => {
     const user = userEvent.setup()
     const manyLibraryFiles = Array.from({ length: 40 }, (_, index) => ({
       id: `file-${index + 1}`,
@@ -367,7 +369,7 @@ describe('CardModal file picker positioning', () => {
     expect(screen.getByRole('button', { name: 'Recolher activity' })).toBeInTheDocument()
   })
 
-  it('opens the comment editor actions on focus and saves the comment through the footer button', async () => {
+  itWithSidebar('opens the comment editor actions on focus and saves the comment through the footer button', async () => {
     const user = userEvent.setup()
     const deferred = createDeferred()
     const addComment = vi.fn(() => deferred.promise)
@@ -404,7 +406,7 @@ describe('CardModal file picker positioning', () => {
     })
   })
 
-  it('keeps the initial assignment history stable when the card props refresh', async () => {
+  itWithSidebar('keeps the initial assignment history stable when the card props refresh', async () => {
     const user = userEvent.setup()
     const baseCard = buildCard({
       memberIds: ['member-1'],
@@ -458,7 +460,7 @@ describe('CardModal file picker positioning', () => {
     expect(findAssignmentHistoryItems().some((item) => item.textContent?.includes('Beatriz Souza'))).toBe(false)
   })
 
-  it('renders persisted assignee activity as inline history instead of a comment card', async () => {
+  itWithSidebar('renders persisted assignee activity as inline history instead of a comment card', async () => {
     const user = userEvent.setup()
     render(
       <CardModal
@@ -495,7 +497,7 @@ describe('CardModal file picker positioning', () => {
     expect(screen.queryByRole('button', { name: 'Responder' })).not.toBeInTheDocument()
   })
 
-  it('reverts checklist item toggles when the backend update fails', async () => {
+  itWithSidebar('reverts checklist item toggles when the backend update fails', async () => {
     const user = userEvent.setup()
     const deferred = createDeferred()
     const updateChecklistItem = vi.fn(() => deferred.promise)
@@ -559,7 +561,7 @@ describe('CardModal file picker positioning', () => {
     expect(screen.getByText('Falha ao atualizar item')).toBeInTheDocument()
   })
 
-  it('does not expose checklist creation when the card already has one', async () => {
+  itWithSidebar('does not expose checklist creation when the card already has one', async () => {
     const user = userEvent.setup()
     const deleteChecklist = vi.fn()
 
@@ -638,7 +640,7 @@ describe('CardModal file picker positioning', () => {
     })
   })
 
-  it('persists the Activity sidebar open state in localStorage', async () => {
+  itWithSidebar('persists the Activity sidebar open state in localStorage', async () => {
     const user = userEvent.setup()
     window.localStorage.clear()
 
@@ -667,7 +669,7 @@ describe('CardModal file picker positioning', () => {
     expect(window.localStorage.getItem('plan-things:card-modal-activity-sidebar-open:v1:user-1')).toBe('true')
   })
 
-  it('shows the sidebar picker on first open before a panel is selected', async () => {
+  itWithSidebar('shows the sidebar picker on first open before a panel is selected', async () => {
     const user = userEvent.setup()
     window.localStorage.clear()
 
@@ -697,7 +699,7 @@ describe('CardModal file picker positioning', () => {
     expect(screen.getByRole('button', { name: 'Checklist' })).toBeInTheDocument()
   })
 
-  it('persists the selected sidebar panel in localStorage', async () => {
+  itWithSidebar('persists the selected sidebar panel in localStorage', async () => {
     const user = userEvent.setup()
     window.localStorage.clear()
 
