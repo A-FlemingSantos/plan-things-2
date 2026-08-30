@@ -36,6 +36,73 @@ export const COLUMN_DRAG_OVERLAY_HEIGHT_MS = 300
 const CARD_DRAG_OVERLAY_DROP_MS = 180
 const columnDragOverlayHeightById = new Map()
 
+function startCardKeysFromGroups(groups) {
+  return new Set(
+    (Array.isArray(groups) ? groups : [])
+      .map((group) => group?.startCardId)
+      .filter(Boolean),
+  )
+}
+
+function sameKeySet(left, right) {
+  if (left.size !== right.size) {
+    return false
+  }
+  for (const key of left) {
+    if (!right.has(key)) {
+      return false
+    }
+  }
+  return true
+}
+
+function useEnteringColumnGroupKeys(groups, enabled) {
+  const currentKeys = startCardKeysFromGroups(groups)
+  const [prevKeys, setPrevKeys] = useState(currentKeys)
+  const [enteringKeys, setEnteringKeys] = useState(() => new Set())
+
+  const freshKeys = []
+  if (enabled) {
+    for (const key of currentKeys) {
+      if (!prevKeys.has(key)) {
+        freshKeys.push(key)
+      }
+    }
+  }
+
+  if (!sameKeySet(prevKeys, currentKeys)) {
+    setPrevKeys(currentKeys)
+    if (enabled && freshKeys.length) {
+      const nextEntering = new Set(enteringKeys)
+      for (const key of freshKeys) {
+        nextEntering.add(key)
+      }
+      setEnteringKeys(nextEntering)
+    }
+  }
+
+  const visibleEntering = new Set(enteringKeys)
+  for (const key of freshKeys) {
+    visibleEntering.add(key)
+  }
+
+  const clearEnteringKey = (key) => {
+    if (!key) {
+      return
+    }
+    setEnteringKeys((prev) => {
+      if (!prev.has(key)) {
+        return prev
+      }
+      const next = new Set(prev)
+      next.delete(key)
+      return next
+    })
+  }
+
+  return [visibleEntering, clearEnteringKey]
+}
+
 function readColumnDragOverlayMaxHeightPx(columnNode) {
   const probe = document.createElement('div')
   probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;height:var(--kanban-column-drag-max-height)'
@@ -269,6 +336,10 @@ export function KanbanColumnView({
   const isComposerOpen = addingCard || isAddingCard || lockedCardsHeight != null
   const hasColumnColor = Boolean(col.color?.trim())
   const columnGroups = col.groups ?? []
+  const [enteringGroupKeys, clearEnteringGroupKey] = useEnteringColumnGroupKeys(
+    columnGroups,
+    !isDragOverlay,
+  )
   const hiddenCardIds = collapsedCardIdsFromGroups(col.cards, columnGroups)
   const cardIds = col.cards
     .filter((card) => !hiddenCardIds.has(card.id))
@@ -441,6 +512,16 @@ export function KanbanColumnView({
     setGroupTitleDraft(group.title ?? '')
   }
 
+  useLayoutEffect(() => {
+    const untitled = columnGroups.find((group) => (
+      enteringGroupKeys.has(group.startCardId) && !String(group.title ?? '').trim()
+    ))
+    if (!untitled || editingGroupId === untitled.id) {
+      return
+    }
+    beginEditingGroup(untitled)
+  }, [columnGroups, editingGroupId, enteringGroupKeys])
+
   const submitGroupTitle = async (group) => {
     const nextTitle = groupTitleDraft.trim()
     setEditingGroupId(null)
@@ -530,74 +611,87 @@ export function KanbanColumnView({
 
     const group = segment.group
     const expanded = !group.collapsed
-    const isEditingTitle = editingGroupId === group.id
-    const groupLabel = group.title.trim() || 'Agrupamento'
+    const groupTitle = group.title.trim()
+    const groupA11yLabel = groupTitle || 'Agrupamento'
+    const isEntering = Boolean(group.startCardId && enteringGroupKeys.has(group.startCardId))
+    const isEditingTitle = editingGroupId === group.id || (isEntering && !groupTitle)
 
     return (
       <section
-        key={group.id}
-        className={styles.columnGroup}
-        aria-label={groupLabel}
+        key={group.startCardId || group.id}
+        className={`${styles.columnGroup} ${isEntering ? styles.columnGroupEnter : ''}`}
+        aria-label={groupA11yLabel}
+        onAnimationEnd={(event) => {
+          if (!isEntering || !String(event.animationName).includes('ChromeEmerge')) {
+            return
+          }
+          clearEnteringGroupKey(group.startCardId)
+        }}
       >
-        <div
-          className={styles.columnGroupHeader}
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <button
-            type="button"
-            className={styles.columnGroupChevronBtn}
-            aria-expanded={expanded}
-            aria-label={expanded ? `Recolher ${groupLabel}` : `Expandir ${groupLabel}`}
-            onClick={() => onUpdateColumnGroup?.(col.id, group.id, { collapsed: expanded })}
-          >
-            <ChevronRight
-              size={ICON_SIZE}
-              strokeWidth={ICON_STROKE}
-              className={styles.columnGroupChevron}
-              aria-hidden="true"
-            />
-          </button>
-          {isEditingTitle && !isDragOverlay ? (
-            <input
-              className={styles.columnGroupTitleInput}
-              value={groupTitleDraft}
-              aria-label="Nome do agrupamento"
-              onChange={(event) => setGroupTitleDraft(event.target.value)}
-              onBlur={() => submitGroupTitle(group)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.currentTarget.blur()
-                }
-                if (event.key === 'Escape') {
-                  setEditingGroupId(null)
-                  setGroupTitleDraft(group.title ?? '')
-                }
-              }}
-              autoFocus
-            />
-          ) : (
-            <button
-              type="button"
-              className={styles.columnGroupTitle}
-              onClick={() => {
-                if (!isDragOverlay) {
-                  beginEditingGroup(group)
-                }
-              }}
+        <div className={styles.columnGroupHeaderReveal}>
+          <div className={styles.columnGroupHeaderRevealInner}>
+            <div
+              className={styles.columnGroupHeader}
+              onPointerDown={(event) => event.stopPropagation()}
             >
-              {groupLabel}
-            </button>
-          )}
-          {!isDragOverlay ? (
-            <button
-              type="button"
-              className={styles.columnGroupRemoveBtn}
-              aria-label={`Remover ${groupLabel}`}
-              onClick={() => onDeleteColumnGroup?.(col.id, group.id)}
-            >
-              <Minus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-            </button>
-          ) : null}
+              <button
+                type="button"
+                className={styles.columnGroupChevronBtn}
+                aria-expanded={expanded}
+                aria-label={expanded ? `Recolher ${groupA11yLabel}` : `Expandir ${groupA11yLabel}`}
+                onClick={() => onUpdateColumnGroup?.(col.id, group.id, { collapsed: expanded })}
+              >
+                <ChevronRight
+                  size={ICON_SIZE}
+                  strokeWidth={ICON_STROKE}
+                  className={styles.columnGroupChevron}
+                  aria-hidden="true"
+                />
+              </button>
+              {isEditingTitle && !isDragOverlay ? (
+                <input
+                  className={styles.columnGroupTitleInput}
+                  value={groupTitleDraft}
+                  aria-label="Nome do agrupamento"
+                  placeholder=""
+                  onChange={(event) => setGroupTitleDraft(event.target.value)}
+                  onBlur={() => submitGroupTitle(group)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.currentTarget.blur()
+                    }
+                    if (event.key === 'Escape') {
+                      setEditingGroupId(null)
+                      setGroupTitleDraft(group.title ?? '')
+                    }
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <button
+                  type="button"
+                  className={styles.columnGroupTitle}
+                  onClick={() => {
+                    if (!isDragOverlay) {
+                      beginEditingGroup(group)
+                    }
+                  }}
+                >
+                  {groupTitle}
+                </button>
+              )}
+              {!isDragOverlay ? (
+                <button
+                  type="button"
+                  className={styles.columnGroupRemoveBtn}
+                  aria-label={`Remover ${groupA11yLabel}`}
+                  onClick={() => onDeleteColumnGroup?.(col.id, group.id)}
+                >
+                  <Minus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
         <div
           className={`${styles.columnGroupExpand} ${expanded ? styles.columnGroupExpandOpen : ''}`}

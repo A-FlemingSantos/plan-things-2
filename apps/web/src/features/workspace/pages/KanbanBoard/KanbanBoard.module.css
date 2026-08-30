@@ -1837,6 +1837,7 @@
 }
 
 .columnGroup {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -1846,9 +1847,77 @@
   background: color-mix(in srgb, var(--text-1) 3.5%, transparent);
 }
 
+.columnGroupEnter {
+  background: transparent;
+  border-color: transparent;
+}
+
+.columnGroupEnter::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--text-1) 11%, transparent);
+  background: color-mix(in srgb, var(--text-1) 3.5%, transparent);
+  clip-path: inset(0 50% calc(100% - 36px) 50%);
+  animation: columnGroupChromeEmerge 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.columnColored .columnGroupEnter::before {
+  border-color: color-mix(in srgb, var(--column-color) 26%, transparent);
+  background: color-mix(in srgb, var(--column-color) 6%, transparent);
+}
+
+@keyframes columnGroupChromeEmerge {
+  0% {
+    clip-path: inset(0 50% calc(100% - 36px) 50%);
+  }
+
+  42% {
+    clip-path: inset(0 0 calc(100% - 36px) 0);
+  }
+
+  100% {
+    clip-path: inset(0);
+  }
+}
+
+.columnGroupEnter .columnGroupHeaderReveal,
+.columnGroupEnter .columnGroupExpand {
+  position: relative;
+  z-index: 1;
+}
+
+.columnGroupEnter .columnGroupHeaderReveal {
+  clip-path: inset(0 50% 0 50%);
+  animation: columnGroupHeaderSpread 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes columnGroupHeaderSpread {
+  from {
+    clip-path: inset(0 50% 0 50%);
+  }
+
+  to {
+    clip-path: inset(0);
+  }
+}
+
 .columnColored .columnGroup {
   border-color: color-mix(in srgb, var(--column-color) 26%, transparent);
   background: color-mix(in srgb, var(--column-color) 6%, transparent);
+}
+
+.columnGroupHeaderReveal {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.columnGroupHeaderRevealInner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .columnGroupHeader {
@@ -1978,8 +2047,30 @@
 
 @media (prefers-reduced-motion: reduce) {
   .columnGroupChevron,
-  .columnGroupExpand {
+  .columnGroupExpand,
+  .columnGroupEnter,
+  .columnGroupEnter::before,
+  .columnGroupEnter .columnGroupHeaderReveal {
     transition: none;
+    animation: none;
+  }
+
+  .columnGroupEnter {
+    border-color: color-mix(in srgb, var(--text-1) 11%, transparent);
+    background: color-mix(in srgb, var(--text-1) 3.5%, transparent);
+  }
+
+  .columnColored .columnGroupEnter {
+    border-color: color-mix(in srgb, var(--column-color) 26%, transparent);
+    background: color-mix(in srgb, var(--column-color) 6%, transparent);
+  }
+
+  .columnGroupEnter::before {
+    content: none;
+  }
+
+  .columnGroupEnter .columnGroupHeaderReveal {
+    clip-path: none;
   }
 }
 
