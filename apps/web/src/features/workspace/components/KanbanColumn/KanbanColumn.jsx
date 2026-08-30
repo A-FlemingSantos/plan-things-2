@@ -599,11 +599,17 @@ export function KanbanColumnView({
             </button>
           ) : null}
         </div>
-        {expanded ? (
-          <div className={styles.columnGroupBody}>
-            {segment.cards.map((card) => renderCardSlot(card, false))}
+        <div
+          className={`${styles.columnGroupExpand} ${expanded ? styles.columnGroupExpandOpen : ''}`}
+          aria-hidden={!expanded}
+          inert={expanded ? undefined : ''}
+        >
+          <div className={styles.columnGroupExpandInner}>
+            <div className={styles.columnGroupBody}>
+              {segment.cards.map((card) => renderCardSlot(card, false))}
+            </div>
           </div>
-        ) : null}
+        </div>
       </section>
     )
   })
