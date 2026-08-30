@@ -552,6 +552,24 @@ describe('KanbanColumn card groups', () => {
     expect(onUpdateColumnGroup).toHaveBeenCalledWith('col-1', 'group-1', { collapsed: true })
   })
 
+  it('keeps collapsed group cards out of the accessibility tree', () => {
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [
+          { id: 'group-1', title: 'Sprint', startCardId: 'card-2', collapsed: true },
+        ],
+      },
+    })
+
+    expect(screen.getByRole('button', { name: /abrir cartão primeiro/i })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /abrir cartão segundo/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /expandir sprint/i })).toBeTruthy()
+  })
+
   it('removes a group from the header without deleting cards', () => {
     const onDeleteColumnGroup = vi.fn()
 
