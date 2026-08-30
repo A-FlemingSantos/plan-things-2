@@ -529,7 +529,27 @@ export function mapBoardViewToColumns(boardView, options = {}) {
     cards: Array.from(
       new Map((column.cards ?? []).map((card) => [card.id, card])).values(),
     ).map((card) => mapBoardCard(card, options)),
+    groups: mapBoardColumnGroups(column.groups),
   }))
+}
+
+function mapBoardColumnGroups(groups) {
+  if (!Array.isArray(groups)) {
+    return []
+  }
+
+  return groups.flatMap((group) => {
+    if (!group?.id || !group.startCardId) {
+      return []
+    }
+
+    return [{
+      id: group.id,
+      title: typeof group.title === 'string' ? group.title : '',
+      startCardId: group.startCardId,
+      collapsed: Boolean(group.collapsed),
+    }]
+  })
 }
 
 export function mergeBoardIntoPlan(plan, boardView, options = {}) {

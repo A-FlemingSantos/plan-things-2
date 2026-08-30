@@ -451,3 +451,90 @@ describe('KanbanColumn drag overlay', () => {
     }
   })
 })
+
+describe('KanbanColumn card groups', () => {
+  const cards = [
+    {
+      id: 'card-1',
+      title: 'Primeiro',
+      labelId: '',
+      memberIds: [],
+      comments: [],
+      attachments: [],
+      checklists: [],
+      dueDate: '',
+    },
+    {
+      id: 'card-2',
+      title: 'Segundo',
+      labelId: '',
+      memberIds: [],
+      comments: [],
+      attachments: [],
+      checklists: [],
+      dueDate: '',
+    },
+    {
+      id: 'card-3',
+      title: 'Terceiro',
+      labelId: '',
+      memberIds: [],
+      comments: [],
+      attachments: [],
+      checklists: [],
+      dueDate: '',
+    },
+  ]
+
+  it('creates a group from the insert control between two cards', async () => {
+    const onCreateColumnGroup = vi.fn(async (_columnId, startCardId) => ({
+      id: 'group-1',
+      title: '',
+      startCardId,
+      collapsed: false,
+    }))
+
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [],
+      },
+      onCreateColumnGroup,
+    })
+
+    fireEvent.click(screen.getAllByRole('button', { name: /criar agrupamento com os cartões abaixo/i })[0])
+
+    await waitFor(() => {
+      expect(onCreateColumnGroup).toHaveBeenCalledWith('col-1', 'card-2')
+    })
+
+    const insert = screen.getAllByRole('button', { name: /criar agrupamento com os cartões abaixo/i })[0]
+    expect(insert.closest('.cardSlot')).toBeNull()
+    expect(insert.closest('[aria-label^="Abrir cartão"]')).toBeNull()
+  })
+
+  it('wraps cards below a group and collapses them from the header chevron', () => {
+    const onUpdateColumnGroup = vi.fn()
+
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [
+          { id: 'group-1', title: 'Sprint', startCardId: 'card-2', collapsed: false },
+        ],
+      },
+      onUpdateColumnGroup,
+    })
+
+    expect(screen.getByRole('button', { name: /abrir cartão segundo/i })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /recolher sprint/i }))
+    expect(onUpdateColumnGroup).toHaveBeenCalledWith('col-1', 'group-1', { collapsed: true })
+  })
+})
+

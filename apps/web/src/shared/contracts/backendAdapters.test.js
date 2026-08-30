@@ -236,4 +236,22 @@ describe('board mapping with preferences', () => {
 
     expect(mergeBoardIntoPlan(plan, boardView).compactColumnIds).toEqual(['column-1'])
   })
+
+  it('maps column groups from the board response', () => {
+    const [column] = mapBoardViewToColumns({
+      ...sampleBoardView,
+      columns: [
+        {
+          ...sampleBoardView.columns[0],
+          groups: [
+            { id: 'group-1', title: 'Sprint', startCardId: 'card-1', collapsed: true },
+          ],
+        },
+      ],
+    })
+
+    expect(column.groups).toEqual([
+      { id: 'group-1', title: 'Sprint', startCardId: 'card-1', collapsed: true },
+    ])
+  })
 })

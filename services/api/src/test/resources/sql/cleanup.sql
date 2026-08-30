@@ -13,6 +13,8 @@ DELETE FROM board_checklist_items;
 DELETE FROM board_checklists;
 DELETE FROM board_card_comments;
 DELETE FROM board_card_assignees;
+DELETE FROM board_column_groups;
+DELETE FROM board_column_view_preferences;
 DELETE FROM board_cards;
 DELETE FROM board_columns;
 DELETE FROM plan_labels;
@@ -32,3 +34,4 @@ DELETE FROM oauth_login_states;
 DELETE FROM user_external_identities;
 DELETE FROM password_reset_tokens;
 DELETE FROM users;
+

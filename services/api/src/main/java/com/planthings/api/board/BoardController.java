@@ -3,6 +3,7 @@ package com.planthings.api.board;
 import com.planthings.api.common.api.ApiEnvelope;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +60,35 @@ public class BoardController {
   @PutMapping("/columns/reorder")
   public ApiEnvelope<BoardService.BoardView> reorderColumns(@PathVariable UUID planId, @Valid @RequestBody ReorderColumnsRequest request) {
     return ApiEnvelope.ok(boardService.reorderColumns(planId, request.orderedColumnIds()));
+  }
+
+  @PostMapping("/columns/{columnId}/groups")
+  public ApiEnvelope<BoardService.BoardView> createColumnGroup(
+      @PathVariable UUID planId,
+      @PathVariable UUID columnId,
+      @Valid @RequestBody ColumnGroupRequest request
+  ) {
+    return ApiEnvelope.ok(boardService.createColumnGroup(
+        planId,
+        columnId,
+        request.startCardId(),
+        request.title(),
+        request.collapsed()
+    ));
+  }
+
+  @PatchMapping("/groups/{groupId}")
+  public ApiEnvelope<BoardService.BoardView> updateColumnGroup(
+      @PathVariable UUID planId,
+      @PathVariable UUID groupId,
+      @RequestBody ColumnGroupUpdateRequest request
+  ) {
+    return ApiEnvelope.ok(boardService.updateColumnGroup(
+        planId,
+        groupId,
+        request == null ? null : request.title(),
+        request == null ? null : request.collapsed()
+    ));
   }
 
   @PostMapping("/cards")
@@ -128,6 +158,16 @@ public class BoardController {
   }
 
   public record CompactColumnsPreferenceRequest(List<UUID> columnIds) {
+  }
+
+  public record ColumnGroupRequest(
+      @NotNull(message = "O cartao inicial do agrupamento e obrigatorio.") UUID startCardId,
+      String title,
+      Boolean collapsed
+  ) {
+  }
+
+  public record ColumnGroupUpdateRequest(String title, Boolean collapsed) {
   }
 
   public record CardRequest(
