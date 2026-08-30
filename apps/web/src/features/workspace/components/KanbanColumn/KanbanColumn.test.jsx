@@ -48,6 +48,36 @@ function renderColumn(props = {}) {
 }
 
 describe('KanbanColumn card composer', () => {
+  it('does not lock the card list height when the composer opens', () => {
+    const { container } = renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards: [
+          {
+            id: 'card-1',
+            title: 'Card existente',
+            labelId: '',
+            memberIds: [],
+            comments: [],
+            attachments: [],
+            checklists: [],
+            dueDate: '',
+          },
+        ],
+      },
+    })
+
+    fireEvent.click(screen.getAllByRole('button', { name: /adicionar cartão/i }).at(-1))
+
+    const cardsScroll = container.querySelector('.colCardsScroll')
+    expect(cardsScroll).toBeInTheDocument()
+    expect(cardsScroll.className).not.toContain('colCardsScrollLocked')
+    expect(cardsScroll.style.height).toBe('')
+    expect(container.querySelector('.columnComposerOpen')).toBeNull()
+  })
+
   it('hides the composer immediately while the card creation request is pending', async () => {
     let resolveCreation
     const onAddCard = vi.fn(() => new Promise((resolve) => {

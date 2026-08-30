@@ -21,7 +21,7 @@ export default function AddCardComposer({
 
   useEffect(() => {
     if (addingCard) {
-      inputRef.current?.focus()
+      inputRef.current?.focus({ preventScroll: true })
     }
   }, [addingCard])
 
