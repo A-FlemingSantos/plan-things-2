@@ -1923,7 +1923,6 @@
 
 .columnGroupTitle,
 .columnGroupTitleInput {
-  flex: 1 1 auto;
   min-width: 0;
   height: 20px;
   padding: 0 4px;
@@ -1938,13 +1937,16 @@
 }
 
 .columnGroupTitle {
-  cursor: text;
+  flex: 0 1 auto;
+  max-width: calc(100% - 24px);
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .columnGroupTitleInput {
+  flex: 1 1 auto;
   outline: 1px solid color-mix(in srgb, var(--text-1) 16%, transparent);
 }
 
