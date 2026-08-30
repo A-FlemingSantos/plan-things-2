@@ -154,12 +154,9 @@ vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
 }))
 
 vi.mock('../../components/CardModal/CardModal.jsx', () => ({
-  default: ({ card, onDelete }) => (
+  default: ({ card }) => (
     <div>
       <p>{card.title}</p>
-      <button type="button" onClick={() => { onDelete(card.id).catch(() => {}) }}>
-        Excluir cartão
-      </button>
     </div>
   ),
 }))
@@ -420,26 +417,6 @@ describe('KanbanBoard optimistic feedback', () => {
     })
 
     scrollTo.mockRestore()
-  })
-
-  it('closes the card modal immediately while the backend deletion is pending and restores it on failure', async () => {
-    const deferred = createDeferred()
-    boardActions.deleteCard.mockReturnValue(deferred.promise)
-
-    renderBoard()
-    await userEvent.click(await screen.findByRole('button', { name: 'Abrir Card de teste' }))
-    expect(screen.getByRole('button', { name: 'Excluir cartão' })).toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Excluir cartão' }))
-
-    await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Excluir cartão' })).toBeNull()
-    })
-
-    deferred.reject(new Error('Falha ao excluir cartão'))
-
-    expect(await screen.findByRole('button', { name: 'Excluir cartão' })).toBeInTheDocument()
-    expect(screen.getByText('Falha ao excluir cartão')).toBeInTheDocument()
   })
 })
 

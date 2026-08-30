@@ -4,20 +4,22 @@ import {
   Check,
   MoveRight,
   Code,
+  Ellipsis,
+  Eye,
+  EyeClosed,
   FileText,
   Flag,
   Goal,
   History,
   Hourglass,
   Image,
+  ImagePlus,
   Link,
   Maximize2,
   PencilLine,
   Plus,
-  Star,
   Tag,
   TimerReset,
-  Trash2,
   Users,
   X,
 } from 'lucide-react'
@@ -56,7 +58,6 @@ export default function CardModal({
   colTitle,
   onClose,
   onUpdate,
-  onDelete,
   onMoveToNextColumn,
   canMoveToNextColumn = false,
   onToggleCardCompleted,
@@ -120,12 +121,12 @@ export default function CardModal({
   ))
   const [isConfirmingSchedule, setIsConfirmingSchedule] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [isMovingToNextColumn, setIsMovingToNextColumn] = useState(false)
   const [isTogglingCompleted, setIsTogglingCompleted] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const [saveStatus, setSaveStatus] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [isTopBarEyeOpen, setIsTopBarEyeOpen] = useState(true)
   const titleTextareaRef = useRef(null)
   const titleRowRef = useRef(null)
   const textMenuRef = useRef(null)
@@ -170,7 +171,7 @@ export default function CardModal({
     }, 2200)
   }
 
-  const isInteractionBlocked = isSaving || isDeleting
+  const isInteractionBlocked = isSaving
 
   const checklist = useCardModalChecklist({
     card,
@@ -233,7 +234,6 @@ export default function CardModal({
   const {
     comments,
     setComments,
-    createdAtLabel,
     isSendingComment,
     isActivitySidebarOpen,
     sidebarPanel,
@@ -480,21 +480,6 @@ export default function CardModal({
     })
   }
 
-  const handleDelete = async () => {
-    if (isMutating) return
-
-    setIsDeleting(true)
-    setSubmitError(null)
-
-    try {
-      await onDelete(card.id)
-      startClose()
-    } catch (error) {
-      setSubmitError(error?.message ?? 'Não foi possível excluir o cartão.')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
   const selectedMembers = memberIds.map(id => members.find(m => m.id === id)).filter(Boolean)
   const selectedMembersSummary = selectedMembers.map(getMemberName).join(', ')
   const selectedLabelSummary = label?.text ?? ''
@@ -967,14 +952,46 @@ export default function CardModal({
             <span className={styles.cmBreadcrumbCurrent}>{colTitle}</span>
           </div>
           <div className={styles.cmTopBarMeta}>
-            <span className={styles.cmCreatedAt}>Criada em {createdAtLabel}</span>
-            <span className={styles.cmTopBarDivider} aria-hidden="true" />
-            <button type="button" className={styles.cmTopBarLink}>Faça uma pergunta</button>
-            <button type="button" className={styles.cmTopBarLink}>Compartilhar</button>
-            <span className={styles.cmTopBarDivider} aria-hidden="true" />
-            <button type="button" className={styles.cmIconBtn} title="Favoritar" aria-label="Favoritar"><Star size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
-            <button type="button" className={styles.cmIconBtn} onClick={handleDelete} title="Excluir cartão" aria-label="Excluir cartão" disabled={isMutating}><Trash2 size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
-            <button type="button" className={styles.cmIconBtn} onClick={close} title="Fechar" aria-label="Fechar detalhes do cartão" disabled={isMutating}><X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" /></button>
+            <button
+              type="button"
+              className={styles.cmIconBtn}
+              aria-label="Adicionar imagem"
+              disabled={isMutating}
+            >
+              <ImagePlus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={styles.cmIconBtn}
+              aria-label={isTopBarEyeOpen ? 'Ocultar visualização' : 'Mostrar visualização'}
+              aria-pressed={!isTopBarEyeOpen}
+              disabled={isMutating}
+              onClick={() => setIsTopBarEyeOpen((open) => !open)}
+            >
+              {isTopBarEyeOpen ? (
+                <Eye size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              ) : (
+                <EyeClosed size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              )}
+            </button>
+            <button
+              type="button"
+              className={styles.cmIconBtn}
+              aria-label="Mais opções"
+              disabled={isMutating}
+            >
+              <Ellipsis size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={styles.cmIconBtn}
+              onClick={close}
+              title="Fechar"
+              aria-label="Fechar detalhes do cartão"
+              disabled={isMutating}
+            >
+              <X size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            </button>
           </div>
         </div>
 

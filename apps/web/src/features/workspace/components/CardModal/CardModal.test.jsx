@@ -143,7 +143,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -174,7 +173,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -211,7 +209,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -283,7 +280,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[
           { id: 'user-1', name: 'Arthur Fleming', initials: 'AF', color: '#4290da', email: 'arthur@example.com' },
@@ -347,7 +343,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[
           { id: 'user-1', name: 'Arthur Fleming', initials: 'AF', color: '#4290da', email: 'arthur@example.com' },
@@ -380,7 +375,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         onAddComment={addComment}
         labels={[]}
         members={[]}
@@ -420,7 +414,6 @@ describe('CardModal file picker positioning', () => {
       colTitle: 'Backlog',
       onClose: () => {},
       onUpdate: async () => {},
-      onDelete: async () => {},
       labels: [],
       members: [
         { id: 'member-1', name: 'Arthur Fleming', initials: 'AF', color: '#4290da', email: 'arthur@example.com' },
@@ -480,7 +473,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -522,7 +514,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -579,7 +570,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -613,7 +603,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={onUpdate}
-        onDelete={async () => {}}
         labels={[
           { id: 'label-legacy', text: 'Antiga', color: '#999999' },
           { id: 'label-1', text: 'Urgente', color: '#ff6766' },
@@ -650,7 +639,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -679,7 +667,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
@@ -709,7 +696,6 @@ describe('CardModal file picker positioning', () => {
         colTitle="Backlog"
         onClose={() => {}}
         onUpdate={async () => {}}
-        onDelete={async () => {}}
         labels={[]}
         members={[]}
         currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}

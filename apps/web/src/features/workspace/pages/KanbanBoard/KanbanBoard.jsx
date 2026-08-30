@@ -177,7 +177,6 @@ export default function KanbanBoard() {
   const {
     saveCardOptimistically,
     handleCardUpdate,
-    handleCardDelete,
     handleBoardCardClick,
     canMoveActiveCardToNextColumn,
     handleMoveCardToNextColumn,
@@ -739,7 +738,6 @@ export default function KanbanBoard() {
           colTitle={activeCard.colTitle}
           onClose={() => setActiveCard(null)}
           onUpdate={handleCardUpdate}
-          onDelete={handleCardDelete}
           onMoveToNextColumn={handleMoveCardToNextColumn}
           canMoveToNextColumn={canMoveActiveCardToNextColumn}
           onToggleCardCompleted={togglePlannerCardCompleted}

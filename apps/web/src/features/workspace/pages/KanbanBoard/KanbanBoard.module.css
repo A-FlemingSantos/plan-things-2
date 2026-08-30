@@ -2812,41 +2812,30 @@
 .cmTopBarMeta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
-.cmCreatedAt {
-  font-size: 12px;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-.cmTopBarLink {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--text-2);
-  font-family: var(--font-family);
-  font-size: 12px;
-  display: inline-flex;
+.cmIconBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  color: var(--text-2);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.cmTopBarLink:hover {
+.cmIconBtn:hover {
   background: var(--hover);
   color: var(--text-1);
 }
 
-.cmTopBarDivider {
-  width: 1px;
-  height: 18px;
-  background: var(--border-1);
-  flex-shrink: 0;
+.cmIconBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Modal header (invite + legacy) */
@@ -2892,19 +2881,6 @@
   align-items: center;
   gap: 8px;
 }
-
-.cmIconBtn {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-.cmIconBtn:hover { background: var(--hover); color: var(--text-1); }
 
 .cmBody {
   display: grid;
