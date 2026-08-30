@@ -7,12 +7,19 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
 public class DefaultGitHubApiClient implements GitHubApiClient {
+
+  private static final Pattern QUALIFIER_ONLY_ISSUE_SEARCH = Pattern.compile(
+      "^repo:(\\S+)\\s+is:(issue|pr)$",
+      Pattern.CASE_INSENSITIVE
+  );
 
   private final GitHubRestExecutor restExecutor;
   private final ObjectMapper objectMapper;
@@ -107,6 +114,15 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
 
   @Override
   public List<GitHubSearchItem> searchIssuesAndPullRequests(String accessToken, String query, int page, int perPage) {
+    Matcher qualifierOnly = QUALIFIER_ONLY_ISSUE_SEARCH.matcher(query == null ? "" : query.trim());
+    if (qualifierOnly.matches()) {
+      String[] parts = qualifierOnly.group(1).split("/", 2);
+      if (parts.length == 2 && StringUtils.hasText(parts[0]) && StringUtils.hasText(parts[1])) {
+        boolean pullRequests = "pr".equalsIgnoreCase(qualifierOnly.group(2));
+        return listRecentIssuesOrPullRequests(accessToken, parts[0], parts[1], pullRequests, page, perPage);
+      }
+    }
+
     String path = UriComponentsBuilder.fromPath("/search/issues")
         .queryParam("q", query)
         .queryParam("sort", "updated")
@@ -120,6 +136,35 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
     List<GitHubSearchItem> items = new ArrayList<>();
     for (JsonNode item : response.path("items")) {
       items.add(mapIssueSearchItem(item));
+    }
+    return items;
+  }
+
+  private List<GitHubSearchItem> listRecentIssuesOrPullRequests(
+      String accessToken,
+      String owner,
+      String repo,
+      boolean pullRequests,
+      int page,
+      int perPage
+  ) {
+    String repoFullName = owner + "/" + repo;
+    String path = UriComponentsBuilder.fromPath(repoPath(owner, repo) + (pullRequests ? "/pulls" : "/issues"))
+        .queryParam("state", "open")
+        .queryParam("sort", "updated")
+        .queryParam("direction", "desc")
+        .queryParam("per_page", perPage)
+        .queryParam("page", page)
+        .build()
+        .encode()
+        .toUriString();
+    JsonNode response = restExecutor.getJson(accessToken, path);
+    List<GitHubSearchItem> items = new ArrayList<>();
+    for (JsonNode item : response) {
+      if (!pullRequests && item.hasNonNull("pull_request")) {
+        continue;
+      }
+      items.add(pullRequests ? mapListedPullRequest(item, repoFullName) : mapIssueSearchItem(item, repoFullName));
     }
     return items;
   }
@@ -348,14 +393,21 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
   }
 
   private GitHubSearchItem mapIssueSearchItem(JsonNode node) {
+    return mapIssueSearchItem(node, extractRepoFullName(node.path("repository_url").asText("")));
+  }
+
+  private GitHubSearchItem mapIssueSearchItem(JsonNode node, String repoFullName) {
     GitHubLinkType type = node.hasNonNull("pull_request") ? GitHubLinkType.PULL_REQUEST : GitHubLinkType.ISSUE;
     boolean merged = type == GitHubLinkType.PULL_REQUEST && node.hasNonNull("pull_request")
         && !node.path("pull_request").path("merged_at").isNull();
     String status = mapStatus(type, node.path("state").asText(""), merged);
+    String resolvedRepo = StringUtils.hasText(extractRepoFullName(node.path("repository_url").asText("")))
+        ? extractRepoFullName(node.path("repository_url").asText(""))
+        : repoFullName;
     return new GitHubSearchItem(
         node.path("id").asText(""),
         type,
-        extractRepoFullName(node.path("repository_url").asText("")),
+        resolvedRepo,
         node.path("title").asText(""),
         node.path("html_url").asText(""),
         "#" + node.path("number").asInt(),
@@ -369,6 +421,38 @@ public class DefaultGitHubApiClient implements GitHubApiClient {
         node.path("comments").asInt(0),
         type == GitHubLinkType.PULL_REQUEST ? node.path("base").path("ref").asText(null) : null,
         type == GitHubLinkType.PULL_REQUEST ? node.path("head").path("ref").asText(null) : null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+  }
+
+  private GitHubSearchItem mapListedPullRequest(JsonNode node, String repoFullName) {
+    boolean merged = node.path("merged").asBoolean(false)
+        || (node.has("merged_at") && !node.path("merged_at").isNull());
+    String status = mapStatus(GitHubLinkType.PULL_REQUEST, node.path("state").asText(""), merged);
+    return new GitHubSearchItem(
+        node.path("id").asText(""),
+        GitHubLinkType.PULL_REQUEST,
+        repoFullName,
+        node.path("title").asText(""),
+        node.path("html_url").asText(""),
+        "#" + node.path("number").asInt(),
+        status,
+        node.path("user").path("login").asText(null),
+        node.path("user").path("avatar_url").asText(null),
+        node.path("created_at").asText(null),
+        node.path("updated_at").asText(null),
+        labelNames(node.path("labels")),
+        preview(node.path("body").asText(null)),
+        node.path("comments").asInt(0),
+        node.path("base").path("ref").asText(null),
+        node.path("head").path("ref").asText(null),
         null,
         null,
         null,
