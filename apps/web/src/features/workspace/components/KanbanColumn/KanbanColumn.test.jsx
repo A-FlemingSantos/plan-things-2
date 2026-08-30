@@ -38,13 +38,13 @@ function buildColumnProps(props = {}) {
 function renderColumn(props = {}) {
   const mergedProps = buildColumnProps(props)
 
-  render(
+  const view = render(
     <DndContext>
       <KanbanColumn {...mergedProps} />
     </DndContext>,
   )
 
-  return mergedProps
+  return { ...mergedProps, ...view }
 }
 
 describe('KanbanColumn card composer', () => {
@@ -513,6 +513,54 @@ describe('KanbanColumn card groups', () => {
 
     const insert = screen.getAllByRole('button', { name: /criar agrupamento com os cartões abaixo/i })[0]
     expect(insert.closest('[aria-label^="Abrir cartão"]')).toBeNull()
+  })
+
+  it('animates a newly created group wrapping its cards', () => {
+    const view = renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [],
+      },
+    })
+
+    view.rerender(
+      <DndContext>
+        <KanbanColumn
+          {...buildColumnProps({
+            col: {
+              id: 'col-1',
+              title: 'A fazer',
+              color: '#4290da',
+              cards,
+              groups: [
+                { id: 'group-1', title: 'Sprint', startCardId: 'card-2', collapsed: false },
+              ],
+            },
+          })}
+        />
+      </DndContext>,
+    )
+
+    expect(screen.getByRole('region', { name: 'Sprint' }).className).toContain('columnGroupEnter')
+  })
+
+  it('does not animate groups that were already on the board', () => {
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [
+          { id: 'group-1', title: 'Sprint', startCardId: 'card-2', collapsed: false },
+        ],
+      },
+    })
+
+    expect(screen.getByRole('region', { name: 'Sprint' }).className).not.toContain('columnGroupEnter')
   })
 
   it('does not offer a group insert between cards already inside a group', () => {
