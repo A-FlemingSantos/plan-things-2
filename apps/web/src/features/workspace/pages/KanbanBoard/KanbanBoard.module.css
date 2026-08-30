@@ -1900,7 +1900,6 @@
 }
 
 .columnGroup:hover .columnGroupRemoveBtn,
-.columnGroup:focus-within .columnGroupRemoveBtn,
 .columnGroupRemoveBtn:focus-visible {
   opacity: 1;
   pointer-events: auto;
