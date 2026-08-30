@@ -61,7 +61,7 @@ describe('AuthenticatedAppHeader', () => {
     expect(screen.getByText('Lancamento Q3')).toHaveAttribute('aria-current', 'page')
   })
 
-  it('places GitHub, settings, and the account control on the right', () => {
+  it('places settings and the account control on the right', () => {
     render(
       <TestMemoryRouter initialEntries={['/workspace']}>
         <AuthenticatedAppHeader pathname="/workspace" />
@@ -69,14 +69,12 @@ describe('AuthenticatedAppHeader', () => {
     )
 
     const header = document.querySelector('[data-authenticated-app-header]')
-    const github = screen.getByRole('button', { name: 'GitHub' })
     const settings = screen.getByRole('button', { name: 'Configurações' })
     const account = screen.getByRole('button', { name: 'Abrir menu da conta' })
 
-    expect(header.lastElementChild).toContainElement(github)
     expect(header.lastElementChild).toContainElement(settings)
     expect(header.lastElementChild).toContainElement(account)
-    expect(github.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(settings.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'GitHub' })).not.toBeInTheDocument()
   })
 })

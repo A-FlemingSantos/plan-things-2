@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AlignStartHorizontal, BookOpen, House, Settings } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { SiGithub } from 'react-icons/si'
 
 import { useAuth } from '../../../features/auth/context/AuthContext.jsx'
 import AppThemeScope from '../../../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
@@ -23,12 +22,6 @@ const NAV_ITEMS = [
   { id: 'docs', label: 'Docs', to: ROUTES.docs, Icon: BookOpen },
   { id: 'plan', label: 'Plano', to: ROUTES.workspaceBoard, Icon: AlignStartHorizontal },
 ]
-
-function isSettingsSectionActive(pathname, search, section) {
-  if (normalizePathname(pathname) !== ROUTES.settings) return false
-
-  return new URLSearchParams(search).get('section') === section
-}
 
 function isRouteActive(pathname, route) {
   const normalizedPathname = normalizePathname(pathname)
@@ -96,8 +89,7 @@ export default function AuthenticatedAppHeader({ pathname }) {
   const { plans } = usePlans()
   const { pageBreadcrumbLabel } = useAppChrome()
   const [docsPath, setDocsPath] = useState(() => resolveDocsDockPath())
-  const githubActive = isSettingsSectionActive(location.pathname, location.search, 'integrations')
-  const settingsActive = normalizePathname(location.pathname) === ROUTES.settings && !githubActive
+  const settingsActive = normalizePathname(location.pathname) === ROUTES.settings
   const [workspaceItem, docsItem, planItem] = NAV_ITEMS
   const { items } = resolveAuthenticatedPageBreadcrumb({
     pathname,
@@ -144,14 +136,6 @@ export default function AuthenticatedAppHeader({ pathname }) {
         </div>
 
         <div className={styles.trailing}>
-          <HeaderIconButton
-            label="GitHub"
-            active={githubActive}
-            onClick={() => openSettingsPanel('integrations')}
-          >
-            <SiGithub size={16} aria-hidden="true" />
-          </HeaderIconButton>
-
           <HeaderIconButton
             label="Configurações"
             active={settingsActive}
