@@ -231,10 +231,10 @@ public class BoardService {
       throw new BadRequestException("AGRUPAMENTO_INVALIDO", "O cartao inicial precisa pertencer a esta coluna.");
     }
 
-    boolean startTaken = boardColumnGroupRepository.findByColumnId(columnId).stream()
-        .anyMatch(group -> startCardId.equals(group.getStartCardId()));
-    if (startTaken) {
-      throw new ConflictException("AGRUPAMENTO_EXISTENTE", "Ja existe um agrupamento neste ponto da lista.");
+    List<BoardCardEntity> columnCards = boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId);
+    List<BoardColumnGroupEntity> existingGroups = boardColumnGroupRepository.findByColumnId(columnId);
+    if (isCardInsideExistingGroup(columnCards, existingGroups, startCardId)) {
+      throw new ConflictException("AGRUPAMENTO_ANINHADO", "Nao e possivel criar um agrupamento dentro de outro.");
     }
 
     BoardColumnGroupEntity group = new BoardColumnGroupEntity();
@@ -242,6 +242,7 @@ public class BoardService {
     group.setColumnId(columnId);
     group.setTitle(normalizeGroupTitle(title));
     group.setStartCardId(startCardId);
+    group.setEndCardId(resolveGroupEndCardId(columnCards, existingGroups, startCardId));
     group.setCollapsed(Boolean.TRUE.equals(collapsed));
     boardColumnGroupRepository.save(group);
     return buildBoardView(plan, userId);
@@ -823,21 +824,98 @@ public class BoardService {
         .orElseThrow(() -> new NotFoundException("AGRUPAMENTO_NAO_ENCONTRADO", "Nao encontramos o agrupamento informado."));
   }
 
-  private List<ColumnGroupView> toGroupViews(List<BoardColumnGroupEntity> groups, List<BoardCardEntity> cards) {
+  private boolean isCardInsideExistingGroup(
+      List<BoardCardEntity> cards,
+      List<BoardColumnGroupEntity> groups,
+      UUID cardId
+  ) {
+    if (cardId == null || cards.isEmpty() || groups.isEmpty()) {
+      return false;
+    }
+
+    Map<UUID, Integer> indexById = cardIndexById(cards);
+    Integer cardIndex = indexById.get(cardId);
+    if (cardIndex == null) {
+      return false;
+    }
+
+    for (BoardColumnGroupEntity group : groups) {
+      int[] range = groupRange(indexById, group);
+      if (range == null) {
+        continue;
+      }
+      if (cardIndex >= range[0] && cardIndex <= range[1]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private UUID resolveGroupEndCardId(
+      List<BoardCardEntity> cards,
+      List<BoardColumnGroupEntity> groups,
+      UUID startCardId
+  ) {
+    Map<UUID, Integer> indexById = cardIndexById(cards);
+    Integer start = indexById.get(startCardId);
+    if (start == null) {
+      return startCardId;
+    }
+
+    int end = cards.size() - 1;
+    for (BoardColumnGroupEntity group : groups) {
+      int[] range = groupRange(indexById, group);
+      if (range == null || range[0] <= start) {
+        continue;
+      }
+      end = Math.min(end, range[0] - 1);
+    }
+    if (end < start) {
+      end = start;
+    }
+    return cards.get(end).getId();
+  }
+
+  private Map<UUID, Integer> cardIndexById(List<BoardCardEntity> cards) {
     Map<UUID, Integer> indexById = new HashMap<>();
     for (int i = 0; i < cards.size(); i++) {
       indexById.put(cards.get(i).getId(), i);
     }
+    return indexById;
+  }
+
+  private int[] groupRange(Map<UUID, Integer> indexById, BoardColumnGroupEntity group) {
+    if (group.getStartCardId() == null) {
+      return null;
+    }
+    Integer start = indexById.get(group.getStartCardId());
+    if (start == null) {
+      return null;
+    }
+    Integer end = group.getEndCardId() == null ? start : indexById.get(group.getEndCardId());
+    if (end == null || end < start) {
+      end = start;
+    }
+    return new int[] { start, end };
+  }
+
+  private List<ColumnGroupView> toGroupViews(List<BoardColumnGroupEntity> groups, List<BoardCardEntity> cards) {
+    Map<UUID, Integer> indexById = cardIndexById(cards);
 
     return groups.stream()
         .filter(group -> group.getStartCardId() != null && indexById.containsKey(group.getStartCardId()))
         .sorted(Comparator.comparingInt(group -> indexById.get(group.getStartCardId())))
-        .map(group -> new ColumnGroupView(
-            group.getId(),
-            group.getTitle(),
-            group.getStartCardId(),
-            Boolean.TRUE.equals(group.getCollapsed())
-        ))
+        .map(group -> {
+          int[] range = groupRange(indexById, group);
+          UUID endCardId = range == null ? group.getStartCardId() : cards.get(range[1]).getId();
+          return new ColumnGroupView(
+              group.getId(),
+              group.getTitle(),
+              group.getStartCardId(),
+              endCardId,
+              Boolean.TRUE.equals(group.getCollapsed())
+          );
+        })
         .toList();
   }
 
@@ -856,55 +934,50 @@ public class BoardService {
       List<BoardCardEntity> remainingCards
   ) {
     List<BoardColumnGroupEntity> groups = boardColumnGroupRepository.findByColumnId(columnId);
-    List<BoardColumnGroupEntity> anchored = groups.stream()
-        .filter(group -> removedCardId.equals(group.getStartCardId()))
-        .toList();
-    if (anchored.isEmpty()) {
+    if (groups.isEmpty()) {
       return;
     }
 
-    Set<UUID> occupiedStarts = groups.stream()
-        .map(BoardColumnGroupEntity::getStartCardId)
-        .filter(id -> id != null && !removedCardId.equals(id))
+    Map<UUID, Integer> originalIndex = cardIndexById(originalOrderedCards);
+    Set<UUID> remainingIds = remainingCards.stream()
+        .map(BoardCardEntity::getId)
         .collect(Collectors.toCollection(LinkedHashSet::new));
 
-    int removedIndex = -1;
-    for (int i = 0; i < originalOrderedCards.size(); i++) {
-      if (originalOrderedCards.get(i).getId().equals(removedCardId)) {
-        removedIndex = i;
-        break;
-      }
-    }
-
-    List<UUID> candidateIds = new ArrayList<>();
-    if (removedIndex >= 0) {
-      for (int i = removedIndex + 1; i < originalOrderedCards.size(); i++) {
-        candidateIds.add(originalOrderedCards.get(i).getId());
-      }
-    } else {
-      candidateIds.addAll(remainingCards.stream().map(BoardCardEntity::getId).toList());
-    }
-
     List<BoardColumnGroupEntity> toDelete = new ArrayList<>();
-    for (BoardColumnGroupEntity group : anchored) {
-      UUID nextStart = candidateIds.stream()
-          .filter(id -> !occupiedStarts.contains(id))
-          .findFirst()
-          .orElse(null);
-      if (nextStart == null) {
+    List<BoardColumnGroupEntity> toSave = new ArrayList<>();
+
+    for (BoardColumnGroupEntity group : groups) {
+      int[] range = groupRange(originalIndex, group);
+      if (range == null) {
         toDelete.add(group);
         continue;
       }
-      group.setStartCardId(nextStart);
-      occupiedStarts.add(nextStart);
+
+      List<UUID> stillInRange = new ArrayList<>();
+      for (int i = range[0]; i <= range[1]; i++) {
+        UUID cardId = originalOrderedCards.get(i).getId();
+        if (!removedCardId.equals(cardId) && remainingIds.contains(cardId)) {
+          stillInRange.add(cardId);
+        }
+      }
+
+      if (stillInRange.isEmpty()) {
+        toDelete.add(group);
+        continue;
+      }
+
+      UUID nextStart = stillInRange.get(0);
+      UUID nextEnd = stillInRange.get(stillInRange.size() - 1);
+      if (!nextStart.equals(group.getStartCardId()) || !nextEnd.equals(group.getEndCardId())) {
+        group.setStartCardId(nextStart);
+        group.setEndCardId(nextEnd);
+        toSave.add(group);
+      }
     }
 
     if (!toDelete.isEmpty()) {
       boardColumnGroupRepository.deleteAll(toDelete);
     }
-    List<BoardColumnGroupEntity> toSave = anchored.stream()
-        .filter(group -> !toDelete.contains(group))
-        .toList();
     if (!toSave.isEmpty()) {
       boardColumnGroupRepository.saveAll(toSave);
     }
@@ -1122,7 +1195,7 @@ public class BoardService {
   ) {
   }
 
-  public record ColumnGroupView(UUID id, String title, UUID startCardId, boolean collapsed) {
+  public record ColumnGroupView(UUID id, String title, UUID startCardId, UUID endCardId, boolean collapsed) {
   }
 
   public record BoardCardView(

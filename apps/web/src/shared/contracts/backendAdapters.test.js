@@ -251,7 +251,7 @@ describe('board mapping with preferences', () => {
     })
 
     expect(column.groups).toEqual([
-      { id: 'group-1', title: 'Sprint', startCardId: 'card-1', collapsed: true },
+      { id: 'group-1', title: 'Sprint', startCardId: 'card-1', endCardId: 'card-1', collapsed: true },
     ])
   })
 })

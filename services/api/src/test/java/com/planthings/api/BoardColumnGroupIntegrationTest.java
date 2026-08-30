@@ -32,6 +32,7 @@ class BoardColumnGroupIntegrationTest extends ApiIntegrationTestSupport {
                 """.formatted(secondCardId)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.columns[0].groups[0].startCardId").value(secondCardId))
+        .andExpect(jsonPath("$.data.columns[0].groups[0].endCardId").value(secondCardId))
         .andReturn()).path("data");
 
     String groupId = created.path("columns").get(0).path("groups").get(0).path("id").asText();
@@ -103,6 +104,86 @@ class BoardColumnGroupIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.columns[0].groups.length()").value(0))
         .andExpect(jsonPath("$.data.columns[0].cards.length()").value(2));
+  }
+
+  @Test
+  void shouldRejectNestedColumnGroup() throws Exception {
+    String token = registerAndGetToken("Owner", "owner-groups-nested@example.com", "12345678");
+    String planId = createPlan(token, "Plano agrupamentos aninhados").path("plan").path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Backlog");
+    createBoardCard(token, planId, columnId, "Cartao A");
+    String secondCardId = createBoardCard(token, planId, columnId, "Cartao B");
+    String thirdCardId = createBoardCard(token, planId, columnId, "Cartao C");
+
+    mockMvc.perform(post("/api/plans/" + planId + "/board/columns/" + columnId + "/groups")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "startCardId": "%s"
+                }
+                """.formatted(secondCardId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].groups.length()").value(1));
+
+    mockMvc.perform(post("/api/plans/" + planId + "/board/columns/" + columnId + "/groups")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "startCardId": "%s"
+                }
+                """.formatted(thirdCardId)))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.error.code").value("AGRUPAMENTO_ANINHADO"));
+  }
+
+  @Test
+  void shouldLeaveCardsLooseWhenDeletingALaterGroup() throws Exception {
+    String token = registerAndGetToken("Owner", "owner-groups-loose@example.com", "12345678");
+    String planId = createPlan(token, "Plano agrupamentos soltos").path("plan").path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Backlog");
+    createBoardCard(token, planId, columnId, "Cartao A");
+    String secondCardId = createBoardCard(token, planId, columnId, "Cartao B");
+    String thirdCardId = createBoardCard(token, planId, columnId, "Cartao C");
+    String fourthCardId = createBoardCard(token, planId, columnId, "Cartao D");
+
+    mockMvc.perform(post("/api/plans/" + planId + "/board/columns/" + columnId + "/groups")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "startCardId": "%s"
+                }
+                """.formatted(fourthCardId)))
+        .andExpect(status().isOk());
+
+    JsonNode created = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/columns/" + columnId + "/groups")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "startCardId": "%s"
+                }
+                """.formatted(secondCardId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].groups.length()").value(2))
+        .andReturn()).path("data");
+
+    String laterId = null;
+    for (JsonNode group : created.path("columns").get(0).path("groups")) {
+      if (fourthCardId.equals(group.path("startCardId").asText())) {
+        laterId = group.path("id").asText();
+      }
+    }
+
+    mockMvc.perform(delete("/api/plans/" + planId + "/board/groups/" + laterId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].groups.length()").value(1))
+        .andExpect(jsonPath("$.data.columns[0].groups[0].startCardId").value(secondCardId))
+        .andExpect(jsonPath("$.data.columns[0].groups[0].endCardId").value(thirdCardId))
+        .andExpect(jsonPath("$.data.columns[0].cards.length()").value(4));
   }
 
   private String createBoardCard(String token, String planId, String columnId, String title) throws Exception {

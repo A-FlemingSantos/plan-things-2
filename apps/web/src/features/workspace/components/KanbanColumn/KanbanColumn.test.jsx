@@ -512,8 +512,23 @@ describe('KanbanColumn card groups', () => {
     })
 
     const insert = screen.getAllByRole('button', { name: /criar agrupamento com os cartões abaixo/i })[0]
-    expect(insert.closest('.cardSlot')).toBeNull()
     expect(insert.closest('[aria-label^="Abrir cartão"]')).toBeNull()
+  })
+
+  it('does not offer a group insert between cards already inside a group', () => {
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [
+          { id: 'group-1', title: 'Sprint', startCardId: 'card-2', collapsed: false },
+        ],
+      },
+    })
+
+    expect(screen.queryAllByRole('button', { name: /criar agrupamento com os cartões abaixo/i })).toHaveLength(0)
   })
 
   it('wraps cards below a group and collapses them from the header chevron', () => {

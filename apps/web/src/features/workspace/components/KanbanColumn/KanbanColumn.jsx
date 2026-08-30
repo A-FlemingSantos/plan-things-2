@@ -1,4 +1,4 @@
-import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { defaultDropAnimationSideEffects, useDroppable } from '@dnd-kit/core'
 import { SortableContext, defaultAnimateLayoutChanges, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -503,31 +503,29 @@ export function KanbanColumnView({
     )
   }
 
-  const renderCardSlot = (card, cardList, showInserts) => {
+  const renderCardSlot = (card, allowInsert) => {
     const showInsert = Boolean(
-      showInserts
+      allowInsert
       && !isDragOverlay
-      && canInsertColumnGroupAfter(cardList, columnGroups, card.id),
+      && canInsertColumnGroupAfter(col.cards, columnGroups, card.id),
     )
 
     return (
-      <Fragment key={card.uiKey ?? card.id}>
-        <div className={styles.cardSlot}>
-          {renderCardNode(card)}
-        </div>
+      <div key={card.uiKey ?? card.id} className={styles.cardSlot}>
+        {renderCardNode(card)}
         {showInsert ? (
           <ColumnGroupInsertButton
             styles={styles}
             onClick={() => handleCreateGroupAfter(card.id)}
           />
         ) : null}
-      </Fragment>
+      </div>
     )
   }
 
   const renderListSegments = (showInserts) => listSegments.map((segment) => {
     if (segment.type === 'loose') {
-      return segment.cards.map((card) => renderCardSlot(card, segment.cards, showInserts))
+      return segment.cards.map((card) => renderCardSlot(card, showInserts))
     }
 
     const group = segment.group
@@ -603,7 +601,7 @@ export function KanbanColumnView({
         </div>
         {expanded ? (
           <div className={styles.columnGroupBody}>
-            {segment.cards.map((card) => renderCardSlot(card, segment.cards, showInserts))}
+            {segment.cards.map((card) => renderCardSlot(card, false))}
           </div>
         ) : null}
       </section>

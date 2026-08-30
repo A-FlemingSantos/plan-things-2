@@ -5,6 +5,7 @@ import {
   createColumnGroup,
   replaceColumnGroupId,
   removeColumnGroup,
+  resolveGroupEndCardId,
   upsertColumnGroup,
 } from '../utils/columnCardGroups.js'
 
@@ -1428,7 +1429,11 @@ export function useBoardColumns({
       return null
     }
 
-    const optimisticGroup = createColumnGroup({ startCardId })
+    const column = columns.find((item) => item.id === columnId)
+    const optimisticGroup = createColumnGroup({
+      startCardId,
+      endCardId: resolveGroupEndCardId(column?.cards, column?.groups, startCardId),
+    })
     if (!optimisticGroup) {
       return null
     }

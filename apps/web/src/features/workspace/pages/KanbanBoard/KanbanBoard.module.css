@@ -1787,31 +1787,30 @@
 .cardSlot + .cardSlot,
 .cardSlot + .columnGroup,
 .columnGroup + .cardSlot,
-.columnGroup + .columnGroup,
-.cardSlot + .cardInsertBtn + .cardSlot,
-.cardSlot + .cardInsertBtn + .columnGroup,
-.columnGroup + .cardInsertBtn + .cardSlot,
-.columnGroup + .cardInsertBtn + .columnGroup {
+.columnGroup + .columnGroup {
   margin-top: var(--card-stack-gap, 10px);
 }
 
 .cardInsertBtn {
-  flex: 0 0 auto;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: stretch;
   gap: 8px;
   box-sizing: border-box;
+  width: 100%;
   height: var(--card-stack-gap, 10px);
-  margin: 0 0 calc(var(--card-stack-gap, 10px) * -1);
+  margin: 0;
   padding: 0 20px;
   border: 0;
   background: transparent;
   color: var(--text-2);
   opacity: 0;
   cursor: pointer;
-  z-index: 2;
   transition: opacity 140ms ease, color var(--transition-fast);
 }
 
@@ -1857,7 +1856,7 @@
   align-items: center;
   gap: 2px;
   min-height: 22px;
-  padding: 0 1px 1px;
+  padding: 2px 2px 4px;
 }
 
 .columnGroupChevronBtn {
