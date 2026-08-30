@@ -1784,7 +1784,14 @@
   position: relative;
 }
 
-.cardSlot + .cardSlot {
+.cardSlot + .cardSlot,
+.cardSlot + .columnGroup,
+.columnGroup + .cardSlot,
+.columnGroup + .columnGroup,
+.cardSlot + .cardInsertBtn + .cardSlot,
+.cardSlot + .cardInsertBtn + .columnGroup,
+.columnGroup + .cardInsertBtn + .cardSlot,
+.columnGroup + .cardInsertBtn + .columnGroup {
   margin-top: var(--card-stack-gap, 10px);
 }
 
@@ -1792,18 +1799,20 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
+  justify-content: center;
   align-self: stretch;
   gap: 8px;
   box-sizing: border-box;
   height: var(--card-stack-gap, 10px);
-  margin: 0 4px;
-  padding: 0;
+  margin: 0 0 calc(var(--card-stack-gap, 10px) * -1);
+  padding: 0 20px;
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--text-1) 55%, transparent);
+  color: var(--text-2);
   opacity: 0;
   cursor: pointer;
-  transition: opacity 120ms ease, color var(--transition-fast);
+  z-index: 2;
+  transition: opacity 140ms ease, color var(--transition-fast);
 }
 
 .cardInsertBtn:hover,
@@ -1815,16 +1824,17 @@
 .cardInsertRule {
   flex: 1 1 auto;
   height: 1px;
+  max-width: 56px;
   background: currentColor;
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
 .cardInsertGlyph {
   flex: 0 0 auto;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.04em;
+  display: block;
+  width: 10px;
+  height: 10px;
+  overflow: visible;
 }
 
 .columnGroup {
@@ -1908,10 +1918,11 @@
 }
 
 .columnGroupBody {
-  --card-stack-gap: 8px;
+  --card-stack-gap: 10px;
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding: 0 2px 2px;
 }
 
 /* Add card composer inside column */

@@ -185,7 +185,12 @@ function ColumnGroupInsertButton({ styles, onClick }) {
       aria-label="Criar agrupamento com os cartões abaixo"
     >
       <span className={styles.cardInsertRule} aria-hidden="true" />
-      <span className={styles.cardInsertGlyph} aria-hidden="true">+</span>
+      <Plus
+        size={10}
+        strokeWidth={ICON_STROKE}
+        className={styles.cardInsertGlyph}
+        aria-hidden="true"
+      />
       <span className={styles.cardInsertRule} aria-hidden="true" />
     </button>
   )
