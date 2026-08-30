@@ -20,6 +20,12 @@ import styles from './BoardHeader.module.css'
 const ICON_SIZE = 15
 const ICON_STROKE = 1.75
 
+function getGitHubRepoShortName(fullName) {
+  if (!fullName) return ''
+  const segments = fullName.split('/')
+  return segments[segments.length - 1] ?? fullName
+}
+
 export const BOARD_VIEW_MODES = [
   { id: 'kanban', label: 'Kanban', Icon: AlignStartHorizontal },
   { id: 'timeline', label: 'Timeline', Icon: AlignStartVertical },
@@ -113,12 +119,14 @@ export default function BoardHeader({
   const sharePlan = plan ?? { name: planName }
   const connectedRepos = githubIntegration?.connectedRepos ?? []
   const primaryConnectedRepo = connectedRepos[0] ?? null
-  const hasConnectedRepo = Boolean(primaryConnectedRepo?.fullName)
+  const primaryRepoShortName = getGitHubRepoShortName(primaryConnectedRepo?.fullName)
+  const hasConnectedRepo = Boolean(primaryRepoShortName)
   const connectedRepoLabel = hasConnectedRepo
     ? (connectedRepos.length > 1
-      ? `${primaryConnectedRepo.fullName} +${connectedRepos.length - 1}`
-      : primaryConnectedRepo.fullName)
+      ? `${primaryRepoShortName} +${connectedRepos.length - 1}`
+      : primaryRepoShortName)
     : null
+  const connectedRepoTitle = hasConnectedRepo ? primaryConnectedRepo.fullName : null
 
   return (
     <header className={styles.header}>
@@ -215,7 +223,7 @@ export default function BoardHeader({
                 {hasConnectedRepo ? (
                   <>
                     <SiGithub size={ICON_SIZE} aria-hidden="true" />
-                    <span className={styles.githubIntegrationRepoName} title={connectedRepoLabel}>
+                    <span className={styles.githubIntegrationRepoName} title={connectedRepoTitle}>
                       {connectedRepoLabel}
                     </span>
                   </>

@@ -41,8 +41,8 @@ describe('BoardHeader GitHub integration', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Integrações do GitHub (plan-things/core)' })).toBeInTheDocument()
-    expect(screen.getByText('plan-things/core')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Integrações do GitHub (core)' })).toBeInTheDocument()
+    expect(screen.getByText('core')).toBeInTheDocument()
   })
 
   it('shows a count suffix when multiple repos are connected', () => {
@@ -60,7 +60,7 @@ describe('BoardHeader GitHub integration', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Integrações do GitHub (plan-things/core +1)' })).toBeInTheDocument()
-    expect(screen.getByText('plan-things/core +1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Integrações do GitHub (core +1)' })).toBeInTheDocument()
+    expect(screen.getByText('core +1')).toBeInTheDocument()
   })
 })
