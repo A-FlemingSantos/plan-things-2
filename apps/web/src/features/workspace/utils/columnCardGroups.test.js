@@ -5,6 +5,7 @@ import {
   collapsedCardIdsFromGroups,
   createColumnGroup,
   nextCardIdAfter,
+  removeColumnGroup,
   upsertColumnGroup,
 } from './columnCardGroups.js'
 
@@ -53,5 +54,23 @@ describe('columnCardGroups', () => {
     )
 
     expect(next[0].groups).toEqual([expect.objectContaining({ startCardId: 'c', title: 'Sprint' })])
+  })
+
+  it('removes a group and leaves the cards in place', () => {
+    const next = removeColumnGroup(
+      [{
+        id: 'col-1',
+        cards,
+        groups: [
+          { id: 'g1', startCardId: 'b', title: 'Meio' },
+          { id: 'g2', startCardId: 'd', title: 'Fim' },
+        ],
+      }],
+      'col-1',
+      'g1',
+    )
+
+    expect(next[0].cards).toEqual(cards)
+    expect(next[0].groups).toEqual([expect.objectContaining({ id: 'g2' })])
   })
 })

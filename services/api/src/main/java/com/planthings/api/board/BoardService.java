@@ -263,6 +263,15 @@ public class BoardService {
   }
 
   @Transactional
+  public BoardView deleteColumnGroup(UUID planId, UUID groupId) {
+    UUID userId = authenticatedUserService.requireUserId();
+    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    BoardColumnGroupEntity group = requireColumnGroup(planId, groupId);
+    boardColumnGroupRepository.delete(group);
+    return buildBoardView(plan, userId);
+  }
+
+  @Transactional
   public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, Boolean starred, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);

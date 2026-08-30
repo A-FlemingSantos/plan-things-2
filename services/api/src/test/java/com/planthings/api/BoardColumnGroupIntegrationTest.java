@@ -77,6 +77,34 @@ class BoardColumnGroupIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.columns[0].groups[0].startCardId").value(firstCardId));
   }
 
+  @Test
+  void shouldDeleteColumnGroupWithoutRemovingCards() throws Exception {
+    String token = registerAndGetToken("Owner", "owner-groups-delete@example.com", "12345678");
+    String planId = createPlan(token, "Plano agrupamentos delete").path("plan").path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Backlog");
+    createBoardCard(token, planId, columnId, "Cartao A");
+    String secondCardId = createBoardCard(token, planId, columnId, "Cartao B");
+
+    JsonNode created = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/columns/" + columnId + "/groups")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "startCardId": "%s"
+                }
+                """.formatted(secondCardId)))
+        .andExpect(status().isOk())
+        .andReturn()).path("data");
+
+    String groupId = created.path("columns").get(0).path("groups").get(0).path("id").asText();
+
+    mockMvc.perform(delete("/api/plans/" + planId + "/board/groups/" + groupId)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].groups.length()").value(0))
+        .andExpect(jsonPath("$.data.columns[0].cards.length()").value(2));
+  }
+
   private String createBoardCard(String token, String planId, String columnId, String title) throws Exception {
     return readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/cards")
             .header("Authorization", "Bearer " + token)

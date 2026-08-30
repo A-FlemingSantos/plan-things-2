@@ -4,6 +4,7 @@ import { buildBoardCardPayload, mapBoardCard, mapBoardViewToColumns } from '../.
 import {
   createColumnGroup,
   replaceColumnGroupId,
+  removeColumnGroup,
   upsertColumnGroup,
 } from '../utils/columnCardGroups.js'
 
@@ -1533,6 +1534,34 @@ export function useBoardColumns({
     }
   }, [accessToken, activePlanId, applyBoardView, columns, dateFormat, isBackendDriven, timeZone, updateColumns])
 
+  const deleteColumnGroup = useCallback(async (columnId, groupId) => {
+    if (!activePlanId || !columnId || !groupId) {
+      return
+    }
+
+    if (!isBackendDriven) {
+      updateColumns((prev) => removeColumnGroup(prev, columnId, groupId))
+      return
+    }
+
+    const previousColumns = columns
+    updateColumns((prev) => removeColumnGroup(prev, columnId, groupId))
+
+    try {
+      const boardView = await apiRequest(`/api/plans/${activePlanId}/board/groups/${groupId}`, {
+        method: 'DELETE',
+        token: accessToken,
+      })
+
+      if (Array.isArray(boardView?.columns)) {
+        updateColumns((prev) => applyColumnGroupsFromBoardView(prev, boardView, { timeZone, dateFormat }))
+      }
+    } catch (error) {
+      updateColumns(() => previousColumns)
+      throw error
+    }
+  }, [accessToken, activePlanId, columns, dateFormat, isBackendDriven, timeZone, updateColumns])
+
   const totalCards = useMemo(
     () => columns.reduce((sum, column) => sum + column.cards.length, 0),
     [columns],
@@ -1559,5 +1588,6 @@ export function useBoardColumns({
     updateChecklistItem,
     createColumnGroup: createColumnGroupAtCard,
     updateColumnGroup,
+    deleteColumnGroup,
   }
 }

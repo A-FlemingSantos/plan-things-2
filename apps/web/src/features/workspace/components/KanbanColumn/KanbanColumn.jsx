@@ -11,6 +11,7 @@ import {
   CircleX,
   Ellipsis,
   Loader,
+  Minus,
   Plus,
 } from 'lucide-react'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
@@ -231,6 +232,7 @@ export function KanbanColumnView({
   onToggleCardCompleted,
   onCreateColumnGroup,
   onUpdateColumnGroup,
+  onDeleteColumnGroup,
   labels,
   members,
   colorOptions,
@@ -588,6 +590,16 @@ export function KanbanColumnView({
               {groupLabel}
             </button>
           )}
+          {!isDragOverlay ? (
+            <button
+              type="button"
+              className={styles.columnGroupRemoveBtn}
+              aria-label={`Remover ${groupLabel}`}
+              onClick={() => onDeleteColumnGroup?.(col.id, group.id)}
+            >
+              <Minus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
         {expanded ? (
           <div className={styles.columnGroupBody}>
@@ -818,6 +830,7 @@ function areKanbanColumnPropsEqual(prevProps, nextProps) {
     && prevProps.onToggleCompactView === nextProps.onToggleCompactView
     && prevProps.onCreateColumnGroup === nextProps.onCreateColumnGroup
     && prevProps.onUpdateColumnGroup === nextProps.onUpdateColumnGroup
+    && prevProps.onDeleteColumnGroup === nextProps.onDeleteColumnGroup
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.colorOptions === nextProps.colorOptions
