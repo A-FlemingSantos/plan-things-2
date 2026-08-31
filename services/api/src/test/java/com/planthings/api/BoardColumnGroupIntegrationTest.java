@@ -47,8 +47,9 @@ class BoardColumnGroupIntegrationTest extends ApiIntegrationTestSupport {
                 }
                 """))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.columns[0].groups[0].title").value("Sprint atual"))
-        .andExpect(jsonPath("$.data.columns[0].groups[0].collapsed").value(true));
+        .andExpect(jsonPath("$.data.id").value(groupId))
+        .andExpect(jsonPath("$.data.title").value("Sprint atual"))
+        .andExpect(jsonPath("$.data.collapsed").value(true));
 
     mockMvc.perform(get("/api/plans/" + planId + "/board")
             .header("Authorization", "Bearer " + token))
