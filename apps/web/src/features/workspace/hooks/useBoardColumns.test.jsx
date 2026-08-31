@@ -1097,3 +1097,210 @@ describe('useBoardColumns card saves without board reload', () => {
     })
   })
 })
+
+describe('useBoardColumns column group updates', () => {
+  beforeEach(() => {
+    apiClientMock.apiRequest.mockReset()
+  })
+
+  function buildGroupedColumn({ collapsed = false } = {}) {
+    return {
+      id: 'col-1',
+      title: 'Backlog',
+      color: '',
+      cards: [buildFrontendCard()],
+      groups: [{
+        id: 'group-1',
+        title: 'Design',
+        startCardId: 'card-1',
+        endCardId: 'card-1',
+        collapsed,
+      }],
+    }
+  }
+
+  it('does not replace groups from the PATCH board snapshot', async () => {
+    let boardState = [buildGroupedColumn()]
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+
+    apiClientMock.apiRequest.mockResolvedValue({
+      columns: [{
+        id: 'col-1',
+        groups: [{
+          id: 'group-1',
+          title: 'Design',
+          startCardId: 'card-1',
+          endCardId: 'card-1',
+          collapsed: false,
+        }],
+      }],
+    })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    await act(async () => {
+      await result.current.updateColumnGroup('col-1', 'group-1', { collapsed: true })
+    })
+
+    expect(boardState[0].groups[0].collapsed).toBe(true)
+    expect(apiClientMock.apiRequest).toHaveBeenCalledWith(
+      '/api/plans/plan-1/board/groups/group-1',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: { collapsed: true },
+      }),
+    )
+  })
+
+  it('keeps the latest toggle when a slower PATCH would have restored the previous collapsed state', async () => {
+    let boardState = [buildGroupedColumn()]
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const firstRequest = createDeferred()
+    const secondRequest = createDeferred()
+    apiClientMock.apiRequest
+      .mockImplementationOnce(() => firstRequest.promise)
+      .mockImplementationOnce(() => secondRequest.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    let persist
+    await act(async () => {
+      persist = result.current.updateColumnGroup('col-1', 'group-1', { collapsed: true })
+    })
+
+    expect(apiClientMock.apiRequest).toHaveBeenCalledTimes(1)
+    expect(boardState[0].groups[0].collapsed).toBe(true)
+
+    await act(async () => {
+      void result.current.updateColumnGroup('col-1', 'group-1', { collapsed: false })
+    })
+
+    expect(boardState[0].groups[0].collapsed).toBe(false)
+
+    await act(async () => {
+      firstRequest.resolve({ columns: [] })
+      secondRequest.resolve({ columns: [] })
+      await persist
+    })
+
+    expect(boardState[0].groups[0].collapsed).toBe(false)
+    expect(apiClientMock.apiRequest).toHaveBeenCalledTimes(2)
+    expect(apiClientMock.apiRequest.mock.calls[1][1].body).toEqual({ collapsed: false })
+  })
+
+  it('restores the last persisted group when the only in-flight PATCH fails', async () => {
+    let boardState = [buildGroupedColumn({ collapsed: false })]
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    apiClientMock.apiRequest.mockRejectedValueOnce(new Error('network'))
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    await act(async () => {
+      await expect(result.current.updateColumnGroup('col-1', 'group-1', { collapsed: true }))
+        .rejects.toThrow('network')
+    })
+
+    expect(boardState[0].groups[0].collapsed).toBe(false)
+  })
+
+  it('toggles from the latest group so a second click does not repeat the same PATCH', async () => {
+    let boardState = [buildGroupedColumn({ collapsed: false })]
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+    const firstRequest = createDeferred()
+    const secondRequest = createDeferred()
+    apiClientMock.apiRequest
+      .mockImplementationOnce(() => firstRequest.promise)
+      .mockImplementationOnce(() => secondRequest.promise)
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    const toggle = (group) => ({ collapsed: !group.collapsed })
+    let persist
+    await act(async () => {
+      persist = result.current.updateColumnGroup('col-1', 'group-1', toggle)
+    })
+    expect(boardState[0].groups[0].collapsed).toBe(true)
+
+    await act(async () => {
+      void result.current.updateColumnGroup('col-1', 'group-1', toggle)
+    })
+    expect(boardState[0].groups[0].collapsed).toBe(false)
+
+    await act(async () => {
+      firstRequest.resolve({ id: 'group-1', collapsed: true })
+      secondRequest.resolve({ id: 'group-1', collapsed: false })
+      await persist
+    })
+
+    expect(apiClientMock.apiRequest).toHaveBeenCalledTimes(2)
+    expect(apiClientMock.apiRequest.mock.calls[0][1].body).toEqual({ collapsed: true })
+    expect(apiClientMock.apiRequest.mock.calls[1][1].body).toEqual({ collapsed: false })
+  })
+
+  it('skips persistence when rapid toggles return to the last acked state', async () => {
+    let boardState = [buildGroupedColumn({ collapsed: false })]
+    const updatePlanBoard = vi.fn((planId, updater) => {
+      boardState = typeof updater === 'function' ? updater(boardState) : updater
+    })
+
+    const { result } = renderHook(() => useBoardColumns({
+      activePlanId: 'plan-1',
+      boardColumns: boardState,
+      updatePlanBoard,
+      isBackendDriven: true,
+      accessToken: 'token-1',
+      applyBoardView: vi.fn(),
+      loadPlanBoard: vi.fn(),
+    }))
+
+    const toggle = (group) => ({ collapsed: !group.collapsed })
+    await act(async () => {
+      const first = result.current.updateColumnGroup('col-1', 'group-1', toggle)
+      const second = result.current.updateColumnGroup('col-1', 'group-1', toggle)
+      await Promise.all([first, second])
+    })
+
+    expect(boardState[0].groups[0].collapsed).toBe(false)
+    expect(apiClientMock.apiRequest).not.toHaveBeenCalled()
+  })
+})

@@ -78,7 +78,7 @@ public class BoardController {
   }
 
   @PatchMapping("/groups/{groupId}")
-  public ApiEnvelope<BoardService.BoardView> updateColumnGroup(
+  public ApiEnvelope<BoardService.ColumnGroupView> updateColumnGroup(
       @PathVariable UUID planId,
       @PathVariable UUID groupId,
       @RequestBody ColumnGroupUpdateRequest request

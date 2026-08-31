@@ -249,9 +249,9 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardView updateColumnGroup(UUID planId, UUID groupId, String title, Boolean collapsed) {
+  public ColumnGroupView updateColumnGroup(UUID planId, UUID groupId, String title, Boolean collapsed) {
     UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanMember(planId, userId);
     BoardColumnGroupEntity group = requireColumnGroup(planId, groupId);
     if (title != null) {
       group.setTitle(normalizeGroupTitle(title));
@@ -260,7 +260,7 @@ public class BoardService {
       group.setCollapsed(collapsed);
     }
     boardColumnGroupRepository.save(group);
-    return buildBoardView(plan, userId);
+    return toColumnGroupView(group);
   }
 
   @Transactional
@@ -917,6 +917,22 @@ public class BoardService {
           );
         })
         .toList();
+  }
+
+  private ColumnGroupView toColumnGroupView(BoardColumnGroupEntity group) {
+    List<BoardCardEntity> cards = boardCardRepository.findByColumnIdOrderByPositionIndexAsc(group.getColumnId());
+    List<ColumnGroupView> views = toGroupViews(List.of(group), cards);
+    if (!views.isEmpty()) {
+      return views.get(0);
+    }
+
+    return new ColumnGroupView(
+        group.getId(),
+        group.getTitle(),
+        group.getStartCardId(),
+        group.getEndCardId() == null ? group.getStartCardId() : group.getEndCardId(),
+        Boolean.TRUE.equals(group.getCollapsed())
+    );
   }
 
   private String normalizeGroupTitle(String title) {

@@ -605,7 +605,9 @@ export function KanbanColumnView({
                 className={styles.columnGroupChevronBtn}
                 aria-expanded={expanded}
                 aria-label={expanded ? `Recolher ${groupA11yLabel}` : `Expandir ${groupA11yLabel}`}
-                onClick={() => onUpdateColumnGroup?.(col.id, group.id, { collapsed: expanded })}
+                onClick={() => onUpdateColumnGroup?.(col.id, group.id, (current) => ({
+                  collapsed: !current?.collapsed,
+                }))}
               >
                 <ChevronRight
                   size={ICON_SIZE}

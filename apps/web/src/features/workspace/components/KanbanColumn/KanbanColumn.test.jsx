@@ -627,7 +627,8 @@ describe('KanbanColumn card groups', () => {
 
     expect(screen.getByRole('button', { name: /abrir cartão segundo/i })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /recolher sprint/i }))
-    expect(onUpdateColumnGroup).toHaveBeenCalledWith('col-1', 'group-1', { collapsed: true })
+    expect(onUpdateColumnGroup).toHaveBeenCalledWith('col-1', 'group-1', expect.any(Function))
+    expect(onUpdateColumnGroup.mock.calls[0][2]({ collapsed: false })).toEqual({ collapsed: true })
   })
 
   it('keeps collapsed group cards out of the accessibility tree', () => {

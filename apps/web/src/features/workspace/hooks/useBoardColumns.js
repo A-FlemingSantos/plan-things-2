@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 import { buildBoardCardPayload, mapBoardCard, mapBoardViewToColumns } from '../../../shared/contracts/backendAdapters.js'
 import {
@@ -727,6 +727,59 @@ function applyColumnGroupsFromBoardView(columns, boardView, options) {
   })
 }
 
+function patchColumnGroupInColumns(columns, columnId, groupId, patch) {
+  if (!Array.isArray(columns) || !columnId || !groupId || !patch) {
+    return columns
+  }
+
+  let hasChanges = false
+  const nextColumns = columns.map((column) => {
+    if (column.id !== columnId) {
+      return column
+    }
+
+    const groups = column.groups ?? []
+    let groupChanged = false
+    const nextGroups = groups.map((group) => {
+      if (group.id !== groupId) {
+        return group
+      }
+
+      groupChanged = true
+      hasChanges = true
+      return { ...group, ...patch }
+    })
+
+    return groupChanged ? { ...column, groups: nextGroups } : column
+  })
+
+  return hasChanges ? nextColumns : columns
+}
+
+function findColumnGroup(columns, columnId, groupId) {
+  return columns
+    ?.find((column) => column.id === columnId)
+    ?.groups
+    ?.find((group) => group.id === groupId) ?? null
+}
+
+function columnGroupPatchIsNoOp(group, patch) {
+  if (!group || !patch) {
+    return true
+  }
+
+  return Object.entries(patch).every(([key, value]) => group[key] === value)
+}
+
+function resolveColumnGroupPatch(patch, currentGroup) {
+  if (typeof patch === 'function') {
+    const resolved = patch(currentGroup)
+    return resolved && typeof resolved === 'object' ? resolved : null
+  }
+
+  return patch && typeof patch === 'object' ? patch : null
+}
+
 export function useBoardColumns({
   activePlanId,
   boardColumns,
@@ -739,6 +792,11 @@ export function useBoardColumns({
   dateFormat = 'dd/MM/yyyy',
 }) {
   const columns = boardColumns ?? []
+  const columnGroupPersistRef = useRef({
+    desired: new Map(),
+    lastAcked: new Map(),
+    flushing: new Map(),
+  })
 
   const updateColumns = useCallback((updater) => {
     if (!activePlanId) return
@@ -1489,55 +1547,91 @@ export function useBoardColumns({
       return
     }
 
-    const nextPatch = patch && typeof patch === 'object' ? patch : {}
+    const persist = columnGroupPersistRef.current
+    const persistKey = `${activePlanId}:${groupId}`
+    let resolvedPatch = null
 
-    if (!isBackendDriven) {
-      updateColumns((prev) => prev.map((column) => {
-        if (column.id !== columnId) {
-          return column
-        }
+    updateColumns((prev) => {
+      const currentGroup = findColumnGroup(prev, columnId, groupId)
+      resolvedPatch = resolveColumnGroupPatch(patch, currentGroup)
+      if (!resolvedPatch || columnGroupPatchIsNoOp(currentGroup, resolvedPatch)) {
+        resolvedPatch = null
+        return prev
+      }
 
-        return {
-          ...column,
-          groups: (column.groups ?? []).map((group) => (
-            group.id === groupId ? { ...group, ...nextPatch } : group
-          )),
-        }
-      }))
+      if (!persist.lastAcked.has(persistKey) && currentGroup) {
+        persist.lastAcked.set(persistKey, { ...currentGroup })
+      }
+
+      return patchColumnGroupInColumns(prev, columnId, groupId, resolvedPatch)
+    })
+
+    if (!resolvedPatch) {
       return
     }
 
-    const previousColumns = columns
-    updateColumns((prev) => prev.map((column) => {
-      if (column.id !== columnId) {
-        return column
-      }
-
-      return {
-        ...column,
-        groups: (column.groups ?? []).map((group) => (
-          group.id === groupId ? { ...group, ...nextPatch } : group
-        )),
-      }
-    }))
-
-    try {
-      const boardView = await apiRequest(`/api/plans/${activePlanId}/board/groups/${groupId}`, {
-        method: 'PATCH',
-        token: accessToken,
-        body: nextPatch,
-      })
-
-      if (Array.isArray(boardView?.columns)) {
-        updateColumns((prev) => applyColumnGroupsFromBoardView(prev, boardView, { timeZone, dateFormat }))
-      } else {
-        applyBoardView(activePlanId, boardView)
-      }
-    } catch (error) {
-      updateColumns(() => previousColumns)
-      throw error
+    if (!isBackendDriven) {
+      persist.lastAcked.delete(persistKey)
+      return
     }
-  }, [accessToken, activePlanId, applyBoardView, columns, dateFormat, isBackendDriven, timeZone, updateColumns])
+
+    const queued = persist.desired.get(persistKey)
+    persist.desired.set(persistKey, {
+      columnId,
+      patch: { ...(queued?.patch ?? {}), ...resolvedPatch },
+    })
+
+    let flush = persist.flushing.get(persistKey)
+    if (!flush) {
+      flush = (async () => {
+        try {
+          await Promise.resolve()
+          while (persist.desired.has(persistKey)) {
+            const job = persist.desired.get(persistKey)
+            persist.desired.delete(persistKey)
+            const acked = persist.lastAcked.get(persistKey)
+            if (columnGroupPatchIsNoOp(acked, job.patch)) {
+              continue
+            }
+
+            try {
+              await apiRequest(`/api/plans/${activePlanId}/board/groups/${groupId}`, {
+                method: 'PATCH',
+                token: accessToken,
+                body: job.patch,
+              })
+              persist.lastAcked.set(persistKey, {
+                ...(persist.lastAcked.get(persistKey) ?? {}),
+                ...job.patch,
+              })
+            } catch (error) {
+              if (persist.desired.has(persistKey)) {
+                continue
+              }
+
+              const latestAcked = persist.lastAcked.get(persistKey)
+              persist.lastAcked.delete(persistKey)
+              if (latestAcked) {
+                updateColumns((prev) => patchColumnGroupInColumns(prev, columnId, groupId, {
+                  title: latestAcked.title,
+                  collapsed: latestAcked.collapsed,
+                }))
+              }
+              throw error
+            }
+          }
+
+          persist.lastAcked.delete(persistKey)
+        } finally {
+          persist.flushing.delete(persistKey)
+        }
+      })()
+
+      persist.flushing.set(persistKey, flush)
+    }
+
+    return flush
+  }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
   const deleteColumnGroup = useCallback(async (columnId, groupId) => {
     if (!activePlanId || !columnId || !groupId) {
