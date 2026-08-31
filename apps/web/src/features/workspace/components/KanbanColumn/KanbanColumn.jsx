@@ -866,7 +866,7 @@ function SortableKanbanColumn(props) {
       dragHandleListeners={listeners}
       style={{
         transform: CSS.Transform.toString(transform),
-        transition: isDragging ? transition : undefined,
+        transition,
       }}
     />
   )
