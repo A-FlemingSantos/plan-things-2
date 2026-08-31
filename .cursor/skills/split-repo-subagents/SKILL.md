@@ -18,7 +18,7 @@ You launch every subagent. Do not tell a subagent to spawn others. A subagent of
 
 **You:** all layers, structure only. Open enough of the tree to split; do not investigate.
 
-**Subagent:** review the assigned slice in full. Budget: about 8–20 implementation files, or one clear product — whatever fits the subagent’s window. If you still see a hub, split **before** launch.
+**Subagent:** review the assigned slice in full. Budget: about 8–20 implementation files, or one clear product — whatever fits the subagent’s window. If you still see nested products, split **before** launch.
 
 Never give two subagents the same folder. Do not mix web and API, or web and mobile, in one prompt.
 
@@ -34,7 +34,7 @@ Walk `apps/web`, `apps/mobile`, `services/api`, and `shared`. Descend into `feat
 | `apps/web/src/shared` | Shell, API client, adapters |
 | `apps/web/src/features/*` | Product features (whatever directories exist) |
 
-A directory is **one subagent** when it is already one product. If it holds several products (multiple large pages/components), keep descending and do **not** launch on the outer folder.
+Mark each feature as **one subagent** or **needs a nested pass**. A nested pass is required when one folder holds several products (multiple large pages/components). Keep descending and do **not** launch on the outer folder.
 
 Git history is a hint, not a verdict. On `main` (not WIP), repeated **fix** commits on the same path suggest fragility. Feature work and the current phase do not. Use this while splitting; still do not review.
 
@@ -50,9 +50,9 @@ Git history is a hint, not a verdict. On `main` (not WIP), repeated **fix** comm
 
 Launch only slices you already judged as one product.
 
-**Web:** one subagent per `features/*` directory that is not a hub, plus `shared` if in scope.
+**Web:** one subagent per `features/*` directory that does not need a nested pass, plus `shared` if in scope.
 
-**Hub:** you already looked inside (structure only). Do not launch “the whole feature.” Pass 1 may be only the shell (home, list, context); inner products wait for pass 2. Typical shape: `workspace` home vs board/modal/dnd.
+**Exception — nested products:** you already looked inside (structure only). Do not launch “the whole feature.” Pass 1 may be only the shell (home, list, context); inner products wait for pass 2. Typical shape: `workspace` home vs board/modal/dnd.
 
 **API:** one subagent per package that fits; not the whole `services/api` tree.
 
@@ -60,7 +60,7 @@ Launch only slices you already judged as one product.
 
 ## Pass 2 — punctual slices
 
-You create these from the tree (or from a child that still did not fit). One subagent per **product inside** a hub. Each one reviews.
+You create these from the tree (or from a child that still did not fit). One subagent per **product inside** a nested feature. Each one reviews.
 
 Split on clusters that have one job, for example:
 
