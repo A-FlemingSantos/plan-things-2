@@ -17,7 +17,7 @@ Built-in subagents must always be used when their respective roles apply, and th
 
 - `explore` — initial exploration and robust, broad, or multi-step codebase exploration.
 - `bash` — use for robust, verbose, or long-running terminal tasks (tests, builds, migrations, complex installs, monitoring, etc.). Run simple commands directly (file operations, process checks, simple installs, etc.).
-- `browser` — debugging through the integrated browser, including inspecting browser logs, the DOM, network activity, console output, and other runtime details that are hidden from the normal application view.
+- `browser` — debugging through the integrated browser, including logs, DOM, network, console, and other runtime details hidden from the normal application view.
 
 ## Task prompts — hygiene (all subagents)
 
