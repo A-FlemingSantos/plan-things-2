@@ -44,6 +44,7 @@ import {
 } from './components/CardModalChecklistMenus.jsx'
 import CardModalDateSchedulePicker from './components/CardModalDateSchedulePicker.jsx'
 import CardModalFilePicker from './components/CardModalFilePicker.jsx'
+import CardMoreOptionsPopover from './components/CardMoreOptionsPopover/CardMoreOptionsPopover.jsx'
 import PropertyDatesSummary from './components/PropertyDatesSummary.jsx'
 import useCardModalActivity from './hooks/useCardModalActivity.js'
 import useCardModalAttachments from './hooks/useCardModalAttachments.js'
@@ -60,6 +61,8 @@ export default function CardModal({
   onUpdate,
   onMoveToNextColumn,
   canMoveToNextColumn = false,
+  onMoreOptionsAction,
+  isFollowingCard = false,
   onToggleCardCompleted,
   onAddComment,
   labels,
@@ -127,7 +130,9 @@ export default function CardModal({
   const [saveStatus, setSaveStatus] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isTopBarEyeOpen, setIsTopBarEyeOpen] = useState(true)
+  const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false)
   const titleTextareaRef = useRef(null)
+  const moreOptionsMenuWrapRef = useRef(null)
   const titleRowRef = useRef(null)
   const textMenuRef = useRef(null)
   const textMenuButtonRef = useRef(null)
@@ -804,6 +809,52 @@ export default function CardModal({
     }
   }, [showListMenu])
 
+  useEffect(() => {
+    if (!isMoreOptionsOpen) return
+
+    const handlePointerDown = (event) => {
+      if (moreOptionsMenuWrapRef.current?.contains(event.target)) return
+      setIsMoreOptionsOpen(false)
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsMoreOptionsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isMoreOptionsOpen])
+
+  const closePropertyMenus = () => {
+    setShowMembersMenu(false)
+    setShowLabelMenu(false)
+    setShowDateMenu(false)
+    setShowTextMenu(false)
+    setShowListMenu(false)
+    setShowInsertMenu(false)
+  }
+
+  const toggleMoreOptionsPopover = () => {
+    closePropertyMenus()
+    setIsMoreOptionsOpen((open) => !open)
+  }
+
+  const handleMoreOptionsAction = (actionId) => {
+    if (actionId === 'move' && canMoveToNextColumn && onMoveToNextColumn) {
+      void onMoveToNextColumn(card.id)
+      return
+    }
+
+    onMoreOptionsAction?.(actionId, card)
+  }
+
   useLayoutEffect(() => {
     if (!showMembersMenu || !membersMenuButtonRef.current) return
 
@@ -974,14 +1025,26 @@ export default function CardModal({
                 <EyeClosed size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
               )}
             </button>
-            <button
-              type="button"
-              className={styles.cmIconBtn}
-              aria-label="Mais opções"
-              disabled={isMutating}
-            >
-              <Ellipsis size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-            </button>
+            <div ref={moreOptionsMenuWrapRef} className={styles.cmMoreOptionsMenuWrap}>
+              <button
+                type="button"
+                className={`${styles.cmIconBtn} ${isMoreOptionsOpen ? styles.cmIconBtnOpen : ''}`}
+                aria-label="Mais opções"
+                aria-haspopup="menu"
+                aria-expanded={isMoreOptionsOpen}
+                disabled={isMutating}
+                onClick={toggleMoreOptionsPopover}
+              >
+                <Ellipsis size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              </button>
+
+              <CardMoreOptionsPopover
+                open={isMoreOptionsOpen}
+                isFollowing={isFollowingCard}
+                onAction={handleMoreOptionsAction}
+                onClose={() => setIsMoreOptionsOpen(false)}
+              />
+            </div>
             <button
               type="button"
               className={styles.cmIconBtn}

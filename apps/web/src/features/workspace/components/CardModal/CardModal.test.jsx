@@ -712,4 +712,36 @@ describe('CardModal file picker positioning', () => {
     expect(window.localStorage.getItem('plan-things:card-modal-sidebar-panel:v1:user-1')).toBe('activity')
     expect(screen.getByRole('button', { name: 'Voltar às opções' })).toBeInTheDocument()
   })
+
+  it('opens the more options popover from the top bar', async () => {
+    const user = userEvent.setup()
+    const onMoreOptionsAction = vi.fn()
+
+    render(
+      <CardModal
+        card={buildCard()}
+        colTitle="Backlog"
+        onClose={() => {}}
+        onUpdate={async () => {}}
+        onMoreOptionsAction={onMoreOptionsAction}
+        labels={[]}
+        members={[]}
+        currentUser={{ id: 'user-1', fullName: 'Arthur Fleming', email: 'arthur@example.com' }}
+        styles={styles}
+      />,
+    )
+
+    const trigger = screen.getByRole('button', { name: 'Mais opções' })
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(trigger)
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('menu', { name: 'Mais opções do cartão' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Ingressar' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Arquivar' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('menuitem', { name: 'Copiar' }))
+    expect(onMoreOptionsAction).toHaveBeenCalledWith('copy', expect.objectContaining({ id: 'card-1' }))
+    expect(screen.queryByRole('menu', { name: 'Mais opções do cartão' })).not.toBeInTheDocument()
+  })
 })

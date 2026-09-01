@@ -2822,6 +2822,12 @@
   flex-shrink: 0;
 }
 
+.cmMoreOptionsMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .cmIconBtn {
   width: 32px;
   height: 32px;
@@ -2835,6 +2841,11 @@
 }
 
 .cmIconBtn:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.cmIconBtnOpen {
   background: var(--hover);
   color: var(--text-1);
 }
