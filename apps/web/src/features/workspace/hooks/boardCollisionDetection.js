@@ -65,6 +65,7 @@ function pickClosestCardCollisionInColumn(
   pointerCoordinates,
   droppableContainers,
   droppableRects,
+  activeId,
 ) {
   if (!pointerCoordinates) {
     return []
@@ -74,6 +75,9 @@ function pickClosestCardCollisionInColumn(
   let bestDistance = Infinity
 
   for (const container of droppableContainers) {
+    if (String(container.id) === String(activeId)) {
+      continue
+    }
     if (getContainerType(droppableContainers, container.id) !== CARD_TYPE) {
       continue
     }
@@ -262,6 +266,7 @@ export function createBoardCollisionDetection(columnIds, dragState) {
         pointerCoordinates,
         droppableContainers,
         droppableRects,
+        args.active?.id,
       )
       const collision = cardCollision[0]
       if (collision) {

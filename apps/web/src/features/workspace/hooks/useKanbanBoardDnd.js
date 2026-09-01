@@ -30,16 +30,42 @@ function getDragType(active) {
 
 function getCardGroupId(columns, cardId) {
   for (const column of columns) {
-    if (!column.cards.some((card) => card.id === cardId)) {
+    const cardIndex = column.cards.findIndex((card) => card.id === cardId)
+    if (cardIndex < 0) {
       continue
     }
 
-    const group = (column.groups ?? []).find((item) => (
-      Array.isArray(item.cardIds) && item.cardIds.includes(cardId)
-    ))
+    const group = (column.groups ?? []).find((item) => {
+      if (Array.isArray(item.cardIds) && item.cardIds.length) {
+        return item.cardIds.includes(cardId)
+      }
+
+      const startIndex = column.cards.findIndex((card) => card.id === item.startCardId)
+      if (startIndex < 0) {
+        return false
+      }
+      const endIndex = column.cards.findIndex((card) => card.id === item.endCardId)
+      const lastIndex = endIndex < startIndex ? startIndex : endIndex
+      return cardIndex >= startIndex && cardIndex <= lastIndex
+    })
     return group?.id ?? null
   }
 
+  return null
+}
+
+function resolveTargetGroupId(columns, overId, dropIntent, sourceGroupId = null) {
+  if (dropIntent?.targetGroupId) {
+    return dropIntent.targetGroupId
+  }
+
+  const overGroupId = getCardGroupId(columns, overId)
+  if (!sourceGroupId && overGroupId && dropIntent?.kind !== 'before-group') {
+    return overGroupId
+  }
+  if (!dropIntent) {
+    return overGroupId
+  }
   return null
 }
 
@@ -64,6 +90,7 @@ export function useKanbanBoardDnd({
   const dragColumnsRef = useRef(columns)
   const dragStartSnapshotRef = useRef(null)
   const dragPreviewSignatureRef = useRef(null)
+  const dragTargetRef = useRef(null)
   const dragCollisionStateRef = useRef(createBoardDragCollisionState())
 
   columnsRef.current = columns
@@ -138,6 +165,7 @@ export function useKanbanBoardDnd({
     dragStartSnapshotRef.current = columnsRef.current
     dragColumnsRef.current = columnsRef.current
     dragPreviewSignatureRef.current = null
+    dragTargetRef.current = null
     dragCollisionStateRef.current.reset()
     setGroupDropPreview(null)
     setDragPreviewCardIdsByColumn(null)
@@ -171,6 +199,7 @@ export function useKanbanBoardDnd({
       setDragOverColumnId(pointerColumnId)
       setGroupDropPreview(null)
       dragPreviewSignatureRef.current = null
+      dragTargetRef.current = null
       setDragPreviewCardIdsByColumn(null)
       return
     }
@@ -180,6 +209,7 @@ export function useKanbanBoardDnd({
       setDragOverColumnId(null)
       setGroupDropPreview(null)
       dragPreviewSignatureRef.current = null
+      dragTargetRef.current = null
       setDragPreviewCardIdsByColumn(null)
       return
     }
@@ -192,13 +222,24 @@ export function useKanbanBoardDnd({
     const dropIntent = dragCollisionStateRef.current.getDropIntent()
     const sourceColumns = dragStartSnapshotRef.current ?? dragColumnsRef.current
     const sourceGroupId = getCardGroupId(sourceColumns, activeId)
+    const previewGroupId = getCardGroupId(dragColumnsRef.current, activeId)
     const sourceColumnId = findColumnIdForItem(sourceColumns, activeId)
-    const targetGroupId = dropIntent?.targetGroupId ?? null
+    const resolvedTargetGroupId = resolveTargetGroupId(
+      sourceColumns,
+      overId,
+      dropIntent,
+      sourceGroupId,
+    )
+    const targetGroupId = resolvedTargetGroupId
+      ?? (overId === activeId ? dragTargetRef.current?.groupId : null)
     const targetColumnId = findColumnIdForItem(sourceColumns, overId)
     setGroupDropPreview(null)
+    if (overId === activeId && dragTargetRef.current?.groupId) {
+      return
+    }
 
     const isGroupTransaction = Boolean(
-      sourceGroupId || targetGroupId || dropIntent?.kind === 'before-group',
+      sourceGroupId || previewGroupId || targetGroupId || dropIntent?.kind === 'before-group',
     )
     if (isGroupTransaction) {
       const targetPosition = targetColumnId
@@ -206,6 +247,15 @@ export function useKanbanBoardDnd({
         : -1
       if (!sourceColumnId || targetPosition < 0) {
         return
+      }
+      if (targetGroupId) {
+        dragTargetRef.current = {
+          groupId: targetGroupId,
+          columnId: targetColumnId,
+          position: targetPosition,
+        }
+      } else if (overId !== activeId) {
+        dragTargetRef.current = null
       }
 
       const projectedColumns = applyCardDropToColumns(
@@ -217,19 +267,22 @@ export function useKanbanBoardDnd({
         targetGroupId,
       )
       const previewSignature = projectedColumns
-        .map((column) => `${column.id}:${column.cards.map((card) => card.id).join(',')}`)
+        .map((column) => [
+          `${column.id}:${column.cards.map((card) => card.id).join(',')}`,
+          (column.groups ?? [])
+            .map((group) => `${group.id}:${(group.cardIds ?? []).join(',')}`)
+            .join(';'),
+        ].join('/'))
         .join('|')
       if (dragPreviewSignatureRef.current === previewSignature) {
         return
       }
 
       dragPreviewSignatureRef.current = previewSignature
-      setDragPreviewCardIdsByColumn(Object.fromEntries(
-        projectedColumns.map((column) => [
-          column.id,
-          column.cards.map((card) => card.id),
-        ]),
-      ))
+      dragColumnsRef.current = projectedColumns
+      columnsRef.current = projectedColumns
+      updateColumns(() => projectedColumns)
+      setDragPreviewCardIdsByColumn(null)
       return
     }
 
@@ -262,6 +315,7 @@ export function useKanbanBoardDnd({
   const resetDragState = useCallback(() => {
     dragStartSnapshotRef.current = null
     dragPreviewSignatureRef.current = null
+    dragTargetRef.current = null
     resetDragCollisionState()
     setActiveCardId(null)
     setActiveColumnId(null)
@@ -312,7 +366,12 @@ export function useKanbanBoardDnd({
     }
   }, [activePlanId, isBackendDriven, onReorderError, reorderColumns, updateColumns])
 
-  const handleCardDragEnd = useCallback(async ({ active, over }, snapshot, dropIntent) => {
+  const handleCardDragEnd = useCallback(async (
+    { active, over },
+    snapshot,
+    dropIntent,
+    targetHint,
+  ) => {
     const cardId = String(active.id)
 
     if (!over) {
@@ -341,10 +400,17 @@ export function useKanbanBoardDnd({
     const finalColumns = columnsRef.current
     const sourceColumns = snapshot ?? finalColumns
     const sourceGroupId = getCardGroupId(sourceColumns, cardId)
-    const targetGroupId = dropIntent?.targetGroupId ?? null
+    const targetGroupId = resolveTargetGroupId(
+      sourceColumns,
+      String(over.id),
+      dropIntent,
+      sourceGroupId,
+    ) ?? targetHint?.groupId ?? null
     const isGroupTransaction = Boolean(sourceGroupId || targetGroupId)
     const targetColumns = isGroupTransaction ? sourceColumns : finalColumns
-    const targetColumnId = findColumnIdForItem(targetColumns, String(over.id))
+    const targetColumnId = targetGroupId && targetHint?.groupId === targetGroupId
+      ? targetHint.columnId
+      : findColumnIdForItem(targetColumns, String(over.id))
 
     if (!targetColumnId) {
       if (snapshot) {
@@ -355,8 +421,10 @@ export function useKanbanBoardDnd({
       return
     }
 
-    const targetPosition = isGroupTransaction
-      ? resolveOverIndex(targetColumns, columnIds, String(over.id), targetColumnId)
+    const targetPosition = targetGroupId && targetHint?.groupId === targetGroupId
+      ? targetHint.position
+      : isGroupTransaction
+        ? resolveOverIndex(targetColumns, columnIds, String(over.id), targetColumnId)
       : findCardIndex(finalColumns, targetColumnId, cardId)
     if (targetPosition === -1) {
       if (snapshot) {
@@ -414,8 +482,10 @@ export function useKanbanBoardDnd({
     const dragType = getDragType(event.active)
     const snapshot = dragStartSnapshotRef.current
     const dropIntent = dragCollisionStateRef.current.getDropIntent()
+    const targetHint = dragTargetRef.current
     dragStartSnapshotRef.current = null
     dragPreviewSignatureRef.current = null
+    dragTargetRef.current = null
     resetDragCollisionState()
     setActiveCardId(null)
     setActiveColumnId(null)
@@ -429,7 +499,7 @@ export function useKanbanBoardDnd({
       return
     }
 
-    await handleCardDragEnd(event, snapshot, dropIntent)
+    await handleCardDragEnd(event, snapshot, dropIntent, targetHint)
   }, [handleCardDragEnd, handleColumnDragEnd, resetDragCollisionState])
 
   return {

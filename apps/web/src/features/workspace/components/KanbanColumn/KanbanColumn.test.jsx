@@ -545,6 +545,9 @@ describe('KanbanColumn card groups', () => {
     )
 
     expect(screen.getByRole('region', { name: 'Sprint' }).className).toContain('columnGroupEnter')
+    expect(
+      screen.getByRole('button', { name: 'Abrir cartão Segundo' }).closest('.cardSlot').className,
+    ).toContain('cardSlotGroupEnter')
   })
 
   it('does not animate groups that were already on the board', () => {
@@ -561,6 +564,9 @@ describe('KanbanColumn card groups', () => {
     })
 
     expect(screen.getByRole('region', { name: 'Sprint' }).className).not.toContain('columnGroupEnter')
+    expect(
+      screen.getByRole('button', { name: 'Abrir cartão Segundo' }).closest('.cardSlot').className,
+    ).not.toContain('cardSlotGroupEnter')
   })
 
   it('shows a non-structural target indicator for a group drop preview', () => {
@@ -631,6 +637,92 @@ describe('KanbanColumn card groups', () => {
     )
 
     expect(screen.getByRole('region', { name: 'Sprint' })).toBe(group)
+  })
+
+  it('keeps the card mounted when it moves into an existing group', () => {
+    const props = buildColumnProps({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [{
+          id: 'group-1',
+          title: 'Sprint',
+          startCardId: 'card-2',
+          endCardId: 'card-3',
+          cardIds: ['card-2', 'card-3'],
+          collapsed: false,
+        }],
+      },
+    })
+    const view = render(
+      <DndContext>
+        <KanbanColumn {...props} />
+      </DndContext>,
+    )
+    const movedCard = screen.getByRole('button', { name: 'Abrir cartão Primeiro' })
+
+    view.rerender(
+      <DndContext>
+        <KanbanColumn
+          {...props}
+          col={{
+            ...props.col,
+            cards: [cards[1], cards[0], cards[2]],
+            groups: [{
+              ...props.col.groups[0],
+              cardIds: ['card-2', 'card-1', 'card-3'],
+            }],
+          }}
+        />
+      </DndContext>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Abrir cartão Primeiro' })).toBe(movedCard)
+  })
+
+  it('keeps the card mounted when it moves immediately above its group', () => {
+    const props = buildColumnProps({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [{
+          id: 'group-1',
+          title: 'Sprint',
+          startCardId: 'card-1',
+          endCardId: 'card-3',
+          cardIds: ['card-1', 'card-2', 'card-3'],
+          collapsed: false,
+        }],
+      },
+    })
+    const view = render(
+      <DndContext>
+        <KanbanColumn {...props} />
+      </DndContext>,
+    )
+    const movedCard = screen.getByRole('button', { name: 'Abrir cartão Primeiro' })
+
+    view.rerender(
+      <DndContext>
+        <KanbanColumn
+          {...props}
+          col={{
+            ...props.col,
+            groups: [{
+              ...props.col.groups[0],
+              startCardId: 'card-2',
+              cardIds: ['card-2', 'card-3'],
+            }],
+          }}
+        />
+      </DndContext>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Abrir cartão Primeiro' })).toBe(movedCard)
   })
 
   it('does not offer a group insert between cards already inside a group', () => {

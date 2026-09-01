@@ -202,7 +202,7 @@ describe('useKanbanBoardDnd', () => {
     expect(columns[1].cards.map((card) => card.id)).toEqual(['card-1'])
   })
 
-  it('projects the common sort order without changing group membership during drag-over', () => {
+  it('applies the same structural preview used by loose cards during grouped drag-over', () => {
     let columns = [{
       id: 'col-1',
       title: 'Backlog',
@@ -211,7 +211,7 @@ describe('useKanbanBoardDnd', () => {
         { id: 'card-2', title: 'Card 2', columnId: 'col-1' },
         { id: 'card-3', title: 'Card 3', columnId: 'col-1' },
       ],
-      groups: [{ id: 'group-1', cardIds: ['card-2', 'card-3'] }],
+      groups: [{ id: 'group-1', startCardId: 'card-2', endCardId: 'card-3' }],
     }]
     const updateColumns = vi.fn((updater) => {
       columns = typeof updater === 'function' ? updater(columns) : updater
@@ -234,13 +234,66 @@ describe('useKanbanBoardDnd', () => {
       })
     })
 
-    expect(updateColumns).not.toHaveBeenCalled()
-    expect(columns[0].cards.map((card) => card.id)).toEqual(['card-1', 'card-2', 'card-3'])
-    expect(columns[0].groups[0].cardIds).toEqual(['card-2', 'card-3'])
+    expect(updateColumns).toHaveBeenCalled()
+    expect(columns[0].cards.map((card) => card.id)).toEqual(['card-2', 'card-1', 'card-3'])
+    expect(columns[0].groups[0].cardIds).toEqual(['card-3'])
     expect(result.current.groupDropPreview).toBeNull()
-    expect(result.current.dragPreviewCardIdsByColumn).toEqual({
-      'col-1': ['card-2', 'card-1', 'card-3'],
+    expect(result.current.dragPreviewCardIdsByColumn).toBeNull()
+  })
+
+  it('keeps a loose card in the target group when collision intent is temporarily unavailable', async () => {
+    const columns = [{
+      id: 'col-1',
+      title: 'Backlog',
+      cards: [
+        { id: 'card-1', title: 'Card 1', columnId: 'col-1' },
+        { id: 'card-2', title: 'Card 2', columnId: 'col-1' },
+        { id: 'card-3', title: 'Card 3', columnId: 'col-1' },
+      ],
+      groups: [{ id: 'group-1', startCardId: 'card-2', endCardId: 'card-3' }],
+    }]
+    let previewColumns = columns
+    const moveCard = vi.fn(() => Promise.resolve(true))
+    const updateColumns = vi.fn((updater) => {
+      previewColumns = typeof updater === 'function' ? updater(previewColumns) : updater
     })
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns,
+      moveCard,
+      reorderColumns: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: { id: 'card-1' } })
+      result.current.handleDragOver({
+        active: { id: 'card-1' },
+        over: { id: 'card-2' },
+      })
+    })
+
+    expect(previewColumns[0].cards.map((card) => card.id)).toEqual(['card-2', 'card-1', 'card-3'])
+    expect(previewColumns[0].groups[0].cardIds).toEqual(['card-2', 'card-1', 'card-3'])
+
+    act(() => {
+      result.current.handleDragOver({
+        active: { id: 'card-1' },
+        over: { id: 'card-1' },
+      })
+    })
+
+    expect(previewColumns[0].groups[0].cardIds).toEqual(['card-2', 'card-1', 'card-3'])
+
+    await act(async () => {
+      await result.current.handleDragEnd({
+        active: { id: 'card-1' },
+        over: { id: 'card-1' },
+      })
+    })
+
+    expect(moveCard).toHaveBeenCalledWith('card-1', 'col-1', 1, 'group-1')
   })
 
   it('persists a group-card drop from its stable drag snapshot', async () => {
@@ -317,7 +370,7 @@ describe('useKanbanBoardDnd', () => {
       })
     })
 
-    expect(previewColumns[0].groups[0].cardIds).toEqual(['card-2', 'card-3'])
+    expect(previewColumns[0].groups[0].cardIds).toEqual(['card-3'])
 
     await act(async () => {
       await result.current.handleDragEnd({
