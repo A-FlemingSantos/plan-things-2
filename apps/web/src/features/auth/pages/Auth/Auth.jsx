@@ -175,6 +175,7 @@ export default function Auth({ initialMode = 'login' }) {
 
   useEffect(() => {
     setNoticeMessage(location.state?.notice ?? '')
+    setErrorMessage(location.state?.error ?? '')
   }, [location.state])
 
   const alternateHref = isRegister ? ROUTES.login : ROUTES.register

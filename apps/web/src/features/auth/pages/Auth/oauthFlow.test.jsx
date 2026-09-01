@@ -46,10 +46,12 @@ describe('OAuth auth flow', () => {
     expect(window.sessionStorage.getItem('plan-things.auth.intent')).toBeNull()
   })
 
-  it('shows an OAuth callback error without creating a session', async () => {
+  it('returns to login with the OAuth error and does not create a session', async () => {
     renderApp('/oauth/callback?error=OAUTH_PROVIDER_ERROR')
 
+    expect(await screen.findByRole('heading', { name: 'Entre na sua conta' })).toBeInTheDocument()
     expect(await screen.findByText('Nao foi possivel concluir o login externo.')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/login')
     expect(window.localStorage.getItem('plan-things.session')).toBeNull()
   })
 })

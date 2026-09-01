@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { usePreferences } from '../../../preferences/context/PreferencesContext.jsx'
 import { resolveAuthRedirectTarget, resolvePostAuthRoute } from '../../utils/authRedirect.js'
@@ -13,8 +13,6 @@ export default function OAuthCallback() {
   const navigate = useNavigate()
   const { completeOAuthLogin } = useAuth()
   const { resolveInitialRoute } = usePreferences()
-  const [message, setMessage] = useState('Concluindo login...')
-  const [failed, setFailed] = useState(false)
   const hasCompletedRef = useRef(false)
 
   useEffect(() => {
@@ -73,48 +71,28 @@ export default function OAuthCallback() {
     }
 
     completeLogin().catch((error) => {
-      const message = error.message ?? 'Nao foi possivel concluir o login externo.'
+      const failureMessage = error.message ?? 'Nao foi possivel concluir o login externo.'
 
       if (finishPopupOAuth({
         success: false,
-        error: message,
+        error: failureMessage,
       })) {
         return
       }
 
-      setMessage(message)
-      setFailed(true)
+      navigate(ROUTES.login, {
+        replace: true,
+        state: { error: failureMessage },
+      })
     }).finally(() => {
       clearAuthIntent()
     })
   }, [completeOAuthLogin, location.search, navigate, resolveInitialRoute])
 
-  if (failed) {
-    return (
-      <main
-        style={{
-          minHeight: '100vh',
-          display: 'grid',
-          placeItems: 'center',
-          padding: '32px',
-          background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--app-bg) 100%)',
-          color: 'var(--text-1)',
-        }}
-      >
-        <section style={{ maxWidth: '420px', textAlign: 'center' }}>
-          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>{message}</p>
-          <p style={{ margin: '16px 0 0' }}>
-            <Link to={ROUTES.login}>Voltar ao login</Link>
-          </p>
-        </section>
-      </main>
-    )
-  }
-
   return (
     <LoadingScreen
       variant="fullscreen"
-      label={message}
+      label="Concluindo login..."
     />
   )
 }

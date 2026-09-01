@@ -5,6 +5,7 @@ import { resolveSessionMode } from '../utils/sessionMode.js'
 
 const SESSION_STORAGE_KEY = 'plan-things.session'
 const ACCOUNT_STORE_VERSION = 2
+const oauthExchangeInFlight = new Map()
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000
 const TOKEN_REFRESH_RETRY_MS = 30 * 1000
 const MIN_TOKEN_REFRESH_DELAY_MS = 5 * 1000
@@ -643,10 +644,19 @@ export function AuthProvider({ children }) {
       )
     }
 
-    const response = await apiRequest('/api/auth/oauth/exchange', {
-      method: 'POST',
-      body: { code },
-    })
+    let exchange = oauthExchangeInFlight.get(code)
+    if (!exchange) {
+      exchange = apiRequest('/api/auth/oauth/exchange', {
+        method: 'POST',
+        body: { code },
+      }).catch((error) => {
+        oauthExchangeInFlight.delete(code)
+        throw error
+      })
+      oauthExchangeInFlight.set(code, exchange)
+    }
+
+    const response = await exchange
 
     return saveAuthenticatedSession({
       ...response,

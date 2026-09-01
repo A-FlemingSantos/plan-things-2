@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TestMemoryRouter } from '../../../../test/testRouter.jsx'
+import { ROUTES } from '../../../../shared/config/routes.js'
 import OAuthCallback from './OAuthCallback.jsx'
 
 const authMocks = vi.hoisted(() => ({
@@ -30,6 +32,17 @@ vi.mock('../../../preferences/context/PreferencesContext.jsx', async () => {
 })
 
 vi.mock('../../utils/oauthPopup.js', () => oauthPopupMocks)
+
+function LoginRedirectProbe() {
+  const location = useLocation()
+
+  return (
+    <div>
+      <p>{location.pathname}</p>
+      <p>{location.state?.error}</p>
+    </div>
+  )
+}
 
 describe('OAuthCallback popup flow', () => {
   beforeEach(() => {
@@ -64,5 +77,22 @@ describe('OAuthCallback popup flow', () => {
       })
       expect(window.close).toHaveBeenCalled()
     })
+  })
+
+  it('redirects the main window to login when the completion code cannot be exchanged', async () => {
+    oauthPopupMocks.isOAuthPopupContext.mockReturnValue(false)
+    authMocks.completeOAuthLogin.mockRejectedValue(new Error('O codigo de conclusao do login expirou.'))
+
+    render(
+      <TestMemoryRouter initialEntries={['/oauth/callback?code=used-oauth-code']}>
+        <Routes>
+          <Route path={ROUTES.oauthCallback} element={<OAuthCallback />} />
+          <Route path={ROUTES.login} element={<LoginRedirectProbe />} />
+        </Routes>
+      </TestMemoryRouter>,
+    )
+
+    expect(await screen.findByText('/login')).toBeInTheDocument()
+    expect(screen.getByText('O codigo de conclusao do login expirou.')).toBeInTheDocument()
   })
 })
