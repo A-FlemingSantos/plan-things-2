@@ -1,14 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import {
-  AlignStartHorizontal,
-  AlignStartVertical,
   Blocks,
   Bug,
   ChevronDown,
   EllipsisVertical,
   Funnel,
   Globe,
-  Route,
   Share,
 } from 'lucide-react'
 import { SiGithub } from 'react-icons/si'
@@ -18,6 +15,7 @@ import PlanGitHubIntegrationModal from '../PlanGitHubIntegrationModal/PlanGitHub
 import BoardVisibilityPopover from '../BoardVisibilityPopover/BoardVisibilityPopover.jsx'
 import BoardMoreOptionsPopover from '../BoardMoreOptionsPopover/BoardMoreOptionsPopover.jsx'
 import BoardFilterPopover from '../BoardFilterPopover/BoardFilterPopover.jsx'
+import BoardViewModePopover, { BOARD_VIEW_MODES } from '../BoardViewModePopover/BoardViewModePopover.jsx'
 import { BOARD_FILTER_DEFAULTS, hasActiveBoardFilters } from '../BoardFilterPopover/boardFilterDefaults.js'
 import styles from './BoardHeader.module.css'
 
@@ -30,12 +28,7 @@ function getGitHubRepoShortName(fullName) {
   return segments[segments.length - 1] ?? fullName
 }
 
-export const BOARD_VIEW_MODES = [
-  { id: 'kanban', label: 'Kanban', Icon: AlignStartHorizontal },
-  { id: 'timeline', label: 'Timeline', Icon: AlignStartVertical },
-  { id: 'bugtrack', label: 'Bugtrack', Icon: Bug },
-  { id: 'actions', label: 'Actions', Icon: Route },
-]
+export { BOARD_VIEW_MODES }
 
 const LEADING_ACTION_ITEMS = [
   { id: 'blocks', Icon: Blocks, label: 'Blocos' },
@@ -230,32 +223,13 @@ export default function BoardHeader({
           </button>
 
           {isViewMenuOpen ? (
-            <div
-              id={viewMenuId}
-              className={styles.viewMenu}
-              role="menu"
-              aria-label="Modos de visualização do board"
-            >
-              {BOARD_VIEW_MODES.map(({ id, label, Icon }) => {
-                const isActive = viewMode === id
-
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={isActive}
-                    className={`${styles.viewMenuItem} ${isActive ? styles.viewMenuItemActive : ''}`}
-                    onClick={() => handleSelectViewMode(id)}
-                  >
-                    <span className={styles.viewMenuItemIcon} aria-hidden="true">
-                      <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-                    </span>
-                    <span className={styles.viewMenuItemLabel}>{label}</span>
-                  </button>
-                )
-              })}
-            </div>
+            <BoardViewModePopover
+              open={isViewMenuOpen}
+              menuId={viewMenuId}
+              viewMode={viewMode}
+              onSelect={handleSelectViewMode}
+              onClose={() => setIsViewMenuOpen(false)}
+            />
           ) : null}
         </div>
 
