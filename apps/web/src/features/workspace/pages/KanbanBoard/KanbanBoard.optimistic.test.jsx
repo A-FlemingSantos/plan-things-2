@@ -134,6 +134,7 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 }))
 
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
+  kanbanDropAnimation: undefined,
   default: ({ col, isCompact, onToggleCompactView, onToggleCardCompleted, onCardClick }) => (
     <section aria-label={col.title} data-compact={isCompact}>
       <button type="button" onClick={() => onToggleCompactView(col.id)}>

@@ -232,8 +232,7 @@ public class BoardService {
     }
 
     List<BoardCardEntity> columnCards = boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId);
-    List<BoardColumnGroupEntity> existingGroups = boardColumnGroupRepository.findByColumnId(columnId);
-    if (isCardInsideExistingGroup(columnCards, existingGroups, startCardId)) {
+    if (startCard.getGroupId() != null) {
       throw new ConflictException("AGRUPAMENTO_ANINHADO", "Nao e possivel criar um agrupamento dentro de outro.");
     }
 
@@ -242,9 +241,13 @@ public class BoardService {
     group.setColumnId(columnId);
     group.setTitle(normalizeGroupTitle(title));
     group.setStartCardId(startCardId);
-    group.setEndCardId(resolveGroupEndCardId(columnCards, existingGroups, startCardId));
+    group.setEndCardId(startCardId);
     group.setCollapsed(Boolean.TRUE.equals(collapsed));
     boardColumnGroupRepository.save(group);
+    List<BoardCardEntity> initialMembers = collectInitialGroupMembers(columnCards, startCardId);
+    initialMembers.forEach(card -> card.setGroupId(group.getId()));
+    boardCardRepository.saveAll(initialMembers);
+    synchronizeGroupsForColumn(columnId, columnCards);
     return buildBoardView(plan, userId);
   }
 
@@ -268,6 +271,13 @@ public class BoardService {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardColumnGroupEntity group = requireColumnGroup(planId, groupId);
+    List<BoardCardEntity> members = boardCardRepository.findByColumnIdOrderByPositionIndexAsc(group.getColumnId())
+        .stream()
+        .filter(card -> group.getId().equals(card.getGroupId()))
+        .toList();
+    members.forEach(card -> card.setGroupId(null));
+    boardCardRepository.saveAll(members);
+    boardCardRepository.flush();
     boardColumnGroupRepository.delete(group);
     return buildBoardView(plan, userId);
   }
@@ -318,9 +328,15 @@ public class BoardService {
 
     if (!Objects.equals(card.getColumnId(), columnId)) {
       UUID previousColumnId = card.getColumnId();
+      List<BoardCardEntity> previousColumnCards = boardCardRepository.findByColumnIdOrderByPositionIndexAsc(previousColumnId);
+      card.setGroupId(null);
       card.setColumnId(columnId);
       card.setPositionIndex(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId).size());
-      reorder(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(previousColumnId), BoardCardEntity::setPositionIndex);
+      List<BoardCardEntity> remainingCards = previousColumnCards.stream()
+          .filter(item -> !item.getId().equals(card.getId()))
+          .toList();
+      reorder(remainingCards, BoardCardEntity::setPositionIndex);
+      synchronizeGroupsForColumn(previousColumnId, remainingCards);
     }
 
     card.setTitle(requireText(title, "O titulo do cartao e obrigatorio."));
@@ -343,19 +359,15 @@ public class BoardService {
   }
 
   @Transactional
-  public BoardView moveCard(UUID planId, UUID cardId, UUID targetColumnId, int targetPosition) {
+  public BoardView moveCard(UUID planId, UUID cardId, UUID targetColumnId, int targetPosition, UUID targetGroupId) {
     UUID userId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
     requireColumn(planId, targetColumnId);
 
     UUID sourceColumnId = card.getColumnId();
-    List<BoardCardEntity> originalSourceCards = new ArrayList<>(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(sourceColumnId));
-    List<BoardCardEntity> sourceCards = new ArrayList<>(originalSourceCards);
+    List<BoardCardEntity> sourceCards = new ArrayList<>(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(sourceColumnId));
     sourceCards.removeIf(item -> item.getId().equals(cardId));
-    if (!sourceColumnId.equals(targetColumnId)) {
-      reassignGroupsAfterRemovingCard(sourceColumnId, cardId, originalSourceCards, sourceCards);
-    }
     reorder(sourceCards, BoardCardEntity::setPositionIndex);
 
     List<BoardCardEntity> targetCards = sourceColumnId.equals(targetColumnId)
@@ -363,14 +375,23 @@ public class BoardService {
         : new ArrayList<>(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(targetColumnId));
     int safePosition = Math.max(0, Math.min(targetPosition, targetCards.size()));
 
+    BoardColumnGroupEntity targetGroup = targetGroupId == null ? null : requireColumnGroup(planId, targetGroupId);
+    if (targetGroup != null && !targetGroup.getColumnId().equals(targetColumnId)) {
+      throw new BadRequestException("AGRUPAMENTO_INVALIDO", "O agrupamento de destino precisa pertencer a esta coluna.");
+    }
+
     card.setColumnId(targetColumnId);
+    card.setGroupId(targetGroupId);
     targetCards.add(safePosition, card);
+    ensureGroupsRemainContiguous(targetCards);
     reorder(targetCards, BoardCardEntity::setPositionIndex);
 
     if (!sourceColumnId.equals(targetColumnId)) {
       boardCardRepository.saveAll(sourceCards);
+      synchronizeGroupsForColumn(sourceColumnId, sourceCards);
     }
     boardCardRepository.saveAll(targetCards);
+    synchronizeGroupsForColumn(targetColumnId, targetCards);
     return buildBoardView(plan, userId);
   }
 
@@ -380,11 +401,12 @@ public class BoardService {
     planAccessService.requirePlanMember(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
     UUID columnId = card.getColumnId();
-    List<BoardCardEntity> originalCards = new ArrayList<>(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId));
-    List<BoardCardEntity> remainingCards = originalCards.stream()
+    List<BoardCardEntity> remainingCards = boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId).stream()
         .filter(item -> !item.getId().equals(cardId))
         .toList();
-    reassignGroupsAfterRemovingCard(columnId, cardId, originalCards, remainingCards);
+    card.setGroupId(null);
+    boardCardRepository.saveAndFlush(card);
+    synchronizeGroupsForColumn(columnId, remainingCards);
     calendarService.removeCardEvent(cardId);
     boardCardRepository.delete(card);
     reorder(boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId), BoardCardEntity::setPositionIndex);
@@ -824,115 +846,113 @@ public class BoardService {
         .orElseThrow(() -> new NotFoundException("AGRUPAMENTO_NAO_ENCONTRADO", "Nao encontramos o agrupamento informado."));
   }
 
-  private boolean isCardInsideExistingGroup(
-      List<BoardCardEntity> cards,
-      List<BoardColumnGroupEntity> groups,
-      UUID cardId
-  ) {
-    if (cardId == null || cards.isEmpty() || groups.isEmpty()) {
-      return false;
-    }
-
-    Map<UUID, Integer> indexById = cardIndexById(cards);
-    Integer cardIndex = indexById.get(cardId);
-    if (cardIndex == null) {
-      return false;
-    }
-
-    for (BoardColumnGroupEntity group : groups) {
-      int[] range = groupRange(indexById, group);
-      if (range == null) {
-        continue;
-      }
-      if (cardIndex >= range[0] && cardIndex <= range[1]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private UUID resolveGroupEndCardId(
-      List<BoardCardEntity> cards,
-      List<BoardColumnGroupEntity> groups,
-      UUID startCardId
-  ) {
-    Map<UUID, Integer> indexById = cardIndexById(cards);
-    Integer start = indexById.get(startCardId);
-    if (start == null) {
-      return startCardId;
-    }
-
-    int end = cards.size() - 1;
-    for (BoardColumnGroupEntity group : groups) {
-      int[] range = groupRange(indexById, group);
-      if (range == null || range[0] <= start) {
-        continue;
-      }
-      end = Math.min(end, range[0] - 1);
-    }
-    if (end < start) {
-      end = start;
-    }
-    return cards.get(end).getId();
-  }
-
-  private Map<UUID, Integer> cardIndexById(List<BoardCardEntity> cards) {
-    Map<UUID, Integer> indexById = new HashMap<>();
-    for (int i = 0; i < cards.size(); i++) {
-      indexById.put(cards.get(i).getId(), i);
-    }
-    return indexById;
-  }
-
-  private int[] groupRange(Map<UUID, Integer> indexById, BoardColumnGroupEntity group) {
-    if (group.getStartCardId() == null) {
-      return null;
-    }
-    Integer start = indexById.get(group.getStartCardId());
-    if (start == null) {
-      return null;
-    }
-    Integer end = group.getEndCardId() == null ? start : indexById.get(group.getEndCardId());
-    if (end == null || end < start) {
-      end = start;
-    }
-    return new int[] { start, end };
-  }
-
   private List<ColumnGroupView> toGroupViews(List<BoardColumnGroupEntity> groups, List<BoardCardEntity> cards) {
-    Map<UUID, Integer> indexById = cardIndexById(cards);
-
+    Map<UUID, Integer> firstPositionByGroupId = new HashMap<>();
+    for (int index = 0; index < cards.size(); index++) {
+      UUID groupId = cards.get(index).getGroupId();
+      if (groupId != null) {
+        firstPositionByGroupId.putIfAbsent(groupId, index);
+      }
+    }
     return groups.stream()
-        .filter(group -> group.getStartCardId() != null && indexById.containsKey(group.getStartCardId()))
-        .sorted(Comparator.comparingInt(group -> indexById.get(group.getStartCardId())))
-        .map(group -> {
-          int[] range = groupRange(indexById, group);
-          UUID endCardId = range == null ? group.getStartCardId() : cards.get(range[1]).getId();
-          return new ColumnGroupView(
-              group.getId(),
-              group.getTitle(),
-              group.getStartCardId(),
-              endCardId,
-              Boolean.TRUE.equals(group.getCollapsed())
-          );
-        })
+        .map(group -> toColumnGroupView(group, cards))
+        .filter(Objects::nonNull)
+        .sorted(Comparator.comparingInt(group -> firstPositionByGroupId.getOrDefault(group.id(), Integer.MAX_VALUE)))
         .toList();
+  }
+
+  private ColumnGroupView toColumnGroupView(BoardColumnGroupEntity group, List<BoardCardEntity> cards) {
+    List<UUID> memberIds = cards.stream()
+        .filter(card -> group.getId().equals(card.getGroupId()))
+        .map(BoardCardEntity::getId)
+        .toList();
+    if (memberIds.isEmpty()) {
+      return null;
+    }
+    return new ColumnGroupView(
+        group.getId(),
+        group.getTitle(),
+        memberIds.get(0),
+        memberIds.get(memberIds.size() - 1),
+        memberIds,
+        Boolean.TRUE.equals(group.getCollapsed())
+    );
+  }
+
+  private List<BoardCardEntity> collectInitialGroupMembers(List<BoardCardEntity> cards, UUID startCardId) {
+    int start = -1;
+    for (int index = 0; index < cards.size(); index++) {
+      if (cards.get(index).getId().equals(startCardId)) {
+        start = index;
+        break;
+      }
+    }
+    if (start < 0) {
+      return List.of();
+    }
+    List<BoardCardEntity> members = new ArrayList<>();
+    for (int index = start; index < cards.size(); index++) {
+      BoardCardEntity card = cards.get(index);
+      if (card.getGroupId() != null) {
+        break;
+      }
+      members.add(card);
+    }
+    return members;
+  }
+
+  private void ensureGroupsRemainContiguous(List<BoardCardEntity> cards) {
+    UUID currentGroupId = null;
+    Set<UUID> closedGroupIds = new LinkedHashSet<>();
+    for (BoardCardEntity card : cards) {
+      UUID groupId = card.getGroupId();
+      if (Objects.equals(groupId, currentGroupId)) {
+        continue;
+      }
+      if (currentGroupId != null) {
+        closedGroupIds.add(currentGroupId);
+      }
+      if (groupId != null && closedGroupIds.contains(groupId)) {
+        throw new BadRequestException(
+            "POSICAO_EM_AGRUPAMENTO",
+            "Um cartao solto nao pode ser inserido entre membros de um agrupamento."
+        );
+      }
+      currentGroupId = groupId;
+    }
+  }
+
+  private void synchronizeGroupsForColumn(UUID columnId, List<BoardCardEntity> cards) {
+    Map<UUID, List<BoardCardEntity>> membersByGroup = cards.stream()
+        .filter(card -> card.getGroupId() != null)
+        .collect(Collectors.groupingBy(BoardCardEntity::getGroupId));
+    List<BoardColumnGroupEntity> toDelete = new ArrayList<>();
+    List<BoardColumnGroupEntity> toSave = new ArrayList<>();
+    for (BoardColumnGroupEntity group : boardColumnGroupRepository.findByColumnId(columnId)) {
+      List<BoardCardEntity> members = membersByGroup.getOrDefault(group.getId(), List.of());
+      if (members.isEmpty()) {
+        toDelete.add(group);
+        continue;
+      }
+      UUID startCardId = members.get(0).getId();
+      UUID endCardId = members.get(members.size() - 1).getId();
+      if (!startCardId.equals(group.getStartCardId()) || !endCardId.equals(group.getEndCardId())) {
+        group.setStartCardId(startCardId);
+        group.setEndCardId(endCardId);
+        toSave.add(group);
+      }
+    }
+    if (!toDelete.isEmpty()) {
+      boardColumnGroupRepository.deleteAll(toDelete);
+    }
+    if (!toSave.isEmpty()) {
+      boardColumnGroupRepository.saveAll(toSave);
+    }
   }
 
   private ColumnGroupView toColumnGroupView(BoardColumnGroupEntity group) {
     List<BoardCardEntity> cards = boardCardRepository.findByColumnIdOrderByPositionIndexAsc(group.getColumnId());
-    List<ColumnGroupView> views = toGroupViews(List.of(group), cards);
-    if (!views.isEmpty()) {
-      return views.get(0);
-    }
-
-    return new ColumnGroupView(
-        group.getId(),
-        group.getTitle(),
-        group.getStartCardId(),
-        group.getEndCardId() == null ? group.getStartCardId() : group.getEndCardId(),
-        Boolean.TRUE.equals(group.getCollapsed())
-    );
+    return toColumnGroupView(group, cards);
   }
 
   private String normalizeGroupTitle(String title) {
@@ -943,61 +963,6 @@ public class BoardService {
     return trimmed.length() > 120 ? trimmed.substring(0, 120) : trimmed;
   }
 
-  private void reassignGroupsAfterRemovingCard(
-      UUID columnId,
-      UUID removedCardId,
-      List<BoardCardEntity> originalOrderedCards,
-      List<BoardCardEntity> remainingCards
-  ) {
-    List<BoardColumnGroupEntity> groups = boardColumnGroupRepository.findByColumnId(columnId);
-    if (groups.isEmpty()) {
-      return;
-    }
-
-    Map<UUID, Integer> originalIndex = cardIndexById(originalOrderedCards);
-    Set<UUID> remainingIds = remainingCards.stream()
-        .map(BoardCardEntity::getId)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
-
-    List<BoardColumnGroupEntity> toDelete = new ArrayList<>();
-    List<BoardColumnGroupEntity> toSave = new ArrayList<>();
-
-    for (BoardColumnGroupEntity group : groups) {
-      int[] range = groupRange(originalIndex, group);
-      if (range == null) {
-        toDelete.add(group);
-        continue;
-      }
-
-      List<UUID> stillInRange = new ArrayList<>();
-      for (int i = range[0]; i <= range[1]; i++) {
-        UUID cardId = originalOrderedCards.get(i).getId();
-        if (!removedCardId.equals(cardId) && remainingIds.contains(cardId)) {
-          stillInRange.add(cardId);
-        }
-      }
-
-      if (stillInRange.isEmpty()) {
-        toDelete.add(group);
-        continue;
-      }
-
-      UUID nextStart = stillInRange.get(0);
-      UUID nextEnd = stillInRange.get(stillInRange.size() - 1);
-      if (!nextStart.equals(group.getStartCardId()) || !nextEnd.equals(group.getEndCardId())) {
-        group.setStartCardId(nextStart);
-        group.setEndCardId(nextEnd);
-        toSave.add(group);
-      }
-    }
-
-    if (!toDelete.isEmpty()) {
-      boardColumnGroupRepository.deleteAll(toDelete);
-    }
-    if (!toSave.isEmpty()) {
-      boardColumnGroupRepository.saveAll(toSave);
-    }
-  }
 
   private BoardCardEntity requireCard(UUID planId, UUID cardId) {
     return boardCardRepository.findByIdAndPlanId(cardId, planId)
@@ -1211,7 +1176,7 @@ public class BoardService {
   ) {
   }
 
-  public record ColumnGroupView(UUID id, String title, UUID startCardId, UUID endCardId, boolean collapsed) {
+  public record ColumnGroupView(UUID id, String title, UUID startCardId, UUID endCardId, List<UUID> cardIds, boolean collapsed) {
   }
 
   public record BoardCardView(

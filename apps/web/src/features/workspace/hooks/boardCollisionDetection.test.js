@@ -10,7 +10,11 @@ vi.mock('@dnd-kit/core', async () => {
 })
 
 import { closestCorners, pointerWithin } from '@dnd-kit/core'
-import { columnCardStackDropId, KANBAN_INBOX_DROP_ID } from './boardDnDUtils.js'
+import {
+  columnCardStackDropId,
+  columnGroupBeforeDropId,
+  KANBAN_INBOX_DROP_ID,
+} from './boardDnDUtils.js'
 import {
   createBoardCollisionDetection,
   createBoardDragCollisionState,
@@ -180,6 +184,157 @@ describe('boardCollisionDetection', () => {
 
     expect(collisions).toEqual([{ id: KANBAN_INBOX_DROP_ID }])
     expect(dragState.getPointerColumnId()).toBeNull()
+  })
+
+  it('treats the space above a group as before the group, not as a group drop', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+
+    const collisions = detect(buildCollisionArgs({
+      pointer: { x: 140, y: 110 },
+      droppableContainers: [
+        ...buildBoardContainers().filter((container) => container.id !== 'card-2'),
+        {
+          id: 'card-2',
+          data: { current: { type: 'card', columnId: 'col-1', groupId: 'group-1', isFirstGroupCard: true } },
+          rect: { current: null },
+        },
+      ],
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(collisions).toEqual([{ id: 'card-2' }])
+    expect(dragState.getDropIntent()).toEqual({
+      targetGroupId: null,
+      beforeGroupId: 'group-1',
+      kind: 'before-group',
+    })
+  })
+
+  it('treats the group header as a stable before-group boundary', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+    const boundaryId = columnGroupBeforeDropId('col-1', 'group-1')
+    pointerWithin.mockReturnValueOnce([{ id: boundaryId }])
+
+    const collisions = detect(buildCollisionArgs({
+      pointer: { x: 140, y: 100 },
+      droppableContainers: [
+        ...buildBoardContainers(),
+        {
+          id: boundaryId,
+          data: { current: { type: 'group-before', columnId: 'col-1', groupId: 'group-1' } },
+          rect: { current: null },
+        },
+      ],
+      droppableRects: new Map([
+        ...buildBoardRects(),
+        [boundaryId, buildCardStackRect(12, 90, 118)],
+      ]),
+    }))
+
+    expect(collisions).toEqual([{ id: boundaryId }])
+    expect(dragState.getDropIntent()).toEqual({
+      targetGroupId: null,
+      beforeGroupId: 'group-1',
+      kind: 'before-group',
+    })
+  })
+
+  it('keeps membership when a group card is reordered into the first slot', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+
+    detect(buildCollisionArgs({
+      active: {
+        id: 'card-3',
+        data: { current: { type: 'card', groupId: 'group-1' } },
+        rect: { current: { translated: null } },
+      },
+      pointer: { x: 140, y: 130 },
+      droppableContainers: [
+        ...buildBoardContainers().filter((container) => container.id !== 'card-2'),
+        {
+          id: 'card-2',
+          data: { current: { type: 'card', columnId: 'col-1', groupId: 'group-1', isFirstGroupCard: true } },
+          rect: { current: null },
+        },
+      ],
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(dragState.getDropIntent()).toEqual({ targetGroupId: 'group-1', kind: 'group-interior' })
+  })
+
+  it('allows a group card to leave when the pointer is above the first member', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+
+    detect(buildCollisionArgs({
+      active: {
+        id: 'card-3',
+        data: { current: { type: 'card', groupId: 'group-1' } },
+        rect: { current: { translated: null } },
+      },
+      pointer: { x: 140, y: 110 },
+      droppableContainers: [
+        ...buildBoardContainers().filter((container) => container.id !== 'card-2'),
+        {
+          id: 'card-2',
+          data: { current: { type: 'card', columnId: 'col-1', groupId: 'group-1', isFirstGroupCard: true } },
+          rect: { current: null },
+        },
+      ],
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(dragState.getDropIntent()).toEqual({
+      targetGroupId: null,
+      beforeGroupId: 'group-1',
+      kind: 'before-group',
+    })
+  })
+
+  it('allows a group card to leave when the pointer is below the last member', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+
+    detect(buildCollisionArgs({
+      active: {
+        id: 'card-3',
+        data: { current: { type: 'card', groupId: 'group-1' } },
+        rect: { current: { translated: null } },
+      },
+      pointer: { x: 140, y: 210 },
+      droppableContainers: [
+        ...buildBoardContainers().filter((container) => container.id !== 'card-2'),
+        {
+          id: 'card-2',
+          data: {
+            current: {
+              type: 'card',
+              columnId: 'col-1',
+              groupId: 'group-1',
+              isFirstGroupCard: false,
+              isLastGroupCard: true,
+            },
+          },
+          rect: { current: null },
+        },
+      ],
+      droppableRects: buildBoardRects(),
+    }))
+
+    expect(dragState.getDropIntent()).toEqual({
+      targetGroupId: null,
+      beforeGroupId: null,
+      kind: 'loose-card',
+    })
   })
 
   it('falls back to closestCorners when pointer coordinates are unavailable', () => {

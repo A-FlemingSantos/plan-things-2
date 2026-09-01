@@ -4,6 +4,7 @@ import { columnCardStackDropId, KANBAN_INBOX_DROP_ID } from './boardDnDUtils.js'
 const CARD_TYPE = 'card'
 const COLUMN_TYPE = 'column'
 const INBOX_TYPE = 'inbox'
+const GROUP_BEFORE_TYPE = 'group-before'
 
 function getContainerType(droppableContainers, id) {
   const container = droppableContainers.find((item) => item.id === id)
@@ -13,6 +14,10 @@ function getContainerType(droppableContainers, id) {
 function getCardColumnId(droppableContainers, id) {
   const container = droppableContainers.find((item) => item.id === id)
   return container?.data?.current?.columnId ?? null
+}
+
+function getContainerData(droppableContainers, id) {
+  return droppableContainers.find((item) => item.id === id)?.data?.current ?? null
 }
 
 function isPointerInsideColumnHorizontally(pointerX, rect) {
@@ -200,6 +205,7 @@ export function createBoardCollisionDetection(columnIds, dragState) {
     })
     if (inboxCollision) {
       dragState.setPointerColumnId(null)
+      dragState.setDropIntent(null)
       return [inboxCollision]
     }
 
@@ -236,31 +242,84 @@ export function createBoardCollisionDetection(columnIds, dragState) {
         : null,
     )
 
-    const cardPointerCollisions = pointerCollisions.filter((collision) => {
-      if (getContainerType(droppableContainers, collision.id) !== CARD_TYPE) {
-        return false
-      }
-
-      return getCardColumnId(droppableContainers, collision.id) === activeColumnId
+    const groupBeforeCollision = pointerCollisions.find((collision) => {
+      const data = getContainerData(droppableContainers, collision.id)
+      return data?.type === GROUP_BEFORE_TYPE && data.columnId === activeColumnId
     })
-
-    if (cardPointerCollisions.length > 0) {
-      return cardPointerCollisions
+    if (groupBeforeCollision) {
+      const data = getContainerData(droppableContainers, groupBeforeCollision.id)
+      dragState.setDropIntent({
+        targetGroupId: null,
+        beforeGroupId: String(data.groupId),
+        kind: 'before-group',
+      })
+      return [groupBeforeCollision]
     }
 
     if (!isBelowActiveCardStack) {
-      return pickClosestCardCollisionInColumn(
+      const cardCollision = pickClosestCardCollisionInColumn(
         activeColumnId,
         pointerCoordinates,
         droppableContainers,
         droppableRects,
       )
+      const collision = cardCollision[0]
+      if (collision) {
+        const data = getContainerData(droppableContainers, collision.id)
+        const rect = droppableRects.get(collision.id)
+        const isBeforeFirstMember = Boolean(
+          data?.groupId
+          && data?.isFirstGroupCard
+          && rect
+          && pointerCoordinates.y <= rect.top + rect.height / 2
+        )
+        const isAboveFirstMember = Boolean(
+          data?.groupId
+          && data?.isFirstGroupCard
+          && rect
+          && pointerCoordinates.y < rect.top
+        )
+        const isBelowLastMember = Boolean(
+          data?.groupId
+          && data?.isLastGroupCard
+          && rect
+          && pointerCoordinates.y > rect.bottom
+        )
+        const isReorderingWithinSameGroup = Boolean(
+          data?.groupId
+          && String(args.active?.data?.current?.groupId) === String(data.groupId)
+          && !isAboveFirstMember
+          && !isBelowLastMember
+        )
+        const isLeavingOwnGroup = Boolean(
+          isBelowLastMember
+          && String(args.active?.data?.current?.groupId) === String(data.groupId)
+        )
+        if (
+          data?.groupId
+          && !isLeavingOwnGroup
+          && (!isBeforeFirstMember || isReorderingWithinSameGroup)
+        ) {
+          dragState.setDropIntent({ targetGroupId: String(data.groupId), kind: 'group-interior' })
+        } else {
+          dragState.setDropIntent({
+            targetGroupId: null,
+            beforeGroupId: isBeforeFirstMember ? String(data.groupId) : null,
+            kind: isBeforeFirstMember ? 'before-group' : 'loose-card',
+          })
+        }
+      } else {
+        dragState.setDropIntent(null)
+      }
+      return cardCollision
     }
 
     if (columnIdSet.has(String(activeColumnId))) {
+      dragState.setDropIntent({ targetGroupId: null, kind: 'column-end' })
       return [{ id: activeColumnId }]
     }
 
+    dragState.setDropIntent(null)
     return []
   }
 }
@@ -268,6 +327,7 @@ export function createBoardCollisionDetection(columnIds, dragState) {
 export function createBoardDragCollisionState() {
   let stickyColumnId = null
   let pointerColumnId = null
+  let dropIntent = null
 
   return {
     getStickyColumnId: () => stickyColumnId,
@@ -278,9 +338,14 @@ export function createBoardDragCollisionState() {
     setPointerColumnId: (columnId) => {
       pointerColumnId = columnId
     },
+    getDropIntent: () => dropIntent,
+    setDropIntent: (nextDropIntent) => {
+      dropIntent = nextDropIntent
+    },
     reset: () => {
       stickyColumnId = null
       pointerColumnId = null
+      dropIntent = null
     },
   }
 }

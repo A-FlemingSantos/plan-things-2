@@ -14,7 +14,7 @@ export function normalizeColumnGroups(groups) {
   const seenIds = new Set()
 
   return groups.flatMap((group) => {
-    if (!group?.id || !group.startCardId) {
+    if (!group?.id) {
       return []
     }
 
@@ -27,45 +27,40 @@ export function normalizeColumnGroups(groups) {
 
     return [{
       id,
+      uiKey: typeof group.uiKey === 'string' && group.uiKey ? group.uiKey : `group-ui-${id}`,
       title: typeof group.title === 'string' ? group.title : '',
-      startCardId: String(group.startCardId),
-      endCardId: String(group.endCardId || group.startCardId),
+      startCardId: group.startCardId ? String(group.startCardId) : null,
+      endCardId: group.endCardId ? String(group.endCardId) : (group.startCardId ? String(group.startCardId) : null),
+      cardIds: Array.from(new Set(
+        Array.isArray(group.cardIds) ? group.cardIds.filter(Boolean).map(String) : [],
+      )),
       collapsed: Boolean(group.collapsed),
     }]
   })
 }
 
-export function createColumnGroup({ startCardId, endCardId, title = '', collapsed = false, id } = {}) {
-  if (!startCardId) {
+export function createColumnGroup({ startCardId, endCardId, cardIds, title = '', collapsed = false, id, uiKey } = {}) {
+  const normalizedCardIds = Array.from(new Set(
+    Array.isArray(cardIds) ? cardIds.filter(Boolean).map(String) : [startCardId].filter(Boolean).map(String),
+  ))
+  if (!normalizedCardIds.length) {
     return null
   }
 
+  const nextId = id ?? createColumnGroupId()
   return {
-    id: id ?? createColumnGroupId(),
+    id: nextId,
+    uiKey: uiKey ?? `group-ui-${nextId}`,
     title: typeof title === 'string' ? title : '',
-    startCardId: String(startCardId),
-    endCardId: String(endCardId || startCardId),
+    startCardId: String(startCardId || normalizedCardIds[0]),
+    endCardId: String(endCardId || normalizedCardIds.at(-1)),
+    cardIds: normalizedCardIds,
     collapsed: Boolean(collapsed),
   }
 }
 
 export function resolveGroupEndCardId(cards, groups, startCardId) {
-  if (!Array.isArray(cards) || !startCardId) {
-    return startCardId ?? null
-  }
-
-  const start = cards.findIndex((card) => card.id === startCardId)
-  if (start < 0) {
-    return startCardId
-  }
-
-  const nextOccupied = normalizeColumnGroups(groups)
-    .map((group) => cards.findIndex((card) => card.id === group.startCardId))
-    .filter((index) => index > start)
-    .sort((left, right) => left - right)[0]
-
-  const end = nextOccupied == null ? cards.length - 1 : nextOccupied - 1
-  return cards[Math.max(start, end)]?.id ?? startCardId
+  return collectInitialGroupCardIds(cards, groups, startCardId).at(-1) ?? startCardId ?? null
 }
 
 export function nextCardIdAfter(cards, afterCardId) {
@@ -101,7 +96,7 @@ export function canInsertColumnGroupAfter(cards, groups, afterCardId) {
     return false
   }
 
-  return !normalizeColumnGroups(groups).some((group) => group.startCardId === startCardId)
+  return !normalizeColumnGroups(groups).some((group) => group.cardIds.includes(startCardId))
 }
 
 export function upsertColumnGroup(columns, columnId, group) {
@@ -144,9 +139,12 @@ export function replaceColumnGroupId(columns, columnId, previousGroupId, nextGro
 
     return {
       ...column,
-      groups: normalizeColumnGroups(column.groups).map((group) => (
-        group.id === previousGroupId ? { ...group, ...createColumnGroup(nextGroup) } : group
-      )),
+      groups: normalizeColumnGroups(column.groups).map((group) => {
+        if (group.id !== previousGroupId) {
+          return group
+        }
+        return createColumnGroup({ ...nextGroup, uiKey: group.uiKey })
+      }),
     }
   })
 }
@@ -180,56 +178,42 @@ export function removeColumnGroup(columns, columnId, groupId) {
 
 export function buildColumnListSegments(cards, groups) {
   const cardList = Array.isArray(cards) ? cards : []
-  const indexById = new Map(cardList.map((card, index) => [card.id, index]))
-  const ranges = []
-
+  const groupsByCardId = new Map()
   for (const group of normalizeColumnGroups(groups)) {
-    const start = indexById.get(group.startCardId)
-    if (start == null) {
-      continue
+    for (const cardId of groupCardIds(cardList, group)) {
+      groupsByCardId.set(cardId, group)
     }
-
-    const endInclusive = indexById.has(group.endCardId)
-      ? indexById.get(group.endCardId)
-      : start
-    ranges.push({
-      group,
-      start,
-      end: Math.max(start, endInclusive) + 1,
-    })
   }
-
-  ranges.sort((left, right) => left.start - right.start || left.end - right.end)
-
   const segments = []
-  let cursor = 0
+  const renderedGroupIds = new Set()
+  for (const card of cardList) {
+    const candidateGroup = groupsByCardId.get(card.id) ?? null
+    const previous = segments.at(-1)
+    const continuesPreviousGroup = Boolean(
+      candidateGroup
+      && previous?.type === 'group'
+      && previous.group.id === candidateGroup.id,
+    )
+    const group = candidateGroup && (!renderedGroupIds.has(candidateGroup.id) || continuesPreviousGroup)
+      ? candidateGroup
+      : null
 
-  for (const range of ranges) {
-    if (range.end <= cursor) {
+    if (group && previous?.type === 'group' && previous.group.id === group.id) {
+      previous.cards.push(card)
+      continue
+    }
+    if (!group && previous?.type === 'loose') {
+      previous.cards.push(card)
       continue
     }
 
-    const start = Math.max(range.start, cursor)
-    if (start > cursor) {
-      segments.push({
-        type: 'loose',
-        cards: cardList.slice(cursor, start),
-      })
+    if (group) {
+      renderedGroupIds.add(group.id)
     }
 
-    segments.push({
-      type: 'group',
-      group: range.group,
-      cards: cardList.slice(start, range.end),
-    })
-    cursor = range.end
-  }
-
-  if (cursor < cardList.length) {
-    segments.push({
-      type: 'loose',
-      cards: cardList.slice(cursor),
-    })
+    segments.push(group
+      ? { type: 'group', group, cards: [card] }
+      : { type: 'loose', cards: [card] })
   }
 
   return segments
@@ -249,4 +233,34 @@ export function collapsedCardIdsFromGroups(cards, groups) {
   }
 
   return hidden
+}
+
+export function collectInitialGroupCardIds(cards, groups, startCardId) {
+  const cardList = Array.isArray(cards) ? cards : []
+  const start = cardList.findIndex((card) => card.id === startCardId)
+  if (start < 0 || isCardInColumnGroup(cardList, groups, startCardId)) {
+    return []
+  }
+  const result = []
+  for (let index = start; index < cardList.length; index += 1) {
+    const cardId = cardList[index].id
+    if (isCardInColumnGroup(cardList, groups, cardId)) {
+      break
+    }
+    result.push(cardId)
+  }
+  return result
+}
+
+function groupCardIds(cards, group) {
+  if (group.cardIds.length) {
+    return group.cardIds
+  }
+  // Compatibility only for responses from an API that has not yet run V32.
+  const start = cards.findIndex((card) => card.id === group.startCardId)
+  const end = cards.findIndex((card) => card.id === group.endCardId)
+  if (start < 0) {
+    return []
+  }
+  return cards.slice(start, end < start ? start + 1 : end + 1).map((card) => card.id)
 }

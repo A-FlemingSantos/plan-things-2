@@ -227,6 +227,9 @@ function SortableKanbanCard({
   labels,
   members,
   styles,
+  groupId = null,
+  isFirstGroupCard = false,
+  isLastGroupCard = false,
 }) {
   const {
     attributes,
@@ -241,6 +244,9 @@ function SortableKanbanCard({
       type: 'card',
       columnId: colId,
       cardId: card.id,
+      groupId,
+      isFirstGroupCard,
+      isLastGroupCard,
     },
   })
 
@@ -277,6 +283,9 @@ function KanbanCard({
   labels,
   members,
   styles,
+  groupId,
+  isFirstGroupCard,
+  isLastGroupCard,
 }) {
   if (isDragOverlay) {
     return (
@@ -305,6 +314,9 @@ function KanbanCard({
       labels={labels}
       members={members}
       styles={styles}
+      groupId={groupId}
+      isFirstGroupCard={isFirstGroupCard}
+      isLastGroupCard={isLastGroupCard}
     />
   )
 }
@@ -318,6 +330,9 @@ function areKanbanCardPropsEqual(prevProps, nextProps) {
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.onClick === nextProps.onClick
+    && prevProps.groupId === nextProps.groupId
+    && prevProps.isFirstGroupCard === nextProps.isFirstGroupCard
+    && prevProps.isLastGroupCard === nextProps.isLastGroupCard
     && prevProps.styles === nextProps.styles
 }
 

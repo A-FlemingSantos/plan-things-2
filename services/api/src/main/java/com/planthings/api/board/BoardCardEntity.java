@@ -17,6 +17,9 @@ public class BoardCardEntity extends BaseEntity {
   @Column(nullable = false)
   private UUID columnId;
 
+  @Column(name = "group_id")
+  private UUID groupId;
+
   @Column(nullable = false)
   private UUID authorUserId;
 
@@ -58,6 +61,14 @@ public class BoardCardEntity extends BaseEntity {
 
   public void setColumnId(UUID columnId) {
     this.columnId = columnId;
+  }
+
+  public UUID getGroupId() {
+    return groupId;
+  }
+
+  public void setGroupId(UUID groupId) {
+    this.groupId = groupId;
   }
 
   public UUID getAuthorUserId() {

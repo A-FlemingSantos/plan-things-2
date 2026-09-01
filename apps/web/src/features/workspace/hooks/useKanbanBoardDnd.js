@@ -11,12 +11,14 @@ import {
   createBoardDragCollisionState,
 } from './boardCollisionDetection.js'
 import {
+  applyCardDropToColumns,
   applyDragOverToColumns,
   findCardIndex,
   findColumnIdForItem,
   isColumnId,
   KANBAN_INBOX_DROP_ID,
   reorderColumnsByDrag,
+  resolveOverIndex,
 } from './boardDnDUtils.js'
 
 const DRAG_TYPE_CARD = 'card'
@@ -24,6 +26,21 @@ const DRAG_TYPE_COLUMN = 'column'
 
 function getDragType(active) {
   return active?.data?.current?.type ?? DRAG_TYPE_CARD
+}
+
+function getCardGroupId(columns, cardId) {
+  for (const column of columns) {
+    if (!column.cards.some((card) => card.id === cardId)) {
+      continue
+    }
+
+    const group = (column.groups ?? []).find((item) => (
+      Array.isArray(item.cardIds) && item.cardIds.includes(cardId)
+    ))
+    return group?.id ?? null
+  }
+
+  return null
 }
 
 export function useKanbanBoardDnd({
@@ -41,9 +58,12 @@ export function useKanbanBoardDnd({
   const [activeColumnId, setActiveColumnId] = useState(null)
   const [isInboxDropActive, setIsInboxDropActive] = useState(false)
   const [dragOverColumnId, setDragOverColumnId] = useState(null)
+  const [groupDropPreview, setGroupDropPreview] = useState(null)
+  const [dragPreviewCardIdsByColumn, setDragPreviewCardIdsByColumn] = useState(null)
   const columnsRef = useRef(columns)
   const dragColumnsRef = useRef(columns)
   const dragStartSnapshotRef = useRef(null)
+  const dragPreviewSignatureRef = useRef(null)
   const dragCollisionStateRef = useRef(createBoardDragCollisionState())
 
   columnsRef.current = columns
@@ -117,7 +137,10 @@ export function useKanbanBoardDnd({
 
     dragStartSnapshotRef.current = columnsRef.current
     dragColumnsRef.current = columnsRef.current
+    dragPreviewSignatureRef.current = null
     dragCollisionStateRef.current.reset()
+    setGroupDropPreview(null)
+    setDragPreviewCardIdsByColumn(null)
 
     if (dragType === DRAG_TYPE_COLUMN) {
       setActiveColumnId(String(active.id))
@@ -146,12 +169,18 @@ export function useKanbanBoardDnd({
     if (!over) {
       setIsInboxDropActive(false)
       setDragOverColumnId(pointerColumnId)
+      setGroupDropPreview(null)
+      dragPreviewSignatureRef.current = null
+      setDragPreviewCardIdsByColumn(null)
       return
     }
 
     if (over.id === KANBAN_INBOX_DROP_ID) {
       setIsInboxDropActive(true)
       setDragOverColumnId(null)
+      setGroupDropPreview(null)
+      dragPreviewSignatureRef.current = null
+      setDragPreviewCardIdsByColumn(null)
       return
     }
 
@@ -160,7 +189,53 @@ export function useKanbanBoardDnd({
 
     const activeId = String(active.id)
     const overId = String(over.id)
-    const { columns: nextColumns, changed } = applyDragOverToColumns(
+    const dropIntent = dragCollisionStateRef.current.getDropIntent()
+    const sourceColumns = dragStartSnapshotRef.current ?? dragColumnsRef.current
+    const sourceGroupId = getCardGroupId(sourceColumns, activeId)
+    const sourceColumnId = findColumnIdForItem(sourceColumns, activeId)
+    const targetGroupId = dropIntent?.targetGroupId ?? null
+    const targetColumnId = findColumnIdForItem(sourceColumns, overId)
+    setGroupDropPreview(null)
+
+    const isGroupTransaction = Boolean(
+      sourceGroupId || targetGroupId || dropIntent?.kind === 'before-group',
+    )
+    if (isGroupTransaction) {
+      const targetPosition = targetColumnId
+        ? resolveOverIndex(sourceColumns, columnIds, overId, targetColumnId)
+        : -1
+      if (!sourceColumnId || targetPosition < 0) {
+        return
+      }
+
+      const projectedColumns = applyCardDropToColumns(
+        sourceColumns,
+        activeId,
+        sourceColumnId,
+        targetColumnId,
+        targetPosition,
+        targetGroupId,
+      )
+      const previewSignature = projectedColumns
+        .map((column) => `${column.id}:${column.cards.map((card) => card.id).join(',')}`)
+        .join('|')
+      if (dragPreviewSignatureRef.current === previewSignature) {
+        return
+      }
+
+      dragPreviewSignatureRef.current = previewSignature
+      setDragPreviewCardIdsByColumn(Object.fromEntries(
+        projectedColumns.map((column) => [
+          column.id,
+          column.cards.map((card) => card.id),
+        ]),
+      ))
+      return
+    }
+
+    dragPreviewSignatureRef.current = null
+    setDragPreviewCardIdsByColumn(null)
+    const { columns: reorderedColumns, changed } = applyDragOverToColumns(
       dragColumnsRef.current,
       columnIds,
       activeId,
@@ -171,9 +246,9 @@ export function useKanbanBoardDnd({
       return
     }
 
-    dragColumnsRef.current = nextColumns
-    columnsRef.current = nextColumns
-    updateColumns(() => nextColumns)
+    dragColumnsRef.current = reorderedColumns
+    columnsRef.current = reorderedColumns
+    updateColumns(() => reorderedColumns)
   }, [columnIds, updateColumns])
 
   const handleDragOver = useCallback((event) => {
@@ -186,11 +261,14 @@ export function useKanbanBoardDnd({
 
   const resetDragState = useCallback(() => {
     dragStartSnapshotRef.current = null
+    dragPreviewSignatureRef.current = null
     resetDragCollisionState()
     setActiveCardId(null)
     setActiveColumnId(null)
     setIsInboxDropActive(false)
     setDragOverColumnId(null)
+    setGroupDropPreview(null)
+    setDragPreviewCardIdsByColumn(null)
   }, [resetDragCollisionState])
 
   const handleDragCancel = useCallback(() => {
@@ -234,7 +312,7 @@ export function useKanbanBoardDnd({
     }
   }, [activePlanId, isBackendDriven, onReorderError, reorderColumns, updateColumns])
 
-  const handleCardDragEnd = useCallback(async ({ active, over }, snapshot) => {
+  const handleCardDragEnd = useCallback(async ({ active, over }, snapshot, dropIntent) => {
     const cardId = String(active.id)
 
     if (!over) {
@@ -261,7 +339,12 @@ export function useKanbanBoardDnd({
     }
 
     const finalColumns = columnsRef.current
-    const targetColumnId = findColumnIdForItem(finalColumns, String(over.id))
+    const sourceColumns = snapshot ?? finalColumns
+    const sourceGroupId = getCardGroupId(sourceColumns, cardId)
+    const targetGroupId = dropIntent?.targetGroupId ?? null
+    const isGroupTransaction = Boolean(sourceGroupId || targetGroupId)
+    const targetColumns = isGroupTransaction ? sourceColumns : finalColumns
+    const targetColumnId = findColumnIdForItem(targetColumns, String(over.id))
 
     if (!targetColumnId) {
       if (snapshot) {
@@ -272,7 +355,9 @@ export function useKanbanBoardDnd({
       return
     }
 
-    const targetPosition = findCardIndex(finalColumns, targetColumnId, cardId)
+    const targetPosition = isGroupTransaction
+      ? resolveOverIndex(targetColumns, columnIds, String(over.id), targetColumnId)
+      : findCardIndex(finalColumns, targetColumnId, cardId)
     if (targetPosition === -1) {
       if (snapshot) {
         dragColumnsRef.current = snapshot
@@ -282,17 +367,16 @@ export function useKanbanBoardDnd({
       return
     }
 
-    const sourceColumnId = snapshot
-      ? findColumnIdForItem(snapshot, cardId)
-      : findColumnIdForItem(finalColumns, cardId)
+    const sourceColumnId = findColumnIdForItem(sourceColumns, cardId)
     const sourcePosition = snapshot && sourceColumnId
       ? findCardIndex(snapshot, sourceColumnId, cardId)
       : -1
 
     const movedBetweenColumns = sourceColumnId && sourceColumnId !== targetColumnId
     const changedPosition = sourcePosition !== targetPosition
+    const changedMembership = sourceGroupId !== targetGroupId
 
-    if (!movedBetweenColumns && !changedPosition) {
+    if (!movedBetweenColumns && !changedPosition && !changedMembership) {
       return
     }
 
@@ -301,9 +385,22 @@ export function useKanbanBoardDnd({
     }
 
     const previousColumns = finalColumns
+    if (isGroupTransaction) {
+      const optimisticColumns = applyCardDropToColumns(
+        sourceColumns,
+        cardId,
+        sourceColumnId,
+        targetColumnId,
+        targetPosition,
+        targetGroupId,
+      )
+      dragColumnsRef.current = optimisticColumns
+      columnsRef.current = optimisticColumns
+      updateColumns(() => optimisticColumns)
+    }
 
     try {
-      await moveCard(cardId, targetColumnId, targetPosition)
+      await moveCard(cardId, targetColumnId, targetPosition, targetGroupId)
     } catch (error) {
       const rollbackColumns = snapshot ?? previousColumns
       dragColumnsRef.current = rollbackColumns
@@ -316,19 +413,23 @@ export function useKanbanBoardDnd({
   const handleDragEnd = useCallback(async (event) => {
     const dragType = getDragType(event.active)
     const snapshot = dragStartSnapshotRef.current
+    const dropIntent = dragCollisionStateRef.current.getDropIntent()
     dragStartSnapshotRef.current = null
+    dragPreviewSignatureRef.current = null
     resetDragCollisionState()
     setActiveCardId(null)
     setActiveColumnId(null)
     setIsInboxDropActive(false)
     setDragOverColumnId(null)
+    setGroupDropPreview(null)
+    setDragPreviewCardIdsByColumn(null)
 
     if (dragType === DRAG_TYPE_COLUMN) {
       await handleColumnDragEnd(event, snapshot)
       return
     }
 
-    await handleCardDragEnd(event, snapshot)
+    await handleCardDragEnd(event, snapshot, dropIntent)
   }, [handleCardDragEnd, handleColumnDragEnd, resetDragCollisionState])
 
   return {
@@ -339,6 +440,8 @@ export function useKanbanBoardDnd({
     activeDragCard: activeCard,
     activeDragColumn,
     dragOverColumnId,
+    groupDropPreview,
+    dragPreviewCardIdsByColumn,
     isInboxDropActive,
     handleDragStart,
     handleDragOver,

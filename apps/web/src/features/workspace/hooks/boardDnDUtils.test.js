@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyCardDropToColumns,
   applyDragOverToColumns,
+  columnGroupBeforeDropId,
   findCardIndex,
   findColumnIdForItem,
   moveCardInColumns,
   moveCardToIndex,
   reorderCardWithinColumn,
   reorderColumnsByDrag,
+  resolveOverIndex,
 } from './boardDnDUtils.js'
 
 function buildColumns() {
@@ -35,6 +38,54 @@ describe('boardDnDUtils', () => {
     const columns = buildColumns()
     expect(findColumnIdForItem(columns, 'card-2')).toBe('col-1')
     expect(findColumnIdForItem(columns, 'col-2')).toBe('col-2')
+  })
+
+  it('resolves the group boundary to its first member position', () => {
+    const columns = [{
+      ...buildColumns()[0],
+      groups: [{
+        id: 'group-1',
+        startCardId: 'card-2',
+        cardIds: ['card-2', 'card-3'],
+      }],
+    }, buildColumns()[1]]
+    const boundaryId = columnGroupBeforeDropId('col-1', 'group-1')
+
+    expect(findColumnIdForItem(columns, boundaryId)).toBe('col-1')
+    expect(resolveOverIndex(columns, ['col-1', 'col-2'], boundaryId, 'col-1')).toBe(1)
+  })
+
+  it('projects a grouped drop atomically with its final membership and order', () => {
+    const columns = [{
+      ...buildColumns()[0],
+      groups: [{
+        id: 'group-1',
+        startCardId: 'card-2',
+        endCardId: 'card-3',
+        cardIds: ['card-2', 'card-3'],
+      }],
+    }, buildColumns()[1]]
+
+    const reordered = applyCardDropToColumns(
+      columns,
+      'card-3',
+      'col-1',
+      'col-1',
+      1,
+      'group-1',
+    )
+    const detached = applyCardDropToColumns(
+      columns,
+      'card-2',
+      'col-1',
+      'col-1',
+      1,
+      null,
+    )
+
+    expect(reordered[0].cards.map((card) => card.id)).toEqual(['card-1', 'card-3', 'card-2'])
+    expect(reordered[0].groups[0].cardIds).toEqual(['card-3', 'card-2'])
+    expect(detached[0].groups[0].cardIds).toEqual(['card-3'])
   })
 
   it('moves a card to an explicit index in another column', () => {

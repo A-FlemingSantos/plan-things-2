@@ -1,6 +1,10 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { applyDragOverToColumns, reorderColumnsByDrag } from './boardDnDUtils.js'
+import {
+  applyDragOverToColumns,
+  columnGroupBeforeDropId,
+  reorderColumnsByDrag,
+} from './boardDnDUtils.js'
 import { useKanbanBoardDnd } from './useKanbanBoardDnd.js'
 
 function createDeferred() {
@@ -84,7 +88,7 @@ describe('useKanbanBoardDnd', () => {
       await dragEndPromise
     })
 
-    expect(moveCard).toHaveBeenCalledWith('card-1', 'col-2', 0)
+    expect(moveCard).toHaveBeenCalledWith('card-1', 'col-2', 0, null)
   })
 
   it('restores the board when the backend move fails', async () => {
@@ -196,6 +200,134 @@ describe('useKanbanBoardDnd', () => {
 
     expect(updateColumns).toHaveBeenCalled()
     expect(columns[1].cards.map((card) => card.id)).toEqual(['card-1'])
+  })
+
+  it('projects the common sort order without changing group membership during drag-over', () => {
+    let columns = [{
+      id: 'col-1',
+      title: 'Backlog',
+      cards: [
+        { id: 'card-1', title: 'Card 1', columnId: 'col-1' },
+        { id: 'card-2', title: 'Card 2', columnId: 'col-1' },
+        { id: 'card-3', title: 'Card 3', columnId: 'col-1' },
+      ],
+      groups: [{ id: 'group-1', cardIds: ['card-2', 'card-3'] }],
+    }]
+    const updateColumns = vi.fn((updater) => {
+      columns = typeof updater === 'function' ? updater(columns) : updater
+    })
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns,
+      moveCard: vi.fn(),
+      reorderColumns: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: { id: 'card-2' } })
+      result.current.handleDragOver({
+        active: { id: 'card-2' },
+        over: { id: 'card-1' },
+      })
+    })
+
+    expect(updateColumns).not.toHaveBeenCalled()
+    expect(columns[0].cards.map((card) => card.id)).toEqual(['card-1', 'card-2', 'card-3'])
+    expect(columns[0].groups[0].cardIds).toEqual(['card-2', 'card-3'])
+    expect(result.current.groupDropPreview).toBeNull()
+    expect(result.current.dragPreviewCardIdsByColumn).toEqual({
+      'col-1': ['card-2', 'card-1', 'card-3'],
+    })
+  })
+
+  it('persists a group-card drop from its stable drag snapshot', async () => {
+    const columns = [{
+      id: 'col-1',
+      title: 'Backlog',
+      cards: [
+        { id: 'card-1', title: 'Card 1', columnId: 'col-1' },
+        { id: 'card-2', title: 'Card 2', columnId: 'col-1' },
+        { id: 'card-3', title: 'Card 3', columnId: 'col-1' },
+      ],
+      groups: [{ id: 'group-1', cardIds: ['card-2', 'card-3'] }],
+    }]
+    const moveCard = vi.fn(() => Promise.resolve(true))
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns: vi.fn(),
+      moveCard,
+      reorderColumns: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: { id: 'card-2' } })
+      result.current.handleDragOver({
+        active: { id: 'card-2' },
+        over: { id: 'card-1' },
+      })
+    })
+
+    await act(async () => {
+      await result.current.handleDragEnd({
+        active: { id: 'card-2' },
+        over: { id: 'card-1' },
+      })
+    })
+
+    expect(moveCard).toHaveBeenCalledWith('card-2', 'col-1', 0, null)
+  })
+
+  it('detaches a group card when it is dropped on the group boundary', async () => {
+    const columns = [{
+      id: 'col-1',
+      title: 'Backlog',
+      cards: [
+        { id: 'card-1', title: 'Card 1', columnId: 'col-1' },
+        { id: 'card-2', title: 'Card 2', columnId: 'col-1' },
+        { id: 'card-3', title: 'Card 3', columnId: 'col-1' },
+      ],
+      groups: [{ id: 'group-1', startCardId: 'card-2', cardIds: ['card-2', 'card-3'] }],
+    }]
+    let previewColumns = columns
+    const moveCard = vi.fn(() => Promise.resolve(true))
+    const updateColumns = vi.fn((updater) => {
+      previewColumns = typeof updater === 'function' ? updater(previewColumns) : updater
+    })
+
+    const { result } = renderHook(() => useKanbanBoardDnd({
+      activePlanId: 'plan-1',
+      columns,
+      updateColumns,
+      moveCard,
+      reorderColumns: vi.fn(),
+      isBackendDriven: true,
+    }))
+
+    act(() => {
+      result.current.handleDragStart({ active: { id: 'card-2' } })
+      result.current.handleDragOver({
+        active: { id: 'card-2' },
+        over: { id: columnGroupBeforeDropId('col-1', 'group-1') },
+      })
+    })
+
+    expect(previewColumns[0].groups[0].cardIds).toEqual(['card-2', 'card-3'])
+
+    await act(async () => {
+      await result.current.handleDragEnd({
+        active: { id: 'card-2' },
+        over: { id: columnGroupBeforeDropId('col-1', 'group-1') },
+      })
+    })
+
+    expect(moveCard).toHaveBeenCalledWith('card-2', 'col-1', 1, null)
+    expect(previewColumns[0].groups[0].cardIds).toEqual(['card-3'])
   })
 
   it('marks inbox as active during drag-over on inbox target', () => {

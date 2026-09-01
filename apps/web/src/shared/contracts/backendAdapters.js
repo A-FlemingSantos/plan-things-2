@@ -545,9 +545,13 @@ function mapBoardColumnGroups(groups) {
 
     return [{
       id: group.id,
+      uiKey: typeof group.uiKey === 'string' && group.uiKey ? group.uiKey : `group-ui-${group.id}`,
       title: typeof group.title === 'string' ? group.title : '',
       startCardId: group.startCardId,
       endCardId: group.endCardId || group.startCardId,
+      cardIds: Array.isArray(group.cardIds)
+        ? Array.from(new Set(group.cardIds.filter(Boolean).map(String)))
+        : [],
       collapsed: Boolean(group.collapsed),
     }]
   })

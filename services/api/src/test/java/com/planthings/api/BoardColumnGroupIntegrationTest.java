@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -185,6 +186,57 @@ class BoardColumnGroupIntegrationTest extends ApiIntegrationTestSupport {
         .andExpect(jsonPath("$.data.columns[0].groups[0].startCardId").value(secondCardId))
         .andExpect(jsonPath("$.data.columns[0].groups[0].endCardId").value(thirdCardId))
         .andExpect(jsonPath("$.data.columns[0].cards.length()").value(4));
+  }
+
+  @Test
+  void shouldKeepExplicitMembersWhenReorderingAndDetachingCards() throws Exception {
+    String token = registerAndGetToken("Owner", "owner-members@example.com", "12345678");
+    String planId = createPlan(token, "Plano membros explicitos").path("plan").path("id").asText();
+    String columnId = createBoardColumn(token, planId, "Backlog");
+    createBoardCard(token, planId, columnId, "Cartao A");
+    String secondCardId = createBoardCard(token, planId, columnId, "Cartao B");
+    String thirdCardId = createBoardCard(token, planId, columnId, "Cartao C");
+    String fourthCardId = createBoardCard(token, planId, columnId, "Cartao D");
+
+    JsonNode board = readJson(mockMvc.perform(post("/api/plans/" + planId + "/board/columns/" + columnId + "/groups")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                { "startCardId": "%s" }
+                """.formatted(secondCardId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].groups[0].cardIds.length()").value(3))
+        .andReturn()).path("data");
+    String groupId = board.path("columns").get(0).path("groups").get(0).path("id").asText();
+
+    mockMvc.perform(put("/api/plans/" + planId + "/board/cards/" + thirdCardId + "/move")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                { "targetColumnId": "%s", "targetPosition": 1, "targetGroupId": "%s" }
+                """.formatted(columnId, groupId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].groups[0].cardIds[0]").value(thirdCardId))
+        .andExpect(jsonPath("$.data.columns[0].groups[0].cardIds[1]").value(secondCardId));
+
+    mockMvc.perform(put("/api/plans/" + planId + "/board/cards/" + thirdCardId + "/move")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                { "targetColumnId": "%s", "targetPosition": 1, "targetGroupId": null }
+                """.formatted(columnId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.columns[0].groups[0].cardIds.length()").value(2))
+        .andExpect(jsonPath("$.data.columns[0].groups[0].cardIds[0]").value(secondCardId));
+
+    mockMvc.perform(put("/api/plans/" + planId + "/board/cards/" + thirdCardId + "/move")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                { "targetColumnId": "%s", "targetPosition": 2, "targetGroupId": null }
+                """.formatted(columnId)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error.code").value("POSICAO_EM_AGRUPAMENTO"));
   }
 
   private String createBoardCard(String token, String planId, String columnId, String title) throws Exception {
