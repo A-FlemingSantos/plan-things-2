@@ -169,8 +169,37 @@
 }
 
 .roleCycleButton:hover:not(:disabled) {
-  background: var(--hover);
   color: var(--text-1);
+}
+
+.roleCycleButtonMember {
+  background: color-mix(in srgb, var(--color-red) 24%, var(--surface-2));
+  color: var(--color-red);
+}
+
+.roleCycleButtonMember:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-red) 34%, var(--surface-2));
+  color: var(--color-red);
+}
+
+.roleCycleButtonObserver {
+  background: color-mix(in srgb, var(--color-green) 38%, var(--surface-2));
+  color: #4ade80;
+}
+
+.roleCycleButtonObserver:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-green) 48%, var(--surface-2));
+  color: #4ade80;
+}
+
+.roleCycleButtonAdmin {
+  background: color-mix(in srgb, var(--color-blue) 24%, var(--surface-2));
+  color: var(--color-blue);
+}
+
+.roleCycleButtonAdmin:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-blue) 34%, var(--surface-2));
+  color: var(--color-blue);
 }
 
 .roleCycleButton:focus-visible {

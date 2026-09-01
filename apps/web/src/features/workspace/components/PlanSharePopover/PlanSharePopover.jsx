@@ -24,6 +24,12 @@ const SHARE_ROLE_ICONS = {
   ADMIN: Shield,
 }
 
+const SHARE_ROLE_BUTTON_CLASS = {
+  MEMBER: 'roleCycleButtonMember',
+  OBSERVER: 'roleCycleButtonObserver',
+  ADMIN: 'roleCycleButtonAdmin',
+}
+
 function ShareRoleCycleButton({
   value,
   onChange,
@@ -34,11 +40,12 @@ function ShareRoleCycleButton({
 }) {
   const option = getShareRoleOption(value)
   const Icon = SHARE_ROLE_ICONS[option.value] ?? PenLine
+  const roleClassName = styles[SHARE_ROLE_BUTTON_CLASS[option.value]] ?? ''
 
   return (
     <button
       type="button"
-      className={className}
+      className={[className, roleClassName].filter(Boolean).join(' ')}
       aria-label={`${ariaLabel}: ${option.label}`}
       title={option.label}
       disabled={disabled}
