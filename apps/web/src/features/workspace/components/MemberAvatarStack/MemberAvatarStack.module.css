@@ -52,7 +52,7 @@
 
 .tooltipHost {
   position: fixed;
-  z-index: calc(var(--z-app-shell-header, 30) + 2);
+  z-index: calc(var(--z-app-shell-overlay, 40) + 1);
   pointer-events: none;
 }
 
