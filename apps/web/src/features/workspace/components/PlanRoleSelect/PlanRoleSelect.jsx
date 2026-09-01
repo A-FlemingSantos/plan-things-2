@@ -1,8 +1,19 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Shield, User } from 'lucide-react'
 import styles from './PlanRoleSelect.module.css'
 
 const MENU_GAP = 6
+
+const ROLE_ICONS = {
+  MEMBER: User,
+  ADMIN: Shield,
+  OWNER: Shield,
+}
+
+function RoleIcon({ role, className }) {
+  const Icon = ROLE_ICONS[role] ?? User
+  return <Icon size={13} strokeWidth={1.75} className={className} aria-hidden="true" />
+}
 
 export default function PlanRoleSelect({
   value,
@@ -10,6 +21,7 @@ export default function PlanRoleSelect({
   options,
   disabled = false,
   ariaLabel = 'Nível de permissão',
+  variant = 'default',
 }) {
   const menuId = useId()
   const fieldRef = useRef(null)
@@ -19,9 +31,10 @@ export default function PlanRoleSelect({
   const [menuStyle, setMenuStyle] = useState(null)
   const selectedOption = options.find((option) => option.value === value) ?? options[0]
   const isInteractive = !disabled && options.length > 1
+  const isInline = variant === 'inline'
 
   useLayoutEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || isInline) {
       setMenuStyle(null)
       return undefined
     }
@@ -59,7 +72,7 @@ export default function PlanRoleSelect({
       window.removeEventListener('resize', updatePosition)
       window.removeEventListener('scroll', updatePosition, true)
     }
-  }, [isOpen, options.length])
+  }, [isOpen, options.length, isInline])
 
   useEffect(() => {
     if (!isOpen) return undefined
@@ -86,12 +99,23 @@ export default function PlanRoleSelect({
   }, [isOpen])
 
   return (
-    <div className={`${styles.wrap} ${isOpen ? styles.wrapOpen : ''}`} ref={fieldRef}>
+    <div
+      className={[
+        styles.wrap,
+        isOpen ? styles.wrapOpen : '',
+        isInline ? styles.wrapInline : '',
+      ].filter(Boolean).join(' ')}
+      ref={fieldRef}
+    >
       <button
         type="button"
         id={menuId}
         ref={triggerRef}
-        className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''}`}
+        className={[
+          styles.trigger,
+          isOpen ? styles.triggerOpen : '',
+          isInline ? styles.triggerInline : '',
+        ].filter(Boolean).join(' ')}
         onClick={() => {
           if (!isInteractive) return
           setIsOpen((open) => !open)
@@ -102,7 +126,10 @@ export default function PlanRoleSelect({
         aria-controls={isInteractive ? `${menuId}-menu` : undefined}
         disabled={disabled}
       >
-        <span className={styles.triggerLabel}>{selectedOption?.label}</span>
+        <span className={styles.triggerContent}>
+          <RoleIcon role={selectedOption?.value} className={styles.triggerIcon} />
+          <span className={styles.triggerLabel}>{selectedOption?.label}</span>
+        </span>
         {isInteractive ? (
           <ChevronDown size={12} strokeWidth={1.75} className={styles.chevron} aria-hidden="true" />
         ) : null}
@@ -112,10 +139,10 @@ export default function PlanRoleSelect({
         <div
           id={`${menuId}-menu`}
           ref={menuRef}
-          className={styles.menu}
+          className={isInline ? styles.menuInline : styles.menu}
           role="listbox"
           aria-label={ariaLabel}
-          style={menuStyle ?? { position: 'fixed', visibility: 'hidden' }}
+          style={isInline ? undefined : (menuStyle ?? { position: 'fixed', visibility: 'hidden' })}
         >
           {options.map((option) => {
             const isSelected = option.value === value
@@ -126,13 +153,20 @@ export default function PlanRoleSelect({
                 type="button"
                 role="option"
                 aria-selected={isSelected}
-                className={`${styles.option} ${isSelected ? styles.optionSelected : ''}`}
+                className={[
+                  styles.option,
+                  isInline ? styles.optionInline : '',
+                  isSelected ? styles.optionSelected : '',
+                ].filter(Boolean).join(' ')}
                 onClick={() => {
                   onChange(option.value)
                   setIsOpen(false)
                 }}
               >
-                <span className={styles.optionLabel}>{option.label}</span>
+                <span className={styles.optionContent}>
+                  <RoleIcon role={option.value} className={styles.optionIcon} />
+                  <span className={styles.optionLabel}>{option.label}</span>
+                </span>
                 {isSelected ? (
                   <Check size={12} strokeWidth={1.75} className={styles.optionCheck} aria-hidden="true" />
                 ) : (

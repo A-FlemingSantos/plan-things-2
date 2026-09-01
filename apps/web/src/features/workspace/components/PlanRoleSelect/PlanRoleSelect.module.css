@@ -3,8 +3,49 @@
   min-width: 0;
 }
 
+.wrapInline {
+  position: relative;
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: stretch;
+  min-width: 104px;
+}
+
+.menuInline {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  min-width: 100%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  animation: roleSelectReveal 160ms var(--ease-out, ease) both;
+}
+
+.optionInline {
+  font-size: 13px;
+}
+
+.optionInline .optionLabel {
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .wrapOpen {
   z-index: 20;
+}
+
+.wrapInline.wrapOpen {
+  z-index: 2;
 }
 
 .trigger {
@@ -28,9 +69,27 @@
   transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 
+.triggerInline {
+  width: 100%;
+  min-width: 104px;
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+}
+
 .trigger:hover:not(:disabled) {
   border-color: var(--border-2, var(--border-1));
   background: var(--hover);
+}
+
+.triggerInline:hover:not(:disabled),
+.triggerInline:focus-visible,
+.triggerInline.triggerOpen {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--hover) 72%, transparent);
 }
 
 .trigger:focus-visible,
@@ -43,6 +102,20 @@
 .trigger:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.triggerContent,
+.optionContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.triggerIcon,
+.optionIcon {
+  flex-shrink: 0;
+  color: var(--text-3);
 }
 
 .triggerLabel {
@@ -106,6 +179,10 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
+.optionSelected .optionIcon {
+  color: var(--text-2);
+}
+
 .option:hover {
   background: var(--hover);
   color: var(--text-1);
@@ -114,6 +191,31 @@
 .optionSelected {
   background: var(--active);
   color: var(--text-1);
+}
+
+.menuInline .optionInline {
+  min-height: 32px;
+  padding: 7px 10px;
+  border-radius: 0;
+}
+
+.menuInline .optionInline + .optionInline {
+  border-top: 1px solid var(--border-1);
+}
+
+.menuInline .optionInline:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.menuInline .optionInline.optionSelected {
+  background: color-mix(in srgb, var(--border-2) 42%, var(--app-bg));
+  color: var(--text-1);
+  border-radius: 0;
+}
+
+.menuInline .optionInline.optionSelected:hover {
+  background: color-mix(in srgb, var(--border-2) 52%, var(--app-bg));
 }
 
 .optionLabel {
@@ -133,7 +235,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .menu {
+  .menu,
+  .menuInline {
     animation: none;
   }
 }

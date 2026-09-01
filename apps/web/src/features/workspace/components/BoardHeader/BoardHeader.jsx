@@ -374,8 +374,6 @@ export default function BoardHeader({
           <PlanSharePopover
             open={isShareOpen}
             plan={sharePlan}
-            members={members}
-            isMembersLoading={isMembersLoading}
             isBackendDriven={isBackendDriven}
             accessToken={accessToken}
             onRefreshPlanDetails={onRefreshPlanDetails}

@@ -74,71 +74,63 @@
 
 .inviteSection {
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  border-bottom: 1px solid var(--border-1);
+  gap: 8px;
+  padding: 10px 12px 12px;
   overflow: visible;
   position: relative;
   z-index: 10;
   flex-shrink: 0;
 }
 
-.inviteRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 108px 32px;
-  gap: 8px;
-  align-items: center;
-}
-
-.emailInput {
-  height: 32px;
-  width: 100%;
-  padding: 0 10px;
+.inviteField {
+  display: flex;
+  align-items: stretch;
+  min-height: 28px;
   border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
-  color: var(--text-1);
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: var(--font-weight-light);
+  overflow: visible;
   transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.emailInput::placeholder {
-  color: var(--text-3);
-}
-
-.emailInput:focus {
-  outline: none;
+.inviteField:focus-within {
   border-color: var(--border-2, var(--border-1));
   background: var(--hover);
 }
 
-.copyLinkButton {
-  all: unset;
-  box-sizing: border-box;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-3);
-  background: var(--surface-2);
-  cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-}
-
-.copyLinkButton:hover:not(:disabled) {
+.inviteEmailInput {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  background: transparent;
   color: var(--text-1);
-  border-color: var(--border-2, var(--border-1));
-  background: var(--hover);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
 }
 
-.copyLinkButton:disabled {
+.inviteEmailInput::placeholder {
+  color: var(--text-3);
+}
+
+.inviteEmailInput:focus {
+  outline: none;
+}
+
+.inviteEmailInput:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.inviteFieldDivider {
+  width: 1px;
+  height: 14px;
+  align-self: center;
+  flex-shrink: 0;
+  background: var(--border-1);
 }
 
 .inviteError {
@@ -168,120 +160,12 @@
   color: var(--text-1);
 }
 
-.membersSection {
-  padding: 12px;
-  min-height: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.membersList {
-  display: grid;
-  gap: 2px;
-  overflow: auto;
-  min-height: 0;
-}
-
-.memberRow {
-  position: relative;
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) 108px;
-  gap: 10px;
-  align-items: center;
-  min-height: 44px;
-  padding: 6px 4px;
-  border-radius: var(--radius-sm);
-}
-
-.memberRoleCell {
-  position: relative;
-  min-width: 0;
-}
-
-.memberRow:hover {
-  background: var(--hover);
-}
-
-.membersTitle {
-  margin: 0 0 10px;
-  font-family: var(--font-family);
-  font-size: 11px;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  flex-shrink: 0;
-}
-
-.memberAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  color: var(--text-inverse);
-  flex-shrink: 0;
-}
-
-.memberAvatarImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.memberInfo {
-  min-width: 0;
-}
-
-.memberName {
-  margin: 0;
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: var(--font-weight-regular);
-  letter-spacing: -0.01em;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.memberEmail {
-  margin: 2px 0 0;
-  font-family: var(--font-family);
-  font-size: 12px;
-  font-weight: var(--font-weight-light);
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.membersState {
-  margin: 0;
-  padding: 8px 4px;
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: var(--font-weight-light);
-  color: var(--text-3);
-}
-
 @media (max-width: 520px) {
   .popover {
     right: auto;
     left: 50%;
     transform: translateX(-50%);
     width: min(360px, calc(100vw - 16px));
-  }
-
-  .inviteRow {
-    grid-template-columns: minmax(0, 1fr) 96px 32px;
   }
 }
 

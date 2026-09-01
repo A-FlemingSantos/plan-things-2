@@ -12,10 +12,6 @@ vi.mock('../../../../shared/api/apiClient.js', () => ({
   apiRequest: (...args) => apiMock.apiRequest(...args),
 }))
 
-vi.mock('../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx', () => ({
-  default: ({ fallback = 'PT' }) => <span>{fallback}</span>,
-}))
-
 vi.mock('../../../../shared/hooks/useAuthenticatedImageUrl.js', () => ({
   useAuthenticatedImageUrl: () => null,
 }))
@@ -40,7 +36,6 @@ function renderPopover(overrides = {}) {
       <PlanSharePopover
         open
         plan={{ id: 'plan-1', name: 'Plano de teste', role: 'OWNER' }}
-        members={[]}
         isBackendDriven
         accessToken="test-token"
         onRefreshPlanDetails={async () => {}}
@@ -56,7 +51,7 @@ describe('PlanSharePopover Gmail gating', () => {
     apiMock.apiRequest.mockReset()
   })
 
-  it('blocks invite copy when Gmail is not connected', async () => {
+  it('blocks invite send when Gmail is not connected', async () => {
     const user = userEvent.setup()
     apiMock.apiRequest.mockResolvedValue({
       integrations: {
@@ -73,12 +68,7 @@ describe('PlanSharePopover Gmail gating', () => {
     )
 
     const emailInput = screen.getByPlaceholderText('E-mail')
-    await user.type(emailInput, 'convidado@example.com')
-
-    const copyButton = screen.getByRole('button', { name: 'Copiar link de convite' })
-    expect(copyButton).toBeDisabled()
-
-    await user.click(copyButton)
+    await user.type(emailInput, 'convidado@example.com{Enter}')
 
     await waitFor(() => {
       expect(apiMock.apiRequest).toHaveBeenCalledTimes(1)
@@ -87,7 +77,7 @@ describe('PlanSharePopover Gmail gating', () => {
     expect(apiMock.apiRequest).not.toHaveBeenCalledWith('/api/plans/plan-1/invites', expect.anything())
   })
 
-  it('allows invite copy when Gmail is connected', async () => {
+  it('allows invite send when Gmail is connected', async () => {
     const user = userEvent.setup()
     apiMock.apiRequest
       .mockResolvedValueOnce({
@@ -97,8 +87,6 @@ describe('PlanSharePopover Gmail gating', () => {
       })
       .mockResolvedValueOnce({ token: 'invite-token-123' })
 
-    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
-
     renderPopover()
 
     await waitFor(() => {
@@ -106,14 +94,7 @@ describe('PlanSharePopover Gmail gating', () => {
     })
 
     const emailInput = screen.getByPlaceholderText('E-mail')
-    await user.type(emailInput, 'convidado@example.com')
-
-    const copyButton = screen.getByRole('button', { name: 'Copiar link de convite' })
-    await waitFor(() => {
-      expect(copyButton).toBeEnabled()
-    })
-
-    await user.click(copyButton)
+    await user.type(emailInput, 'convidado@example.com{Enter}')
 
     await waitFor(() => {
       expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/plans/plan-1/invites', {
