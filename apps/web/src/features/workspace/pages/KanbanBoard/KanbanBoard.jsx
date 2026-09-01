@@ -288,6 +288,8 @@ export default function KanbanBoard() {
     activeDragCard,
     activeDragColumn,
     dragOverColumnId,
+    groupDropPreview,
+    dragPreviewCardIdsByColumn,
     isInboxDropActive,
     handleDragStart,
     handleDragOver,
@@ -612,6 +614,11 @@ export default function KanbanBoard() {
                     key={col.uiKey ?? col.id}
                     col={col}
                     isDropTarget={dragOverColumnId === col.id}
+                    groupDropPreview={(
+                      groupDropPreview?.targetColumnId === col.id
+                      || groupDropPreview?.sourceColumnId === col.id
+                    ) ? groupDropPreview : null}
+                    sortableCardIds={dragPreviewCardIdsByColumn?.[col.id] ?? null}
                     isCompact={compactColumnIds.has(col.id)}
                     onAddCard={addCard}
                     onDeleteCol={handleColumnDelete}

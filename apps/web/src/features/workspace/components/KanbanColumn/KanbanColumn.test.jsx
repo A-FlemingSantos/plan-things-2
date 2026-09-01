@@ -563,6 +563,76 @@ describe('KanbanColumn card groups', () => {
     expect(screen.getByRole('region', { name: 'Sprint' }).className).not.toContain('columnGroupEnter')
   })
 
+  it('shows a non-structural target indicator for a group drop preview', () => {
+    const { container } = renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [
+          { id: 'group-1', title: 'Sprint', startCardId: 'card-2', collapsed: false },
+        ],
+      },
+      groupDropPreview: {
+        cardId: 'card-1',
+        sourceGroupId: null,
+        targetGroupId: 'group-1',
+        beforeGroupId: null,
+        targetColumnId: 'col-1',
+        overId: 'card-2',
+        kind: 'group-interior',
+      },
+    })
+
+    expect(screen.getByRole('region', { name: 'Sprint' }).className).toContain('columnGroupDropPreview')
+    expect(container.querySelector('.cardSlotDropPreview')).toBeTruthy()
+  })
+
+  it('keeps the group section mounted when a dragged card leaves it', () => {
+    const props = buildColumnProps({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards,
+        groups: [{
+          id: 'group-1',
+          title: 'Sprint',
+          startCardId: 'card-2',
+          cardIds: ['card-2', 'card-3'],
+          collapsed: false,
+        }],
+      },
+    })
+    const view = render(
+      <DndContext>
+        <KanbanColumn {...props} />
+      </DndContext>,
+    )
+    const group = screen.getByRole('region', { name: 'Sprint' })
+
+    view.rerender(
+      <DndContext>
+        <KanbanColumn
+          {...props}
+          col={{
+            ...props.col,
+            cards: [cards[1], cards[0], cards[2]],
+            groups: [{
+              ...props.col.groups[0],
+              startCardId: 'card-3',
+              endCardId: 'card-3',
+              cardIds: ['card-3'],
+            }],
+          }}
+        />
+      </DndContext>,
+    )
+
+    expect(screen.getByRole('region', { name: 'Sprint' })).toBe(group)
+  })
+
   it('does not offer a group insert between cards already inside a group', () => {
     renderColumn({
       col: {

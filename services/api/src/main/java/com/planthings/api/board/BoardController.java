@@ -111,7 +111,13 @@ public class BoardController {
 
   @PutMapping("/cards/{cardId}/move")
   public ApiEnvelope<BoardService.BoardView> moveCard(@PathVariable UUID planId, @PathVariable UUID cardId, @Valid @RequestBody MoveCardRequest request) {
-    return ApiEnvelope.ok(boardService.moveCard(planId, cardId, request.targetColumnId(), request.targetPosition()));
+    return ApiEnvelope.ok(boardService.moveCard(
+        planId,
+        cardId,
+        request.targetColumnId(),
+        request.targetPosition(),
+        request.targetGroupId()
+    ));
   }
 
   @DeleteMapping("/cards/{cardId}")
@@ -191,7 +197,7 @@ public class BoardController {
   ) {
   }
 
-  public record MoveCardRequest(UUID targetColumnId, int targetPosition) {
+  public record MoveCardRequest(UUID targetColumnId, int targetPosition, UUID targetGroupId) {
   }
 
   public record InboxSendRequest(List<UUID> recipientUserIds) {

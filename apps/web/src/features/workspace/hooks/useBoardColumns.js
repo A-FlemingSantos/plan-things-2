@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from 'react'
 import { ApiClientError, apiRequest } from '../../../shared/api/apiClient.js'
 import { buildBoardCardPayload, mapBoardCard, mapBoardViewToColumns } from '../../../shared/contracts/backendAdapters.js'
 import {
+  collectInitialGroupCardIds,
   createColumnGroup,
   replaceColumnGroupId,
   removeColumnGroup,
@@ -129,6 +130,14 @@ function mergePersistedCards(currentCards, persistedCards) {
   return sameReferences ? currentCards : nextCards
 }
 
+function mergePersistedGroups(currentGroups, persistedGroups) {
+  const currentById = new Map((currentGroups ?? []).map((group) => [group.id, group]))
+  return (persistedGroups ?? []).map((group) => ({
+    ...group,
+    uiKey: currentById.get(group.id)?.uiKey ?? group.uiKey ?? `group-ui-${group.id}`,
+  }))
+}
+
 function mergePersistedColumnForMove(currentColumn, persistedColumn) {
   if (!currentColumn || !persistedColumn) {
     return currentColumn ?? persistedColumn ?? null
@@ -157,7 +166,9 @@ function mergePersistedColumnForMove(currentColumn, persistedColumn) {
     color: nextColor,
     status: nextStatus,
     cards: nextCards,
-    groups: Array.isArray(persistedColumn.groups) ? persistedColumn.groups : (currentColumn.groups ?? []),
+    groups: Array.isArray(persistedColumn.groups)
+      ? mergePersistedGroups(currentColumn.groups, persistedColumn.groups)
+      : (currentColumn.groups ?? []),
   }
 }
 
@@ -722,7 +733,7 @@ function applyColumnGroupsFromBoardView(columns, boardView, options) {
 
     return {
       ...column,
-      groups: groupsById.get(column.id),
+      groups: mergePersistedGroups(column.groups, groupsById.get(column.id)),
     }
   })
 }
@@ -1278,7 +1289,7 @@ export function useBoardColumns({
     return mappedComment
   }, [accessToken, activePlanId, isBackendDriven, updateColumns])
 
-  const moveCard = useCallback(async (cardId, targetColumnId, targetPosition) => {
+  const moveCard = useCallback(async (cardId, targetColumnId, targetPosition, targetGroupId = null) => {
     if (!activePlanId) return
 
     if (!isBackendDriven) {
@@ -1291,6 +1302,7 @@ export function useBoardColumns({
       body: {
         targetColumnId,
         targetPosition,
+        targetGroupId,
       },
     })
 
@@ -1488,9 +1500,11 @@ export function useBoardColumns({
     }
 
     const column = columns.find((item) => item.id === columnId)
+    const cardIds = collectInitialGroupCardIds(column?.cards, column?.groups, startCardId)
     const optimisticGroup = createColumnGroup({
       startCardId,
-      endCardId: resolveGroupEndCardId(column?.cards, column?.groups, startCardId),
+      endCardId: cardIds.at(-1) ?? resolveGroupEndCardId(column?.cards, column?.groups, startCardId),
+      cardIds,
     })
     if (!optimisticGroup) {
       return null

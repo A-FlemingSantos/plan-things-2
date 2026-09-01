@@ -164,6 +164,7 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 }))
 
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
+  kanbanDropAnimation: undefined,
   default: ({ col }) => (
     <section aria-label={col.title}>
       {col.cards.map((card) => (

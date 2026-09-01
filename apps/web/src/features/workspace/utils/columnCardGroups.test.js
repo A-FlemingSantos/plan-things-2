@@ -48,6 +48,32 @@ describe('columnCardGroups', () => {
     ])
   })
 
+  it('never splits the same group into two sections around a loose card', () => {
+    const cardsWithLooseMiddle = [
+      cards[0],
+      cards[1],
+      { id: 'outside', title: 'Fora' },
+      cards[2],
+      cards[3],
+    ]
+    const segments = buildColumnListSegments(cardsWithLooseMiddle, [{
+      id: 'g1',
+      title: 'Membros explícitos',
+      startCardId: 'b',
+      endCardId: 'c',
+      cardIds: ['b', 'c'],
+    }])
+
+    expect(segments.filter((segment) => segment.type === 'group')).toHaveLength(1)
+    expect(segments[1]).toEqual(expect.objectContaining({
+      type: 'group',
+      cards: [cards[1]],
+    }))
+    expect(segments.flatMap((segment) => (
+      segment.type === 'loose' ? segment.cards.map((card) => card.id) : []
+    ))).toEqual(expect.arrayContaining(['outside', 'c']))
+  })
+
   it('leaves cards loose when a later group is removed', () => {
     const groups = [
       { id: 'g1', startCardId: 'b', endCardId: 'c' },

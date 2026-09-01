@@ -19,12 +19,13 @@ import AddCardComposer from '../AddCardComposer/AddCardComposer.jsx'
 import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard, { KanbanCardView } from '../KanbanCard/KanbanCard.jsx'
 import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
-import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
+import { columnCardStackDropId, columnGroupBeforeDropId } from '../../hooks/boardDnDUtils.js'
 import {
   buildColumnListSegments,
   canInsertColumnGroupAfter,
   collapsedCardIdsFromGroups,
   nextCardIdAfter,
+  normalizeColumnGroups,
 } from '../../utils/columnCardGroups.js'
 
 const ICON_SIZE = 13
@@ -36,10 +37,10 @@ export const COLUMN_DRAG_OVERLAY_HEIGHT_MS = 300
 const CARD_DRAG_OVERLAY_DROP_MS = 180
 const columnDragOverlayHeightById = new Map()
 
-function startCardKeysFromGroups(groups) {
+function groupKeysFromGroups(groups) {
   return new Set(
     (Array.isArray(groups) ? groups : [])
-      .map((group) => group?.startCardId)
+      .map((group) => group?.uiKey ?? group?.id)
       .filter(Boolean),
   )
 }
@@ -57,7 +58,7 @@ function sameKeySet(left, right) {
 }
 
 function useEnteringColumnGroupKeys(groups, enabled) {
-  const currentKeys = startCardKeysFromGroups(groups)
+  const currentKeys = groupKeysFromGroups(groups)
   const [prevKeys, setPrevKeys] = useState(currentKeys)
   const [enteringKeys, setEnteringKeys] = useState(() => new Set())
 
@@ -264,6 +265,34 @@ function ColumnGroupInsertButton({ styles, onClick }) {
   )
 }
 
+function ColumnGroupBeforeDropTarget({
+  columnId,
+  groupId,
+  disabled,
+  styles,
+  children,
+}) {
+  const { setNodeRef } = useDroppable({
+    id: columnGroupBeforeDropId(columnId, groupId),
+    data: {
+      type: 'group-before',
+      columnId,
+      groupId,
+    },
+    disabled,
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={styles.columnGroupHeader}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      {children}
+    </div>
+  )
+}
+
 function ColumnStatusIcon({ option, className }) {
   const Icon = STATUS_ICONS[option.icon]
 
@@ -285,6 +314,8 @@ function ColumnStatusIcon({ option, className }) {
 export function KanbanColumnView({
   col,
   isDropTarget = false,
+  groupDropPreview = null,
+  sortableCardIds = null,
   isDragging = false,
   isDragOverlay = false,
   isCompact = false,
@@ -335,15 +366,12 @@ export function KanbanColumnView({
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
   const isComposerOpen = addingCard || isAddingCard || lockedCardsHeight != null
   const hasColumnColor = Boolean(col.color?.trim())
-  const columnGroups = col.groups ?? []
+  const columnGroups = normalizeColumnGroups(col.groups)
   const [enteringGroupKeys, clearEnteringGroupKey] = useEnteringColumnGroupKeys(
     columnGroups,
     !isDragOverlay,
   )
   const hiddenCardIds = collapsedCardIdsFromGroups(col.cards, columnGroups)
-  const cardIds = col.cards
-    .filter((card) => !hiddenCardIds.has(card.id))
-    .map((card) => card.id)
   const listSegments = buildColumnListSegments(col.cards, columnGroups)
 
   const { setNodeRef: setCardStackDropRef } = useDroppable({
@@ -514,7 +542,7 @@ export function KanbanColumnView({
 
   useLayoutEffect(() => {
     const untitled = columnGroups.find((group) => (
-      enteringGroupKeys.has(group.startCardId) && !String(group.title ?? '').trim()
+      enteringGroupKeys.has(group.uiKey ?? group.id) && !String(group.title ?? '').trim()
     ))
     if (!untitled || editingGroupId === untitled.id) {
       return
@@ -553,7 +581,12 @@ export function KanbanColumnView({
     }
   }
 
-  const renderCardNode = (card) => {
+  const renderCardNode = (
+    card,
+    group = null,
+    isFirstGroupCard = false,
+    isLastGroupCard = false,
+  ) => {
     if (isDragOverlay) {
       return (
         <KanbanCardView
@@ -564,6 +597,8 @@ export function KanbanColumnView({
           labels={labels}
           members={members}
           styles={styles}
+          groupId={group?.id ?? null}
+          isFirstGroupCard={isFirstGroupCard}
         />
       )
     }
@@ -580,20 +615,44 @@ export function KanbanColumnView({
         labels={labels}
         members={members}
         styles={styles}
+        groupId={group?.id ?? null}
+        isFirstGroupCard={isFirstGroupCard}
+        isLastGroupCard={isLastGroupCard}
       />
     )
   }
 
-  const renderCardSlot = (card, allowInsert) => {
+  const renderCardSlot = (
+    card,
+    allowInsert,
+    group = null,
+    isFirstGroupCard = false,
+    isLastGroupCard = false,
+  ) => {
     const showInsert = Boolean(
       allowInsert
       && !isDragOverlay
       && canInsertColumnGroupAfter(col.cards, columnGroups, card.id),
     )
+    const isDropPreviewTarget = (
+      groupDropPreview?.targetColumnId === col.id
+      && groupDropPreview.overId === card.id
+    )
+    const isDropPreviewSource = (
+      groupDropPreview?.sourceColumnId === col.id
+      && groupDropPreview.cardId === card.id
+    )
 
     return (
-      <div key={card.uiKey ?? card.id} className={styles.cardSlot}>
-        {renderCardNode(card)}
+      <div
+        key={card.uiKey ?? card.id}
+        className={`
+          ${styles.cardSlot}
+          ${isDropPreviewTarget ? styles.cardSlotDropPreview : ''}
+          ${isDropPreviewSource ? styles.cardSlotDragPreviewSource : ''}
+        `}
+      >
+        {renderCardNode(card, group, isFirstGroupCard, isLastGroupCard)}
         {showInsert ? (
           <ColumnGroupInsertButton
             styles={styles}
@@ -613,26 +672,47 @@ export function KanbanColumnView({
     const expanded = !group.collapsed
     const groupTitle = group.title.trim()
     const groupA11yLabel = groupTitle || 'Agrupamento'
-    const isEntering = Boolean(group.startCardId && enteringGroupKeys.has(group.startCardId))
+    const groupUiKey = group.uiKey ?? group.id
+    const isEntering = Boolean(groupUiKey && enteringGroupKeys.has(groupUiKey))
     const isEditingTitle = editingGroupId === group.id || (isEntering && !groupTitle)
+    const isGroupPreviewTarget = (
+      groupDropPreview?.targetColumnId === col.id
+      && groupDropPreview.targetGroupId === group.id
+    )
+    const isGroupPreviewBefore = (
+      groupDropPreview?.targetColumnId === col.id
+      && groupDropPreview.beforeGroupId === group.id
+    )
+    const isGroupPreviewSource = (
+      groupDropPreview?.sourceGroupId === group.id
+      && groupDropPreview.targetGroupId !== group.id
+    )
 
     return (
       <section
-        key={group.startCardId || group.id}
-        className={`${styles.columnGroup} ${isEntering ? styles.columnGroupEnter : ''}`}
+        key={groupUiKey}
+        className={`
+          ${styles.columnGroup}
+          ${isEntering ? styles.columnGroupEnter : ''}
+          ${isGroupPreviewTarget ? styles.columnGroupDropPreview : ''}
+          ${isGroupPreviewBefore ? styles.columnGroupBeforePreview : ''}
+          ${isGroupPreviewSource ? styles.columnGroupSourcePreview : ''}
+        `}
         aria-label={groupA11yLabel}
         onAnimationEnd={(event) => {
           if (!isEntering || !String(event.animationName).includes('ChromeEmerge')) {
             return
           }
-          clearEnteringGroupKey(group.startCardId)
+          clearEnteringGroupKey(groupUiKey)
         }}
       >
         <div className={styles.columnGroupHeaderReveal}>
           <div className={styles.columnGroupHeaderRevealInner}>
-            <div
-              className={styles.columnGroupHeader}
-              onPointerDown={(event) => event.stopPropagation()}
+            <ColumnGroupBeforeDropTarget
+              columnId={col.id}
+              groupId={group.id}
+              disabled={isDragOverlay}
+              styles={styles}
             >
               <button
                 type="button"
@@ -692,7 +772,7 @@ export function KanbanColumnView({
                   <Minus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
                 </button>
               ) : null}
-            </div>
+            </ColumnGroupBeforeDropTarget>
           </div>
         </div>
         <div
@@ -702,7 +782,15 @@ export function KanbanColumnView({
         >
           <div className={styles.columnGroupExpandInner}>
             <div className={styles.columnGroupBody}>
-              {segment.cards.map((card) => renderCardSlot(card, false))}
+              {segment.cards.map((card, index) => (
+                renderCardSlot(
+                  card,
+                  false,
+                  group,
+                  index === 0,
+                  index === segment.cards.length - 1,
+                )
+              ))}
             </div>
           </div>
         </div>
@@ -837,27 +925,35 @@ export function KanbanColumnView({
         <div
           className={`${styles.colCards} ${col.cards.length === 0 ? styles.colCardsEmpty : ''}`}
         >
-          {renderListSegments(false)}
+          <SortableContext
+            items={sortableCardIds ?? col.cards.map((card) => card.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {renderListSegments(false)}
+          </SortableContext>
         </div>
       ) : !isCompact ? (
         <>
-          <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-            <div
-              ref={cardsScrollRef}
-              className={`${styles.colCardsScroll} ${isEmptyColumn ? styles.colCardsScrollEmpty : ''} ${lockedCardsHeight != null ? styles.colCardsScrollLocked : ''}`}
-              style={lockedCardsHeight != null ? { height: lockedCardsHeight } : undefined}
+          <div
+            ref={cardsScrollRef}
+            className={`${styles.colCardsScroll} ${isEmptyColumn ? styles.colCardsScrollEmpty : ''} ${lockedCardsHeight != null ? styles.colCardsScrollLocked : ''}`}
+            style={lockedCardsHeight != null ? { height: lockedCardsHeight } : undefined}
+          >
+            <CustomScrollArea
+              className={styles.colCardsScrollArea}
+              viewportClassName={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
+              viewportRef={setCardStackDropRef}
+              enabled={col.cards.length > 0}
+              refreshKey={`${col.id}:${col.cards.length}:${lockedCardsHeight ?? 'auto'}`}
             >
-              <CustomScrollArea
-                className={styles.colCardsScrollArea}
-                viewportClassName={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
-                viewportRef={setCardStackDropRef}
-                enabled={col.cards.length > 0}
-                refreshKey={`${col.id}:${col.cards.length}:${lockedCardsHeight ?? 'auto'}`}
+              <SortableContext
+                items={sortableCardIds ?? col.cards.map((card) => card.id)}
+                strategy={verticalListSortingStrategy}
               >
                 {renderListSegments(true)}
-              </CustomScrollArea>
-            </div>
-          </SortableContext>
+              </SortableContext>
+            </CustomScrollArea>
+          </div>
 
           <AddCardComposer
             addingCard={addingCard}
@@ -925,6 +1021,8 @@ function KanbanColumn({
 function areKanbanColumnPropsEqual(prevProps, nextProps) {
   return prevProps.col === nextProps.col
     && prevProps.isDropTarget === nextProps.isDropTarget
+    && prevProps.groupDropPreview === nextProps.groupDropPreview
+    && prevProps.sortableCardIds === nextProps.sortableCardIds
     && prevProps.isDragOverlay === nextProps.isDragOverlay
     && prevProps.isCompact === nextProps.isCompact
     && prevProps.onToggleCompactView === nextProps.onToggleCompactView

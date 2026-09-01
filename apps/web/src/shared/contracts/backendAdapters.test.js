@@ -244,14 +244,22 @@ describe('board mapping with preferences', () => {
         {
           ...sampleBoardView.columns[0],
           groups: [
-            { id: 'group-1', title: 'Sprint', startCardId: 'card-1', collapsed: true },
+            { id: 'group-1', title: 'Sprint', startCardId: 'card-1', cardIds: ['card-1'], collapsed: true },
           ],
         },
       ],
     })
 
     expect(column.groups).toEqual([
-      { id: 'group-1', title: 'Sprint', startCardId: 'card-1', endCardId: 'card-1', collapsed: true },
+      {
+        id: 'group-1',
+        uiKey: 'group-ui-group-1',
+        title: 'Sprint',
+        startCardId: 'card-1',
+        endCardId: 'card-1',
+        cardIds: ['card-1'],
+        collapsed: true,
+      },
     ])
   })
 })
