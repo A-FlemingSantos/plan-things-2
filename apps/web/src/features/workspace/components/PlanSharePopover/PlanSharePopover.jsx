@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from 'react'
+import { Copy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
+import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthenticatedImageUrl.js'
 import PlanRoleSelect from '../PlanRoleSelect/PlanRoleSelect.jsx'
 import { resolveCoverThemeClass } from '../workspaceCover/workspaceCoverUtils.js'
@@ -14,6 +16,31 @@ import styles from './PlanSharePopover.module.css'
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const GMAIL_NOT_CONNECTED_MESSAGE = 'Conecte o Gmail em Configurações para enviar convites por e-mail.'
 const GMAIL_RECONNECT_MESSAGE = 'A autorização do Gmail expirou. Reconecte em Configurações para enviar convites.'
+
+function buildPlanShareUrl(planId) {
+  if (!planId || typeof window === 'undefined') return ''
+  return `${window.location.origin}${buildWorkspaceBoardPath(planId)}`
+}
+
+async function copyTextToClipboard(value) {
+  if (!value) return false
+
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value)
+    return true
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = value
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'absolute'
+  textarea.style.left = '-9999px'
+  document.body.appendChild(textarea)
+  textarea.select()
+  const copied = document.execCommand('copy')
+  document.body.removeChild(textarea)
+  return copied
+}
 
 function isGmailAuthError(error) {
   return String(error?.code ?? '').startsWith('GMAIL_')
@@ -67,6 +94,7 @@ export default function PlanSharePopover({
   const [gmailNeedsReconnect, setGmailNeedsReconnect] = useState(false)
   const [isGmailStatusLoading, setIsGmailStatusLoading] = useState(false)
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
+  const [shareLinkUrl, setShareLinkUrl] = useState('')
   const gmailBlocked = gmailConnected === false
   const gmailHintMessage = gmailNeedsReconnect ? GMAIL_RECONNECT_MESSAGE : GMAIL_NOT_CONNECTED_MESSAGE
 
@@ -84,6 +112,7 @@ export default function PlanSharePopover({
       setGmailNeedsReconnect(false)
       setIsGmailStatusLoading(false)
       setIsRoleMenuOpen(false)
+      setShareLinkUrl('')
       return
     }
 
@@ -177,6 +206,27 @@ export default function PlanSharePopover({
     setEmail('')
   }
 
+  const handleGenerateLink = () => {
+    const nextLinkUrl = buildPlanShareUrl(plan?.id)
+    if (!nextLinkUrl) return
+    setShareLinkUrl(nextLinkUrl)
+  }
+
+  const handleCopyLink = async () => {
+    if (!shareLinkUrl) return
+
+    try {
+      const copied = await copyTextToClipboard(shareLinkUrl)
+      onNotify?.(copied ? 'Link copiado.' : 'Não foi possível copiar o link.')
+    } catch {
+      onNotify?.('Não foi possível copiar o link.')
+    }
+  }
+
+  const handleDeleteLink = () => {
+    setShareLinkUrl('')
+  }
+
   const handleEmailKeyDown = (event) => {
     if (event.key !== 'Enter') return
     event.preventDefault()
@@ -207,6 +257,7 @@ export default function PlanSharePopover({
               </Link>
             </p>
           ) : null}
+          <h3 className={styles.sectionTitle}>Convite por e-mail</h3>
           <div className={styles.inviteField}>
             <input
               type="email"
@@ -242,6 +293,55 @@ export default function PlanSharePopover({
           </p>
         </section>
       )}
+
+      {plan?.id ? (
+        <>
+          <div className={styles.sectionDivider} aria-hidden="true" />
+          <section className={styles.linkSection} aria-label="Link do plano">
+            <h3 className={styles.sectionTitle}>Link do plano</h3>
+            {shareLinkUrl ? (
+              <>
+                <div className={styles.linkField}>
+                  <input
+                    type="text"
+                    className={styles.linkFieldInput}
+                    value={shareLinkUrl}
+                    readOnly
+                    aria-label="Link do plano"
+                    tabIndex={-1}
+                  />
+                  <button
+                    type="button"
+                    className={styles.linkCopyButton}
+                    aria-label="Copiar link do plano"
+                    title="Copiar link do plano"
+                    onClick={handleCopyLink}
+                  >
+                    <Copy size={14} strokeWidth={1.75} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className={styles.linkActions}>
+                  <button
+                    type="button"
+                    className={[styles.linkTextButton, styles.linkTextButtonDanger].join(' ')}
+                    onClick={handleDeleteLink}
+                  >
+                    Excluir link
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={styles.linkGenerateButton}
+                onClick={handleGenerateLink}
+              >
+                Gerar link
+              </button>
+            )}
+          </section>
+        </>
+      ) : null}
     </div>
   )
 }

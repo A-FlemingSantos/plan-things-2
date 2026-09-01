@@ -137,6 +137,163 @@
   background: var(--border-1);
 }
 
+.sectionTitle {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  color: var(--text-3);
+}
+
+.sectionDivider {
+  height: 1px;
+  margin: 0 12px 10px;
+  background: var(--border-1);
+}
+
+.linkSection {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+
+.linkGenerateButton {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.linkGenerateButton:hover {
+  border-color: var(--border-2, var(--border-1));
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.linkGenerateButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.linkField {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.linkField:hover,
+.linkField:focus-within {
+  border-color: var(--border-2, var(--border-1));
+  background: var(--hover);
+}
+
+.linkFieldInput {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 34px 0 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.linkFieldInput::placeholder {
+  color: var(--text-3);
+}
+
+.linkFieldInput:focus {
+  outline: none;
+}
+
+.linkCopyButton {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.linkField:hover .linkCopyButton:not(:disabled),
+.linkField:focus-within .linkCopyButton:not(:disabled) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.linkCopyButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--border-2) 28%, transparent);
+  color: var(--text-1);
+}
+
+.linkActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.linkTextButton {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-light);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.linkTextButton:hover {
+  color: var(--text-2);
+}
+
+.linkTextButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.linkTextButtonDanger:hover {
+  color: var(--danger-text, var(--color-red));
+}
+
 .inviteError {
   margin: 0;
   font-family: var(--font-family);
