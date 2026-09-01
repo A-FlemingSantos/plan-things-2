@@ -9,7 +9,7 @@
   flex-wrap: wrap;
   overflow: visible;
   position: relative;
-  z-index: 2;
+  z-index: 40;
   background: var(--board-canvas-bg);
   border-bottom: 1px solid var(--border-1);
 }
