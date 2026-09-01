@@ -1,0 +1,180 @@
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  width: min(272px, calc(100vw - 24px));
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  background: var(--app-bg);
+  box-shadow: var(--shadow-md);
+  animation: visibilityPopoverReveal 160ms var(--ease-out, ease) both;
+}
+
+@keyframes visibilityPopoverReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px 6px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.title {
+  grid-column: 2;
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.closeButton {
+  all: unset;
+  box-sizing: border-box;
+  grid-column: 3;
+  justify-self: end;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.closeButton:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+}
+
+.option {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 16px;
+  align-items: start;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.option:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.option:disabled {
+  cursor: not-allowed;
+}
+
+.optionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.optionIconPrivate {
+  color: var(--danger-text, var(--color-red));
+}
+
+.optionIconPublic {
+  color: #2abb7f;
+}
+
+.optionIconDisabled {
+  color: var(--text-3);
+  opacity: 0.55;
+}
+
+.optionBody {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.optionTitle {
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  line-height: 1.2;
+}
+
+.optionDescription {
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: var(--font-weight-light);
+  line-height: 1.35;
+  color: var(--text-3);
+}
+
+.optionDisabled .optionTitle,
+.optionDisabled .optionDescription {
+  color: var(--text-3);
+  opacity: 0.7;
+}
+
+.optionCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  color: var(--text-1);
+}
+
+@media (max-width: 520px) {
+  .popover {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(260px, calc(100vw - 16px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+}

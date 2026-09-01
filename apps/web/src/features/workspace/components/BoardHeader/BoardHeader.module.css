@@ -265,6 +265,16 @@
   transform: translateY(-1px);
 }
 
+.visibilityMenuWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.iconButtonOpen {
+  background: var(--hover);
+}
+
 .iconButton:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;

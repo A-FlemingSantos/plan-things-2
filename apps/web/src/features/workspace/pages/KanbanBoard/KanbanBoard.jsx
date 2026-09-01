@@ -52,7 +52,7 @@ export default function KanbanBoard() {
   const { planId } = useParams()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { accessToken, currentUser } = useAuth()
+  const { accessToken, currentUser, workspace } = useAuth()
   const {
     updatePlanBoard,
     isBackendDriven,
@@ -530,6 +530,7 @@ export default function KanbanBoard() {
             <BoardHeader
               planName={activePlan?.name ?? 'Plano'}
               plan={activePlan}
+              workspaceName={workspace?.name}
               viewMode={boardViewMode === 'calendar' ? 'kanban' : boardViewMode}
               onViewModeChange={(nextViewMode) => {
                 setBoardViewMode(nextViewMode)

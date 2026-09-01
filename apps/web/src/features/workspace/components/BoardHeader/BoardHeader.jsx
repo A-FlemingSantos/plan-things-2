@@ -15,6 +15,7 @@ import { SiGithub } from 'react-icons/si'
 import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import PlanSharePopover from '../PlanSharePopover/PlanSharePopover.jsx'
 import PlanGitHubIntegrationModal from '../PlanGitHubIntegrationModal/PlanGitHubIntegrationModal.jsx'
+import BoardVisibilityPopover from '../BoardVisibilityPopover/BoardVisibilityPopover.jsx'
 import styles from './BoardHeader.module.css'
 
 const ICON_SIZE = 15
@@ -54,16 +55,20 @@ export default function BoardHeader({
   accessToken,
   onRefreshPlanDetails,
   onNotify,
+  workspaceName,
   githubIntegration = null,
   githubOpen: controlledGitHubOpen,
   onGitHubOpenChange,
 }) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isVisibilityOpen, setIsVisibilityOpen] = useState(false)
+  const [boardVisibility, setBoardVisibility] = useState('public')
   const [isGitHubOpen, setIsGitHubOpen] = useState(false)
   const viewMenuId = useId()
   const viewMenuWrapRef = useRef(null)
   const shareMenuWrapRef = useRef(null)
+  const visibilityMenuWrapRef = useRef(null)
   const githubButtonRef = useRef(null)
   const githubOpen = controlledGitHubOpen ?? isGitHubOpen
   const setGitHubOpen = (next) => {
@@ -73,20 +78,23 @@ export default function BoardHeader({
   }
 
   useEffect(() => {
-    if (!isViewMenuOpen && !isShareOpen && !githubOpen) return undefined
+    if (!isViewMenuOpen && !isShareOpen && !isVisibilityOpen && !githubOpen) return undefined
 
     const handlePointerDown = (event) => {
       if (viewMenuWrapRef.current?.contains(event.target)) return
       if (shareMenuWrapRef.current?.contains(event.target)) return
+      if (visibilityMenuWrapRef.current?.contains(event.target)) return
       if (githubButtonRef.current?.contains(event.target)) return
       setIsViewMenuOpen(false)
       setIsShareOpen(false)
+      setIsVisibilityOpen(false)
     }
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsViewMenuOpen(false)
         setIsShareOpen(false)
+        setIsVisibilityOpen(false)
         setGitHubOpen(false)
       }
     }
@@ -98,7 +106,7 @@ export default function BoardHeader({
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [githubOpen, isShareOpen, isViewMenuOpen])
+  }, [githubOpen, isShareOpen, isViewMenuOpen, isVisibilityOpen])
 
   const activeViewMode = BOARD_VIEW_MODES.find((mode) => mode.id === viewMode) ?? BOARD_VIEW_MODES[0]
   const ActiveViewIcon = activeViewMode.Icon
@@ -107,12 +115,21 @@ export default function BoardHeader({
     onViewModeChange?.(nextViewMode)
     setIsViewMenuOpen(false)
     setIsShareOpen(false)
+    setIsVisibilityOpen(false)
     setGitHubOpen(false)
   }
 
   const toggleSharePopover = () => {
     setIsShareOpen((open) => !open)
     setIsViewMenuOpen(false)
+    setIsVisibilityOpen(false)
+    setGitHubOpen(false)
+  }
+
+  const toggleVisibilityPopover = () => {
+    setIsVisibilityOpen((open) => !open)
+    setIsViewMenuOpen(false)
+    setIsShareOpen(false)
     setGitHubOpen(false)
   }
 
@@ -141,6 +158,7 @@ export default function BoardHeader({
             aria-label={`Alterar visualização (${activeViewMode.label})`}
             onClick={() => {
               setIsShareOpen(false)
+              setIsVisibilityOpen(false)
               setIsViewMenuOpen((open) => !open)
             }}
           >
@@ -218,6 +236,7 @@ export default function BoardHeader({
                   setGitHubOpen((open) => !open)
                   setIsViewMenuOpen(false)
                   setIsShareOpen(false)
+                  setIsVisibilityOpen(false)
                 }}
               >
                 {hasConnectedRepo ? (
@@ -231,6 +250,31 @@ export default function BoardHeader({
                   <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
                 )}
               </button>
+            )
+          }
+
+          if (id === 'globe') {
+            return (
+              <div key={id} ref={visibilityMenuWrapRef} className={styles.visibilityMenuWrap}>
+                <button
+                  type="button"
+                  className={`${styles.iconButton} ${isVisibilityOpen ? styles.iconButtonOpen : ''}`}
+                  aria-label="Alterar visibilidade"
+                  aria-haspopup="dialog"
+                  aria-expanded={isVisibilityOpen}
+                  onClick={toggleVisibilityPopover}
+                >
+                  <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+                </button>
+
+                <BoardVisibilityPopover
+                  open={isVisibilityOpen}
+                  visibility={boardVisibility}
+                  workspaceName={workspaceName}
+                  onVisibilityChange={setBoardVisibility}
+                  onClose={() => setIsVisibilityOpen(false)}
+                />
+              </div>
             )
           }
 
