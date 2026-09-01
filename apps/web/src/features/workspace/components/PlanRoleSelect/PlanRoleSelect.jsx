@@ -22,16 +22,24 @@ export default function PlanRoleSelect({
   disabled = false,
   ariaLabel = 'Nível de permissão',
   variant = 'default',
+  onOpenChange = null,
 }) {
   const menuId = useId()
   const fieldRef = useRef(null)
   const triggerRef = useRef(null)
   const menuRef = useRef(null)
+  const onOpenChangeRef = useRef(onOpenChange)
+  onOpenChangeRef.current = onOpenChange
   const [isOpen, setIsOpen] = useState(false)
   const [menuStyle, setMenuStyle] = useState(null)
   const selectedOption = options.find((option) => option.value === value) ?? options[0]
   const isInteractive = !disabled && options.length > 1
   const isInline = variant === 'inline'
+
+  const setOpen = (nextOpen) => {
+    setIsOpen(nextOpen)
+    onOpenChangeRef.current?.(nextOpen)
+  }
 
   useLayoutEffect(() => {
     if (!isOpen || isInline) {
@@ -46,7 +54,7 @@ export default function PlanRoleSelect({
 
       const triggerRect = trigger.getBoundingClientRect()
       const menuHeight = menu.offsetHeight
-      const menuWidth = Math.max(menu.offsetWidth, triggerRect.width)
+      const menuWidth = Math.max(menu.scrollWidth, triggerRect.width)
       const spaceBelow = window.innerHeight - triggerRect.bottom - MENU_GAP
       const spaceAbove = triggerRect.top - MENU_GAP
       const opensDown = spaceBelow >= menuHeight || spaceBelow >= spaceAbove
@@ -75,26 +83,32 @@ export default function PlanRoleSelect({
   }, [isOpen, options.length, isInline])
 
   useEffect(() => {
+    if (!disabled || !isOpen) return
+    setOpen(false)
+  }, [disabled, isOpen])
+
+  useEffect(() => {
     if (!isOpen) return undefined
 
     const handlePointerDown = (event) => {
       if (fieldRef.current?.contains(event.target)) return
       if (menuRef.current?.contains(event.target)) return
-      setIsOpen(false)
+      setOpen(false)
     }
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setIsOpen(false)
+        event.stopPropagation()
+        setOpen(false)
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown, true)
 
     return () => {
       document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('keydown', handleKeyDown, true)
     }
   }, [isOpen])
 
@@ -118,7 +132,7 @@ export default function PlanRoleSelect({
         ].filter(Boolean).join(' ')}
         onClick={() => {
           if (!isInteractive) return
-          setIsOpen((open) => !open)
+          setOpen(!isOpen)
         }}
         aria-label={ariaLabel}
         aria-haspopup={isInteractive ? 'listbox' : undefined}
@@ -160,7 +174,7 @@ export default function PlanRoleSelect({
                 ].filter(Boolean).join(' ')}
                 onClick={() => {
                   onChange(option.value)
-                  setIsOpen(false)
+                  setOpen(false)
                 }}
               >
                 <span className={styles.optionContent}>

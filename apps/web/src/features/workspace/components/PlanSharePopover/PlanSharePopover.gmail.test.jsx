@@ -104,4 +104,56 @@ describe('PlanSharePopover Gmail gating', () => {
       })
     })
   })
+
+  it('blocks invite send when Gmail is connected but the last authorization failed', async () => {
+    const user = userEvent.setup()
+    apiMock.apiRequest.mockResolvedValue({
+      integrations: {
+        gmail: { connected: true, email: 'owner@example.com', lastError: 'GMAIL_TOKEN_REFRESH_FALHOU' },
+      },
+    })
+
+    renderPopover()
+
+    expect(await screen.findByText(/A autorização do Gmail expirou/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ir para Integrações' })).toHaveAttribute(
+      'href',
+      '/settings?section=integrations',
+    )
+
+    const emailInput = screen.getByPlaceholderText('E-mail')
+    await user.type(emailInput, 'convidado@example.com{Enter}')
+
+    await waitFor(() => {
+      expect(apiMock.apiRequest).toHaveBeenCalledTimes(1)
+    })
+    expect(apiMock.apiRequest).not.toHaveBeenCalledWith('/api/plans/plan-1/invites', expect.anything())
+  })
+
+  it('asks to reconnect Gmail when invite send fails with a Gmail authorization error', async () => {
+    const user = userEvent.setup()
+    const gmailError = Object.assign(new Error('Nao foi possivel renovar a autorizacao Gmail.'), {
+      code: 'GMAIL_TOKEN_REFRESH_FALHOU',
+    })
+    apiMock.apiRequest
+      .mockResolvedValueOnce({
+        integrations: {
+          gmail: { connected: true, email: 'owner@example.com' },
+        },
+      })
+      .mockRejectedValueOnce(gmailError)
+
+    renderPopover()
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Conecte o Gmail em Configurações/i)).not.toBeInTheDocument()
+    })
+
+    const emailInput = screen.getByPlaceholderText('E-mail')
+    await user.type(emailInput, 'convidado@example.com{Enter}')
+
+    expect(await screen.findByText('Nao foi possivel renovar a autorizacao Gmail.')).toBeInTheDocument()
+    expect(screen.getByText(/A autorização do Gmail expirou/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ir para Integrações' })).toBeInTheDocument()
+  })
 })

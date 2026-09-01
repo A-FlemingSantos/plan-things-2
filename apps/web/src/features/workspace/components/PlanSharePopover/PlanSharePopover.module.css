@@ -15,6 +15,10 @@
   animation: sharePopoverReveal 160ms var(--ease-out, ease) both;
 }
 
+.popoverRoleMenuOpen {
+  overflow: visible;
+}
+
 @keyframes sharePopoverReveal {
   from {
     opacity: 0;

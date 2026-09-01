@@ -13,9 +13,19 @@ import styles from './PlanSharePopover.module.css'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const GMAIL_NOT_CONNECTED_MESSAGE = 'Conecte o Gmail em Configurações para enviar convites por e-mail.'
+const GMAIL_RECONNECT_MESSAGE = 'A autorização do Gmail expirou. Reconecte em Configurações para enviar convites.'
 
-function normalizeGmailConnected(source = {}) {
-  return Boolean(source?.connected)
+function isGmailAuthError(error) {
+  return String(error?.code ?? '').startsWith('GMAIL_')
+}
+
+function normalizeGmailInviteReadiness(source = {}) {
+  const connected = Boolean(source?.connected)
+  const lastError = source?.lastError ?? null
+  return {
+    canSend: connected && !lastError,
+    needsReconnect: connected && Boolean(lastError),
+  }
 }
 
 function PlanShareCover({ plan }) {
@@ -54,7 +64,11 @@ export default function PlanSharePopover({
   const [inviteError, setInviteError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [gmailConnected, setGmailConnected] = useState(null)
+  const [gmailNeedsReconnect, setGmailNeedsReconnect] = useState(false)
   const [isGmailStatusLoading, setIsGmailStatusLoading] = useState(false)
+  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
+  const gmailBlocked = gmailConnected === false
+  const gmailHintMessage = gmailNeedsReconnect ? GMAIL_RECONNECT_MESSAGE : GMAIL_NOT_CONNECTED_MESSAGE
 
   const canInvite = canManagePlanMembers(plan?.role)
   const trimmedEmail = email.trim()
@@ -67,7 +81,9 @@ export default function PlanSharePopover({
       setInviteError('')
       setIsSubmitting(false)
       setGmailConnected(null)
+      setGmailNeedsReconnect(false)
       setIsGmailStatusLoading(false)
+      setIsRoleMenuOpen(false)
       return
     }
 
@@ -75,6 +91,7 @@ export default function PlanSharePopover({
 
     if (!isBackendDriven || !accessToken) {
       setGmailConnected(false)
+      setGmailNeedsReconnect(false)
       setIsGmailStatusLoading(false)
       return undefined
     }
@@ -85,11 +102,14 @@ export default function PlanSharePopover({
     apiRequest('/api/settings', { token: accessToken })
       .then((snapshot) => {
         if (!active) return
-        setGmailConnected(normalizeGmailConnected(snapshot?.integrations?.gmail))
+        const readiness = normalizeGmailInviteReadiness(snapshot?.integrations?.gmail)
+        setGmailConnected(readiness.canSend)
+        setGmailNeedsReconnect(readiness.needsReconnect)
       })
       .catch(() => {
         if (!active) return
         setGmailConnected(null)
+        setGmailNeedsReconnect(false)
       })
       .finally(() => {
         if (!active) return
@@ -122,8 +142,8 @@ export default function PlanSharePopover({
       return null
     }
 
-    if (gmailConnected === false) {
-      setInviteError(GMAIL_NOT_CONNECTED_MESSAGE)
+    if (gmailBlocked) {
+      setInviteError(gmailHintMessage)
       return null
     }
 
@@ -138,6 +158,10 @@ export default function PlanSharePopover({
       })
       return result
     } catch (error) {
+      if (isGmailAuthError(error)) {
+        setGmailConnected(false)
+        setGmailNeedsReconnect(true)
+      }
       setInviteError(error?.message ?? 'Não foi possível enviar o convite.')
       return null
     } finally {
@@ -164,7 +188,7 @@ export default function PlanSharePopover({
   return (
     <div
       id={popoverId}
-      className={styles.popover}
+      className={[styles.popover, isRoleMenuOpen ? styles.popoverRoleMenuOpen : ''].filter(Boolean).join(' ')}
       role="dialog"
       aria-label="Compartilhar plano"
     >
@@ -175,9 +199,9 @@ export default function PlanSharePopover({
 
       {canInvite ? (
         <section className={styles.inviteSection} aria-label="Convidar membros">
-          {!isGmailStatusLoading && gmailConnected === false ? (
+          {!isGmailStatusLoading && gmailBlocked ? (
             <p className={styles.inviteHint}>
-              {GMAIL_NOT_CONNECTED_MESSAGE}{' '}
+              {gmailHintMessage}{' '}
               <Link to="/settings?section=integrations" className={styles.inviteSettingsLink}>
                 Ir para Integrações
               </Link>
@@ -195,16 +219,17 @@ export default function PlanSharePopover({
               }}
               onKeyDown={handleEmailKeyDown}
               autoComplete="email"
-              disabled={isSubmitting || isGmailStatusLoading || gmailConnected === false}
+              disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
             />
             <span className={styles.inviteFieldDivider} aria-hidden="true" />
             <PlanRoleSelect
               value={inviteRole}
               onChange={setInviteRole}
               options={PLAN_INVITE_ROLE_OPTIONS}
-              disabled={isSubmitting || isGmailStatusLoading || gmailConnected === false}
+              disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
               ariaLabel="Nível de permissão do convite"
               variant="inline"
+              onOpenChange={setIsRoleMenuOpen}
             />
           </div>
 
