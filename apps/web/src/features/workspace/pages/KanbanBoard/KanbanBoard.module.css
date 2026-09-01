@@ -1600,32 +1600,46 @@
 .colMenu {
   position: fixed;
   z-index: 1000;
-  width: 188px;
-  min-width: 188px;
-  padding: 6px;
-  background: var(--app-bg);
+  width: min(188px, calc(100vw - 24px));
   border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
+  background: var(--app-bg);
   box-shadow: var(--shadow-md);
-  animation: menuIn 0.15s ease both;
+  animation: colMenuReveal 160ms var(--ease-out, ease) both;
+  overflow: hidden;
+}
+
+@keyframes colMenuReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .colMenuItem {
-  display: flex;
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  width: 100%;
   padding: 7px 10px;
-  font-family: var(--font-family);
-  font-size: 12px;
-  font-weight: var(--font-weight-regular);
-  color: var(--text-2);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background var(--transition-fast);
-  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.colMenuItemWithMeta {
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+}
+
+.colMenuItemWithTrailing {
+  grid-template-columns: 22px minmax(0, 1fr) auto;
 }
 
 .colMenuItem:hover {
@@ -1633,24 +1647,35 @@
 }
 
 .colMenuItemActive {
-  background: var(--active);
-  color: var(--text-1);
+  background: var(--hover);
 }
 
-.colMenuItemHasSubmenu {
-  gap: 6px;
+.colMenuItem:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 
-.colMenuItemLeading {
+.colMenuItemIcon {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--text-2);
 }
 
 .colMenuItemLabel {
-  flex: 1;
   min-width: 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .colMenuItemMeta {
@@ -1659,64 +1684,51 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: var(--font-family);
   font-size: 11px;
+  font-weight: var(--font-weight-light);
   color: var(--text-3);
 }
 
-.colMenuItemChevron {
+.colMenuItemTrailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   color: var(--text-3);
 }
 
 .colMenuColorPreview {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--border-2) 80%, transparent);
 }
 
-.colMenuItemSelected {
-  color: var(--text-1);
-}
-
-.colMenuItemCheck {
-  flex-shrink: 0;
-  color: var(--text-2);
-}
-
-.colMenuItemCheckPlaceholder {
-  flex-shrink: 0;
-  width: 12px;
-  height: 12px;
-}
-
-.colMenuItemDanger {
-  color: var(--danger-text);
+.colMenuItemDanger .colMenuItemIcon,
+.colMenuItemDanger .colMenuItemLabel {
+  color: var(--danger-text, var(--color-red));
 }
 
 .colMenuItemDanger:hover {
-  background: var(--danger-bg);
-}
-
-.colMenuSubmenuWrap {
-  position: static;
+  background: color-mix(in srgb, var(--danger-text, var(--color-red)) 8%, var(--hover));
 }
 
 .colMenuFlyout {
   position: fixed;
   z-index: 1001;
-  min-width: 168px;
-  padding: 6px;
-  background: var(--app-bg);
+  width: min(188px, calc(100vw - 24px));
   border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
+  background: var(--app-bg);
   box-shadow: var(--shadow-md);
-  animation: menuIn 0.15s ease both;
+  animation: colMenuReveal 160ms var(--ease-out, ease) both;
+  overflow: hidden;
 }
 
 .colMenuFlyoutColors {
-  min-width: auto;
-  padding: 5px;
+  width: max-content;
+  max-width: min(188px, calc(100vw - 24px));
 }
 
 .colMenuFlyoutPalette {
@@ -1725,8 +1737,9 @@
   left: auto;
   z-index: auto;
   width: max-content;
-  max-width: 196px;
+  max-width: 100%;
   margin: 0;
+  padding: 7px 10px;
   box-shadow: none;
   animation: none;
 }
@@ -1734,13 +1747,19 @@
 .colMenuFlyoutStatus {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .colMenuDivider {
   height: 1px;
-  margin: 4px 6px;
+  margin: 3px 8px;
   background: var(--border-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .colMenu,
+  .colMenuFlyout {
+    animation: none;
+  }
 }
 
 @keyframes menuIn {

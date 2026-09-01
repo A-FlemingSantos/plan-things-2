@@ -18,13 +18,13 @@ import {
 import KanbanColumnColorPalette from '../KanbanColumnColorPalette/KanbanColumnColorPalette.jsx'
 import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
 
-const ICON_SIZE = 13
+const ICON_SIZE = 15
 const ICON_STROKE = 1.75
+const TRAILING_ICON_SIZE = 13
 const MENU_GAP = 4
 const VIEWPORT_GAP = 8
 const MENU_WIDTH = 188
-const COLOR_FLYOUT_WIDTH = 196
-const STATUS_FLYOUT_WIDTH = 200
+const FLYOUT_WIDTH = 188
 
 const STATUS_ICONS = {
   CircleOff,
@@ -59,7 +59,6 @@ function resolveMenuPosition(anchorRect, menuHeight = 160) {
     return { top: VIEWPORT_GAP, left: VIEWPORT_GAP }
   }
 
-  // Keep the dropdown directly below the trigger, anchored by its left edge.
   const preferredLeft = anchorRect.left
   const left = clamp(
     preferredLeft,
@@ -140,10 +139,11 @@ export default function ColMenu({
     const triggerRect = activeFlyout === 'color'
       ? colorTriggerRef.current?.getBoundingClientRect()
       : statusTriggerRef.current?.getBoundingClientRect()
-    const flyoutWidth = activeFlyout === 'color' ? COLOR_FLYOUT_WIDTH : STATUS_FLYOUT_WIDTH
-    const flyoutHeight = activeFlyout === 'color' ? 72 : Math.min(280, statusOptions.length * 34 + 12)
+    const flyoutHeight = activeFlyout === 'color'
+      ? 56
+      : Math.min(280, statusOptions.length * 36)
 
-    setFlyoutPosition(resolveFlyoutPosition(menuRect, triggerRect, flyoutWidth, flyoutHeight))
+    setFlyoutPosition(resolveFlyoutPosition(menuRect, triggerRect, FLYOUT_WIDTH, flyoutHeight))
   }
 
   useLayoutEffect(() => {
@@ -224,8 +224,10 @@ export default function ColMenu({
           }}
           role="menuitem"
         >
-          <Pencil size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          Renomear
+          <span className={styles.colMenuItemIcon} aria-hidden="true">
+            <Pencil size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          </span>
+          <span className={styles.colMenuItemLabel}>Renomear</span>
         </button>
 
         <button
@@ -237,57 +239,78 @@ export default function ColMenu({
           }}
           role="menuitem"
         >
-          {isCompact ? (
-            <PanelLeftOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          ) : (
-            <PanelLeftClose size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          )}
-          {isCompact ? 'Expandir lista' : 'Visualização compacta'}
+          <span className={styles.colMenuItemIcon} aria-hidden="true">
+            {isCompact ? (
+              <PanelLeftOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+            ) : (
+              <PanelLeftClose size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+            )}
+          </span>
+          <span className={styles.colMenuItemLabel}>
+            {isCompact ? 'Expandir lista' : 'Visualização compacta'}
+          </span>
         </button>
 
         <button
           ref={colorTriggerRef}
           type="button"
-          className={`${styles.colMenuItem} ${styles.colMenuItemHasSubmenu} ${activeFlyout === 'color' ? styles.colMenuItemActive : ''}`}
+          className={[
+            styles.colMenuItem,
+            styles.colMenuItemWithMeta,
+            activeFlyout === 'color' ? styles.colMenuItemActive : '',
+          ].filter(Boolean).join(' ')}
           onClick={() => toggleFlyout('color')}
           role="menuitem"
           aria-haspopup="menu"
           aria-expanded={activeFlyout === 'color'}
         >
-          <span className={styles.colMenuItemLeading}>
+          <span className={styles.colMenuItemIcon} aria-hidden="true">
             {currentColor ? (
               <span
                 className={styles.colMenuColorPreview}
                 style={{ background: currentColor }}
-                aria-hidden="true"
               />
             ) : (
-              <CircleOff size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              <CircleOff size={ICON_SIZE} strokeWidth={ICON_STROKE} />
             )}
-            <span className={styles.colMenuItemLabel}>Cor</span>
           </span>
+          <span className={styles.colMenuItemLabel}>Cor</span>
           <span className={styles.colMenuItemMeta}>{selectedColorLabel}</span>
-          <ChevronRight size={12} strokeWidth={ICON_STROKE} className={styles.colMenuItemChevron} aria-hidden="true" />
+          <ChevronRight
+            size={TRAILING_ICON_SIZE}
+            strokeWidth={ICON_STROKE}
+            className={styles.colMenuItemTrailing}
+            aria-hidden="true"
+          />
         </button>
 
         <button
           ref={statusTriggerRef}
           type="button"
-          className={`${styles.colMenuItem} ${styles.colMenuItemHasSubmenu} ${activeFlyout === 'status' ? styles.colMenuItemActive : ''}`}
+          className={[
+            styles.colMenuItem,
+            styles.colMenuItemWithMeta,
+            activeFlyout === 'status' ? styles.colMenuItemActive : '',
+          ].filter(Boolean).join(' ')}
           onClick={() => toggleFlyout('status')}
           role="menuitem"
           aria-haspopup="menu"
           aria-expanded={activeFlyout === 'status'}
         >
-          <span className={styles.colMenuItemLeading}>
+          <span className={styles.colMenuItemIcon} aria-hidden="true">
             <StatusMenuIcon option={selectedStatus} />
-            <span className={styles.colMenuItemLabel}>Status</span>
           </span>
+          <span className={styles.colMenuItemLabel}>Status</span>
           <span className={styles.colMenuItemMeta}>{selectedStatus.label}</span>
-          <ChevronRight size={12} strokeWidth={ICON_STROKE} className={styles.colMenuItemChevron} aria-hidden="true" />
+          <ChevronRight
+            size={TRAILING_ICON_SIZE}
+            strokeWidth={ICON_STROKE}
+            className={styles.colMenuItemTrailing}
+            aria-hidden="true"
+          />
         </button>
 
-        <div className={styles.colMenuDivider} />
+        <div className={styles.colMenuDivider} role="separator" />
 
         <button
           type="button"
@@ -298,8 +321,10 @@ export default function ColMenu({
           }}
           role="menuitem"
         >
-          <Trash2 size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-          Excluir lista
+          <span className={styles.colMenuItemIcon} aria-hidden="true">
+            <Trash2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+          </span>
+          <span className={styles.colMenuItemLabel}>Excluir lista</span>
         </button>
       </div>
 
@@ -341,7 +366,11 @@ export default function ColMenu({
               <button
                 key={status.id || 'none'}
                 type="button"
-                className={`${styles.colMenuItem} ${isSelected ? styles.colMenuItemSelected : ''}`}
+                className={[
+                  styles.colMenuItem,
+                  styles.colMenuItemWithTrailing,
+                  isSelected ? styles.colMenuItemActive : '',
+                ].filter(Boolean).join(' ')}
                 onClick={() => {
                   onChangeStatus(status.id)
                   setActiveFlyout(null)
@@ -349,18 +378,18 @@ export default function ColMenu({
                 role="menuitemradio"
                 aria-checked={isSelected}
               >
-                <StatusMenuIcon option={status} />
+                <span className={styles.colMenuItemIcon} aria-hidden="true">
+                  <StatusMenuIcon option={status} />
+                </span>
                 <span className={styles.colMenuItemLabel}>{status.label}</span>
                 {isSelected ? (
                   <Check
-                    size={12}
+                    size={TRAILING_ICON_SIZE}
                     strokeWidth={ICON_STROKE}
-                    className={styles.colMenuItemCheck}
+                    className={styles.colMenuItemTrailing}
                     aria-hidden="true"
                   />
-                ) : (
-                  <span className={styles.colMenuItemCheckPlaceholder} aria-hidden="true" />
-                )}
+                ) : null}
               </button>
             )
           })}
