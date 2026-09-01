@@ -59,6 +59,33 @@ describe('BoardHeader filter popover', () => {
     expect(screen.getByRole('button', { name: 'Filtros' })).toHaveClass(/iconButtonActive/)
   })
 
+  it('keeps the filter body scroll position when toggling an option', async () => {
+    const user = userEvent.setup()
+    render(
+      <BoardHeader
+        planName="MVP Board"
+        labels={[
+          { id: 'l1', text: 'Design', color: '#f5a623' },
+          { id: 'l2', text: 'Engenharia', color: '#2363eb' },
+          { id: 'l3', text: 'Marketing', color: '#e2483d' },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Filtros' }))
+
+    const viewport = document.querySelector('[data-custom-scroll-viewport]')
+    expect(viewport).not.toBeNull()
+
+    Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 120 })
+    Object.defineProperty(viewport, 'scrollHeight', { configurable: true, value: 480 })
+    viewport.scrollTop = 180
+
+    await user.click(screen.getByRole('checkbox', { name: /A ser entregue em um mês/i }))
+
+    expect(viewport.scrollTop).toBe(180)
+  })
+
   it('selects the match mode from the footer dropdown', async () => {
     const user = userEvent.setup()
     const onBoardFilterChange = vi.fn()

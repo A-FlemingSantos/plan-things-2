@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import {
   Calendar,
   ChevronDown,
@@ -17,8 +17,9 @@ import {
 } from './boardFilterDefaults.js'
 import styles from './BoardFilterPopover.module.css'
 
-const ICON_SIZE = 13
+const ICON_SIZE = 15
 const ICON_STROKE = 1.75
+const TRAILING_ICON_SIZE = 13
 
 function resolveMemberLabel(member) {
   return member?.label ?? member?.name ?? member?.fullName ?? member?.email ?? member?.initials ?? ''
@@ -39,15 +40,21 @@ function renderMemberAvatar(member, className) {
 
 function FilterCheckbox({ checked, onChange, children, className = '' }) {
   return (
-    <label className={[styles.checkboxRow, className].filter(Boolean).join(' ')}>
+    <label
+      className={[styles.optionRow, className].filter(Boolean).join(' ')}
+      onMouseDown={(event) => event.preventDefault()}
+    >
       <input
         type="checkbox"
         className={styles.checkboxInput}
         checked={checked}
+        tabIndex={-1}
         onChange={(event) => onChange?.(event.target.checked)}
       />
-      <span className={styles.checkboxBox} aria-hidden="true" />
-      <span className={styles.checkboxContent}>{children}</span>
+      <span className={styles.optionIcon} aria-hidden="true">
+        <span className={styles.checkboxBox} />
+      </span>
+      <span className={styles.optionLabel}>{children}</span>
     </label>
   )
 }
@@ -64,7 +71,7 @@ function FilterSection({ title, children }) {
 function DueDateOption({ id, label, tone, checked, onChange }) {
   return (
     <FilterCheckbox checked={checked} onChange={(next) => onChange(id, next)}>
-      <span className={[styles.dueDateIcon, styles[`dueDateIcon${tone}`]].filter(Boolean).join(' ')} aria-hidden="true">
+      <span className={[styles.optionIcon, styles[`dueDateIcon${tone}`]].filter(Boolean).join(' ')} aria-hidden="true">
         {tone === 'none' ? (
           <Calendar size={ICON_SIZE} strokeWidth={ICON_STROKE} />
         ) : (
@@ -87,9 +94,18 @@ export default function BoardFilterPopover({
 }) {
   const titleId = useId()
   const matchModeWrapRef = useRef(null)
+  const bodyViewportRef = useRef(null)
+  const pendingScrollTopRef = useRef(null)
   const [isMembersExpanded, setIsMembersExpanded] = useState(false)
   const [isLabelsExpanded, setIsLabelsExpanded] = useState(false)
   const [isMatchModeOpen, setIsMatchModeOpen] = useState(false)
+
+  useLayoutEffect(() => {
+    if (pendingScrollTopRef.current === null || !bodyViewportRef.current) return
+
+    bodyViewportRef.current.scrollTop = pendingScrollTopRef.current
+    pendingScrollTopRef.current = null
+  })
 
   useEffect(() => {
     if (!isMatchModeOpen) return undefined
@@ -112,8 +128,16 @@ export default function BoardFilterPopover({
   const activeMatchMode = BOARD_FILTER_MATCH_MODES.find((mode) => mode.id === resolvedFilter.matchMode)
     ?? BOARD_FILTER_MATCH_MODES[0]
 
+  const commitFilterChange = (nextFilter) => {
+    if (bodyViewportRef.current) {
+      pendingScrollTopRef.current = bodyViewportRef.current.scrollTop
+    }
+
+    onFilterChange?.(nextFilter)
+  }
+
   const updateFilter = (patch) => {
-    onFilterChange?.({
+    commitFilterChange({
       ...resolvedFilter,
       ...patch,
     })
@@ -165,19 +189,22 @@ export default function BoardFilterPopover({
         enabled
         className={styles.bodyScrollArea}
         viewportClassName={styles.body}
+        viewportRef={bodyViewportRef}
         refreshKey={`${labels.length}:${members.length}:${isMembersExpanded}:${isLabelsExpanded}`}
       >
         <FilterSection title="Palavra-chave">
-          <input
-            type="search"
-            className={styles.keywordInput}
-            value={resolvedFilter.keyword}
-            placeholder="Insira uma palavra-chave..."
-            onChange={(event) => updateFilter({ keyword: event.target.value })}
-          />
-          <p className={styles.keywordHint}>
-            Pesquise cartões, membros, etiquetas e muito mais.
-          </p>
+          <div className={styles.keywordField}>
+            <input
+              type="search"
+              className={styles.keywordInput}
+              value={resolvedFilter.keyword}
+              placeholder="Insira uma palavra-chave..."
+              onChange={(event) => updateFilter({ keyword: event.target.value })}
+            />
+            <p className={styles.keywordHint}>
+              Pesquise cartões, membros, etiquetas e muito mais.
+            </p>
+          </div>
         </FilterSection>
 
         <FilterSection title="Membros">
@@ -185,7 +212,7 @@ export default function BoardFilterPopover({
             checked={resolvedFilter.members.noMembers}
             onChange={(checked) => updateNestedFilter('members', { noMembers: checked })}
           >
-            <span className={styles.inlineIcon} aria-hidden="true">
+            <span className={styles.optionIcon} aria-hidden="true">
               <UserRound size={ICON_SIZE} strokeWidth={ICON_STROKE} />
             </span>
             <span>Sem membros</span>
@@ -205,16 +232,17 @@ export default function BoardFilterPopover({
             <>
               <button
                 type="button"
-                className={styles.expandButton}
+                className={styles.optionRowWithTrailing}
                 aria-expanded={isMembersExpanded}
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => setIsMembersExpanded((expanded) => !expanded)}
               >
-                <span className={styles.expandButtonCheckbox} aria-hidden="true" />
-                <span>Selecionar membros</span>
+                <span className={styles.optionIcon} aria-hidden="true" />
+                <span className={styles.optionLabel}>Selecionar membros</span>
                 <ChevronDown
-                  size={12}
+                  size={TRAILING_ICON_SIZE}
                   strokeWidth={ICON_STROKE}
-                  className={`${styles.expandChevron} ${isMembersExpanded ? styles.expandChevronOpen : ''}`}
+                  className={`${styles.optionTrailing} ${isMembersExpanded ? styles.optionTrailingOpen : ''}`}
                   aria-hidden="true"
                 />
               </button>
@@ -225,8 +253,8 @@ export default function BoardFilterPopover({
                     <FilterCheckbox
                       key={member.id}
                       checked={resolvedFilter.members.selectedMemberIds.includes(member.id)}
-                      onChange={() => onFilterChange?.(toggleBoardFilterMemberId(resolvedFilter, member.id))}
-                      className={styles.nestedCheckboxRow}
+                      onChange={() => commitFilterChange(toggleBoardFilterMemberId(resolvedFilter, member.id))}
+                      className={styles.nestedOptionRow}
                     >
                       {renderMemberAvatar(member, styles.memberAvatar)}
                       <span>{resolveMemberLabel(member)}</span>
@@ -296,7 +324,7 @@ export default function BoardFilterPopover({
             checked={resolvedFilter.labels.noLabels}
             onChange={(checked) => updateNestedFilter('labels', { noLabels: checked })}
           >
-            <span className={styles.inlineIcon} aria-hidden="true">
+            <span className={styles.optionIcon} aria-hidden="true">
               <Tag size={ICON_SIZE} strokeWidth={ICON_STROKE} />
             </span>
             <span>Sem etiquetas</span>
@@ -305,12 +333,11 @@ export default function BoardFilterPopover({
           {visibleLabels.map((label) => (
             <FilterCheckbox
               key={label.id}
-              className={styles.checkboxRowLabel}
               checked={resolvedFilter.labels.selectedLabelIds.includes(label.id)}
-              onChange={() => onFilterChange?.(toggleBoardFilterLabelId(resolvedFilter, label.id))}
+              onChange={() => commitFilterChange(toggleBoardFilterLabelId(resolvedFilter, label.id))}
             >
               <span
-                className={styles.labelPill}
+                className={styles.optionLabelPill}
                 style={{ backgroundColor: label.color }}
               >
                 {label.text}
@@ -321,16 +348,17 @@ export default function BoardFilterPopover({
           {labels.length > 3 ? (
             <button
               type="button"
-              className={styles.expandButton}
+              className={styles.optionRowWithTrailing}
               aria-expanded={isLabelsExpanded}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => setIsLabelsExpanded((expanded) => !expanded)}
             >
-              <span className={styles.expandButtonCheckbox} aria-hidden="true" />
-              <span>Selecionar etiquetas</span>
+              <span className={styles.optionIcon} aria-hidden="true" />
+              <span className={styles.optionLabel}>Selecionar etiquetas</span>
               <ChevronDown
-                size={12}
+                size={TRAILING_ICON_SIZE}
                 strokeWidth={ICON_STROKE}
-                className={`${styles.expandChevron} ${isLabelsExpanded ? styles.expandChevronOpen : ''}`}
+                className={`${styles.optionTrailing} ${isLabelsExpanded ? styles.optionTrailingOpen : ''}`}
                 aria-hidden="true"
               />
             </button>
