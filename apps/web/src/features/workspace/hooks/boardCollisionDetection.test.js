@@ -117,6 +117,29 @@ describe('boardCollisionDetection', () => {
     expect(dragState.getPointerColumnId()).toBeNull()
   })
 
+  it('excludes the active card when choosing the closest card collision', () => {
+    const dragState = createBoardDragCollisionState()
+    dragState.setStickyColumnId('col-1')
+    const detect = createBoardCollisionDetection(['col-1', 'col-2'], dragState)
+    const droppableRects = buildBoardRects()
+    droppableRects.set('card-1', buildCardStackRect(12, 140, 160))
+
+    const collisions = detect(buildCollisionArgs({
+      pointer: { x: 140, y: 150 },
+      droppableContainers: [
+        ...buildBoardContainers(),
+        {
+          id: 'card-1',
+          data: { current: { type: 'card', columnId: 'col-1' } },
+          rect: { current: null },
+        },
+      ],
+      droppableRects,
+    }))
+
+    expect(collisions).toEqual([{ id: 'card-2' }])
+  })
+
   it('switches the sticky column only after the pointer enters the next column', () => {
     const dragState = createBoardDragCollisionState()
     dragState.setStickyColumnId('col-1')

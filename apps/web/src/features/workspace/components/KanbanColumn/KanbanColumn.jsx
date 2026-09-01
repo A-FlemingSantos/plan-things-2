@@ -348,6 +348,8 @@ export function KanbanColumnView({
   const renameRef = useRef(null)
   const menuAnchorRef = useRef(null)
   const columnNodeRef = useRef(null)
+  const cardSlotNodesRef = useRef(new Map())
+  const cardSlotRefCallbacksRef = useRef(new Map())
   const [composerOverlay, setComposerOverlay] = useState(false)
 
   const setColumnNodeRef = (node) => {
@@ -363,6 +365,65 @@ export function KanbanColumnView({
   )
   const hiddenCardIds = collapsedCardIdsFromGroups(col.cards, columnGroups)
   const listSegments = buildColumnListSegments(col.cards, columnGroups)
+  const resolvedSortableCardIds = (sortableCardIds ?? col.cards.map((card) => card.id))
+    .filter((cardId) => !hiddenCardIds.has(cardId))
+  const groupLayoutKey = columnGroups
+    .map((group) => `${group.id}:${group.collapsed}:${group.cardIds.join(',')}`)
+    .join('|')
+
+  const getCardSlotRef = (cardId) => {
+    if (!cardSlotRefCallbacksRef.current.has(cardId)) {
+      cardSlotRefCallbacksRef.current.set(cardId, (node) => {
+        if (node) {
+          cardSlotNodesRef.current.set(cardId, node)
+        } else {
+          cardSlotNodesRef.current.delete(cardId)
+        }
+      })
+    }
+    return cardSlotRefCallbacksRef.current.get(cardId)
+  }
+
+  useLayoutEffect(() => {
+    const groupSegments = listSegments.filter((segment) => segment.type === 'group')
+    if (!groupSegments.length) {
+      return undefined
+    }
+
+    const updateGroupChromeHeights = () => {
+      for (const segment of groupSegments) {
+        const firstNode = cardSlotNodesRef.current.get(segment.cards[0]?.id)
+        const lastNode = cardSlotNodesRef.current.get(segment.cards.at(-1)?.id)
+        if (!firstNode || !lastNode) {
+          continue
+        }
+        const height = Math.max(
+          0,
+          lastNode.offsetTop + lastNode.offsetHeight - firstNode.offsetTop,
+        )
+        firstNode.style.setProperty('--column-group-body-height', `${height}px`)
+      }
+    }
+
+    updateGroupChromeHeights()
+    const frameId = window.requestAnimationFrame(updateGroupChromeHeights)
+    const observer = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(updateGroupChromeHeights)
+      : null
+    for (const segment of groupSegments) {
+      for (const card of segment.cards) {
+        const node = cardSlotNodesRef.current.get(card.id)
+        if (node) {
+          observer?.observe(node)
+        }
+      }
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      observer?.disconnect()
+    }
+  }, [listSegments])
 
   const { setNodeRef: setCardStackDropRef } = useDroppable({
     id: columnCardStackDropId(col.id),
@@ -584,6 +645,7 @@ export function KanbanColumnView({
         groupId={group?.id ?? null}
         isFirstGroupCard={isFirstGroupCard}
         isLastGroupCard={isLastGroupCard}
+        suppressLayoutAnimation={enteringGroupKeys.size > 0}
       />
     )
   }
@@ -594,6 +656,8 @@ export function KanbanColumnView({
     group = null,
     isFirstGroupCard = false,
     isLastGroupCard = false,
+    isCollapsedGroup = false,
+    isEnteringGroup = false,
   ) => {
     const showInsert = Boolean(
       allowInsert
@@ -611,14 +675,25 @@ export function KanbanColumnView({
 
     return (
       <div
+        ref={getCardSlotRef(card.id)}
         key={card.uiKey ?? card.id}
+        id={`kanban-card-slot-${col.id}-${card.id}`}
         className={`
           ${styles.cardSlot}
+          ${group ? styles.cardSlotGrouped : ''}
+          ${isFirstGroupCard ? styles.cardSlotGroupFirst : ''}
+          ${isLastGroupCard ? styles.cardSlotGroupLast : ''}
+          ${isCollapsedGroup ? styles.cardSlotGroupCollapsed : ''}
+          ${isEnteringGroup ? styles.cardSlotGroupEnter : ''}
           ${isDropPreviewTarget ? styles.cardSlotDropPreview : ''}
           ${isDropPreviewSource ? styles.cardSlotDragPreviewSource : ''}
         `}
+        aria-hidden={isCollapsedGroup || undefined}
+        inert={isCollapsedGroup ? '' : undefined}
       >
-        {renderCardNode(card, group, isFirstGroupCard, isLastGroupCard)}
+        <div className={styles.cardSlotInner}>
+          {renderCardNode(card, group, isFirstGroupCard, isLastGroupCard)}
+        </div>
         {showInsert ? (
           <ColumnGroupInsertButton
             styles={styles}
@@ -629,12 +704,7 @@ export function KanbanColumnView({
     )
   }
 
-  const renderListSegments = (showInserts) => listSegments.map((segment) => {
-    if (segment.type === 'loose') {
-      return segment.cards.map((card) => renderCardSlot(card, showInserts))
-    }
-
-    const group = segment.group
+  const renderColumnGroupHeader = (group, cards) => {
     const expanded = !group.collapsed
     const groupTitle = group.title.trim()
     const groupA11yLabel = groupTitle || 'Agrupamento'
@@ -659,12 +729,16 @@ export function KanbanColumnView({
         key={groupUiKey}
         className={`
           ${styles.columnGroup}
+          ${expanded ? '' : styles.columnGroupCollapsed}
           ${isEntering ? styles.columnGroupEnter : ''}
           ${isGroupPreviewTarget ? styles.columnGroupDropPreview : ''}
           ${isGroupPreviewBefore ? styles.columnGroupBeforePreview : ''}
           ${isGroupPreviewSource ? styles.columnGroupSourcePreview : ''}
         `}
         aria-label={groupA11yLabel}
+        aria-owns={expanded
+          ? cards.map((card) => `kanban-card-slot-${col.id}-${card.id}`).join(' ')
+          : undefined}
         onAnimationEnd={(event) => {
           if (!isEntering || !String(event.animationName).includes('ChromeEmerge')) {
             return
@@ -741,27 +815,31 @@ export function KanbanColumnView({
             </ColumnGroupBeforeDropTarget>
           </div>
         </div>
-        <div
-          className={`${styles.columnGroupExpand} ${expanded ? styles.columnGroupExpandOpen : ''}`}
-          aria-hidden={!expanded}
-          inert={expanded ? undefined : ''}
-        >
-          <div className={styles.columnGroupExpandInner}>
-            <div className={styles.columnGroupBody}>
-              {segment.cards.map((card, index) => (
-                renderCardSlot(
-                  card,
-                  false,
-                  group,
-                  index === 0,
-                  index === segment.cards.length - 1,
-                )
-              ))}
-            </div>
-          </div>
-        </div>
       </section>
     )
+  }
+
+  const renderListItems = (showInserts) => listSegments.flatMap((segment) => {
+    if (segment.type === 'loose') {
+      return segment.cards.map((card) => renderCardSlot(card, showInserts))
+    }
+
+    const group = segment.group
+    const collapsed = Boolean(group.collapsed)
+    const groupUiKey = group.uiKey ?? group.id
+    const isEntering = Boolean(groupUiKey && enteringGroupKeys.has(groupUiKey))
+    return [
+      renderColumnGroupHeader(group, segment.cards),
+      ...segment.cards.map((card, index) => renderCardSlot(
+        card,
+        false,
+        group,
+        index === 0,
+        index === segment.cards.length - 1,
+        collapsed,
+        isEntering,
+      )),
+    ]
   })
 
   return (
@@ -892,10 +970,10 @@ export function KanbanColumnView({
           className={`${styles.colCards} ${col.cards.length === 0 ? styles.colCardsEmpty : ''}`}
         >
           <SortableContext
-            items={sortableCardIds ?? col.cards.map((card) => card.id)}
+            items={resolvedSortableCardIds}
             strategy={verticalListSortingStrategy}
           >
-            {renderListSegments(false)}
+            {renderListItems(false)}
           </SortableContext>
         </div>
       ) : !isCompact ? (
@@ -908,13 +986,13 @@ export function KanbanColumnView({
               viewportClassName={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
               viewportRef={setCardStackDropRef}
               enabled={col.cards.length > 0}
-              refreshKey={`${col.id}:${col.cards.length}`}
+              refreshKey={`${col.id}:${col.cards.length}:${groupLayoutKey}`}
             >
               <SortableContext
-                items={sortableCardIds ?? col.cards.map((card) => card.id)}
+                items={resolvedSortableCardIds}
                 strategy={verticalListSortingStrategy}
               >
-                {renderListSegments(true)}
+                {renderListItems(true)}
               </SortableContext>
             </CustomScrollArea>
           </div>

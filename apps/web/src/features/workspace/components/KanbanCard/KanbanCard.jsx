@@ -13,6 +13,7 @@ import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvat
 const ICON_SIZE = 13
 const ICON_SIZE_SM = 12
 const ICON_STROKE = 1.75
+const disableSortableLayoutChanges = () => false
 
 function isUserComment(comment = {}) {
   return comment.kind !== 'ASSIGNEE_ACTIVITY'
@@ -230,6 +231,7 @@ function SortableKanbanCard({
   groupId = null,
   isFirstGroupCard = false,
   isLastGroupCard = false,
+  suppressLayoutAnimation = false,
 }) {
   const {
     attributes,
@@ -248,6 +250,9 @@ function SortableKanbanCard({
       isFirstGroupCard,
       isLastGroupCard,
     },
+    animateLayoutChanges: suppressLayoutAnimation
+      ? disableSortableLayoutChanges
+      : undefined,
   })
 
   return (
@@ -286,6 +291,7 @@ function KanbanCard({
   groupId,
   isFirstGroupCard,
   isLastGroupCard,
+  suppressLayoutAnimation,
 }) {
   if (isDragOverlay) {
     return (
@@ -317,6 +323,7 @@ function KanbanCard({
       groupId={groupId}
       isFirstGroupCard={isFirstGroupCard}
       isLastGroupCard={isLastGroupCard}
+      suppressLayoutAnimation={suppressLayoutAnimation}
     />
   )
 }
@@ -333,6 +340,7 @@ function areKanbanCardPropsEqual(prevProps, nextProps) {
     && prevProps.groupId === nextProps.groupId
     && prevProps.isFirstGroupCard === nextProps.isFirstGroupCard
     && prevProps.isLastGroupCard === nextProps.isLastGroupCard
+    && prevProps.suppressLayoutAnimation === nextProps.suppressLayoutAnimation
     && prevProps.styles === nextProps.styles
 }
 
