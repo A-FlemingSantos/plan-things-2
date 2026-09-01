@@ -1,22 +1,54 @@
 import { useEffect, useId, useState } from 'react'
-import { GlobeLock, Link2, SendHorizontal, User } from 'lucide-react'
+import { Eye, Link2, PenLine, SendHorizontal, Shield, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthenticatedImageUrl.js'
 import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
-import PlanRoleSelect from '../PlanRoleSelect/PlanRoleSelect.jsx'
 import { resolveCoverThemeClass } from '../workspaceCover/workspaceCoverUtils.js'
 import workspaceCoverStyles from '../../pages/Workspace/Workspace.module.css'
 import {
   canManagePlanMembers,
-  PLAN_INVITE_ROLE_OPTIONS,
+  getNextShareRole,
+  getShareRoleOption,
 } from '../../utils/planMemberRoles.js'
 import styles from './PlanSharePopover.module.css'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const GMAIL_NOT_CONNECTED_MESSAGE = 'Conecte o Gmail em Configurações para enviar convites por e-mail.'
 const GMAIL_RECONNECT_MESSAGE = 'A autorização do Gmail expirou. Reconecte em Configurações para enviar convites.'
+
+const SHARE_ROLE_ICONS = {
+  MEMBER: PenLine,
+  OBSERVER: Eye,
+  ADMIN: Shield,
+}
+
+function ShareRoleCycleButton({
+  value,
+  onChange,
+  disabled = false,
+  ariaLabel,
+  className,
+  showLabel = true,
+}) {
+  const option = getShareRoleOption(value)
+  const Icon = SHARE_ROLE_ICONS[option.value] ?? PenLine
+
+  return (
+    <button
+      type="button"
+      className={className}
+      aria-label={`${ariaLabel}: ${option.label}`}
+      title={option.label}
+      disabled={disabled}
+      onClick={() => onChange(getNextShareRole(value))}
+    >
+      <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+      {showLabel ? <span>{option.label}</span> : null}
+    </button>
+  )
+}
 
 function buildPlanShareUrl(planId) {
   if (!planId || typeof window === 'undefined') return ''
@@ -89,12 +121,12 @@ export default function PlanSharePopover({
   const popoverId = useId()
   const [email, setEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('MEMBER')
+  const [linkRole, setLinkRole] = useState('MEMBER')
   const [inviteError, setInviteError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [gmailConnected, setGmailConnected] = useState(null)
   const [gmailNeedsReconnect, setGmailNeedsReconnect] = useState(false)
   const [isGmailStatusLoading, setIsGmailStatusLoading] = useState(false)
-  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
   const gmailBlocked = gmailConnected === false
   const gmailHintMessage = gmailNeedsReconnect ? GMAIL_RECONNECT_MESSAGE : GMAIL_NOT_CONNECTED_MESSAGE
 
@@ -104,17 +136,18 @@ export default function PlanSharePopover({
   const isEmailValid = EMAIL_PATTERN.test(trimmedEmail)
   const shareUrl = buildPlanShareUrl(plan?.id)
   const inviteDisabled = isSubmitting || isGmailStatusLoading || gmailBlocked || !trimmedEmail
+  const roleControlsDisabled = isSubmitting || isGmailStatusLoading || gmailBlocked
 
   useEffect(() => {
     if (!open) {
       setEmail('')
       setInviteRole('MEMBER')
+      setLinkRole('MEMBER')
       setInviteError('')
       setIsSubmitting(false)
       setGmailConnected(null)
       setGmailNeedsReconnect(false)
       setIsGmailStatusLoading(false)
-      setIsRoleMenuOpen(false)
       return
     }
 
@@ -230,7 +263,7 @@ export default function PlanSharePopover({
   return (
     <div
       id={popoverId}
-      className={[styles.popover, isRoleMenuOpen ? styles.popoverRoleMenuOpen : ''].filter(Boolean).join(' ')}
+      className={styles.popover}
       role="dialog"
       aria-label="Compartilhar plano"
     >
@@ -266,17 +299,16 @@ export default function PlanSharePopover({
                 }}
                 onKeyDown={handleEmailKeyDown}
                 autoComplete="email"
-                disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
+                disabled={roleControlsDisabled}
               />
               <span className={styles.inviteFieldDivider} aria-hidden="true" />
-              <PlanRoleSelect
+              <ShareRoleCycleButton
                 value={inviteRole}
                 onChange={setInviteRole}
-                options={PLAN_INVITE_ROLE_OPTIONS}
-                disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
+                disabled={roleControlsDisabled}
                 ariaLabel="Nível de permissão do convite"
-                variant="inline"
-                onOpenChange={setIsRoleMenuOpen}
+                className={[styles.roleCycleButton, styles.roleCycleButtonCompact].join(' ')}
+                showLabel={false}
               />
             </div>
 
@@ -308,15 +340,13 @@ export default function PlanSharePopover({
                   <Link2 size={14} strokeWidth={1.75} aria-hidden="true" />
                   <span>Copiar link</span>
                 </button>
-                <button
-                  type="button"
-                  className={styles.copyLinkSettingsButton}
-                  aria-label="Opções do link"
-                  title="Opções do link"
-                  disabled
-                >
-                  <GlobeLock size={14} strokeWidth={1.75} aria-hidden="true" />
-                </button>
+                <ShareRoleCycleButton
+                  value={linkRole}
+                  onChange={setLinkRole}
+                  ariaLabel="Cargo do link"
+                  className={[styles.roleCycleButton, styles.roleCycleButtonCompact].join(' ')}
+                  showLabel={false}
+                />
               </div>
             ) : null}
 

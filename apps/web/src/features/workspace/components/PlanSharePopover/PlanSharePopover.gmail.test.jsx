@@ -16,20 +16,6 @@ vi.mock('../../../../shared/hooks/useAuthenticatedImageUrl.js', () => ({
   useAuthenticatedImageUrl: () => null,
 }))
 
-vi.mock('../PlanRoleSelect/PlanRoleSelect.jsx', () => ({
-  default: ({ value, onChange, disabled, ariaLabel }) => (
-    <select
-      aria-label={ariaLabel}
-      value={value}
-      disabled={disabled}
-      onChange={(event) => onChange(event.target.value)}
-    >
-      <option value="MEMBER">Membro</option>
-      <option value="ADMIN">Admin</option>
-    </select>
-  ),
-}))
-
 function renderPopover(overrides = {}) {
   return render(
     <MemoryRouter>

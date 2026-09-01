@@ -15,10 +15,6 @@
   animation: sharePopoverReveal 160ms var(--ease-out, ease) both;
 }
 
-.popoverRoleMenuOpen {
-  overflow: visible;
-}
-
 @keyframes sharePopoverReveal {
   from {
     opacity: 0;
@@ -151,6 +147,49 @@
   background: var(--border-1);
 }
 
+.roleCycleButton {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 104px;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: var(--font-weight-light);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.roleCycleButton:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.roleCycleButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.roleCycleButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.roleCycleButtonCompact {
+  min-width: 0;
+  width: 31px;
+  padding: 0 8px;
+  border-left: 1px solid var(--border-1);
+}
+
 .footer {
   display: flex;
   align-items: center;
@@ -172,6 +211,7 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .copyLinkGroup {
@@ -179,12 +219,11 @@
   align-items: stretch;
   border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
-  overflow: hidden;
+  overflow: visible;
   background: var(--surface-2);
 }
 
 .copyLinkButton,
-.copyLinkSettingsButton,
 .sendButton {
   all: unset;
   box-sizing: border-box;
@@ -205,15 +244,13 @@
   transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 
-.copyLinkButton,
-.copyLinkSettingsButton {
+.copyLinkButton {
   border: none;
   border-radius: 0;
   background: transparent;
 }
 
 .copyLinkButton:hover,
-.copyLinkSettingsButton:hover,
 .sendButton:hover:not(:disabled) {
   border-color: var(--border-2, var(--border-1));
   background: var(--hover);
@@ -221,20 +258,9 @@
 }
 
 .copyLinkButton:focus-visible,
-.copyLinkSettingsButton:focus-visible,
 .sendButton:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-}
-
-.copyLinkSettingsButton {
-  padding: 0 8px;
-  border-left: 1px solid var(--border-1);
-}
-
-.copyLinkSettingsButton:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 .sendButton:disabled {
