@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { Link2, SendHorizontal, Settings, User } from 'lucide-react'
+import { GlobeLock, Link2, SendHorizontal, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
@@ -315,7 +315,7 @@ export default function PlanSharePopover({
                   title="Opções do link"
                   disabled
                 >
-                  <Settings size={14} strokeWidth={1.75} aria-hidden="true" />
+                  <GlobeLock size={14} strokeWidth={1.75} aria-hidden="true" />
                 </button>
               </div>
             ) : null}
