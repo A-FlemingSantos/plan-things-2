@@ -1,6 +1,6 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { memo, useLayoutEffect, useRef, useState } from 'react'
 import { defaultDropAnimationSideEffects, useDroppable } from '@dnd-kit/core'
-import { SortableContext, defaultAnimateLayoutChanges, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
   CircleAlert,
@@ -22,7 +22,6 @@ import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
 const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
 const ICON_STROKE = 1.75
-const COMPOSER_COLLAPSE_MS = 320
 const COLUMN_DRAG_OVERLAY_MAX_HEIGHT_FALLBACK_PX = 320
 export const COLUMN_DRAG_OVERLAY_HEIGHT_MS = 300
 const CARD_DRAG_OVERLAY_DROP_MS = 180
@@ -147,12 +146,8 @@ export function kanbanDropAnimation(args) {
   })
 }
 
-function columnAnimateLayoutChanges(args) {
-  if (args.isSorting || args.wasDragging) {
-    return false
-  }
-
-  return defaultAnimateLayoutChanges(args)
+function columnAnimateLayoutChanges() {
+  return false
 }
 
 const STATUS_ICONS = {
@@ -217,18 +212,13 @@ export function KanbanColumnView({
   const renameRef = useRef(null)
   const menuAnchorRef = useRef(null)
   const columnNodeRef = useRef(null)
-  const cardsScrollRef = useRef(null)
-  const lockedCardsHeightRef = useRef(null)
-  const composerClosingRef = useRef(false)
-  const composerCloseTimeoutRef = useRef(null)
-  const [lockedCardsHeight, setLockedCardsHeight] = useState(null)
+  const [composerOverlay, setComposerOverlay] = useState(false)
 
   const setColumnNodeRef = (node) => {
     columnNodeRef.current = node
     setNodeRef?.(node)
   }
   const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
-  const isComposerOpen = addingCard || isAddingCard || lockedCardsHeight != null
   const hasColumnColor = Boolean(col.color?.trim())
   const cardIds = col.cards.map((card) => card.id)
 
@@ -264,39 +254,8 @@ export function KanbanColumnView({
     }
   }
 
-  const clearComposerCloseTimeout = () => {
-    if (composerCloseTimeoutRef.current == null) return
-    window.clearTimeout(composerCloseTimeoutRef.current)
-    composerCloseTimeoutRef.current = null
-  }
-
-  const lockCardsScrollHeight = () => {
-    if (lockedCardsHeightRef.current != null) return
-    const node = cardsScrollRef.current
-    if (!node) return
-    const nextHeight = node.getBoundingClientRect().height
-    lockedCardsHeightRef.current = nextHeight
-    setLockedCardsHeight(nextHeight)
-  }
-
-  const unlockCardsScrollHeight = () => {
-    clearComposerCloseTimeout()
-    composerClosingRef.current = false
-    if (lockedCardsHeightRef.current == null) return
-    lockedCardsHeightRef.current = null
-    setLockedCardsHeight(null)
-  }
-
-  const finishComposerClose = () => {
-    if (!composerClosingRef.current) return
-    unlockCardsScrollHeight()
-  }
-
   const startAddingCard = () => {
     if (isAddingCard || isDragOverlay) return
-    composerClosingRef.current = false
-    clearComposerCloseTimeout()
-    lockCardsScrollHeight()
     setAddingCard(true)
     setCardError(null)
   }
@@ -306,24 +265,31 @@ export function KanbanColumnView({
     setAddingCard(false)
     setNewCardText('')
     setCardError(null)
-
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
-      unlockCardsScrollHeight()
-      return
-    }
-
-    composerClosingRef.current = true
-    clearComposerCloseTimeout()
-    composerCloseTimeoutRef.current = window.setTimeout(() => {
-      composerCloseTimeoutRef.current = null
-      finishComposerClose()
-    }, COMPOSER_COLLAPSE_MS)
   }
 
-  useEffect(() => () => {
-    if (composerCloseTimeoutRef.current == null) return
-    window.clearTimeout(composerCloseTimeoutRef.current)
-  }, [])
+  useLayoutEffect(() => {
+    if (isDragOverlay || isCompact || !addingCard) {
+      setComposerOverlay(false)
+      return undefined
+    }
+
+    const column = columnNodeRef.current
+    const board = column?.parentElement
+    if (!column || !board) return undefined
+
+    const updateOverlay = () => {
+      const columnRect = column.getBoundingClientRect()
+      const boardRect = board.getBoundingClientRect()
+      const paddingBottom = Number.parseFloat(getComputedStyle(board).paddingBottom) || 0
+      const roomBelow = boardRect.bottom - paddingBottom - columnRect.bottom
+      setComposerOverlay(roomBelow < 8)
+    }
+
+    updateOverlay()
+    const observer = new ResizeObserver(updateOverlay)
+    observer.observe(column)
+    return () => observer.disconnect()
+  }, [addingCard, isCompact, isDragOverlay])
 
   useLayoutEffect(() => {
     if (!isDragOverlay || isCompact) return undefined
@@ -403,7 +369,7 @@ export function KanbanColumnView({
         ${isDragging ? styles.columnDragging : ''}
         ${isDragOverlay ? styles.columnDragOverlay : ''}
         ${isCompact ? styles.columnCompact : ''}
-        ${isComposerOpen ? styles.columnComposerOpen : ''}
+        ${composerOverlay ? styles.columnComposerOverlay : ''}
       `}
       data-column-id={col.id}
       style={{
@@ -487,7 +453,7 @@ export function KanbanColumnView({
                     onToggleCompactView?.(col.id)
                     setAddingCard(false)
                     setCardError(null)
-                    unlockCardsScrollHeight()
+                    setComposerOverlay(false)
                   }}
                   onClose={() => setShowMenu(false)}
                   colorOptions={colorOptions}
@@ -536,16 +502,14 @@ export function KanbanColumnView({
         <>
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
             <div
-              ref={cardsScrollRef}
-              className={`${styles.colCardsScroll} ${isEmptyColumn ? styles.colCardsScrollEmpty : ''} ${lockedCardsHeight != null ? styles.colCardsScrollLocked : ''}`}
-              style={lockedCardsHeight != null ? { height: lockedCardsHeight } : undefined}
+              className={`${styles.colCardsScroll} ${isEmptyColumn ? styles.colCardsScrollEmpty : ''}`}
             >
               <CustomScrollArea
                 className={styles.colCardsScrollArea}
                 viewportClassName={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
                 viewportRef={setCardStackDropRef}
                 enabled={col.cards.length > 0}
-                refreshKey={`${col.id}:${col.cards.length}:${lockedCardsHeight ?? 'auto'}`}
+                refreshKey={`${col.id}:${col.cards.length}`}
               >
                 {col.cards.map((card) => (
                   <KanbanCard
@@ -574,7 +538,6 @@ export function KanbanColumnView({
             setNewCardText={setNewCardText}
             onSubmit={submitCard}
             onDismiss={cancelAddingCard}
-            onCollapseEnd={finishComposerClose}
             errorMessage={cardError}
             isSubmitting={isAddingCard}
             styles={styles}

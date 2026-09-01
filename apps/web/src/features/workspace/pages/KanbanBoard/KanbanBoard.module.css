@@ -271,6 +271,7 @@
   padding: var(--board-canvas-top-padding) var(--board-inline-padding) var(--board-bottom-padding);
   overflow-x: auto;
   overflow-y: hidden;
+  overflow-anchor: none;
   flex: 1 1 0;
   align-items: flex-start;
   background: transparent;
@@ -1390,20 +1391,29 @@
   border: 1px solid color-mix(in srgb, var(--border-1) 72%, transparent);
   border-radius: var(--radius-sm);
   overflow: visible;
+  overflow-anchor: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .column:not(.columnCompact) {
-  height: min(max-content, 100%);
+  position: relative;
+  height: auto;
   max-height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-.column:not(.columnCompact).columnComposerOpen {
-  height: auto;
-  max-height: none;
-  overflow: visible;
+.columnComposerOverlay .addCardWrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  background: inherit;
+}
+
+.columnComposerOverlay .colCards {
+  padding-bottom: 96px;
 }
 
 @keyframes colEnter {
@@ -1749,10 +1759,6 @@
 
 .colCardsScrollEmpty {
   flex: 0 0 auto;
-}
-
-.colCardsScrollLocked {
-  flex: none;
 }
 
 .colCardsScrollArea {
