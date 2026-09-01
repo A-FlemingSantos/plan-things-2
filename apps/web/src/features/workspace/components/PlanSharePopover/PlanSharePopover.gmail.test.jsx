@@ -67,7 +67,7 @@ describe('PlanSharePopover Gmail gating', () => {
       '/settings?section=integrations',
     )
 
-    const emailInput = screen.getByPlaceholderText('E-mail')
+    const emailInput = screen.getByPlaceholderText('Adicionar um nome, grupo ou e-mail')
     await user.type(emailInput, 'convidado@example.com{Enter}')
 
     await waitFor(() => {
@@ -93,7 +93,7 @@ describe('PlanSharePopover Gmail gating', () => {
       expect(screen.queryByText(/Conecte o Gmail em Configurações/i)).not.toBeInTheDocument()
     })
 
-    const emailInput = screen.getByPlaceholderText('E-mail')
+    const emailInput = screen.getByPlaceholderText('Adicionar um nome, grupo ou e-mail')
     await user.type(emailInput, 'convidado@example.com{Enter}')
 
     await waitFor(() => {
@@ -121,7 +121,7 @@ describe('PlanSharePopover Gmail gating', () => {
       '/settings?section=integrations',
     )
 
-    const emailInput = screen.getByPlaceholderText('E-mail')
+    const emailInput = screen.getByPlaceholderText('Adicionar um nome, grupo ou e-mail')
     await user.type(emailInput, 'convidado@example.com{Enter}')
 
     await waitFor(() => {
@@ -149,7 +149,7 @@ describe('PlanSharePopover Gmail gating', () => {
       expect(screen.queryByText(/Conecte o Gmail em Configurações/i)).not.toBeInTheDocument()
     })
 
-    const emailInput = screen.getByPlaceholderText('E-mail')
+    const emailInput = screen.getByPlaceholderText('Adicionar um nome, grupo ou e-mail')
     await user.type(emailInput, 'convidado@example.com{Enter}')
 
     expect(await screen.findByText('Nao foi possivel renovar a autorizacao Gmail.')).toBeInTheDocument()

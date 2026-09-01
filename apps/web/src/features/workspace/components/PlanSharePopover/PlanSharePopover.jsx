@@ -1,9 +1,10 @@
 import { useEffect, useId, useState } from 'react'
-import { Copy } from 'lucide-react'
+import { Link2, SendHorizontal, Settings, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
 import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthenticatedImageUrl.js'
+import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import PlanRoleSelect from '../PlanRoleSelect/PlanRoleSelect.jsx'
 import { resolveCoverThemeClass } from '../workspaceCover/workspaceCoverUtils.js'
 import workspaceCoverStyles from '../../pages/Workspace/Workspace.module.css'
@@ -94,13 +95,15 @@ export default function PlanSharePopover({
   const [gmailNeedsReconnect, setGmailNeedsReconnect] = useState(false)
   const [isGmailStatusLoading, setIsGmailStatusLoading] = useState(false)
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
-  const [shareLinkUrl, setShareLinkUrl] = useState('')
   const gmailBlocked = gmailConnected === false
   const gmailHintMessage = gmailNeedsReconnect ? GMAIL_RECONNECT_MESSAGE : GMAIL_NOT_CONNECTED_MESSAGE
 
   const canInvite = canManagePlanMembers(plan?.role)
+  const planMembers = Array.isArray(plan?.membersMeta) ? plan.membersMeta : []
   const trimmedEmail = email.trim()
   const isEmailValid = EMAIL_PATTERN.test(trimmedEmail)
+  const shareUrl = buildPlanShareUrl(plan?.id)
+  const inviteDisabled = isSubmitting || isGmailStatusLoading || gmailBlocked || !trimmedEmail
 
   useEffect(() => {
     if (!open) {
@@ -112,7 +115,6 @@ export default function PlanSharePopover({
       setGmailNeedsReconnect(false)
       setIsGmailStatusLoading(false)
       setIsRoleMenuOpen(false)
-      setShareLinkUrl('')
       return
     }
 
@@ -206,29 +208,19 @@ export default function PlanSharePopover({
     setEmail('')
   }
 
-  const handleGenerateLink = () => {
-    const nextLinkUrl = buildPlanShareUrl(plan?.id)
-    if (!nextLinkUrl) return
-    setShareLinkUrl(nextLinkUrl)
-  }
-
   const handleCopyLink = async () => {
-    if (!shareLinkUrl) return
+    if (!shareUrl) return
 
     try {
-      const copied = await copyTextToClipboard(shareLinkUrl)
+      const copied = await copyTextToClipboard(shareUrl)
       onNotify?.(copied ? 'Link copiado.' : 'Não foi possível copiar o link.')
     } catch {
       onNotify?.('Não foi possível copiar o link.')
     }
   }
 
-  const handleDeleteLink = () => {
-    setShareLinkUrl('')
-  }
-
   const handleEmailKeyDown = (event) => {
-    if (event.key !== 'Enter') return
+    if (event.key !== 'Enter' || event.shiftKey) return
     event.preventDefault()
     handleSendInvite()
   }
@@ -247,101 +239,101 @@ export default function PlanSharePopover({
         <h2 className={styles.planName}>{plan?.name ?? 'Plano'}</h2>
       </div>
 
-      {canInvite ? (
-        <section className={styles.inviteSection} aria-label="Convidar membros">
-          {!isGmailStatusLoading && gmailBlocked ? (
+      <div className={styles.body}>
+        {canInvite ? (
+          <section className={styles.inviteSection} aria-label="Convidar membros">
+            {!isGmailStatusLoading && gmailBlocked ? (
+              <p className={styles.inviteHint}>
+                {gmailHintMessage}{' '}
+                <Link to="/settings?section=integrations" className={styles.inviteSettingsLink}>
+                  Ir para Integrações
+                </Link>
+              </p>
+            ) : null}
+
+            <div className={styles.inviteField}>
+              <span className={styles.fieldIcon} aria-hidden="true">
+                <User size={14} strokeWidth={1.75} />
+              </span>
+              <input
+                type="email"
+                className={styles.inviteEmailInput}
+                placeholder="Adicionar um nome, grupo ou e-mail"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  if (inviteError) setInviteError('')
+                }}
+                onKeyDown={handleEmailKeyDown}
+                autoComplete="email"
+                disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
+              />
+              <span className={styles.inviteFieldDivider} aria-hidden="true" />
+              <PlanRoleSelect
+                value={inviteRole}
+                onChange={setInviteRole}
+                options={PLAN_INVITE_ROLE_OPTIONS}
+                disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
+                ariaLabel="Nível de permissão do convite"
+                variant="inline"
+                onOpenChange={setIsRoleMenuOpen}
+              />
+            </div>
+
+            {inviteError ? <p className={styles.inviteError}>{inviteError}</p> : null}
+          </section>
+        ) : (
+          <section className={styles.inviteSection}>
             <p className={styles.inviteHint}>
-              {gmailHintMessage}{' '}
-              <Link to="/settings?section=integrations" className={styles.inviteSettingsLink}>
-                Ir para Integrações
-              </Link>
+              Apenas proprietários e admins podem convidar novos membros para este plano.
             </p>
-          ) : null}
-          <h3 className={styles.sectionTitle}>Convite por e-mail</h3>
-          <div className={styles.inviteField}>
-            <input
-              type="email"
-              className={styles.inviteEmailInput}
-              placeholder="E-mail"
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value)
-                if (inviteError) setInviteError('')
-              }}
-              onKeyDown={handleEmailKeyDown}
-              autoComplete="email"
-              disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
-            />
-            <span className={styles.inviteFieldDivider} aria-hidden="true" />
-            <PlanRoleSelect
-              value={inviteRole}
-              onChange={setInviteRole}
-              options={PLAN_INVITE_ROLE_OPTIONS}
-              disabled={isSubmitting || isGmailStatusLoading || gmailBlocked}
-              ariaLabel="Nível de permissão do convite"
-              variant="inline"
-              onOpenChange={setIsRoleMenuOpen}
-            />
+          </section>
+        )}
+
+        <footer className={styles.footer}>
+          <div className={styles.footerAvatars}>
+            {planMembers.length > 0 ? (
+              <MemberAvatarStack members={planMembers} size={28} overlap={9} maxVisible={4} />
+            ) : null}
           </div>
 
-          {inviteError ? <p className={styles.inviteError}>{inviteError}</p> : null}
-        </section>
-      ) : (
-        <section className={styles.inviteSection}>
-          <p className={styles.inviteHint}>
-            Apenas proprietários e admins podem convidar novos membros para este plano.
-          </p>
-        </section>
-      )}
+          <div className={styles.footerActions}>
+            {plan?.id ? (
+              <div className={styles.copyLinkGroup}>
+                <button
+                  type="button"
+                  className={styles.copyLinkButton}
+                  onClick={handleCopyLink}
+                >
+                  <Link2 size={14} strokeWidth={1.75} aria-hidden="true" />
+                  <span>Copiar link</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.copyLinkSettingsButton}
+                  aria-label="Opções do link"
+                  title="Opções do link"
+                  disabled
+                >
+                  <Settings size={14} strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              </div>
+            ) : null}
 
-      {plan?.id ? (
-        <>
-          <div className={styles.sectionDivider} aria-hidden="true" />
-          <section className={styles.linkSection} aria-label="Link do plano">
-            <h3 className={styles.sectionTitle}>Link do plano</h3>
-            {shareLinkUrl ? (
-              <>
-                <div className={styles.linkField}>
-                  <input
-                    type="text"
-                    className={styles.linkFieldInput}
-                    value={shareLinkUrl}
-                    readOnly
-                    aria-label="Link do plano"
-                    tabIndex={-1}
-                  />
-                  <button
-                    type="button"
-                    className={styles.linkCopyButton}
-                    aria-label="Copiar link do plano"
-                    title="Copiar link do plano"
-                    onClick={handleCopyLink}
-                  >
-                    <Copy size={14} strokeWidth={1.75} aria-hidden="true" />
-                  </button>
-                </div>
-                <div className={styles.linkActions}>
-                  <button
-                    type="button"
-                    className={[styles.linkTextButton, styles.linkTextButtonDanger].join(' ')}
-                    onClick={handleDeleteLink}
-                  >
-                    Excluir link
-                  </button>
-                </div>
-              </>
-            ) : (
+            {canInvite ? (
               <button
                 type="button"
-                className={styles.linkGenerateButton}
-                onClick={handleGenerateLink}
+                className={styles.sendButton}
+                onClick={handleSendInvite}
+                disabled={inviteDisabled}
               >
-                Gerar link
+                <SendHorizontal size={14} strokeWidth={1.75} aria-hidden="true" />
+                <span>Enviar</span>
               </button>
-            )}
-          </section>
-        </>
-      ) : null}
+            ) : null}
+          </div>
+        </footer>
+      </div>
     </div>
   )
 }
