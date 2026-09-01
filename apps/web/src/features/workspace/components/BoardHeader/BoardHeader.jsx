@@ -17,6 +17,8 @@ import PlanSharePopover from '../PlanSharePopover/PlanSharePopover.jsx'
 import PlanGitHubIntegrationModal from '../PlanGitHubIntegrationModal/PlanGitHubIntegrationModal.jsx'
 import BoardVisibilityPopover from '../BoardVisibilityPopover/BoardVisibilityPopover.jsx'
 import BoardMoreOptionsPopover from '../BoardMoreOptionsPopover/BoardMoreOptionsPopover.jsx'
+import BoardFilterPopover from '../BoardFilterPopover/BoardFilterPopover.jsx'
+import { BOARD_FILTER_DEFAULTS, hasActiveBoardFilters } from '../BoardFilterPopover/boardFilterDefaults.js'
 import styles from './BoardHeader.module.css'
 
 const ICON_SIZE = 15
@@ -62,11 +64,16 @@ export default function BoardHeader({
   onGitHubOpenChange,
   onMoreOptionsAction,
   isPlanFavorite = false,
+  labels = [],
+  currentUser = null,
+  boardFilter = BOARD_FILTER_DEFAULTS,
+  onBoardFilterChange,
 }) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(false)
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [boardVisibility, setBoardVisibility] = useState('public')
   const [isGitHubOpen, setIsGitHubOpen] = useState(false)
   const viewMenuId = useId()
@@ -74,6 +81,7 @@ export default function BoardHeader({
   const shareMenuWrapRef = useRef(null)
   const visibilityMenuWrapRef = useRef(null)
   const moreOptionsMenuWrapRef = useRef(null)
+  const filterMenuWrapRef = useRef(null)
   const githubButtonRef = useRef(null)
   const githubOpen = controlledGitHubOpen ?? isGitHubOpen
   const setGitHubOpen = (next) => {
@@ -83,7 +91,7 @@ export default function BoardHeader({
   }
 
   useEffect(() => {
-    if (!isViewMenuOpen && !isShareOpen && !isVisibilityOpen && !isMoreOptionsOpen && !githubOpen) {
+    if (!isViewMenuOpen && !isShareOpen && !isVisibilityOpen && !isMoreOptionsOpen && !isFilterOpen && !githubOpen) {
       return undefined
     }
 
@@ -92,11 +100,13 @@ export default function BoardHeader({
       if (shareMenuWrapRef.current?.contains(event.target)) return
       if (visibilityMenuWrapRef.current?.contains(event.target)) return
       if (moreOptionsMenuWrapRef.current?.contains(event.target)) return
+      if (filterMenuWrapRef.current?.contains(event.target)) return
       if (githubButtonRef.current?.contains(event.target)) return
       setIsViewMenuOpen(false)
       setIsShareOpen(false)
       setIsVisibilityOpen(false)
       setIsMoreOptionsOpen(false)
+      setIsFilterOpen(false)
     }
 
     const handleKeyDown = (event) => {
@@ -105,6 +115,7 @@ export default function BoardHeader({
         setIsShareOpen(false)
         setIsVisibilityOpen(false)
         setIsMoreOptionsOpen(false)
+        setIsFilterOpen(false)
         setGitHubOpen(false)
       }
     }
@@ -116,7 +127,7 @@ export default function BoardHeader({
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [githubOpen, isMoreOptionsOpen, isShareOpen, isViewMenuOpen, isVisibilityOpen])
+  }, [githubOpen, isFilterOpen, isMoreOptionsOpen, isShareOpen, isViewMenuOpen, isVisibilityOpen])
 
   const activeViewMode = BOARD_VIEW_MODES.find((mode) => mode.id === viewMode) ?? BOARD_VIEW_MODES[0]
   const ActiveViewIcon = activeViewMode.Icon
@@ -127,6 +138,7 @@ export default function BoardHeader({
     setIsShareOpen(false)
     setIsVisibilityOpen(false)
     setIsMoreOptionsOpen(false)
+    setIsFilterOpen(false)
     setGitHubOpen(false)
   }
 
@@ -135,6 +147,7 @@ export default function BoardHeader({
     setIsViewMenuOpen(false)
     setIsVisibilityOpen(false)
     setIsMoreOptionsOpen(false)
+    setIsFilterOpen(false)
     setGitHubOpen(false)
   }
 
@@ -143,6 +156,7 @@ export default function BoardHeader({
     setIsViewMenuOpen(false)
     setIsShareOpen(false)
     setIsMoreOptionsOpen(false)
+    setIsFilterOpen(false)
     setGitHubOpen(false)
   }
 
@@ -151,6 +165,16 @@ export default function BoardHeader({
     setIsViewMenuOpen(false)
     setIsShareOpen(false)
     setIsVisibilityOpen(false)
+    setIsFilterOpen(false)
+    setGitHubOpen(false)
+  }
+
+  const toggleFilterPopover = () => {
+    setIsFilterOpen((open) => !open)
+    setIsViewMenuOpen(false)
+    setIsShareOpen(false)
+    setIsVisibilityOpen(false)
+    setIsMoreOptionsOpen(false)
     setGitHubOpen(false)
   }
 
@@ -173,6 +197,7 @@ export default function BoardHeader({
       : primaryRepoShortName)
     : null
   const connectedRepoTitle = hasConnectedRepo ? primaryConnectedRepo.fullName : null
+  const hasActiveFilters = hasActiveBoardFilters(boardFilter)
 
   return (
     <header className={styles.header}>
@@ -189,6 +214,7 @@ export default function BoardHeader({
               setIsShareOpen(false)
               setIsVisibilityOpen(false)
               setIsMoreOptionsOpen(false)
+              setIsFilterOpen(false)
               setIsViewMenuOpen((open) => !open)
             }}
           >
@@ -268,6 +294,7 @@ export default function BoardHeader({
                   setIsShareOpen(false)
                   setIsVisibilityOpen(false)
                   setIsMoreOptionsOpen(false)
+                  setIsFilterOpen(false)
                 }}
               >
                 {hasConnectedRepo ? (
@@ -304,6 +331,37 @@ export default function BoardHeader({
                   workspaceName={workspaceName}
                   onVisibilityChange={setBoardVisibility}
                   onClose={() => setIsVisibilityOpen(false)}
+                />
+              </div>
+            )
+          }
+
+          if (id === 'funnel') {
+            return (
+              <div key={id} ref={filterMenuWrapRef} className={styles.filterMenuWrap}>
+                <button
+                  type="button"
+                  className={[
+                    styles.iconButton,
+                    isFilterOpen ? styles.iconButtonOpen : '',
+                    hasActiveFilters ? styles.iconButtonActive : '',
+                  ].filter(Boolean).join(' ')}
+                  aria-label={label}
+                  aria-haspopup="dialog"
+                  aria-expanded={isFilterOpen}
+                  onClick={toggleFilterPopover}
+                >
+                  <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+                </button>
+
+                <BoardFilterPopover
+                  open={isFilterOpen}
+                  filter={boardFilter}
+                  labels={labels}
+                  members={members}
+                  currentUser={currentUser}
+                  onFilterChange={onBoardFilterChange}
+                  onClose={() => setIsFilterOpen(false)}
                 />
               </div>
             )

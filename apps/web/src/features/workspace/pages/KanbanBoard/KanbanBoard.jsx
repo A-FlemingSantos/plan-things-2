@@ -8,6 +8,7 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
+import { BOARD_FILTER_DEFAULTS } from '../../components/BoardFilterPopover/boardFilterDefaults.js'
 import KanbanColumn, { kanbanDropAnimation } from '../../components/KanbanColumn/KanbanColumn.jsx'
 import KanbanCard from '../../components/KanbanCard/KanbanCard.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
@@ -78,6 +79,7 @@ export default function KanbanBoard() {
   const [addColumnError, setAddColumnError] = useState(null)
   const [boardLoadError, setBoardLoadError] = useState(null)
   const [isGitHubIntegrationOpen, setIsGitHubIntegrationOpen] = useState(false)
+  const [boardFilter, setBoardFilter] = useState(BOARD_FILTER_DEFAULTS)
   const [compactColumnIds, setCompactColumnIds] = useState(() => new Set())
   const compactColumnIdsRef = useRef(new Set())
   const persistedCompactColumnIdsRef = useRef(new Set())
@@ -531,6 +533,10 @@ export default function KanbanBoard() {
               planName={activePlan?.name ?? 'Plano'}
               plan={activePlan}
               workspaceName={workspace?.name}
+              labels={planLabels}
+              currentUser={currentUser}
+              boardFilter={boardFilter}
+              onBoardFilterChange={setBoardFilter}
               viewMode={boardViewMode === 'calendar' ? 'kanban' : boardViewMode}
               onViewModeChange={(nextViewMode) => {
                 setBoardViewMode(nextViewMode)

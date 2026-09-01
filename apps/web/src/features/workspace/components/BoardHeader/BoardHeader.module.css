@@ -266,7 +266,8 @@
 }
 
 .visibilityMenuWrap,
-.moreOptionsMenuWrap {
+.moreOptionsMenuWrap,
+.filterMenuWrap {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -274,6 +275,10 @@
 
 .iconButtonOpen {
   background: var(--hover);
+}
+
+.iconButtonActive {
+  color: #2abb7f;
 }
 
 .iconButton:focus-visible {
