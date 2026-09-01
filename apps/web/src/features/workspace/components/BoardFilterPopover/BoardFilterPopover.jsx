@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import {
   Calendar,
   ChevronDown,
@@ -8,6 +8,7 @@ import {
   X,
 } from 'lucide-react'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import {
   BOARD_FILTER_DEFAULTS,
   BOARD_FILTER_MATCH_MODES,
@@ -85,8 +86,22 @@ export default function BoardFilterPopover({
   onClose,
 }) {
   const titleId = useId()
+  const matchModeWrapRef = useRef(null)
   const [isMembersExpanded, setIsMembersExpanded] = useState(false)
   const [isLabelsExpanded, setIsLabelsExpanded] = useState(false)
+  const [isMatchModeOpen, setIsMatchModeOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isMatchModeOpen) return undefined
+
+    const handlePointerDown = (event) => {
+      if (matchModeWrapRef.current?.contains(event.target)) return
+      setIsMatchModeOpen(false)
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [isMatchModeOpen])
 
   if (!open) return null
 
@@ -121,10 +136,9 @@ export default function BoardFilterPopover({
     updateNestedFilter('activity', { [id]: checked })
   }
 
-  const cycleMatchMode = () => {
-    const currentIndex = BOARD_FILTER_MATCH_MODES.findIndex((mode) => mode.id === resolvedFilter.matchMode)
-    const nextMode = BOARD_FILTER_MATCH_MODES[(currentIndex + 1) % BOARD_FILTER_MATCH_MODES.length]
-    updateFilter({ matchMode: nextMode.id })
+  const handleSelectMatchMode = (matchModeId) => {
+    updateFilter({ matchMode: matchModeId })
+    setIsMatchModeOpen(false)
   }
 
   return (
@@ -147,7 +161,12 @@ export default function BoardFilterPopover({
         </button>
       </header>
 
-      <div className={styles.body}>
+      <CustomScrollArea
+        enabled
+        className={styles.bodyScrollArea}
+        viewportClassName={styles.body}
+        refreshKey={`${labels.length}:${members.length}:${isMembersExpanded}:${isLabelsExpanded}`}
+      >
         <FilterSection title="Palavra-chave">
           <input
             type="search"
@@ -344,18 +363,57 @@ export default function BoardFilterPopover({
             <span>Sem atividade nas últimas quatro semanas</span>
           </FilterCheckbox>
         </FilterSection>
-      </div>
+      </CustomScrollArea>
 
-      <footer className={styles.footer}>
-        <button
-          type="button"
-          className={styles.matchModeButton}
-          onClick={cycleMatchMode}
-        >
-          <span>{activeMatchMode.label}</span>
-          <ChevronDown size={12} strokeWidth={ICON_STROKE} aria-hidden="true" />
-        </button>
-      </footer>
+      <div className={styles.matchModeBar}>
+        <div className={styles.matchModeDivider} role="separator" />
+
+        <div ref={matchModeWrapRef} className={styles.matchModeControl}>
+          {isMatchModeOpen ? (
+            <div className={styles.matchModeMenu} role="listbox" aria-label="Modo de correspondência">
+              {BOARD_FILTER_MATCH_MODES.map(({ id, label, description }) => {
+                const isActive = resolvedFilter.matchMode === id
+
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    className={[
+                      styles.matchModeOption,
+                      isActive ? styles.matchModeOptionActive : '',
+                    ].filter(Boolean).join(' ')}
+                    onClick={() => handleSelectMatchMode(id)}
+                  >
+                    <span className={styles.matchModeOptionAccent} aria-hidden="true" />
+                    <span className={styles.matchModeOptionBody}>
+                      <span className={styles.matchModeOptionTitle}>{label}</span>
+                      <span className={styles.matchModeOptionDescription}>{description}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            className={styles.matchModeButton}
+            aria-haspopup="listbox"
+            aria-expanded={isMatchModeOpen}
+            onClick={() => setIsMatchModeOpen((open) => !open)}
+          >
+            <span className={styles.matchModeButtonLabel}>{activeMatchMode.label}</span>
+            <ChevronDown
+              size={12}
+              strokeWidth={ICON_STROKE}
+              className={`${styles.matchModeChevron} ${isMatchModeOpen ? styles.matchModeChevronOpen : ''}`}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

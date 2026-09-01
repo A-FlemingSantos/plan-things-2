@@ -1,6 +1,14 @@
 export const BOARD_FILTER_MATCH_MODES = [
-  { id: 'any', label: 'Qualquer correspondência' },
-  { id: 'all', label: 'Todas as correspondências' },
+  {
+    id: 'any',
+    label: 'Qualquer correspondência',
+    description: 'Associa qualquer etiqueta e qualquer membro',
+  },
+  {
+    id: 'all',
+    label: 'Correspondência exata',
+    description: 'Associa todas as etiquetas e todos os membros',
+  },
 ]
 
 export const BOARD_FILTER_DEFAULTS = {

@@ -59,7 +59,7 @@ describe('BoardHeader filter popover', () => {
     expect(screen.getByRole('button', { name: 'Filtros' })).toHaveClass(/iconButtonActive/)
   })
 
-  it('cycles the match mode from the footer', async () => {
+  it('selects the match mode from the footer dropdown', async () => {
     const user = userEvent.setup()
     const onBoardFilterChange = vi.fn()
     render(
@@ -72,6 +72,7 @@ describe('BoardHeader filter popover', () => {
 
     await user.click(screen.getByRole('button', { name: 'Filtros' }))
     await user.click(screen.getByRole('button', { name: /Qualquer correspondência/i }))
+    await user.click(screen.getByRole('option', { name: /Correspondência exata/i }))
 
     expect(onBoardFilterChange).toHaveBeenCalledWith({
       ...BOARD_FILTER_DEFAULTS,
