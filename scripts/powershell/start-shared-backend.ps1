@@ -77,5 +77,5 @@ $configRows += New-PlanThingsConfigRow 'mobile_web_callback' "http://localhost:$
 $configRows += New-PlanThingsConfigRow 'mobile_web_gmail' "http://localhost:$expoWebPort/settings"
 
 Write-PlanThingsConfig -Rows $configRows
-Write-PlanThingsRun -Command 'mvn spring-boot:run'
-Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('spring-boot:run')
+Write-PlanThingsRun -Command 'mvn clean spring-boot:run'
+Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('clean', 'spring-boot:run')

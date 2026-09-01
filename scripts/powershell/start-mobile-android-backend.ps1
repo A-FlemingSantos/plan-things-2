@@ -68,5 +68,5 @@ if ($googleOAuth) {
 }
 
 Write-PlanThingsConfig -Rows $configRows
-Write-PlanThingsRun -Command 'mvn spring-boot:run'
-Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('spring-boot:run')
+Write-PlanThingsRun -Command 'mvn clean spring-boot:run'
+Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('clean', 'spring-boot:run')

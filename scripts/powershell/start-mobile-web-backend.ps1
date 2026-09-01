@@ -42,5 +42,5 @@ Write-PlanThingsConfig -Rows @(
   (New-PlanThingsConfigRow 'spring_db_password' 'loaded'),
   (New-PlanThingsConfigRow 'google_oauth' ($(if ($googleOAuth) { 'on' } else { 'off' })))
 )
-Write-PlanThingsRun -Command 'mvn spring-boot:run'
-Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('spring-boot:run')
+Write-PlanThingsRun -Command 'mvn clean spring-boot:run'
+Invoke-PlanThingsCommand -WorkingDirectory $apiRoot -FilePath 'mvn' -Arguments @('clean', 'spring-boot:run')
