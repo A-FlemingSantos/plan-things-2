@@ -85,7 +85,7 @@ public class FileService {
     UUID userId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanMember(planId, userId);
     PlanMemberRole role = planAccessService.requireMemberRole(planId, userId);
-    boolean canManagePlan = role == PlanMemberRole.OWNER || role == PlanMemberRole.ADMIN;
+    boolean canManagePlan = PlanAccessService.isManager(role);
     return filePlanShareRepository.findByPlanId(planId).stream()
         .map(share -> {
           FileEntryEntity file = fileEntryRepository.findById(share.getFileEntryId())
@@ -349,7 +349,7 @@ public class FileService {
 
   private boolean canManagePlanFiles(UUID planId, UUID userId) {
     PlanMemberRole role = planAccessService.requireMemberRole(planId, userId);
-    return role == PlanMemberRole.OWNER || role == PlanMemberRole.ADMIN;
+    return PlanAccessService.isManager(role);
   }
 
   private FileEntryEntity persistUploadedFile(MultipartFile multipartFile, UUID parentId, UserEntity user, WorkspaceEntity workspace) throws Exception {
@@ -411,7 +411,7 @@ public class FileService {
     FileEntryEntity file = fileEntryRepository.findById(attachment.getFileEntryId())
         .orElseThrow(() -> new NotFoundException("ARQUIVO_NAO_ENCONTRADO", "Nao encontramos o arquivo informado."));
     boolean attachedByCurrentUser = Objects.equals(attachment.getAttachedByUserId(), currentUser.getId());
-    boolean canRemove = attachedByCurrentUser || currentRole == PlanMemberRole.OWNER || currentRole == PlanMemberRole.ADMIN;
+    boolean canRemove = attachedByCurrentUser || currentRole == PlanMemberRole.ADMIN;
 
     return new CardAttachmentView(
         attachment.getId(),

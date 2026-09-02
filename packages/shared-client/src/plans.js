@@ -33,9 +33,10 @@ function buildInitials(fullName = '') {
     .join('') || 'PT'
 }
 
-function mapRoleToTag(role) {
-  if (role === 'OWNER') return { tag: 'Owner', tagColor: '#0f703a' }
+function mapRoleToTag(role, isCreator = false) {
+  if (isCreator) return { tag: 'Criador', tagColor: '#0f703a' }
   if (role === 'ADMIN') return { tag: 'Admin', tagColor: '#4290da' }
+  if (role === 'OBSERVER') return { tag: 'Observador', tagColor: '#7a7a7a' }
   return { tag: 'Membro', tagColor: '#a0a0a0' }
 }
 
@@ -44,7 +45,7 @@ function buildMemberDots(memberCount, offset = 0) {
 }
 
 export function mapPlanSummaryToRecord(summary, index = 0) {
-  const roleMeta = mapRoleToTag(summary.role)
+  const roleMeta = mapRoleToTag(summary.role, summary.isCreator)
   const date = toDate(summary.updatedAt?.iso ?? summary.createdAt?.iso)
   const coverColor = summary.cover ?? null
   const cover = coverColor ?? PLAN_COVERS[index % PLAN_COVERS.length]

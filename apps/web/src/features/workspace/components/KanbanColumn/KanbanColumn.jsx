@@ -463,6 +463,7 @@ export function KanbanColumnView({
               ) : null}
             </div>
 
+            {onAddCard ? (
             <button
               type="button"
               className={styles.colActionBtn}
@@ -477,6 +478,7 @@ export function KanbanColumnView({
             >
               <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
             </button>
+            ) : null}
           </div>
         ) : null}
       </div>

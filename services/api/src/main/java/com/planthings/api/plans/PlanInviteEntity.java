@@ -19,8 +19,12 @@ public class PlanInviteEntity extends BaseEntity {
   @Column(nullable = false)
   private UUID inviterUserId;
 
-  @Column(nullable = false, length = 160)
+  @Column(length = 160)
   private String invitedEmail;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private PlanMemberRole role;
 
   @Column(nullable = false, unique = true, length = 120)
   private String token;
@@ -57,6 +61,14 @@ public class PlanInviteEntity extends BaseEntity {
 
   public void setInvitedEmail(String invitedEmail) {
     this.invitedEmail = invitedEmail;
+  }
+
+  public PlanMemberRole getRole() {
+    return role;
+  }
+
+  public void setRole(PlanMemberRole role) {
+    this.role = role;
   }
 
   public String getToken() {

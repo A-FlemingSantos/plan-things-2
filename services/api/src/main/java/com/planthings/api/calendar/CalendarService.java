@@ -181,7 +181,7 @@ public class CalendarService {
 
   public EventSummary getEventForPlan(UUID planId, UUID eventId) {
     UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, currentUserId);
+    planAccessService.requirePlanViewer(planId, currentUserId);
     CalendarEventEntity event = calendarEventRepository.findById(eventId)
         .orElseThrow(() -> new NotFoundException("EVENTO_NAO_ENCONTRADO", "Nao encontramos o evento informado."));
     if (event.getPlanId() == null || !event.getPlanId().equals(planId)) {

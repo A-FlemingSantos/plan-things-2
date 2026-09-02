@@ -488,6 +488,8 @@ public class SettingsExportService {
     payload.put("id", plan.getId());
     payload.put("workspaceId", plan.getWorkspaceId());
     payload.put("ownerUserId", plan.getOwnerUserId());
+    payload.put("slug", plan.getSlug());
+    payload.put("visibility", plan.getVisibility());
     payload.put("name", plan.getName());
     payload.put("description", plan.getDescription());
     payload.put("coverThemeId", plan.getCoverThemeId());
@@ -515,6 +517,7 @@ public class SettingsExportService {
         "planId", invite.getPlanId(),
         "inviterUserId", invite.getInviterUserId(),
         "invitedEmail", invite.getInvitedEmail(),
+        "role", invite.getRole(),
         "status", invite.getStatus(),
         "expiresAt", toIso(invite.getExpiresAt()),
         "respondedAt", toIso(invite.getRespondedAt()),

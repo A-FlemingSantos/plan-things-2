@@ -50,8 +50,25 @@ public class SecurityConfiguration {
             .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/oauth/*/start", "/api/auth/oauth/*/native", "/api/auth/oauth/exchange")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/auth/oauth/*/callback").permitAll()
+            .requestMatchers(
+                HttpMethod.GET,
+                "/api/plans/{planId}",
+                "/api/plans/{planId}/board",
+                "/api/plans/{planId}/members",
+                "/api/plans/{planId}/labels"
+            )
+            .permitAll()
             .anyRequest()
             .authenticated()
+        )
+        .exceptionHandling(exceptions -> exceptions
+            .authenticationEntryPoint((request, response, ex) -> {
+              response.setStatus(401);
+              response.setContentType("application/json");
+              response.getWriter().write(
+                  "{\"error\":{\"code\":\"AUTENTICACAO_OBRIGATORIA\",\"message\":\"Voce precisa estar autenticado para continuar.\"}}"
+              );
+            })
         )
         .authenticationProvider(authenticationProvider)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

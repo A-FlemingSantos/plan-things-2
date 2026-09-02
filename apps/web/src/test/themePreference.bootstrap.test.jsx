@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import App from '../App.jsx'
 import AppThemeScope from '../features/preferences/components/AppThemeScope/AppThemeScope.jsx'
 import { PreferencesProvider } from '../features/preferences/context/PreferencesContext.jsx'
+import { PlansProvider } from '../features/workspace/context/PlansContext.jsx'
 import { TEST_ROUTER_FUTURE_FLAGS } from './testRouter.jsx'
 
 const { getAuthState, setAuthState } = vi.hoisted(() => {
@@ -58,7 +59,9 @@ describe('Theme preference bootstrap', () => {
     const createUi = () => (
       <BrowserRouter future={TEST_ROUTER_FUTURE_FLAGS}>
         <PreferencesProvider>
-          <App />
+          <PlansProvider>
+            <App />
+          </PlansProvider>
         </PreferencesProvider>
       </BrowserRouter>
     )

@@ -68,7 +68,7 @@ describe('PlansProvider', () => {
 
     expect(result.current.plans).toEqual([])
     expect(result.current.activePlan).toBeNull()
-    expect(result.current.isBackendDriven).toBe(false)
+    expect(result.current.isBackendDriven).toBe(true)
   })
 
   it('hydrates the local snapshot for demo sessions', async () => {
@@ -121,7 +121,7 @@ describe('PlansProvider', () => {
         id: 'plan-1',
         name: 'Plano backend',
         description: 'Sincronizado da API',
-        role: 'OWNER',
+        role: 'ADMIN',
         memberCount: 2,
         taskCount: 5,
         createdAt: { iso: '2026-05-09T12:00:00.000Z' },
@@ -166,7 +166,7 @@ describe('PlansProvider', () => {
         id: planId,
         name: 'Plano compartilhado',
         description: 'Sincronizado da API',
-        role: 'OWNER',
+        role: 'ADMIN',
         memberCount: 2,
         taskCount: 5,
         createdAt: { iso: '2026-05-09T12:00:00.000Z' },
@@ -202,7 +202,7 @@ describe('PlansProvider', () => {
         id: planId,
         name: 'Plano compartilhado',
         description: 'Sincronizado da API',
-        role: 'OWNER',
+        role: 'ADMIN',
         memberCount: 2,
         taskCount: 5,
         createdAt: { iso: '2026-05-09T12:00:00.000Z' },
@@ -213,7 +213,7 @@ describe('PlansProvider', () => {
           userId: 'user-1',
           fullName: 'Arthur Santos',
           email: 'arthur@example.com',
-          role: 'OWNER',
+          role: 'ADMIN',
         },
         {
           userId: 'user-2',
@@ -268,7 +268,7 @@ describe('PlansProvider', () => {
         id: 'plan-1',
         name: 'Plano backend',
         description: 'Sincronizado da API',
-        role: 'OWNER',
+        role: 'ADMIN',
         memberCount: 2,
         taskCount: 5,
         createdAt: { iso: '2026-05-09T12:00:00.000Z' },
@@ -425,7 +425,7 @@ describe('PlansProvider', () => {
         id: 'plan-1',
         name: 'Plano backend',
         description: 'Sincronizado da API',
-        role: 'OWNER',
+        role: 'ADMIN',
         memberCount: 2,
         taskCount: 5,
         createdAt: { iso: '2026-05-09T12:00:00.000Z' },

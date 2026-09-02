@@ -105,7 +105,7 @@ public class AiReadOnlyCapabilityService {
   public JsonNode getPlan(AiToolExecutionContext context, UUID requestedPlanId) {
     UUID planId = resolvePlanId(context, requestedPlanId, "Plano");
     requirePlanInScope(planId, context);
-    PlanService.PlanDetails details = planService.getPlan(planId);
+    PlanService.PlanDetails details = planService.getPlan(planId.toString());
 
     PlanService.PlanSummary summary = details.plan();
     Map<String, Object> payload = new LinkedHashMap<>();

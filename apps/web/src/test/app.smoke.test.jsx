@@ -144,17 +144,13 @@ describe('App smoke flows', () => {
     await expectWorkspaceHomeShell()
   })
 
-  it('restores the board route after login when the route was protected', async () => {
-    const user = userEvent.setup()
-
+  it('keeps a board slug route public for anonymous visitors', async () => {
     renderApp('/workspace/board/product-launch-q3')
-
-    await loginFromProtectedRedirect(user)
 
     await waitFor(() => {
       expect(window.location.pathname).toBe('/workspace/board/product-launch-q3')
     }, { timeout: 4000 })
-    expect(await screen.findAllByText('Adicionar lista', {}, { timeout: 4000 })).not.toHaveLength(0)
+    expect(screen.queryByLabelText('E-mail')).not.toBeInTheDocument()
   })
 
   it('redirects the legacy files route to workspace after login', async () => {
@@ -626,7 +622,6 @@ describe('App smoke flows', () => {
     expect(within(header).getByRole('link', { name: 'Workspace' })).toBeInTheDocument()
     expect(within(header).getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs')
     expect(within(header).getByRole('link', { name: 'Plano' })).toBeInTheDocument()
-    expect(within(header).getByRole('button', { name: 'GitHub' })).toBeInTheDocument()
     expect(within(header).getByRole('button', { name: 'Configurações' })).toBeInTheDocument()
     expect(within(header).getByRole('button', { name: 'Abrir menu da conta' })).toBeInTheDocument()
 

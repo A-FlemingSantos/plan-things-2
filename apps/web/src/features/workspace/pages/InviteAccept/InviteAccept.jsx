@@ -19,11 +19,12 @@ function LogoMark() {
   )
 }
 
-export default function InviteAccept() {
+export default function InviteAccept({ variant = 'email' }) {
   const { token = '' } = useParams()
   const navigate = useNavigate()
   const { accessToken, isAuthenticated } = useAuth()
   const { refreshPlans } = usePlans()
+  const isShareLink = variant === 'share-link'
   const [status, setStatus] = useState('loading') // loading | ready | accepted | declined | error
   const [message, setMessage] = useState('')
   const [invite, setInvite] = useState(null)
@@ -42,8 +43,8 @@ export default function InviteAccept() {
       navigate(ROUTES.login, {
         replace: true,
         state: {
-          redirectTo: `/plans/invites/${normalizedToken}`,
-          notice: 'Faça login para aceitar o convite.',
+          redirectTo: isShareLink ? `/plans/join/${normalizedToken}` : `/plans/invites/${normalizedToken}`,
+          notice: isShareLink ? 'Faça login para entrar no plano.' : 'Faça login para aceitar o convite.',
         },
       })
       return
@@ -56,14 +57,21 @@ export default function InviteAccept() {
       setMessage('Carregando convite...')
 
       try {
-        const result = await apiRequest(`/api/plans/invites/${normalizedToken}`, {
-          token: accessToken,
-        })
+        const result = isShareLink
+          ? await apiRequest(`/api/plans/share-links/${normalizedToken}`, { token: accessToken })
+          : await apiRequest(`/api/plans/invites/${normalizedToken}`, { token: accessToken })
 
         if (!active) return
 
-        setInvite(result)
-        if (result?.status !== 'PENDING') {
+        setInvite(isShareLink
+          ? {
+              planId: result?.planId,
+              planName: result?.planName,
+              role: result?.role,
+              status: 'PENDING',
+            }
+          : result)
+        if (!isShareLink && result?.status !== 'PENDING') {
           setStatus('error')
           setMessage('Este convite não está mais disponível.')
           return
@@ -82,7 +90,7 @@ export default function InviteAccept() {
     return () => {
       active = false
     }
-  }, [accessToken, isAuthenticated, navigate, normalizedToken, refreshPlans])
+  }, [accessToken, isAuthenticated, isShareLink, navigate, normalizedToken, refreshPlans])
 
   const acceptInvite = async () => {
     if (!normalizedToken || !accessToken) return
@@ -90,20 +98,26 @@ export default function InviteAccept() {
     setSubmittingAction('accept')
     setMessage('')
     try {
-      const result = await apiRequest(`/api/plans/invites/${normalizedToken}/accept`, {
-        method: 'POST',
-        token: accessToken,
-      })
+      const result = isShareLink
+        ? await apiRequest(`/api/plans/share-links/${normalizedToken}/accept`, {
+            method: 'POST',
+            token: accessToken,
+          })
+        : await apiRequest(`/api/plans/invites/${normalizedToken}/accept`, {
+            method: 'POST',
+            token: accessToken,
+          })
       const planId = result?.planId ?? invite?.planId ?? null
       if (!planId) {
         setStatus('error')
         setMessage('Não foi possível identificar o plano do convite.')
         return
       }
-      await refreshPlans({ selectPlanId: planId }).catch(() => {})
+      const plans = await refreshPlans({ selectPlanId: planId }).catch(() => [])
+      const joinedPlan = Array.isArray(plans) ? plans.find((plan) => plan.id === planId) : null
       setStatus('accepted')
       setMessage(result?.message ?? 'Convite aceito com sucesso.')
-      navigate(buildWorkspaceBoardPath(planId), { replace: true })
+      navigate(buildWorkspaceBoardPath(joinedPlan ?? planId), { replace: true })
     } catch (error) {
       setStatus('error')
       setMessage(error?.message ?? 'Não foi possível aceitar este convite.')
@@ -168,10 +182,17 @@ export default function InviteAccept() {
                     <span>Plano</span>
                     <strong>{invite?.planName ?? 'Plano compartilhado'}</strong>
                   </div>
+                  {invite?.invitedEmail ? (
                   <div>
                     <span>Enviado para</span>
-                    <strong>{invite?.invitedEmail}</strong>
+                    <strong>{invite.invitedEmail}</strong>
                   </div>
+                  ) : invite?.role ? (
+                  <div>
+                    <span>Cargo</span>
+                    <strong>{invite.role === 'ADMIN' ? 'Admin' : invite.role === 'OBSERVER' ? 'Observador' : 'Membro'}</strong>
+                  </div>
+                  ) : null}
                   {invite?.expiresAt?.text ? (
                     <div>
                       <span>Expira em</span>
@@ -188,11 +209,13 @@ export default function InviteAccept() {
                       <Loader size={16} label="Aceitar convite" className={styles.primaryBtnLoader} />
                     ) : 'Aceitar convite'}
                   </button>
+                  {isShareLink ? null : (
                   <button type="button" className={`${styles.secondary} ${submittingAction === 'decline' ? styles.secondaryLoading : ''}`} onClick={declineInvite} disabled={Boolean(submittingAction)}>
                     {submittingAction === 'decline' ? (
                       <Loader size={16} label="Recusar" className={styles.secondaryBtnLoader} />
                     ) : 'Recusar'}
                   </button>
+                  )}
                 </div>
               ) : status === 'error' || status === 'declined' ? (
                 <div className={styles.actions}>

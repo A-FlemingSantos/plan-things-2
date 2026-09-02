@@ -6,12 +6,14 @@ import { installMatchMediaController } from './matchMedia.js'
 
 async function expectWorkspaceHomeShell() {
   await waitFor(() => {
+    expect(screen.queryByRole('button', { name: /continuar com e-mail/i })).not.toBeInTheDocument()
     expect(window.location.pathname).toBe('/workspace')
-  }, { timeout: 4000 })
+  }, { timeout: 8000 })
 
   expect(
-    await screen.findByPlaceholderText('Buscar planos...', {}, { timeout: 4000 }),
-  ).toBeInTheDocument()
+    await screen.findByRole('link', { name: 'Workspace' }, { timeout: 4000 }),
+  ).toHaveAttribute('aria-current', 'page')
+  expect(await screen.findByRole('heading', { name: 'Planos' }, { timeout: 4000 })).toBeInTheDocument()
 }
 
 describe('Page verification flows', () => {
@@ -78,19 +80,12 @@ describe('Page verification flows', () => {
     expect(await screen.findByRole('heading', { name: /crie sua conta/i })).toBeInTheDocument()
   })
 
-  it('verifies workspace search empty state and recovery', async () => {
-    const user = userEvent.setup()
-
+  it('verifies workspace plans gallery for a demo session', async () => {
     renderApp('/workspace', { session: createDemoSession() })
 
-    const search = await screen.findByPlaceholderText('Buscar planos...')
-    await user.type(search, 'nao-existe')
-
-    expect(await screen.findByText('Nenhum plano encontrado')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /limpar busca de planos/i }))
-    expect(screen.queryByText('Nenhum plano encontrado')).not.toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Buscar planos...')).toHaveValue('')
+    await expectWorkspaceHomeShell()
+    expect(screen.getAllByText('Lançamento do Produto — Q3')[0]).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Buscar planos...')).not.toBeInTheDocument()
   })
 
   it('verifies kanban utility panels', async () => {
@@ -131,5 +126,5 @@ describe('Page verification flows', () => {
     await user.click(screen.getByRole('button', { name: /continuar com e-mail/i }))
 
     await expectWorkspaceHomeShell()
-  }, 10000)
+  }, 15000)
 })

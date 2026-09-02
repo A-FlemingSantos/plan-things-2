@@ -50,6 +50,8 @@ public class PlanService {
   private final AiConversationRepository aiConversationRepository;
   private final AuthenticatedUserService authenticatedUserService;
   private final PlanAccessService planAccessService;
+  private final PlanSlugService planSlugService;
+  private final PlanShareLinkRepository planShareLinkRepository;
   private final BrazilDateTimeMapper brazilDateTimeMapper;
   private final PlanInviteEmailSender planInviteEmailSender;
   private final AvatarImageService avatarImageService;
@@ -72,6 +74,8 @@ public class PlanService {
       AiConversationRepository aiConversationRepository,
       AuthenticatedUserService authenticatedUserService,
       PlanAccessService planAccessService,
+      PlanSlugService planSlugService,
+      PlanShareLinkRepository planShareLinkRepository,
       BrazilDateTimeMapper brazilDateTimeMapper,
       PlanInviteEmailSender planInviteEmailSender,
       AvatarImageService avatarImageService,
@@ -93,6 +97,8 @@ public class PlanService {
     this.aiConversationRepository = aiConversationRepository;
     this.authenticatedUserService = authenticatedUserService;
     this.planAccessService = planAccessService;
+    this.planSlugService = planSlugService;
+    this.planShareLinkRepository = planShareLinkRepository;
     this.brazilDateTimeMapper = brazilDateTimeMapper;
     this.planInviteEmailSender = planInviteEmailSender;
     this.avatarImageService = avatarImageService;
@@ -111,9 +117,10 @@ public class PlanService {
         .toList();
   }
 
-  public PlanDetails getPlan(UUID planId) {
-    UUID currentUserId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, currentUserId);
+  public PlanDetails getPlan(String idOrSlug) {
+    UUID currentUserId = authenticatedUserService.findUserId().orElse(null);
+    PlanEntity plan = planAccessService.resolvePlan(idOrSlug);
+    planAccessService.requirePlanViewer(plan.getId(), currentUserId);
     return toPlanDetails(plan, currentUserId);
   }
 
@@ -132,6 +139,8 @@ public class PlanService {
     plan.setWorkspaceId(workspace.getId());
     plan.setOwnerUserId(currentUser.getId());
     plan.setName(requireName(name));
+    plan.setSlug(planSlugService.allocateSlug(plan.getName()));
+    plan.setVisibility(PlanVisibility.PRIVATE);
     plan.setDescription(normalizeOptional(description));
     applyCover(plan, coverThemeId, cover, coverImageId);
     planRepository.save(plan);
@@ -139,7 +148,7 @@ public class PlanService {
     PlanMemberEntity ownerMembership = new PlanMemberEntity();
     ownerMembership.setPlanId(plan.getId());
     ownerMembership.setUserId(currentUser.getId());
-    ownerMembership.setRole(PlanMemberRole.OWNER);
+    ownerMembership.setRole(PlanMemberRole.ADMIN);
     planMemberRepository.save(ownerMembership);
 
     return toPlanDetails(plan, currentUser.getId());
@@ -155,10 +164,21 @@ public class PlanService {
       String coverImageId
   ) {
     UUID currentUserId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, currentUserId);
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, currentUserId);
     plan.setName(requireName(name));
     plan.setDescription(normalizeOptional(description));
     applyCover(plan, coverThemeId, cover, coverImageId);
+    return toPlanDetails(plan, currentUserId);
+  }
+
+  @Transactional
+  public PlanDetails updateVisibility(UUID planId, PlanVisibility visibility) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    PlanEntity plan = planAccessService.requirePlanManager(planId, currentUserId);
+    if (visibility != PlanVisibility.PRIVATE && visibility != PlanVisibility.PUBLIC) {
+      throw new BadRequestException("VISIBILIDADE_INVALIDA", "Informe Particular ou Publico.");
+    }
+    plan.setVisibility(visibility);
     planRepository.save(plan);
     return toPlanDetails(plan, currentUserId);
   }
@@ -181,25 +201,28 @@ public class PlanService {
   }
 
   public List<MemberSummary> listMembers(UUID planId) {
-    UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, currentUserId);
+    UUID currentUserId = authenticatedUserService.findUserId().orElse(null);
+    PlanEntity plan = planAccessService.requirePlanViewer(planId, currentUserId);
+    boolean includeEmail = currentUserId != null
+        && planMemberRepository.existsByPlanIdAndUserId(planId, currentUserId);
 
     List<PlanMemberEntity> members = planMemberRepository.findByPlanId(planId);
     Set<UUID> userIds = members.stream().map(PlanMemberEntity::getUserId).collect(Collectors.toSet());
     List<UserEntity> users = userRepository.findAllById(userIds);
 
     return members.stream()
-        .map(member -> toMemberSummary(member, users))
+        .map(member -> toMemberSummary(plan, member, users, includeEmail))
         .sorted(Comparator.comparing(MemberSummary::fullName))
         .toList();
   }
 
   @Transactional
-  public InviteResponse inviteMember(UUID planId, String email) {
+  public InviteResponse inviteMember(UUID planId, String email, PlanMemberRole role) {
     UserEntity currentUser = authenticatedUserService.requireUser();
     planAccessService.requirePlanManager(planId, currentUser.getId());
     PlanEntity plan = planRepository.findById(planId)
         .orElseThrow(() -> new NotFoundException("PLANO_NAO_ENCONTRADO", "Plano nao encontrado."));
+    PlanMemberRole inviteRole = requireAssignableRole(role);
 
     String normalizedEmail = normalizeEmail(email);
     planInviteRepository.findByPlanIdAndInvitedEmailIgnoreCaseAndStatus(planId, normalizedEmail, PlanInviteStatus.PENDING)
@@ -217,22 +240,29 @@ public class PlanService {
     invite.setPlanId(planId);
     invite.setInviterUserId(currentUser.getId());
     invite.setInvitedEmail(normalizedEmail);
+    invite.setRole(inviteRole);
     invite.setToken(UUID.randomUUID().toString());
     invite.setStatus(PlanInviteStatus.PENDING);
     invite.setExpiresAt(OffsetDateTime.now(clock).plusDays(7));
     ApiDateTimeDto expiresAt = brazilDateTimeMapper.toDateTime(invite.getExpiresAt());
-    PlanInviteEmailSender.Delivery delivery = planInviteEmailSender.sendInvite(
-        currentUser,
-        normalizedEmail,
-        plan.getName(),
-        buildInviteUrl(invite.getToken()),
-        expiresAt
-    );
+    PlanInviteEmailSender.Delivery delivery;
+    try {
+      delivery = planInviteEmailSender.sendInvite(
+          currentUser,
+          normalizedEmail,
+          plan.getName(),
+          buildInviteUrl(invite.getToken()),
+          expiresAt
+      );
+    } catch (BadRequestException ignored) {
+      delivery = new PlanInviteEmailSender.Delivery(false, normalizedEmail, null);
+    }
 
     planInviteRepository.save(invite);
     return new InviteResponse(
         invite.getId(),
         invite.getInvitedEmail(),
+        invite.getRole(),
         invite.getStatus(),
         invite.getToken(),
         expiresAt,
@@ -256,17 +286,11 @@ public class PlanService {
       throw new BadRequestException("CONVITE_EXPIRADO", "Este convite expirou.");
     }
 
-    if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
+    if (invite.getInvitedEmail() == null || !invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
       throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
     }
 
-    if (!planMemberRepository.existsByPlanIdAndUserId(invite.getPlanId(), currentUser.getId())) {
-      PlanMemberEntity membership = new PlanMemberEntity();
-      membership.setPlanId(invite.getPlanId());
-      membership.setUserId(currentUser.getId());
-      membership.setRole(PlanMemberRole.MEMBER);
-      planMemberRepository.save(membership);
-    }
+    addMemberIfMissing(invite.getPlanId(), currentUser.getId(), invite.getRole());
 
     invite.setStatus(PlanInviteStatus.ACCEPTED);
     invite.setRespondedAt(OffsetDateTime.now(clock));
@@ -280,7 +304,7 @@ public class PlanService {
     PlanInviteEntity invite = planInviteRepository.findByToken(token)
         .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
 
-    if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
+    if (invite.getInvitedEmail() == null || !invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
       throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
     }
 
@@ -298,7 +322,7 @@ public class PlanService {
     PlanInviteEntity invite = planInviteRepository.findByToken(token)
         .orElseThrow(() -> new NotFoundException("CONVITE_NAO_ENCONTRADO", "Nao encontramos um convite com este token."));
 
-    if (!invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
+    if (invite.getInvitedEmail() == null || !invite.getInvitedEmail().equalsIgnoreCase(currentUser.getEmail())) {
       throw new BadRequestException("EMAIL_DIFERENTE", "Este convite foi enviado para outro e-mail.");
     }
 
@@ -326,8 +350,9 @@ public class PlanService {
     PlanMemberEntity member = planMemberRepository.findByPlanIdAndUserId(planId, memberUserId)
         .orElseThrow(() -> new NotFoundException("MEMBRO_NAO_ENCONTRADO", "Nao encontramos este membro no plano."));
 
-    if (member.getRole() == PlanMemberRole.OWNER) {
-      throw new BadRequestException("OWNER_NAO_PODE_SER_REMOVIDO", "O owner do plano nao pode ser removido.");
+    PlanEntity plan = planAccessService.requirePlan(planId);
+    if (planAccessService.isCreator(plan, memberUserId)) {
+      throw new BadRequestException("CRIADOR_NAO_PODE_SER_REMOVIDO", "O criador do plano nao pode ser removido.");
     }
 
     List<UUID> cardIds = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(planId).stream()
@@ -346,28 +371,27 @@ public class PlanService {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanManager(planId, currentUserId);
 
-    if (role == null || role == PlanMemberRole.OWNER) {
-      throw new BadRequestException("CARGO_INVALIDO", "Nao e possivel atribuir o cargo de proprietario por este fluxo.");
-    }
+    PlanMemberRole nextRole = requireAssignableRole(role);
 
     PlanMemberEntity member = planMemberRepository.findByPlanIdAndUserId(planId, memberUserId)
         .orElseThrow(() -> new NotFoundException("MEMBRO_NAO_ENCONTRADO", "Nao encontramos este membro no plano."));
 
-    if (member.getRole() == PlanMemberRole.OWNER) {
-      throw new BadRequestException("OWNER_NAO_PODE_SER_ALTERADO", "O cargo do proprietario nao pode ser alterado.");
+    PlanEntity plan = planAccessService.requirePlan(planId);
+    if (planAccessService.isCreator(plan, memberUserId)) {
+      throw new BadRequestException("CRIADOR_NAO_PODE_SER_ALTERADO", "O cargo do criador nao pode ser alterado.");
     }
 
-    member.setRole(role);
+    member.setRole(nextRole);
     planMemberRepository.save(member);
 
     UserEntity user = userRepository.findById(memberUserId)
         .orElseThrow(() -> new NotFoundException("USUARIO_NAO_ENCONTRADO", "Nao encontramos os dados de um membro do plano."));
-    return toMemberSummary(member, List.of(user));
+    return toMemberSummary(plan, member, List.of(user), true);
   }
 
   public List<LabelSummary> listLabels(UUID planId) {
-    UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, currentUserId);
+    UUID currentUserId = authenticatedUserService.findUserId().orElse(null);
+    planAccessService.requirePlanViewer(planId, currentUserId);
     return planLabelRepository.findByPlanIdOrderByNameAsc(planId).stream()
         .map(label -> new LabelSummary(label.getId(), label.getName(), label.getColor()))
         .toList();
@@ -376,8 +400,6 @@ public class PlanService {
   @Transactional
   public LabelSummary createLabel(UUID planId, String name, String color) {
     UUID currentUserId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, currentUserId);
-
     PlanLabelEntity label = new PlanLabelEntity();
     label.setPlanId(planId);
     label.setName(requireName(name));
@@ -387,16 +409,20 @@ public class PlanService {
   }
 
   private PlanSummary toPlanSummary(PlanEntity plan, UUID currentUserId) {
-    PlanMemberRole role = planAccessService.requireMemberRole(plan.getId(), currentUserId);
+    PlanMemberRole role = planAccessService.findMemberRole(plan.getId(), currentUserId).orElse(null);
     long memberCount = planMemberRepository.findByPlanId(plan.getId()).size();
     long taskCount = boardCardRepository.countByPlanId(plan.getId());
     return new PlanSummary(
         plan.getId(),
+        plan.getSlug(),
         plan.getName(),
         plan.getDescription(),
         plan.getCoverThemeId(),
         plan.getCoverColor(),
         plan.getCoverImageId(),
+        plan.getVisibility(),
+        plan.getOwnerUserId(),
+        planAccessService.isCreator(plan, currentUserId),
         role,
         memberCount,
         taskCount,
@@ -413,7 +439,12 @@ public class PlanService {
     );
   }
 
-  private MemberSummary toMemberSummary(PlanMemberEntity member, List<UserEntity> users) {
+  private MemberSummary toMemberSummary(
+      PlanEntity plan,
+      PlanMemberEntity member,
+      List<UserEntity> users,
+      boolean includeEmail
+  ) {
     UserEntity user = users.stream()
         .filter(candidate -> candidate.getId().equals(member.getUserId()))
         .findFirst()
@@ -422,9 +453,10 @@ public class PlanService {
     return new MemberSummary(
         user.getId(),
         user.getFullName(),
-        user.getEmail(),
+        includeEmail ? user.getEmail() : null,
         avatarImageService.avatarUrlFor(AvatarOwnerType.USER, user.getId()),
         member.getRole(),
+        planAccessService.isCreator(plan, member.getUserId()),
         brazilDateTimeMapper.toDateTime(member.getCreatedAt())
     );
   }
@@ -433,6 +465,7 @@ public class PlanService {
     return new InviteResponse(
         invite.getId(),
         invite.getInvitedEmail(),
+        invite.getRole(),
         invite.getStatus(),
         invite.getToken(),
         brazilDateTimeMapper.toDateTime(invite.getExpiresAt()),
@@ -448,6 +481,7 @@ public class PlanService {
         invite.getPlanId(),
         plan.getName(),
         invite.getInvitedEmail(),
+        invite.getRole(),
         invite.getStatus(),
         invite.getToken(),
         brazilDateTimeMapper.toDateTime(invite.getExpiresAt())
@@ -532,13 +566,104 @@ public class PlanService {
     return frontendBaseUrl + "/plans/invites/" + token;
   }
 
+  private String buildShareLinkUrl(String token) {
+    return frontendBaseUrl + "/plans/join/" + token;
+  }
+
+  private PlanMemberRole requireAssignableRole(PlanMemberRole role) {
+    PlanMemberRole resolved = role == null ? PlanMemberRole.MEMBER : role;
+    if (resolved == PlanMemberRole.ADMIN || resolved == PlanMemberRole.MEMBER || resolved == PlanMemberRole.OBSERVER) {
+      return resolved;
+    }
+    throw new BadRequestException("CARGO_INVALIDO", "Informe um cargo valido para o convite.");
+  }
+
+  private void addMemberIfMissing(UUID planId, UUID userId, PlanMemberRole role) {
+    if (planMemberRepository.existsByPlanIdAndUserId(planId, userId)) {
+      return;
+    }
+    PlanMemberEntity membership = new PlanMemberEntity();
+    membership.setPlanId(planId);
+    membership.setUserId(userId);
+    membership.setRole(requireAssignableRole(role));
+    planMemberRepository.save(membership);
+  }
+
+  @Transactional
+  public ShareLinkResponse upsertShareLink(UUID planId, PlanMemberRole role) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    planAccessService.requirePlanManager(planId, currentUser.getId());
+    PlanMemberRole shareRole = requireAssignableRole(role);
+
+    PlanShareLinkEntity link = planShareLinkRepository.findByPlanIdAndRevokedAtIsNull(planId)
+        .orElseGet(() -> {
+          PlanShareLinkEntity created = new PlanShareLinkEntity();
+          created.setPlanId(planId);
+          created.setCreatedByUserId(currentUser.getId());
+          created.setToken(UUID.randomUUID().toString());
+          return created;
+        });
+    link.setRole(shareRole);
+    link.setRevokedAt(null);
+    planShareLinkRepository.save(link);
+    return toShareLinkResponse(link);
+  }
+
+  public ShareLinkResponse getShareLink(UUID planId) {
+    UUID currentUserId = authenticatedUserService.requireUserId();
+    planAccessService.requirePlanManager(planId, currentUserId);
+    return planShareLinkRepository.findByPlanIdAndRevokedAtIsNull(planId)
+        .map(this::toShareLinkResponse)
+        .orElse(null);
+  }
+
+  public ShareLinkPreviewResponse getShareLinkPreview(String token) {
+    PlanShareLinkEntity link = requireActiveShareLink(token);
+    PlanEntity plan = planAccessService.requirePlan(link.getPlanId());
+    return new ShareLinkPreviewResponse(
+        link.getToken(),
+        plan.getId(),
+        plan.getSlug(),
+        plan.getName(),
+        link.getRole()
+    );
+  }
+
+  @Transactional
+  public AcceptInviteResponse acceptShareLink(String token) {
+    UserEntity currentUser = authenticatedUserService.requireUser();
+    PlanShareLinkEntity link = requireActiveShareLink(token);
+    addMemberIfMissing(link.getPlanId(), currentUser.getId(), link.getRole());
+    return new AcceptInviteResponse(link.getPlanId(), "Convite aceito com sucesso.");
+  }
+
+  private PlanShareLinkEntity requireActiveShareLink(String token) {
+    PlanShareLinkEntity link = planShareLinkRepository.findByToken(token)
+        .orElseThrow(() -> new NotFoundException("LINK_NAO_ENCONTRADO", "Nao encontramos este link de convite."));
+    if (link.getRevokedAt() != null) {
+      throw new BadRequestException("LINK_INVALIDO", "Este link de convite nao esta mais disponivel.");
+    }
+    if (link.getExpiresAt() != null && link.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
+      throw new BadRequestException("LINK_EXPIRADO", "Este link de convite expirou.");
+    }
+    return link;
+  }
+
+  private ShareLinkResponse toShareLinkResponse(PlanShareLinkEntity link) {
+    return new ShareLinkResponse(link.getToken(), link.getRole(), buildShareLinkUrl(link.getToken()));
+  }
+
   public record PlanSummary(
       UUID id,
+      String slug,
       String name,
       String description,
       String coverThemeId,
       String cover,
       String coverImageId,
+      PlanVisibility visibility,
+      UUID ownerUserId,
+      boolean isCreator,
       PlanMemberRole role,
       long memberCount,
       long taskCount,
@@ -560,6 +685,7 @@ public class PlanService {
       String email,
       String avatarUrl,
       PlanMemberRole role,
+      boolean isCreator,
       ApiDateTimeDto joinedAt
   ) {
   }
@@ -567,6 +693,7 @@ public class PlanService {
   public record InviteResponse(
       UUID inviteId,
       String invitedEmail,
+      PlanMemberRole role,
       PlanInviteStatus status,
       String token,
       ApiDateTimeDto expiresAt,
@@ -586,6 +713,7 @@ public class PlanService {
       UUID planId,
       String planName,
       String invitedEmail,
+      PlanMemberRole role,
       PlanInviteStatus status,
       String token,
       ApiDateTimeDto expiresAt
@@ -593,6 +721,18 @@ public class PlanService {
   }
 
   public record AcceptInviteResponse(UUID planId, String message) {
+  }
+
+  public record ShareLinkResponse(String token, PlanMemberRole role, String url) {
+  }
+
+  public record ShareLinkPreviewResponse(
+      String token,
+      UUID planId,
+      String planSlug,
+      String planName,
+      PlanMemberRole role
+  ) {
   }
 
   public record LabelSummary(UUID id, String name, String color) {

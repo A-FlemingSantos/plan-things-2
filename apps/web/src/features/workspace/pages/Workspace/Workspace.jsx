@@ -263,10 +263,10 @@ export default function Workspace() {
     setPlanMenuAnchorRect(null)
   }
 
-  const openBoard = (planId) => {
+  const openBoard = (plan) => {
     setBackgroundPicker(null)
-    selectPlan(planId)
-    navigate(buildWorkspaceBoardPath(planId))
+    selectPlan(plan.id)
+    navigate(buildWorkspaceBoardPath(plan))
   }
 
   const openNewPlan = (event) => {
@@ -278,7 +278,7 @@ export default function Workspace() {
       key={plan.id}
       plan={plan}
       view={cardView}
-      onOpen={() => openBoard(plan.id)}
+      onOpen={() => openBoard(plan)}
       onMore={(anchorRect) => {
         setOpenPlanMenuId((current) => (current === plan.id ? null : plan.id))
         setPlanMenuAnchorRect(openPlanMenuId === plan.id ? null : anchorRect)

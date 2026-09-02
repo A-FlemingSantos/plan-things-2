@@ -65,7 +65,7 @@ public class PlanGitHubService {
     UUID currentUserId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanMember(planId, currentUserId);
     PlanMemberRole role = planAccessService.requireMemberRole(planId, currentUserId);
-    boolean manager = role == PlanMemberRole.OWNER || role == PlanMemberRole.ADMIN;
+    boolean manager = PlanAccessService.isManager(role);
     boolean userConnected = accessTokenService.isConnected(currentUserId);
 
     List<ConnectedGitHubRepoView> repos = planGitHubRepoRepository.findByPlanIdAndRemovedAtIsNullOrderByConnectedAtAsc(planId).stream()

@@ -346,9 +346,10 @@ function buildInitials(fullName = '') {
     .join('') || 'PT'
 }
 
-function mapRoleToTag(role) {
-  if (role === 'OWNER') return { tag: 'Owner', tagColor: '#0f703a' }
+function mapRoleToTag(role, isCreator = false) {
+  if (isCreator) return { tag: 'Criador', tagColor: '#0f703a' }
   if (role === 'ADMIN') return { tag: 'Admin', tagColor: '#4290da' }
+  if (role === 'OBSERVER') return { tag: 'Observador', tagColor: '#7a7a7a' }
   return { tag: 'Membro', tagColor: '#a0a0a0' }
 }
 
@@ -357,7 +358,7 @@ function buildMemberDots(memberCount, offset = 0) {
 }
 
 export function mapPlanSummaryToRecord(summary, index = 0) {
-  const roleMeta = mapRoleToTag(summary.role)
+  const roleMeta = mapRoleToTag(summary.role, summary.isCreator)
   const date = toDate(summary.updatedAt?.iso ?? summary.createdAt?.iso)
   const coverThemeId = summary.coverThemeId ?? null
   const coverImageId = summary.coverImageId ?? null
@@ -382,6 +383,10 @@ export function mapPlanSummaryToRecord(summary, index = 0) {
     coverImageThumb,
     boardColumns: [],
     role: summary.role,
+    slug: summary.slug ?? null,
+    visibility: summary.visibility ?? 'PRIVATE',
+    ownerUserId: summary.ownerUserId ?? null,
+    isCreator: Boolean(summary.isCreator),
     memberCount: summary.memberCount,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
@@ -401,6 +406,7 @@ export function mergePlanDetails(plan, details) {
     email: member.email,
     avatarUrl: member.avatarUrl ?? null,
     role: member.role,
+    isCreator: Boolean(member.isCreator),
   }))
 
   const labelsMeta = details.labels.map((label) => ({
@@ -413,6 +419,10 @@ export function mergePlanDetails(plan, details) {
   return {
     ...plan,
     role: details.plan.role,
+    slug: details.plan.slug ?? plan.slug ?? null,
+    visibility: details.plan.visibility ?? plan.visibility ?? 'PRIVATE',
+    ownerUserId: details.plan.ownerUserId ?? plan.ownerUserId ?? null,
+    isCreator: Boolean(details.plan.isCreator),
     memberCount: details.plan.memberCount,
     tasks: Number.isFinite(details.plan.taskCount) ? details.plan.taskCount : plan.tasks,
     coverThemeId: details.plan.coverThemeId ?? plan.coverThemeId ?? null,

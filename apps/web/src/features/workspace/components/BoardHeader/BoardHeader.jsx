@@ -6,6 +6,7 @@ import {
   EllipsisVertical,
   Funnel,
   Globe,
+  Lock,
   Share,
 } from 'lucide-react'
 import { SiGithub } from 'react-icons/si'
@@ -17,6 +18,7 @@ import BoardMoreOptionsPopover from '../BoardMoreOptionsPopover/BoardMoreOptions
 import BoardFilterPopover from '../BoardFilterPopover/BoardFilterPopover.jsx'
 import BoardViewModePopover, { BOARD_VIEW_MODES } from '../BoardViewModePopover/BoardViewModePopover.jsx'
 import { BOARD_FILTER_DEFAULTS, hasActiveBoardFilters } from '../BoardFilterPopover/boardFilterDefaults.js'
+import { canManagePlanMembers } from '../../utils/planMemberRoles.js'
 import styles from './BoardHeader.module.css'
 
 const ICON_SIZE = 15
@@ -61,14 +63,17 @@ export default function BoardHeader({
   currentUser = null,
   boardFilter = BOARD_FILTER_DEFAULTS,
   onBoardFilterChange,
+  onVisibilityChange,
+  readOnly = false,
 }) {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(false)
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [boardVisibility, setBoardVisibility] = useState('public')
   const [isGitHubOpen, setIsGitHubOpen] = useState(false)
+  const boardVisibility = (plan?.visibility ?? 'PRIVATE').toLowerCase() === 'public' ? 'public' : 'private'
+  const canManageVisibility = !readOnly && canManagePlanMembers(plan?.role)
   const viewMenuId = useId()
   const viewMenuWrapRef = useRef(null)
   const shareMenuWrapRef = useRef(null)
@@ -286,6 +291,8 @@ export default function BoardHeader({
           }
 
           if (id === 'globe') {
+            if (readOnly) return null
+            const VisibilityIcon = boardVisibility === 'private' ? Lock : Globe
             return (
               <div key={id} ref={visibilityMenuWrapRef} className={styles.visibilityMenuWrap}>
                 <button
@@ -296,14 +303,18 @@ export default function BoardHeader({
                   aria-expanded={isVisibilityOpen}
                   onClick={toggleVisibilityPopover}
                 >
-                  <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+                  <VisibilityIcon size={ICON_SIZE} strokeWidth={ICON_STROKE} />
                 </button>
 
                 <BoardVisibilityPopover
                   open={isVisibilityOpen}
                   visibility={boardVisibility}
                   workspaceName={workspaceName}
-                  onVisibilityChange={setBoardVisibility}
+                  onVisibilityChange={(nextVisibility) => {
+                    if (!canManageVisibility) return
+                    onVisibilityChange?.(nextVisibility)
+                    setIsVisibilityOpen(false)
+                  }}
                   onClose={() => setIsVisibilityOpen(false)}
                 />
               </div>
@@ -359,6 +370,7 @@ export default function BoardHeader({
           planName={planName}
           {...githubIntegration}
         />
+        {!readOnly ? (
         <div ref={shareMenuWrapRef} className={styles.shareMenuWrap}>
           <button
             type="button"
@@ -380,6 +392,7 @@ export default function BoardHeader({
             onNotify={onNotify}
           />
         </div>
+        ) : null}
         {TRAILING_ACTION_ITEMS.map(({ id, Icon, label }) => (
           <div key={id} ref={moreOptionsMenuWrapRef} className={styles.moreOptionsMenuWrap}>
             <button

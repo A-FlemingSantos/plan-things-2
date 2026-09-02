@@ -18,6 +18,7 @@ export const ROUTES = {
   privacy: '/privacy',
   terms: '/terms',
   planInvite: '/plans/invites/:token',
+  planJoin: '/plans/join/:token',
 }
 
 export const ROUTE_ALIASES = [
@@ -66,6 +67,8 @@ export function isInternalAppPath(pathname) {
     ROUTES.calendar,
     ROUTES.docs,
     ROUTES.settings,
+    '/plans/invites',
+    '/plans/join',
   ]
 
   for (const base of internalBases) {
@@ -136,8 +139,17 @@ export function toRouteString(location) {
   )
 }
 
-export function buildWorkspaceBoardPath(planId) {
-  return planId ? `${ROUTES.workspaceBoard}/${planId}` : ROUTES.workspaceBoard
+export function buildWorkspaceBoardPath(planOrSlug) {
+  if (!planOrSlug) return ROUTES.workspaceBoard
+  if (typeof planOrSlug === 'object') {
+    const slug = planOrSlug.slug || planOrSlug.id
+    return slug ? `${ROUTES.workspaceBoard}/${slug}` : ROUTES.workspaceBoard
+  }
+  return `${ROUTES.workspaceBoard}/${planOrSlug}`
+}
+
+export function buildPlanJoinPath(token) {
+  return token ? `/plans/join/${token}` : ROUTES.workspace
 }
 
 export function buildDocsPath(docId) {

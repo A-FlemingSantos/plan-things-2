@@ -34,8 +34,8 @@ export function PlansProvider({ children }) {
   const { accessToken, currentUser, workspace } = auth
   const { generalPreferences } = usePreferences()
   const sessionMode = readSessionModeFromAuthState(auth)
-  const backendEnabled = sessionMode === 'authenticated'
   const demoEnabled = sessionMode === 'demo'
+  const backendEnabled = sessionMode === 'authenticated'
   const [plans, setPlans] = useState([])
   const [activePlanId, setActivePlanId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -298,8 +298,30 @@ export function PlansProvider({ children }) {
 
   const getPlanById = useCallback((planId) => {
     if (!planId) return null
-    return plansByIdRef.current.get(planId) ?? null
+    const plansMap = plansByIdRef.current
+    if (plansMap.has(planId)) return plansMap.get(planId)
+    return [...plansMap.values()].find((plan) => plan.slug === planId) ?? null
   }, [])
+
+  const mergeFetchedPlan = useCallback((details) => {
+    const basePlan = mapPlanSummaryToRecord(details.plan)
+    const mergedPlan = mergePlanDetails(basePlan, details)
+    setPlans((prev) => {
+      const exists = prev.some((plan) => plan.id === mergedPlan.id)
+      if (!exists) return [...prev, mergedPlan]
+      return prev.map((plan) => (plan.id === mergedPlan.id ? mergePlanDetails(plan, details) : plan))
+    })
+    setActivePlanId(mergedPlan.id)
+    return mergedPlan
+  }, [])
+
+  const loadPlanByKey = useCallback(async (planKey) => {
+    if (!planKey || demoEnabled) return null
+    const details = await apiRequest(`/api/plans/${planKey}`, {
+      token: accessToken,
+    })
+    return mergeFetchedPlan(details)
+  }, [accessToken, demoEnabled, mergeFetchedPlan])
 
   const updatePlan = useCallback((planId, updater) => {
     setPlans((prev) => setPlanById(prev, planId, updater))
@@ -317,57 +339,41 @@ export function PlansProvider({ children }) {
   }, [])
 
   const ensurePlanDetails = useCallback(async (planId) => {
-    if (!backendEnabled) {
+    if (demoEnabled) {
       return plansByIdRef.current.get(planId) ?? null
     }
 
-    if (!isBackendPlanId(planId)) {
-      return null
-    }
+    if (!planId) return null
 
-    const currentPlan = plansByIdRef.current.get(planId)
-    if (!currentPlan) return null
-    if (currentPlan.detailsLoaded) {
+    const currentPlan = getPlanById(planId)
+    if (currentPlan?.detailsLoaded) {
       return currentPlan
     }
 
-    const details = await apiRequest(`/api/plans/${planId}`, {
-      token: accessToken,
-    })
+    if (currentPlan && isBackendPlanId(currentPlan.id)) {
+      const details = await apiRequest(`/api/plans/${currentPlan.id}`, {
+        token: accessToken,
+      })
+      return mergeFetchedPlan(details)
+    }
 
-    const latestPlan = plansByIdRef.current.get(planId) ?? currentPlan
-    const mergedPlan = mergePlanDetails(latestPlan, details)
-    setPlans((prev) => prev.map((plan) => {
-      if (plan.id !== planId) return plan
-      return mergePlanDetails(plan, details)
-    }))
-    return mergedPlan
-  }, [accessToken, backendEnabled])
+    return loadPlanByKey(planId)
+  }, [accessToken, demoEnabled, getPlanById, loadPlanByKey, mergeFetchedPlan])
 
   const refreshPlanDetails = useCallback(async (planId) => {
-    if (!backendEnabled) {
-      return plansByIdRef.current.get(planId) ?? null
+    if (demoEnabled) {
+      return getPlanById(planId)
     }
 
-    if (!isBackendPlanId(planId)) {
-      return null
-    }
+    const currentPlan = getPlanById(planId)
+    const key = currentPlan?.id ?? planId
+    if (!key) return null
 
-    const currentPlan = plansByIdRef.current.get(planId)
-    if (!currentPlan) return null
-
-    const details = await apiRequest(`/api/plans/${planId}`, {
+    const details = await apiRequest(`/api/plans/${key}`, {
       token: accessToken,
     })
-
-    const latestPlan = plansByIdRef.current.get(planId) ?? currentPlan
-    const mergedPlan = mergePlanDetails(latestPlan, details)
-    setPlans((prev) => prev.map((plan) => {
-      if (plan.id !== planId) return plan
-      return mergePlanDetails(plan, details)
-    }))
-    return mergedPlan
-  }, [accessToken, backendEnabled])
+    return mergeFetchedPlan(details)
+  }, [accessToken, demoEnabled, getPlanById, mergeFetchedPlan])
 
   const refreshPlans = useCallback(async ({ selectPlanId } = {}) => {
     if (!backendEnabled) {
@@ -395,25 +401,22 @@ export function PlansProvider({ children }) {
   }, [accessToken, backendEnabled, plans])
 
   const loadPlanBoard = useCallback(async (planId) => {
-    if (!backendEnabled || !planId) {
-      return plansByIdRef.current.get(planId)?.boardColumns ?? []
+    if (demoEnabled || !planId) {
+      return getPlanById(planId)?.boardColumns ?? []
     }
 
-    if (!isBackendPlanId(planId)) {
-      return []
-    }
-
-    await ensurePlanDetails(planId)
-    const boardView = await apiRequest(`/api/plans/${planId}/board`, {
+    const plan = await ensurePlanDetails(planId)
+    const resolvedId = plan?.id ?? planId
+    const boardView = await apiRequest(`/api/plans/${resolvedId}/board`, {
       token: accessToken,
     })
 
-    setPlans((prev) => prev.map((plan) => (
-      plan.id === planId ? mergeBoardIntoPlan(plan, boardView, boardMappingOptions) : plan
+    setPlans((prev) => prev.map((entry) => (
+      entry.id === resolvedId ? mergeBoardIntoPlan(entry, boardView, boardMappingOptions) : entry
     )))
 
     return mapBoardViewToColumns(boardView, boardMappingOptions)
-  }, [accessToken, backendEnabled, boardMappingOptions, ensurePlanDetails])
+  }, [accessToken, boardMappingOptions, demoEnabled, ensurePlanDetails, getPlanById])
 
   const applyBoardView = useCallback((planId, boardView) => {
     setPlans((prev) => prev.map((plan) => (
@@ -428,12 +431,13 @@ export function PlansProvider({ children }) {
     currentUser,
     workspace,
     isLoading,
-    isBackendDriven: backendEnabled,
+    isBackendDriven: sessionMode !== 'demo',
     createPlan,
     deletePlan,
     renamePlan,
     updatePlanCover,
     getPlanById,
+    loadPlanByKey,
     selectPlan,
     updatePlan,
     updatePlanBoard,
@@ -447,6 +451,7 @@ export function PlansProvider({ children }) {
     activePlanId,
     applyBoardView,
     backendEnabled,
+    sessionMode,
     createPlan,
     deletePlan,
     currentUser,
@@ -456,6 +461,7 @@ export function PlansProvider({ children }) {
     renamePlan,
     updatePlanCover,
     getPlanById,
+    loadPlanByKey,
     isLoading,
     loadPlanBoard,
     plans,

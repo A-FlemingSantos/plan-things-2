@@ -115,8 +115,8 @@ public class BoardService {
   }
 
   public BoardView getBoard(UUID planId) {
-    UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    UUID userId = authenticatedUserService.findUserId().orElse(null);
+    PlanEntity plan = planAccessService.requirePlanViewer(planId, userId);
     ensureDefaultLabels(planId);
     return buildBoardView(plan, userId);
   }
@@ -125,19 +125,17 @@ public class BoardService {
   public CompactColumnsPreferenceView updateCompactColumns(UUID planId, List<UUID> columnIds) {
     UUID userId = authenticatedUserService.requireUserId();
     planAccessService.requirePlanMember(planId, userId);
-
-    Set<UUID> requestedColumnIds = new LinkedHashSet<>(columnIds == null ? List.of() : columnIds);
     Set<UUID> planColumnIds = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId).stream()
         .map(BoardColumnEntity::getId)
         .collect(Collectors.toSet());
 
-    if (!planColumnIds.containsAll(requestedColumnIds)) {
+    if (!planColumnIds.containsAll(columnIds)) {
       throw new BadRequestException("COLUNA_INVALIDA", "A preferencia contem uma coluna inexistente neste plano.");
     }
 
     boardColumnViewPreferenceRepository.deleteByUserIdAndPlanId(userId, planId);
-    if (!requestedColumnIds.isEmpty()) {
-      boardColumnViewPreferenceRepository.saveAll(requestedColumnIds.stream()
+    if (!columnIds.isEmpty()) {
+      boardColumnViewPreferenceRepository.saveAll(columnIds.stream()
           .map(columnId -> {
             BoardColumnViewPreferenceEntity preference = new BoardColumnViewPreferenceEntity();
             preference.setUserId(userId);
@@ -148,13 +146,13 @@ public class BoardService {
           .toList());
     }
 
-    return new CompactColumnsPreferenceView(List.copyOf(requestedColumnIds));
+    return new CompactColumnsPreferenceView(List.copyOf(columnIds));
   }
 
   @Transactional
   public BoardView createColumn(UUID planId, String title, String color, String status) {
     UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, userId);
 
     BoardColumnEntity column = new BoardColumnEntity();
     column.setPlanId(planId);
@@ -169,7 +167,7 @@ public class BoardService {
   @Transactional
   public BoardView updateColumn(UUID planId, UUID columnId, String title, String color, String status) {
     UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, userId);
     BoardColumnEntity column = requireColumn(planId, columnId);
     column.setTitle(requireText(title, "O titulo da coluna e obrigatorio."));
     column.setColor(normalizeColumnColor(color));
@@ -183,7 +181,7 @@ public class BoardService {
   @Transactional
   public MessageResponse deleteColumn(UUID planId, UUID columnId) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     BoardColumnEntity column = requireColumn(planId, columnId);
 
     if (!boardCardRepository.findByColumnIdOrderByPositionIndexAsc(columnId).isEmpty()) {
@@ -198,7 +196,7 @@ public class BoardService {
   @Transactional
   public BoardView reorderColumns(UUID planId, List<UUID> orderedColumnIds) {
     UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, userId);
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(planId);
     Map<UUID, BoardColumnEntity> byId = columns.stream().collect(Collectors.toMap(BoardColumnEntity::getId, column -> column));
 
@@ -220,7 +218,7 @@ public class BoardService {
   @Transactional
   public BoardCardView createCard(UUID planId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, Boolean starred, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, userId);
     requireColumn(planId, columnId);
     validateLabel(planId, labelId);
     validateAssignees(planId, assigneeIds);
@@ -248,7 +246,7 @@ public class BoardService {
   @Transactional
   public BoardCardView updateCard(UUID planId, UUID cardId, UUID columnId, String title, String description, UUID labelId, List<UUID> assigneeIds, Boolean completed, Boolean starred, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
     List<UUID> previousAssigneeIds = normalizeAssigneeIds(
         boardCardAssigneeRepository.findByCardId(cardId).stream()
@@ -290,7 +288,7 @@ public class BoardService {
   @Transactional
   public BoardView moveCard(UUID planId, UUID cardId, UUID targetColumnId, int targetPosition) {
     UUID userId = authenticatedUserService.requireUserId();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, userId);
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
     requireColumn(planId, targetColumnId);
 
@@ -318,7 +316,7 @@ public class BoardService {
   @Transactional
   public MessageResponse deleteCard(UUID planId, UUID cardId) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     BoardCardEntity card = requireCard(planId, cardId);
     UUID columnId = card.getColumnId();
     calendarService.removeCardEvent(cardId);
@@ -330,7 +328,7 @@ public class BoardService {
   @Transactional
   public CommentView addComment(UUID planId, UUID cardId, String message) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     requireCard(planId, cardId);
 
     BoardCardCommentEntity comment = createComment(cardId, userId, requireText(message, "O comentario e obrigatorio."), BoardCommentKind.USER_COMMENT);
@@ -340,7 +338,7 @@ public class BoardService {
   @Transactional
   public ChecklistView createChecklist(UUID planId, UUID cardId, String title) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     requireCard(planId, cardId);
 
     BoardChecklistEntity checklist = new BoardChecklistEntity();
@@ -354,7 +352,7 @@ public class BoardService {
   @Transactional
   public MessageResponse deleteChecklist(UUID planId, UUID checklistId) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     BoardChecklistEntity checklist = requireChecklist(planId, checklistId);
     UUID cardId = checklist.getCardId();
 
@@ -367,7 +365,7 @@ public class BoardService {
   @Transactional
   public ChecklistItemView createChecklistItem(UUID planId, UUID checklistId, String title, UUID assigneeUserId, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     BoardChecklistEntity checklist = requireChecklist(planId, checklistId);
     validateSchedule(startAt, dueAt);
     if (assigneeUserId != null) {
@@ -389,7 +387,7 @@ public class BoardService {
   @Transactional
   public ChecklistItemView updateChecklistItem(UUID planId, UUID itemId, String title, Boolean completed, UUID assigneeUserId, OffsetDateTime startAt, OffsetDateTime dueAt) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     BoardChecklistItemEntity item = boardChecklistItemRepository.findById(itemId)
         .orElseThrow(() -> new NotFoundException("ITEM_NAO_ENCONTRADO", "Nao encontramos o item do checklist informado."));
     requireChecklist(planId, item.getChecklistId());
@@ -410,7 +408,7 @@ public class BoardService {
   @Transactional
   public InboxDeliveryResponse sendCardToInbox(UUID planId, UUID cardId, List<UUID> recipientUserIds) {
     UserEntity currentUser = authenticatedUserService.requireUser();
-    PlanEntity plan = planAccessService.requirePlanMember(planId, currentUser.getId());
+    PlanEntity plan = planAccessService.requirePlanEditor(planId, currentUser.getId());
     BoardCardEntity card = requireCard(planId, cardId);
     List<UserEntity> recipients = resolveInboxRecipients(planId, cardId, recipientUserIds);
     if (recipients.isEmpty()) {
@@ -434,7 +432,7 @@ public class BoardService {
   @Transactional
   public MessageResponse clearInboxDeliveries(UUID planId) {
     UUID userId = authenticatedUserService.requireUserId();
-    planAccessService.requirePlanMember(planId, userId);
+    planAccessService.requirePlanEditor(planId, userId);
     List<UUID> deliveryIds = boardCardInboxDeliveryRepository.findByPlanId(planId).stream()
         .map(BoardCardInboxDeliveryEntity::getId)
         .toList();
@@ -449,11 +447,13 @@ public class BoardService {
     List<BoardColumnEntity> columns = boardColumnRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     List<BoardCardEntity> cards = boardCardRepository.findByPlanIdOrderByPositionIndexAsc(plan.getId());
     Map<UUID, List<BoardCardEntity>> cardsByColumn = cards.stream().collect(Collectors.groupingBy(BoardCardEntity::getColumnId));
-    List<UUID> compactColumnIds = boardColumnViewPreferenceRepository.findByUserIdAndPlanId(currentUserId, plan.getId())
-        .stream()
-        .map(BoardColumnViewPreferenceEntity::getColumnId)
-        .toList();
-    PlanMemberRole currentRole = planAccessService.requireMemberRole(plan.getId(), currentUserId);
+    List<UUID> compactColumnIds = currentUserId == null
+        ? List.of()
+        : boardColumnViewPreferenceRepository.findByUserIdAndPlanId(currentUserId, plan.getId())
+            .stream()
+            .map(BoardColumnViewPreferenceEntity::getColumnId)
+            .toList();
+    PlanMemberRole currentRole = planAccessService.findMemberRole(plan.getId(), currentUserId).orElse(null);
     List<LabelView> labels = planLabelRepository.findByPlanIdOrderByNameAsc(plan.getId()).stream()
         .map(label -> new LabelView(label.getId(), label.getName(), label.getColor()))
         .toList();
@@ -638,7 +638,7 @@ public class BoardService {
 
     UserEntity attachedBy = userRepository.findById(attachment.getAttachedByUserId()).orElse(null);
     boolean attachedByCurrentUser = Objects.equals(attachment.getAttachedByUserId(), currentUserId);
-    boolean canRemove = attachedByCurrentUser || currentRole == PlanMemberRole.OWNER || currentRole == PlanMemberRole.ADMIN;
+    boolean canRemove = attachedByCurrentUser || currentRole == PlanMemberRole.ADMIN;
 
     return new AttachmentView(
         attachment.getId(),

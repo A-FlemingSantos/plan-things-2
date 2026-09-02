@@ -60,7 +60,7 @@ class IntelligenceApiIntegrationTest extends ApiIntegrationTestSupport {
   @Test
   void shouldRejectIntelligenceStatusWithoutAuthentication() throws Exception {
     mockMvc.perform(get("/api/intelligence/conversations/status"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isUnauthorized());
   }
 
   @Test

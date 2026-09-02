@@ -40,6 +40,7 @@ import { useKanbanBoardFiles } from './hooks/useKanbanBoardFiles.js'
 import { useKanbanBoardInbox } from './hooks/useKanbanBoardInbox.js'
 import { useKanbanBoardPlanner } from './hooks/useKanbanBoardPlanner.js'
 import useKanbanGitHubIntegration from './hooks/useKanbanGitHubIntegration.js'
+import { canEditPlan, canManagePlanMembers } from '../../utils/planMemberRoles.js'
 import styles from './KanbanBoard.module.css'
 
 const MEMBERS = [
@@ -128,7 +129,9 @@ export default function KanbanBoard() {
   const planMembers = isBackendDriven
     ? backendPlanMembers
     : (activePlan ? (activePlan?.membersMeta?.length ? activePlan.membersMeta : MEMBERS) : [])
-  const isPlanManager = !isBackendDriven || ['OWNER', 'ADMIN'].includes(activePlan?.role)
+  const isPlanManager = !isBackendDriven || canManagePlanMembers(activePlan?.role)
+  const canEditBoard = !isBackendDriven || canEditPlan(activePlan?.role)
+  const readOnlyBoard = isBackendDriven && !canEditBoard
   const canManageGitHub = Boolean(isBackendDriven && isPlanManager)
 
   const refreshBoardAfterGitHubSync = useCallback(async () => {
@@ -547,6 +550,20 @@ export default function KanbanBoard() {
               isBackendDriven={isBackendDriven}
               accessToken={accessToken}
               onRefreshPlanDetails={refreshPlanDetails}
+              onVisibilityChange={async (nextVisibility) => {
+                if (!activePlan?.id || !accessToken) return
+                try {
+                  await apiRequest(`/api/plans/${activePlan.id}/visibility`, {
+                    method: 'PATCH',
+                    token: accessToken,
+                    body: { visibility: nextVisibility === 'public' ? 'PUBLIC' : 'PRIVATE' },
+                  })
+                  await refreshPlanDetails(activePlan.id)
+                } catch (error) {
+                  showNotification(error?.message ?? 'Não foi possível alterar a visibilidade.')
+                }
+              }}
+              readOnly={readOnlyBoard}
               onNotify={showNotification}
               githubOpen={isGitHubIntegrationOpen}
               onGitHubOpenChange={setIsGitHubIntegrationOpen}
@@ -617,7 +634,7 @@ export default function KanbanBoard() {
                     col={col}
                     isDropTarget={dragOverColumnId === col.id}
                     isCompact={compactColumnIds.has(col.id)}
-                    onAddCard={addCard}
+                    onAddCard={canEditBoard ? addCard : undefined}
                     onDeleteCol={handleColumnDelete}
                     onRenameCol={renameColumn}
                     onChangeColColor={handleColumnColorChange}
@@ -633,6 +650,7 @@ export default function KanbanBoard() {
                   />
                 ))}
 
+                {canEditBoard ? (
                 <AddColumnComposer
                   addingCol={addingCol}
                   newColTitle={newColTitle}
@@ -654,6 +672,7 @@ export default function KanbanBoard() {
                   errorMessage={addColumnError}
                   styles={styles}
                 />
+                ) : null}
               </div>
               </SortableContext>
             )}

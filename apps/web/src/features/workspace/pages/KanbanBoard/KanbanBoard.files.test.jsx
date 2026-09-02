@@ -17,7 +17,7 @@ const boardState = vi.hoisted(() => ({
 const activePlan = vi.hoisted(() => ({
   id: 'plan-1',
   name: 'Plano Arquivos',
-  role: 'OWNER',
+  role: 'ADMIN',
   boardColumns: [],
   boardLoaded: true,
   labelsMeta: [],
@@ -26,7 +26,7 @@ const activePlan = vi.hoisted(() => ({
       id: 'user-1',
       fullName: 'Arthur Owner',
       email: 'arthur@example.com',
-      role: 'OWNER',
+      role: 'ADMIN',
     },
   ],
 }))
@@ -134,6 +134,7 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 }))
 
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
+  kanbanDropAnimation: () => null,
   default: ({ col, onCardClick }) => (
     <section aria-label={col.title}>
       {col.cards.map((card) => (

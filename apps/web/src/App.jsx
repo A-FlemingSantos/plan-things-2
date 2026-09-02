@@ -62,6 +62,25 @@ function RequireSession({ children, notice = '' }) {
   return children
 }
 
+function KanbanBoardRoute() {
+  const { planId } = useParams()
+  const auth = useAuth()
+  const location = useLocation()
+  const sessionMode = readSessionModeFromAuthState(auth)
+
+  if (!planId && sessionMode === 'anonymous') {
+    return (
+      <Navigate
+        to={ROUTES.login}
+        replace
+        state={buildAuthRedirectState(location)}
+      />
+    )
+  }
+
+  return <KanbanBoard />
+}
+
 function AppBootstrapScreen() {
   const location = useLocation()
   const isInternalPath = isInternalAppPath(location.pathname)
@@ -252,9 +271,19 @@ function AppShell() {
                   </RequireSession>
                 )}
               />
+              <Route
+                path={ROUTES.planJoin}
+                element={(
+                  <RequireSession notice="Faça login para entrar no plano.">
+                    <AppThemeScope preference="system">
+                      <InviteAccept variant="share-link" />
+                    </AppThemeScope>
+                  </RequireSession>
+                )}
+              />
               <Route path="/app" element={<RequireSession><PreferredAppEntryRedirect /></RequireSession>} />
               <Route path={ROUTES.workspace} element={<RequireSession><Workspace /></RequireSession>} />
-              <Route path={`${ROUTES.workspaceBoard}/:planId?`} element={<RequireSession><KanbanBoard /></RequireSession>} />
+              <Route path={`${ROUTES.workspaceBoard}/:planId?`} element={<KanbanBoardRoute />} />
               <Route
                 path={ROUTES.calendar}
                 element={(

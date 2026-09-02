@@ -29,6 +29,14 @@ public class AuthenticatedUserService {
     return requirePrincipal().getUserId();
   }
 
+  public java.util.Optional<UUID> findUserId() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || !(authentication.getPrincipal() instanceof SecurityUser principal)) {
+      return java.util.Optional.empty();
+    }
+    return java.util.Optional.ofNullable(principal.getUserId());
+  }
+
   public UUID requireSessionId() {
     UUID sessionId = requirePrincipal().getSessionId();
     if (sessionId == null) {

@@ -91,7 +91,7 @@ class PlanInviteGmailIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
-  void shouldRejectInviteWithoutConnectedGmailAndNotCreatePendingInvite() throws Exception {
+  void shouldPersistInviteWithoutConnectedGmail() throws Exception {
     JsonNode ownerSession = register("No Gmail Owner", "owner-no-gmail@example.com");
     String ownerToken = ownerSession.path("accessToken").asText();
     JsonNode createdPlan = createPlan(ownerToken, "Plano sem Gmail");
@@ -105,10 +105,11 @@ class PlanInviteGmailIntegrationTest extends ApiIntegrationTestSupport {
                   "email": "missing-gmail@example.com"
                 }
                 """))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.error.code").value("GMAIL_NAO_CONECTADO"));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("PENDING"))
+        .andExpect(jsonPath("$.data.delivery.emailSent").value(false));
 
-    assertEquals(0, planInviteRepository.findByPlanIdOrderByCreatedAtDesc(java.util.UUID.fromString(planId)).size());
+    assertEquals(1, planInviteRepository.findByPlanIdOrderByCreatedAtDesc(java.util.UUID.fromString(planId)).size());
   }
 
   @Test
@@ -129,10 +130,10 @@ class PlanInviteGmailIntegrationTest extends ApiIntegrationTestSupport {
                   "email": "refresh-failure@example.com"
                 }
                 """))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.error.code").value("GMAIL_TOKEN_REFRESH_FALHOU"));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.delivery.emailSent").value(false));
 
-    assertEquals(0, planInviteRepository.findByPlanIdOrderByCreatedAtDesc(java.util.UUID.fromString(planId)).size());
+    assertEquals(1, planInviteRepository.findByPlanIdOrderByCreatedAtDesc(java.util.UUID.fromString(planId)).size());
     mockMvc.perform(get("/api/settings")
             .header("Authorization", "Bearer " + ownerToken))
         .andExpect(status().isOk())
@@ -140,7 +141,7 @@ class PlanInviteGmailIntegrationTest extends ApiIntegrationTestSupport {
   }
 
   @Test
-  void shouldRejectInviteWhenGmailSendFailsAndNotCreatePendingInvite() throws Exception {
+  void shouldPersistInviteWhenGmailSendFails() throws Exception {
     JsonNode ownerSession = register("Send Owner", "owner-send-gmail@example.com");
     String ownerToken = ownerSession.path("accessToken").asText();
     String ownerId = ownerSession.path("user").path("id").asText();
@@ -157,10 +158,10 @@ class PlanInviteGmailIntegrationTest extends ApiIntegrationTestSupport {
                   "email": "send-failure@example.com"
                 }
                 """))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.error.code").value("GMAIL_ENVIO_CONVITE_FALHOU"));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.delivery.emailSent").value(false));
 
-    assertEquals(0, planInviteRepository.findByPlanIdOrderByCreatedAtDesc(java.util.UUID.fromString(planId)).size());
+    assertEquals(1, planInviteRepository.findByPlanIdOrderByCreatedAtDesc(java.util.UUID.fromString(planId)).size());
   }
 
   @Test

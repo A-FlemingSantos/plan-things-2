@@ -69,6 +69,10 @@ vi.mock('./features/workspace/pages/Workspace/Workspace.jsx', () => ({
   },
 }))
 
+vi.mock('./features/workspace/context/PlansContext.jsx', () => ({
+  usePlans: () => ({ plans: [] }),
+}))
+
 vi.mock('./features/workspace/pages/KanbanBoard/KanbanBoard.jsx', () => ({
   default: () => {
     const navigate = useNavigate()

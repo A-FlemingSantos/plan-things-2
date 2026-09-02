@@ -3,6 +3,8 @@ package com.planthings.api.plans;
 import com.planthings.api.common.persistence.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
@@ -15,6 +17,13 @@ public class PlanEntity extends BaseEntity {
 
   @Column(nullable = false)
   private UUID ownerUserId;
+
+  @Column(nullable = false, unique = true, length = 140)
+  private String slug;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private PlanVisibility visibility = PlanVisibility.PRIVATE;
 
   @Column(nullable = false, length = 120)
   private String name;
@@ -45,6 +54,22 @@ public class PlanEntity extends BaseEntity {
 
   public void setOwnerUserId(UUID ownerUserId) {
     this.ownerUserId = ownerUserId;
+  }
+
+  public String getSlug() {
+    return slug;
+  }
+
+  public void setSlug(String slug) {
+    this.slug = slug;
+  }
+
+  public PlanVisibility getVisibility() {
+    return visibility;
+  }
+
+  public void setVisibility(PlanVisibility visibility) {
+    this.visibility = visibility;
   }
 
   public String getName() {

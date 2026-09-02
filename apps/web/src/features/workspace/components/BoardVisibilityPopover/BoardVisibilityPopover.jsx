@@ -18,6 +18,8 @@ export const BOARD_VISIBILITY_OPTIONS = [
     label: 'Área de trabalho',
     description: null,
     Icon: Users,
+    disabled: true,
+    iconClassName: styles.optionIconDisabled,
   },
   {
     id: 'organization',
@@ -43,7 +45,7 @@ function resolveWorkspaceDescription(workspaceName) {
 
 export default function BoardVisibilityPopover({
   open,
-  visibility = 'public',
+  visibility = 'private',
   workspaceName,
   onVisibilityChange,
   onClose,

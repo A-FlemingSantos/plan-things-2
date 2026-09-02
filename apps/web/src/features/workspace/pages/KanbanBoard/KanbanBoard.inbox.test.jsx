@@ -22,7 +22,7 @@ const dndMock = vi.hoisted(() => ({
 const activePlan = vi.hoisted(() => ({
   id: 'plan-1',
   name: 'Plano Inbox',
-  role: 'OWNER',
+  role: 'ADMIN',
   boardColumns: [],
   boardLoaded: true,
   labelsMeta: [],
@@ -33,7 +33,7 @@ const activePlan = vi.hoisted(() => ({
       color: '#111827',
       name: 'Arthur Owner',
       email: 'arthur@example.com',
-      role: 'OWNER',
+      role: 'ADMIN',
     },
     {
       id: 'user-2',
@@ -164,6 +164,7 @@ vi.mock('../../../preferences/components/AppThemeScope/AppThemeScope.jsx', () =>
 }))
 
 vi.mock('../../components/KanbanColumn/KanbanColumn.jsx', () => ({
+  kanbanDropAnimation: () => null,
   default: ({ col }) => (
     <section aria-label={col.title}>
       {col.cards.map((card) => (

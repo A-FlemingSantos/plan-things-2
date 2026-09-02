@@ -2,7 +2,6 @@ import { useEffect, useId, useState } from 'react'
 import { Eye, Link2, PenLine, SendHorizontal, Shield, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '../../../../shared/api/apiClient.js'
-import { buildWorkspaceBoardPath } from '../../../../shared/config/routes.js'
 import { useAuthenticatedImageUrl } from '../../../../shared/hooks/useAuthenticatedImageUrl.js'
 import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import { resolveCoverThemeClass } from '../workspaceCover/workspaceCoverUtils.js'
@@ -55,11 +54,6 @@ function ShareRoleCycleButton({
       {showLabel ? <span>{option.label}</span> : null}
     </button>
   )
-}
-
-function buildPlanShareUrl(planId) {
-  if (!planId || typeof window === 'undefined') return ''
-  return `${window.location.origin}${buildWorkspaceBoardPath(planId)}`
 }
 
 async function copyTextToClipboard(value) {
@@ -141,9 +135,8 @@ export default function PlanSharePopover({
   const planMembers = Array.isArray(plan?.membersMeta) ? plan.membersMeta : []
   const trimmedEmail = email.trim()
   const isEmailValid = EMAIL_PATTERN.test(trimmedEmail)
-  const shareUrl = buildPlanShareUrl(plan?.id)
-  const inviteDisabled = isSubmitting || isGmailStatusLoading || gmailBlocked || !trimmedEmail
-  const roleControlsDisabled = isSubmitting || isGmailStatusLoading || gmailBlocked
+  const inviteDisabled = isSubmitting || isGmailStatusLoading || !trimmedEmail
+  const roleControlsDisabled = isSubmitting
 
   useEffect(() => {
     if (!open) {
@@ -213,11 +206,6 @@ export default function PlanSharePopover({
       return null
     }
 
-    if (gmailBlocked) {
-      setInviteError(gmailHintMessage)
-      return null
-    }
-
     setInviteError('')
     setIsSubmitting(true)
 
@@ -225,7 +213,7 @@ export default function PlanSharePopover({
       const result = await apiRequest(`/api/plans/${plan.id}/invites`, {
         method: 'POST',
         token: accessToken,
-        body: { email: trimmedEmail },
+        body: { email: trimmedEmail, role: inviteRole },
       })
       return result
     } catch (error) {
@@ -249,13 +237,27 @@ export default function PlanSharePopover({
   }
 
   const handleCopyLink = async () => {
-    if (!shareUrl) return
+    if (!isBackendDriven || !accessToken || !plan?.id) {
+      onNotify?.('Convites estão disponíveis apenas com uma conta conectada.')
+      return
+    }
+
+    if (!canInvite) {
+      onNotify?.('Apenas admins podem criar links de convite.')
+      return
+    }
 
     try {
-      const copied = await copyTextToClipboard(shareUrl)
-      onNotify?.(copied ? 'Link copiado.' : 'Não foi possível copiar o link.')
-    } catch {
-      onNotify?.('Não foi possível copiar o link.')
+      const shareLink = await apiRequest(`/api/plans/${plan.id}/share-link`, {
+        method: 'PUT',
+        token: accessToken,
+        body: { role: linkRole },
+      })
+      const value = shareLink?.url || (typeof window === 'undefined' ? '' : `${window.location.origin}/plans/join/${shareLink?.token ?? ''}`)
+      const copied = await copyTextToClipboard(value)
+      onNotify?.(copied ? 'Link de convite copiado.' : 'Não foi possível copiar o link.')
+    } catch (error) {
+      onNotify?.(error?.message ?? 'Não foi possível copiar o link.')
     }
   }
 

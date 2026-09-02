@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,8 +33,33 @@ public class PlanController {
     return ApiEnvelope.ok(planService.listAccessiblePlans());
   }
 
+  @GetMapping("/invites/{token}")
+  public ApiEnvelope<PlanService.InvitePreviewResponse> getInvite(@PathVariable String token) {
+    return ApiEnvelope.ok(planService.getInvitePreview(token));
+  }
+
+  @PostMapping("/invites/{token}/accept")
+  public ApiEnvelope<PlanService.AcceptInviteResponse> acceptInvite(@PathVariable String token) {
+    return ApiEnvelope.ok(planService.acceptInvite(token));
+  }
+
+  @PostMapping("/invites/{token}/decline")
+  public ApiEnvelope<PlanService.MessageResponse> declineInvite(@PathVariable String token) {
+    return ApiEnvelope.ok(planService.declineInvite(token));
+  }
+
+  @GetMapping("/share-links/{token}")
+  public ApiEnvelope<PlanService.ShareLinkPreviewResponse> getShareLinkPreview(@PathVariable String token) {
+    return ApiEnvelope.ok(planService.getShareLinkPreview(token));
+  }
+
+  @PostMapping("/share-links/{token}/accept")
+  public ApiEnvelope<PlanService.AcceptInviteResponse> acceptShareLink(@PathVariable String token) {
+    return ApiEnvelope.ok(planService.acceptShareLink(token));
+  }
+
   @GetMapping("/{planId}")
-  public ApiEnvelope<PlanService.PlanDetails> getPlan(@PathVariable UUID planId) {
+  public ApiEnvelope<PlanService.PlanDetails> getPlan(@PathVariable String planId) {
     return ApiEnvelope.ok(planService.getPlan(planId));
   }
 
@@ -60,6 +86,14 @@ public class PlanController {
     ));
   }
 
+  @PatchMapping("/{planId}/visibility")
+  public ApiEnvelope<PlanService.PlanDetails> updateVisibility(
+      @PathVariable UUID planId,
+      @Valid @RequestBody UpdateVisibilityRequest request
+  ) {
+    return ApiEnvelope.ok(planService.updateVisibility(planId, request.visibility()));
+  }
+
   @DeleteMapping("/{planId}")
   public ApiEnvelope<PlanService.MessageResponse> deletePlan(@PathVariable UUID planId) {
     return ApiEnvelope.ok(planService.deletePlan(planId));
@@ -72,22 +106,20 @@ public class PlanController {
 
   @PostMapping("/{planId}/invites")
   public ApiEnvelope<PlanService.InviteResponse> inviteMember(@PathVariable UUID planId, @Valid @RequestBody InviteRequest request) {
-    return ApiEnvelope.ok(planService.inviteMember(planId, request.email()));
+    return ApiEnvelope.ok(planService.inviteMember(planId, request.email(), request.role()));
   }
 
-  @GetMapping("/invites/{token}")
-  public ApiEnvelope<PlanService.InvitePreviewResponse> getInvite(@PathVariable String token) {
-    return ApiEnvelope.ok(planService.getInvitePreview(token));
+  @GetMapping("/{planId}/share-link")
+  public ApiEnvelope<PlanService.ShareLinkResponse> getShareLink(@PathVariable UUID planId) {
+    return ApiEnvelope.ok(planService.getShareLink(planId));
   }
 
-  @PostMapping("/invites/{token}/accept")
-  public ApiEnvelope<PlanService.AcceptInviteResponse> acceptInvite(@PathVariable String token) {
-    return ApiEnvelope.ok(planService.acceptInvite(token));
-  }
-
-  @PostMapping("/invites/{token}/decline")
-  public ApiEnvelope<PlanService.MessageResponse> declineInvite(@PathVariable String token) {
-    return ApiEnvelope.ok(planService.declineInvite(token));
+  @PutMapping("/{planId}/share-link")
+  public ApiEnvelope<PlanService.ShareLinkResponse> upsertShareLink(
+      @PathVariable UUID planId,
+      @Valid @RequestBody ShareLinkRequest request
+  ) {
+    return ApiEnvelope.ok(planService.upsertShareLink(planId, request.role()));
   }
 
   @DeleteMapping("/{planId}/members/{memberUserId}")
@@ -128,8 +160,15 @@ public class PlanController {
 
   public record InviteRequest(
       @NotBlank(message = "O e-mail e obrigatorio.")
-      @Email(message = "Informe um e-mail valido.") String email
+      @Email(message = "Informe um e-mail valido.") String email,
+      PlanMemberRole role
   ) {
+  }
+
+  public record ShareLinkRequest(PlanMemberRole role) {
+  }
+
+  public record UpdateVisibilityRequest(PlanVisibility visibility) {
   }
 
   public record UpdateMemberRoleRequest(PlanMemberRole role) {

@@ -78,10 +78,12 @@ export function buildMembersByPlanSeries(plans = [], limit = 5) {
 
 export function resolveMemberRoleLabel(role = 'MEMBER') {
   switch (role) {
-    case 'OWNER':
-      return 'Proprietário'
     case 'ADMIN':
       return 'Admin'
+    case 'OBSERVER':
+      return 'Observador'
+    case 'OWNER':
+      return 'Criador'
     default:
       return 'Membro'
   }

@@ -1,7 +1,8 @@
-export const PLAN_MEMBER_ROLES = ['OWNER', 'ADMIN', 'MEMBER']
+export const PLAN_MEMBER_ROLES = ['ADMIN', 'MEMBER', 'OBSERVER']
 
 export const PLAN_INVITE_ROLE_OPTIONS = [
   { value: 'MEMBER', label: 'Membro' },
+  { value: 'OBSERVER', label: 'Observador' },
   { value: 'ADMIN', label: 'Admin' },
 ]
 
@@ -13,11 +14,12 @@ export const PLAN_SHARE_ROLE_OPTIONS = [
 
 export const PLAN_MEMBER_ROLE_EDIT_OPTIONS = [
   { value: 'MEMBER', label: 'Membro' },
+  { value: 'OBSERVER', label: 'Observador' },
   { value: 'ADMIN', label: 'Admin' },
 ]
 
-export function formatPlanMemberRole(role) {
-  if (role === 'OWNER') return 'Proprietário'
+export function formatPlanMemberRole(role, { isCreator = false } = {}) {
+  if (isCreator) return 'Criador'
   if (role === 'ADMIN') return 'Admin'
   if (role === 'OBSERVER') return 'Observador'
   if (role === 'MEMBER') return 'Membro'
@@ -35,19 +37,24 @@ export function getNextShareRole(role) {
 }
 
 export function canManagePlanMembers(role) {
-  return role === 'OWNER' || role === 'ADMIN'
+  return role === 'ADMIN'
 }
 
-export function canEditMemberRole(planRole, memberRole) {
+export function canEditMemberRole(planRole, member, currentUserId) {
   if (!canManagePlanMembers(planRole)) return false
-  if (memberRole === 'OWNER') return false
+  if (member?.isCreator) return false
+  if (member?.userId && member.userId === currentUserId && member?.isCreator) return false
   return true
 }
 
 export function memberRoleOptionsFor(member) {
-  if (member?.role === 'OWNER') {
-    return [{ value: 'OWNER', label: formatPlanMemberRole('OWNER') }]
+  if (member?.isCreator) {
+    return [{ value: member.role ?? 'ADMIN', label: formatPlanMemberRole(member.role, { isCreator: true }) }]
   }
 
   return PLAN_MEMBER_ROLE_EDIT_OPTIONS
+}
+
+export function canEditPlan(role) {
+  return role === 'ADMIN' || role === 'MEMBER'
 }

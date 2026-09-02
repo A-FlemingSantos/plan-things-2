@@ -78,7 +78,7 @@ describe('mapPlanSummaryToRecord cover images', () => {
       id: 'plan-1',
       name: 'Test',
       coverImageId: 'files/abc-123',
-      role: 'OWNER',
+      role: 'ADMIN',
       memberCount: 1,
       taskCount: 0,
     })

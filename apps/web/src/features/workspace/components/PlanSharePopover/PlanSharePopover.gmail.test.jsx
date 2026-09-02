@@ -21,7 +21,7 @@ function renderPopover(overrides = {}) {
     <MemoryRouter>
       <PlanSharePopover
         open
-        plan={{ id: 'plan-1', name: 'Plano de teste', role: 'OWNER' }}
+        plan={{ id: 'plan-1', name: 'Plano de teste', role: 'ADMIN' }}
         isBackendDriven
         accessToken="test-token"
         onRefreshPlanDetails={async () => {}}
@@ -37,7 +37,7 @@ describe('PlanSharePopover Gmail gating', () => {
     apiMock.apiRequest.mockReset()
   })
 
-  it('blocks invite send when Gmail is not connected', async () => {
+  it('still allows invite send when Gmail is not connected', async () => {
     const user = userEvent.setup()
     apiMock.apiRequest.mockResolvedValue({
       integrations: {
@@ -57,10 +57,12 @@ describe('PlanSharePopover Gmail gating', () => {
     await user.type(emailInput, 'convidado@example.com{Enter}')
 
     await waitFor(() => {
-      expect(apiMock.apiRequest).toHaveBeenCalledTimes(1)
-      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/settings', { token: 'test-token' })
+      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/plans/plan-1/invites', {
+        method: 'POST',
+        token: 'test-token',
+        body: { email: 'convidado@example.com', role: 'MEMBER' },
+      })
     })
-    expect(apiMock.apiRequest).not.toHaveBeenCalledWith('/api/plans/plan-1/invites', expect.anything())
   })
 
   it('allows invite send when Gmail is connected', async () => {
@@ -86,12 +88,12 @@ describe('PlanSharePopover Gmail gating', () => {
       expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/plans/plan-1/invites', {
         method: 'POST',
         token: 'test-token',
-        body: { email: 'convidado@example.com' },
+        body: { email: 'convidado@example.com', role: 'MEMBER' },
       })
     })
   })
 
-  it('blocks invite send when Gmail is connected but the last authorization failed', async () => {
+  it('still allows invite send when Gmail last authorization failed', async () => {
     const user = userEvent.setup()
     apiMock.apiRequest.mockResolvedValue({
       integrations: {
@@ -111,9 +113,12 @@ describe('PlanSharePopover Gmail gating', () => {
     await user.type(emailInput, 'convidado@example.com{Enter}')
 
     await waitFor(() => {
-      expect(apiMock.apiRequest).toHaveBeenCalledTimes(1)
+      expect(apiMock.apiRequest).toHaveBeenCalledWith('/api/plans/plan-1/invites', {
+        method: 'POST',
+        token: 'test-token',
+        body: { email: 'convidado@example.com', role: 'MEMBER' },
+      })
     })
-    expect(apiMock.apiRequest).not.toHaveBeenCalledWith('/api/plans/plan-1/invites', expect.anything())
   })
 
   it('asks to reconnect Gmail when invite send fails with a Gmail authorization error', async () => {

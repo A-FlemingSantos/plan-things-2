@@ -335,7 +335,7 @@ class OAuthApiIntegrationTest extends ApiIntegrationTestSupport {
 
     String docsInviteLocation = completeProviderCallbackLocation(
         "google",
-        "google-docs-invite",
+        "google-again",
         "/docs/invites/invite-token-123"
     );
     assertEquals("/docs/invites/invite-token-123", queryParam(docsInviteLocation, "redirectTo"));

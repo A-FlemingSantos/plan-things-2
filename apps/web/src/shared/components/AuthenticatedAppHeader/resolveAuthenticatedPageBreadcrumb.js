@@ -29,7 +29,9 @@ export function resolveAuthenticatedPageBreadcrumb({
     const planId = normalized.startsWith(`${ROUTES.workspaceBoard}/`)
       ? normalized.slice(`${ROUTES.workspaceBoard}/`.length).split('/')[0]
       : null
-    const plan = planId ? plans.find((entry) => entry.id === planId) : null
+    const plan = planId
+      ? plans.find((entry) => entry.id === planId || entry.slug === planId)
+      : null
 
     items.push(createItem(plan?.name?.trim() || 'Plano', { current: true }))
   } else if (normalized === ROUTES.settings) {
