@@ -2133,6 +2133,15 @@
   pointer-events: none;
 }
 
+.cardFilterEntering,
+.cardFilterExiting {
+  will-change: max-height, opacity;
+}
+
+.cardFilterExiting {
+  pointer-events: none;
+}
+
 .cardDragOverlay {
   cursor: grabbing;
   box-shadow: var(--shadow-md);

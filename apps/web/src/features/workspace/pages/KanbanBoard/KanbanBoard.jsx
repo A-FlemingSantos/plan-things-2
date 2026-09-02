@@ -8,7 +8,8 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
-import { BOARD_FILTER_DEFAULTS } from '../../components/BoardFilterPopover/boardFilterDefaults.js'
+import { BOARD_FILTER_DEFAULTS, hasActiveBoardFilters } from '../../components/BoardFilterPopover/boardFilterDefaults.js'
+import { collectMatchingCardIds } from '../../components/BoardFilterPopover/boardCardFilter.js'
 import KanbanColumn, { kanbanDropAnimation } from '../../components/KanbanColumn/KanbanColumn.jsx'
 import KanbanCard from '../../components/KanbanCard/KanbanCard.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
@@ -306,6 +307,15 @@ export default function KanbanBoard() {
     onReorderError: (error) => showNotification(error?.message ?? 'Não foi possível reordenar as listas.'),
     onInboxDrop: handleInboxCardDrop,
   })
+
+  const matchingCardIds = useMemo(() => {
+    if (!hasActiveBoardFilters(boardFilter)) return null
+    return collectMatchingCardIds(columns, boardFilter, {
+      currentUserId: currentUser?.id ?? null,
+      labels: planLabels,
+      members: planMembers,
+    })
+  }, [boardFilter, columns, currentUser?.id, planLabels, planMembers])
 
   const addColumn = async () => {
     const nextTitle = newColTitle.trim()
@@ -645,6 +655,8 @@ export default function KanbanBoard() {
                     onToggleCardCompleted={togglePlannerCardCompleted}
                     labels={planLabels}
                     members={planMembers}
+                    matchingCardIds={matchingCardIds}
+                    isFilterAnimationPaused={Boolean(activeDragCard || activeDragColumn)}
                     colorOptions={KANBAN_ADD_LIST_COLOR_OPTIONS}
                     styles={styles}
                   />

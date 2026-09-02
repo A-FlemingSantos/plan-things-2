@@ -156,6 +156,51 @@ describe('KanbanColumn card composer', () => {
     expect(onCardClick).toHaveBeenCalledWith(card, 'Em progresso')
   })
 
+  it('hides unmatched cards immediately when reduced motion is preferred', () => {
+    const matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: String(query).includes('prefers-reduced-motion'),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+    vi.stubGlobal('matchMedia', matchMedia)
+
+    renderColumn({
+      col: {
+        id: 'col-1',
+        title: 'A fazer',
+        color: '#4290da',
+        cards: [
+          {
+            id: 'keep',
+            title: 'Manter visivel',
+            labelId: '',
+            memberIds: [],
+            comments: [],
+            attachments: [],
+            checklists: [],
+            dueDate: '',
+          },
+          {
+            id: 'hide',
+            title: 'Esconder este',
+            labelId: '',
+            memberIds: [],
+            comments: [],
+            attachments: [],
+            checklists: [],
+            dueDate: '',
+          },
+        ],
+      },
+      matchingCardIds: new Set(['keep']),
+    })
+
+    expect(screen.getByRole('button', { name: /abrir cartão manter visivel/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /abrir cartão esconder este/i })).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
   it('closes the rename input immediately while the rename request is pending and reopens it on failure', async () => {
     let rejectRename
     const onRenameCol = vi.fn(() => new Promise((_, reject) => {

@@ -18,6 +18,7 @@ import ColMenu from '../ColMenu/ColMenu.jsx'
 import KanbanCard, { KanbanCardView } from '../KanbanCard/KanbanCard.jsx'
 import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
 import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
+import { useBoardFilterCardPresence } from './useBoardFilterCardPresence.js'
 
 const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
@@ -196,6 +197,8 @@ export function KanbanColumnView({
   members,
   colorOptions,
   styles,
+  matchingCardIds = null,
+  isFilterAnimationPaused = false,
   setNodeRef,
   style,
   dragHandleAttributes = {},
@@ -213,14 +216,22 @@ export function KanbanColumnView({
   const menuAnchorRef = useRef(null)
   const columnNodeRef = useRef(null)
   const [composerOverlay, setComposerOverlay] = useState(false)
+  const { displayCards: displayedCards, getMotion, completeMotion } = useBoardFilterCardPresence(
+    col.cards,
+    matchingCardIds,
+    isFilterAnimationPaused,
+  )
 
   const setColumnNodeRef = (node) => {
     columnNodeRef.current = node
     setNodeRef?.(node)
   }
-  const isEmptyColumn = col.cards.length === 0 && !addingCard && !isAddingCard
+  const isEmptyColumn = displayedCards.length === 0 && !addingCard && !isAddingCard
   const hasColumnColor = Boolean(col.color?.trim())
   const cardIds = col.cards.map((card) => card.id)
+  const visibleCount = matchingCardIds
+    ? col.cards.filter((card) => matchingCardIds.has(card.id)).length
+    : col.cards.length
 
   const { setNodeRef: setCardStackDropRef } = useDroppable({
     id: columnCardStackDropId(col.id),
@@ -414,7 +425,7 @@ export function KanbanColumnView({
               <span className={styles.colTitle}>{col.title}</span>
             </>
           )}
-          <span className={styles.colCount}>{col.cards.length}</span>
+          <span className={styles.colCount}>{visibleCount}</span>
         </div>
 
         {!isDragOverlay ? (
@@ -510,10 +521,10 @@ export function KanbanColumnView({
                 className={styles.colCardsScrollArea}
                 viewportClassName={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
                 viewportRef={setCardStackDropRef}
-                enabled={col.cards.length > 0}
-                refreshKey={`${col.id}:${col.cards.length}`}
+                enabled={displayedCards.length > 0 || col.cards.length > 0}
+                refreshKey={`${col.id}:${displayedCards.length}:${col.cards.length}`}
               >
-                {col.cards.map((card) => (
+                {displayedCards.map((card) => (
                   <KanbanCard
                     key={card.uiKey ?? card.id}
                     card={card}
@@ -522,6 +533,8 @@ export function KanbanColumnView({
                     onClick={onCardClick}
                     isConfirmed={Boolean(card.isCompleted)}
                     onToggleConfirmed={onToggleCardCompleted}
+                    filterMotion={getMotion(card.id)}
+                    onFilterMotionEnd={completeMotion}
                     labels={labels}
                     members={members}
                     styles={styles}
@@ -604,6 +617,8 @@ function areKanbanColumnPropsEqual(prevProps, nextProps) {
     && prevProps.colorOptions === nextProps.colorOptions
     && prevProps.statusOptions === nextProps.statusOptions
     && prevProps.styles === nextProps.styles
+    && prevProps.matchingCardIds === nextProps.matchingCardIds
+    && prevProps.isFilterAnimationPaused === nextProps.isFilterAnimationPaused
 }
 
 export default memo(KanbanColumn, areKanbanColumnPropsEqual)
