@@ -1787,6 +1787,7 @@
 }
 
 .colCards {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2135,11 +2136,12 @@
 
 .cardFilterEntering,
 .cardFilterExiting {
-  will-change: max-height, opacity;
+  pointer-events: none;
+  transition: none;
 }
 
 .cardFilterExiting {
-  pointer-events: none;
+  z-index: 0;
 }
 
 .cardDragOverlay {

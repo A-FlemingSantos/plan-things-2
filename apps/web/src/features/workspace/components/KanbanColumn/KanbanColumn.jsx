@@ -19,6 +19,7 @@ import KanbanCard, { KanbanCardView } from '../KanbanCard/KanbanCard.jsx'
 import { resolveKanbanColumnStatus } from '../../data/kanbanColumnStatusOptions.js'
 import { columnCardStackDropId } from '../../hooks/boardDnDUtils.js'
 import { useBoardFilterCardPresence } from './useBoardFilterCardPresence.js'
+import { useKanbanColumnFilterFlip } from './useKanbanColumnFilterFlip.js'
 
 const ICON_SIZE = 13
 const ICON_SIZE_MD = 14
@@ -216,11 +217,25 @@ export function KanbanColumnView({
   const menuAnchorRef = useRef(null)
   const columnNodeRef = useRef(null)
   const [composerOverlay, setComposerOverlay] = useState(false)
+  const cardStackRef = useRef(null)
+  const cardStackScrollRef = useRef(null)
   const { displayCards: displayedCards, getMotion, completeMotion } = useBoardFilterCardPresence(
     col.cards,
     matchingCardIds,
     isFilterAnimationPaused,
   )
+  const registerFilterNode = useKanbanColumnFilterFlip({
+    displayedCards,
+    getMotion,
+    completeMotion,
+    paused: isFilterAnimationPaused || isDragOverlay,
+    viewportRef: cardStackRef,
+    stackRef: cardStackScrollRef,
+  })
+  const isFilterFlipping = displayedCards.some((card) => {
+    const motion = getMotion(card.id)
+    return motion === 'entering' || motion === 'exiting'
+  })
 
   const setColumnNodeRef = (node) => {
     columnNodeRef.current = node
@@ -241,6 +256,11 @@ export function KanbanColumnView({
     },
     disabled: isDragOverlay,
   })
+
+  const setCardStackNodeRef = (node) => {
+    cardStackRef.current = node
+    setCardStackDropRef(node)
+  }
 
   const columnStatus = resolveKanbanColumnStatus(col.status)
   const showColumnStatusIcon = Boolean(col.status)
@@ -515,13 +535,14 @@ export function KanbanColumnView({
         <>
           <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
             <div
+              ref={cardStackScrollRef}
               className={`${styles.colCardsScroll} ${isEmptyColumn ? styles.colCardsScrollEmpty : ''}`}
             >
               <CustomScrollArea
                 className={styles.colCardsScrollArea}
                 viewportClassName={`${styles.colCards} ${isEmptyColumn ? styles.colCardsEmpty : ''}`}
-                viewportRef={setCardStackDropRef}
-                enabled={displayedCards.length > 0 || col.cards.length > 0}
+                viewportRef={setCardStackNodeRef}
+                enabled={!isFilterFlipping && (displayedCards.length > 0 || col.cards.length > 0)}
                 refreshKey={`${col.id}:${displayedCards.length}:${col.cards.length}`}
               >
                 {displayedCards.map((card) => (
@@ -534,7 +555,8 @@ export function KanbanColumnView({
                     isConfirmed={Boolean(card.isCompleted)}
                     onToggleConfirmed={onToggleCardCompleted}
                     filterMotion={getMotion(card.id)}
-                    onFilterMotionEnd={completeMotion}
+                    isFilterFlipping={isFilterFlipping}
+                    registerFilterNode={registerFilterNode}
                     labels={labels}
                     members={members}
                     styles={styles}

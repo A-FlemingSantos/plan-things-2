@@ -1,7 +1,6 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { memo } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { BOARD_FILTER_CARD_MOTION_MS } from '../KanbanColumn/useBoardFilterCardPresence.js'
 import {
   Calendar,
   Check,
@@ -33,7 +32,7 @@ export function KanbanCardView({
   isDragging = false,
   isDragOverlay = false,
   filterMotion = 'in',
-  onFilterMotionEnd,
+  registerFilterNode,
   onClick,
   onToggleConfirmed,
   labels,
@@ -44,93 +43,10 @@ export function KanbanCardView({
   dragAttributes = {},
   dragListeners = {},
 }) {
-  const measureRef = useRef(null)
-  const onFilterMotionEndRef = useRef(onFilterMotionEnd)
-  onFilterMotionEndRef.current = onFilterMotionEnd
-  const [filterStyle, setFilterStyle] = useState(null)
-  const isFilterAnimating = filterMotion === 'entering' || filterMotion === 'exiting'
-
-  useLayoutEffect(() => {
-    const node = measureRef.current
-    if (!isFilterAnimating) {
-      setFilterStyle(null)
-      return undefined
-    }
-    if (!node) return undefined
-
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
-      onFilterMotionEndRef.current?.(card.id)
-      return undefined
-    }
-
-    if (filterMotion === 'exiting') {
-      const height = node.getBoundingClientRect().height
-      setFilterStyle({
-        maxHeight: `${Math.max(height, 0)}px`,
-        overflow: 'hidden',
-        opacity: 1,
-        transition: 'none',
-      })
-      let innerFrame = 0
-      const outerFrame = window.requestAnimationFrame(() => {
-        innerFrame = window.requestAnimationFrame(() => {
-          setFilterStyle({
-            maxHeight: 0,
-            opacity: 0,
-            overflow: 'hidden',
-            paddingTop: 0,
-            paddingBottom: 0,
-            pointerEvents: 'none',
-            transition: `max-height ${BOARD_FILTER_CARD_MOTION_MS}ms ease, opacity ${BOARD_FILTER_CARD_MOTION_MS}ms ease, padding ${BOARD_FILTER_CARD_MOTION_MS}ms ease`,
-          })
-        })
-      })
-      return () => {
-        window.cancelAnimationFrame(outerFrame)
-        window.cancelAnimationFrame(innerFrame)
-      }
-    }
-
-    setFilterStyle({
-      maxHeight: 0,
-      opacity: 0,
-      overflow: 'hidden',
-      transition: 'none',
-    })
-    let innerFrame = 0
-    const outerFrame = window.requestAnimationFrame(() => {
-      innerFrame = window.requestAnimationFrame(() => {
-        const height = measureRef.current?.scrollHeight ?? 0
-        setFilterStyle({
-          maxHeight: `${Math.max(height, 0)}px`,
-          opacity: 1,
-          overflow: 'hidden',
-          transition: `max-height ${BOARD_FILTER_CARD_MOTION_MS}ms ease, opacity ${BOARD_FILTER_CARD_MOTION_MS}ms ease`,
-        })
-      })
-    })
-    return () => {
-      window.cancelAnimationFrame(outerFrame)
-      window.cancelAnimationFrame(innerFrame)
-    }
-  }, [card.id, filterMotion, isFilterAnimating])
-
-  useEffect(() => {
-    if (!isFilterAnimating) return undefined
-    const timer = window.setTimeout(() => {
-      onFilterMotionEndRef.current?.(card.id)
-    }, BOARD_FILTER_CARD_MOTION_MS + 80)
-    return () => window.clearTimeout(timer)
-  }, [card.id, filterMotion, isFilterAnimating])
-
   const assignRef = (node) => {
-    measureRef.current = node
+    registerFilterNode?.(card.id, node)
     setNodeRef?.(node)
   }
-
-  const mergedStyle = filterStyle
-    ? { ...style, ...filterStyle }
-    : style
 
   const label = labels.find((item) => item.id === card.labelId)
   const descriptionPreview = getDescriptionPreview(card.description)
@@ -166,7 +82,7 @@ export function KanbanCardView({
   return (
     <div
       ref={assignRef}
-      style={mergedStyle}
+      style={style}
       className={`
         ${styles.card}
         ${isCompactCard ? styles.cardCompact : ''}
@@ -180,11 +96,6 @@ export function KanbanCardView({
       tabIndex={0}
       {...dragAttributes}
       {...dragListeners}
-      onTransitionEnd={(event) => {
-        if (event.target !== event.currentTarget) return
-        if (event.propertyName !== 'max-height' && event.propertyName !== 'opacity') return
-        onFilterMotionEndRef.current?.(card.id)
-      }}
       onClick={openCard}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -321,7 +232,8 @@ function SortableKanbanCard({
   colTitle,
   isConfirmed,
   filterMotion,
-  onFilterMotionEnd,
+  isFilterFlipping,
+  registerFilterNode,
   onClick,
   onToggleConfirmed,
   labels,
@@ -351,7 +263,8 @@ function SortableKanbanCard({
       isConfirmed={isConfirmed}
       isDragging={isDragging}
       filterMotion={filterMotion}
-      onFilterMotionEnd={onFilterMotionEnd}
+      isFilterFlipping={isFilterFlipping}
+      registerFilterNode={registerFilterNode}
       onClick={onClick}
       onToggleConfirmed={onToggleConfirmed}
       labels={labels}
@@ -361,8 +274,10 @@ function SortableKanbanCard({
       dragAttributes={attributes}
       dragListeners={listeners}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition: filterMotion === 'entering' || filterMotion === 'exiting'
+        transform: isFilterFlipping
+          ? undefined
+          : CSS.Transform.toString(transform),
+        transition: isFilterFlipping || filterMotion === 'entering' || filterMotion === 'exiting'
           ? undefined
           : transition,
       }}
@@ -377,7 +292,8 @@ function KanbanCard({
   isDragOverlay = false,
   isConfirmed,
   filterMotion,
-  onFilterMotionEnd,
+  isFilterFlipping,
+  registerFilterNode,
   onClick,
   onToggleConfirmed,
   labels,
@@ -407,7 +323,8 @@ function KanbanCard({
       colTitle={colTitle}
       isConfirmed={isConfirmed}
       filterMotion={filterMotion}
-      onFilterMotionEnd={onFilterMotionEnd}
+      isFilterFlipping={isFilterFlipping}
+      registerFilterNode={registerFilterNode}
       onClick={onClick}
       onToggleConfirmed={onToggleConfirmed}
       labels={labels}
@@ -424,7 +341,8 @@ function areKanbanCardPropsEqual(prevProps, nextProps) {
     && prevProps.isDragOverlay === nextProps.isDragOverlay
     && prevProps.isConfirmed === nextProps.isConfirmed
     && prevProps.filterMotion === nextProps.filterMotion
-    && prevProps.onFilterMotionEnd === nextProps.onFilterMotionEnd
+    && prevProps.isFilterFlipping === nextProps.isFilterFlipping
+    && prevProps.registerFilterNode === nextProps.registerFilterNode
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.onClick === nextProps.onClick
