@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { AlignLeft, ChevronLeft, MessageSquare, UserRound, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
@@ -40,27 +40,48 @@ export default function BoardAboutPlanPopover({
   onNotify,
 }) {
   const titleId = useId()
+  const descriptionRef = useRef(null)
   const [description, setDescription] = useState(plan?.description ?? '')
   const [savedDescription, setSavedDescription] = useState(plan?.description ?? '')
+  const [isDescriptionFocused, setIsDescriptionFocused] = useState(false)
   const administrators = getPlanAdministrators(members)
   const canEditDescription = !readOnly
+  const hasDescriptionDraft = description !== savedDescription
+  const showDescriptionActions = canEditDescription && (isDescriptionFocused || hasDescriptionDraft)
 
   useEffect(() => {
     const nextDescription = plan?.description ?? ''
     setDescription(nextDescription)
     setSavedDescription(nextDescription)
+    setIsDescriptionFocused(false)
   }, [plan?.description, plan?.id])
 
   const handleSaveDescription = async () => {
-    if (!canEditDescription || busy || description === savedDescription || !plan?.id) return
+    if (!canEditDescription || busy || !hasDescriptionDraft || !plan?.id) return true
 
     try {
       await onSaveDescription?.(plan.id, description)
       setSavedDescription(description)
+      return true
     } catch (error) {
       setDescription(savedDescription)
       onNotify?.(error?.message ?? 'Não foi possível salvar a descrição do plano.')
+      return false
     }
+  }
+
+  const handleConfirmDescription = async () => {
+    const saved = await handleSaveDescription()
+    if (saved) {
+      setIsDescriptionFocused(false)
+      descriptionRef.current?.blur()
+    }
+  }
+
+  const handleCancelDescription = () => {
+    setDescription(savedDescription)
+    setIsDescriptionFocused(false)
+    descriptionRef.current?.blur()
   }
 
   if (!open) return null
@@ -149,17 +170,42 @@ export default function BoardAboutPlanPopover({
 
           <div className={styles.descriptionFieldWrap}>
             <textarea
+              ref={descriptionRef}
               className={styles.descriptionField}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              onBlur={() => {
-                void handleSaveDescription()
-              }}
+              onFocus={() => setIsDescriptionFocused(true)}
+              onBlur={() => setIsDescriptionFocused(false)}
               placeholder={DESCRIPTION_PLACEHOLDER}
               aria-label="Descrição do plano"
               disabled={!canEditDescription || busy}
             />
           </div>
+
+          {showDescriptionActions ? (
+            <div className={styles.descriptionActions}>
+              <button
+                type="button"
+                className={styles.descriptionConfirmButton}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  void handleConfirmDescription()
+                }}
+                disabled={busy || !hasDescriptionDraft}
+              >
+                Concluído
+              </button>
+              <button
+                type="button"
+                className={styles.descriptionCancelButton}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleCancelDescription}
+                disabled={busy}
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : null}
         </section>
 
         <div className={styles.permissionsDivider} role="separator" />

@@ -110,6 +110,11 @@ describe('BoardHeader more options popover', () => {
     expect(screen.getByRole('dialog', { name: 'Sobre este plano' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Descrição do plano' })).toHaveValue('Resumo do plano')
     expect(screen.queryByRole('menu', { name: 'Mais opções do plano' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Concluído' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('textbox', { name: 'Descrição do plano' }))
+    expect(screen.getByRole('button', { name: 'Concluído' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
   })
 
   it('returns to the menu from the about plan panel', async () => {
