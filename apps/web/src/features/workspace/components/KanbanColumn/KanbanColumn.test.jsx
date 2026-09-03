@@ -78,7 +78,7 @@ describe('KanbanColumn card composer', () => {
     expect(container.querySelector('.columnComposerOpen')).toBeNull()
   })
 
-  it('hides the composer immediately while the card creation request is pending', async () => {
+  it('keeps the composer open and empty while the card creation request is pending', async () => {
     let resolveCreation
     const onAddCard = vi.fn(() => new Promise((resolve) => {
       resolveCreation = resolve
@@ -98,8 +98,9 @@ describe('KanbanColumn card composer', () => {
     expect(onAddCard).toHaveBeenCalledWith('col-1', 'Novo cartão')
     await waitFor(() => {
       const input = screen.getByLabelText('Título do cartão')
-      expect(input).toHaveAttribute('tabindex', '-1')
-      expect(input.closest('[aria-hidden="true"]')).not.toBeNull()
+      expect(input).toHaveAttribute('tabindex', '0')
+      expect(input).toHaveValue('')
+      expect(input.closest('[aria-hidden="true"]')).toBeNull()
     })
 
     resolveCreation(true)

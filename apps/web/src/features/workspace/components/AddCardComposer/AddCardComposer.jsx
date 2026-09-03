@@ -17,11 +17,23 @@ export default function AddCardComposer({
   styles,
 }) {
   const inputRef = useRef(null)
+  const triggerRef = useRef(null)
+  const expandRef = useRef(null)
   const shellRef = useRef(null)
+
+  const dismissComposer = () => {
+    if (isSubmitting) return
+    inputRef.current?.blur()
+    onDismiss()
+  }
 
   useEffect(() => {
     if (addingCard) {
       inputRef.current?.focus({ preventScroll: true })
+      return
+    }
+    if (expandRef.current?.contains(document.activeElement)) {
+      triggerRef.current?.focus({ preventScroll: true })
     }
   }, [addingCard])
 
@@ -30,7 +42,7 @@ export default function AddCardComposer({
 
     const handlePointerDown = (event) => {
       if (!shellRef.current?.contains(event.target)) {
-        onDismiss()
+        dismissComposer()
       }
     }
 
@@ -48,7 +60,7 @@ export default function AddCardComposer({
     }
 
     if (event.key === 'Escape') {
-      onDismiss()
+      dismissComposer()
     }
   }
 
@@ -66,6 +78,7 @@ export default function AddCardComposer({
         className={`${styles.addCardShell} ${addingCard ? styles.addCardShellOpen : ''}`}
       >
         <button
+          ref={triggerRef}
           type="button"
           className={styles.addCardTrigger}
           onClick={() => setAddingCard(true)}
@@ -77,7 +90,12 @@ export default function AddCardComposer({
           Adicionar cartão
         </button>
 
-        <div className={styles.addCardExpand} aria-hidden={!addingCard} onTransitionEnd={handleExpandTransitionEnd}>
+        <div
+          ref={expandRef}
+          className={styles.addCardExpand}
+          aria-hidden={!addingCard}
+          onTransitionEnd={handleExpandTransitionEnd}
+        >
           <div className={styles.addCardExpandInner}>
             <div className={styles.addCardForm}>
               <div className={styles.addCardFormBody}>
@@ -109,7 +127,7 @@ export default function AddCardComposer({
                 <button
                   type="button"
                   className={styles.addCardDismiss}
-                  onClick={onDismiss}
+                  onClick={dismissComposer}
                   disabled={isSubmitting}
                   aria-label="Cancelar novo cartão"
                   tabIndex={addingCard ? 0 : -1}

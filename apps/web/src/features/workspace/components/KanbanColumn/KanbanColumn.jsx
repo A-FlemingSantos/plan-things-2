@@ -271,13 +271,10 @@ export function KanbanColumnView({
 
     try {
       setIsAddingCard(true)
-      setAddingCard(false)
       setNewCardText('')
       setCardError(null)
       await onAddCard(col.id, nextCardTitle)
-      setAddingCard(true)
     } catch (error) {
-      setAddingCard(true)
       setNewCardText(nextCardTitle)
       setCardError(error?.message ?? 'Nao foi possivel criar o cartao nesta coluna.')
     } finally {
