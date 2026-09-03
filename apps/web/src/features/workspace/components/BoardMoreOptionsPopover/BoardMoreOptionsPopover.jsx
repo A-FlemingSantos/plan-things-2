@@ -17,13 +17,19 @@ import styles from './BoardMoreOptionsPopover.module.css'
 const ICON_SIZE = 15
 const ICON_STROKE = 1.75
 const TRAILING_ICON_SIZE = 13
+const ABOUT_DESCRIPTION_PLACEHOLDER = 'Adicione uma descrição ao seu plano'
+
+export const getAboutPlanMenuHint = (plan) => {
+  const description = plan?.description?.trim()
+  return description || ABOUT_DESCRIPTION_PLACEHOLDER
+}
 
 export const BOARD_MORE_OPTIONS_SECTIONS = [
   [
     {
       id: 'about',
       label: 'Sobre este plano',
-      hint: 'Adicione uma descrição ao seu plano',
+      hint: ABOUT_DESCRIPTION_PLACEHOLDER,
       Icon: Info,
     },
     { id: 'labels', label: 'Etiquetas', Icon: Tag },
@@ -85,6 +91,7 @@ export default function BoardMoreOptionsPopover({
               showGitHubBadge = false,
             } = item
             const resolvedLabel = id === 'favorite' && isFavorite ? 'Remover dos favoritos' : label
+            const resolvedHint = id === 'about' ? getAboutPlanMenuHint(plan) : hint
 
             return (
               <button
@@ -94,7 +101,7 @@ export default function BoardMoreOptionsPopover({
                 className={[
                   styles.item,
                   danger ? styles.itemDanger : '',
-                  hint ? styles.itemWithHint : '',
+                  resolvedHint ? styles.itemWithHint : '',
                 ].filter(Boolean).join(' ')}
                 onClick={(event) => {
                   onAction?.(id, event.currentTarget.getBoundingClientRect())
@@ -109,7 +116,7 @@ export default function BoardMoreOptionsPopover({
                 </span>
                 <span className={styles.itemBody}>
                   <span className={styles.itemLabel}>{resolvedLabel}</span>
-                  {hint ? <span className={styles.itemHint}>{hint}</span> : null}
+                  {resolvedHint ? <span className={styles.itemHint}>{resolvedHint}</span> : null}
                 </span>
                 {showGitHubBadge && hasGitHubIntegration ? (
                   <span className={styles.itemTrailing} aria-hidden="true">

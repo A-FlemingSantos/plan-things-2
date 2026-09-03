@@ -107,6 +107,9 @@
   font-weight: var(--font-weight-light);
   line-height: 1.35;
   color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .itemTrailing {

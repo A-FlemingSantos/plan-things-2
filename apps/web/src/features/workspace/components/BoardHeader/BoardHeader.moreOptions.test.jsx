@@ -83,6 +83,34 @@ describe('BoardHeader more options popover', () => {
     expect(container.querySelector('[class*="themeneon"]')).toBeTruthy()
   })
 
+  it('shows the plan description in the about menu item when available', async () => {
+    const user = userEvent.setup()
+    render(
+      <BoardHeader
+        planName="MVP Board"
+        plan={{ id: 'plan-1', name: 'MVP Board', description: 'Resumo do plano' }}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+
+    expect(screen.getByRole('menuitem', { name: /Sobre este plano/i })).toHaveTextContent('Resumo do plano')
+    expect(screen.getByRole('menuitem', { name: /Sobre este plano/i })).not.toHaveTextContent(
+      'Adicione uma descrição ao seu plano',
+    )
+  })
+
+  it('shows the placeholder when the plan has no description', async () => {
+    const user = userEvent.setup()
+    render(<BoardHeader planName="MVP Board" plan={{ id: 'plan-1', name: 'MVP Board' }} />)
+
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+
+    expect(screen.getByRole('menuitem', { name: /Sobre este plano/i })).toHaveTextContent(
+      'Adicione uma descrição ao seu plano',
+    )
+  })
+
   it('opens the about plan panel when Sobre este plano is selected', async () => {
     const user = userEvent.setup()
     render(
