@@ -5,7 +5,10 @@ import {
   measureColumnStackCap,
   playKanbanFilterFlip,
   prefersReducedMotion,
+  resetKanbanFilterFlipDom,
 } from './kanbanColumnFilterFlip.js'
+
+const INTERRUPT_SKIP_FLIP_MS = 50
 
 function motionSignature(cards, getMotion) {
   return cards.map((card) => `${card.id}:${getMotion(card.id)}`).join('|')
@@ -32,6 +35,8 @@ export function useKanbanColumnFilterFlip({
   const idleOverflowingRef = useRef(false)
   const idleScrollTopRef = useRef(0)
   const playingRef = useRef(false)
+  const skipFlipRef = useRef(false)
+  const playStartedAtRef = useRef(0)
   const displayedCardsRef = useRef(displayedCards)
   const getMotionRef = useRef(getMotion)
   const completeMotionRef = useRef(completeMotion)
@@ -75,6 +80,7 @@ export function useKanbanColumnFilterFlip({
     const skipAnimation = paused || prefersReducedMotion()
 
     if (!hasMotion || skipAnimation) {
+      skipFlipRef.current = false
       playingRef.current = false
       if (hasMotion && skipAnimation) {
         for (const [id, motion] of Object.entries(motionsById)) {
@@ -87,7 +93,24 @@ export function useKanbanColumnFilterFlip({
       return undefined
     }
 
+    if (skipFlipRef.current) {
+      skipFlipRef.current = false
+      playingRef.current = false
+      resetKanbanFilterFlipDom({
+        stackNode: stackRef?.current ?? viewportRef?.current,
+        viewport: viewportRef?.current,
+        nodesById: nodesRef.current,
+      })
+      for (const [id, motion] of Object.entries(motionsById)) {
+        if (motion === 'entering' || motion === 'exiting') {
+          completeMotionRef.current(id)
+        }
+      }
+      return undefined
+    }
+
     playingRef.current = true
+    playStartedAtRef.current = typeof performance !== 'undefined' ? performance.now() : 0
     const firstRects = idleRectsRef.current.size > 0
       ? idleRectsRef.current
       : measureCardRects(nodesRef.current)
@@ -110,7 +133,11 @@ export function useKanbanColumnFilterFlip({
 
     return () => {
       playingRef.current = false
+      const elapsed = (typeof performance !== 'undefined' ? performance.now() : 0) - playStartedAtRef.current
       stop?.()
+      idleRectsRef.current = new Map()
+      idleStackHeightRef.current = null
+      if (elapsed > INTERRUPT_SKIP_FLIP_MS) skipFlipRef.current = true
     }
   }, [paused, recordIdleSnapshot, signature, stackRef, viewportRef])
 

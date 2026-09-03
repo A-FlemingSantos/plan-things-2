@@ -201,7 +201,7 @@ describe('playKanbanFilterFlip', () => {
         { height: '260px' },
         { height: `${expectedLastHeight}px` },
       ],
-      expect.objectContaining({ fill: 'both' }),
+      expect.objectContaining({ fill: 'none' }),
     )
     expect(below.style.transform).toBe('translate3d(0px, 90px, 0)')
     expect(below.animate).toHaveBeenCalledWith(
@@ -209,7 +209,7 @@ describe('playKanbanFilterFlip', () => {
         { transform: 'translate3d(0px, 90px, 0)' },
         { transform: 'translate3d(0, 0, 0)' },
       ],
-      expect.objectContaining({ fill: 'both' }),
+      expect.objectContaining({ fill: 'none' }),
     )
   })
 
@@ -252,7 +252,7 @@ describe('playKanbanFilterFlip', () => {
         { height: '88px' },
         { height: `${expectedLastHeight}px` },
       ],
-      expect.objectContaining({ fill: 'both' }),
+      expect.objectContaining({ fill: 'none' }),
     )
   })
 
@@ -409,7 +409,84 @@ describe('playKanbanFilterFlip', () => {
         { height: '512px' },
         { height: `${expectedLastHeight}px` },
       ],
-      expect.objectContaining({ fill: 'both' }),
+      expect.objectContaining({ fill: 'none' }),
     )
+  })
+
+  it('clears pin, transform, and stack lock when the flip is interrupted', async () => {
+    let resolveFinished
+    const deferred = {
+      finished: new Promise((resolve) => {
+        resolveFinished = resolve
+      }),
+      cancel: vi.fn(),
+    }
+
+    const staying = createNode({ top: 40, left: 10, width: 200, height: 80 })
+    const exiting = createNode({ top: 130, left: 10, width: 200, height: 80 })
+    const below = createNode({ top: 220, left: 10, width: 200, height: 80 })
+    const originalStayingMeasure = staying.getBoundingClientRect
+    staying.getBoundingClientRect = () => {
+      if (exiting.style.position === 'absolute') {
+        return { top: 40, left: 10, width: 200, height: 80 }
+      }
+      return originalStayingMeasure()
+    }
+    below.getBoundingClientRect = () => {
+      if (exiting.style.position === 'absolute') {
+        return { top: 130, left: 10, width: 200, height: 80 }
+      }
+      return { top: 220, left: 10, width: 200, height: 80 }
+    }
+
+    staying.animate = vi.fn(() => deferred)
+    exiting.animate = vi.fn(() => deferred)
+    below.animate = vi.fn(() => deferred)
+    const viewport = createViewport(260)
+    viewport.animate = vi.fn(() => deferred)
+
+    const onComplete = vi.fn()
+    const stop = playKanbanFilterFlip({
+      viewport,
+      stack: viewport,
+      nodesById: new Map([
+        ['stay-top', staying],
+        ['gone', exiting],
+        ['stay-bottom', below],
+      ]),
+      firstRects: measureCardRects(new Map([
+        ['stay-top', staying],
+        ['gone', exiting],
+        ['stay-bottom', below],
+      ])),
+      firstHeight: 260,
+      motionsById: {
+        'stay-top': 'in',
+        gone: 'exiting',
+        'stay-bottom': 'in',
+      },
+      onComplete,
+    })
+
+    expect(exiting.style.position).toBe('absolute')
+    expect(below.style.transform).toMatch(/translate3d/)
+
+    stop()
+
+    expect(exiting.style.position).toBe('')
+    expect(exiting.style.opacity).toBe('')
+    expect(exiting.style.visibility).toBe('')
+    expect(below.style.transform).toBe('')
+    expect(viewport.style.height).toBe('')
+    expect(viewport.style.overflow).toBe('')
+
+    resolveFinished()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(onComplete).not.toHaveBeenCalled()
+    expect(exiting.style.position).toBe('')
+    expect(below.style.transform).toBe('')
+    expect(viewport.style.height).toBe('')
   })
 })

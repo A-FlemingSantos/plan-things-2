@@ -165,24 +165,31 @@ function animateOrFallback(node, keyframes, duration) {
     return {
       finished: Promise.resolve(),
       cancel() {},
-      commitStyles() {},
     }
   }
 
   return node.animate(keyframes, {
     duration,
     easing: BOARD_FILTER_EASE,
-    fill: 'both',
+    fill: 'none',
   })
 }
 
-function commitAndCancel(animation) {
-  try {
-    animation.commitStyles?.()
-  } catch {
-    // InvalidStateError if the animation already dropped
+export function resetKanbanFilterFlipDom({ stackNode, viewport, nodesById }) {
+  if (nodesById) {
+    for (const node of nodesById.values()) {
+      cancelNodeAnimations(node)
+      clearFlipStyles(node)
+    }
   }
-  animation.cancel()
+  if (stackNode) {
+    cancelNodeAnimations(stackNode)
+    clearStackStyles(stackNode)
+  }
+  if (viewport && viewport !== stackNode) {
+    cancelNodeAnimations(viewport)
+    clearStackStyles(viewport)
+  }
 }
 
 export function playKanbanFilterFlip({
@@ -208,6 +215,8 @@ export function playKanbanFilterFlip({
     pendingIds.forEach(completeMotion)
     return () => {}
   }
+
+  resetKanbanFilterFlipDom({ stackNode, viewport, nodesById })
 
   const startHeight = Number.isFinite(firstHeight) ? firstHeight : stackNode.offsetHeight
   const inFlowCount = countInFlowCards(motionsById)
@@ -344,15 +353,10 @@ export function playKanbanFilterFlip({
   let settled = false
 
   const abort = () => {
-    for (const { id, motion, animation } of animations) {
+    for (const { animation } of animations) {
       animation.cancel()
-      if (motion === 'exiting') {
-        hideExitingNode(nodesById.get(id))
-        continue
-      }
-      if (id) clearFlipStyles(nodesById.get(id))
     }
-    lockStackHeight(stackNode, lastHeight, lastHeight)
+    resetKanbanFilterFlipDom({ stackNode, viewport, nodesById })
   }
 
   const finish = () => {
@@ -360,7 +364,7 @@ export function playKanbanFilterFlip({
     settled = true
 
     for (const { id, motion, animation } of animations) {
-      commitAndCancel(animation)
+      animation.cancel()
       if (motion === 'stack') continue
       if (motion === 'exiting') {
         hideExitingNode(nodesById.get(id))
@@ -393,7 +397,6 @@ export function playKanbanFilterFlip({
 
   return () => {
     cancelled = true
-    if (settled) return
     abort()
   }
 }
