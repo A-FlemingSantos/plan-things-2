@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 export const BOARD_FILTER_CARD_MOTION_MS = 180
 
@@ -20,8 +20,14 @@ export function useBoardFilterCardPresence(cards = [], matchingCardIds = null, p
     }
     return initial
   })
+  const knownCardIdsRef = useRef(null)
+  const knownUiKeysRef = useRef(null)
 
   useLayoutEffect(() => {
+    const knownIds = knownCardIdsRef.current ?? new Set(cards.map((card) => card.id))
+    const knownUiKeys = knownUiKeysRef.current
+      ?? new Set(cards.map((card) => card.uiKey).filter(Boolean))
+
     setPresenceById((previous) => {
       const next = {}
       const reduced = prefersReducedMotion()
@@ -41,7 +47,13 @@ export function useBoardFilterCardPresence(cards = [], matchingCardIds = null, p
 
         if (matches) {
           if (!previousMotion) {
-            next[card.id] = reduced ? 'in' : 'entering'
+            if (reduced || (card.uiKey && knownUiKeys.has(card.uiKey))) {
+              next[card.id] = 'in'
+            } else if (!knownIds.has(card.id)) {
+              next[card.id] = 'created'
+            } else {
+              next[card.id] = 'entering'
+            }
           } else if (previousMotion === 'exiting') {
             next[card.id] = reduced ? 'in' : 'entering'
           } else {
@@ -68,6 +80,9 @@ export function useBoardFilterCardPresence(cards = [], matchingCardIds = null, p
 
       return unchanged ? previous : next
     })
+
+    knownCardIdsRef.current = new Set(cards.map((card) => card.id))
+    knownUiKeysRef.current = new Set(cards.map((card) => card.uiKey).filter(Boolean))
   }, [cards, matchingCardIds, paused])
 
   const completeMotion = useCallback((cardId) => {
@@ -79,7 +94,7 @@ export function useBoardFilterCardPresence(cards = [], matchingCardIds = null, p
         delete next[cardId]
         return next
       }
-      if (motion === 'entering') {
+      if (motion === 'entering' || motion === 'created') {
         return { ...previous, [cardId]: 'in' }
       }
       return previous

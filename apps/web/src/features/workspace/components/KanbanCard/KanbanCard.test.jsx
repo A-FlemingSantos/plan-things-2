@@ -30,10 +30,11 @@ function renderCard(props = {}) {
   }
   const mergedProps = { ...defaults, ...props }
 
-  render(<KanbanCard {...mergedProps} />)
+  const view = render(<KanbanCard {...mergedProps} />)
 
   return {
     ...mergedProps,
+    ...view,
     cardElement: screen.getByRole('button', { name: /abrir cartão card de teste/i }),
   }
 }
@@ -42,6 +43,16 @@ describe('KanbanCard', () => {
   it('renders drag overlay cards without sortable context', () => {
     const { cardElement } = renderCard({ isDragOverlay: true })
     expect(cardElement.className).toContain('cardDragOverlay')
+  })
+
+  it('keeps newly created cards in a slot for insert animation', () => {
+    const { container, cardElement } = renderCard({
+      isDragOverlay: true,
+      filterMotion: 'created',
+    })
+
+    expect(container.querySelector('.cardSlot')).toBeInTheDocument()
+    expect(cardElement.className).toContain('card')
   })
 
   it('renders attachment count and checklist progress metadata', () => {

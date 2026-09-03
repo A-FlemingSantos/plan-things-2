@@ -555,6 +555,7 @@ export function KanbanColumnView({
                     filterMotion={getMotion(card.id)}
                     isFilterFlipping={isFilterFlipping}
                     registerFilterNode={registerFilterNode}
+                    onCreatedMotionEnd={completeMotion}
                     labels={labels}
                     members={members}
                     styles={styles}

@@ -2118,9 +2118,13 @@
   color: var(--kanban-accent-foreground, var(--text-on-accent));
 }
 
-@keyframes cardEnter {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+.cardSlot {
+  display: block;
+  flex-shrink: 0;
+}
+
+.cardSlotInner {
+  min-height: 0;
 }
 
 .card:hover {

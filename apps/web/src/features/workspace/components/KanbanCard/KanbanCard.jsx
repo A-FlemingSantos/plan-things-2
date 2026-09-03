@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useLayoutEffect, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -13,6 +13,8 @@ import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvat
 const ICON_SIZE = 13
 const ICON_SIZE_SM = 12
 const ICON_STROKE = 1.75
+const CARD_INSERT_MS = 200
+const CARD_INSERT_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 function isUserComment(comment = {}) {
   return comment.kind !== 'ASSIGNEE_ACTIVITY'
@@ -33,6 +35,7 @@ export function KanbanCardView({
   isDragOverlay = false,
   filterMotion = 'in',
   registerFilterNode,
+  onCreatedMotionEnd,
   onClick,
   onToggleConfirmed,
   labels,
@@ -47,6 +50,7 @@ export function KanbanCardView({
     registerFilterNode?.(card.id, node)
     setNodeRef?.(node)
   }
+  const slotRef = useRef(null)
 
   const label = labels.find((item) => item.id === card.labelId)
   const descriptionPreview = getDescriptionPreview(card.description)
@@ -79,7 +83,56 @@ export function KanbanCardView({
     onClick?.(card, colTitle)
   }
 
-  return (
+  useLayoutEffect(() => {
+    if (filterMotion !== 'created' || isDragOverlay) return undefined
+
+    const slot = slotRef.current
+    if (!slot) {
+      onCreatedMotionEnd?.(card.id)
+      return undefined
+    }
+
+    const height = slot.getBoundingClientRect().height
+    if (!(height > 1) || typeof slot.animate !== 'function') {
+      onCreatedMotionEnd?.(card.id)
+      return undefined
+    }
+
+    slot.style.overflow = 'hidden'
+    slot.style.height = '0px'
+
+    const animation = slot.animate(
+      [
+        { height: '0px', opacity: 0 },
+        { height: `${height}px`, opacity: 1 },
+      ],
+      {
+        duration: CARD_INSERT_MS,
+        easing: CARD_INSERT_EASE,
+      },
+    )
+
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      slot.style.height = ''
+      slot.style.overflow = ''
+      onCreatedMotionEnd?.(card.id)
+    }
+
+    const done = Promise.resolve(animation.finished).then(finish, () => {})
+
+    return () => {
+      settled = true
+      animation.cancel()
+      slot.style.height = ''
+      slot.style.overflow = ''
+      void done
+    }
+  }, [])
+
+  const cardNode = (
     <div
       ref={assignRef}
       style={style}
@@ -224,6 +277,14 @@ export function KanbanCardView({
       ) : null}
     </div>
   )
+
+  return (
+    <div ref={slotRef} className={styles.cardSlot}>
+      <div className={styles.cardSlotInner}>
+        {cardNode}
+      </div>
+    </div>
+  )
 }
 
 function SortableKanbanCard({
@@ -234,6 +295,7 @@ function SortableKanbanCard({
   filterMotion,
   isFilterFlipping,
   registerFilterNode,
+  onCreatedMotionEnd,
   onClick,
   onToggleConfirmed,
   labels,
@@ -265,6 +327,7 @@ function SortableKanbanCard({
       filterMotion={filterMotion}
       isFilterFlipping={isFilterFlipping}
       registerFilterNode={registerFilterNode}
+      onCreatedMotionEnd={onCreatedMotionEnd}
       onClick={onClick}
       onToggleConfirmed={onToggleConfirmed}
       labels={labels}
@@ -277,7 +340,10 @@ function SortableKanbanCard({
         transform: isFilterFlipping
           ? undefined
           : CSS.Transform.toString(transform),
-        transition: isFilterFlipping || filterMotion === 'entering' || filterMotion === 'exiting'
+        transition: isFilterFlipping
+          || filterMotion === 'entering'
+          || filterMotion === 'exiting'
+          || filterMotion === 'created'
           ? undefined
           : transition,
       }}
@@ -294,6 +360,7 @@ function KanbanCard({
   filterMotion,
   isFilterFlipping,
   registerFilterNode,
+  onCreatedMotionEnd,
   onClick,
   onToggleConfirmed,
   labels,
@@ -307,6 +374,8 @@ function KanbanCard({
         colTitle={colTitle}
         isConfirmed={isConfirmed}
         isDragOverlay
+        filterMotion={filterMotion}
+        onCreatedMotionEnd={onCreatedMotionEnd}
         onClick={onClick}
         onToggleConfirmed={onToggleConfirmed}
         labels={labels}
@@ -325,6 +394,7 @@ function KanbanCard({
       filterMotion={filterMotion}
       isFilterFlipping={isFilterFlipping}
       registerFilterNode={registerFilterNode}
+      onCreatedMotionEnd={onCreatedMotionEnd}
       onClick={onClick}
       onToggleConfirmed={onToggleConfirmed}
       labels={labels}
@@ -343,6 +413,7 @@ function areKanbanCardPropsEqual(prevProps, nextProps) {
     && prevProps.filterMotion === nextProps.filterMotion
     && prevProps.isFilterFlipping === nextProps.isFilterFlipping
     && prevProps.registerFilterNode === nextProps.registerFilterNode
+    && prevProps.onCreatedMotionEnd === nextProps.onCreatedMotionEnd
     && prevProps.labels === nextProps.labels
     && prevProps.members === nextProps.members
     && prevProps.onClick === nextProps.onClick
