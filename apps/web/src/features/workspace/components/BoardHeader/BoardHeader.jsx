@@ -14,6 +14,7 @@ import MemberAvatarStack from '../MemberAvatarStack/MemberAvatarStack.jsx'
 import PlanSharePopover from '../PlanSharePopover/PlanSharePopover.jsx'
 import PlanGitHubIntegrationModal from '../PlanGitHubIntegrationModal/PlanGitHubIntegrationModal.jsx'
 import BoardVisibilityPopover from '../BoardVisibilityPopover/BoardVisibilityPopover.jsx'
+import BoardAboutPlanPopover from '../BoardAboutPlanPopover/BoardAboutPlanPopover.jsx'
 import BoardMoreOptionsPopover from '../BoardMoreOptionsPopover/BoardMoreOptionsPopover.jsx'
 import BoardFilterPopover from '../BoardFilterPopover/BoardFilterPopover.jsx'
 import BoardViewModePopover, { BOARD_VIEW_MODES } from '../BoardViewModePopover/BoardViewModePopover.jsx'
@@ -58,6 +59,7 @@ export default function BoardHeader({
   githubOpen: controlledGitHubOpen,
   onGitHubOpenChange,
   onMoreOptionsAction,
+  onUpdatePlanDescription,
   isPlanFavorite = false,
   labels = [],
   currentUser = null,
@@ -70,6 +72,7 @@ export default function BoardHeader({
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(false)
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false)
+  const [moreOptionsPanel, setMoreOptionsPanel] = useState('menu')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isGitHubOpen, setIsGitHubOpen] = useState(false)
   const boardVisibility = (plan?.visibility ?? 'PRIVATE').toLowerCase() === 'public' ? 'public' : 'private'
@@ -88,6 +91,11 @@ export default function BoardHeader({
     onGitHubOpenChange?.(value)
   }
 
+  const closeMoreOptionsPopover = () => {
+    setIsMoreOptionsOpen(false)
+    setMoreOptionsPanel('menu')
+  }
+
   useEffect(() => {
     if (!isViewMenuOpen && !isShareOpen && !isVisibilityOpen && !isMoreOptionsOpen && !isFilterOpen && !githubOpen) {
       return undefined
@@ -103,7 +111,7 @@ export default function BoardHeader({
       setIsViewMenuOpen(false)
       setIsShareOpen(false)
       setIsVisibilityOpen(false)
-      setIsMoreOptionsOpen(false)
+      closeMoreOptionsPopover()
       setIsFilterOpen(false)
     }
 
@@ -112,7 +120,7 @@ export default function BoardHeader({
         setIsViewMenuOpen(false)
         setIsShareOpen(false)
         setIsVisibilityOpen(false)
-        setIsMoreOptionsOpen(false)
+        closeMoreOptionsPopover()
         setIsFilterOpen(false)
         setGitHubOpen(false)
       }
@@ -135,7 +143,7 @@ export default function BoardHeader({
     setIsViewMenuOpen(false)
     setIsShareOpen(false)
     setIsVisibilityOpen(false)
-    setIsMoreOptionsOpen(false)
+    closeMoreOptionsPopover()
     setIsFilterOpen(false)
     setGitHubOpen(false)
   }
@@ -144,7 +152,7 @@ export default function BoardHeader({
     setIsShareOpen((open) => !open)
     setIsViewMenuOpen(false)
     setIsVisibilityOpen(false)
-    setIsMoreOptionsOpen(false)
+    closeMoreOptionsPopover()
     setIsFilterOpen(false)
     setGitHubOpen(false)
   }
@@ -153,16 +161,7 @@ export default function BoardHeader({
     setIsVisibilityOpen((open) => !open)
     setIsViewMenuOpen(false)
     setIsShareOpen(false)
-    setIsMoreOptionsOpen(false)
-    setIsFilterOpen(false)
-    setGitHubOpen(false)
-  }
-
-  const toggleMoreOptionsPopover = () => {
-    setIsMoreOptionsOpen((open) => !open)
-    setIsViewMenuOpen(false)
-    setIsShareOpen(false)
-    setIsVisibilityOpen(false)
+    closeMoreOptionsPopover()
     setIsFilterOpen(false)
     setGitHubOpen(false)
   }
@@ -172,16 +171,35 @@ export default function BoardHeader({
     setIsViewMenuOpen(false)
     setIsShareOpen(false)
     setIsVisibilityOpen(false)
-    setIsMoreOptionsOpen(false)
+    closeMoreOptionsPopover()
     setGitHubOpen(false)
   }
 
   const handleMoreOptionsAction = (actionId, anchorRect) => {
+    if (actionId === 'about') {
+      setMoreOptionsPanel('about')
+      return
+    }
     if (actionId === 'integrations') {
       setGitHubOpen(true)
       return
     }
     onMoreOptionsAction?.(actionId, anchorRect)
+  }
+
+  const toggleMoreOptionsPopover = () => {
+    setIsMoreOptionsOpen((open) => {
+      const nextOpen = !open
+      if (!nextOpen) {
+        setMoreOptionsPanel('menu')
+      }
+      return nextOpen
+    })
+    setIsViewMenuOpen(false)
+    setIsShareOpen(false)
+    setIsVisibilityOpen(false)
+    setIsFilterOpen(false)
+    setGitHubOpen(false)
   }
 
   const sharePlan = plan ?? { name: planName }
@@ -407,11 +425,27 @@ export default function BoardHeader({
             </button>
 
             <BoardMoreOptionsPopover
-              open={isMoreOptionsOpen}
+              open={isMoreOptionsOpen && moreOptionsPanel === 'menu'}
               plan={sharePlan}
               hasGitHubIntegration={hasConnectedRepo}
               isFavorite={isPlanFavorite}
               onAction={handleMoreOptionsAction}
+            />
+
+            <BoardAboutPlanPopover
+              open={isMoreOptionsOpen && moreOptionsPanel === 'about'}
+              plan={sharePlan}
+              members={members}
+              currentUser={currentUser}
+              readOnly={readOnly}
+              onBack={() => setMoreOptionsPanel('menu')}
+              onClose={closeMoreOptionsPopover}
+              onSaveDescription={onUpdatePlanDescription}
+              onOpenShare={() => {
+                closeMoreOptionsPopover()
+                setIsShareOpen(true)
+              }}
+              onNotify={onNotify}
             />
           </div>
         ))}

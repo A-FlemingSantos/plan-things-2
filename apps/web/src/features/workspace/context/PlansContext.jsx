@@ -289,6 +289,47 @@ export function PlansProvider({ children }) {
     return updatedPlan
   }, [accessToken, ensureInteractiveSession, plansById])
 
+  const updatePlanDescription = useCallback(async (planId, description) => {
+    if (!planId) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    const currentPlan = plansById.get(planId)
+    if (!currentPlan) {
+      throw new Error('Plano nao encontrado.')
+    }
+
+    const nextDescription = description ?? ''
+
+    if (ensureInteractiveSession() === 'demo') {
+      const updatedPlan = normalizePlanRecord({
+        ...currentPlan,
+        description: nextDescription,
+      })
+      setPlans((prev) => setPlanById(prev, planId, updatedPlan))
+      return updatedPlan
+    }
+
+    const response = await apiRequest(`/api/plans/${planId}`, {
+      method: 'PATCH',
+      token: accessToken,
+      body: {
+        name: currentPlan.name,
+        description: nextDescription,
+        coverThemeId: currentPlan.coverThemeId ?? null,
+        cover: currentPlan.cover ?? null,
+        coverImageId: currentPlan.coverImageId ?? null,
+      },
+    })
+
+    const updatedPlan = normalizePlanRecord({
+      ...mergePlanDetails(currentPlan, response),
+      description: nextDescription,
+    })
+    setPlans((prev) => setPlanById(prev, planId, updatedPlan))
+    return updatedPlan
+  }, [accessToken, ensureInteractiveSession, plansById])
+
   const selectPlan = useCallback((planId) => {
     setActivePlanId(planId)
     if (currentUser?.id && planId) {
@@ -436,6 +477,7 @@ export function PlansProvider({ children }) {
     deletePlan,
     renamePlan,
     updatePlanCover,
+    updatePlanDescription,
     getPlanById,
     loadPlanByKey,
     selectPlan,
@@ -460,6 +502,7 @@ export function PlansProvider({ children }) {
     refreshPlans,
     renamePlan,
     updatePlanCover,
+    updatePlanDescription,
     getPlanById,
     loadPlanByKey,
     isLoading,
@@ -469,6 +512,7 @@ export function PlansProvider({ children }) {
     updatePlan,
     updatePlanBoard,
     updatePlanCover,
+    updatePlanDescription,
     workspace,
   ])
 

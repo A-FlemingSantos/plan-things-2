@@ -66,6 +66,7 @@ export default function KanbanBoard() {
     ensurePlanDetails,
     refreshPlanDetails,
     updatePlanCover,
+    updatePlanDescription,
     plans,
     isLoading,
   } = usePlans()
@@ -594,6 +595,7 @@ export default function KanbanBoard() {
               }}
               readOnly={readOnlyBoard}
               onNotify={showNotification}
+              onUpdatePlanDescription={updatePlanDescription}
               githubOpen={isGitHubIntegrationOpen}
               onGitHubOpenChange={setIsGitHubIntegrationOpen}
               githubIntegration={{
