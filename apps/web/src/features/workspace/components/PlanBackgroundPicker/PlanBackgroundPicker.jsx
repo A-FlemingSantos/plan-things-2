@@ -8,6 +8,7 @@ import {
   resolveCoverThemeClass,
 } from '../workspaceCover/workspaceCoverUtils.js'
 import CoverSelectionCheck from '../workspaceCover/CoverSelectionCheck.jsx'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import styles from '../../pages/Workspace/Workspace.module.css'
 
 export const PLAN_BACKGROUND_PICKER_WIDTH = 420
@@ -86,7 +87,12 @@ export default function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, 
         </button>
       </div>
 
-      <div className={styles.collectionsBody}>
+      <CustomScrollArea
+        enabled
+        className={styles.collectionsBodyScrollArea}
+        viewportClassName={styles.collectionsBody}
+        refreshKey={`plan-background:${plan.id}`}
+      >
         <section className={styles.collectionSection} aria-label="Temas">
           <p className={styles.collectionTitle}>Temas</p>
           <div className={styles.coverGrid}>
@@ -158,7 +164,7 @@ export default function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, 
             </div>
           </section>
         ))}
-      </div>
+      </CustomScrollArea>
     </div>,
     portalRoot
   )

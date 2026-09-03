@@ -15,6 +15,7 @@ import {
   resolveCoverThemeClass,
 } from '../workspaceCover/workspaceCoverUtils.js'
 import CoverSelectionCheck from '../workspaceCover/CoverSelectionCheck.jsx'
+import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
 import styles from '../../pages/Workspace/Workspace.module.css'
 
 export default function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }) {
@@ -389,7 +390,12 @@ export default function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendD
             </button>
           </div>
 
-          <div className={styles.collectionsBody}>
+          <CustomScrollArea
+            enabled
+            className={styles.collectionsBodyScrollArea}
+            viewportClassName={styles.collectionsBody}
+            refreshKey="new-plan-collections"
+          >
             {BACKGROUND_COLLECTIONS.map((collection) => (
               <section key={collection.id} className={styles.collectionSection} aria-label={collection.title}>
                 <p className={styles.collectionTitle}>{collection.title}</p>
@@ -422,7 +428,7 @@ export default function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendD
                 </div>
               </section>
             ))}
-          </div>
+          </CustomScrollArea>
         </div>
       )}
     </>
