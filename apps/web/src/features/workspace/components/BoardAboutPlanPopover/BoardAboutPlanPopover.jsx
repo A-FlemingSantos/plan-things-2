@@ -3,6 +3,7 @@ import { AlignLeft, ChevronLeft, MessageSquare, UserRound, X } from 'lucide-reac
 import { Link } from 'react-router-dom'
 import AuthenticatedAvatar from '../../../../shared/components/AuthenticatedAvatar/AuthenticatedAvatar.jsx'
 import CustomScrollArea from '../../../../shared/components/CustomScrollArea/CustomScrollArea.jsx'
+import { PLAN_DESCRIPTION_MAX_LENGTH } from '../../../../shared/contracts/backendAdapters.js'
 import styles from './BoardAboutPlanPopover.module.css'
 
 const ICON_SIZE = 14
@@ -58,6 +59,11 @@ export default function BoardAboutPlanPopover({
 
   const handleSaveDescription = async () => {
     if (!canEditDescription || busy || !hasDescriptionDraft || !plan?.id) return true
+
+    if (description.length > PLAN_DESCRIPTION_MAX_LENGTH) {
+      onNotify?.(`A descrição pode ter no máximo ${PLAN_DESCRIPTION_MAX_LENGTH} caracteres.`)
+      return false
+    }
 
     try {
       await onSaveDescription?.(plan.id, description)
@@ -178,6 +184,7 @@ export default function BoardAboutPlanPopover({
               onBlur={() => setIsDescriptionFocused(false)}
               placeholder={DESCRIPTION_PLACEHOLDER}
               aria-label="Descrição do plano"
+              maxLength={PLAN_DESCRIPTION_MAX_LENGTH}
               disabled={!canEditDescription || busy}
             />
           </div>

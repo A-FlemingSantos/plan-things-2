@@ -4,10 +4,12 @@ import { readSessionModeFromAuthState } from '../../auth/utils/sessionMode.js'
 import { usePreferences } from '../../preferences/context/PreferencesContext.jsx'
 import { apiRequest } from '../../../shared/api/apiClient.js'
 import {
+  buildPlanUpsertPayload,
   mapBoardViewToColumns,
   mapPlanSummaryToRecord,
   mergeBoardIntoPlan,
   mergePlanDetails,
+  PLAN_DESCRIPTION_MAX_LENGTH,
 } from '../../../shared/contracts/backendAdapters.js'
 import { normalizePlanRecord } from '../../../shared/contracts/planContracts.js'
 import { createInitialPlansSnapshot } from '../data/plansRepository.js'
@@ -219,13 +221,7 @@ export function PlansProvider({ children }) {
     const response = await apiRequest(`/api/plans/${planId}`, {
       method: 'PATCH',
       token: accessToken,
-      body: {
-        name: trimmedName,
-        description: currentPlan.description ?? '',
-        coverThemeId: currentPlan.coverThemeId ?? null,
-        cover: currentPlan.cover ?? null,
-        coverImageId: currentPlan.coverImageId ?? null,
-      },
+      body: buildPlanUpsertPayload(currentPlan, { name: trimmedName }),
     })
 
     const responseName = typeof response?.plan?.name === 'string'
@@ -272,13 +268,7 @@ export function PlansProvider({ children }) {
     const response = await apiRequest(`/api/plans/${planId}`, {
       method: 'PATCH',
       token: accessToken,
-      body: {
-        name: currentPlan.name,
-        description: currentPlan.description ?? '',
-        coverThemeId: nextCoverThemeId,
-        cover: nextCover,
-        coverImageId: nextCoverImageId,
-      },
+      body: buildPlanUpsertPayload(currentPlan, nextPlanPatch),
     })
 
     const updatedPlan = normalizePlanRecord({
@@ -301,6 +291,10 @@ export function PlansProvider({ children }) {
 
     const nextDescription = description ?? ''
 
+    if (nextDescription.length > PLAN_DESCRIPTION_MAX_LENGTH) {
+      throw new Error(`A descrição pode ter no máximo ${PLAN_DESCRIPTION_MAX_LENGTH} caracteres.`)
+    }
+
     if (ensureInteractiveSession() === 'demo') {
       const updatedPlan = normalizePlanRecord({
         ...currentPlan,
@@ -313,13 +307,7 @@ export function PlansProvider({ children }) {
     const response = await apiRequest(`/api/plans/${planId}`, {
       method: 'PATCH',
       token: accessToken,
-      body: {
-        name: currentPlan.name,
-        description: nextDescription,
-        coverThemeId: currentPlan.coverThemeId ?? null,
-        cover: currentPlan.cover ?? null,
-        coverImageId: currentPlan.coverImageId ?? null,
-      },
+      body: buildPlanUpsertPayload(currentPlan, { description: nextDescription }),
     })
 
     const updatedPlan = normalizePlanRecord({

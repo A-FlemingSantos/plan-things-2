@@ -4,6 +4,7 @@ import com.planthings.api.common.api.ApiEnvelope;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.validation.annotation.Validated;
@@ -151,10 +152,10 @@ public class PlanController {
 
   public record UpsertPlanRequest(
       @NotBlank(message = "O nome do plano e obrigatorio.") String name,
-      String description,
-      String coverThemeId,
-      String cover,
-      String coverImageId
+      @Size(max = 400, message = "A descricao do plano deve ter no maximo 400 caracteres.") String description,
+      @Size(max = 60, message = "O tema de capa deve ter no maximo 60 caracteres.") String coverThemeId,
+      @Size(max = 20, message = "A cor de capa deve ter no maximo 20 caracteres.") String cover,
+      @Size(max = 255, message = "A imagem de capa deve ter no maximo 255 caracteres.") String coverImageId
   ) {
   }
 

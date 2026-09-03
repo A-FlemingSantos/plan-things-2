@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -101,6 +102,21 @@ public class GlobalExceptionHandler {
         HttpStatus.BAD_REQUEST,
         "REQUISICAO_INVALIDA",
         "Os dados enviados sao invalidos.",
+        request.getRequestURI(),
+        List.of()
+    );
+  }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ApiEnvelope<Void>> handleDataIntegrityViolation(
+      DataIntegrityViolationException ex,
+      HttpServletRequest request
+  ) {
+    logger.warn("Data integrity violation processing request path={}", request.getRequestURI(), ex);
+    return buildResponse(
+        HttpStatus.BAD_REQUEST,
+        "DADOS_INVALIDOS",
+        "Os dados enviados excedem os limites permitidos.",
         request.getRequestURI(),
         List.of()
     );

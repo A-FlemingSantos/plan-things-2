@@ -28,6 +28,8 @@ const COVER_IMAGE_THUMB_URL_BY_ID = Object.entries(COVER_IMAGE_THUMB_FILES).redu
   return acc
 }, {})
 
+export const PLAN_DESCRIPTION_MAX_LENGTH = 400
+
 function canonicalizeCoverImageId(value) {
   if (!value) return null
   const normalized = String(value).trim().replace(/\\/g, '/')
@@ -68,6 +70,18 @@ function resolveCoverImageThumbUrl(coverImageId) {
     return COVER_IMAGE_THUMB_URL_BY_ID[canonicalId] ?? null
   }
   return COVER_IMAGE_THUMB_URL_BY_ID[`background-collections/${canonicalId}`] ?? COVER_IMAGE_THUMB_URL_BY_ID[canonicalId] ?? null
+}
+
+export function buildPlanUpsertPayload(plan, patch = {}) {
+  const merged = { ...plan, ...patch }
+
+  return {
+    name: merged.name,
+    description: merged.description ?? '',
+    coverThemeId: merged.coverThemeId ?? null,
+    cover: merged.cover ?? null,
+    coverImageId: canonicalizeCoverImageId(merged.coverImageId),
+  }
 }
 
 function shortMonthLabel(date) {

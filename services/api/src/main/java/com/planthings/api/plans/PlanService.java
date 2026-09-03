@@ -35,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PlanService {
 
+  private static final int MAX_DESCRIPTION_LENGTH = 400;
+
   private final PlanRepository planRepository;
   private final PlanMemberRepository planMemberRepository;
   private final PlanInviteRepository planInviteRepository;
@@ -141,7 +143,7 @@ public class PlanService {
     plan.setName(requireName(name));
     plan.setSlug(planSlugService.allocateSlug(plan.getName()));
     plan.setVisibility(PlanVisibility.PRIVATE);
-    plan.setDescription(normalizeOptional(description));
+    plan.setDescription(requireDescription(description));
     applyCover(plan, coverThemeId, cover, coverImageId);
     planRepository.save(plan);
 
@@ -166,8 +168,9 @@ public class PlanService {
     UUID currentUserId = authenticatedUserService.requireUserId();
     PlanEntity plan = planAccessService.requirePlanEditor(planId, currentUserId);
     plan.setName(requireName(name));
-    plan.setDescription(normalizeOptional(description));
+    plan.setDescription(requireDescription(description));
     applyCover(plan, coverThemeId, cover, coverImageId);
+    planRepository.save(plan);
     return toPlanDetails(plan, currentUserId);
   }
 
@@ -498,6 +501,17 @@ public class PlanService {
 
   private String normalizeOptional(String value) {
     return value == null || value.isBlank() ? null : value.trim();
+  }
+
+  private String requireDescription(String value) {
+    String normalized = normalizeOptional(value);
+    if (normalized != null && normalized.length() > MAX_DESCRIPTION_LENGTH) {
+      throw new BadRequestException(
+          "DESCRICAO_MUITO_LONGA",
+          "A descricao do plano deve ter no maximo 400 caracteres."
+      );
+    }
+    return normalized;
   }
 
   private void applyCover(PlanEntity plan, String coverThemeId, String cover, String coverImageId) {
