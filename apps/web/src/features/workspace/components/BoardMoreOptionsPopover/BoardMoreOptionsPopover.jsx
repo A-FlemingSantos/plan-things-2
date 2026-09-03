@@ -61,7 +61,6 @@ export default function BoardMoreOptionsPopover({
   hasGitHubIntegration = false,
   isFavorite = false,
   onAction,
-  onClose,
 }) {
   if (!open) return null
 
@@ -97,9 +96,8 @@ export default function BoardMoreOptionsPopover({
                   danger ? styles.itemDanger : '',
                   hint ? styles.itemWithHint : '',
                 ].filter(Boolean).join(' ')}
-                onClick={() => {
-                  onAction?.(id)
-                  onClose?.()
+                onClick={(event) => {
+                  onAction?.(id, event.currentTarget.getBoundingClientRect())
                 }}
               >
                 <span className={styles.itemIcon} aria-hidden="true">

@@ -14,6 +14,7 @@ import {
   buildCustomCoverImageFromFile,
   resolveCoverThemeClass,
 } from '../workspaceCover/workspaceCoverUtils.js'
+import CoverSelectionCheck from '../workspaceCover/CoverSelectionCheck.jsx'
 import styles from '../../pages/Workspace/Workspace.module.css'
 
 export default function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendDriven = false }) {
@@ -253,30 +254,34 @@ export default function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendD
                 <button
                   key={theme.id}
                   type="button"
-                  className={`${styles.coverOption} ${selectedTheme?.id === theme.id ? styles.coverOptionActive : ''} ${resolveCoverThemeClass(styles, theme.id)}`}
+                  className={`${styles.coverOption} ${resolveCoverThemeClass(styles, theme.id)}`}
                   onClick={() => {
                     revokeCustomCoverUrls()
                     setSelectedTheme(theme)
                     setSelectedImage(null)
                   }}
                   aria-label={theme.label}
+                  aria-pressed={selectedTheme?.id === theme.id}
                   title={theme.label}
                 >
                   <span className={styles.coverOptionShade} />
+                  {selectedTheme?.id === theme.id ? <CoverSelectionCheck size="sm" /> : null}
                 </button>
               ))}
               <button
                 type="button"
-                className={`${styles.coverOption} ${styles.coverUploadOption} ${selectedImage?.isCustomUpload ? styles.coverOptionActive : ''}`}
+                className={`${styles.coverOption} ${styles.coverUploadOption}`}
                 onClick={() => coverUploadRef.current?.click()}
                 aria-label="Enviar imagem própria"
+                aria-pressed={selectedImage?.isCustomUpload ?? false}
                 title="Enviar imagem própria"
               >
                 <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
+                {selectedImage?.isCustomUpload ? <CoverSelectionCheck size="sm" /> : null}
               </button>
               <button
                 type="button"
-                className={`${styles.coverOption} ${styles.coverMoreOption} ${showImageCollections ? styles.coverOptionActive : ''}`}
+                className={`${styles.coverOption} ${styles.coverMoreOption} ${showImageCollections ? styles.coverMoreOptionOpen : ''}`}
                 onClick={() => setShowImageCollections((value) => !value)}
                 aria-label="Mais opções de tela de fundo"
                 title="Mais opções"
@@ -395,7 +400,7 @@ export default function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendD
                       <button
                         key={item.id}
                         type="button"
-                        className={`${styles.collectionItem} ${active ? styles.collectionItemActive : ''}`}
+                        className={styles.collectionItem}
                         onClick={() => {
                           revokeCustomCoverUrls()
                           setSelectedImage(item)
@@ -410,6 +415,7 @@ export default function NewPlanPopover({ anchorEl, onClose, onSubmit, isBackendD
                           style={{ backgroundImage: `url(${item.url})` }}
                           aria-hidden="true"
                         />
+                        {active ? <CoverSelectionCheck /> : null}
                       </button>
                     )
                   })}

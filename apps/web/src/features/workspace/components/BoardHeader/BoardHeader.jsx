@@ -176,12 +176,12 @@ export default function BoardHeader({
     setGitHubOpen(false)
   }
 
-  const handleMoreOptionsAction = (actionId) => {
+  const handleMoreOptionsAction = (actionId, anchorRect) => {
     if (actionId === 'integrations') {
       setGitHubOpen(true)
       return
     }
-    onMoreOptionsAction?.(actionId)
+    onMoreOptionsAction?.(actionId, anchorRect)
   }
 
   const sharePlan = plan ?? { name: planName }
@@ -412,7 +412,6 @@ export default function BoardHeader({
               hasGitHubIntegration={hasConnectedRepo}
               isFavorite={isPlanFavorite}
               onAction={handleMoreOptionsAction}
-              onClose={() => setIsMoreOptionsOpen(false)}
             />
           </div>
         ))}

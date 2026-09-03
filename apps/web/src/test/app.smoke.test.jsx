@@ -570,7 +570,7 @@ describe('App smoke flows', () => {
 
     await user.upload(fileInput, file)
 
-    expect(screen.getByRole('button', { name: 'Enviar imagem própria' }).className).toMatch(/coverOptionActive/)
+    expect(screen.getByRole('button', { name: 'Enviar imagem própria' })).toHaveAttribute('aria-pressed', 'true')
 
     await user.type(screen.getByRole('textbox', { name: /título do plano/i }), 'Plano com capa')
     await user.click(screen.getByRole('button', { name: 'Criar' }))

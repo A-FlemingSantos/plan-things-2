@@ -19,6 +19,7 @@ import {
   PlusIcon,
 } from '../../components/WorkspaceIcons/WorkspaceIcons.jsx'
 import { uploadPlanCoverFile } from '../../components/workspaceCover/workspaceCoverUtils.js'
+import { usePlanBackgroundPicker } from '../../hooks/usePlanBackgroundPicker.js'
 import styles from './Workspace.module.css'
 
 export default function Workspace() {
@@ -33,16 +34,27 @@ export default function Workspace() {
   const [renamingPlan, setRenamingPlan] = useState(null)
   const [renameDraft, setRenameDraft] = useState('')
   const [renameBusy, setRenameBusy] = useState(false)
-  const [backgroundPicker, setBackgroundPicker] = useState(null)
-  const [backgroundBusy, setBackgroundBusy] = useState(false)
   const handledFileDeepLinkRef = useRef('')
   const { plans, activePlan, createPlan, deletePlan, renamePlan, updatePlanCover, selectPlan, isBackendDriven, isLoading } = usePlans()
   const { localPreferences } = usePreferences()
   const confirmDestructiveActions = localPreferences.confirmDestructiveActions ?? true
   const hasVisiblePlans = plans.length > 0
-  const backgroundPickerPlan = backgroundPicker?.planId
-    ? plans.find((plan) => plan.id === backgroundPicker.planId) ?? null
-    : null
+  const {
+    backgroundPicker,
+    backgroundPickerPlan,
+    backgroundBusy,
+    openBackgroundPicker,
+    closeBackgroundPicker,
+    dismissBackgroundPicker,
+    handleSelectTheme,
+    handleSelectImage,
+  } = usePlanBackgroundPicker({
+    plans,
+    updatePlanCover,
+    isBackendDriven,
+    accessToken,
+    onNotify: pushNotification,
+  })
   const fileIdFromUrl = String(searchParams.get('file') ?? '').trim()
 
   useEffect(() => {
@@ -141,7 +153,7 @@ export default function Workspace() {
   const startInlineRename = (plan) => {
     setOpenPlanMenuId(null)
     setPlanMenuAnchorRect(null)
-    setBackgroundPicker(null)
+    dismissBackgroundPicker()
     setRenamingPlan(plan)
     setRenameDraft(plan?.name ?? '')
   }
@@ -170,76 +182,21 @@ export default function Workspace() {
     }
   }
 
-  const handlePlanBackgroundTheme = async (theme) => {
-    const plan = plans.find((item) => item.id === backgroundPicker?.planId)
-    if (!plan || backgroundBusy) return
-    setBackgroundBusy(true)
-    try {
-      await updatePlanCover(plan.id, {
-        cover: theme.cardCover,
-        coverThemeId: theme.id,
-        coverImageId: null,
-        coverImage: null,
-        coverImageThumb: null,
-      })
-      setBackgroundPicker(null)
-      pushNotification(`Background de "${plan.name}" atualizado`)
-    } catch (error) {
-      pushNotification(error.message ?? 'Nao foi possivel alterar o background do plano.')
-    } finally {
-      setBackgroundBusy(false)
-    }
-  }
-
-  const handlePlanBackgroundImage = async (image) => {
-    const plan = plans.find((item) => item.id === backgroundPicker?.planId)
-    if (!plan || backgroundBusy) return
-    setBackgroundBusy(true)
-    try {
-      let coverImageId = image.id
-      const coverImage = image.fullUrl ?? image.url
-      const coverImageThumb = image.url
-
-      if (image.isCustomUpload) {
-        if (image.sourceFile instanceof File && isBackendDriven && accessToken) {
-          const fileId = await uploadPlanCoverFile(image.sourceFile, accessToken)
-          coverImageId = `files/${fileId}`
-        } else {
-          coverImageId = null
-        }
-      }
-
-      await updatePlanCover(plan.id, {
-        cover: plan.cover ?? null,
-        coverThemeId: null,
-        coverImageId,
-        coverImage,
-        coverImageThumb,
-      })
-      setBackgroundPicker(null)
-      pushNotification(`Background de "${plan.name}" atualizado`)
-    } catch (error) {
-      pushNotification(error.message ?? 'Nao foi possivel alterar o background do plano.')
-    } finally {
-      setBackgroundBusy(false)
-    }
-  }
-
   const handlePlanMenuAction = (plan, action) => {
     const anchorRect = planMenuAnchorRect
     setOpenPlanMenuId(null)
     setPlanMenuAnchorRect(null)
     if (action === 'board') {
-      setBackgroundPicker(null)
-      openBoard(plan.id)
+      dismissBackgroundPicker()
+      openBoard(plan)
     } else if (action === 'rename') {
       startInlineRename(plan)
     } else if (action === 'background') {
       setRenamingPlan(null)
       setRenameDraft('')
-      setBackgroundPicker({ planId: plan.id, anchorRect })
+      openBackgroundPicker(plan.id, anchorRect)
     } else if (action === 'delete') {
-      setBackgroundPicker(null)
+      dismissBackgroundPicker()
       void handleDeletePlan(plan)
     }
   }
@@ -264,7 +221,7 @@ export default function Workspace() {
   }
 
   const openBoard = (plan) => {
-    setBackgroundPicker(null)
+    dismissBackgroundPicker()
     selectPlan(plan.id)
     navigate(buildWorkspaceBoardPath(plan))
   }
@@ -406,11 +363,9 @@ export default function Workspace() {
           plan={backgroundPickerPlan}
           anchorRect={backgroundPicker.anchorRect}
           busy={backgroundBusy}
-          onClose={() => {
-            if (!backgroundBusy) setBackgroundPicker(null)
-          }}
-          onSelectTheme={handlePlanBackgroundTheme}
-          onSelectImage={handlePlanBackgroundImage}
+          onClose={closeBackgroundPicker}
+          onSelectTheme={handleSelectTheme}
+          onSelectImage={handleSelectImage}
         />
       )}
 

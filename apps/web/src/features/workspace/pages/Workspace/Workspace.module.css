@@ -1441,11 +1441,8 @@
   border-color: var(--border-2, var(--border-1));
 }
 
-.coverOptionActive {
+.coverMoreOptionOpen {
   border-color: var(--border-2, var(--border-1));
-  box-shadow: none;
-  outline: 1px solid var(--text-1);
-  outline-offset: 1px;
 }
 
 .coverOptionShade {
@@ -1569,6 +1566,7 @@
 }
 
 .collectionItem {
+  position: relative;
   aspect-ratio: 1 / 1;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
@@ -1588,11 +1586,15 @@
   cursor: progress;
 }
 
-.collectionItemActive {
-  border-color: var(--text-1);
-  box-shadow: none;
-  outline: 1px solid var(--text-1);
-  outline-offset: 1px;
+.collectionItem:focus,
+.coverOption:focus {
+  outline: none;
+}
+
+.collectionItem:focus-visible,
+.coverOption:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--focus-ring) 70%, transparent);
+  outline-offset: 2px;
 }
 
 .collectionThumb {

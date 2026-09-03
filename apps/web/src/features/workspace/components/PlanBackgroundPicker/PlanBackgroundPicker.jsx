@@ -7,6 +7,7 @@ import {
   isUploadedPlanCoverImageId,
   resolveCoverThemeClass,
 } from '../workspaceCover/workspaceCoverUtils.js'
+import CoverSelectionCheck from '../workspaceCover/CoverSelectionCheck.jsx'
 import styles from '../../pages/Workspace/Workspace.module.css'
 
 export const PLAN_BACKGROUND_PICKER_WIDTH = 420
@@ -95,7 +96,7 @@ export default function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, 
                 <button
                   key={theme.id}
                   type="button"
-                  className={`${styles.coverOption} ${active ? styles.coverOptionActive : ''} ${resolveCoverThemeClass(styles, theme.id)}`}
+                  className={`${styles.coverOption} ${resolveCoverThemeClass(styles, theme.id)}`}
                   onClick={() => onSelectTheme?.(theme)}
                   aria-label={theme.label}
                   aria-pressed={active}
@@ -103,18 +104,21 @@ export default function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, 
                   disabled={busy}
                 >
                   <span className={styles.coverOptionShade} />
+                  {active ? <CoverSelectionCheck size="sm" /> : null}
                 </button>
               )
             })}
             <button
               type="button"
-              className={`${styles.coverOption} ${styles.coverUploadOption} ${isUploadedPlanCoverImageId(plan.coverImageId) ? styles.coverOptionActive : ''}`}
+              className={`${styles.coverOption} ${styles.coverUploadOption}`}
               onClick={() => coverUploadRef.current?.click()}
               aria-label="Enviar imagem própria"
               title="Enviar imagem própria"
+              aria-pressed={isUploadedPlanCoverImageId(plan.coverImageId)}
               disabled={busy}
             >
               <span className={styles.coverUploadIcon}><ImagePlusIcon /></span>
+              {isUploadedPlanCoverImageId(plan.coverImageId) ? <CoverSelectionCheck size="sm" /> : null}
             </button>
             <input
               ref={coverUploadRef}
@@ -136,7 +140,7 @@ export default function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, 
                   <button
                     key={item.id}
                     type="button"
-                    className={`${styles.collectionItem} ${active ? styles.collectionItemActive : ''}`}
+                    className={styles.collectionItem}
                     onClick={() => onSelectImage?.(item)}
                     title={item.label}
                     aria-pressed={active}
@@ -147,6 +151,7 @@ export default function PlanBackgroundPicker({ plan, anchorRect, busy, onClose, 
                       style={{ backgroundImage: `url(${item.url})` }}
                       aria-hidden="true"
                     />
+                    {active ? <CoverSelectionCheck /> : null}
                   </button>
                 )
               })}

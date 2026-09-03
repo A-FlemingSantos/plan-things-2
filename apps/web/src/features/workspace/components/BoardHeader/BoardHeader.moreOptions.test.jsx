@@ -23,7 +23,7 @@ describe('BoardHeader more options popover', () => {
     expect(screen.getByRole('menuitem', { name: /Fechar plano/i })).toBeInTheDocument()
   })
 
-  it('dispatches menu actions and closes the popover', async () => {
+  it('dispatches menu actions without closing the popover', async () => {
     const user = userEvent.setup()
     const onMoreOptionsAction = vi.fn()
     render(
@@ -36,8 +36,27 @@ describe('BoardHeader more options popover', () => {
     await user.click(screen.getByRole('button', { name: 'Mais opções' }))
     await user.click(screen.getByRole('menuitem', { name: /Exportar plano/i }))
 
-    expect(onMoreOptionsAction).toHaveBeenCalledWith('export')
-    expect(screen.queryByRole('menu', { name: 'Mais opções do plano' })).not.toBeInTheDocument()
+    expect(onMoreOptionsAction).toHaveBeenCalledWith('export', expect.any(Object))
+    expect(screen.getByRole('menu', { name: 'Mais opções do plano' })).toBeInTheDocument()
+  })
+
+  it('opens the cover picker anchor when Alterar capa is selected', async () => {
+    const user = userEvent.setup()
+    const onMoreOptionsAction = vi.fn()
+    render(
+      <BoardHeader
+        planName="MVP Board"
+        onMoreOptionsAction={onMoreOptionsAction}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Mais opções' }))
+    await user.click(screen.getByRole('menuitem', { name: /Alterar capa/i }))
+
+    expect(onMoreOptionsAction).toHaveBeenCalledWith('cover', expect.objectContaining({
+      top: expect.any(Number),
+      left: expect.any(Number),
+    }))
   })
 
   it('shows a cover preview instead of an icon for Alterar capa', async () => {

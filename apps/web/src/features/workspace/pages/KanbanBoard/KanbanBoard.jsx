@@ -8,11 +8,13 @@ import ProductAppShell from '../../../../shared/components/ProductAppShell/Produ
 import CardModal from '../../components/CardModal/CardModal.jsx'
 import AddColumnComposer from '../../components/AddColumnComposer/AddColumnComposer.jsx'
 import BoardHeader from '../../components/BoardHeader/BoardHeader.jsx'
+import PlanBackgroundPicker from '../../components/PlanBackgroundPicker/PlanBackgroundPicker.jsx'
 import { BOARD_FILTER_DEFAULTS, hasActiveBoardFilters } from '../../components/BoardFilterPopover/boardFilterDefaults.js'
 import { collectMatchingCardIds } from '../../components/BoardFilterPopover/boardCardFilter.js'
 import KanbanColumn, { kanbanDropAnimation } from '../../components/KanbanColumn/KanbanColumn.jsx'
 import KanbanCard from '../../components/KanbanCard/KanbanCard.jsx'
 import { usePlans } from '../../context/PlansContext.jsx'
+import { usePlanBackgroundPicker } from '../../hooks/usePlanBackgroundPicker.js'
 import { useBoardColumns } from '../../hooks/useBoardColumns.js'
 import { useKanbanBoardDnd } from '../../hooks/useKanbanBoardDnd.js'
 import { useResolvedPlanRoute } from '../../hooks/useResolvedPlanRoute.js'
@@ -63,6 +65,8 @@ export default function KanbanBoard() {
     applyBoardView,
     ensurePlanDetails,
     refreshPlanDetails,
+    updatePlanCover,
+    plans,
     isLoading,
   } = usePlans()
   const { activePlan } = useResolvedPlanRoute({
@@ -101,6 +105,21 @@ export default function KanbanBoard() {
   }, [])
 
   const { notification, showNotification } = useKanbanBoardNotification()
+  const {
+    backgroundPicker,
+    backgroundPickerPlan,
+    backgroundBusy,
+    openBackgroundPicker,
+    closeBackgroundPicker,
+    handleSelectTheme,
+    handleSelectImage,
+  } = usePlanBackgroundPicker({
+    plans,
+    updatePlanCover,
+    isBackendDriven,
+    accessToken,
+    onNotify: showNotification,
+  })
   const {
     isInboxOpen,
     isInboxPanelMounted,
@@ -598,6 +617,11 @@ export default function KanbanBoard() {
                 onConnectRepo: github.connectRepo,
                 pendingConnectRepoIds: github.pendingConnectRepoIds,
               }}
+              onMoreOptionsAction={(actionId, anchorRect) => {
+                if (actionId === 'cover' && activePlan?.id && canEditBoard) {
+                  openBackgroundPicker(activePlan.id, anchorRect)
+                }
+              }}
             />
 
             {isBoardLoading ? (
@@ -834,6 +858,17 @@ export default function KanbanBoard() {
         <div className={styles.boardNotification} role="status" aria-live="polite">
           {notification}
         </div>
+      )}
+
+      {backgroundPickerPlan && (
+        <PlanBackgroundPicker
+          plan={backgroundPickerPlan}
+          anchorRect={backgroundPicker.anchorRect}
+          busy={backgroundBusy}
+          onClose={closeBackgroundPicker}
+          onSelectTheme={handleSelectTheme}
+          onSelectImage={handleSelectImage}
+        />
       )}
       </div>
     </AppThemeScope>
