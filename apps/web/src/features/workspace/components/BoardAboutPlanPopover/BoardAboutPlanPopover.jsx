@@ -147,17 +147,19 @@ export default function BoardAboutPlanPopover({
             Descrição
           </h3>
 
-          <textarea
-            className={styles.descriptionField}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            onBlur={() => {
-              void handleSaveDescription()
-            }}
-            placeholder={DESCRIPTION_PLACEHOLDER}
-            aria-label="Descrição do plano"
-            disabled={!canEditDescription || busy}
-          />
+          <div className={styles.descriptionFieldWrap}>
+            <textarea
+              className={styles.descriptionField}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              onBlur={() => {
+                void handleSaveDescription()
+              }}
+              placeholder={DESCRIPTION_PLACEHOLDER}
+              aria-label="Descrição do plano"
+              disabled={!canEditDescription || busy}
+            />
+          </div>
         </section>
 
         <div className={styles.permissionsDivider} role="separator" />

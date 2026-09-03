@@ -185,32 +185,59 @@
   color: var(--text-1);
 }
 
-.descriptionField {
-  width: 100%;
-  min-height: 96px;
-  padding: 8px 10px;
-  border: none;
+.descriptionFieldWrap {
+  border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
-  background: var(--surface-2, var(--hover));
+  background: color-mix(in srgb, var(--surface-2, var(--hover)) 72%, var(--app-bg));
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.descriptionFieldWrap:focus-within {
+  border-color: color-mix(in srgb, var(--focus-ring) 42%, var(--border-1));
+  background: var(--app-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 14%, transparent);
+}
+
+.descriptionFieldWrap:has(.descriptionField:disabled) {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.descriptionField {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 104px;
+  padding: 10px 11px;
+  border: none;
+  border-radius: inherit;
+  background: transparent;
   color: var(--text-1);
   font-family: var(--font-family);
   font-size: 12px;
   font-weight: var(--font-weight-light);
-  line-height: 1.45;
-  resize: vertical;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .descriptionField::placeholder {
   color: var(--text-3);
 }
 
-.descriptionField:focus {
-  outline: 2px solid color-mix(in srgb, var(--focus-ring) 70%, transparent);
-  outline-offset: 0;
+.descriptionField:focus,
+.descriptionField:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .descriptionField:disabled {
-  opacity: 0.72;
   cursor: not-allowed;
 }
 
