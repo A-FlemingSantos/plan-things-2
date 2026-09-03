@@ -537,6 +537,7 @@ export function KanbanColumnView({
             <div
               ref={cardStackScrollRef}
               className={`${styles.colCardsScroll} ${isEmptyColumn ? styles.colCardsScrollEmpty : ''}`}
+              data-column-card-stack=""
             >
               <CustomScrollArea
                 className={styles.colCardsScrollArea}

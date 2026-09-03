@@ -2023,6 +2023,7 @@
   isolation: isolate;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: 8px;
   transform: translate3d(0, 0, 0);
   transition:

@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useRef } from 'react'
 import {
   clearStackStyles,
   measureCardRects,
+  measureColumnStackCap,
   playKanbanFilterFlip,
   prefersReducedMotion,
 } from './kanbanColumnFilterFlip.js'
@@ -27,6 +28,9 @@ export function useKanbanColumnFilterFlip({
   const nodesRef = useRef(new Map())
   const idleRectsRef = useRef(new Map())
   const idleStackHeightRef = useRef(null)
+  const idleStackCapRef = useRef(null)
+  const idleOverflowingRef = useRef(false)
+  const idleScrollTopRef = useRef(0)
   const playingRef = useRef(false)
   const displayedCardsRef = useRef(displayedCards)
   const getMotionRef = useRef(getMotion)
@@ -43,8 +47,15 @@ export function useKanbanColumnFilterFlip({
   }, [])
 
   const recordIdleSnapshot = useCallback(() => {
+    const stackNode = stackRef?.current ?? viewportRef?.current
     idleRectsRef.current = measureCardRects(nodesRef.current)
-    idleStackHeightRef.current = readStackHeight(stackRef, viewportRef)
+    idleStackHeightRef.current = stackNode ? stackNode.offsetHeight : 0
+    idleStackCapRef.current = measureColumnStackCap(stackNode)
+    const viewport = viewportRef?.current
+    idleOverflowingRef.current = Boolean(
+      viewport && viewport.scrollHeight > viewport.clientHeight + 1,
+    )
+    idleScrollTopRef.current = viewport?.scrollTop ?? 0
     clearStackStyles(stackRef?.current)
     if (viewportRef?.current && viewportRef.current !== stackRef?.current) {
       clearStackStyles(viewportRef.current)
@@ -90,6 +101,9 @@ export function useKanbanColumnFilterFlip({
       nodesById: nodesRef.current,
       firstRects,
       firstHeight,
+      stackCap: idleStackCapRef.current,
+      idleOverflowing: idleOverflowingRef.current,
+      idleScrollTop: idleScrollTopRef.current,
       motionsById,
       onComplete: (id) => completeMotionRef.current(id),
     })
